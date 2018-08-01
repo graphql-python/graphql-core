@@ -1,0 +1,23 @@
+language: python
+
+python:
+  - 3.6
+# - 3.7  done in the matrix below
+
+install:
+  - pip install pipenv
+  - pipenv install --dev
+
+matrix:
+  include:
+    - python: 3.7
+      dist: xenial  # required for Python 3.7,
+      sudo: true  # see travis-ci/travis-ci#9069
+
+script:
+  - flake8 graphql tests
+  - mypy graphql
+  - pytest --cov-report term-missing --cov=graphql
+
+after_success:
+  - coveralls
