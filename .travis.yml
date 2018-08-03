@@ -1,18 +1,15 @@
 language: python
 
+dist: xenial
+sudo: true
+
 python:
   - 3.6
-# - 3.7  done in the matrix below
+  - 3.7
 
 install:
   - pip install pipenv
   - pipenv install --dev
-
-matrix:
-  include:
-    - python: 3.7
-      dist: xenial  # required for Python 3.7,
-      sudo: true  # see travis-ci/travis-ci#9069
 
 script:
   - flake8 graphql tests
