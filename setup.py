@@ -23,6 +23,9 @@ setup(
     author_email='cito@online.de',
     license='MIT license',
 
+    # PEP-561: https://www.python.org/dev/peps/pep-0561/
+    package_data={'graphql': ['py.typed']},
+
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
