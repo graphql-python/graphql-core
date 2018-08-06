@@ -885,6 +885,20 @@ def describe_failures():
         assert msg == (
             "Specified subscription type 'Awesome' not found in document.")
 
+    def does_not_consider_directive_names():
+        body = dedent("""
+            schema {
+              query: Foo
+            }
+
+            directive @ Foo on QUERY
+            """)
+        doc = parse(body)
+        with raises(TypeError) as exc_info:
+            build_ast_schema(doc)
+        msg = str(exc_info.value)
+        assert msg == "Specified query type 'Foo' not found in document."
+
     def does_not_consider_operation_names():
         body = dedent("""
             schema {
