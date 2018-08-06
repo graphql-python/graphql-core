@@ -1,16 +1,14 @@
-from typing import List, Sequence, Type
+from typing import List, Sequence
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, TypeInfoVisitor, visit
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo
-from .rules import ValidationRule
+from .rules import RuleType
 from .specified_rules import specified_rules
 from .validation_context import ValidationContext
 
 __all__ = ['validate']
-
-RuleType = Type[ValidationRule]
 
 
 def validate(schema: GraphQLSchema, document_ast: DocumentNode,

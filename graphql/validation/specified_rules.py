@@ -1,6 +1,6 @@
-from typing import List, Type
+from typing import List
 
-from .rules import ValidationRule
+from .rules import RuleType
 
 # Spec Section: "Executable Definitions"
 from .rules.executable_definitions import ExecutableDefinitionsRule
@@ -90,7 +90,7 @@ __all__ = ['specified_rules']
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: List[Type[ValidationRule]] = [
+specified_rules: List[RuleType] = [
     ExecutableDefinitionsRule,
     UniqueOperationNamesRule,
     LoneAnonymousOperationRule,
