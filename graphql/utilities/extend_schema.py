@@ -64,15 +64,19 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
     # have the same name. For example, a type named "skip".
     directive_definitions: List[DirectiveDefinitionNode] = []
 
+    schema_def: Optional[SchemaDefinitionNode] = None
     # Schema extensions are collected which may add additional operation types.
     schema_extensions: List[SchemaExtensionNode] = []
 
     for def_ in document_ast.definitions:
         if isinstance(def_, SchemaDefinitionNode):
-            # Sanity check that a schema extension is not defining a new schema
-            raise GraphQLError(
-                'Cannot define a new schema within a schema extension.',
-                [def_])
+            # Sanity check that a schema extension is not overriding the schema
+            if (schema.ast_node or schema.query_type or
+                    schema.mutation_type or schema.subscription_type):
+                raise GraphQLError(
+                    'Cannot define a new schema within a schema extension.',
+                    [def_])
+            schema_def = def_
         elif isinstance(def_, SchemaExtensionNode):
             schema_extensions.append(def_)
         elif isinstance(def_, (
@@ -121,7 +125,8 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
     # If this document contains no new types, extensions, or directives then
     # return the same unmodified GraphQLSchema instance.
     if (not type_extensions_map and not type_definition_map
-            and not directive_definitions and not schema_extensions):
+            and not directive_definitions and not schema_extensions
+            and not schema_def):
         return schema
 
     # Below are functions used for producing this schema that have closed over
@@ -431,7 +436,20 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
         OperationType.SUBSCRIPTION:
             extend_maybe_named_type(schema.subscription_type)}
 
-    # Then, incorporate all schema extensions.
+    if schema_def:
+        for operation_type in schema_def.operation_types:
+            operation = operation_type.operation
+            if operation_types[operation]:
+                raise TypeError(
+                    f'Must provide only one {operation.value} type in schema.')
+            # Note: While this could make early assertions to get the
+            # correctly typed values, that would throw immediately while
+            # type system validation with validate_schema() will produce
+            # more actionable results.
+            type_ = operation_type.type
+            operation_types[operation] = ast_builder.build_type(type_)
+
+    # Then, incorporate schema definition and all schema extensions.
     for schema_extension in schema_extensions:
         if schema_extension.operation_types:
             for operation_type in schema_extension.operation_types:
@@ -439,12 +457,12 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
                 if operation_types[operation]:
                     raise TypeError(f'Must provide only one {operation.value}'
                                     ' type in schema.')
-                type_ref = operation_type.type
                 # Note: While this could make early assertions to get the
                 # correctly typed values, that would throw immediately while
                 # type system validation with validate_schema() will produce
-                # more actionable results
-                operation_types[operation] = ast_builder.build_type(type_ref)
+                # more actionable results.
+                type_ = operation_type.type
+                operation_types[operation] = ast_builder.build_type(type_)
 
     schema_extension_ast_nodes = (
         schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())

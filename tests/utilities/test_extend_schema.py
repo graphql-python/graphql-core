@@ -59,6 +59,22 @@ SomeEnumType = GraphQLEnumType(
 SomeInputType = GraphQLInputObjectType('SomeInput', lambda: {
     'fooArg': GraphQLInputField(GraphQLString)})
 
+FooDirective = GraphQLDirective(
+    name='foo',
+    args={'input': GraphQLArgument(SomeInputType)},
+    locations=[
+        DirectiveLocation.SCHEMA,
+        DirectiveLocation.SCALAR,
+        DirectiveLocation.OBJECT,
+        DirectiveLocation.FIELD_DEFINITION,
+        DirectiveLocation.ARGUMENT_DEFINITION,
+        DirectiveLocation.INTERFACE,
+        DirectiveLocation.UNION,
+        DirectiveLocation.ENUM,
+        DirectiveLocation.ENUM_VALUE,
+        DirectiveLocation.INPUT_OBJECT,
+        DirectiveLocation.INPUT_FIELD_DEFINITION])
+
 test_schema = GraphQLSchema(
     query=GraphQLObjectType(
         name='Query',
@@ -74,19 +90,7 @@ test_schema = GraphQLSchema(
                 GraphQLString,
                 args={'input': GraphQLArgument(SomeInputType)})}),
     types=[FooType, BarType],
-    directives=specified_directives + (GraphQLDirective(
-        'foo', args={'input': GraphQLArgument(SomeInputType)}, locations=[
-            DirectiveLocation.SCHEMA,
-            DirectiveLocation.SCALAR,
-            DirectiveLocation.OBJECT,
-            DirectiveLocation.FIELD_DEFINITION,
-            DirectiveLocation.ARGUMENT_DEFINITION,
-            DirectiveLocation.INTERFACE,
-            DirectiveLocation.UNION,
-            DirectiveLocation.ENUM,
-            DirectiveLocation.ENUM_VALUE,
-            DirectiveLocation.INPUT_OBJECT,
-            DirectiveLocation.INPUT_FIELD_DEFINITION]),))
+    directives=specified_directives + (FooDirective,))
 
 
 def extend_test_schema(sdl, **options) -> GraphQLSchema:
@@ -1076,7 +1080,7 @@ def describe_extend_schema():
                 """)
             assert schema.mutation_type is None
 
-        def does_not_allow_new_schema_within_an_extension():
+        def does_not_allow_overriding_schema_within_an_extension():
             sdl = """
                 schema {
                   mutation: Mutation
@@ -1090,6 +1094,21 @@ def describe_extend_schema():
                 extend_test_schema(sdl)
             assert str(exc_info.value).startswith(
                 'Cannot define a new schema within a schema extension.')
+
+        def adds_schema_definition_missing_in_the_original_schema():
+            schema = GraphQLSchema(
+                directives=[FooDirective],
+                types=[FooType])
+            assert schema.query_type is None
+
+            ast = parse("""
+                schema @foo {
+                  query: Foo
+                }
+                """)
+            schema = extend_schema(schema, ast)
+            query_type = schema.query_type
+            assert query_type.name == 'Foo'
 
         def adds_new_root_types_via_schema_extension():
             schema = extend_test_schema("""
