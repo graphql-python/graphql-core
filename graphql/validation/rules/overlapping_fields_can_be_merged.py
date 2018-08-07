@@ -45,7 +45,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     without ambiguity.
     """
 
-    def __init__(self, context):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         # A memoization for when two fragments are compared "between" each
         # other for conflicts.
@@ -57,9 +57,9 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # given selection set.
         # Selection sets may be asked for this information multiple times,
         # so this improves the performance of this validator.
-        self.cached_fields_and_fragment_names = {}
+        self.cached_fields_and_fragment_names: Dict = {}
 
-    def enter_selection_set(self, selection_set, *_args):
+    def enter_selection_set(self, selection_set: SelectionSetNode, *_args):
         conflicts = find_conflicts_within_selection_set(
             self.context,
             self.cached_fields_and_fragment_names,

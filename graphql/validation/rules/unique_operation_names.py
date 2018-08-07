@@ -1,5 +1,8 @@
+from typing import Dict
+
 from ...error import GraphQLError
-from . import ValidationRule
+from ...language import NameNode, OperationDefinitionNode
+from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ['UniqueOperationNamesRule', 'duplicate_operation_name_message']
 
@@ -8,18 +11,19 @@ def duplicate_operation_name_message(operation_name: str) -> str:
     return f"There can only be one operation named '{operation_name}'."
 
 
-class UniqueOperationNamesRule(ValidationRule):
+class UniqueOperationNamesRule(ASTValidationRule):
     """Unique operation names
 
     A GraphQL document is only valid if all defined operations have unique
     names.
     """
 
-    def __init__(self, context):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
-        self.known_operation_names = {}
+        self.known_operation_names: Dict[str, NameNode] = {}
 
-    def enter_operation_definition(self, node, *_args):
+    def enter_operation_definition(
+            self, node: OperationDefinitionNode, *_args):
         operation_name = node.name
         if operation_name:
             known_operation_names = self.known_operation_names

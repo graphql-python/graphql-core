@@ -1,8 +1,8 @@
-from typing import List
+from typing import Dict, List
 
-from ...language import DirectiveNode
 from ...error import GraphQLError
-from . import ValidationRule
+from ...language import DirectiveNode, Node
+from . import ASTValidationRule
 
 __all__ = ['UniqueDirectivesPerLocationRule', 'duplicate_directive_message']
 
@@ -12,7 +12,7 @@ def duplicate_directive_message(directive_name: str) -> str:
             ' can only be used once at this location.')
 
 
-class UniqueDirectivesPerLocationRule(ValidationRule):
+class UniqueDirectivesPerLocationRule(ASTValidationRule):
     """Unique directive names per location
 
     A GraphQL document is only valid if all directives at a given location
@@ -22,10 +22,10 @@ class UniqueDirectivesPerLocationRule(ValidationRule):
     # Many different AST nodes may contain directives. Rather than listing
     # them all, just listen for entering any node, and check to see if it
     # defines any directives.
-    def enter(self, node, *_args):
+    def enter(self, node: Node, *_args):
         directives: List[DirectiveNode] = getattr(node, 'directives', None)
         if directives:
-            known_directives = {}
+            known_directives: Dict[str, DirectiveNode] = {}
             for directive in directives:
                 directive_name = directive.name.value
                 if directive_name in known_directives:

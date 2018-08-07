@@ -1,4 +1,5 @@
 from ...error import GraphQLError
+from ...language import FieldNode
 from ...type import get_named_type, is_leaf_type
 from . import ValidationRule
 
@@ -27,7 +28,7 @@ class ScalarLeafsRule(ValidationRule):
     sub selections) are of scalar or enum types.
     """
 
-    def enter_field(self, node, *_args):
+    def enter_field(self, node: FieldNode, *_args):
         type_ = self.context.get_type()
         if type_:
             selection_set = node.selection_set
@@ -36,7 +37,7 @@ class ScalarLeafsRule(ValidationRule):
                     self.report_error(GraphQLError(
                         no_subselection_allowed_message(
                             node.name.value, str(type_)),
-                        [node.selection_set]))
+                        [selection_set]))
             elif not selection_set:
                 self.report_error(GraphQLError(
                     required_subselection_message(node.name.value, str(type_)),

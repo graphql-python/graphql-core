@@ -1,8 +1,8 @@
-from typing import List
+from typing import Dict, List, Set
 
-from ...language import FragmentDefinitionNode
 from ...error import GraphQLError
-from . import ValidationRule
+from ...language import FragmentDefinitionNode, FragmentSpreadNode
+from . import ValidationContext, ValidationRule
 
 __all__ = ['NoFragmentCyclesRule', 'cycle_error_message']
 
@@ -15,21 +15,20 @@ def cycle_error_message(frag_name: str, spread_names: List[str]) -> str:
 class NoFragmentCyclesRule(ValidationRule):
     """No fragment cycles"""
 
-    def __init__(self, context):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.errors = []
         # Tracks already visited fragments to maintain O(N) and to ensure that
         # cycles are not redundantly reported.
-        self.visited_frags = set()
+        self.visited_frags: Set[str] = set()
         # List of AST nodes used to produce meaningful errors
-        self.spread_path = []
+        self.spread_path: List[FragmentSpreadNode] = []
         # Position in the spread path
-        self.spread_path_index_by_name = {}
+        self.spread_path_index_by_name: Dict[str, int] = {}
 
     def enter_operation_definition(self, *_args):
         return self.SKIP
 
-    def enter_fragment_definition(self, node, *_args):
+    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args):
         self.detect_cycle_recursive(node)
         return self.SKIP
 
@@ -71,4 +70,4 @@ class NoFragmentCyclesRule(ValidationRule):
                     cycle_path))
             spread_path.pop()
 
-        spread_path_index[fragment_name] = None
+        del spread_path_index[fragment_name]

@@ -1,5 +1,8 @@
+from typing import List, Set
+
 from ...error import GraphQLError
-from . import ValidationRule
+from ...language import OperationDefinitionNode, VariableDefinitionNode
+from . import ValidationContext, ValidationRule
 
 __all__ = ['NoUnusedVariablesRule', 'unused_variable_message']
 
@@ -16,15 +19,16 @@ class NoUnusedVariablesRule(ValidationRule):
     are used, either directly or within a spread fragment.
     """
 
-    def __init__(self, context):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.variable_defs = []
+        self.variable_defs: List[VariableDefinitionNode] = []
 
     def enter_operation_definition(self, *_args):
         self.variable_defs.clear()
 
-    def leave_operation_definition(self, operation, *_args):
-        variable_name_used = set()
+    def leave_operation_definition(
+            self, operation: OperationDefinitionNode, *_args):
+        variable_name_used: Set[str] = set()
         usages = self.context.get_recursive_variable_usages(operation)
         op_name = operation.name.value if operation.name else None
 
@@ -37,5 +41,6 @@ class NoUnusedVariablesRule(ValidationRule):
                 self.report_error(GraphQLError(unused_variable_message(
                     variable_name, op_name), [variable_def]))
 
-    def enter_variable_definition(self, definition, *_args):
+    def enter_variable_definition(
+            self, definition: VariableDefinitionNode, *_args):
         self.variable_defs.append(definition)

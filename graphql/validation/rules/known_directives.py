@@ -1,7 +1,8 @@
 from typing import cast
 
 from ...error import GraphQLError
-from ...language import DirectiveLocation, Node, OperationDefinitionNode
+from ...language import (
+    DirectiveLocation, DirectiveNode, Node, OperationDefinitionNode)
 from . import ValidationRule
 
 __all__ = [
@@ -13,7 +14,7 @@ def unknown_directive_message(directive_name: str) -> str:
     return f"Unknown directive '{directive_name}'."
 
 
-def misplaced_directive_message(directive_name, location):
+def misplaced_directive_message(directive_name: str, location: str) -> str:
     return f"Directive '{directive_name}' may not be used on {location}."
 
 
@@ -24,7 +25,8 @@ class KnownDirectivesRule(ValidationRule):
     schema and legally positioned.
     """
 
-    def enter_directive(self, node, _key, _parent, _path, ancestors):
+    def enter_directive(
+            self, node: DirectiveNode, _key, _parent, _path, ancestors):
         for definition in self.context.schema.directives:
             if definition.name == node.name.value:
                 candidate_location = get_directive_location_for_ast_path(

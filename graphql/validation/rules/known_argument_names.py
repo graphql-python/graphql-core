@@ -1,7 +1,7 @@
 from typing import List
 
 from ...error import GraphQLError
-from ...language import FieldNode, DirectiveNode
+from ...language import ArgumentNode, FieldNode, DirectiveNode
 from ...pyutils import quoted_or_list, suggestion_list
 from . import ValidationRule
 
@@ -37,7 +37,8 @@ class KnownArgumentNamesRule(ValidationRule):
     that field.
     """
 
-    def enter_argument(self, node, _key, _parent, _path, ancestors):
+    def enter_argument(
+            self, node: ArgumentNode, _key, _parent, _path, ancestors):
         context = self.context
         arg_def = context.get_argument()
         if not arg_def:

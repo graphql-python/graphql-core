@@ -1,11 +1,12 @@
-from typing import Any, Optional, cast
+from typing import Any, Dict, Optional, cast
 
 from ...error import GraphQLError, INVALID
-from ...language import ValueNode, NullValueNode
+from ...language import (
+    NullValueNode, OperationDefinitionNode, ValueNode, VariableDefinitionNode)
 from ...type import (
     GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type)
 from ...utilities import type_from_ast, is_type_sub_type_of
-from . import ValidationRule
+from . import ValidationContext, ValidationRule
 
 __all__ = ['VariablesInAllowedPositionRule', 'bad_var_pos_message']
 
@@ -19,14 +20,15 @@ def bad_var_pos_message(
 class VariablesInAllowedPositionRule(ValidationRule):
     """Variables passed to field arguments conform to type"""
 
-    def __init__(self, context):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.var_def_map = {}
+        self.var_def_map: Dict[str, Any] = {}
 
     def enter_operation_definition(self, *_args):
         self.var_def_map.clear()
 
-    def leave_operation_definition(self, operation, *_args):
+    def leave_operation_definition(
+            self, operation: OperationDefinitionNode, *_args):
         var_def_map = self.var_def_map
         usages = self.context.get_recursive_variable_usages(operation)
 
@@ -52,7 +54,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
                             var_name, str(var_type), str(type_)),
                         [var_def, node]))
 
-    def enter_variable_definition(self, node, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
         self.var_def_map[node.variable.name.value] = node
 
 

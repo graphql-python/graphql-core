@@ -1,5 +1,8 @@
+from typing import List
+
 from ...error import GraphQLError
-from . import ValidationRule
+from ...language import FragmentDefinitionNode, OperationDefinitionNode
+from . import ValidationContext, ValidationRule
 
 __all__ = ['NoUnusedFragmentsRule', 'unused_fragment_message']
 
@@ -16,16 +19,17 @@ class NoUnusedFragmentsRule(ValidationRule):
     within operations.
     """
 
-    def __init__(self, context):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.operation_defs = []
-        self.fragment_defs = []
+        self.operation_defs: List[OperationDefinitionNode] = []
+        self.fragment_defs: List[FragmentDefinitionNode] = []
 
-    def enter_operation_definition(self, node, *_args):
+    def enter_operation_definition(
+            self, node: OperationDefinitionNode, *_args):
         self.operation_defs.append(node)
         return False
 
-    def enter_fragment_definition(self, node, *_args):
+    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args):
         self.fragment_defs.append(node)
         return False
 

@@ -5,6 +5,7 @@ from ...type import (
     GraphQLAbstractType, GraphQLSchema, GraphQLOutputType,
     is_abstract_type, is_interface_type, is_object_type)
 from ...error import GraphQLError
+from ...language import FieldNode
 from ...pyutils import quoted_or_list, suggestion_list
 from . import ValidationRule
 
@@ -32,7 +33,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
     parent type, or are an allowed meta field such as __typename.
     """
 
-    def enter_field(self, node, *_args):
+    def enter_field(self, node: FieldNode, *_args):
         type_ = self.context.get_parent_type()
         if not type_:
             return

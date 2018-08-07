@@ -1,4 +1,5 @@
 from ...error import GraphQLError
+from ...language import FragmentSpreadNode, InlineFragmentNode
 from ...type import is_composite_type
 from ...utilities import do_types_overlap, type_from_ast
 from . import ValidationRule
@@ -29,7 +30,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
     and possible types which pass the type condition.
     """
 
-    def enter_inline_fragment(self, node, *_args):
+    def enter_inline_fragment(self, node: InlineFragmentNode, *_args):
         context = self.context
         frag_type = context.get_type()
         parent_type = context.get_parent_type()
@@ -40,7 +41,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                     str(parent_type), str(frag_type)),
                 [node]))
 
-    def enter_fragment_spread(self, node, *_args):
+    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args):
         context = self.context
         frag_name = node.name.value
         frag_type = self.get_fragment_type(frag_name)
@@ -51,7 +52,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                 type_incompatible_spread_message(
                     frag_name, str(parent_type), str(frag_type)), [node]))
 
-    def get_fragment_type(self, name):
+    def get_fragment_type(self, name: str):
         context = self.context
         frag = context.get_fragment(name)
         if frag:

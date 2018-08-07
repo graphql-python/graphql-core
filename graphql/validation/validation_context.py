@@ -8,8 +8,9 @@ from ..language import (
 from ..type import GraphQLSchema, GraphQLInputType
 from ..utilities import TypeInfo
 
-__all__ = ['ValidationContext', 'VariableUsage', 'VariableUsageVisitor']
-
+__all__ = [
+    'ASTValidationContext', 'ValidationContext',
+    'VariableUsage', 'VariableUsageVisitor']
 
 NodeWithSelectionSet = Union[OperationDefinitionNode, FragmentDefinitionNode]
 
@@ -40,8 +41,27 @@ class VariableUsageVisitor(Visitor):
         self._append_usage(usage)
 
 
-class ValidationContext:
-    """Utility class providing a context for validation.
+class ASTValidationContext:
+    """Utility class providing a context for validation of an AST.
+
+    An instance of this class is passed as the context attribute to all
+    Validators, allowing access to commonly useful contextual information
+    from within a validation rule.
+    """
+
+    document: DocumentNode
+    errors: List[GraphQLError]
+
+    def __init__(self, ast: DocumentNode) -> None:
+        self.document = ast
+        self.errors = []
+
+    def report_error(self, error: GraphQLError):
+        self.errors.append(error)
+
+
+class ValidationContext(ASTValidationContext):
+    """Utility class providing a context for validation using a GraphQL schema.
 
     An instance of this class is passed as the context attribute to all
     Validators, allowing access to commonly useful contextual information
@@ -49,15 +69,12 @@ class ValidationContext:
     """
 
     schema: GraphQLSchema
-    ast: DocumentNode
-    errors: List[GraphQLError]
 
     def __init__(self, schema: GraphQLSchema,
                  ast: DocumentNode, type_info: TypeInfo) -> None:
+        super().__init__(ast)
         self.schema = schema
-        self.ast = ast
         self._type_info = type_info
-        self.errors = []
         self._fragments: Optional[Dict[str, FragmentDefinitionNode]] = None
         self._fragment_spreads: Dict[
             SelectionSetNode, List[FragmentSpreadNode]] = {}
@@ -68,14 +85,11 @@ class ValidationContext:
         self._recursive_variable_usages: Dict[
             OperationDefinitionNode, List[VariableUsage]] = {}
 
-    def report_error(self, error: GraphQLError):
-        self.errors.append(error)
-
-    def get_fragment(self, name) -> Optional[FragmentDefinitionNode]:
+    def get_fragment(self, name: str) -> Optional[FragmentDefinitionNode]:
         fragments = self._fragments
         if fragments is None:
             fragments = {}
-            for statement in self.ast.definitions:
+            for statement in self.document.definitions:
                 if isinstance(statement, FragmentDefinitionNode):
                     fragments[statement.name.value] = statement
             self._fragments = fragments

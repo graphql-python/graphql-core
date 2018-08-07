@@ -1,4 +1,5 @@
 from ...error import GraphQLError, INVALID
+from ...language import DirectiveNode, FieldNode
 from ...type import is_non_null_type
 from . import ValidationRule
 
@@ -26,7 +27,7 @@ class ProvidedRequiredArgumentsRule(ValidationRule):
     default value) field arguments have been provided.
     """
 
-    def leave_field(self, node, *_args):
+    def leave_field(self, node: FieldNode, *_args):
         # Validate on leave to allow for deeper errors to appear first.
         field_def = self.context.get_field_def()
         if not field_def:
@@ -41,7 +42,7 @@ class ProvidedRequiredArgumentsRule(ValidationRule):
                 self.report_error(GraphQLError(missing_field_arg_message(
                     node.name.value, arg_name, str(arg_def.type)), [node]))
 
-    def leave_directive(self, node, *_args):
+    def leave_directive(self, node: DirectiveNode, *_args):
         # Validate on leave to allow for deeper errors to appear first.
         directive_def = self.context.get_directive()
         if not directive_def:

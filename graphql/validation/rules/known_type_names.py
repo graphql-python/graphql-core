@@ -1,6 +1,7 @@
 from typing import List
 
 from ...error import GraphQLError
+from ...language import NamedTypeNode
 from ...pyutils import suggestion_list
 from . import ValidationRule
 
@@ -33,7 +34,7 @@ class KnownTypeNamesRule(ValidationRule):
     def enter_input_object_type_definition(self, *_args):
         return self.SKIP
 
-    def enter_named_type(self, node, *_args):
+    def enter_named_type(self, node: NamedTypeNode, *_args):
         schema = self.context.schema
         type_name = node.name.value
         if not schema.get_type(type_name):

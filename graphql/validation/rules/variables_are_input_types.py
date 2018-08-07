@@ -1,5 +1,5 @@
 from ...error import GraphQLError
-from ...language import print_ast
+from ...language import VariableDefinitionNode, print_ast
 from ...type import is_input_type
 from ...utilities import type_from_ast
 from . import ValidationRule
@@ -20,7 +20,7 @@ class VariablesAreInputTypesRule(ValidationRule):
     input types (scalar, enum, or input object).
     """
 
-    def enter_variable_definition(self, node, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
         type_ = type_from_ast(self.context.schema, node.type)
 
         # If the variable type is not an input type, return an error.

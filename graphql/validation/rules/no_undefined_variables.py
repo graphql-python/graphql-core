@@ -1,5 +1,8 @@
+from typing import Set
+
 from ...error import GraphQLError
-from . import ValidationRule
+from ...language import OperationDefinitionNode, VariableDefinitionNode
+from . import ValidationContext, ValidationRule
 
 __all__ = ['NoUndefinedVariablesRule', 'undefined_var_message']
 
@@ -16,23 +19,24 @@ class NoUndefinedVariablesRule(ValidationRule):
     directly and via fragment spreads, are defined by that operation.
     """
 
-    def __init__(self, context):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.defined_variable_names = set()
+        self.defined_variable_names: Set[str] = set()
 
     def enter_operation_definition(self, *_args):
         self.defined_variable_names.clear()
 
-    def leave_operation_definition(self, operation, *_args):
+    def leave_operation_definition(
+            self, operation: OperationDefinitionNode, *_args):
         usages = self.context.get_recursive_variable_usages(operation)
         defined_variables = self.defined_variable_names
         for usage in usages:
             node = usage.node
             var_name = node.name.value
             if var_name not in defined_variables:
+                op_name = operation.name.value if operation.name else None
                 self.report_error(GraphQLError(undefined_var_message(
-                    var_name, operation.name and operation.name.value),
-                    [node, operation]))
+                    var_name, op_name), [node, operation]))
 
-    def enter_variable_definition(self, node, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
         self.defined_variable_names.add(node.variable.name.value)

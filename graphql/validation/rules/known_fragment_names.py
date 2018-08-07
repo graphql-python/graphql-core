@@ -1,4 +1,5 @@
 from ...error import GraphQLError
+from ...language import FragmentSpreadNode
 from . import ValidationRule
 
 __all__ = ['KnownFragmentNamesRule', 'unknown_fragment_message']
@@ -15,7 +16,7 @@ class KnownFragmentNamesRule(ValidationRule):
     refer to fragments defined in the same document.
     """
 
-    def enter_fragment_spread(self, node, *_args):
+    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args):
         fragment_name = node.name.value
         fragment = self.context.get_fragment(fragment_name)
         if not fragment:

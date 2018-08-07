@@ -4,18 +4,28 @@ from typing import Type
 
 from ...error import GraphQLError
 from ...language.visitor import Visitor
-from ..validation_context import ValidationContext
+from ..validation_context import ASTValidationContext, ValidationContext
 
-__all__ = ['ValidationRule', 'RuleType']
+__all__ = ['ASTValidationRule', 'ValidationRule', 'RuleType']
 
 
-class ValidationRule(Visitor):
+class ASTValidationRule(Visitor):
 
-    def __init__(self, context: ValidationContext) -> None:
+    context: ASTValidationContext
+
+    def __init__(self, context: ASTValidationContext) -> None:
         self.context = context
 
     def report_error(self, error: GraphQLError):
         self.context.report_error(error)
 
 
-RuleType = Type[ValidationRule]
+class ValidationRule(ASTValidationRule):
+
+    context: ValidationContext
+
+    def __init__(self, context: ValidationContext) -> None:
+        super().__init__(context)
+
+
+RuleType = Type[ASTValidationRule]

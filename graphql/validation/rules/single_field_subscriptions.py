@@ -2,7 +2,7 @@ from typing import Optional
 
 from ...error import GraphQLError
 from ...language import OperationDefinitionNode, OperationType
-from . import ValidationRule
+from . import ASTValidationRule
 
 __all__ = ['SingleFieldSubscriptionsRule', 'single_field_only_message']
 
@@ -12,7 +12,7 @@ def single_field_only_message(name: Optional[str]) -> str:
             ' must select only one top level field.')
 
 
-class SingleFieldSubscriptionsRule(ValidationRule):
+class SingleFieldSubscriptionsRule(ASTValidationRule):
     """Subscriptions must only include one field.
 
     A GraphQL subscription is valid only if it contains a single root

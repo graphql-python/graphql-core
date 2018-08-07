@@ -146,6 +146,7 @@ class DefinitionNode(Node):
 class ExecutableDefinitionNode(DefinitionNode):
     __slots__ = 'name', 'directives', 'variable_definitions', 'selection_set'
 
+    name: Optional[NameNode]
     directives: Optional[List['DirectiveNode']]
     variable_definitions: List['VariableDefinitionNode']
     selection_set: 'SelectionSetNode'
@@ -155,7 +156,6 @@ class OperationDefinitionNode(ExecutableDefinitionNode):
     __slots__ = 'operation',
 
     operation: OperationType
-    name: Optional[NameNode]
 
 
 class VariableDefinitionNode(Node):
@@ -328,7 +328,7 @@ class SchemaDefinitionNode(TypeSystemDefinitionNode):
     operation_types: List['OperationTypeDefinitionNode']
 
 
-class OperationTypeDefinitionNode(TypeSystemDefinitionNode):
+class OperationTypeDefinitionNode(Node):
     __slots__ = 'operation', 'type'
 
     operation: OperationType
