@@ -5,10 +5,12 @@ from ..language import DocumentNode, ParallelVisitor, TypeInfoVisitor, visit
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo
 from .rules import RuleType
-from .specified_rules import specified_rules
-from .validation_context import ValidationContext
+from .specified_rules import specified_rules, specified_sdl_rules
+from .validation_context import SDLValidationContext, ValidationContext
 
-__all__ = ['validate']
+__all__ = [
+    'assert_valid_sdl', 'assert_valid_sdl_extension',
+    'validate', 'validate_sdl']
 
 
 def validate(schema: GraphQLSchema, document_ast: DocumentNode,
@@ -49,3 +51,40 @@ def validate(schema: GraphQLSchema, document_ast: DocumentNode,
     # Visit the whole document with each instance of all provided rules.
     visit(document_ast, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
     return context.errors
+
+
+def validate_sdl(document_ast: DocumentNode,
+                 schema_to_extend: GraphQLSchema=None,
+                 rules: Sequence[RuleType]=None) -> List[GraphQLError]:
+    """Validate an SDL document."""
+    context = SDLValidationContext(document_ast, schema_to_extend)
+    if rules is None:
+        rules = specified_sdl_rules
+    visitors = [rule(context) for rule in rules]
+    visit(document_ast, ParallelVisitor(visitors))
+    return context.errors
+
+
+def assert_valid_sdl(document_ast: DocumentNode) -> None:
+    """Assert document is valid SDL.
+
+    Utility function which asserts a SDL document is valid by throwing an error
+    if it is invalid.
+    """
+
+    errors = validate_sdl(document_ast)
+    if errors:
+        raise TypeError('\n\n'.join(error.message for error in errors))
+
+
+def assert_valid_sdl_extension(
+        document_ast: DocumentNode, schema: GraphQLSchema) -> None:
+    """Assert document is a valid SDL extension.
+
+    Utility function which asserts a SDL document is valid by throwing an error
+    if it is invalid.
+    """
+
+    errors = validate_sdl(document_ast, schema)
+    if errors:
+        raise TypeError('\n\n'.join(error.message for error in errors))

@@ -1,9 +1,11 @@
-from typing import cast
+from typing import cast, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import (
-    DirectiveLocation, DirectiveNode, Node, OperationDefinitionNode)
-from . import ValidationRule
+    DirectiveLocation, DirectiveDefinitionNode, DirectiveNode, Node,
+    OperationDefinitionNode)
+from ...type import specified_directives
+from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
 __all__ = [
     'KnownDirectivesRule',
@@ -18,26 +20,40 @@ def misplaced_directive_message(directive_name: str, location: str) -> str:
     return f"Directive '{directive_name}' may not be used on {location}."
 
 
-class KnownDirectivesRule(ValidationRule):
+class KnownDirectivesRule(ASTValidationRule):
     """Known directives
 
     A GraphQL document is only valid if all `@directives` are known by the
     schema and legally positioned.
     """
 
+    def __init__(self, context: Union[
+            ValidationContext, SDLValidationContext]) -> None:
+        super().__init__(context)
+        schema = context.schema
+        locations_map: Dict[str, List[DirectiveLocation]] = {}
+        defined_directives = (
+            schema.directives if schema else cast(List, specified_directives))
+        for directive in defined_directives:
+            locations_map[directive.name] = directive.locations
+        ast_definitions = context.document.definitions
+        for def_ in ast_definitions:
+            if isinstance(def_, DirectiveDefinitionNode):
+                locations_map[def_.name.value] = [
+                    DirectiveLocation[name.value] for name in def_.locations]
+        self.locations_map = locations_map
+
     def enter_directive(
             self, node: DirectiveNode, _key, _parent, _path, ancestors):
-        for definition in self.context.schema.directives:
-            if definition.name == node.name.value:
-                candidate_location = get_directive_location_for_ast_path(
-                    ancestors)
-                if (candidate_location
-                        and candidate_location not in definition.locations):
-                    self.report_error(GraphQLError(
-                        misplaced_directive_message(
-                            node.name.value, candidate_location.value),
-                        [node]))
-                break
+        name = node.name.value
+        locations = self.locations_map.get(name)
+        if locations:
+            candidate_location = get_directive_location_for_ast_path(
+                ancestors)
+            if candidate_location and candidate_location not in locations:
+                self.report_error(GraphQLError(
+                    misplaced_directive_message(
+                        node.name.value, candidate_location.value), [node]))
         else:
             self.report_error(GraphQLError(
                 unknown_directive_message(node.name.value), [node]))

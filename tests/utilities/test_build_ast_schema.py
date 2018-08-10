@@ -703,6 +703,26 @@ def describe_schema_builder():
         errors = validate_schema(schema)
         assert errors
 
+    def rejects_invalid_sdl():
+        doc = parse("""
+            type Query {
+              foo: String @unknown
+            }
+            """)
+        with raises(TypeError) as exc_info:
+            build_ast_schema(doc)
+        msg = str(exc_info.value)
+        assert msg == "Unknown directive 'unknown'."
+
+    def allows_to_disable_sdl_validation():
+        body = """
+            type Query {
+              foo: String @unknown
+            }
+            """
+        build_schema(body, assume_valid=True)
+        build_schema(body, assume_valid_sdl=True)
+
 
 def describe_failures():
 

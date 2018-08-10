@@ -27,7 +27,9 @@ __all__ = [
     'ASTDefinitionBuilder']
 
 
-def build_ast_schema(ast: DocumentNode, assume_valid: bool=False):
+def build_ast_schema(
+        ast: DocumentNode, assume_valid: bool=False,
+        assume_valid_sdl: bool=False) -> GraphQLSchema:
     """Build a GraphQL Schema from a given AST.
 
     This takes the ast of a schema document produced by the parse function in
@@ -41,10 +43,15 @@ def build_ast_schema(ast: DocumentNode, assume_valid: bool=False):
 
     When building a schema from a GraphQL service's introspection result, it
     might be safe to assume the schema is valid. Set `assume_valid` to True
-    to assume the produced schema is valid.
+    to assume the produced schema is valid. Set `assume_valid_sdl` to True to
+    assume it is already a valid SDL document.
     """
     if not isinstance(ast, DocumentNode):
         raise TypeError('Must provide a Document AST.')
+
+    if not (assume_valid or assume_valid_sdl):
+        from ..validation.validate import assert_valid_sdl
+        assert_valid_sdl(ast)
 
     schema_def: Optional[SchemaDefinitionNode] = None
     type_defs: List[TypeDefinitionNode] = []
@@ -61,8 +68,6 @@ def build_ast_schema(ast: DocumentNode, assume_valid: bool=False):
         InputObjectTypeDefinitionNode)
     for d in ast.definitions:
         if isinstance(d, SchemaDefinitionNode):
-            if schema_def:
-                raise TypeError('Must provide only one schema definition.')
             schema_def = d
         elif isinstance(d, type_definition_nodes):
             d = cast(TypeDefinitionNode, d)
@@ -372,10 +377,10 @@ def get_description(node: Node) -> Optional[str]:
 
 
 def build_schema(source: Union[str, Source],
-                 assume_valid=False, no_location=False,
+                 assume_valid=False, assume_valid_sdl=False, no_location=False,
                  experimental_fragment_variables=False) -> GraphQLSchema:
     """Build a GraphQLSchema directly from a source document."""
     return build_ast_schema(parse(
         source, no_location=no_location,
         experimental_fragment_variables=experimental_fragment_variables),
-        assume_valid=assume_valid)
+        assume_valid=assume_valid, assume_valid_sdl=assume_valid_sdl)

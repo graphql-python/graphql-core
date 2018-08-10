@@ -82,7 +82,10 @@ from .rules.overlapping_fields_can_be_merged import (
 # Spec Section: "Input Object Field Uniqueness"
 from .rules.unique_input_field_names import UniqueInputFieldNamesRule
 
-__all__ = ['specified_rules']
+# Schema definition language:
+from .rules.lone_schema_definition import LoneSchemaDefinition
+
+__all__ = ['specified_rules', 'specified_sdl_rules']
 
 
 # This list includes all validation rules defined by the GraphQL spec.
@@ -116,4 +119,11 @@ specified_rules: List[RuleType] = [
     ProvidedRequiredArgumentsRule,
     VariablesInAllowedPositionRule,
     OverlappingFieldsCanBeMergedRule,
+    UniqueInputFieldNamesRule]
+
+specified_sdl_rules: List[RuleType] = [
+    LoneSchemaDefinition,
+    KnownDirectivesRule,
+    UniqueDirectivesPerLocationRule,
+    UniqueArgumentNamesRule,
     UniqueInputFieldNamesRule]

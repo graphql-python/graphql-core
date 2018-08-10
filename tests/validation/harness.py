@@ -11,7 +11,7 @@ from graphql.type.directives import (
     DirectiveLocation, GraphQLDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective)
-from graphql.validation import validate
+from graphql.validation.validate import validate, validate_sdl
 
 Being = GraphQLInterfaceType('Being', {
     'name': GraphQLField(GraphQLString, {
@@ -196,39 +196,7 @@ test_schema = GraphQLSchema(
             locations=[DirectiveLocation.FRAGMENT_SPREAD]),
         GraphQLDirective(
             name='onInlineFragment',
-            locations=[DirectiveLocation.INLINE_FRAGMENT]),
-        GraphQLDirective(
-            name='onSchema',
-            locations=[DirectiveLocation.SCHEMA]),
-        GraphQLDirective(
-            name='onScalar',
-            locations=[DirectiveLocation.SCALAR]),
-        GraphQLDirective(
-            name='onObject',
-            locations=[DirectiveLocation.OBJECT]),
-        GraphQLDirective(
-            name='onFieldDefinition',
-            locations=[DirectiveLocation.FIELD_DEFINITION]),
-        GraphQLDirective(
-            name='onArgumentDefinition',
-            locations=[DirectiveLocation.ARGUMENT_DEFINITION]),
-        GraphQLDirective(
-            name='onInterface',
-            locations=[DirectiveLocation.INTERFACE]),
-        GraphQLDirective(
-            name='onUnion',
-            locations=[DirectiveLocation.UNION]),
-        GraphQLDirective(
-            name='onEnum', locations=[DirectiveLocation.ENUM]),
-        GraphQLDirective(
-            name='onEnumValue',
-            locations=[DirectiveLocation.ENUM_VALUE]),
-        GraphQLDirective(
-            name='onInputObject',
-            locations=[DirectiveLocation.INPUT_OBJECT]),
-        GraphQLDirective(
-            name='onInputFieldDefinition',
-            locations=[DirectiveLocation.INPUT_FIELD_DEFINITION])],
+            locations=[DirectiveLocation.INLINE_FRAGMENT])],
     types=[Cat, Dog, Human, Alien])
 
 
@@ -245,7 +213,7 @@ def expect_invalid(schema, rule, query_string, expected_errors):
 
 
 def expect_passes_rule(rule, query_string):
-    return expect_valid(test_schema, rule, query_string)
+    expect_valid(test_schema, rule, query_string)
 
 
 def expect_fails_rule(rule, query_string, errors):
@@ -258,3 +226,8 @@ def expect_passes_rule_with_schema(schema, rule, query_string):
 
 def expect_fails_rule_with_schema(schema, rule, query_string, errors):
     return expect_invalid(schema, rule, query_string, errors)
+
+
+def expect_sdl_errors_from_rule(rule, sdl_string, schema=None):
+    errors = validate_sdl(parse(sdl_string), schema, [rule])
+    return errors

@@ -9,7 +9,7 @@ from ..type import GraphQLSchema, GraphQLInputType
 from ..utilities import TypeInfo
 
 __all__ = [
-    'ASTValidationContext', 'ValidationContext',
+    'ASTValidationContext', 'SDLValidationContext', 'ValidationContext',
     'VariableUsage', 'VariableUsageVisitor']
 
 NodeWithSelectionSet = Union[OperationDefinitionNode, FragmentDefinitionNode]
@@ -58,6 +58,21 @@ class ASTValidationContext:
 
     def report_error(self, error: GraphQLError):
         self.errors.append(error)
+
+
+class SDLValidationContext(ASTValidationContext):
+    """Utility class providing a context for validation of an SDL ast.
+
+    An instance of this class is passed as the context attribute to all
+    Validators, allowing access to commonly useful contextual information
+    from within a validation rule.
+    """
+
+    schema: Optional[GraphQLSchema]
+
+    def __init__(self, ast: DocumentNode, schema: GraphQLSchema=None) -> None:
+        super().__init__(ast)
+        self.schema = schema
 
 
 class ValidationContext(ASTValidationContext):

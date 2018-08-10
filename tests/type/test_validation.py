@@ -518,10 +518,15 @@ def describe_type_system_input_objects_must_have_fields():
 
             input SomeInputObject
             """)
+        schema = extend_schema(schema, parse("""
+            directive @test on INPUT_OBJECT
+
+            extend input SomeInputObject @test
+            """))
         assert validate_schema(schema) == [{
             'message': 'Input Object type SomeInputObject'
                        ' must define one or more fields.',
-            'locations': [(6, 13)]}]
+            'locations': [(6, 13), (4, 13)]}]
 
     def rejects_an_input_object_type_with_incorrectly_typed_fields():
         # invalid schema cannot be built with Python

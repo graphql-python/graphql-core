@@ -870,6 +870,22 @@ def describe_extend_schema():
         assert is_scalar_type(arg0.type.of_type) is True
         assert is_scalar_type(arg1.type) is True
 
+    def rejects_invalid_sdl():
+        sdl = """
+            extend schema @unknown
+            """
+        with raises(TypeError) as exc_info:
+            extend_test_schema(sdl)
+        msg = str(exc_info.value)
+        assert msg == "Unknown directive 'unknown'."
+
+    def allows_to_disable_sdl_validation():
+        sdl = """
+            extend schema @unknown
+            """
+        extend_test_schema(sdl, assume_valid=True)
+        extend_test_schema(sdl, assume_valid_sdl=True)
+
     def does_not_allow_replacing_a_default_directive():
         sdl = """
             directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD
@@ -1090,7 +1106,7 @@ def describe_extend_schema():
                   doSomething: String
                 }
                 """
-            with raises(GraphQLError) as exc_info:
+            with raises(TypeError) as exc_info:
                 extend_test_schema(sdl)
             assert str(exc_info.value).startswith(
                 'Cannot define a new schema within a schema extension.')

@@ -30,8 +30,9 @@ from .build_ast_schema import ASTDefinitionBuilder
 __all__ = ['extend_schema']
 
 
-def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
-                  assume_valid=False) -> GraphQLSchema:
+def extend_schema(
+        schema: GraphQLSchema, document_ast: DocumentNode,
+        assume_valid=False, assume_valid_sdl=False) -> GraphQLSchema:
     """Extend the schema with extensions from a given document.
 
     Produces a new schema given an existing schema and a document which may
@@ -47,7 +48,8 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
 
     When extending a schema with a known valid extension, it might be safe to
     assume the schema is valid. Set `assume_valid` to true to assume the
-    produced schema is valid.
+    produced schema is valid. Set `assume_valid_sdl` to True to assume it is
+    already a valid SDL document.
     """
 
     if not is_schema(schema):
@@ -55,6 +57,10 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
 
     if not isinstance(document_ast, DocumentNode):
         'Must provide valid Document AST'
+
+    if not (assume_valid or assume_valid_sdl):
+        from ..validation.validate import assert_valid_sdl_extension
+        assert_valid_sdl_extension(document_ast, schema)
 
     # Collect the type definitions and extensions found in the document.
     type_definition_map: Dict[str, Any] = {}
@@ -70,12 +76,6 @@ def extend_schema(schema: GraphQLSchema, document_ast: DocumentNode,
 
     for def_ in document_ast.definitions:
         if isinstance(def_, SchemaDefinitionNode):
-            # Sanity check that a schema extension is not overriding the schema
-            if (schema.ast_node or schema.query_type or
-                    schema.mutation_type or schema.subscription_type):
-                raise GraphQLError(
-                    'Cannot define a new schema within a schema extension.',
-                    [def_])
             schema_def = def_
         elif isinstance(def_, SchemaExtensionNode):
             schema_extensions.append(def_)

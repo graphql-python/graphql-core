@@ -5,7 +5,7 @@ from . import ValidationRule
 __all__ = ['KnownFragmentNamesRule', 'unknown_fragment_message']
 
 
-def unknown_fragment_message(fragment_name):
+def unknown_fragment_message(fragment_name: str) -> str:
     return f"Unknown fragment '{fragment_name}'."
 
 
