@@ -169,13 +169,14 @@ def parse_variable_definitions(lexer: Lexer) -> List[VariableDefinitionNode]:
 
 
 def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
-    """VariableDefinition: Variable: Type DefaultValue?"""
+    """VariableDefinition: Variable: Type DefaultValue? Directives[Const]?"""
     start = lexer.token
     return VariableDefinitionNode(
         variable=parse_variable(lexer),
         type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
         default_value=parse_value_literal(lexer, True)
         if skip(lexer, TokenKind.EQUALS) else None,
+        directives=parse_directives(lexer, True),
         loc=loc(lexer, start))
 
 

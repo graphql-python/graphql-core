@@ -82,6 +82,9 @@ def describe_parser():
           'query Foo($x: Complex = { a: { b: [ $var ] } }) { field }',
           'Unexpected $', (1, 37))
 
+    def parses_variable_definition_directives():
+        parse('query Foo($x: Boolean = false @bar) { field }')
+
     def does_not_accept_fragments_named_on():
         assert_syntax_error(
             'fragment on on on { on }', "Unexpected Name 'on'", (1, 10))

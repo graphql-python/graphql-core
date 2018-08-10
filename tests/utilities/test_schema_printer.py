@@ -576,6 +576,9 @@ def describe_type_system_printer():
               """Location adjacent to an inline fragment."""
               INLINE_FRAGMENT
 
+              """Location adjacent to a variable definition."""
+              VARIABLE_DEFINITION
+
               """Location adjacent to a schema definition."""
               SCHEMA
 

@@ -159,11 +159,12 @@ class OperationDefinitionNode(ExecutableDefinitionNode):
 
 
 class VariableDefinitionNode(Node):
-    __slots__ = 'variable', 'type', 'default_value'
+    __slots__ = 'variable', 'type', 'default_value', 'directives'
 
     variable: 'VariableNode'
     type: 'TypeNode'
     default_value: Optional['ValueNode']
+    directives: Optional[List['DirectiveNode']]
 
 
 class SelectionSetNode(Node):

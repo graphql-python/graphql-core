@@ -27,7 +27,7 @@ QUERY_DOCUMENT_KEYS = {
     'document': ('definitions',),
     'operation_definition': (
         'name', 'variable_definitions', 'directives', 'selection_set'),
-    'variable_definition': ('variable', 'type', 'default_value'),
+    'variable_definition': ('variable', 'type', 'default_value', 'directives'),
     'variable': ('name',),
     'selection_set': ('selections',),
     'field': ('alias', 'name', 'arguments', 'directives', 'selection_set'),

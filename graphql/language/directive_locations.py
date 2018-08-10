@@ -13,6 +13,7 @@ class DirectiveLocation(Enum):
     FIELD = 'field'
     FRAGMENT_DEFINITION = 'fragment definition'
     FRAGMENT_SPREAD = 'fragment spread'
+    VARIABLE_DEFINITION = 'variable definition'
     INLINE_FRAGMENT = 'inline fragment'
 
     # Type System Definitions

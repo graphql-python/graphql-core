@@ -50,7 +50,9 @@ class PrintAstVisitor(Visitor):
         ) else selection_set
 
     def leave_variable_definition(self, node, *_args):
-        return f"{node.variable}: {node.type}{wrap(' = ', node.default_value)}"
+        return (f"{node.variable}: {node.type}"
+                f"{wrap(' = ', node.default_value)}"
+                f"{wrap(' ', ' '.join(node.directives))}")
 
     def leave_selection_set(self, node, *_args):
         return block(node.selections)

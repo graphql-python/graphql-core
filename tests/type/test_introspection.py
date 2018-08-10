@@ -656,7 +656,11 @@ def describe_introspection():
                         'name': 'INLINE_FRAGMENT',
                         'isDeprecated': False,
                         'deprecationReason': None
-                    },                 {
+                    }, {
+                        'name': 'VARIABLE_DEFINITION',
+                        'isDeprecated': False,
+                        'deprecationReason': None
+                    }, {
                         'name': 'SCHEMA',
                         'isDeprecated': False,
                         'deprecationReason': None

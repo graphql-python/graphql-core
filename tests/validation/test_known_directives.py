@@ -98,8 +98,8 @@ def describe_known_directives():
 
     def with_well_placed_directives():
         expect_passes_rule(KnownDirectivesRule, """
-            query Foo @onQuery{
-              name @include(if: true)
+            query Foo($var: Boolean @onVariableDefinition) @onQuery {
+              name @include(if: $var)
               ...Frag @include(if: true)
               skippedField @skip(if: true)
               ...SkippedFrag @skip(if: true)
@@ -112,8 +112,8 @@ def describe_known_directives():
 
     def with_misplaced_directives():
         expect_fails_rule(KnownDirectivesRule, """
-            query Foo @include(if: true) {
-              name @onQuery
+            query Foo($var: Boolean @onField) @include(if: true) {
+              name @onQuery @include(if: $var)
               ...Frag @onQuery
             }
 
@@ -121,7 +121,8 @@ def describe_known_directives():
               someField
             }
             """, [
-            misplaced_directive('include', 'query', 2, 23),
+            misplaced_directive('onField', 'variable definition', 2, 37),
+            misplaced_directive('include', 'query', 2, 47),
             misplaced_directive('onQuery', 'field', 3, 20),
             misplaced_directive('onQuery', 'fragment spread', 4, 23),
             misplaced_directive('onQuery', 'mutation', 7, 26),

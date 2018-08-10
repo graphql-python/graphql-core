@@ -48,6 +48,16 @@ def describe_printer_query_document():
             }
             """)
 
+    def correcty_prints_query_operation_with_variable_directive():
+        query_ast_with_variable_directive = parse(
+            'query ($foo: TestType = {a: 123}'
+            ' @testDirective(if: true) @test) { id }')
+        assert print_ast(query_ast_with_variable_directive) == dedent("""
+            query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
+              id
+            }
+            """)
+
     def correctly_prints_mutation_operation_with_artifacts():
         mutation_ast_with_artifacts = parse(
             'mutation ($foo: TestType) @testDirective { id, name }')

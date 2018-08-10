@@ -196,7 +196,10 @@ test_schema = GraphQLSchema(
             locations=[DirectiveLocation.FRAGMENT_SPREAD]),
         GraphQLDirective(
             name='onInlineFragment',
-            locations=[DirectiveLocation.INLINE_FRAGMENT])],
+            locations=[DirectiveLocation.INLINE_FRAGMENT]),
+        GraphQLDirective(
+            name='onVariableDefinition',
+            locations=[DirectiveLocation.VARIABLE_DEFINITION])],
     types=[Cat, Dog, Human, Alien])
 
 
