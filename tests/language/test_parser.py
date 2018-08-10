@@ -83,7 +83,8 @@ def describe_parser():
           'Unexpected $', (1, 37))
 
     def parses_variable_definition_directives():
-        parse('query Foo($x: Boolean = false @bar) { field }')
+        parse('query Foo($x: Boolean = false @bar) { field }',
+              experimental_variable_definition_directives=True)
 
     def does_not_accept_fragments_named_on():
         assert_syntax_error(

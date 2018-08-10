@@ -28,9 +28,9 @@ __all__ = ['parse', 'parse_type', 'parse_value']
 SourceType = Union[Source, str]
 
 
-def parse(source: SourceType,
-          no_location=False,
-          experimental_fragment_variables=False) -> DocumentNode:
+def parse(source: SourceType, no_location=False,
+          experimental_fragment_variables=False,
+          experimental_variable_definition_directives=False) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
     Throws GraphQLError if a syntax error is encountered.
@@ -38,6 +38,26 @@ def parse(source: SourceType,
     By default, the parser creates AST nodes that know the location
     in the source that they correspond to. The `no_location` option
     disables that behavior for performance or testing.
+
+    Experimental features:
+
+    If `experimental_fragment_variables` is set to True, the parser will
+    understand and parse variable definitions contained in a fragment
+    definition. They'll be represented in the `variable_definitions` field
+    of the `FragmentDefinitionNode`.
+
+    The syntax is identical to normal, query-defined variables. For example:
+
+        fragment A($var: Boolean = false) on T  {
+          ...
+        }
+
+    If `experimental_variable_definition_directives` is set to True, the parser
+    understands directives on variable definitions:
+
+        query Foo($var: String = "abc" @variable_definition_directive) {
+          ...
+        }
     """
     if isinstance(source, str):
         source = Source(source)
@@ -45,7 +65,9 @@ def parse(source: SourceType,
         raise TypeError(f'Must provide Source. Received: {source!r}')
     lexer = Lexer(
         source, no_location=no_location,
-        experimental_fragment_variables=experimental_fragment_variables)
+        experimental_fragment_variables=experimental_fragment_variables,
+        experimental_variable_definition_directives  # noqa
+        =experimental_variable_definition_directives)
     return parse_document(lexer)
 
 
@@ -171,12 +193,21 @@ def parse_variable_definitions(lexer: Lexer) -> List[VariableDefinitionNode]:
 def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
     """VariableDefinition: Variable: Type DefaultValue? Directives[Const]?"""
     start = lexer.token
+    if lexer.experimental_variable_definition_directives:
+        return VariableDefinitionNode(
+            variable=parse_variable(lexer),
+            type=expect(lexer, TokenKind.COLON)
+            and parse_type_reference(lexer),
+            default_value=parse_value_literal(lexer, True)
+            if skip(lexer, TokenKind.EQUALS) else None,
+            directives=parse_directives(lexer, True),
+            loc=loc(lexer, start))
     return VariableDefinitionNode(
         variable=parse_variable(lexer),
-        type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
+        type=expect(lexer, TokenKind.COLON) and parse_type_reference(
+            lexer),
         default_value=parse_value_literal(lexer, True)
         if skip(lexer, TokenKind.EQUALS) else None,
-        directives=parse_directives(lexer, True),
         loc=loc(lexer, start))
 
 

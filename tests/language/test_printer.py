@@ -40,7 +40,8 @@ def describe_printer_query_document():
 
     def correctly_prints_query_operation_with_artifacts():
         query_ast_with_artifacts = parse(
-            'query ($foo: TestType) @testDirective { id, name }')
+            'query ($foo: TestType) @testDirective { id, name }',
+            experimental_variable_definition_directives=True)
         assert print_ast(query_ast_with_artifacts) == dedent("""
             query ($foo: TestType) @testDirective {
               id
@@ -51,7 +52,8 @@ def describe_printer_query_document():
     def correcty_prints_query_operation_with_variable_directive():
         query_ast_with_variable_directive = parse(
             'query ($foo: TestType = {a: 123}'
-            ' @testDirective(if: true) @test) { id }')
+            ' @testDirective(if: true) @test) { id }',
+            experimental_variable_definition_directives=True)
         assert print_ast(query_ast_with_variable_directive) == dedent("""
             query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
               id

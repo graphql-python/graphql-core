@@ -1,12 +1,14 @@
 from functools import partial
 
+from graphql.language import parse
 from graphql.utilities import build_schema
-from graphql.validation import KnownDirectivesRule
+from graphql.validation import validate, KnownDirectivesRule
 from graphql.validation.rules.known_directives import (
     unknown_directive_message, misplaced_directive_message)
 
 from .harness import (
-    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule)
+    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule,
+    test_schema)
 
 
 expect_sdl_errors = partial(
@@ -98,7 +100,7 @@ def describe_known_directives():
 
     def with_well_placed_directives():
         expect_passes_rule(KnownDirectivesRule, """
-            query Foo($var: Boolean @onVariableDefinition) @onQuery {
+            query Foo($var: Boolean) @onQuery {
               name @include(if: $var)
               ...Frag @include(if: true)
               skippedField @skip(if: true)
@@ -110,9 +112,21 @@ def describe_known_directives():
             }
             """)
 
+    def with_well_placed_variable_definition_directives():
+        # Need to parse with experimental flag
+        query_string = """
+            query Foo($var: Boolean @onVariableDefinition) {
+              name
+            }
+            """
+        errors = validate(test_schema, parse(
+            query_string, experimental_variable_definition_directives=True),
+            [KnownDirectivesRule])
+        assert errors == [], 'Should validate'
+
     def with_misplaced_directives():
         expect_fails_rule(KnownDirectivesRule, """
-            query Foo($var: Boolean @onField) @include(if: true) {
+            query Foo($var: Boolean) @include(if: true) {
               name @onQuery @include(if: $var)
               ...Frag @onQuery
             }
@@ -121,12 +135,26 @@ def describe_known_directives():
               someField
             }
             """, [
-            misplaced_directive('onField', 'variable definition', 2, 37),
-            misplaced_directive('include', 'query', 2, 47),
+            misplaced_directive('include', 'query', 2, 38),
             misplaced_directive('onQuery', 'field', 3, 20),
             misplaced_directive('onQuery', 'fragment spread', 4, 23),
             misplaced_directive('onQuery', 'mutation', 7, 26),
         ])
+
+    def with_misplaced_variable_definition_directives():
+        # Need to parse with experimental flag
+        query_string = """
+            query Foo($var: Boolean @onField) {
+              name
+            }
+            """
+        errors = validate(test_schema, parse(
+            query_string, experimental_variable_definition_directives=True),
+            [KnownDirectivesRule])
+        expected_errors = [
+            misplaced_directive('onField', 'variable definition', 2, 37)]
+        assert len(errors) >= 1, 'Should not validate'
+        assert errors == expected_errors
 
     def describe_within_sdl():
 

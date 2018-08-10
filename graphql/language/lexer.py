@@ -123,13 +123,16 @@ class Lexer:
 
     def __init__(self, source: Source,
                  no_location=False,
-                 experimental_fragment_variables=False) -> None:
+                 experimental_fragment_variables=False,
+                 experimental_variable_definition_directives=False) -> None:
         """Given a Source object, this returns a Lexer for that source."""
         self.source = source
         self.token = self.last_token = Token(TokenKind.SOF, 0, 0, 0, 0)
         self.line, self.line_start = 1, 0
         self.no_location = no_location
         self.experimental_fragment_variables = experimental_fragment_variables
+        self.experimental_variable_definition_directives = \
+            experimental_variable_definition_directives
 
     def advance(self):
         self.last_token = self.token
