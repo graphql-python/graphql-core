@@ -216,6 +216,7 @@ class TypeFieldResolvers:
     def description(type_, _info):
         return getattr(type_, 'description', None)
 
+    # noinspection PyPep8Naming
     @staticmethod
     def fields(type_, _info, includeDeprecated=False):
         if is_object_type(type_) or is_interface_type(type_):
@@ -235,6 +236,7 @@ class TypeFieldResolvers:
         if is_abstract_type(type_):
             return info.schema.get_possible_types(type_)
 
+    # noinspection PyPep8Naming
     @staticmethod
     def enum_values(type_, _info, includeDeprecated=False):
         if is_enum_type(type_):

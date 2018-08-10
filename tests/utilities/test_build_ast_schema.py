@@ -726,26 +726,6 @@ def describe_schema_builder():
 
 def describe_failures():
 
-    def allows_only_a_single_schema_definition():
-        body = dedent("""
-            schema {
-              query: Hello
-            }
-
-            schema {
-              query: Hello
-            }
-
-            type Hello {
-              bar: Bar
-            }
-            """)
-        doc = parse(body)
-        with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
-        msg = str(exc_info.value)
-        assert msg == 'Must provide only one schema definition.'
-
     def allows_only_a_single_query_type():
         body = dedent("""
             schema {
@@ -754,7 +734,7 @@ def describe_failures():
             }
 
             type Hello {
-              bar: Bar
+              bar: String
             }
 
             type Yellow {
@@ -776,7 +756,7 @@ def describe_failures():
             }
 
             type Hello {
-              bar: Bar
+              bar: String
             }
 
             type Yellow {
@@ -797,7 +777,7 @@ def describe_failures():
               subscription: Yellow
             }
             type Hello {
-              bar: Bar
+              bar: String
             }
 
             type Yellow {

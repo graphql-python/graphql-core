@@ -130,7 +130,7 @@ def describe_known_directives():
     def describe_within_sdl():
 
         def with_directive_defined_inside_sdl():
-            expect_sdl_errors("""
+            assert expect_sdl_errors("""
                 type Query {
                   foo: String @test
                 }
@@ -139,23 +139,56 @@ def describe_known_directives():
                 """) == []
 
         def with_standard_directive():
-            expect_sdl_errors("""
+            assert expect_sdl_errors("""
                 type Query {
                   foo: String @deprecated
                 }
                 """) == []
 
         def with_overridden_standard_directive():
-            expect_sdl_errors("""
+            assert expect_sdl_errors("""
                 schema @deprecated {
                   query: Query
                 }
                 directive @deprecated on SCHEMA
                 """) == []
 
-        # noinspection PyShadowingNames
+        def with_directive_defined_in_schema_extension():
+            schema = build_schema("""
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                directive @test on OBJECT
+
+                extend type Query @test
+                """, schema) == []
+
+        def with_directive_used_in_schema_extension():
+            schema = build_schema("""
+                directive @test on OBJECT
+
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                extend type Query @test
+                """, schema) == []
+
+        def with_unknown_directive_in_schema_extension():
+            schema = build_schema("""
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                extend type Query @unknown
+                """, schema) == [unknown_directive('unknown', 2, 35)]
+
         def with_well_placed_directives():
-            expect_sdl_errors("""
+            assert expect_sdl_errors("""
                 type MyObj implements MyInterface @onObject {
                   myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
                 }
@@ -196,9 +229,8 @@ def describe_known_directives():
                 """,  # noqa
                 schema_with_sdl_directives) == []
 
-        # noinspection PyShadowingNames
         def with_misplaced_directives():
-            expect_sdl_errors("""
+            assert expect_sdl_errors("""
                 type MyObj implements MyInterface @onInterface {
                   myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
                 }

@@ -446,8 +446,8 @@ def extend_schema(
             # correctly typed values, that would throw immediately while
             # type system validation with validate_schema() will produce
             # more actionable results.
-            type_ = operation_type.type
-            operation_types[operation] = ast_builder.build_type(type_)
+            operation_types[operation] = ast_builder.build_type(
+                operation_type.type)
 
     # Then, incorporate schema definition and all schema extensions.
     for schema_extension in schema_extensions:
@@ -461,8 +461,8 @@ def extend_schema(
                 # correctly typed values, that would throw immediately while
                 # type system validation with validate_schema() will produce
                 # more actionable results.
-                type_ = operation_type.type
-                operation_types[operation] = ast_builder.build_type(type_)
+                operation_types[operation] = ast_builder.build_type(
+                    operation_type.type)
 
     schema_extension_ast_nodes = (
         schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())
@@ -472,8 +472,7 @@ def extend_schema(
     # that any type not directly referenced by a value will get created.
     types = list(map(extend_named_type, schema.type_map.values()))
     # do the same with new types
-    types.extend(ast_builder.build_type(type_)
-                 for type_ in type_definition_map.values())
+    types.extend(map(ast_builder.build_type, type_definition_map.values()))
 
     # Then produce and return a Schema with these types.
     return GraphQLSchema(  # type: ignore

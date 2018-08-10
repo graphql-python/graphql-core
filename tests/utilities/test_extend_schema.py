@@ -1096,21 +1096,6 @@ def describe_extend_schema():
                 """)
             assert schema.mutation_type is None
 
-        def does_not_allow_overriding_schema_within_an_extension():
-            sdl = """
-                schema {
-                  mutation: Mutation
-                }
-
-                type Mutation {
-                  doSomething: String
-                }
-                """
-            with raises(TypeError) as exc_info:
-                extend_test_schema(sdl)
-            assert str(exc_info.value).startswith(
-                'Cannot define a new schema within a schema extension.')
-
         def adds_schema_definition_missing_in_the_original_schema():
             schema = GraphQLSchema(
                 directives=[FooDirective],
