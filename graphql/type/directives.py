@@ -34,7 +34,7 @@ class GraphQLDirective:
         elif not isinstance(name, str):
             raise TypeError('The directive name must be a string.')
         if not isinstance(locations, (list, tuple)):
-            raise TypeError('{name} locations must be a list/tuple.')
+            raise TypeError(f'{name} locations must be a list/tuple.')
         if not all(isinstance(value, DirectiveLocation)
                    for value in locations):
             try:
@@ -60,7 +60,7 @@ class GraphQLDirective:
                     else GraphQLArgument(cast(GraphQLInputType, value))
                     for name, value in args.items()}
         if description is not None and not isinstance(description, str):
-            raise TypeError('f{name} description must be a string.')
+            raise TypeError(f'{name} description must be a string.')
         if ast_node and not isinstance(ast_node, ast.DirectiveDefinitionNode):
             raise TypeError(
                 f'{name} AST node must be a DirectiveDefinitionNode.')
