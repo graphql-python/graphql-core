@@ -28,7 +28,7 @@ __all__ = [
 
 
 def build_ast_schema(
-        ast: DocumentNode, assume_valid: bool=False,
+        document_ast: DocumentNode, assume_valid: bool=False,
         assume_valid_sdl: bool=False) -> GraphQLSchema:
     """Build a GraphQL Schema from a given AST.
 
@@ -46,12 +46,12 @@ def build_ast_schema(
     to assume the produced schema is valid. Set `assume_valid_sdl` to True to
     assume it is already a valid SDL document.
     """
-    if not isinstance(ast, DocumentNode):
+    if not isinstance(document_ast, DocumentNode):
         raise TypeError('Must provide a Document AST.')
 
     if not (assume_valid or assume_valid_sdl):
         from ..validation.validate import assert_valid_sdl
-        assert_valid_sdl(ast)
+        assert_valid_sdl(document_ast)
 
     schema_def: Optional[SchemaDefinitionNode] = None
     type_defs: List[TypeDefinitionNode] = []
@@ -66,7 +66,7 @@ def build_ast_schema(
         EnumTypeDefinitionNode,
         UnionTypeDefinitionNode,
         InputObjectTypeDefinitionNode)
-    for d in ast.definitions:
+    for d in document_ast.definitions:
         if isinstance(d, SchemaDefinitionNode):
             schema_def = d
         elif isinstance(d, type_definition_nodes):
