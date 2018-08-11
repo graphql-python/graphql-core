@@ -40,23 +40,11 @@ def describe_printer_query_document():
 
     def correctly_prints_query_operation_with_artifacts():
         query_ast_with_artifacts = parse(
-            'query ($foo: TestType) @testDirective { id, name }',
-            experimental_variable_definition_directives=True)
+            'query ($foo: TestType) @testDirective { id, name }')
         assert print_ast(query_ast_with_artifacts) == dedent("""
             query ($foo: TestType) @testDirective {
               id
               name
-            }
-            """)
-
-    def correcty_prints_query_operation_with_variable_directive():
-        query_ast_with_variable_directive = parse(
-            'query ($foo: TestType = {a: 123}'
-            ' @testDirective(if: true) @test) { id }',
-            experimental_variable_definition_directives=True)
-        assert print_ast(query_ast_with_variable_directive) == dedent("""
-            query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
-              id
             }
             """)
 
@@ -67,6 +55,29 @@ def describe_printer_query_document():
             mutation ($foo: TestType) @testDirective {
               id
               name
+            }
+            """)
+
+    def experimental_prints_query_with_variable_directives():
+        query_ast_with_variable_directive = parse(
+            'query ($foo: TestType = {a: 123}'
+            ' @testDirective(if: true) @test) { id }',
+            experimental_variable_definition_directives=True)
+        assert print_ast(query_ast_with_variable_directive) == dedent("""
+            query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
+              id
+            }
+            """)
+
+    def experimental_prints_fragment_with_variable_directives():
+        query_ast_with_variable_directive = parse(
+            'fragment Foo($foo: TestType @test) on TestType'
+            ' @testDirective { id }',
+            experimental_fragment_variables=True,
+            experimental_variable_definition_directives=True)
+        assert print_ast(query_ast_with_variable_directive) == dedent("""
+            fragment Foo($foo: TestType @test) on TestType @testDirective {
+              id
             }
             """)
 

@@ -7,7 +7,6 @@ from graphql.validation.rules.unique_directives_per_location import (
 from .harness import (
     expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule)
 
-
 expect_sdl_errors = partial(
     expect_sdl_errors_from_rule, UniqueDirectivesPerLocationRule)
 

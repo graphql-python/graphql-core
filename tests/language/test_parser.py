@@ -82,7 +82,7 @@ def describe_parser():
           'query Foo($x: Complex = { a: { b: [ $var ] } }) { field }',
           'Unexpected $', (1, 37))
 
-    def parses_variable_definition_directives():
+    def experimental_parses_variable_definition_directives():
         parse('query Foo($x: Boolean = false @bar) { field }',
               experimental_variable_definition_directives=True)
 

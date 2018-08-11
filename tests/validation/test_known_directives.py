@@ -1,15 +1,12 @@
 from functools import partial
 
-from graphql.language import parse
 from graphql.utilities import build_schema
-from graphql.validation import validate, KnownDirectivesRule
+from graphql.validation import KnownDirectivesRule
 from graphql.validation.rules.known_directives import (
     unknown_directive_message, misplaced_directive_message)
 
 from .harness import (
-    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule,
-    test_schema)
-
+    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule)
 
 expect_sdl_errors = partial(
     expect_sdl_errors_from_rule, KnownDirectivesRule)
@@ -112,17 +109,12 @@ def describe_known_directives():
             }
             """)
 
-    def with_well_placed_variable_definition_directives():
-        # Need to parse with experimental flag
-        query_string = """
+    def experimental_with_well_placed_variable_definition_directive():
+        expect_passes_rule(KnownDirectivesRule, """
             query Foo($var: Boolean @onVariableDefinition) {
               name
             }
-            """
-        errors = validate(test_schema, parse(
-            query_string, experimental_variable_definition_directives=True),
-            [KnownDirectivesRule])
-        assert errors == [], 'Should validate'
+            """, experimental_variable_definition_directives=True)
 
     def with_misplaced_directives():
         expect_fails_rule(KnownDirectivesRule, """
@@ -141,20 +133,14 @@ def describe_known_directives():
             misplaced_directive('onQuery', 'mutation', 7, 26),
         ])
 
-    def with_misplaced_variable_definition_directives():
-        # Need to parse with experimental flag
-        query_string = """
+    def experimental_with_misplaced_variable_definition_directive():
+        expect_fails_rule(KnownDirectivesRule, """
             query Foo($var: Boolean @onField) {
               name
             }
-            """
-        errors = validate(test_schema, parse(
-            query_string, experimental_variable_definition_directives=True),
-            [KnownDirectivesRule])
-        expected_errors = [
-            misplaced_directive('onField', 'variable definition', 2, 37)]
-        assert len(errors) >= 1, 'Should not validate'
-        assert errors == expected_errors
+            """, [
+            misplaced_directive('onField', 'variable definition', 2, 37)],
+            experimental_variable_definition_directives=True)
 
     def describe_within_sdl():
 

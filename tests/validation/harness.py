@@ -203,24 +203,24 @@ test_schema = GraphQLSchema(
     types=[Cat, Dog, Human, Alien])
 
 
-def expect_valid(schema, rule, query_string):
-    errors = validate(schema, parse(query_string), [rule])
+def expect_valid(schema, rule, query_string, **options):
+    errors = validate(schema, parse(query_string, **options), [rule])
     assert errors == [], 'Should validate'
 
 
-def expect_invalid(schema, rule, query_string, expected_errors):
-    errors = validate(schema, parse(query_string), [rule])
+def expect_invalid(schema, rule, query_string, expected_errors, **options):
+    errors = validate(schema, parse(query_string, **options), [rule])
     assert errors, 'Should not validate'
     assert errors == expected_errors
     return errors
 
 
-def expect_passes_rule(rule, query_string):
-    expect_valid(test_schema, rule, query_string)
+def expect_passes_rule(rule, query_string, **options):
+    expect_valid(test_schema, rule, query_string, **options)
 
 
-def expect_fails_rule(rule, query_string, errors):
-    return expect_invalid(test_schema, rule, query_string, errors)
+def expect_fails_rule(rule, query_string, errors, **options):
+    return expect_invalid(test_schema, rule, query_string, errors, **options)
 
 
 def expect_passes_rule_with_schema(schema, rule, query_string):
