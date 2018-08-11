@@ -18,7 +18,7 @@ from ..language import (
 from ..pyutils import MaybeAwaitable, cached_property
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .schema import GraphQLSchema  # noqa: F401
 
 __all__ = [

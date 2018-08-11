@@ -2,7 +2,7 @@ import re
 from functools import reduce
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .graphql_error import GraphQLError  # noqa: F401
     from ..language import Source, SourceLocation  # noqa: F401
 

@@ -7,7 +7,7 @@ from . import ast
 
 from .ast import Node
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from ..utilities import TypeInfo  # noqa: F401
 
 __all__ = [
