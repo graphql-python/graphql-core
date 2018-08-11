@@ -115,17 +115,14 @@ def parse_name(lexer: Lexer) -> NameNode:
     return NameNode(value=token.value, loc=loc(lexer, token))
 
 
+# Implement the parsing rules in the Document section.
+
 def parse_document(lexer: Lexer) -> DocumentNode:
     """Document: Definition+"""
     start = lexer.token
-    expect(lexer, TokenKind.SOF)
-    definitions: List[DefinitionNode] = []
-    append = definitions.append
-    while True:
-        append(parse_definition(lexer))
-        if skip(lexer, TokenKind.EOF):
-            break
-    return DocumentNode(definitions=definitions, loc=loc(lexer, start))
+    return DocumentNode(definitions=many_nodes(
+        lexer, TokenKind.SOF, parse_definition, TokenKind.EOF),
+        loc=loc(lexer, start))
 
 
 def parse_definition(lexer: Lexer) -> DefinitionNode:
@@ -345,7 +342,7 @@ def parse_fragment_name(lexer: Lexer) -> NameNode:
     return parse_name(lexer)
 
 
-# Implements the parsing rules in the Values section.
+# Implement the parsing rules in the Values section.
 
 def parse_value_literal(lexer: Lexer, is_const: bool) -> ValueNode:
     func = _parse_value_literal_functions.get(lexer.token.kind)
