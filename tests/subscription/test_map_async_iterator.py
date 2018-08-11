@@ -1,3 +1,5 @@
+import sys
+
 from pytest import mark, raises
 
 from graphql.subscription.map_async_iterator import MapAsyncIterator
@@ -171,3 +173,77 @@ def describe_map_async_iterator():
 
         with raises(StopAsyncIteration):
             await anext(doubles)
+
+    @mark.asyncio
+    async def can_use_simple_iterator_instead_of_generator():
+        async def source():
+            yield 1
+            yield 2
+            yield 3
+
+        class Source:
+            def __init__(self):
+                self.counter = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                self.counter += 1
+                if self.counter > 3:
+                    raise StopAsyncIteration
+                return self.counter
+
+        for iterator in source, Source:
+            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+
+            await doubles.aclose()
+
+            with raises(StopAsyncIteration):
+                await anext(doubles)
+
+            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+
+            assert await anext(doubles) == 2
+            assert await anext(doubles) == 4
+            assert await anext(doubles) == 6
+
+            with raises(StopAsyncIteration):
+                await anext(doubles)
+
+            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+
+            assert await anext(doubles) == 2
+            assert await anext(doubles) == 4
+
+            # Throw error
+            with raises(RuntimeError) as exc_info:
+                await doubles.athrow(RuntimeError('ouch'))
+
+            assert str(exc_info.value) == 'ouch'
+
+            with raises(StopAsyncIteration):
+                await anext(doubles)
+            with raises(StopAsyncIteration):
+                await anext(doubles)
+
+            await doubles.athrow(RuntimeError('no more ouch'))
+
+            with raises(StopAsyncIteration):
+                await anext(doubles)
+
+            await doubles.aclose()
+
+            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+
+            assert await anext(doubles) == 2
+            assert await anext(doubles) == 4
+
+            try:
+                raise ValueError('bad')
+            except ValueError:
+                tb = sys.exc_info()[2]
+
+            # Throw error
+            with raises(ValueError):
+                await doubles.athrow(ValueError, None, tb)
