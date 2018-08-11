@@ -2,9 +2,8 @@ from typing import Union, cast
 
 from ...error import GraphQLError
 from ...language import (
-    DirectiveDefinitionNode, DocumentNode, FragmentDefinitionNode,
-    OperationDefinitionNode, SchemaDefinitionNode, SchemaExtensionNode,
-    TypeDefinitionNode)
+    DirectiveDefinitionNode, DocumentNode, ExecutableDefinitionNode,
+    SchemaDefinitionNode, SchemaExtensionNode, TypeDefinitionNode)
 from . import ASTValidationRule
 
 __all__ = ['ExecutableDefinitionsRule', 'non_executable_definitions_message']
@@ -23,8 +22,7 @@ class ExecutableDefinitionsRule(ASTValidationRule):
 
     def enter_document(self, node: DocumentNode, *_args):
         for definition in node.definitions:
-            if not isinstance(definition, (
-                    OperationDefinitionNode, FragmentDefinitionNode)):
+            if not isinstance(definition, ExecutableDefinitionNode):
                 self.report_error(GraphQLError(
                     non_executable_definitions_message(
                         'schema' if isinstance(definition, (

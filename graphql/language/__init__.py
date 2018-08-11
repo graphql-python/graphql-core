@@ -38,6 +38,11 @@ from .ast import (
     ObjectTypeExtensionNode, InterfaceTypeExtensionNode,
     UnionTypeExtensionNode, EnumTypeExtensionNode,
     InputObjectTypeExtensionNode)
+from .predicates import (
+    is_definition_node, is_executable_definition_node,
+    is_selection_node, is_value_node, is_type_node,
+    is_type_system_definition_node, is_type_definition_node,
+    is_type_system_extension_node, is_type_extension_node)
 from .directive_locations import DirectiveLocation
 
 __all__ = [
@@ -70,4 +75,8 @@ __all__ = [
     'SchemaExtensionNode', 'TypeExtensionNode', 'ScalarTypeExtensionNode',
     'ObjectTypeExtensionNode', 'InterfaceTypeExtensionNode',
     'UnionTypeExtensionNode', 'EnumTypeExtensionNode',
-    'InputObjectTypeExtensionNode']
+    'InputObjectTypeExtensionNode',
+    'is_definition_node', 'is_executable_definition_node',
+    'is_selection_node', 'is_value_node', 'is_type_node',
+    'is_type_system_definition_node', 'is_type_definition_node',
+    'is_type_system_extension_node', 'is_type_extension_node']

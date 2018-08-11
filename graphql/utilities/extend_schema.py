@@ -6,14 +6,10 @@ from typing import (
 
 from ..error import GraphQLError
 from ..language import (
-    DirectiveDefinitionNode, DocumentNode,
-    EnumTypeDefinitionNode, EnumTypeExtensionNode,
-    InputObjectTypeDefinitionNode, InputObjectTypeExtensionNode,
-    InterfaceTypeDefinitionNode, InterfaceTypeExtensionNode,
-    ObjectTypeDefinitionNode, ObjectTypeExtensionNode, OperationType,
-    ScalarTypeDefinitionNode, ScalarTypeExtensionNode,
-    SchemaExtensionNode, SchemaDefinitionNode,
-    UnionTypeDefinitionNode, UnionTypeExtensionNode,
+    DirectiveDefinitionNode, DocumentNode, EnumTypeExtensionNode,
+    InputObjectTypeExtensionNode, InterfaceTypeExtensionNode,
+    ObjectTypeExtensionNode, OperationType, SchemaExtensionNode,
+    SchemaDefinitionNode, TypeDefinitionNode, UnionTypeExtensionNode,
     NamedTypeNode, TypeExtensionNode)
 from ..type import (
     GraphQLArgument, GraphQLArgumentMap, GraphQLDirective,
@@ -79,13 +75,7 @@ def extend_schema(
             schema_def = def_
         elif isinstance(def_, SchemaExtensionNode):
             schema_extensions.append(def_)
-        elif isinstance(def_, (
-                ObjectTypeDefinitionNode,
-                InterfaceTypeDefinitionNode,
-                EnumTypeDefinitionNode,
-                UnionTypeDefinitionNode,
-                ScalarTypeDefinitionNode,
-                InputObjectTypeDefinitionNode)):
+        elif isinstance(def_, TypeDefinitionNode):
             # Sanity check that none of the defined types conflict with the
             # schema's existing types.
             type_name = def_.name.value
@@ -95,13 +85,7 @@ def extend_schema(
                     ' It cannot also be defined in this type definition.',
                     [def_])
             type_definition_map[type_name] = def_
-        elif isinstance(def_, (
-                ScalarTypeExtensionNode,
-                ObjectTypeExtensionNode,
-                InterfaceTypeExtensionNode,
-                EnumTypeExtensionNode,
-                InputObjectTypeExtensionNode,
-                UnionTypeExtensionNode)):
+        elif isinstance(def_, TypeExtensionNode):
             # Sanity check that this type extension exists within the
             # schema's existing types.
             extended_type_name = def_.name.value

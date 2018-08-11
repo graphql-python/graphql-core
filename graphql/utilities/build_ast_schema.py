@@ -59,26 +59,19 @@ def build_ast_schema(
     node_map: TypeDefinitionsMap = {}
     directive_defs: List[DirectiveDefinitionNode] = []
     append_directive_def = directive_defs.append
-    type_definition_nodes = (
-        ScalarTypeDefinitionNode,
-        ObjectTypeDefinitionNode,
-        InterfaceTypeDefinitionNode,
-        EnumTypeDefinitionNode,
-        UnionTypeDefinitionNode,
-        InputObjectTypeDefinitionNode)
-    for d in document_ast.definitions:
-        if isinstance(d, SchemaDefinitionNode):
-            schema_def = d
-        elif isinstance(d, type_definition_nodes):
-            d = cast(TypeDefinitionNode, d)
-            type_name = d.name.value
+    for def_ in document_ast.definitions:
+        if isinstance(def_, SchemaDefinitionNode):
+            schema_def = def_
+        elif isinstance(def_, TypeDefinitionNode):
+            def_ = cast(TypeDefinitionNode, def_)
+            type_name = def_.name.value
             if type_name in node_map:
                 raise TypeError(
                     f"Type '{type_name}' was defined more than once.")
-            append_type_def(d)
-            node_map[type_name] = d
-        elif isinstance(d, DirectiveDefinitionNode):
-            append_directive_def(d)
+            append_type_def(def_)
+            node_map[type_name] = def_
+        elif isinstance(def_, DirectiveDefinitionNode):
+            append_directive_def(def_)
 
     if schema_def:
         operation_types: Dict[OperationType, Any] = get_operation_types(
