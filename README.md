@@ -1,6 +1,6 @@
 # GraphQL-core-next
 
-GraphQL-core-next is a Python port of [GraphQL.js](https://github.com/graphql/graphql-js),
+GraphQL-core-next is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
@@ -165,16 +165,17 @@ GraphQL-core-next tries to reproduce the code of the reference implementation
 GraphQL.js in Python as closely as possible and to stay up-to-date with
 the latest development of GraphQL.js.
 
-It has been created as an alternative to
+It has been created as an alternative and potential successor to
 [GraphQL-core](https://github.com/graphql-python/graphql-core),
-a prior work by Syrus Akbary, which was based on an older version of
-GraphQL.js and targeted older Python versions. Some parts of the code base
-of GraphQL.js have been inspired by GraphQL-core or directly taken over with
-only slight modifications, but most of the code base has been re-implemented
-from scratch, replicating the latest code in GraphQL.js and adding type hints.
-Recently, GraphQL-core has also been modernized, but its focus is primarily
-to serve as as a solid base library for [Graphene](http://graphene-python.org/),
-a more high-level framework for building GraphQL APIs in Python.
+a prior work by Syrus Akbary, based on an older version of GraphQL.js and
+also targeting older Python versions. GraphQL-core also serves as as the
+foundation for [Graphene](http://graphene-python.org/), a more high-level
+framework for building GraphQL APIs in Python. Some parts of GraphQL-core-next
+have been inspired by GraphQL-core or directly taken over with only slight
+modifications, but most of the code has been re-implemented from scratch,
+replicating the latest code in GraphQL.js very closely and adding type hints
+for Python. Though GraphQL-core has also been updated and modernized to some
+extend, it might be replaced by GraphQL-core-next in the future.
 
 Design goals for the GraphQL-core-next library are:
 
@@ -188,10 +189,11 @@ Design goals for the GraphQL-core-next library are:
 
 Some restrictions (mostly in line with the design goals):
 
-* requires Python >= 3.6
-* does not support a few deprecated methods and options of GraphQL.js
+* requires Python 3.6 or 3.7
+* does not support some already deprecated methods and options of GraphQL.js
 * supports asynchronous operations only via async.io
 * does not support additional executors and middleware like GraphQL-core
+  (we are considering adding middleware later though)
 * the benchmarks have not yet been ported to Python
 
 
