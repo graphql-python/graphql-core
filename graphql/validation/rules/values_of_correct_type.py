@@ -1,6 +1,6 @@
 from typing import Optional, cast
 
-from ...error import GraphQLError, INVALID
+from ...error import GraphQLError
 from ...language import (
     BooleanValueNode, EnumValueNode, FloatValueNode, IntValueNode,
     NullValueNode, ListValueNode, ObjectFieldNode, ObjectValueNode,
@@ -9,7 +9,7 @@ from ...pyutils import is_invalid, or_list, suggestion_list
 from ...type import (
     GraphQLEnumType, GraphQLScalarType, GraphQLType,
     get_named_type, get_nullable_type, is_enum_type, is_input_object_type,
-    is_list_type, is_non_null_type, is_scalar_type)
+    is_list_type, is_non_null_type, is_required_input_field, is_scalar_type)
 from . import ValidationRule
 
 __all__ = [
@@ -65,12 +65,11 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         input_fields = type_.fields
         field_node_map = {field.name.value: field for field in node.fields}
         for field_name, field_def in input_fields.items():
-            field_type = field_def.type
             field_node = field_node_map.get(field_name)
-            if not field_node and is_non_null_type(
-                    field_type) and field_def.default_value is INVALID:
+            if not field_node and is_required_input_field(field_def):
+                field_type = field_def.type
                 self.report_error(GraphQLError(required_field_message(
-                    type_.name, field_name, field_type), node))
+                    type_.name, field_name, str(field_type)), node))
 
     def enter_object_field(self, node: ObjectFieldNode, *_args):
         parent_type = get_named_type(self.context.get_parent_input_type())

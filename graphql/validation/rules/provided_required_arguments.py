@@ -1,6 +1,6 @@
-from ...error import GraphQLError, INVALID
+from ...error import GraphQLError
 from ...language import DirectiveNode, FieldNode
-from ...type import is_non_null_type
+from ...type import is_required_argument
 from . import ValidationRule
 
 __all__ = [
@@ -37,8 +37,7 @@ class ProvidedRequiredArgumentsRule(ValidationRule):
         arg_node_map = {arg.name.value: arg for arg in arg_nodes}
         for arg_name, arg_def in field_def.args.items():
             arg_node = arg_node_map.get(arg_name)
-            if not arg_node and is_non_null_type(
-                    arg_def.type) and arg_def.default_value is INVALID:
+            if not arg_node and is_required_argument(arg_def):
                 self.report_error(GraphQLError(missing_field_arg_message(
                     node.name.value, arg_name, str(arg_def.type)), [node]))
 
@@ -52,7 +51,6 @@ class ProvidedRequiredArgumentsRule(ValidationRule):
         arg_node_map = {arg.name.value: arg for arg in arg_nodes}
         for arg_name, arg_def in directive_def.args.items():
             arg_node = arg_node_map.get(arg_name)
-            if not arg_node and is_non_null_type(
-                    arg_def.type) and arg_def.default_value is INVALID:
+            if not arg_node and is_required_argument(arg_def):
                 self.report_error(GraphQLError(missing_directive_arg_message(
                     node.name.value, arg_name, str(arg_def.type)), [node]))

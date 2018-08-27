@@ -27,6 +27,7 @@ __all__ = [
     'is_non_null_type', 'is_input_type', 'is_output_type', 'is_leaf_type',
     'is_composite_type', 'is_abstract_type', 'is_wrapping_type',
     'is_nullable_type', 'is_named_type',
+    'is_required_argument', 'is_required_input_field',
     'assert_type', 'assert_scalar_type', 'assert_object_type',
     'assert_interface_type', 'assert_union_type', 'assert_enum_type',
     'assert_input_object_type', 'assert_list_type', 'assert_non_null_type',
@@ -413,6 +414,10 @@ class GraphQLArgument:
             self.type == other.type and
             self.default_value == other.default_value and
             self.description == other.description))
+
+
+def is_required_argument(arg: GraphQLArgument) -> bool:
+    return is_non_null_type(arg.type) and arg.default_value is INVALID
 
 
 T = TypeVar('T')
@@ -979,6 +984,10 @@ class GraphQLInputField:
             isinstance(other, GraphQLInputField) and
             self.type == other.type and
             self.description == other.description))
+
+
+def is_required_input_field(field: GraphQLInputField) -> bool:
+    return is_non_null_type(field.type) and field.default_value is INVALID
 
 
 # Wrapper types
