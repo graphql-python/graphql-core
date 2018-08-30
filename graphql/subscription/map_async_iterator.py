@@ -44,15 +44,18 @@ class MapAsyncIterator:
             result = await self.iterator.__anext__()
             return self.callback(result)
 
-        _next = ensure_future(self.iterator.__anext__())
         _close = ensure_future(self._close_event.wait())
+        _next = ensure_future(self.iterator.__anext__())
         done, pending = await wait(
-            [_next, _close],
+            [_close, _next],
             return_when=FIRST_COMPLETED,
         )
 
         for task in pending:
             task.cancel()
+
+        if _close.done():
+            raise StopAsyncIteration
 
         if _next.done():
             error = _next.exception()
@@ -63,9 +66,6 @@ class MapAsyncIterator:
                 result = self.reject_callback(error)
             else:
                 result = self.callback(_next.result())
-
-        if _close.done():
-            raise StopAsyncIteration
 
         return (await result) if isawaitable(result) else result
 
