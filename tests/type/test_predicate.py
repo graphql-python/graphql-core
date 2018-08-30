@@ -1,8 +1,9 @@
 from pytest import raises
 
 from graphql.type import (
-    GraphQLEnumType, GraphQLInputObjectType, GraphQLInterfaceType,
-    GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLScalarType,
+    GraphQLArgument, GraphQLEnumType, GraphQLInputField,
+    GraphQLInputObjectType, GraphQLInterfaceType, GraphQLList,
+    GraphQLNonNull, GraphQLObjectType, GraphQLScalarType,
     GraphQLString, GraphQLUnionType,
     assert_abstract_type, assert_composite_type, assert_enum_type,
     assert_input_object_type, assert_input_type, assert_interface_type,
@@ -12,6 +13,7 @@ from graphql.type import (
     assert_wrapping_type, get_named_type, get_nullable_type, is_abstract_type,
     is_composite_type, is_enum_type, is_input_object_type, is_input_type,
     is_interface_type, is_leaf_type, is_list_type, is_named_type,
+    is_required_argument, is_required_input_field,
     is_non_null_type, is_nullable_type, is_object_type, is_output_type,
     is_scalar_type, is_type, is_union_type, is_wrapping_type)
 
@@ -370,3 +372,47 @@ def describe_type_predicates():
         def unwraps_deeply_wrapper_types():
             assert get_named_type(GraphQLNonNull(GraphQLList(GraphQLNonNull(
                 ObjectType)))) is ObjectType
+
+    def describe_is_required_argument():
+
+            def returns_true_for_required_arguments():
+                required_arg = GraphQLArgument(GraphQLNonNull(GraphQLString))
+                assert is_required_argument(required_arg) is True
+
+            def returns_false_for_optional_arguments():
+                opt_arg1 = GraphQLArgument(GraphQLString)
+                assert is_required_argument(opt_arg1) is False
+
+                opt_arg2 = GraphQLArgument(GraphQLString, default_value=None)
+                assert is_required_argument(opt_arg2) is False
+
+                opt_arg3 = GraphQLArgument(
+                    GraphQLList(GraphQLNonNull(GraphQLString)))
+                assert is_required_argument(opt_arg3) is False
+
+                opt_arg4 = GraphQLArgument(
+                    GraphQLNonNull(GraphQLString), default_value='default')
+                assert is_required_argument(opt_arg4) is False
+
+    def describe_is_required_input_field():
+
+            def returns_true_for_required_input_field():
+                required_field = GraphQLInputField(
+                    GraphQLNonNull(GraphQLString))
+                assert is_required_input_field(required_field) is True
+
+            def returns_false_for_optional_input_field():
+                opt_field1 = GraphQLInputField(GraphQLString)
+                assert is_required_input_field(opt_field1) is False
+
+                opt_field2 = GraphQLInputField(
+                    GraphQLString, default_value=None)
+                assert is_required_input_field(opt_field2) is False
+
+                opt_field3 = GraphQLInputField(
+                    GraphQLList(GraphQLNonNull(GraphQLString)))
+                assert is_required_input_field(opt_field3) is False
+
+                opt_field4 = GraphQLInputField(
+                    GraphQLNonNull(GraphQLString), default_value='default')
+                assert is_required_input_field(opt_field4) is False
