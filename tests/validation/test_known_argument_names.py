@@ -153,7 +153,6 @@ def describe_validate_known_argument_names():
             unknown_arg('unknown', 'doesKnowCommand', 'Dog', [], 9, 37)
         ])
 
-
     def describe_within_sdl():
 
         def known_arg_on_directive_inside_sdl():
@@ -180,7 +179,7 @@ def describe_validate_known_argument_names():
                 type Query {
                   foo: String @test(agr: "")
                 }
-        
+
                 directive @test(arg: String) on FIELD_DEFINITION
                 """) == [
                 unknown_directive_arg('agr', 'test', ['arg'], 3, 37)]

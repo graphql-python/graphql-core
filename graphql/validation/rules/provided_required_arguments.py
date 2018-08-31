@@ -1,9 +1,9 @@
-from typing import Dict, Union
+from typing import cast, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import (
     DirectiveDefinitionNode, DirectiveNode, FieldNode,
-    InputValueDefinitionNode, NonNullTypeNode, print_ast)
+    InputValueDefinitionNode, NonNullTypeNode, TypeNode, print_ast)
 from ...type import (
     GraphQLArgument, is_required_argument, is_type, specified_directives)
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
@@ -38,12 +38,13 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
     def __init__(self, context: Union[
             ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
-        required_args_map: Dict[str, Dict[str, GraphQLArgument]] = {}
+        required_args_map: Dict[str, Dict[str, Union[
+            GraphQLArgument, InputValueDefinitionNode]]] = {}
 
         schema = context.schema
         defined_directives = (
             schema.directives if schema else specified_directives)
-        for directive in defined_directives:
+        for directive in cast(List, defined_directives):
             required_args_map[directive.name] = {
                 name: arg for name, arg in directive.args.items()
                 if is_required_argument(arg)}
@@ -72,7 +73,8 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
                     self.report_error(GraphQLError(
                         missing_directive_arg_message(
                             directive_name, arg_name, str(arg_type)
-                            if is_type(arg_type) else print_ast(arg_type)),
+                            if is_type(arg_type)
+                            else print_ast(cast(TypeNode, arg_type))),
                         [directive_node]))
 
 

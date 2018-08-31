@@ -1,8 +1,8 @@
-from typing import Dict, List, Union
+from typing import cast, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import (
-    ArgumentNode, FieldNode, DirectiveDefinitionNode, DirectiveNode, SKIP)
+    ArgumentNode, DirectiveDefinitionNode, DirectiveNode, SKIP)
 from ...pyutils import quoted_or_list, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
@@ -48,7 +48,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
         schema = context.schema
         defined_directives = (
             schema.directives if schema else specified_directives)
-        for directive in defined_directives:
+        for directive in cast(List, defined_directives):
             directive_args[directive.name] = list(directive.args)
 
         ast_definitions = context.document.definitions
@@ -100,4 +100,3 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
                 unknown_arg_message(
                     arg_name, field_name, parent_type.name,
                     suggestion_list(arg_name, known_args_names)), arg_node))
-
