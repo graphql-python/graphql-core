@@ -1278,19 +1278,23 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
             }
 
             interface AnotherInterface {
-              field(input: String): String
+              field(baseArg: String): String
             }
 
             type AnotherObject implements AnotherInterface {
-              field(input: String, anotherInput: String!): String
+              field(
+                baseArg: String,
+                requiredArg: String!
+                optionalArg1: String,
+                optionalArg2: String = "",
+              ): String
             }
             """)
         assert validate_schema(schema) == [{
-            'message': 'Object field argument'
-                       ' AnotherObject.field(anotherInput:) is of'
-                       ' required type String! but is not also provided'
-                       ' by the Interface field AnotherInterface.field.',
-            'locations': [(11, 50), (7, 15)]}]
+            'message': 'Object field AnotherObject.field includes required'
+                       ' argument requiredArg that is missing from the'
+                       ' Interface field AnotherInterface.field.',
+            'locations': [(13, 17), (7, 15)]}]
 
     def accepts_an_object_with_an_equivalently_wrapped_interface_field_type():
         schema = build_schema("""

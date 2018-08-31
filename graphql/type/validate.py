@@ -9,8 +9,8 @@ from .definition import (
     GraphQLEnumType, GraphQLInputObjectType, GraphQLInterfaceType,
     GraphQLObjectType, GraphQLUnionType,
     is_enum_type, is_input_object_type, is_input_type, is_interface_type,
-    is_named_type, is_non_null_type,
-    is_object_type, is_output_type, is_union_type)
+    is_named_type, is_object_type, is_output_type, is_union_type,
+    is_required_argument)
 from ..utilities.assert_valid_name import is_valid_name_error
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
 from .directives import GraphQLDirective, is_directive
@@ -332,14 +332,12 @@ class SchemaValidationContext:
             # Assert additional arguments must not be required.
             for arg_name, obj_arg in obj_field.args.items():
                 iface_arg = iface_field.args.get(arg_name)
-                if not iface_arg and is_non_null_type(obj_arg.type):
+                if not iface_arg and is_required_argument(obj_arg):
                     self.report_error(
-                        'Object field argument'
-                        f' {obj.name}.{field_name}({arg_name}:)'
-                        f' is of required type {obj_arg.type}'
-                        ' but is not also provided by the Interface field'
-                        f' {iface.name}.{field_name}.',
-                        [get_field_arg_type_node(obj, field_name, arg_name),
+                        f'Object field {obj.name}.{field_name} includes'
+                        f' required argument {arg_name} that is missing from'
+                        f' the Interface field {iface.name}.{field_name}.',
+                        [get_field_arg_node(obj, field_name, arg_name),
                          get_field_node(iface, field_name)])
 
     def validate_union_members(self, union: GraphQLUnionType):
