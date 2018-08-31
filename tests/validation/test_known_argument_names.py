@@ -1,8 +1,16 @@
+from functools import partial
+
+from graphql.utilities import build_schema
 from graphql.validation import KnownArgumentNamesRule
 from graphql.validation.rules.known_argument_names import (
+    KnownArgumentNamesOnDirectivesRule,
     unknown_arg_message, unknown_directive_arg_message)
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import (
+    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule)
+
+expect_sdl_errors = partial(
+    expect_sdl_errors_from_rule, KnownArgumentNamesOnDirectivesRule)
 
 
 def unknown_arg(arg_name, field_name, type_name, suggested_args, line, column):
@@ -144,3 +152,78 @@ def describe_validate_known_argument_names():
             unknown_arg('unknown', 'doesKnowCommand', 'Dog', [], 4, 33),
             unknown_arg('unknown', 'doesKnowCommand', 'Dog', [], 9, 37)
         ])
+
+
+    def describe_within_sdl():
+
+        def known_arg_on_directive_inside_sdl():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @test(arg: "")
+                }
+
+                directive @test(arg: String) on FIELD_DEFINITION
+                """) == []
+
+        def unknown_arg_on_directive_defined_inside_sdl():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @test(unknown: "")
+                }
+
+                directive @test(arg: String) on FIELD_DEFINITION
+                """) == [
+                unknown_directive_arg('unknown', 'test', [], 3, 37)]
+
+        def misspelled_arg_name_is_reported_on_directive_defined_inside_sdl():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @test(agr: "")
+                }
+        
+                directive @test(arg: String) on FIELD_DEFINITION
+                """) == [
+                unknown_directive_arg('agr', 'test', ['arg'], 3, 37)]
+
+        def unknown_arg_on_standard_directive():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @deprecated(unknown: "")
+                }
+                """) == [
+                unknown_directive_arg('unknown', 'deprecated', [], 3, 43)]
+
+        def unknown_arg_on_overridden_standard_directive():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @deprecated(reason: "")
+                }
+                directive @deprecated(arg: String) on FIELD
+                """) == [
+                unknown_directive_arg('reason', 'deprecated', [], 3, 43)]
+
+        def unknown_arg_on_directive_defined_in_schema_extension():
+            schema = build_schema("""
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                directive @test(arg: String) on OBJECT
+
+                extend type Query  @test(unknown: "")
+                """, schema) == [
+                unknown_directive_arg('unknown', 'test', [], 4, 42)]
+
+        def unknown_arg_on_directive_used_in_schema_extension():
+            schema = build_schema("""
+                directive @test(arg: String) on OBJECT
+
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                extend type Query @test(unknown: "")
+                """, schema) == [
+                unknown_directive_arg('unknown', 'test', [], 2, 41)]

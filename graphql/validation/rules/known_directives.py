@@ -27,11 +27,14 @@ class KnownDirectivesRule(ASTValidationRule):
     schema and legally positioned.
     """
 
+    context: Union[ValidationContext, SDLValidationContext]
+
     def __init__(self, context: Union[
             ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
-        schema = context.schema
         locations_map: Dict[str, List[DirectiveLocation]] = {}
+
+        schema = context.schema
         defined_directives = (
             schema.directives if schema else cast(List, specified_directives))
         for directive in defined_directives:

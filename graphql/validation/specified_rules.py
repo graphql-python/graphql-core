@@ -83,7 +83,10 @@ from .rules.overlapping_fields_can_be_merged import (
 from .rules.unique_input_field_names import UniqueInputFieldNamesRule
 
 # Schema definition language:
-from .rules.lone_schema_definition import LoneSchemaDefinition
+from .rules.lone_schema_definition import LoneSchemaDefinitionRule
+from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
+from .rules.provided_required_arguments import (
+    ProvidedRequiredArgumentsOnDirectivesRule)
 
 __all__ = ['specified_rules', 'specified_sdl_rules']
 
@@ -122,8 +125,10 @@ specified_rules: List[RuleType] = [
     UniqueInputFieldNamesRule]
 
 specified_sdl_rules: List[RuleType] = [
-    LoneSchemaDefinition,
+    LoneSchemaDefinitionRule,
     KnownDirectivesRule,
     UniqueDirectivesPerLocationRule,
+    KnownArgumentNamesOnDirectivesRule,
     UniqueArgumentNamesRule,
-    UniqueInputFieldNamesRule]
+    UniqueInputFieldNamesRule,
+    ProvidedRequiredArgumentsOnDirectivesRule]

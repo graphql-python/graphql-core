@@ -2,13 +2,13 @@ from functools import partial
 
 from graphql.utilities import build_schema
 from graphql.validation.rules.lone_schema_definition import (
-    LoneSchemaDefinition, schema_definition_not_alone_message,
+    LoneSchemaDefinitionRule, schema_definition_not_alone_message,
     cannot_define_schema_within_extension_message)
 
 from .harness import expect_sdl_errors_from_rule
 
 expect_sdl_errors = partial(
-    expect_sdl_errors_from_rule, LoneSchemaDefinition)
+    expect_sdl_errors_from_rule, LoneSchemaDefinitionRule)
 
 
 def schema_definition_not_alone(line, column):

@@ -3,7 +3,7 @@ from ...language import SchemaDefinitionNode
 from . import SDLValidationRule, SDLValidationContext
 
 __all__ = [
-    'LoneSchemaDefinition',
+    'LoneSchemaDefinitionRule',
     'schema_definition_not_alone_message',
     'cannot_define_schema_within_extension_message']
 
@@ -16,7 +16,7 @@ def cannot_define_schema_within_extension_message():
     return 'Cannot define a new schema within a schema extension.'
 
 
-class LoneSchemaDefinition(SDLValidationRule):
+class LoneSchemaDefinitionRule(SDLValidationRule):
     """Lone Schema definition
 
     A GraphQL document is only valid if it contains only one schema definition.

@@ -1,8 +1,16 @@
+from functools import partial
+
+from graphql.utilities import build_schema
 from graphql.validation import ProvidedRequiredArgumentsRule
 from graphql.validation.rules.provided_required_arguments import (
+    ProvidedRequiredArgumentsOnDirectivesRule,
     missing_field_arg_message, missing_directive_arg_message)
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import (
+    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule)
+
+expect_sdl_errors = partial(
+    expect_sdl_errors_from_rule, ProvidedRequiredArgumentsOnDirectivesRule)
 
 
 def missing_field_arg(field_name, arg_name, type_name, line, column):
@@ -194,3 +202,68 @@ def describe_validate_provided_required_arguments():
                 missing_directive_arg('include', 'if', 'Boolean!', 3, 23),
                 missing_directive_arg('skip', 'if', 'Boolean!', 4, 26),
             ])
+
+    def describe_within_sdl():
+
+        def missing_optional_args_on_directive_defined_inside_sdl():
+            assert expect_sdl_errors("""
+                type Query {
+                foo: String @test
+                }
+
+                directive @test(arg1: String, arg2: String! = "") on FIELD_DEFINITION
+                """) == []  # noqa
+
+        def missing_arg_on_directive_defined_inside_sdl():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @test
+                }
+
+                directive @test(arg: String!) on FIELD_DEFINITION
+                """) == [
+                    missing_directive_arg('test', 'arg', 'String!', 3, 31)]
+
+        def missing_arg_on_standard_directive():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @include
+                }
+                """) == [
+                missing_directive_arg('include', 'if', 'Boolean!', 3, 31)]
+
+        def missing_arg_on_overridden_standard_directive():
+            assert expect_sdl_errors("""
+                type Query {
+                  foo: String @deprecated
+                }
+                directive @deprecated(reason: String!) on FIELD
+                """) == [
+                missing_directive_arg(
+                    'deprecated', 'reason', 'String!', 3, 31)]
+
+        def missing_arg_on_directive_defined_in_schema_extension():
+            schema = build_schema("""
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                directive @test(arg: String!) on OBJECT
+
+                extend type Query  @test
+                """, schema) == [
+                missing_directive_arg('test', 'arg', 'String!', 4, 36)]
+
+        def missing_arg_on_directive_used_in_schema_extension():
+            schema = build_schema("""
+                directive @test(arg: String!) on OBJECT
+
+                type Query {
+                  foo: String
+                }
+                """)
+            assert expect_sdl_errors("""
+                extend type Query  @test
+                """, schema) == [
+                missing_directive_arg('test', 'arg', 'String!', 2, 36)]

@@ -86,7 +86,7 @@ def describe_validate_directives_are_unique_per_location():
         ])
 
     def duplicate_directives_on_sdl_definitions():
-        expect_sdl_errors("""
+        assert expect_sdl_errors("""
             schema @directive @directive { query: Dummy }
             extend schema @directive @directive
 
