@@ -244,7 +244,7 @@ def describe_find_breaking_changes():
         assert find_fields_that_changed_type_on_input_object_types(
             old_schema, new_schema).breaking_changes == expected_field_changes
 
-    def should_detect_if_a_non_null_field_is_added_to_an_input_type():
+    def should_detect_if_a_required_field_is_added_to_an_input_type():
         old_schema = build_schema("""
             input InputType1 {
               field1: String
@@ -259,7 +259,8 @@ def describe_find_breaking_changes():
             input InputType1 {
                 field1: String
                 requiredField: Int!
-                optionalField: Boolean
+                optionalField1: Boolean
+                optionalField2: Boolean! = false
             }
 
             type Query {
@@ -268,8 +269,8 @@ def describe_find_breaking_changes():
             """)
 
         expected_field_changes = [
-            (BreakingChangeType.NON_NULL_INPUT_FIELD_ADDED,
-             'A non-null field requiredField on input type'
+            (BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
+             'A required field requiredField on input type'
              ' InputType1 was added.')]
 
         assert find_fields_that_changed_type_on_input_object_types(
@@ -462,7 +463,7 @@ def describe_find_breaking_changes():
              'Type1.field1 arg arg15 has changed type from [[Int]!]'
                 ' to [[Int!]!]')]
 
-    def should_detect_if_a_non_null_field_argument_was_added():
+    def should_detect_if_a_required_field_argument_was_added():
         old_schema = build_schema("""
             type Type1 {
               field1(arg1: String): String
@@ -475,7 +476,12 @@ def describe_find_breaking_changes():
 
         new_schema = build_schema("""
             type Type1 {
-              field1(arg1: String, newRequiredArg: String!, newOptionalArg: Int): String
+              field1(
+                arg1: String,
+                newRequiredArg: String!
+                newOptionalArg1: Int
+                newOptionalArg2: Int! = 0
+              ): String
             }
 
             type Query {
@@ -484,8 +490,8 @@ def describe_find_breaking_changes():
             """)  # noqa
 
         assert find_arg_changes(old_schema, new_schema).breaking_changes == [
-            (BreakingChangeType.NON_NULL_ARG_ADDED,
-             'A non-null arg newRequiredArg on Type1.field1 was added')]
+            (BreakingChangeType.REQUIRED_ARG_ADDED,
+             'A required arg newRequiredArg on Type1.field1 was added')]
 
     def should_not_flag_args_with_the_same_type_signature_as_breaking():
         old_schema = build_schema("""
@@ -700,8 +706,8 @@ def describe_find_breaking_changes():
              'DirectiveThatIsRemoved was removed'),
             (BreakingChangeType.DIRECTIVE_ARG_REMOVED,
              'arg1 was removed from DirectiveThatRemovesArg'),
-            (BreakingChangeType.NON_NULL_DIRECTIVE_ARG_ADDED,
-             'A non-null arg arg1 on directive'
+            (BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
+             'A required arg arg1 on directive'
              ' NonNullDirectiveAdded was added'),
             (BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
              'QUERY was removed from DirectiveName')]
@@ -746,18 +752,22 @@ def describe_find_breaking_changes():
             (BreakingChangeType.DIRECTIVE_ARG_REMOVED,
              'arg1 was removed from DirectiveWithArg')]
 
-    def should_detect_if_a_non_nullable_directive_argument_was_added():
+    def should_detect_if_an_optional_directive_argument_was_added():
         old_schema = build_schema("""
             directive @DirectiveName on FIELD_DEFINITION
             """)
 
         new_schema = build_schema("""
-            directive @DirectiveName(arg1: Boolean!) on FIELD_DEFINITION
+            directive @DirectiveName(
+              newRequiredArg: String!
+              newOptionalArg1: Int
+              newOptionalArg2: Int! = 0
+            ) on FIELD_DEFINITION
             """)
 
         assert find_added_non_null_directive_args(old_schema, new_schema) == [
-            (BreakingChangeType.NON_NULL_DIRECTIVE_ARG_ADDED,
-             'A non-null arg arg1 on directive DirectiveName was added')]
+            (BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED, 'A required arg'
+             ' newRequiredArg on directive DirectiveName was added')]
 
     def should_detect_locations_removed_from_a_directive():
         d1 = GraphQLDirective('Directive Name', locations=[
@@ -904,7 +914,7 @@ def describe_find_dangerous_changes():
             (DangerousChangeType.TYPE_ADDED_TO_UNION,
              'Type2 was added to union type UnionType1.')]
 
-    def should_detect_if_a_nullable_field_was_added_to_an_input():
+    def should_detect_if_an_optional_field_was_added_to_an_input():
         old_schema = build_schema("""
             input InputType1 {
                 field1: String
@@ -927,8 +937,8 @@ def describe_find_dangerous_changes():
             """)
 
         expected_field_changes = [
-            (DangerousChangeType.NULLABLE_INPUT_FIELD_ADDED,
-             'A nullable field field2 on input type InputType1 was added.')]
+            (DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
+             'An optional field field2 on input type InputType1 was added.')]
 
         assert find_fields_that_changed_type_on_input_object_types(
             old_schema, new_schema).dangerous_changes == expected_field_changes
@@ -1007,7 +1017,7 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(
             old_schema, new_schema) == expected_dangerous_changes
 
-    def should_detect_if_a_nullable_field_argument_was_added():
+    def should_detect_if_an_optional_field_argument_was_added():
         old_schema = build_schema("""
             type Type1 {
               field1(arg1: String): String
@@ -1029,5 +1039,5 @@ def describe_find_dangerous_changes():
             """)
 
         assert find_arg_changes(old_schema, new_schema).dangerous_changes == [
-            (DangerousChangeType.NULLABLE_ARG_ADDED,
-             'A nullable arg arg2 on Type1.field1 was added')]
+            (DangerousChangeType.OPTIONAL_ARG_ADDED,
+             'An optional arg arg2 on Type1.field1 was added')]

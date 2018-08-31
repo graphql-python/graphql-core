@@ -8,8 +8,8 @@ from ..type import (
     GraphQLInterfaceType, GraphQLList, GraphQLNamedType, GraphQLNonNull,
     GraphQLObjectType, GraphQLSchema, GraphQLType, GraphQLUnionType,
     is_enum_type, is_input_object_type, is_interface_type, is_list_type,
-    is_named_type, is_non_null_type, is_object_type, is_scalar_type,
-    is_union_type)
+    is_named_type, is_required_argument, is_required_input_field,
+    is_non_null_type, is_object_type, is_scalar_type, is_union_type)
 
 __all__ = [
     'BreakingChange', 'BreakingChangeType',
@@ -36,13 +36,13 @@ class BreakingChangeType(Enum):
     VALUE_REMOVED_FROM_ENUM = 30
     ARG_REMOVED = 40
     ARG_CHANGED_KIND = 41
-    NON_NULL_ARG_ADDED = 50
-    NON_NULL_INPUT_FIELD_ADDED = 51
+    REQUIRED_ARG_ADDED = 50
+    REQUIRED_INPUT_FIELD_ADDED = 51
     INTERFACE_REMOVED_FROM_OBJECT = 60
     DIRECTIVE_REMOVED = 70
     DIRECTIVE_ARG_REMOVED = 71
     DIRECTIVE_LOCATION_REMOVED = 72
-    NON_NULL_DIRECTIVE_ARG_ADDED = 73
+    REQUIRED_DIRECTIVE_ARG_ADDED = 73
 
 
 class DangerousChangeType(Enum):
@@ -50,8 +50,8 @@ class DangerousChangeType(Enum):
     VALUE_ADDED_TO_ENUM = 31
     INTERFACE_ADDED_TO_OBJECT = 61
     TYPE_ADDED_TO_UNION = 23
-    NULLABLE_INPUT_FIELD_ADDED = 52
-    NULLABLE_ARG_ADDED = 53
+    OPTIONAL_INPUT_FIELD_ADDED = 52
+    OPTIONAL_ARG_ADDED = 53
 
 
 class BreakingChange(NamedTuple):
@@ -214,20 +214,20 @@ def find_arg_changes(
                         f'{old_type.name}.{field_name} arg'
                         f' {arg_name} has changed defaultValue'))
 
-            # Check if a non-null arg was added to the field
+            # Check if arg was added to the field
             for arg_name in new_args:
                 if arg_name not in old_args:
-                    new_arg = new_args[arg_name]
-                    if is_non_null_type(new_arg.type):
+                    new_arg_def = new_args[arg_name]
+                    if is_required_argument(new_arg_def):
                         breaking_changes.append(BreakingChange(
-                            BreakingChangeType.NON_NULL_ARG_ADDED,
-                            f'A non-null arg {arg_name} on'
-                            f' {new_type.name}.{field_name} was added'))
+                            BreakingChangeType.REQUIRED_ARG_ADDED,
+                            f'A required arg {arg_name} on'
+                            f' {type_name}.{field_name} was added'))
                     else:
                         dangerous_changes.append(DangerousChange(
-                            DangerousChangeType.NULLABLE_ARG_ADDED,
-                            f'A nullable arg {arg_name} on'
-                            f' {new_type.name}.{field_name} was added'))
+                            DangerousChangeType.OPTIONAL_ARG_ADDED,
+                            f'An optional arg {arg_name} on'
+                            f' {type_name}.{field_name} was added'))
 
     return BreakingAndDangerousChanges(breaking_changes, dangerous_changes)
 
@@ -343,16 +343,16 @@ def find_fields_that_changed_type_on_input_object_types(
         # Check if a field was added to the input object type
         for field_name in new_type_fields_def:
             if field_name not in old_type_fields_def:
-                if is_non_null_type(new_type_fields_def[field_name].type):
+                if is_required_input_field(new_type_fields_def[field_name]):
                     breaking_changes.append(BreakingChange(
-                        BreakingChangeType.NON_NULL_INPUT_FIELD_ADDED,
-                        f'A non-null field {field_name} on'
-                        f' input type {new_type.name} was added.'))
+                        BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
+                        f'A required field {field_name} on'
+                        f' input type {type_name} was added.'))
                 else:
                     dangerous_changes.append(DangerousChange(
-                        DangerousChangeType.NULLABLE_INPUT_FIELD_ADDED,
-                        f'A nullable field {field_name} on'
-                        f' input type {new_type.name} was added.'))
+                        DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
+                        f'An optional field {field_name} on'
+                        f' input type {type_name} was added.'))
 
     return BreakingAndDangerousChanges(breaking_changes, dangerous_changes)
 
@@ -651,13 +651,11 @@ def find_added_non_null_directive_args(
 
         for arg_name, arg in find_added_args_for_directive(
                 old_directive, new_directive).items():
-            if not is_non_null_type(arg.type):
-                continue
-
-            added_non_nullable_args.append(BreakingChange(
-                BreakingChangeType.NON_NULL_DIRECTIVE_ARG_ADDED,
-                f'A non-null arg {arg_name} on directive'
-                f' {new_directive.name} was added'))
+            if is_required_argument(arg):
+                added_non_nullable_args.append(BreakingChange(
+                    BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
+                    f'A required arg {arg_name} on directive'
+                    f' {new_directive.name} was added'))
 
     return added_non_nullable_args
 
