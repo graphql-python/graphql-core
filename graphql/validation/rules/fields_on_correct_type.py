@@ -65,8 +65,8 @@ def get_suggested_type_names(
 
     Go through all of the implementations of type, as well as the interfaces
     that they implement. If any of those types include the provided field,
-    suggest them, sorted by how often the type is referenced,  starting
-    with Interfaces.
+    suggest them, sorted by how often the type is referenced, starting with
+    Interfaces.
     """
     if is_abstract_type(type_):
         type_ = cast(GraphQLAbstractType, type_)
