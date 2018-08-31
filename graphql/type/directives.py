@@ -116,8 +116,9 @@ GraphQLDeprecatedDirective = GraphQLDirective(
       GraphQLString,
       description='Explains why this element was deprecated,'
                   ' usually also including a suggestion for how to access'
-                  ' supported similar data. Formatted in [Markdown]'
-                  '(https://daringfireball.net/projects/markdown/).',
+                  ' supported similar data.'
+                  ' Formatted using the Markdown syntax, as specified by'
+                  ' [CommonMark](https://commonmark.org/).',
       default_value=DEFAULT_DEPRECATION_REASON)},
   description='Marks an element of a GraphQL schema as no longer supported.')
 
