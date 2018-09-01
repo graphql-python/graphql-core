@@ -1,3 +1,4 @@
+from asyncio import Event, ensure_future, sleep
 import sys
 
 from pytest import mark, raises
@@ -247,3 +248,27 @@ def describe_map_async_iterator():
             # Throw error
             with raises(ValueError):
                 await doubles.athrow(ValueError, None, tb)
+
+    @mark.asyncio
+    async def stops_async_iteration_on_close():
+        async def source():
+            yield 1
+            await Event().wait()  # Block forever
+            yield 2
+            yield 3
+
+        doubles = MapAsyncIterator(source(), lambda x: x * 2)
+
+        result = await anext(doubles)
+        assert result == 2
+
+        # Block at event.wait()
+        fut = ensure_future(anext(doubles))
+        await sleep(.01)
+        assert not fut.done()
+
+        # Trigger cancellation and watch StopAsyncIteration propogate
+        await doubles.aclose()
+        await sleep(.01)
+        assert fut.done()
+        assert isinstance(fut.exception(), StopAsyncIteration)
