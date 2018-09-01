@@ -6,6 +6,7 @@ from typing import AsyncIterable, Callable
 __all__ = ['MapAsyncIterator']
 
 
+# noinspection PyAttributeOutsideInit
 class MapAsyncIterator:
     """Map an AsyncIterable over a callback function.
 
@@ -23,75 +24,72 @@ class MapAsyncIterator:
         self.reject_callback = reject_callback
         self._close_event = Event()
 
-    @property
-    def closed(self) -> bool:
-        return self._close_event.is_set()
-
-    @closed.setter
-    def closed(self, value: bool) -> None:
-        if value:
-            self._close_event.set()
-        else:
-            self._close_event.clear()
-
     def __aiter__(self):
         return self
 
     async def __anext__(self):
-        if self.closed:
+        if self.is_closed:
             if not isasyncgen(self.iterator):
                 raise StopAsyncIteration
-            result = await self.iterator.__anext__()
-            return self.callback(result)
+            value = await self.iterator.__anext__()
+            result = self.callback(value)
 
-        _close = ensure_future(self._close_event.wait())
-        _next = ensure_future(self.iterator.__anext__())
-        done, pending = await wait(
-            [_close, _next],
-            return_when=FIRST_COMPLETED,
-        )
+        else:
+            aclose = ensure_future(self._close_event.wait())
+            anext = ensure_future(self.iterator.__anext__())
 
-        for task in pending:
-            task.cancel()
+            done, pending = await wait(
+                [aclose, anext], return_when=FIRST_COMPLETED)
+            for task in pending:
+                task.cancel()
 
-        if _close.done():
-            raise StopAsyncIteration
+            if aclose.done():
+                raise StopAsyncIteration
 
-        if _next.done():
-            error = _next.exception()
+            error = anext.exception()
             if error:
                 if not self.reject_callback or isinstance(error, (
                         StopAsyncIteration, GeneratorExit)):
                     raise error
                 result = self.reject_callback(error)
             else:
-                result = self.callback(_next.result())
+                value = anext.result()
+                result = self.callback(value)
 
-        return (await result) if isawaitable(result) else result
+        return await result if isawaitable(result) else result
 
     async def athrow(self, type_, value=None, traceback=None):
-        if self.closed:
-            return
-        athrow = getattr(self.iterator, 'athrow', None)
-        if athrow:
-            await athrow(type_, value, traceback)
-        else:
-            self.closed = True
-            if value is None:
-                if traceback is None:
-                    raise type_
-                value = type_()
-            if traceback is not None:
-                value = value.with_traceback(traceback)
-            raise value
+        if not self.is_closed:
+            athrow = getattr(self.iterator, 'athrow', None)
+            if athrow:
+                await athrow(type_, value, traceback)
+            else:
+                self.is_closed = True
+                if value is None:
+                    if traceback is None:
+                        raise type_
+                    value = type_()
+                if traceback is not None:
+                    value = value.with_traceback(traceback)
+                raise value
 
     async def aclose(self):
-        if self.closed:
-            return
-        aclose = getattr(self.iterator, 'aclose', None)
-        if aclose:
-            try:
-                await aclose()
-            except RuntimeError:
-                pass
-        self.closed = True
+        if not self.is_closed:
+            aclose = getattr(self.iterator, 'aclose', None)
+            if aclose:
+                try:
+                    await aclose()
+                except RuntimeError:
+                    pass
+            self.is_closed = True
+
+    @property
+    def is_closed(self) -> bool:
+        return self._close_event.is_set()
+
+    @is_closed.setter
+    def is_closed(self, value: bool) -> None:
+        if value:
+            self._close_event.set()
+        else:
+            self._close_event.clear()

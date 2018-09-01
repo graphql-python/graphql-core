@@ -257,18 +257,22 @@ def describe_map_async_iterator():
             yield 2
             yield 3
 
-        doubles = MapAsyncIterator(source(), lambda x: x * 2)
+        singles = source()
+        doubles = MapAsyncIterator(singles, lambda x: x * 2)
 
         result = await anext(doubles)
         assert result == 2
 
-        # Block at event.wait()
-        fut = ensure_future(anext(doubles))
-        await sleep(.01)
-        assert not fut.done()
+        # Make sure it is blocked
+        doubles_future = ensure_future(anext(doubles))
+        await sleep(.05)
+        assert not doubles_future.done()
 
-        # Trigger cancellation and watch StopAsyncIteration propogate
+        # Unblock and watch StopAsyncIteration propagate
         await doubles.aclose()
-        await sleep(.01)
-        assert fut.done()
-        assert isinstance(fut.exception(), StopAsyncIteration)
+        await sleep(.05)
+        assert doubles_future.done()
+        assert isinstance(doubles_future.exception(), StopAsyncIteration)
+
+        with raises(StopAsyncIteration):
+            await anext(singles)
