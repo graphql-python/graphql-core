@@ -1,13 +1,14 @@
 include LICENSE
 include README.md
 include Makefile
+include MANIFEST.in
 include Pipfile
+include pytest.ini
 include tox.ini
 
-recursive-include graphql *
-recursive-include tests *
-recursive-exclude * __pycache__
-recursive-exclude * .mypy_cache
-recursive-exclude * *.py[co]
-
+graft graphql
+graft tests
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+prune docs/_build
+
+global-exclude *.py[co] __pycache__
