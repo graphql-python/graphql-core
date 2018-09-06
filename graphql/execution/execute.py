@@ -20,6 +20,8 @@ from ..type import (
     is_non_null_type, is_object_type)
 from .values import (
     get_argument_values, get_directive_values, get_variable_values)
+from .middleware import MiddlewareManager
+
 
 __all__ = [
     'add_path', 'assert_valid_execution_arguments', 'default_field_resolver',
@@ -64,7 +66,8 @@ def execute(
         schema: GraphQLSchema, document: DocumentNode,
         root_value: Any=None, context_value: Any=None,
         variable_values: Dict[str, Any]=None,
-        operation_name: str=None, field_resolver: GraphQLFieldResolver=None
+        operation_name: str=None, field_resolver: GraphQLFieldResolver=None,
+        middleware: Optional[Union[Iterable[Any], MiddlewareManager]]=None
         ) -> MaybeAwaitable[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -84,7 +87,7 @@ def execute(
     #  arguments, a "Response" with only errors is returned.
     exe_context = ExecutionContext.build(
         schema, document, root_value, context_value,
-        variable_values, operation_name, field_resolver)
+        variable_values, operation_name, field_resolver, middleware)
 
     # Return early errors if execution context failed.
     if isinstance(exe_context, list):
@@ -116,6 +119,7 @@ class ExecutionContext:
     operation: OperationDefinitionNode
     variable_values: Dict[str, Any]
     field_resolver: GraphQLFieldResolver
+    middleware_manager: Optional[MiddlewareManager]
     errors: List[GraphQLError]
 
     def __init__(
@@ -125,6 +129,7 @@ class ExecutionContext:
             operation: OperationDefinitionNode,
             variable_values: Dict[str, Any],
             field_resolver: GraphQLFieldResolver,
+            middleware_manager: Optional[MiddlewareManager],
             errors: List[GraphQLError]) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -133,6 +138,7 @@ class ExecutionContext:
         self.operation = operation
         self.variable_values = variable_values
         self.field_resolver = field_resolver  # type: ignore
+        self.middleware_manager = middleware_manager
         self.errors = errors
         self._subfields_cache: Dict[
             Tuple[GraphQLObjectType, Tuple[FieldNode, ...]],
@@ -144,7 +150,8 @@ class ExecutionContext:
             root_value: Any=None, context_value: Any=None,
             raw_variable_values: Dict[str, Any]=None,
             operation_name: str=None,
-            field_resolver: GraphQLFieldResolver=None
+            field_resolver: GraphQLFieldResolver=None,
+            middleware: Optional[Union[Iterable[Any], MiddlewareManager]]=None
             ) -> Union[List[GraphQLError], 'ExecutionContext']:
         """Build an execution context
 
@@ -157,6 +164,18 @@ class ExecutionContext:
         operation: Optional[OperationDefinitionNode] = None
         has_multiple_assumed_operations = False
         fragments: Dict[str, FragmentDefinitionNode] = {}
+        middleware_manager: Optional[MiddlewareManager] = None
+        if middleware:
+            if isinstance(middleware, Iterable):
+                middleware_manager = MiddlewareManager(*middleware)
+            elif isinstance(middleware, MiddlewareManager):
+                middleware_manager = middleware
+            else:
+                raise TypeError(
+                    f"middlewares have to be an instance"
+                    "of MiddlewareManager. Received \"{middleware}\""
+                )
+
         for definition in document.definitions:
             if isinstance(definition, OperationDefinitionNode):
                 if not operation_name and operation:
@@ -201,7 +220,8 @@ class ExecutionContext:
 
         return cls(
             schema, fragments, root_value, context_value, operation,
-            variable_values, field_resolver or default_field_resolver, errors)
+            variable_values, field_resolver or default_field_resolver,
+            middleware_manager, errors)
 
     def build_response(
         self, data: MaybeAwaitable[Optional[Dict[str, Any]]]
@@ -446,6 +466,9 @@ class ExecutionContext:
             return INVALID
 
         resolve_fn = field_def.resolve or self.field_resolver
+
+        if self.middleware_manager:
+            resolve_fn = self.middleware_manager.get_field_resolver(resolve_fn)
 
         info = self.build_resolve_info(
             field_def, field_nodes, parent_type, path)
