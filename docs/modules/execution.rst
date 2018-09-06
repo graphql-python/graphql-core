@@ -1,8 +1,6 @@
 Execution
 =========
 
-.. py:module:: graphql.execution
-
 .. automodule:: graphql.execution
 
 .. autofunction:: execute

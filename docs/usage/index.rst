@@ -11,6 +11,7 @@ and serving queries against that type schema.
    resolvers
    queries
    sdl
+   methods
    introspection
    parser
    extension

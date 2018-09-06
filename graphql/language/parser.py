@@ -46,14 +46,14 @@ def parse(source: SourceType, no_location=False,
     definition. They'll be represented in the `variable_definitions` field
     of the `FragmentDefinitionNode`.
 
-    The syntax is identical to normal, query-defined variables. For example:
+    The syntax is identical to normal, query-defined variables. For example::
 
         fragment A($var: Boolean = false) on T  {
           ...
         }
 
     If `experimental_variable_definition_directives` is set to True, the parser
-    understands directives on variable definitions:
+    understands directives on variable definitions::
 
         query Foo($var: String = "abc" @variable_definition_directive) {
           ...
