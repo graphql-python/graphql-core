@@ -1,7 +1,7 @@
 from inspect import isawaitable
 from typing import (
     Any, Awaitable, Dict, Iterable, List, NamedTuple, Optional, Set, Union,
-    Tuple, cast)
+    Tuple, Type, cast)
 
 from ..error import GraphQLError, INVALID, located_error
 from ..language import (
@@ -58,48 +58,6 @@ class ExecutionResult(NamedTuple):
 
 
 ExecutionResult.__new__.__defaults__ = (None, None)  # type: ignore
-
-
-def execute(
-        schema: GraphQLSchema, document: DocumentNode,
-        root_value: Any=None, context_value: Any=None,
-        variable_values: Dict[str, Any]=None,
-        operation_name: str=None, field_resolver: GraphQLFieldResolver=None
-        ) -> MaybeAwaitable[ExecutionResult]:
-    """Execute a GraphQL operation.
-
-    Implements the "Evaluating requests" section of the GraphQL specification.
-
-    Returns an ExecutionResult (if all encountered resolvers are synchronous),
-    or a coroutine object eventually yielding an ExecutionResult.
-
-    If the arguments to this function do not result in a legal execution
-    context, a GraphQLError will be thrown immediately explaining the invalid
-    input.
-    """
-    # If arguments are missing or incorrect, throw an error.
-    assert_valid_execution_arguments(schema, document, variable_values)
-
-    # If a valid execution context cannot be created due to incorrect
-    #  arguments, a "Response" with only errors is returned.
-    exe_context = ExecutionContext.build(
-        schema, document, root_value, context_value,
-        variable_values, operation_name, field_resolver)
-
-    # Return early errors if execution context failed.
-    if isinstance(exe_context, list):
-        return ExecutionResult(data=None, errors=exe_context)
-
-    # Return a possible coroutine object that will eventually yield the data
-    # described by the "Response" section of the GraphQL specification.
-    #
-    # If errors are encountered while executing a GraphQL field, only that
-    # field and its descendants will be omitted, and sibling fields will still
-    # be executed. An execution which encounters errors will still result in a
-    # coroutine object that can be executed without errors.
-
-    data = exe_context.execute_operation(exe_context.operation, root_value)
-    return exe_context.build_response(data)
 
 
 class ExecutionContext:
@@ -792,6 +750,49 @@ class ExecutionContext:
                         sub_field_nodes, visited_fragment_names)
             self._subfields_cache[cache_key] = sub_field_nodes
         return sub_field_nodes
+
+
+def execute(
+        schema: GraphQLSchema, document: DocumentNode,
+        root_value: Any=None, context_value: Any=None,
+        variable_values: Dict[str, Any]=None,
+        operation_name: str=None, field_resolver: GraphQLFieldResolver=None,
+        execution_context_class: Type[ExecutionContext]=ExecutionContext,
+        ) -> MaybeAwaitable[ExecutionResult]:
+    """Execute a GraphQL operation.
+
+    Implements the "Evaluating requests" section of the GraphQL specification.
+
+    Returns an ExecutionResult (if all encountered resolvers are synchronous),
+    or a coroutine object eventually yielding an ExecutionResult.
+
+    If the arguments to this function do not result in a legal execution
+    context, a GraphQLError will be thrown immediately explaining the invalid
+    input.
+    """
+    # If arguments are missing or incorrect, throw an error.
+    assert_valid_execution_arguments(schema, document, variable_values)
+
+    # If a valid execution context cannot be created due to incorrect
+    #  arguments, a "Response" with only errors is returned.
+    exe_context = execution_context_class.build(
+        schema, document, root_value, context_value,
+        variable_values, operation_name, field_resolver)
+
+    # Return early errors if execution context failed.
+    if isinstance(exe_context, list):
+        return ExecutionResult(data=None, errors=exe_context)
+
+    # Return a possible coroutine object that will eventually yield the data
+    # described by the "Response" section of the GraphQL specification.
+    #
+    # If errors are encountered while executing a GraphQL field, only that
+    # field and its descendants will be omitted, and sibling fields will still
+    # be executed. An execution which encounters errors will still result in a
+    # coroutine object that can be executed without errors.
+
+    data = exe_context.execute_operation(exe_context.operation, root_value)
+    return exe_context.build_response(data)
 
 
 def assert_valid_execution_arguments(
