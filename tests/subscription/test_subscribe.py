@@ -28,13 +28,9 @@ EmailEventType = GraphQLObjectType('EmailEvent', {
     'inbox': GraphQLField(InboxType)})
 
 
-try:
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    anext
-except NameError:  # anext does not yet exist in Python 3.6
-    async def anext(iterable):
-        """Return the next item from an async iterator."""
-        return await iterable.__anext__()
+async def anext(iterable):
+    """Return the next item from an async iterator."""
+    return await iterable.__anext__()
 
 
 def email_schema_with_resolvers(subscribe_fn=None, resolve_fn=None):

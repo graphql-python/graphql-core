@@ -1,6 +1,6 @@
 from typing import Callable, Dict, List
 
-from asyncio import Queue, ensure_future
+from asyncio import AbstractEventLoop, Queue, ensure_future
 from inspect import isawaitable
 
 from collections import defaultdict
@@ -11,7 +11,7 @@ __all__ = ['EventEmitter', 'EventEmitterAsyncIterator']
 class EventEmitter:
     """A very simple EventEmitter."""
 
-    def __init__(self, loop=None) -> None:
+    def __init__(self, loop: AbstractEventLoop=None) -> None:
         self.loop = loop
         self.listeners: Dict[str, List[Callable]] = defaultdict(list)
 
