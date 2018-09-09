@@ -5,6 +5,7 @@ from pytest import mark, raises
 
 from graphql.subscription.map_async_iterator import MapAsyncIterator
 
+
 async def anext(iterable):
     """Return the next item from an async iterator."""
     return await iterable.__anext__()
