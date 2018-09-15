@@ -238,6 +238,10 @@ def build_client_schema(
             raise TypeError(
                 'Introspection result missing directive args:'
                 f' {directive_introspection!r}')
+        if directive_introspection.get('locations') is None:
+            raise TypeError(
+                'Introspection result missing directive locations:'
+                f' {directive_introspection!r}')
         return GraphQLDirective(
             name=directive_introspection['name'],
             description=directive_introspection.get('description'),

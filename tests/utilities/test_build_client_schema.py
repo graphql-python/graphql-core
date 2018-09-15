@@ -388,6 +388,21 @@ def describe_throws_when_given_incomplete_introspection():
             " 'type': {'kind': 'SCALAR', 'name': 'String', 'ofType': None},"
             " 'isDeprecated': False}]}")
 
+    def throws_when_missing_directive_locations():
+        introspection = {
+            '__schema': {
+                'types': [],
+                'directives': [{'name': 'test', 'args': []}]
+            }
+        }
+
+        with raises(TypeError) as exc_info:
+            build_client_schema(introspection)
+
+        assert str(exc_info.value) == (
+            'Introspection result missing directive locations:'
+            " {'name': 'test', 'args': []}")
+
 
 def describe_very_deep_decorators_are_not_supported():
 
