@@ -4,7 +4,7 @@ __all__ = ['block_string_value']
 def block_string_value(raw_string: str) -> str:
     """Produce the value of a block string from its parsed raw value.
 
-    Similar to Coffeescript's block string, Python's docstring trim or
+    Similar to CoffeeScript's block string, Python's docstring trim or
     Ruby's strip_heredoc.
 
     This implements the GraphQL spec's BlockStringValue() static algorithm.

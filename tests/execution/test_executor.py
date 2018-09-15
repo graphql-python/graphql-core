@@ -589,7 +589,7 @@ def describe_execute_handles_basic_execution_tasks():
         assert query_result == ({'a': 'b'}, None)
 
     def does_not_include_illegal_fields_in_output():
-        doc = 'mutation M { thisIsIllegalDontIncludeMe }'
+        doc = 'mutation M { thisIsIllegalDoNotIncludeMe }'
         ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType('Q', {'a': GraphQLField(GraphQLString)}),
