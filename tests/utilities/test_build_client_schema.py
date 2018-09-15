@@ -448,3 +448,38 @@ def describe_very_deep_decorators_are_not_supported():
 
         introspection = introspection_from_schema(schema)
         build_client_schema(introspection)
+
+    def describe_prevents_infinite_recursion_on_invalid_introspection():
+
+        def recursive_interfaces():
+            introspection = {
+                '__schema': {
+                    'types': [{
+                        'name': 'Foo',
+                        'kind': 'OBJECT',
+                        'fields': [],
+                        'interfaces': [{'name': 'Foo'}],
+                    }],
+                },
+            }
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+            assert str(exc_info.value) == (
+                'Foo interfaces cannot be resolved: '
+                'Expected Foo to be a GraphQL Interface type.')
+
+        def recursive_union():
+            introspection = {
+                '__schema': {
+                    'types': [{
+                        'name': 'Foo',
+                        'kind': 'UNION',
+                        'possibleTypes': [{'name': 'Foo'}],
+                    }],
+                },
+            }
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+            assert str(exc_info.value) == (
+                'Foo types cannot be resolved: '
+                'Expected Foo to be a GraphQL Object type.')

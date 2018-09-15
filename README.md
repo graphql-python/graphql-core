@@ -13,7 +13,7 @@ a query language for APIs created by Facebook.
 
 The current version 1.0.0 of GraphQL-core-next is up-to-date with GraphQL.js
 version 14.0.1. All parts of the API are covered by an extensive test suite of
-currently 1604 unit tests.
+currently 1606 unit tests.
 
 
 ## Documentation
