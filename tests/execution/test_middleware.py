@@ -1,104 +1,91 @@
-from pytest import raises
 from graphql.execution import MiddlewareManager, execute
-from graphql.execution.middleware import get_middleware_resolvers, middleware_chain
 from graphql.language.parser import parse
-from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+from graphql.type import (
+    GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString)
 
 
-def test_middleware():
-    doc = """{
-        ok
-        not_ok
-    }"""
+def describe_middleware():
 
-    class Data(object):
-        def ok(self, info):
-            return "ok"
+    def with_function_as_middleware():
+        doc = parse("{ first second }")
 
-        def not_ok(self, info):
-            return "not_ok"
+        # noinspection PyMethodMayBeStatic
+        class Data:
+            def first(self, _info):
+                return 'one'
 
-    doc_ast = parse(doc)
+            def second(self, _info):
+                return 'two'
 
-    Type = GraphQLObjectType(
-        "Type",
-        {"ok": GraphQLField(GraphQLString), "not_ok": GraphQLField(GraphQLString)},
-    )
+        test_type = GraphQLObjectType('Type', {
+            'first': GraphQLField(GraphQLString),
+            'second': GraphQLField(GraphQLString)})
 
-    def reversed_middleware(next, *args, **kwargs):
-        p = next(*args, **kwargs)
-        return p[::-1]
+        def reverse_middleware(next_, *args, **kwargs):
+            return next_(*args, **kwargs)[::-1]
 
-    middlewares = MiddlewareManager(reversed_middleware)
-    result = execute(GraphQLSchema(Type), doc_ast, Data(), middleware=middlewares)
-    assert result.data == {"ok": "ko", "not_ok": "ko_ton"}
+        middlewares = MiddlewareManager(reverse_middleware)
+        result = execute(
+            GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+        assert result.data == {'first': 'eno', 'second': 'owt'}
 
+    def with_object_as_middleware():
+        doc = parse("{ first second }")
 
-def test_middleware_class():
-    doc = """{
-        ok
-        not_ok
-    }"""
+        # noinspection PyMethodMayBeStatic
+        class Data:
+            def first(self, _info):
+                return 'one'
 
-    class Data(object):
-        def ok(self, info):
-            return "ok"
+            def second(self, _info):
+                return 'two'
 
-        def not_ok(self, info):
-            return "not_ok"
+        test_type = GraphQLObjectType('Type', {
+            'first': GraphQLField(GraphQLString),
+            'second': GraphQLField(GraphQLString)})
 
-    doc_ast = parse(doc)
+        class ReverseMiddleware:
 
-    Type = GraphQLObjectType(
-        "Type",
-        {"ok": GraphQLField(GraphQLString), "not_ok": GraphQLField(GraphQLString)},
-    )
+            # noinspection PyMethodMayBeStatic
+            def resolve(self, next_, *args, **kwargs):
+                return next_(*args, **kwargs)[::-1]
 
-    class MyMiddleware(object):
-        def resolve(self, next, *args, **kwargs):
-            p = next(*args, **kwargs)
-            return p[::-1]
+        middlewares = MiddlewareManager(ReverseMiddleware())
+        result = execute(
+            GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+        assert result.data == {'first': 'eno', 'second': 'owt'}
 
-    middlewares = MiddlewareManager(MyMiddleware())
-    result = execute(GraphQLSchema(Type), doc_ast, Data(), middleware=middlewares)
-    assert result.data == {"ok": "ko", "not_ok": "ko_ton"}
+    def with_middleware_chain():
+        doc = parse("{ field }")
 
+        # noinspection PyMethodMayBeStatic
+        class Data:
+            def field(self, _info):
+                return 'resolved'
 
-def test_middleware_chain():
-    call_order = []
+        test_type = GraphQLObjectType('Type', {
+            'field': GraphQLField(GraphQLString)})
 
-    class CharPrintingMiddleware(object):
-        def __init__(self, char):
-            self.char = char
+        log = []
 
-        def resolve(self, next, *args, **kwargs):
-            call_order.append(f"resolve() called for middleware {self.char}")
-            value = next(*args, **kwargs)
-            call_order.append(f"then() for {self.char}")
-            return value
+        class LogMiddleware:
+            def __init__(self, name):
+                self.name = name
 
-    middlewares = [
-        CharPrintingMiddleware("a"),
-        CharPrintingMiddleware("b"),
-        CharPrintingMiddleware("c"),
-    ]
+            # noinspection PyMethodMayBeStatic
+            def resolve(self, next_, *args, **kwargs):
+                log.append(f'enter {self.name}')
+                value = next_(*args, **kwargs)
+                log.append(f'exit {self.name}')
+                return value
 
-    middlewares_resolvers = get_middleware_resolvers(middlewares)
+        middlewares = [
+            LogMiddleware('A'), LogMiddleware('B'), LogMiddleware('C')]
 
-    def func():
-        return
+        result = execute(
+            GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+        assert result.data == {'field': 'resolved'}
 
-    chain_iter = middleware_chain(func, middlewares_resolvers)
-
-    assert call_order == []
-
-    chain_iter()
-
-    assert call_order == [
-        "resolve() called for middleware c",
-        "resolve() called for middleware b",
-        "resolve() called for middleware a",
-        "then() for a",
-        "then() for b",
-        "then() for c",
-    ]
+        assert log == [
+            'enter C', 'enter B', 'enter A',
+            'exit A', 'exit B', 'exit C']

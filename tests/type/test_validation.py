@@ -322,8 +322,8 @@ def describe_type_system_objects_must_have_fields():
 
     def accepts_an_object_type_with_fields_object():
         schema = build_schema("""
-              type Query {
-            field: SomeObject
+            type Query {
+              field: SomeObject
             }
 
             type SomeObject {

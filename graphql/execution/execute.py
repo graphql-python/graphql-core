@@ -8,6 +8,7 @@ from ..language import (
     DocumentNode, FieldNode, FragmentDefinitionNode,
     FragmentSpreadNode, InlineFragmentNode, OperationDefinitionNode,
     OperationType, SelectionSetNode)
+from .middleware import MiddlewareManager
 from ..pyutils import is_invalid, is_nullish, MaybeAwaitable
 from ..utilities import get_operation_root_type, type_from_ast
 from ..type import (
@@ -20,13 +21,11 @@ from ..type import (
     is_non_null_type, is_object_type)
 from .values import (
     get_argument_values, get_directive_values, get_variable_values)
-from .middleware import MiddlewareManager
-
 
 __all__ = [
     'add_path', 'assert_valid_execution_arguments', 'default_field_resolver',
     'execute', 'get_field_def', 'response_path_as_list',
-    'ExecutionResult', 'ExecutionContext']
+    'ExecutionResult', 'ExecutionContext', 'Middleware']
 
 
 # Terminology
@@ -61,13 +60,16 @@ class ExecutionResult(NamedTuple):
 
 ExecutionResult.__new__.__defaults__ = (None, None)  # type: ignore
 
+Middleware = Optional[Union[Iterable[Any], MiddlewareManager]]
+
 
 def execute(
         schema: GraphQLSchema, document: DocumentNode,
         root_value: Any=None, context_value: Any=None,
         variable_values: Dict[str, Any]=None,
-        operation_name: str=None, field_resolver: GraphQLFieldResolver=None,
-        middleware: Optional[Union[Iterable[Any], MiddlewareManager]]=None
+        operation_name: str=None,
+        field_resolver: GraphQLFieldResolver=None,
+        middleware: Middleware=None
         ) -> MaybeAwaitable[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -151,7 +153,7 @@ class ExecutionContext:
             raw_variable_values: Dict[str, Any]=None,
             operation_name: str=None,
             field_resolver: GraphQLFieldResolver=None,
-            middleware: Optional[Union[Iterable[Any], MiddlewareManager]]=None
+            middleware: Middleware=None
             ) -> Union[List[GraphQLError], 'ExecutionContext']:
         """Build an execution context
 
@@ -165,16 +167,16 @@ class ExecutionContext:
         has_multiple_assumed_operations = False
         fragments: Dict[str, FragmentDefinitionNode] = {}
         middleware_manager: Optional[MiddlewareManager] = None
-        if middleware:
+        if middleware is not None:
             if isinstance(middleware, Iterable):
                 middleware_manager = MiddlewareManager(*middleware)
             elif isinstance(middleware, MiddlewareManager):
                 middleware_manager = middleware
             else:
                 raise TypeError(
-                    f"middlewares have to be an instance"
-                    "of MiddlewareManager. Received \"{middleware}\""
-                )
+                    "Middleware must be passed as a sequence of functions"
+                    " or objects, or as a single MiddlewareManager object."
+                    f" Got {middleware!r} instead.")
 
         for definition in document.definitions:
             if isinstance(definition, OperationDefinitionNode):
