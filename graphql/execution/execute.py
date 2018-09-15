@@ -60,7 +60,7 @@ class ExecutionResult(NamedTuple):
 
 ExecutionResult.__new__.__defaults__ = (None, None)  # type: ignore
 
-Middleware = Optional[Union[Iterable[Any], MiddlewareManager]]
+Middleware = Optional[Union[Tuple, List, MiddlewareManager]]
 
 
 def execute(
@@ -168,13 +168,13 @@ class ExecutionContext:
         fragments: Dict[str, FragmentDefinitionNode] = {}
         middleware_manager: Optional[MiddlewareManager] = None
         if middleware is not None:
-            if isinstance(middleware, Iterable):
+            if isinstance(middleware, (list, tuple)):
                 middleware_manager = MiddlewareManager(*middleware)
             elif isinstance(middleware, MiddlewareManager):
                 middleware_manager = middleware
             else:
                 raise TypeError(
-                    "Middleware must be passed as a sequence of functions"
+                    "Middleware must be passed as a list or tuple of functions"
                     " or objects, or as a single MiddlewareManager object."
                     f" Got {middleware!r} instead.")
 
