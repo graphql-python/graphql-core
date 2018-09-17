@@ -1,4 +1,4 @@
-from typing import cast, Callable, Dict, Sequence
+from typing import cast, Callable, Dict, List, Sequence
 
 from ..error import INVALID
 from ..language import DirectiveLocation, parse_value
@@ -126,8 +126,9 @@ def build_client_schema(
         return GraphQLObjectType(
             name=object_introspection['name'],
             description=object_introspection.get('description'),
-            interfaces=[
-                get_interface_type(interface) for interface in interfaces],
+            interfaces=lambda: [
+                get_interface_type(interface)
+                for interface in cast(List[Dict], interfaces)],
             fields=lambda: build_field_def_map(object_introspection))
 
     def build_interface_def(
@@ -146,7 +147,8 @@ def build_client_schema(
         return GraphQLUnionType(
             name=union_introspection['name'],
             description=union_introspection.get('description'),
-            types=[get_object_type(type_) for type_ in possible_types])
+            types=lambda: [get_object_type(type_)
+                           for type_ in cast(List[Dict], possible_types)])
 
     def build_enum_def(enum_introspection: Dict) -> GraphQLEnumType:
         if enum_introspection.get('enumValues') is None:
@@ -237,6 +239,10 @@ def build_client_schema(
         if directive_introspection.get('args') is None:
             raise TypeError(
                 'Introspection result missing directive args:'
+                f' {directive_introspection!r}')
+        if directive_introspection.get('locations') is None:
+            raise TypeError(
+                'Introspection result missing directive locations:'
                 f' {directive_introspection!r}')
         return GraphQLDirective(
             name=directive_introspection['name'],

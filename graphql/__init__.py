@@ -37,8 +37,8 @@ The sub-packages of GraphQL-core-next are:
   - `graphql/subscription`: Subscribe to data updates.
 """
 
-__version__ = '1.0.0'
-__version_js__ = '14.0.0'
+__version__ = '1.0.1'
+__version_js__ = '14.0.2'
 
 # The primary entry point into fulfilling a GraphQL request.
 
@@ -260,36 +260,37 @@ from .subscription import (
 
 # Validate GraphQL queries.
 from .validation import (
-  validate,
-  ValidationContext,
-  # All validation rules in the GraphQL Specification.
-  specified_rules,
-  # Individual validation rules.
-  FieldsOnCorrectTypeRule,
-  FragmentsOnCompositeTypesRule,
-  KnownArgumentNamesRule,
-  KnownDirectivesRule,
-  KnownFragmentNamesRule,
-  KnownTypeNamesRule,
-  LoneAnonymousOperationRule,
-  NoFragmentCyclesRule,
-  NoUndefinedVariablesRule,
-  NoUnusedFragmentsRule,
-  NoUnusedVariablesRule,
-  OverlappingFieldsCanBeMergedRule,
-  PossibleFragmentSpreadsRule,
-  ProvidedRequiredArgumentsRule,
-  ScalarLeafsRule,
-  SingleFieldSubscriptionsRule,
-  UniqueArgumentNamesRule,
-  UniqueDirectivesPerLocationRule,
-  UniqueFragmentNamesRule,
-  UniqueInputFieldNamesRule,
-  UniqueOperationNamesRule,
-  UniqueVariableNamesRule,
-  ValuesOfCorrectTypeRule,
-  VariablesAreInputTypesRule,
-  VariablesInAllowedPositionRule)
+    validate,
+    ValidationContext,
+    ValidationRule, ASTValidationRule, SDLValidationRule,
+    # All validation rules in the GraphQL Specification.
+    specified_rules,
+    # Individual validation rules.
+    FieldsOnCorrectTypeRule,
+    FragmentsOnCompositeTypesRule,
+    KnownArgumentNamesRule,
+    KnownDirectivesRule,
+    KnownFragmentNamesRule,
+    KnownTypeNamesRule,
+    LoneAnonymousOperationRule,
+    NoFragmentCyclesRule,
+    NoUndefinedVariablesRule,
+    NoUnusedFragmentsRule,
+    NoUnusedVariablesRule,
+    OverlappingFieldsCanBeMergedRule,
+    PossibleFragmentSpreadsRule,
+    ProvidedRequiredArgumentsRule,
+    ScalarLeafsRule,
+    SingleFieldSubscriptionsRule,
+    UniqueArgumentNamesRule,
+    UniqueDirectivesPerLocationRule,
+    UniqueFragmentNamesRule,
+    UniqueInputFieldNamesRule,
+    UniqueOperationNamesRule,
+    UniqueVariableNamesRule,
+    ValuesOfCorrectTypeRule,
+    VariablesAreInputTypesRule,
+    VariablesInAllowedPositionRule)
 
 # Create, format, and print GraphQL errors.
 from .error import (
@@ -430,6 +431,7 @@ __all__ = [
     'get_directive_values', 'ExecutionContext', 'ExecutionResult',
     'subscribe', 'create_source_event_stream',
     'validate', 'ValidationContext',
+    'ValidationRule', 'ASTValidationRule', 'SDLValidationRule',
     'specified_rules',
     'FieldsOnCorrectTypeRule', 'FragmentsOnCompositeTypesRule',
     'KnownArgumentNamesRule', 'KnownDirectivesRule', 'KnownFragmentNamesRule',

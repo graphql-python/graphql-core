@@ -5,13 +5,10 @@ from pytest import mark, raises
 
 from graphql.subscription.map_async_iterator import MapAsyncIterator
 
-try:
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    anext
-except NameError:  # anext does not yet exist in Python 3.6
-    async def anext(iterable):
-        """Return the next item from an async iterator."""
-        return await iterable.__anext__()
+
+async def anext(iterable):
+    """Return the next item from an async iterator."""
+    return await iterable.__anext__()
 
 
 def describe_map_async_iterator():

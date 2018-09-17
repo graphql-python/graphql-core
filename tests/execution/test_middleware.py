@@ -1,0 +1,189 @@
+from pytest import raises
+
+from graphql.execution import MiddlewareManager, execute
+from graphql.language.parser import parse
+from graphql.type import (
+    GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString)
+
+
+def describe_middleware():
+
+    def describe_with_manager():
+
+        def default():
+            doc = parse("{ field }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def field(self, _info):
+                    return 'resolved'
+
+            test_type = GraphQLObjectType('TestType', {
+                'field': GraphQLField(GraphQLString)})
+
+            middlewares = MiddlewareManager()
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+
+            assert result.data['field'] == 'resolved'
+
+        def single_function():
+            doc = parse("{ first second }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def first(self, _info):
+                    return 'one'
+
+                def second(self, _info):
+                    return 'two'
+
+            test_type = GraphQLObjectType('TestType', {
+                'first': GraphQLField(GraphQLString),
+                'second': GraphQLField(GraphQLString)})
+
+            def reverse_middleware(next_, *args, **kwargs):
+                return next_(*args, **kwargs)[::-1]
+
+            middlewares = MiddlewareManager(reverse_middleware)
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+
+            assert result.data == {'first': 'eno', 'second': 'owt'}
+
+        def single_object():
+            doc = parse("{ first second }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def first(self, _info):
+                    return 'one'
+
+                def second(self, _info):
+                    return 'two'
+
+            test_type = GraphQLObjectType('TestType', {
+                'first': GraphQLField(GraphQLString),
+                'second': GraphQLField(GraphQLString)})
+
+            class ReverseMiddleware:
+
+                # noinspection PyMethodMayBeStatic
+                def resolve(self, next_, *args, **kwargs):
+                    return next_(*args, **kwargs)[::-1]
+
+            middlewares = MiddlewareManager(ReverseMiddleware())
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+
+            assert result.data == {'first': 'eno', 'second': 'owt'}
+
+        def with_function_and_object():
+            doc = parse("{ field }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def field(self, _info):
+                    return 'resolved'
+
+            test_type = GraphQLObjectType('TestType', {
+                'field': GraphQLField(GraphQLString)})
+
+            def reverse_middleware(next_, *args, **kwargs):
+                return next_(*args, **kwargs)[::-1]
+
+            class CaptitalizeMiddleware:
+
+                # noinspection PyMethodMayBeStatic
+                def resolve(self, next_, *args, **kwargs):
+                    return next_(*args, **kwargs).capitalize()
+
+            middlewares = MiddlewareManager(
+                reverse_middleware, CaptitalizeMiddleware())
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+            assert result.data == {'field': 'Devloser'}
+
+    def describe_without_manager():
+
+        def no_middleware():
+            doc = parse("{ field }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def field(self, _info):
+                    return 'resolved'
+
+            test_type = GraphQLObjectType('TestType', {
+                'field': GraphQLField(GraphQLString)})
+
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=None)
+
+            assert result.data['field'] == 'resolved'
+
+        def empty_middleware_list():
+            doc = parse("{ field }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def field(self, _info):
+                    return 'resolved'
+
+            test_type = GraphQLObjectType('TestType', {
+                'field': GraphQLField(GraphQLString)})
+
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=[])
+
+            assert result.data['field'] == 'resolved'
+
+        def bad_middleware_object():
+            doc = parse("{ field }")
+
+            test_type = GraphQLObjectType('TestType', {
+                'field': GraphQLField(GraphQLString)})
+
+            with raises(TypeError) as exc_info:
+                execute(GraphQLSchema(test_type), doc, None,
+                        middleware={'bad': 'value'})
+
+            assert str(exc_info.value) == (
+                'Middleware must be passed as a list or tuple of functions'
+                ' or objects, or as a single MiddlewareManager object.'
+                " Got {'bad': 'value'} instead.")
+
+        def list_of_functions():
+            doc = parse("{ field }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                def field(self, _info):
+                    return 'resolved'
+
+            test_type = GraphQLObjectType('TestType', {
+                'field': GraphQLField(GraphQLString)})
+
+            log = []
+
+            class LogMiddleware:
+                def __init__(self, name):
+                    self.name = name
+
+                # noinspection PyMethodMayBeStatic
+                def resolve(self, next_, *args, **kwargs):
+                    log.append(f'enter {self.name}')
+                    value = next_(*args, **kwargs)
+                    log.append(f'exit {self.name}')
+                    return value
+
+            middlewares = [
+                LogMiddleware('A'), LogMiddleware('B'), LogMiddleware('C')]
+
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares)
+            assert result.data == {'field': 'resolved'}
+
+            assert log == [
+                'enter C', 'enter B', 'enter A',
+                'exit A', 'exit B', 'exit C']

@@ -88,7 +88,7 @@ def describe_validate_known_argument_names():
             }
             """)
 
-    def undirective_args_are_invalid():
+    def field_args_are_invalid():
         expect_fails_rule(KnownArgumentNamesRule, """
             {
               dog @skip(unless: true)

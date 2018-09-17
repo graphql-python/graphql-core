@@ -8,6 +8,8 @@ from .validate import validate
 
 from .validation_context import ValidationContext
 
+from .rules import ValidationRule, ASTValidationRule, SDLValidationRule
+
 from .specified_rules import specified_rules
 
 # Spec Section: "Executable Definitions"
@@ -91,7 +93,9 @@ from .rules.variables_are_input_types import VariablesAreInputTypesRule
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
 __all__ = [
-    'validate', 'ValidationContext', 'specified_rules',
+    'validate', 'ValidationContext',
+    'ValidationRule', 'ASTValidationRule', 'SDLValidationRule',
+    'specified_rules',
     'ExecutableDefinitionsRule', 'FieldsOnCorrectTypeRule',
     'FragmentsOnCompositeTypesRule', 'KnownArgumentNamesRule',
     'KnownDirectivesRule', 'KnownFragmentNamesRule', 'KnownTypeNamesRule',
