@@ -240,9 +240,9 @@ def describe_star_wars_introspection_tests():
                                 "args": [
                                     {
                                         "defaultValue": None,
-                                        "description": "If omitted, returns the hero of the whole"
-                                        " saga. If provided, returns the hero of"
-                                        " that particular episode.",
+                                        "description": "If omitted, returns the hero of"
+                                        " the whole saga. If provided, returns the hero"
+                                        " of that particular episode.",
                                         "name": "episode",
                                         "type": {
                                             "kind": "ENUM",

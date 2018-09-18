@@ -244,8 +244,8 @@ def describe_type_system_printer():
             type Query {
               singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
             }
-            """
-        )  # noqa
+            """  # noqa
+        )
 
     def prints_string_field_with_multiple_args_second_is_default():
         output = print_single_field_schema(
@@ -263,8 +263,8 @@ def describe_type_system_printer():
             type Query {
               singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
             }
-            """
-        )  # noqa
+            """  # noqa
+        )
 
     def prints_string_field_with_multiple_args_last_is_default():
         output = print_single_field_schema(
@@ -282,8 +282,8 @@ def describe_type_system_printer():
             type Query {
               singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
             }
-            """
-        )  # noqa
+            """  # noqa
+        )
 
     def prints_custom_query_root_type():
         CustomQueryType = GraphQLObjectType(
@@ -835,5 +835,5 @@ def describe_type_system_printer():
               """Indicates this type is a non-null. `ofType` is a valid field."""
               NON_NULL
             }
-            '''
-        )  # noqa
+            '''  # noqa
+        )

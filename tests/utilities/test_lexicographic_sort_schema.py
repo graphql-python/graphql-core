@@ -302,9 +302,9 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: String
             }
-            """
+            """  # noqa
             )
-        )  # noqa
+        )
 
         assert sorted_sdl == dedent(
             """
@@ -313,8 +313,8 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: String
             }
-            """
-        )  # noqa
+            """  # noqa
+        )
 
     def sort_directives():
         sorted_sdl = sort_sdl(

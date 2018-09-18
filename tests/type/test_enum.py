@@ -324,7 +324,7 @@ def describe_type_system_enum_values():
             {"first": "ONE", "second": "TWO", "good": "TWO", "bad": None},
             [
                 {
-                    "message": "Expected a value of type 'Complex' but received: Complex2",
+                    "message": "Expected a value of type 'Complex' but received: Complex2",  # noqa
                     "locations": [(6, 15)],
                     "path": ["bad"],
                 }

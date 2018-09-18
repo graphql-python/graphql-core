@@ -162,7 +162,7 @@ def describe_execute_handles_inputs():
 
                 assert result == (
                     {
-                        "fieldWithObjectInput": "{'a': None, 'b': None, 'c': 'C', 'd': None}"
+                        "fieldWithObjectInput": "{'a': None, 'b': None, 'c': 'C', 'd': None}"  # noqa
                     },
                     None,
                 )
@@ -411,8 +411,8 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value {'a': 'foo',"
-                            " 'b': 'bar', 'c': 'baz', 'extra': 'dog'}; Field"
+                            "message": "Variable '$input' got invalid value {'a':"
+                            " 'foo', 'b': 'bar', 'c': 'baz', 'extra': 'dog'}; Field"
                             " 'extra' is not defined by type TestInputObject.",
                             "locations": [(2, 24)],
                         }
@@ -909,12 +909,12 @@ def describe_execute_handles_inputs():
                 query optionalVariable($optional: String) {
                   fieldWithNonNullableStringInputAndDefaultArgumentValue(input: $optional)
                 }
-                """
-            )  # noqa
+                """  # noqa
+            )
 
             assert result == (
                 {
-                    "fieldWithNonNullableStringInputAndDefaultArgumentValue": "'Hello World'"
+                    "fieldWithNonNullableStringInputAndDefaultArgumentValue": "'Hello World'"  # noqa
                 },
                 None,
             )

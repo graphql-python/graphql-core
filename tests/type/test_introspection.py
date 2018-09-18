@@ -1214,25 +1214,25 @@ def describe_introspection():
                     "fields": [
                         {
                             "name": "types",
-                            "description": "A list of all types supported by this server.",
+                            "description": "A list of all types supported by this server.",  # noqa
                         },
                         {
                             "name": "queryType",
-                            "description": "The type that query operations will be rooted at.",
+                            "description": "The type that query operations will be rooted at.",  # noqa
                         },
                         {
                             "name": "mutationType",
-                            "description": "If this server supports mutation, the type that"
-                            " mutation operations will be rooted at.",
+                            "description": "If this server supports mutation, the type that"  # noqa
+                            " mutation operations will be rooted at.",  # noqa
                         },
                         {
                             "name": "subscriptionType",
-                            "description": "If this server support subscription, the type"
-                            " that subscription operations will be rooted at.",
+                            "description": "If this server support subscription, the type"  # noqa
+                            " that subscription operations will be rooted at.",  # noqa
                         },
                         {
                             "name": "directives",
-                            "description": "A list of all directives supported by this server.",
+                            "description": "A list of all directives supported by this server.",  # noqa
                         },
                     ],
                 }

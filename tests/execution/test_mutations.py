@@ -80,7 +80,7 @@ schema = GraphQLSchema(
             "promiseAndFailToChangeTheNumber": GraphQLField(
                 numberHolderType,
                 args={"newNumber": GraphQLArgument(GraphQLInt)},
-                resolve=lambda obj, _info, newNumber: obj.promise_and_fail_to_change_the_number(
+                resolve=lambda obj, _info, newNumber: obj.promise_and_fail_to_change_the_number(  # noqa
                     newNumber
                 ),
             ),

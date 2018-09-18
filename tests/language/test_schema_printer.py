@@ -156,5 +156,5 @@ def describe_printer_sdl_document():
             extend schema @onSchema {
               subscription: SubscriptionType
             }
-            '''
-        )  # noqa
+            '''  # noqa
+        )
