@@ -1,6 +1,6 @@
 from textwrap import dedent as _dedent
 
-__all__ = ['dedent']
+__all__ = ["dedent"]
 
 
 def dedent(text: str) -> str:
@@ -9,4 +9,4 @@ def dedent(text: str) -> str:
     Also removes leading newlines and trailing spaces and tabs,
     but keeps trailing newlines.
     """
-    return _dedent(text.lstrip('\n').rstrip(' \t'))
+    return _dedent(text.lstrip("\n").rstrip(" \t"))

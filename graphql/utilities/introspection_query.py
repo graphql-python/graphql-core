@@ -1,11 +1,12 @@
 from textwrap import dedent
 
-__all__ = ['get_introspection_query']
+__all__ = ["get_introspection_query"]
 
 
 def get_introspection_query(descriptions=True) -> str:
     """Get a query for introspection, optionally without descriptions."""
-    return dedent(f"""
+    return dedent(
+        f"""
         query IntrospectionQuery {{
           __schema {{
             queryType {{ name }}
@@ -97,4 +98,5 @@ def get_introspection_query(descriptions=True) -> str:
             }}
           }}
         }}
-        """)
+        """
+    )

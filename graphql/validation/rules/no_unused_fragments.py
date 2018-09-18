@@ -4,7 +4,7 @@ from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, OperationDefinitionNode
 from . import ValidationContext, ValidationRule
 
-__all__ = ['NoUnusedFragmentsRule', 'unused_fragment_message']
+__all__ = ["NoUnusedFragmentsRule", "unused_fragment_message"]
 
 
 def unused_fragment_message(frag_name: str) -> str:
@@ -24,8 +24,7 @@ class NoUnusedFragmentsRule(ValidationRule):
         self.operation_defs: List[OperationDefinitionNode] = []
         self.fragment_defs: List[FragmentDefinitionNode] = []
 
-    def enter_operation_definition(
-            self, node: OperationDefinitionNode, *_args):
+    def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
         self.operation_defs.append(node)
         return False
 
@@ -43,5 +42,6 @@ class NoUnusedFragmentsRule(ValidationRule):
         for fragment_def in self.fragment_defs:
             frag_name = fragment_def.name.value
             if frag_name not in fragment_names_used:
-                self.report_error(GraphQLError(
-                    unused_fragment_message(frag_name), [fragment_def]))
+                self.report_error(
+                    GraphQLError(unused_fragment_message(frag_name), [fragment_def])
+                )

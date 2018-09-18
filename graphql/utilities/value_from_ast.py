@@ -2,20 +2,36 @@ from typing import Any, Dict, List, Optional, cast
 
 from ..error import INVALID
 from ..language import (
-    EnumValueNode, ListValueNode, NullValueNode,
-    ObjectValueNode, ValueNode, VariableNode)
+    EnumValueNode,
+    ListValueNode,
+    NullValueNode,
+    ObjectValueNode,
+    ValueNode,
+    VariableNode,
+)
 from ..pyutils import is_invalid
 from ..type import (
-    GraphQLEnumType, GraphQLInputObjectType, GraphQLInputType, GraphQLList,
-    GraphQLNonNull, GraphQLScalarType, is_enum_type, is_input_object_type,
-    is_list_type, is_non_null_type, is_scalar_type)
+    GraphQLEnumType,
+    GraphQLInputObjectType,
+    GraphQLInputType,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLScalarType,
+    is_enum_type,
+    is_input_object_type,
+    is_list_type,
+    is_non_null_type,
+    is_scalar_type,
+)
 
-__all__ = ['value_from_ast']
+__all__ = ["value_from_ast"]
 
 
 def value_from_ast(
-        value_node: Optional[ValueNode], type_: GraphQLInputType,
-        variables: Dict[str, Any]=None) -> Any:
+    value_node: Optional[ValueNode],
+    type_: GraphQLInputType,
+    variables: Dict[str, Any] = None,
+) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 
     A GraphQL type must be provided, which will be used to interpret different
@@ -78,8 +94,7 @@ def value_from_ast(
                         return INVALID
                     append_value(None)
                 else:
-                    item_value = value_from_ast(
-                        item_node, item_type, variables)
+                    item_value = value_from_ast(item_node, item_type, variables)
                     if is_invalid(item_value):
                         return INVALID
                     append_value(item_value)
@@ -98,15 +113,13 @@ def value_from_ast(
         field_nodes = {field.name.value: field for field in value_node.fields}
         for field_name, field in fields.items():
             field_node = field_nodes.get(field_name)
-            if not field_node or is_missing_variable(
-                    field_node.value, variables):
+            if not field_node or is_missing_variable(field_node.value, variables):
                 if field.default_value is not INVALID:
                     coerced_obj[field_name] = field.default_value
                 elif is_non_null_type(field.type):
                     return INVALID
                 continue
-            field_value = value_from_ast(
-                field_node.value, field.type, variables)
+            field_value = value_from_ast(field_node.value, field.type, variables)
             if is_invalid(field_value):
                 return INVALID
             coerced_obj[field_name] = field_value
@@ -139,8 +152,9 @@ def value_from_ast(
 
 
 def is_missing_variable(
-        value_node: ValueNode, variables: Dict[str, Any]=None) -> bool:
+    value_node: ValueNode, variables: Dict[str, Any] = None
+) -> bool:
     """Check if value_node is a variable not defined in the variables dict."""
     return isinstance(value_node, VariableNode) and (
-        not variables or
-        is_invalid(variables.get(value_node.name.value, INVALID)))
+        not variables or is_invalid(variables.get(value_node.name.value, INVALID))
+    )

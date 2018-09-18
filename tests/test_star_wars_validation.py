@@ -6,15 +6,13 @@ from .star_wars_schema import star_wars_schema
 
 def validation_errors(query):
     """Helper function to test a query and the expected response."""
-    source = Source(query, 'StarWars.graphql')
+    source = Source(query, "StarWars.graphql")
     ast = parse(source)
     return validate(star_wars_schema, ast)
 
 
 def describe_star_wars_validation_tests():
-
     def describe_basic_queries():
-
         def validates_a_complex_but_valid_query():
             query = """
                 query NestedQueryWithFragment {

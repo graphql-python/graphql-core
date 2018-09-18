@@ -1,6 +1,6 @@
 # Code taken from https://github.com/bottlepy/bottle
 
-__all__ = ['cached_property']
+__all__ = ["cached_property"]
 
 
 class CachedProperty:
@@ -11,7 +11,7 @@ class CachedProperty:
     """
 
     def __init__(self, func):
-        self.__doc__ = getattr(func, '__doc__')
+        self.__doc__ = getattr(func, "__doc__")
         self.func = func
 
     def __get__(self, obj, cls):

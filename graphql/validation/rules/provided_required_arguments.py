@@ -2,28 +2,39 @@ from typing import cast, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import (
-    DirectiveDefinitionNode, DirectiveNode, FieldNode,
-    InputValueDefinitionNode, NonNullTypeNode, TypeNode, print_ast)
-from ...type import (
-    GraphQLArgument, is_required_argument, is_type, specified_directives)
+    DirectiveDefinitionNode,
+    DirectiveNode,
+    FieldNode,
+    InputValueDefinitionNode,
+    NonNullTypeNode,
+    TypeNode,
+    print_ast,
+)
+from ...type import GraphQLArgument, is_required_argument, is_type, specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
 __all__ = [
-    'ProvidedRequiredArgumentsRule',
-    'ProvidedRequiredArgumentsOnDirectivesRule',
-    'missing_field_arg_message', 'missing_directive_arg_message']
+    "ProvidedRequiredArgumentsRule",
+    "ProvidedRequiredArgumentsOnDirectivesRule",
+    "missing_field_arg_message",
+    "missing_directive_arg_message",
+]
 
 
-def missing_field_arg_message(
-        field_name: str, arg_name: str, type_: str) -> str:
-    return (f"Field '{field_name}' argument '{arg_name}'"
-            f" of type '{type_}' is required but not provided.")
+def missing_field_arg_message(field_name: str, arg_name: str, type_: str) -> str:
+    return (
+        f"Field '{field_name}' argument '{arg_name}'"
+        f" of type '{type_}' is required but not provided."
+    )
 
 
 def missing_directive_arg_message(
-        directive_name: str, arg_name: str, type_: str) -> str:
-    return (f"Directive '@{directive_name}' argument '{arg_name}'"
-            f" of type '{type_}' is required but not provided.")
+    directive_name: str, arg_name: str, type_: str
+) -> str:
+    return (
+        f"Directive '@{directive_name}' argument '{arg_name}'"
+        f" of type '{type_}' is required but not provided."
+    )
 
 
 class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
@@ -35,27 +46,32 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[
-            ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
-        required_args_map: Dict[str, Dict[str, Union[
-            GraphQLArgument, InputValueDefinitionNode]]] = {}
+        required_args_map: Dict[
+            str, Dict[str, Union[GraphQLArgument, InputValueDefinitionNode]]
+        ] = {}
 
         schema = context.schema
-        defined_directives = (
-            schema.directives if schema else specified_directives)
+        defined_directives = schema.directives if schema else specified_directives
         for directive in cast(List, defined_directives):
             required_args_map[directive.name] = {
-                name: arg for name, arg in directive.args.items()
-                if is_required_argument(arg)}
+                name: arg
+                for name, arg in directive.args.items()
+                if is_required_argument(arg)
+            }
 
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                required_args_map[def_.name.value] = {
-                    arg.name.value: arg for arg in filter(
-                        is_required_argument_node, def_.arguments)
-                    } if def_.arguments else {}
+                required_args_map[def_.name.value] = (
+                    {
+                        arg.name.value: arg
+                        for arg in filter(is_required_argument_node, def_.arguments)
+                    }
+                    if def_.arguments
+                    else {}
+                )
 
         self.required_args_map = required_args_map
 
@@ -70,12 +86,18 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
             for arg_name in required_args:
                 if arg_name not in arg_node_set:
                     arg_type = required_args[arg_name].type
-                    self.report_error(GraphQLError(
-                        missing_directive_arg_message(
-                            directive_name, arg_name, str(arg_type)
-                            if is_type(arg_type)
-                            else print_ast(cast(TypeNode, arg_type))),
-                        [directive_node]))
+                    self.report_error(
+                        GraphQLError(
+                            missing_directive_arg_message(
+                                directive_name,
+                                arg_name,
+                                str(arg_type)
+                                if is_type(arg_type)
+                                else print_ast(cast(TypeNode, arg_type)),
+                            ),
+                            [directive_node],
+                        )
+                    )
 
 
 class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
@@ -101,9 +123,14 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
         for arg_name, arg_def in field_def.args.items():
             arg_node = arg_node_map.get(arg_name)
             if not arg_node and is_required_argument(arg_def):
-                self.report_error(GraphQLError(missing_field_arg_message(
-                    field_node.name.value, arg_name, str(arg_def.type)),
-                    [field_node]))
+                self.report_error(
+                    GraphQLError(
+                        missing_field_arg_message(
+                            field_node.name.value, arg_name, str(arg_def.type)
+                        ),
+                        [field_node],
+                    )
+                )
 
 
 def is_required_argument_node(arg: InputValueDefinitionNode) -> bool:

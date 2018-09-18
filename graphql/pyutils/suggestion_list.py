@@ -1,6 +1,6 @@
 from typing import Collection
 
-__all__ = ['suggestion_list']
+__all__ = ["suggestion_list"]
 
 
 def suggestion_list(input_: str, options: Collection[str]):
@@ -49,14 +49,9 @@ def lexical_distance(a_str: str, b_str: str) -> int:
         for j in range(1, b_len + 1):
             cost = 0 if a[i - 1] == b[j - 1] else 1
 
-            d[i][j] = min(
-                d[i - 1][j] + 1,
-                d[i][j - 1] + 1,
-                d[i - 1][j - 1] + cost)
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
 
-            if (i > 1 and j > 1 and
-                    a[i - 1] == b[j - 2] and
-                    a[i - 2] == b[j - 1]):
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
                 d[i][j] = min(d[i][j], d[i - 2][j - 2] + cost)
 
     return d[a_len][b_len]

@@ -1,11 +1,19 @@
 from typing import cast
 
 from ..type import (
-    GraphQLAbstractType, GraphQLList, GraphQLNonNull, GraphQLObjectType,
-    GraphQLSchema, GraphQLType,
-    is_abstract_type, is_list_type, is_non_null_type, is_object_type)
+    GraphQLAbstractType,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLType,
+    is_abstract_type,
+    is_list_type,
+    is_non_null_type,
+    is_object_type,
+)
 
-__all__ = ['is_equal_type', 'is_type_sub_type_of', 'do_types_overlap']
+__all__ = ["is_equal_type", "is_type_sub_type_of", "do_types_overlap"]
 
 
 def is_equal_type(type_a: GraphQLType, type_b: GraphQLType):
@@ -32,8 +40,8 @@ def is_equal_type(type_a: GraphQLType, type_b: GraphQLType):
 
 # noinspection PyUnresolvedReferences
 def is_type_sub_type_of(
-        schema: GraphQLSchema,
-        maybe_subtype: GraphQLType, super_type: GraphQLType) -> bool:
+    schema: GraphQLSchema, maybe_subtype: GraphQLType, super_type: GraphQLType
+) -> bool:
     """Check whether a type is subtype of another type in a given schema.
 
     Provided a type and a super type, return true if the first type is either
@@ -47,20 +55,25 @@ def is_type_sub_type_of(
     if is_non_null_type(super_type):
         if is_non_null_type(maybe_subtype):
             return is_type_sub_type_of(
-                schema, cast(GraphQLNonNull, maybe_subtype).of_type,
-                cast(GraphQLNonNull, super_type).of_type)
+                schema,
+                cast(GraphQLNonNull, maybe_subtype).of_type,
+                cast(GraphQLNonNull, super_type).of_type,
+            )
         return False
     elif is_non_null_type(maybe_subtype):
         # If super_type is nullable, maybe_subtype may be non-null or nullable.
         return is_type_sub_type_of(
-            schema, cast(GraphQLNonNull, maybe_subtype).of_type, super_type)
+            schema, cast(GraphQLNonNull, maybe_subtype).of_type, super_type
+        )
 
     # If superType type is a list, maybeSubType type must also be a list.
     if is_list_type(super_type):
         if is_list_type(maybe_subtype):
             return is_type_sub_type_of(
-                schema, cast(GraphQLList, maybe_subtype).of_type,
-                cast(GraphQLList, super_type).of_type)
+                schema,
+                cast(GraphQLList, maybe_subtype).of_type,
+                cast(GraphQLList, super_type).of_type,
+            )
         return False
     elif is_list_type(maybe_subtype):
         # If super_type is not a list, maybe_subtype must also be not a list.
@@ -69,11 +82,14 @@ def is_type_sub_type_of(
     # If super_type type is an abstract type, maybe_subtype type may be a
     # currently possible object type.
     # noinspection PyTypeChecker
-    if (is_abstract_type(super_type) and
-            is_object_type(maybe_subtype) and
-            schema.is_possible_type(
-                cast(GraphQLAbstractType, super_type),
-                cast(GraphQLObjectType, maybe_subtype))):
+    if (
+        is_abstract_type(super_type)
+        and is_object_type(maybe_subtype)
+        and schema.is_possible_type(
+            cast(GraphQLAbstractType, super_type),
+            cast(GraphQLObjectType, maybe_subtype),
+        )
+    ):
         return True
 
     # Otherwise, the child type is not a valid subtype of the parent type.
@@ -99,8 +115,10 @@ def do_types_overlap(schema, type_a, type_b):
         if is_abstract_type(type_b):
             # If both types are abstract, then determine if there is any
             # intersection between possible concrete types of each.
-            return any(schema.is_possible_type(type_b, type_)
-                       for type_ in schema.get_possible_types(type_a))
+            return any(
+                schema.is_possible_type(type_b, type_)
+                for type_ in schema.get_possible_types(type_a)
+            )
         # Determine if latter type is a possible concrete type of the former.
         return schema.is_possible_type(type_a, type_b)
 

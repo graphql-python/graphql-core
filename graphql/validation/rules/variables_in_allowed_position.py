@@ -2,19 +2,23 @@ from typing import Any, Dict, Optional, cast
 
 from ...error import GraphQLError, INVALID
 from ...language import (
-    NullValueNode, OperationDefinitionNode, ValueNode, VariableDefinitionNode)
-from ...type import (
-    GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type)
+    NullValueNode,
+    OperationDefinitionNode,
+    ValueNode,
+    VariableDefinitionNode,
+)
+from ...type import GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type
 from ...utilities import type_from_ast, is_type_sub_type_of
 from . import ValidationContext, ValidationRule
 
-__all__ = ['VariablesInAllowedPositionRule', 'bad_var_pos_message']
+__all__ = ["VariablesInAllowedPositionRule", "bad_var_pos_message"]
 
 
-def bad_var_pos_message(
-        var_name: str, var_type: str, expected_type: str) -> str:
-    return (f"Variable '${var_name}' of type '{var_type}' used"
-            f" in position expecting type '{expected_type}'.")
+def bad_var_pos_message(var_name: str, var_type: str, expected_type: str) -> str:
+    return (
+        f"Variable '${var_name}' of type '{var_type}' used"
+        f" in position expecting type '{expected_type}'."
+    )
 
 
 class VariablesInAllowedPositionRule(ValidationRule):
@@ -27,8 +31,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
     def enter_operation_definition(self, *_args):
         self.var_def_map.clear()
 
-    def leave_operation_definition(
-            self, operation: OperationDefinitionNode, *_args):
+    def leave_operation_definition(self, operation: OperationDefinitionNode, *_args):
         var_def_map = self.var_def_map
         usages = self.context.get_recursive_variable_usages(operation)
 
@@ -47,21 +50,26 @@ class VariablesInAllowedPositionRule(ValidationRule):
                 schema = self.context.schema
                 var_type = type_from_ast(schema, var_def.type)
                 if var_type and not allowed_variable_usage(
-                        schema, var_type, var_def.default_value,
-                        type_, default_value):
-                    self.report_error(GraphQLError(
-                        bad_var_pos_message(
-                            var_name, str(var_type), str(type_)),
-                        [var_def, node]))
+                    schema, var_type, var_def.default_value, type_, default_value
+                ):
+                    self.report_error(
+                        GraphQLError(
+                            bad_var_pos_message(var_name, str(var_type), str(type_)),
+                            [var_def, node],
+                        )
+                    )
 
     def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
         self.var_def_map[node.variable.name.value] = node
 
 
 def allowed_variable_usage(
-        schema: GraphQLSchema, var_type: GraphQLType,
-        var_default_value: Optional[ValueNode],
-        location_type: GraphQLType, location_default_value: Any) -> bool:
+    schema: GraphQLSchema,
+    var_type: GraphQLType,
+    var_default_value: Optional[ValueNode],
+    location_type: GraphQLType,
+    location_default_value: Any,
+) -> bool:
     """Check for allowed variable usage.
 
     Returns True if the variable is allowed in the location it was found,
@@ -69,12 +77,11 @@ def allowed_variable_usage(
     or the location at which it is located.
     """
     if is_non_null_type(location_type) and not is_non_null_type(var_type):
-        has_non_null_variable_default_value = (
-            var_default_value and not isinstance(
-                var_default_value, NullValueNode))
+        has_non_null_variable_default_value = var_default_value and not isinstance(
+            var_default_value, NullValueNode
+        )
         has_location_default_value = location_default_value is not INVALID
-        if (not has_non_null_variable_default_value
-                and not has_location_default_value):
+        if not has_non_null_variable_default_value and not has_location_default_value:
             return False
         location_type = cast(GraphQLNonNull, location_type)
         nullable_location_type = location_type.of_type

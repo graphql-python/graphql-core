@@ -2,11 +2,8 @@ from graphql.pyutils import cached_property
 
 
 def describe_cached_property():
-
     def works_like_a_normal_property():
-
         class TestClass:
-
             @cached_property
             def value(self):
                 return 42
@@ -14,7 +11,6 @@ def describe_cached_property():
         assert TestClass().value == 42
 
     def caches_the_value():
-
         class TestClass:
             evaluations = 0
 

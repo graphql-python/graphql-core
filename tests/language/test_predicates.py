@@ -1,18 +1,38 @@
 from graphql.language import (
-    DefinitionNode, DocumentNode, ExecutableDefinitionNode,
-    FieldDefinitionNode, FieldNode, InlineFragmentNode, IntValueNode, Node,
-    NonNullTypeNode, ObjectValueNode, ScalarTypeDefinitionNode,
-    ScalarTypeExtensionNode, SchemaDefinitionNode, SchemaExtensionNode,
-    SelectionNode, SelectionSetNode, TypeDefinitionNode, TypeExtensionNode,
-    TypeNode, TypeSystemDefinitionNode, ValueNode,
-    is_definition_node, is_executable_definition_node,
-    is_selection_node, is_value_node, is_type_node,
-    is_type_system_definition_node, is_type_definition_node,
-    is_type_system_extension_node, is_type_extension_node)
+    DefinitionNode,
+    DocumentNode,
+    ExecutableDefinitionNode,
+    FieldDefinitionNode,
+    FieldNode,
+    InlineFragmentNode,
+    IntValueNode,
+    Node,
+    NonNullTypeNode,
+    ObjectValueNode,
+    ScalarTypeDefinitionNode,
+    ScalarTypeExtensionNode,
+    SchemaDefinitionNode,
+    SchemaExtensionNode,
+    SelectionNode,
+    SelectionSetNode,
+    TypeDefinitionNode,
+    TypeExtensionNode,
+    TypeNode,
+    TypeSystemDefinitionNode,
+    ValueNode,
+    is_definition_node,
+    is_executable_definition_node,
+    is_selection_node,
+    is_value_node,
+    is_type_node,
+    is_type_system_definition_node,
+    is_type_definition_node,
+    is_type_system_extension_node,
+    is_type_extension_node,
+)
 
 
 def describe_predicates():
-
     def check_definition_node():
         assert not is_definition_node(Node())
         assert not is_definition_node(DocumentNode())

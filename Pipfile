@@ -5,6 +5,7 @@ name = "pypi"
 
 [dev-packages]
 graphql-core-next = {path = ".", editable = true}
+black = "*"
 flake8 = "*"
 mypy = "*"
 pytest = "*"

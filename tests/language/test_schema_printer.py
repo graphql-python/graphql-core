@@ -2,8 +2,7 @@ from copy import deepcopy
 
 from pytest import raises
 
-from graphql.language import (
-    ScalarTypeDefinitionNode, NameNode, print_ast, parse)
+from graphql.language import ScalarTypeDefinitionNode, NameNode, print_ast, parse
 from graphql.pyutils import dedent
 
 # noinspection PyUnresolvedReferences
@@ -11,13 +10,12 @@ from . import schema_kitchen_sink as kitchen_sink  # noqa: F401
 
 
 def describe_printer_sdl_document():
-
     def prints_minimal_ast():
-        node = ScalarTypeDefinitionNode(name=NameNode(value='foo'))
-        assert print_ast(node) == 'scalar foo'
+        node = ScalarTypeDefinitionNode(name=NameNode(value="foo"))
+        assert print_ast(node) == "scalar foo"
 
     def produces_helpful_error_messages():
-        bad_ast1 = {'random': 'Data'}
+        bad_ast1 = {"random": "Data"}
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             print_ast(bad_ast1)
@@ -36,7 +34,8 @@ def describe_printer_sdl_document():
         ast = parse(kitchen_sink)
         printed = print_ast(ast)
 
-        assert printed == dedent('''
+        assert printed == dedent(
+            '''
             schema {
               query: QueryType
               mutation: MutationType
@@ -157,4 +156,5 @@ def describe_printer_sdl_document():
             extend schema @onSchema {
               subscription: SubscriptionType
             }
-            ''')  # noqa
+            '''
+        )  # noqa

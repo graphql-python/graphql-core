@@ -6,14 +6,16 @@ from .harness import expect_fails_rule, expect_passes_rule
 
 def unknown_type(type_name, suggested_types, line, column):
     return {
-        'message': unknown_type_message(type_name, suggested_types),
-        'locations': [(line, column)]}
+        "message": unknown_type_message(type_name, suggested_types),
+        "locations": [(line, column)],
+    }
 
 
 def describe_validate_known_type_names():
-
     def known_type_names_are_valid():
-        expect_passes_rule(KnownTypeNamesRule, """
+        expect_passes_rule(
+            KnownTypeNamesRule,
+            """
             query Foo($var: String, $required: [String!]!) {
               user(id: 4) {
                 pets { ... on Pet { name }, ...PetFields, ... { name } }
@@ -22,10 +24,13 @@ def describe_validate_known_type_names():
             fragment PetFields on Pet {
               name
             }
-            """)
+            """,
+        )
 
     def unknown_type_names_are_invalid():
-        expect_fails_rule(KnownTypeNamesRule, """
+        expect_fails_rule(
+            KnownTypeNamesRule,
+            """
             query Foo($var: JumbledUpLetters) {
               user(id: 4) {
                 name
@@ -35,14 +40,18 @@ def describe_validate_known_type_names():
             fragment PetFields on Peettt {
               name
             }
-            """, [
-            unknown_type('JumbledUpLetters', [], 2, 29),
-            unknown_type('Badger', [], 5, 31),
-            unknown_type('Peettt', ['Pet'], 8, 35),
-        ])
+            """,
+            [
+                unknown_type("JumbledUpLetters", [], 2, 29),
+                unknown_type("Badger", [], 5, 31),
+                unknown_type("Peettt", ["Pet"], 8, 35),
+            ],
+        )
 
     def ignores_type_definitions():
-        expect_fails_rule(KnownTypeNamesRule, """
+        expect_fails_rule(
+            KnownTypeNamesRule,
+            """
             type NotInTheSchema {
               field: FooBar
             }
@@ -58,6 +67,6 @@ def describe_validate_known_type_names():
                 id
               }
             }
-            """, [
-            unknown_type('NotInTheSchema', [], 12, 29),
-        ])
+            """,
+            [unknown_type("NotInTheSchema", [], 12, 29)],
+        )

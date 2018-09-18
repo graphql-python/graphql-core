@@ -4,13 +4,22 @@ from typing import Any
 from ..error import INVALID
 from ..pyutils import is_finite, is_integer
 from ..language.ast import (
-    BooleanValueNode, FloatValueNode, IntValueNode, StringValueNode)
+    BooleanValueNode,
+    FloatValueNode,
+    IntValueNode,
+    StringValueNode,
+)
 from .definition import GraphQLScalarType, is_named_type
 
 __all__ = [
-    'is_specified_scalar_type', 'specified_scalar_types',
-    'GraphQLInt', 'GraphQLFloat', 'GraphQLString',
-    'GraphQLBoolean', 'GraphQLID']
+    "is_specified_scalar_type",
+    "specified_scalar_types",
+    "GraphQLInt",
+    "GraphQLFloat",
+    "GraphQLString",
+    "GraphQLBoolean",
+    "GraphQLID",
+]
 
 
 # As per the GraphQL Spec, Integers are only treated as valid when a valid
@@ -34,7 +43,7 @@ def serialize_int(value: Any) -> int:
             if num != value:
                 raise ValueError
         elif not value and isinstance(value, str):
-            value = ''
+            value = ""
             raise ValueError
         else:
             num = int(value)
@@ -42,19 +51,21 @@ def serialize_int(value: Any) -> int:
             if num != float_value:
                 raise ValueError
     except (OverflowError, ValueError, TypeError):
-        raise TypeError(f'Int cannot represent non-integer value: {value!r}')
+        raise TypeError(f"Int cannot represent non-integer value: {value!r}")
     if not MIN_INT <= num <= MAX_INT:
         raise TypeError(
-            f'Int cannot represent non 32-bit signed integer value: {value!r}')
+            f"Int cannot represent non 32-bit signed integer value: {value!r}"
+        )
     return num
 
 
 def coerce_int(value: Any) -> int:
     if not is_integer(value):
-        raise TypeError(f'Int cannot represent non-integer value: {value!r}')
+        raise TypeError(f"Int cannot represent non-integer value: {value!r}")
     if not MIN_INT <= value <= MAX_INT:
         raise TypeError(
-            f'Int cannot represent non 32-bit signed integer value: {value!r}')
+            f"Int cannot represent non 32-bit signed integer value: {value!r}"
+        )
     return int(value)
 
 
@@ -68,13 +79,14 @@ def parse_int_literal(ast, _variables=None):
 
 
 GraphQLInt = GraphQLScalarType(
-    name='Int',
-    description='The `Int` scalar type represents'
-                ' non-fractional signed whole numeric values.'
-                ' Int can represent values between -(2^31) and 2^31 - 1. ',
+    name="Int",
+    description="The `Int` scalar type represents"
+    " non-fractional signed whole numeric values."
+    " Int can represent values between -(2^31) and 2^31 - 1. ",
     serialize=serialize_int,
     parse_value=coerce_int,
-    parse_literal=parse_int_literal)
+    parse_literal=parse_int_literal,
+)
 
 
 def serialize_float(value: Any) -> float:
@@ -82,19 +94,19 @@ def serialize_float(value: Any) -> float:
         return 1 if value else 0
     try:
         if not value and isinstance(value, str):
-            value = ''
+            value = ""
             raise ValueError
         num = value if isinstance(value, float) else float(value)
         if not isfinite(num):
             raise ValueError
     except (ValueError, TypeError):
-        raise TypeError(f'Float cannot represent non numeric value: {value!r}')
+        raise TypeError(f"Float cannot represent non numeric value: {value!r}")
     return num
 
 
 def coerce_float(value: Any) -> float:
     if not is_finite(value):
-        raise TypeError(f'Float cannot represent non numeric value: {value!r}')
+        raise TypeError(f"Float cannot represent non numeric value: {value!r}")
     return float(value)
 
 
@@ -106,34 +118,34 @@ def parse_float_literal(ast, _variables=None):
 
 
 GraphQLFloat = GraphQLScalarType(
-    name='Float',
-    description='The `Float` scalar type represents'
-                ' signed double-precision fractional values'
-                ' as specified by [IEEE 754]'
-                '(http://en.wikipedia.org/wiki/IEEE_floating_point).',
+    name="Float",
+    description="The `Float` scalar type represents"
+    " signed double-precision fractional values"
+    " as specified by [IEEE 754]"
+    "(http://en.wikipedia.org/wiki/IEEE_floating_point).",
     serialize=serialize_float,
     parse_value=coerce_float,
-    parse_literal=parse_float_literal)
+    parse_literal=parse_float_literal,
+)
 
 
 def serialize_string(value: Any) -> str:
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
-        return 'true' if value else 'false'
+        return "true" if value else "false"
     if is_finite(value):
         return str(value)
     # do not serialize builtin types as strings,
     # but allow serialization of custom types via their __str__ method
-    if type(value).__module__ == 'builtins':
-        raise TypeError(f'String cannot represent value: {value!r}')
+    if type(value).__module__ == "builtins":
+        raise TypeError(f"String cannot represent value: {value!r}")
     return str(value)
 
 
 def coerce_string(value: Any) -> str:
     if not isinstance(value, str):
-        raise TypeError(
-            f'String cannot represent a non string value: {value!r}')
+        raise TypeError(f"String cannot represent a non string value: {value!r}")
     return value
 
 
@@ -145,14 +157,15 @@ def parse_string_literal(ast, _variables=None):
 
 
 GraphQLString = GraphQLScalarType(
-    name='String',
-    description='The `String` scalar type represents textual data,'
-                ' represented as UTF-8 character sequences.'
-                ' The String type is most often used by GraphQL'
-                ' to represent free-form human-readable text.',
+    name="String",
+    description="The `String` scalar type represents textual data,"
+    " represented as UTF-8 character sequences."
+    " The String type is most often used by GraphQL"
+    " to represent free-form human-readable text.",
     serialize=serialize_string,
     parse_value=coerce_string,
-    parse_literal=parse_string_literal)
+    parse_literal=parse_string_literal,
+)
 
 
 def serialize_boolean(value: Any) -> bool:
@@ -160,13 +173,12 @@ def serialize_boolean(value: Any) -> bool:
         return value
     if is_finite(value):
         return bool(value)
-    raise TypeError(f'Boolean cannot represent a non boolean value: {value!r}')
+    raise TypeError(f"Boolean cannot represent a non boolean value: {value!r}")
 
 
 def coerce_boolean(value: Any) -> bool:
     if not isinstance(value, bool):
-        raise TypeError(
-            f'Boolean cannot represent a non boolean value: {value!r}')
+        raise TypeError(f"Boolean cannot represent a non boolean value: {value!r}")
     return value
 
 
@@ -178,11 +190,12 @@ def parse_boolean_literal(ast, _variables=None):
 
 
 GraphQLBoolean = GraphQLScalarType(
-    name='Boolean',
-    description='The `Boolean` scalar type represents `true` or `false`.',
+    name="Boolean",
+    description="The `Boolean` scalar type represents `true` or `false`.",
     serialize=serialize_boolean,
     parse_value=coerce_boolean,
-    parse_literal=parse_boolean_literal)
+    parse_literal=parse_boolean_literal,
+)
 
 
 def serialize_id(value: Any) -> str:
@@ -192,14 +205,14 @@ def serialize_id(value: Any) -> str:
         return str(int(value))
     # do not serialize builtin types as IDs,
     # but allow serialization of custom types via their __str__ method
-    if type(value).__module__ == 'builtins':
-        raise TypeError(f'ID cannot represent value: {value!r}')
+    if type(value).__module__ == "builtins":
+        raise TypeError(f"ID cannot represent value: {value!r}")
     return str(value)
 
 
 def coerce_id(value: Any) -> str:
     if not isinstance(value, str) and not is_integer(value):
-        raise TypeError(f'ID cannot represent value: {value!r}')
+        raise TypeError(f"ID cannot represent value: {value!r}")
     if isinstance(value, float):
         value = int(value)
     return str(value)
@@ -213,20 +226,23 @@ def parse_id_literal(ast, _variables=None):
 
 
 GraphQLID = GraphQLScalarType(
-    name='ID',
-    description='The `ID` scalar type represents a unique identifier,'
-                ' often used to refetch an object or as key for a cache.'
-                ' The ID type appears in a JSON response as a String; however,'
-                ' it is not intended to be human-readable. When expected as an'
-                ' input type, any string (such as `"4"`) or integer (such as'
-                ' `4`) input value will be accepted as an ID.',
+    name="ID",
+    description="The `ID` scalar type represents a unique identifier,"
+    " often used to refetch an object or as key for a cache."
+    " The ID type appears in a JSON response as a String; however,"
+    " it is not intended to be human-readable. When expected as an"
+    ' input type, any string (such as `"4"`) or integer (such as'
+    " `4`) input value will be accepted as an ID.",
     serialize=serialize_id,
     parse_value=coerce_id,
-    parse_literal=parse_id_literal)
+    parse_literal=parse_id_literal,
+)
 
 
-specified_scalar_types = {type_.name: type_ for type_ in (
-  GraphQLString, GraphQLInt, GraphQLFloat, GraphQLBoolean, GraphQLID)}
+specified_scalar_types = {
+    type_.name: type_
+    for type_ in (GraphQLString, GraphQLInt, GraphQLFloat, GraphQLBoolean, GraphQLID)
+}
 
 
 def is_specified_scalar_type(type_: Any) -> bool:

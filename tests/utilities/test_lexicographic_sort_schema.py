@@ -1,6 +1,5 @@
 from graphql.pyutils import dedent
-from graphql.utilities import (
-    build_schema, print_schema, lexicographic_sort_schema)
+from graphql.utilities import build_schema, print_schema, lexicographic_sort_schema
 
 
 def sort_sdl(sdl):
@@ -9,9 +8,10 @@ def sort_sdl(sdl):
 
 
 def describe_lexicographic_sort_schema():
-
     def sort_fields():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             input Bar {
               barB: String
               barA: String
@@ -33,9 +33,12 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy(arg: Bar): FooType
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             input Bar {
               barA: String
               barB: String
@@ -57,10 +60,13 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy(arg: Bar): FooType
             }
-            """)
+            """
+        )
 
     def sort_implemented_interfaces():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             interface FooA {
               dummy: String
             }
@@ -76,9 +82,12 @@ def describe_lexicographic_sort_schema():
             type Query implements FooB & FooA & FooC {
               dummy: String
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             interface FooA {
               dummy: String
             }
@@ -94,10 +103,13 @@ def describe_lexicographic_sort_schema():
             type Query implements FooA & FooB & FooC {
               dummy: String
             }
-            """)
+            """
+        )
 
     def sort_types_in_union():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             type FooA {
               dummy: String
             }
@@ -115,9 +127,12 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: FooUnion
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             type FooA {
               dummy: String
             }
@@ -135,10 +150,13 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: FooUnion
             }
-            """)
+            """
+        )
 
     def sort_enum_types():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             enum Foo {
               B
               C
@@ -148,9 +166,12 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: Foo
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             enum Foo {
               A
               B
@@ -160,23 +181,32 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: Foo
             }
-            """)
+            """
+        )
 
     def sort_field_arguments():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             type Query {
               dummy(argB: Int, argA: String, argC: Float): ID
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             type Query {
               dummy(argA: String, argB: Int, argC: Float): ID
             }
-            """)
+            """
+        )
 
     def sort_types():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             type Query {
               dummy(arg1: FooF, arg2: FooA, arg3: FooG): FooD
             }
@@ -204,9 +234,12 @@ def describe_lexicographic_sort_schema():
             type FooB {
               dummy: String
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             scalar FooA
 
             type FooB {
@@ -234,44 +267,59 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy(arg1: FooF, arg2: FooA, arg3: FooG): FooD
             }
-            """)
+            """
+        )
 
     def sort_directive_arguments():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             directive @test(argC: Float, argA: String, argB: Int) on FIELD
 
             type Query {
               dummy: String
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             directive @test(argA: String, argB: Int, argC: Float) on FIELD
 
             type Query {
               dummy: String
             }
-            """)
+            """
+        )
 
     def sort_directive_locations():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             directive @test(argC: Float, argA: String, argB: Int) on UNION | FIELD | ENUM
 
             type Query {
               dummy: String
             }
-            """))  # noqa
+            """
+            )
+        )  # noqa
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             directive @test(argA: String, argB: Int, argC: Float) on ENUM | FIELD | UNION
 
             type Query {
               dummy: String
             }
-            """)  # noqa
+            """
+        )  # noqa
 
     def sort_directives():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             directive @fooC on FIELD
 
             directive @fooB on UNION
@@ -281,9 +329,12 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: String
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             directive @fooA on ENUM
 
             directive @fooB on UNION
@@ -293,10 +344,13 @@ def describe_lexicographic_sort_schema():
             type Query {
               dummy: String
             }
-            """)
+            """
+        )
 
     def sort_recursive_types():
-        sorted_sdl = sort_sdl(dedent("""
+        sorted_sdl = sort_sdl(
+            dedent(
+                """
             interface FooC {
               fooB: FooB
               fooA: FooA
@@ -318,9 +372,12 @@ def describe_lexicographic_sort_schema():
               fooB: FooB
               fooA: FooA
             }
-            """))
+            """
+            )
+        )
 
-        assert sorted_sdl == dedent("""
+        assert sorted_sdl == dedent(
+            """
             type FooA implements FooC {
               fooA: FooA
               fooB: FooB
@@ -342,4 +399,5 @@ def describe_lexicographic_sort_schema():
               fooB: FooB
               fooC: FooC
             }
-            """)
+            """
+        )

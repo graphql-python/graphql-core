@@ -4,9 +4,7 @@ from .star_wars_schema import star_wars_schema
 
 
 def describe_star_wars_introspection_tests():
-
     def describe_basic_introspection():
-
         def allows_querying_the_schema_for_types():
             query = """
                 query IntrospectionTypeQuery {
@@ -18,38 +16,24 @@ def describe_star_wars_introspection_tests():
                 }
                 """
             expected = {
-                '__schema': {
-                    'types': [{
-                        'name': 'Query'
-                    }, {
-                        'name': 'Episode'
-                    }, {
-                        'name': 'Character'
-                    }, {
-                        'name': 'String'
-                    }, {
-                        'name': 'Human'
-                    }, {
-                        'name': 'Droid'
-                    }, {
-                        'name': '__Schema'
-                    }, {
-                        'name': '__Type'
-                    }, {
-                        'name': '__TypeKind'
-                    }, {
-                        'name': 'Boolean'
-                    }, {
-                        'name': '__Field'
-                    }, {
-                        'name': '__InputValue'
-                    }, {
-                        'name': '__EnumValue'
-                    }, {
-                        'name': '__Directive'
-                    }, {
-                        'name': '__DirectiveLocation'
-                    }]
+                "__schema": {
+                    "types": [
+                        {"name": "Query"},
+                        {"name": "Episode"},
+                        {"name": "Character"},
+                        {"name": "String"},
+                        {"name": "Human"},
+                        {"name": "Droid"},
+                        {"name": "__Schema"},
+                        {"name": "__Type"},
+                        {"name": "__TypeKind"},
+                        {"name": "Boolean"},
+                        {"name": "__Field"},
+                        {"name": "__InputValue"},
+                        {"name": "__EnumValue"},
+                        {"name": "__Directive"},
+                        {"name": "__DirectiveLocation"},
+                    ]
                 }
             }
 
@@ -66,13 +50,7 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
-                '__schema': {
-                    'queryType': {
-                        'name': 'Query'
-                    }
-                }
-            }
+            expected = {"__schema": {"queryType": {"name": "Query"}}}
             result = graphql_sync(star_wars_schema, query)
             assert result == (expected, None)
 
@@ -84,11 +62,7 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
-                '__type': {
-                    'name': 'Droid'
-                }
-            }
+            expected = {"__type": {"name": "Droid"}}
             result = graphql_sync(star_wars_schema, query)
             assert result == (expected, None)
 
@@ -101,12 +75,7 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
-                '__type': {
-                    'name': 'Droid',
-                    'kind': 'OBJECT'
-                }
-            }
+            expected = {"__type": {"name": "Droid", "kind": "OBJECT"}}
             result = graphql_sync(star_wars_schema, query)
             assert result == (expected, None)
 
@@ -119,12 +88,7 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
-                '__type': {
-                    'name': 'Character',
-                    'kind': 'INTERFACE'
-                }
-            }
+            expected = {"__type": {"name": "Character", "kind": "INTERFACE"}}
             result = graphql_sync(star_wars_schema, query)
             assert result == (expected, None)
 
@@ -144,45 +108,22 @@ def describe_star_wars_introspection_tests():
                 }
                 """
             expected = {
-                '__type': {
-                    'name': 'Droid',
-                    'fields': [{
-                        'name': 'id',
-                        'type': {
-                            'name': None,
-                            'kind': 'NON_NULL'
-                        }
-                    }, {
-                        'name': 'name',
-                        'type': {
-                            'name': 'String',
-                            'kind': 'SCALAR'
-                        }
-                    }, {
-                        'name': 'friends',
-                        'type': {
-                            'name': None,
-                            'kind': 'LIST'
-                        }
-                    }, {
-                        'name': 'appearsIn',
-                        'type': {
-                            'name': None,
-                            'kind': 'LIST'
-                        }
-                    }, {
-                        'name': 'secretBackstory',
-                        'type': {
-                            'name': 'String',
-                            'kind': 'SCALAR'
-                        }
-                    }, {
-                        'name': 'primaryFunction',
-                        'type': {
-                            'name': 'String',
-                            'kind': 'SCALAR'
-                        }
-                    }]
+                "__type": {
+                    "name": "Droid",
+                    "fields": [
+                        {"name": "id", "type": {"name": None, "kind": "NON_NULL"}},
+                        {"name": "name", "type": {"name": "String", "kind": "SCALAR"}},
+                        {"name": "friends", "type": {"name": None, "kind": "LIST"}},
+                        {"name": "appearsIn", "type": {"name": None, "kind": "LIST"}},
+                        {
+                            "name": "secretBackstory",
+                            "type": {"name": "String", "kind": "SCALAR"},
+                        },
+                        {
+                            "name": "primaryFunction",
+                            "type": {"name": "String", "kind": "SCALAR"},
+                        },
+                    ],
                 }
             }
             result = graphql_sync(star_wars_schema, query)
@@ -208,60 +149,58 @@ def describe_star_wars_introspection_tests():
                 }
                 """
             expected = {
-                '__type': {
-                    'name': 'Droid',
-                    'fields': [{
-                        'name': 'id',
-                        'type': {
-                            'name': None,
-                            'kind': 'NON_NULL',
-                            'ofType': {
-                                'name': 'String',
-                                'kind': 'SCALAR'
-                            }
-                        }
-                    }, {
-                        'name': 'name',
-                        'type': {
-                            'name': 'String',
-                            'kind': 'SCALAR',
-                            'ofType': None
-                        }
-                    }, {
-                        'name': 'friends',
-                        'type': {
-                            'name': None,
-                            'kind': 'LIST',
-                            'ofType': {
-                                'name': 'Character',
-                                'kind': 'INTERFACE'
-                            }
-                        }
-                    }, {
-                        'name': 'appearsIn',
-                        'type': {
-                            'name': None,
-                            'kind': 'LIST',
-                            'ofType': {
-                                'name': 'Episode',
-                                'kind': 'ENUM'
-                            }
-                        }
-                    }, {
-                        'name': 'secretBackstory',
-                        'type': {
-                            'name': 'String',
-                            'kind': 'SCALAR',
-                            'ofType': None
-                        }
-                    }, {
-                        'name': 'primaryFunction',
-                        'type': {
-                            'name': 'String',
-                            'kind': 'SCALAR',
-                            'ofType': None
-                        }
-                    }]
+                "__type": {
+                    "name": "Droid",
+                    "fields": [
+                        {
+                            "name": "id",
+                            "type": {
+                                "name": None,
+                                "kind": "NON_NULL",
+                                "ofType": {"name": "String", "kind": "SCALAR"},
+                            },
+                        },
+                        {
+                            "name": "name",
+                            "type": {
+                                "name": "String",
+                                "kind": "SCALAR",
+                                "ofType": None,
+                            },
+                        },
+                        {
+                            "name": "friends",
+                            "type": {
+                                "name": None,
+                                "kind": "LIST",
+                                "ofType": {"name": "Character", "kind": "INTERFACE"},
+                            },
+                        },
+                        {
+                            "name": "appearsIn",
+                            "type": {
+                                "name": None,
+                                "kind": "LIST",
+                                "ofType": {"name": "Episode", "kind": "ENUM"},
+                            },
+                        },
+                        {
+                            "name": "secretBackstory",
+                            "type": {
+                                "name": "String",
+                                "kind": "SCALAR",
+                                "ofType": None,
+                            },
+                        },
+                        {
+                            "name": "primaryFunction",
+                            "type": {
+                                "name": "String",
+                                "kind": "SCALAR",
+                                "ofType": None,
+                            },
+                        },
+                    ],
                 }
             }
             result = graphql_sync(star_wars_schema, query)
@@ -293,54 +232,63 @@ def describe_star_wars_introspection_tests():
                 }
                 """
             expected = {
-                '__schema': {
-                    'queryType': {
-                        'fields': [{
-                            'name': 'hero',
-                            'args': [{
-                                'defaultValue': None,
-                                'description':
-                                    'If omitted, returns the hero of the whole'
-                                    ' saga. If provided, returns the hero of'
-                                    ' that particular episode.',
-                                'name': 'episode',
-                                'type': {
-                                    'kind': 'ENUM',
-                                    'name': 'Episode',
-                                    'ofType': None
-                                }
-                            }]
-                        }, {
-                            'name': 'human',
-                            'args': [{
-                                'name': 'id',
-                                'description': 'id of the human',
-                                'type': {
-                                    'kind': 'NON_NULL',
-                                    'name': None,
-                                    'ofType': {
-                                        'kind': 'SCALAR',
-                                        'name': 'String'
+                "__schema": {
+                    "queryType": {
+                        "fields": [
+                            {
+                                "name": "hero",
+                                "args": [
+                                    {
+                                        "defaultValue": None,
+                                        "description": "If omitted, returns the hero of the whole"
+                                        " saga. If provided, returns the hero of"
+                                        " that particular episode.",
+                                        "name": "episode",
+                                        "type": {
+                                            "kind": "ENUM",
+                                            "name": "Episode",
+                                            "ofType": None,
+                                        },
                                     }
-                                },
-                                'defaultValue': None
-                            }]
-                        }, {
-                            'name': 'droid',
-                            'args': [{
-                                'name': 'id',
-                                'description': 'id of the droid',
-                                'type': {
-                                    'kind': 'NON_NULL',
-                                    'name': None,
-                                    'ofType': {
-                                        'kind': 'SCALAR',
-                                        'name': 'String'
+                                ],
+                            },
+                            {
+                                "name": "human",
+                                "args": [
+                                    {
+                                        "name": "id",
+                                        "description": "id of the human",
+                                        "type": {
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "String",
+                                            },
+                                        },
+                                        "defaultValue": None,
                                     }
-                                },
-                                'defaultValue': None
-                            }]
-                        }]
+                                ],
+                            },
+                            {
+                                "name": "droid",
+                                "args": [
+                                    {
+                                        "name": "id",
+                                        "description": "id of the droid",
+                                        "type": {
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "String",
+                                            },
+                                        },
+                                        "defaultValue": None,
+                                    }
+                                ],
+                            },
+                        ]
                     }
                 }
             }
@@ -357,10 +305,9 @@ def describe_star_wars_introspection_tests():
                 }
                 """
             expected = {
-                '__type': {
-                    'name': 'Droid',
-                    'description':
-                        'A mechanical creature in the Star Wars universe.'
+                "__type": {
+                    "name": "Droid",
+                    "description": "A mechanical creature in the Star Wars universe.",
                 }
             }
             result = graphql_sync(star_wars_schema, query)

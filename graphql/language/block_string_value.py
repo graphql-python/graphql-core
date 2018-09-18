@@ -1,4 +1,4 @@
-__all__ = ['block_string_value']
+__all__ = ["block_string_value"]
 
 
 def block_string_value(raw_string: str) -> str:
@@ -15,8 +15,7 @@ def block_string_value(raw_string: str) -> str:
     common_indent = None
     for line in lines[1:]:
         indent = leading_whitespace(line)
-        if indent < len(line) and (
-                common_indent is None or indent < common_indent):
+        if indent < len(line) and (common_indent is None or indent < common_indent):
             common_indent = indent
         if common_indent == 0:
             break
@@ -30,12 +29,12 @@ def block_string_value(raw_string: str) -> str:
     while lines and not lines[-1].strip():
         lines = lines[:-1]
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def leading_whitespace(s):
     i = 0
     n = len(s)
-    while i < n and s[i] in ' \t':
+    while i < n and s[i] in " \t":
         i += 1
     return i

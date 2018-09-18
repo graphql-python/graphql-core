@@ -57,8 +57,7 @@ from .rules.no_unused_variables import NoUnusedVariablesRule
 from .rules.known_directives import KnownDirectivesRule
 
 # Spec Section: "Directives Are Unique Per Location"
-from .rules.unique_directives_per_location import (
-    UniqueDirectivesPerLocationRule)
+from .rules.unique_directives_per_location import UniqueDirectivesPerLocationRule
 
 # Spec Section: "Argument Names"
 from .rules.known_argument_names import KnownArgumentNamesRule
@@ -76,8 +75,7 @@ from .rules.provided_required_arguments import ProvidedRequiredArgumentsRule
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
 # Spec Section: "Field Selection Merging"
-from .rules.overlapping_fields_can_be_merged import (
-    OverlappingFieldsCanBeMergedRule)
+from .rules.overlapping_fields_can_be_merged import OverlappingFieldsCanBeMergedRule
 
 # Spec Section: "Input Object Field Uniqueness"
 from .rules.unique_input_field_names import UniqueInputFieldNamesRule
@@ -85,10 +83,9 @@ from .rules.unique_input_field_names import UniqueInputFieldNamesRule
 # Schema definition language:
 from .rules.lone_schema_definition import LoneSchemaDefinitionRule
 from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
-from .rules.provided_required_arguments import (
-    ProvidedRequiredArgumentsOnDirectivesRule)
+from .rules.provided_required_arguments import ProvidedRequiredArgumentsOnDirectivesRule
 
-__all__ = ['specified_rules', 'specified_sdl_rules']
+__all__ = ["specified_rules", "specified_sdl_rules"]
 
 
 # This list includes all validation rules defined by the GraphQL spec.
@@ -122,7 +119,8 @@ specified_rules: List[RuleType] = [
     ProvidedRequiredArgumentsRule,
     VariablesInAllowedPositionRule,
     OverlappingFieldsCanBeMergedRule,
-    UniqueInputFieldNamesRule]
+    UniqueInputFieldNamesRule,
+]
 
 specified_sdl_rules: List[RuleType] = [
     LoneSchemaDefinitionRule,
@@ -131,4 +129,5 @@ specified_sdl_rules: List[RuleType] = [
     KnownArgumentNamesOnDirectivesRule,
     UniqueArgumentNamesRule,
     UniqueInputFieldNamesRule,
-    ProvidedRequiredArgumentsOnDirectivesRule]
+    ProvidedRequiredArgumentsOnDirectivesRule,
+]

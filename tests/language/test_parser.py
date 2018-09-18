@@ -5,11 +5,28 @@ from pytest import raises
 from graphql.pyutils import dedent
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
-    ArgumentNode, DefinitionNode, DocumentNode,
-    FieldNode, IntValueNode, ListTypeNode, ListValueNode, NameNode,
-    NamedTypeNode, NonNullTypeNode, NullValueNode, OperationDefinitionNode,
-    OperationType, SelectionSetNode, StringValueNode, ValueNode,
-    Token, parse, parse_type, parse_value, Source)
+    ArgumentNode,
+    DefinitionNode,
+    DocumentNode,
+    FieldNode,
+    IntValueNode,
+    ListTypeNode,
+    ListValueNode,
+    NameNode,
+    NamedTypeNode,
+    NonNullTypeNode,
+    NullValueNode,
+    OperationDefinitionNode,
+    OperationType,
+    SelectionSetNode,
+    StringValueNode,
+    ValueNode,
+    Token,
+    parse,
+    parse_type,
+    parse_value,
+    Source,
+)
 
 # noinspection PyUnresolvedReferences
 from . import kitchen_sink  # noqa: F401
@@ -24,86 +41,94 @@ def assert_syntax_error(text, message, location):
 
 
 def describe_parser():
-
     def asserts_that_a_source_to_parse_was_provided():
         with raises(TypeError) as exc_info:
             # noinspection PyArgumentList
             assert parse()
         msg = str(exc_info.value)
-        assert 'missing' in msg
-        assert 'source' in msg
+        assert "missing" in msg
+        assert "source" in msg
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             assert parse(None)
         msg = str(exc_info.value)
-        assert 'Must provide Source. Received: None' in msg
+        assert "Must provide Source. Received: None" in msg
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             assert parse({})
         msg = str(exc_info.value)
-        assert 'Must provide Source. Received: {}' in msg
+        assert "Must provide Source. Received: {}" in msg
 
     def parse_provides_useful_errors():
         with raises(GraphQLSyntaxError) as exc_info:
-            parse('{')
+            parse("{")
         error = exc_info.value
-        assert error.message == 'Syntax Error: Expected Name, found <EOF>'
+        assert error.message == "Syntax Error: Expected Name, found <EOF>"
         assert error.positions == [1]
         assert error.locations == [(1, 2)]
-        assert str(error) == dedent("""
+        assert str(error) == dedent(
+            """
             Syntax Error: Expected Name, found <EOF>
 
             GraphQL request (1:2)
             1: {
                 ^
-            """)
+            """
+        )
         assert_syntax_error(
-            '\n      { ...MissingOn }\n      fragment MissingOn Type',
-            "Expected 'on', found Name 'Type'", (3, 26))
-        assert_syntax_error('{ field: {} }', 'Expected Name, found {', (1, 10))
+            "\n      { ...MissingOn }\n      fragment MissingOn Type",
+            "Expected 'on', found Name 'Type'",
+            (3, 26),
+        )
+        assert_syntax_error("{ field: {} }", "Expected Name, found {", (1, 10))
         assert_syntax_error(
-            'notanoperation Foo { field }',
-            "Unexpected Name 'notanoperation'", (1, 1))
-        assert_syntax_error('...', 'Unexpected ...', (1, 1))
+            "notanoperation Foo { field }", "Unexpected Name 'notanoperation'", (1, 1)
+        )
+        assert_syntax_error("...", "Unexpected ...", (1, 1))
 
     def parse_provides_useful_error_when_using_source():
         with raises(GraphQLSyntaxError) as exc_info:
-            parse(Source('query', 'MyQuery.graphql'))
+            parse(Source("query", "MyQuery.graphql"))
         error = exc_info.value
         assert str(error) == (
-            'Syntax Error: Expected {, found <EOF>\n\n'
-            'MyQuery.graphql (1:6)\n1: query\n        ^\n')
+            "Syntax Error: Expected {, found <EOF>\n\n"
+            "MyQuery.graphql (1:6)\n1: query\n        ^\n"
+        )
 
     def parses_variable_inline_values():
-        parse('{ field(complex: { a: { b: [ $var ] } }) }')
+        parse("{ field(complex: { a: { b: [ $var ] } }) }")
 
     def parses_constant_default_values():
         assert_syntax_error(
-          'query Foo($x: Complex = { a: { b: [ $var ] } }) { field }',
-          'Unexpected $', (1, 37))
+            "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }",
+            "Unexpected $",
+            (1, 37),
+        )
 
     def experimental_parses_variable_definition_directives():
-        parse('query Foo($x: Boolean = false @bar) { field }',
-              experimental_variable_definition_directives=True)
+        parse(
+            "query Foo($x: Boolean = false @bar) { field }",
+            experimental_variable_definition_directives=True,
+        )
 
     def does_not_accept_fragments_named_on():
-        assert_syntax_error(
-            'fragment on on on { on }', "Unexpected Name 'on'", (1, 10))
+        assert_syntax_error("fragment on on on { on }", "Unexpected Name 'on'", (1, 10))
 
     def does_not_accept_fragments_spread_of_on():
-        assert_syntax_error('{ ...on }', 'Expected Name, found }', (1, 9))
+        assert_syntax_error("{ ...on }", "Expected Name, found }", (1, 9))
 
     def parses_multi_byte_characters():
         # Note: \u0A0A could be naively interpreted as two line-feed chars.
-        doc = parse("""
+        doc = parse(
+            """
             # This comment has a \u0A0A multi-byte character.
             { field(arg: "Has a \u0A0A multi-byte character.") }
-            """)
+            """
+        )
         definitions = doc.definitions
         assert isinstance(definitions, list)
         assert len(definitions) == 1
-        selection_set = cast(
-            OperationDefinitionNode, definitions[0]).selection_set
+        selection_set = cast(OperationDefinitionNode, definitions[0]).selection_set
         selections = selection_set.selections
         assert isinstance(selections, list)
         assert len(selections) == 1
@@ -112,18 +137,25 @@ def describe_parser():
         assert len(arguments) == 1
         value = arguments[0].value
         assert isinstance(value, StringValueNode)
-        assert value.value == 'Has a \u0A0A multi-byte character.'
+        assert value.value == "Has a \u0A0A multi-byte character."
 
     # noinspection PyShadowingNames
     def parses_kitchen_sink(kitchen_sink):  # noqa: F811
         parse(kitchen_sink)
 
     def allows_non_keywords_anywhere_a_name_is_allowed():
-        non_keywords = ('on', 'fragment', 'query', 'mutation', 'subscription',
-                        'true', 'false')
+        non_keywords = (
+            "on",
+            "fragment",
+            "query",
+            "mutation",
+            "subscription",
+            "true",
+            "false",
+        )
         for keyword in non_keywords:
             # You can't define or reference a fragment named `on`.
-            fragment_name = 'a' if keyword == 'on' else keyword
+            fragment_name = "a" if keyword == "on" else keyword
             document = f"""
                 query {keyword} {{
                   ... {fragment_name}
@@ -137,42 +169,54 @@ def describe_parser():
             parse(document)
 
     def parses_anonymous_mutation_operations():
-        parse("""
+        parse(
+            """
             mutation {
               mutationField
             }
-            """)
+            """
+        )
 
     def parses_anonymous_subscription_operations():
-        parse("""
+        parse(
+            """
             subscription {
               subscriptionField
             }
-            """)
+            """
+        )
 
     def parses_named_mutation_operations():
-        parse("""
+        parse(
+            """
             mutation Foo {
               mutationField
             }
-            """)
+            """
+        )
 
     def parses_named_subscription_operations():
-        parse("""
+        parse(
+            """
             subscription Foo {
               subscriptionField
             }
-            """)
+            """
+        )
 
     def creates_ast():
-        doc = parse(dedent("""
+        doc = parse(
+            dedent(
+                """
             {
               node(id: 4) {
                 id,
                 name
               }
             }
-            """))
+            """
+            )
+        )
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 41)
         definitions = doc.definitions
@@ -198,7 +242,7 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (4, 8)
-        assert name.value == 'node'
+        assert name.value == "node"
         arguments = field.arguments
         assert isinstance(arguments, list)
         assert len(arguments) == 1
@@ -207,12 +251,12 @@ def describe_parser():
         name = argument.name
         assert isinstance(name, NameNode)
         assert name.loc == (9, 11)
-        assert name.value == 'id'
+        assert name.value == "id"
         value = argument.value
         assert isinstance(value, ValueNode)
         assert isinstance(value, IntValueNode)
         assert value.loc == (13, 14)
-        assert value.value == '4'
+        assert value.value == "4"
         assert argument.loc == (9, 14)
         assert field.directives == []
         selection_set = field.selection_set
@@ -227,7 +271,7 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (22, 24)
-        assert name.value == 'id'
+        assert name.value == "id"
         assert field.arguments == []
         assert field.directives == []
         assert field.selection_set is None
@@ -238,7 +282,7 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (22, 24)
-        assert name.value == 'id'
+        assert name.value == "id"
         assert field.arguments == []
         assert field.directives == []
         assert field.selection_set is None
@@ -249,19 +293,23 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (30, 34)
-        assert name.value == 'name'
+        assert name.value == "name"
         assert field.arguments == []
         assert field.directives == []
         assert field.selection_set is None
 
     def creates_ast_from_nameless_query_without_variables():
-        doc = parse(dedent("""
+        doc = parse(
+            dedent(
+                """
             query {
               node {
                 id
               }
             }
-            """))
+            """
+            )
+        )
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 30)
         definitions = doc.definitions
@@ -287,7 +335,7 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (10, 14)
-        assert name.value == 'node'
+        assert name.value == "node"
         assert field.arguments == []
         assert field.directives == []
         selection_set = field.selection_set
@@ -303,44 +351,43 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (21, 23)
-        assert name.value == 'id'
+        assert name.value == "id"
         assert field.arguments == []
         assert field.directives == []
         assert field.selection_set is None
 
     def allows_parsing_without_source_location_information():
-        result = parse('{ id }', no_location=True)
+        result = parse("{ id }", no_location=True)
         assert result.loc is None
 
     def experimental_allows_parsing_fragment_defined_variables():
-        document = 'fragment a($v: Boolean = false) on t { f(v: $v) }'
+        document = "fragment a($v: Boolean = false) on t { f(v: $v) }"
         parse(document, experimental_fragment_variables=True)
         with raises(GraphQLSyntaxError):
             parse(document)
 
     def contains_location_information_that_only_stringifies_start_end():
-        result = parse('{ id }')
-        assert str(result.loc) == '0:6'
+        result = parse("{ id }")
+        assert str(result.loc) == "0:6"
 
     def contains_references_to_source():
-        source = Source('{ id }')
+        source = Source("{ id }")
         result = parse(source)
         assert result.loc.source is source
 
     def contains_references_to_start_and_end_tokens():
-        result = parse('{ id }')
+        result = parse("{ id }")
         start_token = result.loc.start_token
         assert isinstance(start_token, Token)
-        assert start_token.desc == '<SOF>'
+        assert start_token.desc == "<SOF>"
         end_token = result.loc.end_token
         assert isinstance(end_token, Token)
-        assert end_token.desc == '<EOF>'
+        assert end_token.desc == "<EOF>"
 
 
 def describe_parse_value():
-
     def parses_null_value():
-        result = parse_value('null')
+        result = parse_value("null")
         assert isinstance(result, NullValueNode)
         assert result.loc == (0, 4)
 
@@ -354,11 +401,11 @@ def describe_parse_value():
         value = values[0]
         assert isinstance(value, IntValueNode)
         assert value.loc == (1, 4)
-        assert value.value == '123'
+        assert value.value == "123"
         value = values[1]
         assert isinstance(value, StringValueNode)
         assert value.loc == (5, 10)
-        assert value.value == 'abc'
+        assert value.value == "abc"
 
     def parses_block_strings():
         result = parse_value('["""long""" "short"]')
@@ -370,37 +417,36 @@ def describe_parse_value():
         value = values[0]
         assert isinstance(value, StringValueNode)
         assert value.loc == (1, 11)
-        assert value.value == 'long'
+        assert value.value == "long"
         assert value.block is True
         value = values[1]
         assert isinstance(value, StringValueNode)
         assert value.loc == (12, 19)
-        assert value.value == 'short'
+        assert value.value == "short"
         assert value.block is False
 
 
 def describe_parse_type():
-
     def parses_well_known_types():
-        result = parse_type('String')
+        result = parse_type("String")
         assert isinstance(result, NamedTypeNode)
         assert result.loc == (0, 6)
         name = result.name
         assert isinstance(name, NameNode)
         assert name.loc == (0, 6)
-        assert name.value == 'String'
+        assert name.value == "String"
 
     def parses_custom_types():
-        result = parse_type('MyType')
+        result = parse_type("MyType")
         assert isinstance(result, NamedTypeNode)
         assert result.loc == (0, 6)
         name = result.name
         assert isinstance(name, NameNode)
         assert name.loc == (0, 6)
-        assert name.value == 'MyType'
+        assert name.value == "MyType"
 
     def parses_list_types():
-        result = parse_type('[MyType]')
+        result = parse_type("[MyType]")
         assert isinstance(result, ListTypeNode)
         assert result.loc == (0, 8)
         type_ = result.type
@@ -409,10 +455,10 @@ def describe_parse_type():
         name = type_.name
         assert isinstance(name, NameNode)
         assert name.loc == (1, 7)
-        assert name.value == 'MyType'
+        assert name.value == "MyType"
 
     def parses_non_null_types():
-        result = parse_type('MyType!')
+        result = parse_type("MyType!")
         assert isinstance(result, NonNullTypeNode)
         assert result.loc == (0, 7)
         type_ = result.type
@@ -421,10 +467,10 @@ def describe_parse_type():
         name = type_.name
         assert isinstance(name, NameNode)
         assert name.loc == (0, 6)
-        assert name.value == 'MyType'
+        assert name.value == "MyType"
 
     def parses_nested_types():
-        result = parse_type('[MyType!]')
+        result = parse_type("[MyType!]")
         assert isinstance(result, ListTypeNode)
         assert result.loc == (0, 9)
         type_ = result.type
@@ -436,4 +482,4 @@ def describe_parse_type():
         name = type_.name
         assert isinstance(name, NameNode)
         assert name.loc == (1, 7)
-        assert name.value == 'MyType'
+        assert name.value == "MyType"

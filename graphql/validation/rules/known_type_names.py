@@ -5,13 +5,13 @@ from ...language import NamedTypeNode
 from ...pyutils import suggestion_list
 from . import ValidationRule
 
-__all__ = ['KnownTypeNamesRule', 'unknown_type_message']
+__all__ = ["KnownTypeNamesRule", "unknown_type_message"]
 
 
 def unknown_type_message(type_name: str, suggested_types: List[str]) -> str:
     message = f"Unknown type '{type_name}'."
     if suggested_types:
-        message += ' Perhaps you meant {quoted_or_list(suggested_types)}?'
+        message += " Perhaps you meant {quoted_or_list(suggested_types)}?"
     return message
 
 
@@ -38,7 +38,11 @@ class KnownTypeNamesRule(ValidationRule):
         schema = self.context.schema
         type_name = node.name.value
         if not schema.get_type(type_name):
-            self.report_error(GraphQLError(
-                unknown_type_message(
-                    type_name, suggestion_list(
-                        type_name, list(schema.type_map))), [node]))
+            self.report_error(
+                GraphQLError(
+                    unknown_type_message(
+                        type_name, suggestion_list(type_name, list(schema.type_map))
+                    ),
+                    [node],
+                )
+            )

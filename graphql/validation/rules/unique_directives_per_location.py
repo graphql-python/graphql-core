@@ -4,12 +4,13 @@ from ...error import GraphQLError
 from ...language import DirectiveNode, Node
 from . import ASTValidationRule
 
-__all__ = ['UniqueDirectivesPerLocationRule', 'duplicate_directive_message']
+__all__ = ["UniqueDirectivesPerLocationRule", "duplicate_directive_message"]
 
 
 def duplicate_directive_message(directive_name: str) -> str:
-    return (f"The directive '{directive_name}'"
-            ' can only be used once at this location.')
+    return (
+        f"The directive '{directive_name}'" " can only be used once at this location."
+    )
 
 
 class UniqueDirectivesPerLocationRule(ASTValidationRule):
@@ -23,14 +24,17 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
     # them all, just listen for entering any node, and check to see if it
     # defines any directives.
     def enter(self, node: Node, *_args):
-        directives: List[DirectiveNode] = getattr(node, 'directives', None)
+        directives: List[DirectiveNode] = getattr(node, "directives", None)
         if directives:
             known_directives: Dict[str, DirectiveNode] = {}
             for directive in directives:
                 directive_name = directive.name.value
                 if directive_name in known_directives:
-                    self.report_error(GraphQLError(
-                        duplicate_directive_message(directive_name),
-                        [known_directives[directive_name], directive]))
+                    self.report_error(
+                        GraphQLError(
+                            duplicate_directive_message(directive_name),
+                            [known_directives[directive_name], directive],
+                        )
+                    )
                 else:
                     known_directives[directive_name] = directive

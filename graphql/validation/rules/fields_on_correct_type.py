@@ -2,27 +2,34 @@ from collections import defaultdict
 from typing import Dict, List, cast
 
 from ...type import (
-    GraphQLAbstractType, GraphQLSchema, GraphQLOutputType,
-    is_abstract_type, is_interface_type, is_object_type)
+    GraphQLAbstractType,
+    GraphQLSchema,
+    GraphQLOutputType,
+    is_abstract_type,
+    is_interface_type,
+    is_object_type,
+)
 from ...error import GraphQLError
 from ...language import FieldNode
 from ...pyutils import quoted_or_list, suggestion_list
 from . import ValidationRule
 
-__all__ = ['FieldsOnCorrectTypeRule', 'undefined_field_message']
+__all__ = ["FieldsOnCorrectTypeRule", "undefined_field_message"]
 
 
 def undefined_field_message(
-        field_name: str, type_: str,
-        suggested_type_names: List[str],
-        suggested_field_names: List[str]) -> str:
+    field_name: str,
+    type_: str,
+    suggested_type_names: List[str],
+    suggested_field_names: List[str],
+) -> str:
     message = f"Cannot query field '{field_name}' on type '{type_}'."
     if suggested_type_names:
         suggestions = quoted_or_list(suggested_type_names)
-        message += f' Did you mean to use an inline fragment on {suggestions}?'
+        message += f" Did you mean to use an inline fragment on {suggestions}?"
     elif suggested_field_names:
         suggestions = quoted_or_list(suggested_field_names)
-        message += f' Did you mean {suggestions}?'
+        message += f" Did you mean {suggestions}?"
     return message
 
 
@@ -44,22 +51,26 @@ class FieldsOnCorrectTypeRule(ValidationRule):
         schema = self.context.schema
         field_name = node.name.value
         # First determine if there are any suggested types to condition on.
-        suggested_type_names = get_suggested_type_names(
-            schema, type_, field_name)
+        suggested_type_names = get_suggested_type_names(schema, type_, field_name)
         # If there are no suggested types, then perhaps this was a typo?
         suggested_field_names = (
-            [] if suggested_type_names
-            else get_suggested_field_names(type_, field_name))
+            [] if suggested_type_names else get_suggested_field_names(type_, field_name)
+        )
 
         # Report an error, including helpful suggestions.
-        self.report_error(GraphQLError(undefined_field_message(
-            field_name, type_.name,
-            suggested_type_names, suggested_field_names), [node]))
+        self.report_error(
+            GraphQLError(
+                undefined_field_message(
+                    field_name, type_.name, suggested_type_names, suggested_field_names
+                ),
+                [node],
+            )
+        )
 
 
 def get_suggested_type_names(
-        schema: GraphQLSchema, type_: GraphQLOutputType,
-        field_name: str) -> List[str]:
+    schema: GraphQLSchema, type_: GraphQLOutputType, field_name: str
+) -> List[str]:
     """
     Get a list of suggested type names.
 
@@ -85,7 +96,8 @@ def get_suggested_type_names(
 
         # Suggest interface types based on how common they are.
         suggested_interface_types = sorted(
-            interface_usage_count, key=lambda k: -interface_usage_count[k])
+            interface_usage_count, key=lambda k: -interface_usage_count[k]
+        )
 
         # Suggest both interface and object types.
         return suggested_interface_types + suggested_object_types
@@ -94,8 +106,7 @@ def get_suggested_type_names(
     return []
 
 
-def get_suggested_field_names(
-        type_: GraphQLOutputType, field_name: str) -> List[str]:
+def get_suggested_field_names(type_: GraphQLOutputType, field_name: str) -> List[str]:
     """Get a list of suggested field names.
 
     For the field name provided, determine if there are any similar field names

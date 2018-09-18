@@ -1,36 +1,76 @@
 from typing import Callable, List, Optional, Union, cast, Dict
 
 from .ast import (
-    ArgumentNode, BooleanValueNode, DefinitionNode,
-    DirectiveDefinitionNode, DirectiveNode, DocumentNode,
-    EnumTypeDefinitionNode, EnumTypeExtensionNode, EnumValueDefinitionNode,
-    EnumValueNode, ExecutableDefinitionNode, FieldDefinitionNode, FieldNode,
-    FloatValueNode, FragmentDefinitionNode, FragmentSpreadNode,
-    InlineFragmentNode, InputObjectTypeDefinitionNode,
-    InputObjectTypeExtensionNode, InputValueDefinitionNode, IntValueNode,
-    InterfaceTypeDefinitionNode, InterfaceTypeExtensionNode, ListTypeNode,
-    ListValueNode, Location, NameNode, NamedTypeNode, Node, NonNullTypeNode,
-    NullValueNode, ObjectFieldNode, ObjectTypeDefinitionNode,
-    ObjectTypeExtensionNode, ObjectValueNode, OperationDefinitionNode,
-    OperationType, OperationTypeDefinitionNode, ScalarTypeDefinitionNode,
-    ScalarTypeExtensionNode, SchemaDefinitionNode, SchemaExtensionNode,
-    SelectionNode, SelectionSetNode, StringValueNode,
-    TypeNode, TypeSystemDefinitionNode, TypeSystemExtensionNode,
-    UnionTypeDefinitionNode, UnionTypeExtensionNode, ValueNode,
-    VariableDefinitionNode, VariableNode)
+    ArgumentNode,
+    BooleanValueNode,
+    DefinitionNode,
+    DirectiveDefinitionNode,
+    DirectiveNode,
+    DocumentNode,
+    EnumTypeDefinitionNode,
+    EnumTypeExtensionNode,
+    EnumValueDefinitionNode,
+    EnumValueNode,
+    ExecutableDefinitionNode,
+    FieldDefinitionNode,
+    FieldNode,
+    FloatValueNode,
+    FragmentDefinitionNode,
+    FragmentSpreadNode,
+    InlineFragmentNode,
+    InputObjectTypeDefinitionNode,
+    InputObjectTypeExtensionNode,
+    InputValueDefinitionNode,
+    IntValueNode,
+    InterfaceTypeDefinitionNode,
+    InterfaceTypeExtensionNode,
+    ListTypeNode,
+    ListValueNode,
+    Location,
+    NameNode,
+    NamedTypeNode,
+    Node,
+    NonNullTypeNode,
+    NullValueNode,
+    ObjectFieldNode,
+    ObjectTypeDefinitionNode,
+    ObjectTypeExtensionNode,
+    ObjectValueNode,
+    OperationDefinitionNode,
+    OperationType,
+    OperationTypeDefinitionNode,
+    ScalarTypeDefinitionNode,
+    ScalarTypeExtensionNode,
+    SchemaDefinitionNode,
+    SchemaExtensionNode,
+    SelectionNode,
+    SelectionSetNode,
+    StringValueNode,
+    TypeNode,
+    TypeSystemDefinitionNode,
+    TypeSystemExtensionNode,
+    UnionTypeDefinitionNode,
+    UnionTypeExtensionNode,
+    ValueNode,
+    VariableDefinitionNode,
+    VariableNode,
+)
 from .directive_locations import DirectiveLocation
 from .lexer import Lexer, Token, TokenKind
 from .source import Source
 from ..error import GraphQLError, GraphQLSyntaxError
 
-__all__ = ['parse', 'parse_type', 'parse_value']
+__all__ = ["parse", "parse_type", "parse_value"]
 
 SourceType = Union[Source, str]
 
 
-def parse(source: SourceType, no_location=False,
-          experimental_fragment_variables=False,
-          experimental_variable_definition_directives=False) -> DocumentNode:
+def parse(
+    source: SourceType,
+    no_location=False,
+    experimental_fragment_variables=False,
+    experimental_variable_definition_directives=False,
+) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
     Throws GraphQLError if a syntax error is encountered.
@@ -62,12 +102,13 @@ def parse(source: SourceType, no_location=False,
     if isinstance(source, str):
         source = Source(source)
     elif not isinstance(source, Source):
-        raise TypeError(f'Must provide Source. Received: {source!r}')
+        raise TypeError(f"Must provide Source. Received: {source!r}")
     lexer = Lexer(
-        source, no_location=no_location,
+        source,
+        no_location=no_location,
         experimental_fragment_variables=experimental_fragment_variables,
-        experimental_variable_definition_directives  # noqa
-        =experimental_variable_definition_directives)
+        experimental_variable_definition_directives=experimental_variable_definition_directives,  # noqa
+    )
     return parse_document(lexer)
 
 
@@ -117,12 +158,14 @@ def parse_name(lexer: Lexer) -> NameNode:
 
 # Implement the parsing rules in the Document section.
 
+
 def parse_document(lexer: Lexer) -> DocumentNode:
     """Document: Definition+"""
     start = lexer.token
-    return DocumentNode(definitions=many_nodes(
-        lexer, TokenKind.SOF, parse_definition, TokenKind.EOF),
-        loc=loc(lexer, start))
+    return DocumentNode(
+        definitions=many_nodes(lexer, TokenKind.SOF, parse_definition, TokenKind.EOF),
+        loc=loc(lexer, start),
+    )
 
 
 def parse_definition(lexer: Lexer) -> DefinitionNode:
@@ -141,8 +184,7 @@ def parse_definition(lexer: Lexer) -> DefinitionNode:
 def parse_executable_definition(lexer: Lexer) -> ExecutableDefinitionNode:
     """ExecutableDefinition: OperationDefinition or FragmentDefinition"""
     if peek(lexer, TokenKind.NAME):
-        func = _parse_executable_definition_functions.get(
-            cast(str, lexer.token.value))
+        func = _parse_executable_definition_functions.get(cast(str, lexer.token.value))
         if func:
             return func(lexer)
     elif peek(lexer, TokenKind.BRACE_L):
@@ -152,23 +194,29 @@ def parse_executable_definition(lexer: Lexer) -> ExecutableDefinitionNode:
 
 # Implement the parsing rules in the Operations section.
 
+
 def parse_operation_definition(lexer: Lexer) -> OperationDefinitionNode:
     """OperationDefinition"""
     start = lexer.token
     if peek(lexer, TokenKind.BRACE_L):
         return OperationDefinitionNode(
-            operation=OperationType.QUERY, name=None,
-            variable_definitions=[], directives=[],
+            operation=OperationType.QUERY,
+            name=None,
+            variable_definitions=[],
+            directives=[],
             selection_set=parse_selection_set(lexer),
-            loc=loc(lexer, start))
+            loc=loc(lexer, start),
+        )
     operation = parse_operation_type(lexer)
     name = parse_name(lexer) if peek(lexer, TokenKind.NAME) else None
     return OperationDefinitionNode(
-        operation=operation, name=name,
+        operation=operation,
+        name=name,
         variable_definitions=parse_variable_definitions(lexer),
         directives=parse_directives(lexer, False),
         selection_set=parse_selection_set(lexer),
-        loc=loc(lexer, start))
+        loc=loc(lexer, start),
+    )
 
 
 def parse_operation_type(lexer: Lexer) -> OperationType:
@@ -182,9 +230,16 @@ def parse_operation_type(lexer: Lexer) -> OperationType:
 
 def parse_variable_definitions(lexer: Lexer) -> List[VariableDefinitionNode]:
     """VariableDefinitions: (VariableDefinition+)"""
-    return cast(List[VariableDefinitionNode], many_nodes(
-        lexer, TokenKind.PAREN_L, parse_variable_definition, TokenKind.PAREN_R
-        )) if peek(lexer, TokenKind.PAREN_L) else []
+    return (
+        cast(
+            List[VariableDefinitionNode],
+            many_nodes(
+                lexer, TokenKind.PAREN_L, parse_variable_definition, TokenKind.PAREN_R
+            ),
+        )
+        if peek(lexer, TokenKind.PAREN_L)
+        else []
+    )
 
 
 def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
@@ -193,19 +248,21 @@ def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
     if lexer.experimental_variable_definition_directives:
         return VariableDefinitionNode(
             variable=parse_variable(lexer),
-            type=expect(lexer, TokenKind.COLON)
-            and parse_type_reference(lexer),
+            type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
             default_value=parse_value_literal(lexer, True)
-            if skip(lexer, TokenKind.EQUALS) else None,
+            if skip(lexer, TokenKind.EQUALS)
+            else None,
             directives=parse_directives(lexer, True),
-            loc=loc(lexer, start))
+            loc=loc(lexer, start),
+        )
     return VariableDefinitionNode(
         variable=parse_variable(lexer),
-        type=expect(lexer, TokenKind.COLON) and parse_type_reference(
-            lexer),
+        type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
         default_value=parse_value_literal(lexer, True)
-        if skip(lexer, TokenKind.EQUALS) else None,
-        loc=loc(lexer, start))
+        if skip(lexer, TokenKind.EQUALS)
+        else None,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_variable(lexer: Lexer) -> VariableNode:
@@ -220,14 +277,15 @@ def parse_selection_set(lexer: Lexer) -> SelectionSetNode:
     start = lexer.token
     return SelectionSetNode(
         selections=many_nodes(
-            lexer, TokenKind.BRACE_L, parse_selection, TokenKind.BRACE_R),
-        loc=loc(lexer, start))
+            lexer, TokenKind.BRACE_L, parse_selection, TokenKind.BRACE_R
+        ),
+        loc=loc(lexer, start),
+    )
 
 
 def parse_selection(lexer: Lexer) -> SelectionNode:
     """Selection: Field or FragmentSpread or InlineFragment"""
-    return (parse_fragment if peek(lexer, TokenKind.SPREAD)
-            else parse_field)(lexer)
+    return (parse_fragment if peek(lexer, TokenKind.SPREAD) else parse_field)(lexer)
 
 
 def parse_field(lexer: Lexer) -> FieldNode:
@@ -241,20 +299,28 @@ def parse_field(lexer: Lexer) -> FieldNode:
         alias = None
         name = name_or_alias
     return FieldNode(
-        alias=alias, name=name,
+        alias=alias,
+        name=name,
         arguments=parse_arguments(lexer, False),
         directives=parse_directives(lexer, False),
         selection_set=parse_selection_set(lexer)
-        if peek(lexer, TokenKind.BRACE_L) else None,
-        loc=loc(lexer, start))
+        if peek(lexer, TokenKind.BRACE_L)
+        else None,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_arguments(lexer: Lexer, is_const: bool) -> List[ArgumentNode]:
     """Arguments[Const]: (Argument[?Const]+)"""
     item = parse_const_argument if is_const else parse_argument
-    return cast(List[ArgumentNode], many_nodes(
-        lexer, TokenKind.PAREN_L, item,
-        TokenKind.PAREN_R)) if peek(lexer, TokenKind.PAREN_L) else []
+    return (
+        cast(
+            List[ArgumentNode],
+            many_nodes(lexer, TokenKind.PAREN_L, item, TokenKind.PAREN_R),
+        )
+        if peek(lexer, TokenKind.PAREN_L)
+        else []
+    )
 
 
 def parse_argument(lexer: Lexer) -> ArgumentNode:
@@ -262,9 +328,9 @@ def parse_argument(lexer: Lexer) -> ArgumentNode:
     start = lexer.token
     return ArgumentNode(
         name=parse_name(lexer),
-        value=expect(lexer, TokenKind.COLON) and
-        parse_value_literal(lexer, False),
-        loc=loc(lexer, start))
+        value=expect(lexer, TokenKind.COLON) and parse_value_literal(lexer, False),
+        loc=loc(lexer, start),
+    )
 
 
 def parse_const_argument(lexer: Lexer) -> ArgumentNode:
@@ -272,15 +338,15 @@ def parse_const_argument(lexer: Lexer) -> ArgumentNode:
     start = lexer.token
     return ArgumentNode(
         name=parse_name(lexer),
-        value=expect(lexer, TokenKind.COLON)
-        and parse_const_value(lexer),
-        loc=loc(lexer, start))
+        value=expect(lexer, TokenKind.COLON) and parse_const_value(lexer),
+        loc=loc(lexer, start),
+    )
 
 
 # Implement the parsing rules in the Fragments section.
 
-def parse_fragment(
-        lexer: Lexer) -> Union[FragmentSpreadNode, InlineFragmentNode]:
+
+def parse_fragment(lexer: Lexer) -> Union[FragmentSpreadNode, InlineFragmentNode]:
     """Corresponds to both FragmentSpread and InlineFragment in the spec.
 
     FragmentSpread: ... FragmentName Directives?
@@ -288,12 +354,13 @@ def parse_fragment(
     """
     start = lexer.token
     expect(lexer, TokenKind.SPREAD)
-    if peek(lexer, TokenKind.NAME) and lexer.token.value != 'on':
+    if peek(lexer, TokenKind.NAME) and lexer.token.value != "on":
         return FragmentSpreadNode(
             name=parse_fragment_name(lexer),
             directives=parse_directives(lexer, False),
-            loc=loc(lexer, start))
-    if lexer.token.value == 'on':
+            loc=loc(lexer, start),
+        )
+    if lexer.token.value == "on":
         lexer.advance()
         type_condition: Optional[NamedTypeNode] = parse_named_type(lexer)
     else:
@@ -302,47 +369,49 @@ def parse_fragment(
         type_condition=type_condition,
         directives=parse_directives(lexer, False),
         selection_set=parse_selection_set(lexer),
-        loc=loc(lexer, start))
+        loc=loc(lexer, start),
+    )
 
 
 def parse_fragment_definition(lexer: Lexer) -> FragmentDefinitionNode:
     """FragmentDefinition"""
     start = lexer.token
-    expect_keyword(lexer, 'fragment')
+    expect_keyword(lexer, "fragment")
     # Experimental support for defining variables within fragments changes
     # the grammar of FragmentDefinition
     if lexer.experimental_fragment_variables:
         return FragmentDefinitionNode(
             name=parse_fragment_name(lexer),
             variable_definitions=parse_variable_definitions(lexer),
-            type_condition=expect_keyword(lexer, 'on') and
-            parse_named_type(lexer),
+            type_condition=expect_keyword(lexer, "on") and parse_named_type(lexer),
             directives=parse_directives(lexer, False),
             selection_set=parse_selection_set(lexer),
-            loc=loc(lexer, start))
+            loc=loc(lexer, start),
+        )
     return FragmentDefinitionNode(
         name=parse_fragment_name(lexer),
-        type_condition=expect_keyword(lexer, 'on') and
-        parse_named_type(lexer),
+        type_condition=expect_keyword(lexer, "on") and parse_named_type(lexer),
         directives=parse_directives(lexer, False),
         selection_set=parse_selection_set(lexer),
-        loc=loc(lexer, start))
+        loc=loc(lexer, start),
+    )
 
 
-_parse_executable_definition_functions: Dict[str, Callable] = {**dict.fromkeys(
-    ('query', 'mutation', 'subscription'),
-    parse_operation_definition), **dict.fromkeys(
-    ('fragment',), parse_fragment_definition)}
+_parse_executable_definition_functions: Dict[str, Callable] = {
+    **dict.fromkeys(("query", "mutation", "subscription"), parse_operation_definition),
+    **dict.fromkeys(("fragment",), parse_fragment_definition),
+}
 
 
 def parse_fragment_name(lexer: Lexer) -> NameNode:
     """FragmentName: Name but not `on`"""
-    if lexer.token.value == 'on':
+    if lexer.token.value == "on":
         raise unexpected(lexer)
     return parse_name(lexer)
 
 
 # Implement the parsing rules in the Values section.
+
 
 def parse_value_literal(lexer: Lexer, is_const: bool) -> ValueNode:
     func = _parse_value_literal_functions.get(lexer.token.kind)
@@ -357,7 +426,8 @@ def parse_string_literal(lexer: Lexer, _is_const=True) -> StringValueNode:
     return StringValueNode(
         value=token.value,
         block=token.kind == TokenKind.BLOCK_STRING,
-        loc=loc(lexer, token))
+        loc=loc(lexer, token),
+    )
 
 
 def parse_const_value(lexer: Lexer) -> ValueNode:
@@ -373,18 +443,18 @@ def parse_list(lexer: Lexer, is_const: bool) -> ListValueNode:
     start = lexer.token
     item = parse_const_value if is_const else parse_value_value
     return ListValueNode(
-        values=any_nodes(
-            lexer, TokenKind.BRACKET_L, item, TokenKind.BRACKET_R),
-        loc=loc(lexer, start))
+        values=any_nodes(lexer, TokenKind.BRACKET_L, item, TokenKind.BRACKET_R),
+        loc=loc(lexer, start),
+    )
 
 
 def parse_object_field(lexer: Lexer, is_const: bool) -> ObjectFieldNode:
     start = lexer.token
     return ObjectFieldNode(
         name=parse_name(lexer),
-        value=expect(lexer, TokenKind.COLON) and
-        parse_value_literal(lexer, is_const),
-        loc=loc(lexer, start))
+        value=expect(lexer, TokenKind.COLON) and parse_value_literal(lexer, is_const),
+        loc=loc(lexer, start),
+    )
 
 
 def parse_object(lexer: Lexer, is_const: bool) -> ObjectValueNode:
@@ -414,9 +484,9 @@ def parse_named_values(lexer: Lexer, _is_const=True) -> ValueNode:
     token = lexer.token
     value = token.value
     lexer.advance()
-    if value in ('true', 'false'):
-        return BooleanValueNode(value=value == 'true', loc=loc(lexer, token))
-    elif value == 'null':
+    if value in ("true", "false"):
+        return BooleanValueNode(value=value == "true", loc=loc(lexer, token))
+    elif value == "null":
         return NullValueNode(loc=loc(lexer, token))
     else:
         return EnumValueNode(value=value, loc=loc(lexer, token))
@@ -436,10 +506,12 @@ _parse_value_literal_functions = {
     TokenKind.STRING: parse_string_literal,
     TokenKind.BLOCK_STRING: parse_string_literal,
     TokenKind.NAME: parse_named_values,
-    TokenKind.DOLLAR: parse_variable_value}
+    TokenKind.DOLLAR: parse_variable_value,
+}
 
 
 # Implement the parsing rules in the Directives section.
+
 
 def parse_directives(lexer: Lexer, is_const: bool) -> List[DirectiveNode]:
     """Directives[Const]: Directive[?Const]+"""
@@ -457,10 +529,12 @@ def parse_directive(lexer: Lexer, is_const: bool) -> DirectiveNode:
     return DirectiveNode(
         name=parse_name(lexer),
         arguments=parse_arguments(lexer, is_const),
-        loc=loc(lexer, start))
+        loc=loc(lexer, start),
+    )
 
 
 # Implement the parsing rules in the Types section.
+
 
 def parse_type_reference(lexer: Lexer) -> TypeNode:
     """Type: NamedType or ListType or NonNullType"""
@@ -484,11 +558,11 @@ def parse_named_type(lexer: Lexer) -> NamedTypeNode:
 
 # Implement the parsing rules in the Type Definition section.
 
+
 def parse_type_system_definition(lexer: Lexer) -> TypeSystemDefinitionNode:
     """TypeSystemDefinition"""
     # Many definitions begin with a description and require a lookahead.
-    keyword_token = lexer.lookahead(
-        ) if peek_description(lexer) else lexer.token
+    keyword_token = lexer.lookahead() if peek_description(lexer) else lexer.token
     func = _parse_type_system_definition_functions.get(keyword_token.value)
     if func:
         return func(lexer)
@@ -505,12 +579,25 @@ def parse_type_system_extension(lexer: Lexer) -> TypeSystemExtensionNode:
     raise unexpected(lexer, keyword_token)
 
 
-_parse_definition_functions: Dict[str, Callable] = {**dict.fromkeys(
-    ('query', 'mutation', 'subscription', 'fragment'),
-    parse_executable_definition), **dict.fromkeys(
-    ('schema', 'scalar', 'type', 'interface', 'union', 'enum',
-        'input', 'directive'), parse_type_system_definition),
-    'extend': parse_type_system_extension}
+_parse_definition_functions: Dict[str, Callable] = {
+    **dict.fromkeys(
+        ("query", "mutation", "subscription", "fragment"), parse_executable_definition
+    ),
+    **dict.fromkeys(
+        (
+            "schema",
+            "scalar",
+            "type",
+            "interface",
+            "union",
+            "enum",
+            "input",
+            "directive",
+        ),
+        parse_type_system_definition,
+    ),
+    "extend": parse_type_system_extension,
+}
 
 
 def peek_description(lexer: Lexer) -> bool:
@@ -527,57 +614,62 @@ def parse_description(lexer: Lexer) -> Optional[StringValueNode]:
 def parse_schema_definition(lexer: Lexer) -> SchemaDefinitionNode:
     """SchemaDefinition"""
     start = lexer.token
-    expect_keyword(lexer, 'schema')
+    expect_keyword(lexer, "schema")
     directives = parse_directives(lexer, True)
     operation_types = many_nodes(
-        lexer, TokenKind.BRACE_L,
-        parse_operation_type_definition, TokenKind.BRACE_R)
+        lexer, TokenKind.BRACE_L, parse_operation_type_definition, TokenKind.BRACE_R
+    )
     return SchemaDefinitionNode(
-        directives=directives, operation_types=operation_types,
-        loc=loc(lexer, start))
+        directives=directives, operation_types=operation_types, loc=loc(lexer, start)
+    )
 
 
-def parse_operation_type_definition(
-        lexer: Lexer) -> OperationTypeDefinitionNode:
+def parse_operation_type_definition(lexer: Lexer) -> OperationTypeDefinitionNode:
     """OperationTypeDefinition: OperationType : NamedType"""
     start = lexer.token
     operation = parse_operation_type(lexer)
     expect(lexer, TokenKind.COLON)
     type_ = parse_named_type(lexer)
     return OperationTypeDefinitionNode(
-        operation=operation, type=type_, loc=loc(lexer, start))
+        operation=operation, type=type_, loc=loc(lexer, start)
+    )
 
 
 def parse_scalar_type_definition(lexer: Lexer) -> ScalarTypeDefinitionNode:
     """ScalarTypeDefinition: Description? scalar Name Directives[Const]?"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'scalar')
+    expect_keyword(lexer, "scalar")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     return ScalarTypeDefinitionNode(
-        description=description, name=name, directives=directives,
-        loc=loc(lexer, start))
+        description=description, name=name, directives=directives, loc=loc(lexer, start)
+    )
 
 
 def parse_object_type_definition(lexer: Lexer) -> ObjectTypeDefinitionNode:
     """ObjectTypeDefinition"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'type')
+    expect_keyword(lexer, "type")
     name = parse_name(lexer)
     interfaces = parse_implements_interfaces(lexer)
     directives = parse_directives(lexer, True)
     fields = parse_fields_definition(lexer)
     return ObjectTypeDefinitionNode(
-        description=description, name=name, interfaces=interfaces,
-        directives=directives, fields=fields, loc=loc(lexer, start))
+        description=description,
+        name=name,
+        interfaces=interfaces,
+        directives=directives,
+        fields=fields,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_implements_interfaces(lexer: Lexer) -> List[NamedTypeNode]:
     """ImplementsInterfaces"""
     types: List[NamedTypeNode] = []
-    if lexer.token.value == 'implements':
+    if lexer.token.value == "implements":
         lexer.advance()
         # optional leading ampersand
         skip(lexer, TokenKind.AMP)
@@ -591,9 +683,16 @@ def parse_implements_interfaces(lexer: Lexer) -> List[NamedTypeNode]:
 
 def parse_fields_definition(lexer: Lexer) -> List[FieldDefinitionNode]:
     """FieldsDefinition: {FieldDefinition+}"""
-    return cast(List[FieldDefinitionNode], many_nodes(
-        lexer, TokenKind.BRACE_L, parse_field_definition,
-        TokenKind.BRACE_R)) if peek(lexer, TokenKind.BRACE_L) else []
+    return (
+        cast(
+            List[FieldDefinitionNode],
+            many_nodes(
+                lexer, TokenKind.BRACE_L, parse_field_definition, TokenKind.BRACE_R
+            ),
+        )
+        if peek(lexer, TokenKind.BRACE_L)
+        else []
+    )
 
 
 def parse_field_definition(lexer: Lexer) -> FieldDefinitionNode:
@@ -606,15 +705,27 @@ def parse_field_definition(lexer: Lexer) -> FieldDefinitionNode:
     type_ = parse_type_reference(lexer)
     directives = parse_directives(lexer, True)
     return FieldDefinitionNode(
-        description=description, name=name, arguments=args, type=type_,
-        directives=directives, loc=loc(lexer, start))
+        description=description,
+        name=name,
+        arguments=args,
+        type=type_,
+        directives=directives,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_argument_defs(lexer: Lexer) -> List[InputValueDefinitionNode]:
     """ArgumentsDefinition: (InputValueDefinition+)"""
-    return cast(List[InputValueDefinitionNode], many_nodes(
-        lexer, TokenKind.PAREN_L, parse_input_value_def,
-        TokenKind.PAREN_R)) if peek(lexer, TokenKind.PAREN_L) else []
+    return (
+        cast(
+            List[InputValueDefinitionNode],
+            many_nodes(
+                lexer, TokenKind.PAREN_L, parse_input_value_def, TokenKind.PAREN_R
+            ),
+        )
+        if peek(lexer, TokenKind.PAREN_L)
+        else []
+    )
 
 
 def parse_input_value_def(lexer: Lexer) -> InputValueDefinitionNode:
@@ -624,40 +735,50 @@ def parse_input_value_def(lexer: Lexer) -> InputValueDefinitionNode:
     name = parse_name(lexer)
     expect(lexer, TokenKind.COLON)
     type_ = parse_type_reference(lexer)
-    default_value = parse_const_value(lexer) if skip(
-        lexer, TokenKind.EQUALS) else None
+    default_value = parse_const_value(lexer) if skip(lexer, TokenKind.EQUALS) else None
     directives = parse_directives(lexer, True)
     return InputValueDefinitionNode(
-        description=description, name=name, type=type_,
-        default_value=default_value, directives=directives,
-        loc=loc(lexer, start))
+        description=description,
+        name=name,
+        type=type_,
+        default_value=default_value,
+        directives=directives,
+        loc=loc(lexer, start),
+    )
 
 
-def parse_interface_type_definition(
-        lexer: Lexer) -> InterfaceTypeDefinitionNode:
+def parse_interface_type_definition(lexer: Lexer) -> InterfaceTypeDefinitionNode:
     """InterfaceTypeDefinition"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'interface')
+    expect_keyword(lexer, "interface")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     fields = parse_fields_definition(lexer)
     return InterfaceTypeDefinitionNode(
-        description=description, name=name, directives=directives,
-        fields=fields, loc=loc(lexer, start))
+        description=description,
+        name=name,
+        directives=directives,
+        fields=fields,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_union_type_definition(lexer: Lexer) -> UnionTypeDefinitionNode:
     """UnionTypeDefinition"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'union')
+    expect_keyword(lexer, "union")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     types = parse_union_member_types(lexer)
     return UnionTypeDefinitionNode(
-        description=description, name=name, directives=directives, types=types,
-        loc=loc(lexer, start))
+        description=description,
+        name=name,
+        directives=directives,
+        types=types,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_union_member_types(lexer: Lexer) -> List[NamedTypeNode]:
@@ -678,21 +799,31 @@ def parse_enum_type_definition(lexer: Lexer) -> EnumTypeDefinitionNode:
     """UnionTypeDefinition"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'enum')
+    expect_keyword(lexer, "enum")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     values = parse_enum_values_definition(lexer)
     return EnumTypeDefinitionNode(
-        description=description, name=name, directives=directives,
-        values=values, loc=loc(lexer, start))
+        description=description,
+        name=name,
+        directives=directives,
+        values=values,
+        loc=loc(lexer, start),
+    )
 
 
-def parse_enum_values_definition(
-        lexer: Lexer) -> List[EnumValueDefinitionNode]:
+def parse_enum_values_definition(lexer: Lexer) -> List[EnumValueDefinitionNode]:
     """EnumValuesDefinition: {EnumValueDefinition+}"""
-    return cast(List[EnumValueDefinitionNode], many_nodes(
-        lexer, TokenKind.BRACE_L, parse_enum_value_definition,
-        TokenKind.BRACE_R)) if peek(lexer, TokenKind.BRACE_L) else []
+    return (
+        cast(
+            List[EnumValueDefinitionNode],
+            many_nodes(
+                lexer, TokenKind.BRACE_L, parse_enum_value_definition, TokenKind.BRACE_R
+            ),
+        )
+        if peek(lexer, TokenKind.BRACE_L)
+        else []
+    )
 
 
 def parse_enum_value_definition(lexer: Lexer) -> EnumValueDefinitionNode:
@@ -702,66 +833,80 @@ def parse_enum_value_definition(lexer: Lexer) -> EnumValueDefinitionNode:
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     return EnumValueDefinitionNode(
-        description=description, name=name, directives=directives,
-        loc=loc(lexer, start))
+        description=description, name=name, directives=directives, loc=loc(lexer, start)
+    )
 
 
-def parse_input_object_type_definition(
-        lexer: Lexer) -> InputObjectTypeDefinitionNode:
+def parse_input_object_type_definition(lexer: Lexer) -> InputObjectTypeDefinitionNode:
     """InputObjectTypeDefinition"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'input')
+    expect_keyword(lexer, "input")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     fields = parse_input_fields_definition(lexer)
     return InputObjectTypeDefinitionNode(
-        description=description, name=name, directives=directives,
-        fields=fields, loc=loc(lexer, start))
+        description=description,
+        name=name,
+        directives=directives,
+        fields=fields,
+        loc=loc(lexer, start),
+    )
 
 
-def parse_input_fields_definition(
-        lexer: Lexer) -> List[InputValueDefinitionNode]:
+def parse_input_fields_definition(lexer: Lexer) -> List[InputValueDefinitionNode]:
     """InputFieldsDefinition: {InputValueDefinition+}"""
-    return cast(List[InputValueDefinitionNode], many_nodes(
-        lexer, TokenKind.BRACE_L, parse_input_value_def,
-        TokenKind.BRACE_R)) if peek(lexer, TokenKind.BRACE_L) else []
+    return (
+        cast(
+            List[InputValueDefinitionNode],
+            many_nodes(
+                lexer, TokenKind.BRACE_L, parse_input_value_def, TokenKind.BRACE_R
+            ),
+        )
+        if peek(lexer, TokenKind.BRACE_L)
+        else []
+    )
 
 
 def parse_schema_extension(lexer: Lexer) -> SchemaExtensionNode:
     """SchemaExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'schema')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "schema")
     directives = parse_directives(lexer, True)
-    operation_types = many_nodes(
-        lexer, TokenKind.BRACE_L, parse_operation_type_definition,
-        TokenKind.BRACE_R) if peek(lexer, TokenKind.BRACE_L) else []
+    operation_types = (
+        many_nodes(
+            lexer, TokenKind.BRACE_L, parse_operation_type_definition, TokenKind.BRACE_R
+        )
+        if peek(lexer, TokenKind.BRACE_L)
+        else []
+    )
     if not directives and not operation_types:
         raise unexpected(lexer)
     return SchemaExtensionNode(
-        directives=directives, operation_types=operation_types,
-        loc=loc(lexer, start))
+        directives=directives, operation_types=operation_types, loc=loc(lexer, start)
+    )
 
 
 def parse_scalar_type_extension(lexer: Lexer) -> ScalarTypeExtensionNode:
     """ScalarTypeExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'scalar')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "scalar")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     if not directives:
         raise unexpected(lexer)
     return ScalarTypeExtensionNode(
-        name=name, directives=directives, loc=loc(lexer, start))
+        name=name, directives=directives, loc=loc(lexer, start)
+    )
 
 
 def parse_object_type_extension(lexer: Lexer) -> ObjectTypeExtensionNode:
     """ObjectTypeExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'type')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "type")
     name = parse_name(lexer)
     interfaces = parse_implements_interfaces(lexer)
     directives = parse_directives(lexer, True)
@@ -769,76 +914,84 @@ def parse_object_type_extension(lexer: Lexer) -> ObjectTypeExtensionNode:
     if not (interfaces or directives or fields):
         raise unexpected(lexer)
     return ObjectTypeExtensionNode(
-        name=name, interfaces=interfaces, directives=directives, fields=fields,
-        loc=loc(lexer, start))
+        name=name,
+        interfaces=interfaces,
+        directives=directives,
+        fields=fields,
+        loc=loc(lexer, start),
+    )
 
 
 def parse_interface_type_extension(lexer: Lexer) -> InterfaceTypeExtensionNode:
     """InterfaceTypeExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'interface')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "interface")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     fields = parse_fields_definition(lexer)
     if not (directives or fields):
         raise unexpected(lexer)
     return InterfaceTypeExtensionNode(
-        name=name, directives=directives, fields=fields, loc=loc(lexer, start))
+        name=name, directives=directives, fields=fields, loc=loc(lexer, start)
+    )
 
 
 def parse_union_type_extension(lexer: Lexer) -> UnionTypeExtensionNode:
     """UnionTypeExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'union')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "union")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     types = parse_union_member_types(lexer)
     if not (directives or types):
         raise unexpected(lexer)
     return UnionTypeExtensionNode(
-        name=name, directives=directives, types=types, loc=loc(lexer, start))
+        name=name, directives=directives, types=types, loc=loc(lexer, start)
+    )
 
 
 def parse_enum_type_extension(lexer: Lexer) -> EnumTypeExtensionNode:
     """EnumTypeExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'enum')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "enum")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     values = parse_enum_values_definition(lexer)
     if not (directives or values):
         raise unexpected(lexer)
     return EnumTypeExtensionNode(
-        name=name, directives=directives, values=values, loc=loc(lexer, start))
+        name=name, directives=directives, values=values, loc=loc(lexer, start)
+    )
 
 
-def parse_input_object_type_extension(
-        lexer: Lexer) -> InputObjectTypeExtensionNode:
+def parse_input_object_type_extension(lexer: Lexer) -> InputObjectTypeExtensionNode:
     """InputObjectTypeExtension"""
     start = lexer.token
-    expect_keyword(lexer, 'extend')
-    expect_keyword(lexer, 'input')
+    expect_keyword(lexer, "extend")
+    expect_keyword(lexer, "input")
     name = parse_name(lexer)
     directives = parse_directives(lexer, True)
     fields = parse_input_fields_definition(lexer)
     if not (directives or fields):
         raise unexpected(lexer)
     return InputObjectTypeExtensionNode(
-        name=name, directives=directives, fields=fields, loc=loc(lexer, start))
+        name=name, directives=directives, fields=fields, loc=loc(lexer, start)
+    )
 
 
 _parse_type_extension_functions: Dict[
-        str, Callable[[Lexer], TypeSystemExtensionNode]] = {
-    'schema': parse_schema_extension,
-    'scalar': parse_scalar_type_extension,
-    'type': parse_object_type_extension,
-    'interface': parse_interface_type_extension,
-    'union': parse_union_type_extension,
-    'enum': parse_enum_type_extension,
-    'input': parse_input_object_type_extension
+    str, Callable[[Lexer], TypeSystemExtensionNode]
+] = {
+    "schema": parse_schema_extension,
+    "scalar": parse_scalar_type_extension,
+    "type": parse_object_type_extension,
+    "interface": parse_interface_type_extension,
+    "union": parse_union_type_extension,
+    "enum": parse_enum_type_extension,
+    "input": parse_input_object_type_extension,
 }
 
 
@@ -846,26 +999,30 @@ def parse_directive_definition(lexer: Lexer) -> DirectiveDefinitionNode:
     """InputObjectTypeExtension"""
     start = lexer.token
     description = parse_description(lexer)
-    expect_keyword(lexer, 'directive')
+    expect_keyword(lexer, "directive")
     expect(lexer, TokenKind.AT)
     name = parse_name(lexer)
     args = parse_argument_defs(lexer)
-    expect_keyword(lexer, 'on')
+    expect_keyword(lexer, "on")
     locations = parse_directive_locations(lexer)
     return DirectiveDefinitionNode(
-        description=description, name=name, arguments=args,
-        locations=locations, loc=loc(lexer, start))
+        description=description,
+        name=name,
+        arguments=args,
+        locations=locations,
+        loc=loc(lexer, start),
+    )
 
 
 _parse_type_system_definition_functions = {
-    'schema': parse_schema_definition,
-    'scalar': parse_scalar_type_definition,
-    'type': parse_object_type_definition,
-    'interface': parse_interface_type_definition,
-    'union': parse_union_type_definition,
-    'enum': parse_enum_type_definition,
-    'input': parse_input_object_type_definition,
-    'directive': parse_directive_definition
+    "schema": parse_schema_definition,
+    "scalar": parse_scalar_type_definition,
+    "type": parse_object_type_definition,
+    "interface": parse_interface_type_definition,
+    "union": parse_union_type_definition,
+    "enum": parse_enum_type_definition,
+    "input": parse_input_object_type_definition,
+    "directive": parse_directive_definition,
 }
 
 
@@ -893,6 +1050,7 @@ def parse_directive_location(lexer: Lexer) -> NameNode:
 
 # Core parsing utility functions
 
+
 def loc(lexer: Lexer, start_token: Token) -> Optional[Location]:
     """Return a location object.
 
@@ -903,7 +1061,8 @@ def loc(lexer: Lexer, start_token: Token) -> Optional[Location]:
         end_token = lexer.last_token
         source = lexer.source
         return Location(
-            start_token.start, end_token.end, start_token, end_token, source)
+            start_token.start, end_token.end, start_token, end_token, source
+        )
     return None
 
 
@@ -935,8 +1094,8 @@ def expect(lexer: Lexer, kind: TokenKind) -> Token:
         lexer.advance()
         return token
     raise GraphQLSyntaxError(
-        lexer.source, token.start,
-        f'Expected {kind.value}, found {token.kind.value}')
+        lexer.source, token.start, f"Expected {kind.value}, found {token.kind.value}"
+    )
 
 
 def expect_keyword(lexer: Lexer, value: str) -> Token:
@@ -951,20 +1110,22 @@ def expect_keyword(lexer: Lexer, value: str) -> Token:
         lexer.advance()
         return token
     raise GraphQLSyntaxError(
-        lexer.source, token.start,
-        f'Expected {value!r}, found {token.desc}')
+        lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
+    )
 
 
-def unexpected(lexer: Lexer, at_token: Token=None) -> GraphQLError:
+def unexpected(lexer: Lexer, at_token: Token = None) -> GraphQLError:
     """Create an error when an unexpected lexed token is encountered."""
     token = at_token or lexer.token
-    return GraphQLSyntaxError(
-        lexer.source, token.start, f'Unexpected {token.desc}')
+    return GraphQLSyntaxError(lexer.source, token.start, f"Unexpected {token.desc}")
 
 
-def any_nodes(lexer: Lexer, open_kind: TokenKind,
-              parse_fn: Callable[[Lexer], Node],
-              close_kind: TokenKind) -> List[Node]:
+def any_nodes(
+    lexer: Lexer,
+    open_kind: TokenKind,
+    parse_fn: Callable[[Lexer], Node],
+    close_kind: TokenKind,
+) -> List[Node]:
     """Fetch any matching nodes, possibly none.
 
     Returns a possibly empty list of parse nodes, determined by the `parse_fn`.
@@ -980,9 +1141,12 @@ def any_nodes(lexer: Lexer, open_kind: TokenKind,
     return nodes
 
 
-def many_nodes(lexer: Lexer, open_kind: TokenKind,
-               parse_fn: Callable[[Lexer], Node],
-               close_kind: TokenKind) -> List[Node]:
+def many_nodes(
+    lexer: Lexer,
+    open_kind: TokenKind,
+    parse_fn: Callable[[Lexer], Node],
+    close_kind: TokenKind,
+) -> List[Node]:
     """Fetch matching nodes, at least one.
 
     Returns a non-empty list of parse nodes, determined by the `parse_fn`.

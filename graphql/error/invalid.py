@@ -1,14 +1,14 @@
-__all__ = ['INVALID', 'InvalidType']
+__all__ = ["INVALID", "InvalidType"]
 
 
 class InvalidType(ValueError):
     """Auxiliary class for creating the INVALID singleton."""
 
     def __repr__(self):
-        return '<INVALID>'
+        return "<INVALID>"
 
     def __str__(self):
-        return 'INVALID'
+        return "INVALID"
 
     def __bool__(self):
         return False

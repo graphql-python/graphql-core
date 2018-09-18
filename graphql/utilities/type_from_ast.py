@@ -1,34 +1,40 @@
 from typing import Optional, overload
 
-from ..language import (
-    TypeNode, NamedTypeNode, ListTypeNode, NonNullTypeNode)
+from ..language import TypeNode, NamedTypeNode, ListTypeNode, NonNullTypeNode
 from ..type import (
-    GraphQLType, GraphQLSchema, GraphQLNamedType, GraphQLList, GraphQLNonNull)
+    GraphQLType,
+    GraphQLSchema,
+    GraphQLNamedType,
+    GraphQLList,
+    GraphQLNonNull,
+)
 
-__all__ = ['type_from_ast']
+__all__ = ["type_from_ast"]
 
 
 @overload
-def type_from_ast(schema: GraphQLSchema,
-                  type_node: NamedTypeNode) -> Optional[GraphQLNamedType]:
+def type_from_ast(
+    schema: GraphQLSchema, type_node: NamedTypeNode
+) -> Optional[GraphQLNamedType]:
     ...
 
 
 @overload  # noqa: F811 (pycqa/flake8#423)
-def type_from_ast(schema: GraphQLSchema,
-                  type_node: ListTypeNode) -> Optional[GraphQLList]:
+def type_from_ast(
+    schema: GraphQLSchema, type_node: ListTypeNode
+) -> Optional[GraphQLList]:
     ...
 
 
 @overload  # noqa: F811
-def type_from_ast(schema: GraphQLSchema,
-                  type_node: NonNullTypeNode) -> Optional[GraphQLNonNull]:
+def type_from_ast(
+    schema: GraphQLSchema, type_node: NonNullTypeNode
+) -> Optional[GraphQLNonNull]:
     ...
 
 
 @overload  # noqa: F811
-def type_from_ast(schema: GraphQLSchema,
-                  type_node: TypeNode) -> Optional[GraphQLType]:
+def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> Optional[GraphQLType]:
     ...
 
 
@@ -49,4 +55,4 @@ def type_from_ast(schema, type_node):  # noqa: F811
         return GraphQLNonNull(inner_type) if inner_type else None
     if isinstance(type_node, NamedTypeNode):
         return schema.get_type(type_node.name.value)
-    raise TypeError(f'Unexpected type kind: {type_node.kind}')
+    raise TypeError(f"Unexpected type kind: {type_node.kind}")

@@ -1,4 +1,4 @@
-__all__ = ['contain_subset']
+__all__ = ["contain_subset"]
 
 
 def contain_subset(actual, expected):
@@ -11,8 +11,10 @@ def contain_subset(actual, expected):
     if isinstance(expected, list):
         if not isinstance(actual, list):
             return False
-        return all(any(contain_subset(actual_value, expected_value)
-                   for actual_value in actual) for expected_value in expected)
+        return all(
+            any(contain_subset(actual_value, expected_value) for actual_value in actual)
+            for expected_value in expected
+        )
     if not isinstance(expected, dict):
         return False
     if not isinstance(actual, dict):

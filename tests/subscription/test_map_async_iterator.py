@@ -12,7 +12,6 @@ async def anext(iterable):
 
 
 def describe_map_async_iterator():
-
     @mark.asyncio
     async def maps_over_async_values():
         async def source():
@@ -67,8 +66,8 @@ def describe_map_async_iterator():
                 yield 2
                 yield 3
             finally:
-                yield 'done'
-                yield 'last'
+                yield "done"
+                yield "last"
 
         doubles = MapAsyncIterator(source(), lambda x: x + x)
 
@@ -79,7 +78,7 @@ def describe_map_async_iterator():
         await doubles.aclose()
 
         # Subsequent nexts may yield from finally block
-        assert await anext(doubles) == 'lastlast'
+        assert await anext(doubles) == "lastlast"
         with raises(GeneratorExit):
             assert await anext(doubles)
 
@@ -97,9 +96,9 @@ def describe_map_async_iterator():
 
         # Throw error
         with raises(RuntimeError) as exc_info:
-            await doubles.athrow(RuntimeError('ouch'))
+            await doubles.athrow(RuntimeError("ouch"))
 
-        assert str(exc_info.value) == 'ouch'
+        assert str(exc_info.value) == "ouch"
 
         with raises(StopAsyncIteration):
             await anext(doubles)
@@ -122,7 +121,7 @@ def describe_map_async_iterator():
         assert await anext(doubles) == 4
 
         # Throw error
-        await doubles.athrow(RuntimeError('ouch'))
+        await doubles.athrow(RuntimeError("ouch"))
 
         with raises(StopAsyncIteration):
             await anext(doubles)
@@ -132,12 +131,12 @@ def describe_map_async_iterator():
     @mark.asyncio
     async def does_not_normally_map_over_thrown_errors():
         async def source():
-            yield 'Hello'
-            raise RuntimeError('Goodbye')
+            yield "Hello"
+            raise RuntimeError("Goodbye")
 
         doubles = MapAsyncIterator(source(), lambda x: x + x)
 
-        assert await anext(doubles) == 'HelloHello'
+        assert await anext(doubles) == "HelloHello"
 
         with raises(RuntimeError):
             await anext(doubles)
@@ -145,29 +144,28 @@ def describe_map_async_iterator():
     @mark.asyncio
     async def does_not_normally_map_over_externally_thrown_errors():
         async def source():
-            yield 'Hello'
+            yield "Hello"
 
         doubles = MapAsyncIterator(source(), lambda x: x + x)
 
-        assert await anext(doubles) == 'HelloHello'
+        assert await anext(doubles) == "HelloHello"
 
         with raises(RuntimeError):
-            await doubles.athrow(RuntimeError('Goodbye'))
+            await doubles.athrow(RuntimeError("Goodbye"))
 
     @mark.asyncio
     async def maps_over_thrown_errors_if_second_callback_provided():
         async def source():
-            yield 'Hello'
-            raise RuntimeError('Goodbye')
+            yield "Hello"
+            raise RuntimeError("Goodbye")
 
-        doubles = MapAsyncIterator(
-            source(), lambda x: x + x, lambda error: error)
+        doubles = MapAsyncIterator(source(), lambda x: x + x, lambda error: error)
 
-        assert await anext(doubles) == 'HelloHello'
+        assert await anext(doubles) == "HelloHello"
 
         result = await anext(doubles)
         assert isinstance(result, RuntimeError)
-        assert str(result) == 'Goodbye'
+        assert str(result) == "Goodbye"
 
         with raises(StopAsyncIteration):
             await anext(doubles)
@@ -216,16 +214,16 @@ def describe_map_async_iterator():
 
             # Throw error
             with raises(RuntimeError) as exc_info:
-                await doubles.athrow(RuntimeError('ouch'))
+                await doubles.athrow(RuntimeError("ouch"))
 
-            assert str(exc_info.value) == 'ouch'
+            assert str(exc_info.value) == "ouch"
 
             with raises(StopAsyncIteration):
                 await anext(doubles)
             with raises(StopAsyncIteration):
                 await anext(doubles)
 
-            await doubles.athrow(RuntimeError('no more ouch'))
+            await doubles.athrow(RuntimeError("no more ouch"))
 
             with raises(StopAsyncIteration):
                 await anext(doubles)
@@ -238,7 +236,7 @@ def describe_map_async_iterator():
             assert await anext(doubles) == 4
 
             try:
-                raise ValueError('bad')
+                raise ValueError("bad")
             except ValueError:
                 tb = sys.exc_info()[2]
 

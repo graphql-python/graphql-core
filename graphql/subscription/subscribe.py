@@ -1,29 +1,34 @@
 from inspect import isawaitable
-from typing import (
-    Any, AsyncIterable, AsyncIterator, Awaitable, Dict, Union, cast)
+from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Dict, Union, cast
 
 from ..error import GraphQLError, located_error
 from ..execution.execute import (
-    add_path, assert_valid_execution_arguments, execute, get_field_def,
-    response_path_as_list, ExecutionContext, ExecutionResult)
+    add_path,
+    assert_valid_execution_arguments,
+    execute,
+    get_field_def,
+    response_path_as_list,
+    ExecutionContext,
+    ExecutionResult,
+)
 from ..language import DocumentNode
 from ..type import GraphQLFieldResolver, GraphQLSchema
 from ..utilities import get_operation_root_type
 from .map_async_iterator import MapAsyncIterator
 
-__all__ = ['subscribe', 'create_source_event_stream']
+__all__ = ["subscribe", "create_source_event_stream"]
 
 
 async def subscribe(
-        schema: GraphQLSchema,
-        document: DocumentNode,
-        root_value: Any=None,
-        context_value: Any=None,
-        variable_values: Dict[str, Any]=None,
-        operation_name: str = None,
-        field_resolver: GraphQLFieldResolver=None,
-        subscribe_field_resolver: GraphQLFieldResolver=None
-        ) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
+    schema: GraphQLSchema,
+    document: DocumentNode,
+    root_value: Any = None,
+    context_value: Any = None,
+    variable_values: Dict[str, Any] = None,
+    operation_name: str = None,
+    field_resolver: GraphQLFieldResolver = None,
+    subscribe_field_resolver: GraphQLFieldResolver = None,
+) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
     """Create a GraphQL subscription.
 
     Implements the "Subscribe" algorithm described in the GraphQL spec.
@@ -45,8 +50,14 @@ async def subscribe(
     """
     try:
         result_or_stream = await create_source_event_stream(
-            schema, document, root_value, context_value, variable_values,
-            operation_name, subscribe_field_resolver)
+            schema,
+            document,
+            root_value,
+            context_value,
+            variable_values,
+            operation_name,
+            subscribe_field_resolver,
+        )
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])
     if isinstance(result_or_stream, ExecutionResult):
@@ -63,21 +74,28 @@ async def subscribe(
         "ExecuteSubscriptionEvent" algorithm, as it is nearly identical to the
         "ExecuteQuery" algorithm, for which `execute` is also used.
         """
-        return execute(schema, document, payload, context_value,
-                       variable_values, operation_name, field_resolver)
+        return execute(
+            schema,
+            document,
+            payload,
+            context_value,
+            variable_values,
+            operation_name,
+            field_resolver,
+        )
 
     return MapAsyncIterator(result_or_stream, map_source_to_response)
 
 
 async def create_source_event_stream(
-        schema: GraphQLSchema,
-        document: DocumentNode,
-        root_value: Any=None,
-        context_value: Any=None,
-        variable_values: Dict[str, Any]=None,
-        operation_name: str = None,
-        field_resolver: GraphQLFieldResolver=None
-        ) -> Union[AsyncIterable[Any], ExecutionResult]:
+    schema: GraphQLSchema,
+    document: DocumentNode,
+    root_value: Any = None,
+    context_value: Any = None,
+    variable_values: Dict[str, Any] = None,
+    operation_name: str = None,
+    field_resolver: GraphQLFieldResolver = None,
+) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source even stream
 
     Implements the "CreateSourceEventStream" algorithm described in the
@@ -104,16 +122,21 @@ async def create_source_event_stream(
     # If a valid context cannot be created due to incorrect arguments,
     # this will throw an error.
     context = ExecutionContext.build(
-        schema, document, root_value, context_value,
-        variable_values, operation_name, field_resolver)
+        schema,
+        document,
+        root_value,
+        context_value,
+        variable_values,
+        operation_name,
+        field_resolver,
+    )
 
     # Return early errors if execution context failed.
     if isinstance(context, list):
         return ExecutionResult(data=None, errors=context)
 
     type_ = get_operation_root_type(schema, context.operation)
-    fields = context.collect_fields(
-        type_, context.operation.selection_set, {}, set())
+    fields = context.collect_fields(type_, context.operation.selection_set, {}, set())
     response_names = list(fields)
     response_name = response_names[0]
     field_nodes = fields[response_name]
@@ -123,8 +146,8 @@ async def create_source_event_stream(
 
     if not field_def:
         raise GraphQLError(
-            f"The subscription field '{field_name}' is not defined.",
-            field_nodes)
+            f"The subscription field '{field_name}' is not defined.", field_nodes
+        )
 
     # Call the `subscribe()` resolver or the default resolver to produce an
     # AsyncIterable yielding raw payloads.
@@ -139,17 +162,16 @@ async def create_source_event_stream(
     # algorithm from GraphQL specification. It differs from
     # "resolve_field_value" due to providing a different `resolve_fn`.
     result = context.resolve_field_value_or_error(
-        field_def, field_nodes, resolve_fn, root_value, info)
-    event_stream = (await cast(Awaitable, result) if isawaitable(result)
-                    else result)
+        field_def, field_nodes, resolve_fn, root_value, info
+    )
+    event_stream = await cast(Awaitable, result) if isawaitable(result) else result
     # If event_stream is an Error, rethrow a located error.
     if isinstance(event_stream, Exception):
-        raise located_error(
-            event_stream, field_nodes, response_path_as_list(path))
+        raise located_error(event_stream, field_nodes, response_path_as_list(path))
 
     # Assert field returned an event stream, otherwise yield an error.
     if isinstance(event_stream, AsyncIterable):
         return cast(AsyncIterable, event_stream)
     raise TypeError(
-        'Subscription field must return AsyncIterable.'
-        f' Received: {event_stream!r}')
+        "Subscription field must return AsyncIterable." f" Received: {event_stream!r}"
+    )

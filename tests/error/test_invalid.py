@@ -2,12 +2,11 @@ from graphql.error import INVALID
 
 
 def describe_invalid():
-
     def has_repr():
-        assert repr(INVALID) == '<INVALID>'
+        assert repr(INVALID) == "<INVALID>"
 
     def has_str():
-        assert str(INVALID) == 'INVALID'
+        assert str(INVALID) == "INVALID"
 
     def as_bool_is_false():
         assert bool(INVALID) is False
