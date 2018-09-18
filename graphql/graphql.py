@@ -1,26 +1,28 @@
 from asyncio import ensure_future
 from inspect import isawaitable
-from typing import Any, Awaitable, Callable, Dict, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Union, Type, cast
 
 from .error import GraphQLError
 from .execution import execute, ExecutionResult, Middleware
 from .language import parse, Source
 from .pyutils import MaybeAwaitable
 from .type import GraphQLSchema, validate_schema
+from .execution.execute import ExecutionResult, ExecutionContext
 
-__all__ = ['graphql', 'graphql_sync']
+__all__ = ["graphql", "graphql_sync"]
 
 
 async def graphql(
-        schema: GraphQLSchema,
-        source: Union[str, Source],
-        root_value: Any=None,
-        context_value: Any=None,
-        variable_values: Dict[str, Any]=None,
-        operation_name: str=None,
-        field_resolver: Callable=None,
-        middleware: Middleware=None
-        ) -> ExecutionResult:
+    schema: GraphQLSchema,
+    source: Union[str, Source],
+    root_value: Any=None,
+    context_value: Any=None,
+    variable_values: Dict[str, Any]=None,
+    operation_name: str=None,
+    field_resolver: Callable=None,
+    middleware: Middleware=None,
+    execution_context_class: Type[ExecutionContext] = ExecutionContext,
+) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
     This is the primary entry point function for fulfilling GraphQL operations
@@ -59,6 +61,8 @@ async def graphql(
       a value or method on the source value with the field's name).
     :arg middleware:
       The middleware to wrap the resolvers with
+    :arg execution_context_class:
+      The execution context class to use to build the context
     """
     # Always return asynchronously for a consistent API.
     result = graphql_impl(
@@ -69,7 +73,9 @@ async def graphql(
         variable_values,
         operation_name,
         field_resolver,
-        middleware)
+        middleware,
+        execution_context_class,
+    )
 
     if isawaitable(result):
         return await cast(Awaitable[ExecutionResult], result)
@@ -78,15 +84,16 @@ async def graphql(
 
 
 def graphql_sync(
-        schema: GraphQLSchema,
-        source: Union[str, Source],
-        root_value: Any=None,
-        context_value: Any=None,
-        variable_values: Dict[str, Any]=None,
-        operation_name: str=None,
-        field_resolver: Callable=None,
-        middleware: Middleware=None
-        ) -> ExecutionResult:
+    schema: GraphQLSchema,
+    source: Union[str, Source],
+    root_value: Any=None,
+    context_value: Any=None,
+    variable_values: Dict[str, Any]=None,
+    operation_name: str=None,
+    field_resolver: Callable=None,
+    middleware: Middleware=None,
+    execution_context_class: Type[ExecutionContext] = ExecutionContext,
+) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
     The graphql_sync function also fulfills GraphQL operations by parsing,
@@ -102,7 +109,9 @@ def graphql_sync(
         variable_values,
         operation_name,
         field_resolver,
-        middleware)
+        middleware,
+        execution_context_class,
+    )
 
     # Assert that the execution was synchronous.
     if isawaitable(result):
@@ -114,14 +123,16 @@ def graphql_sync(
 
 
 def graphql_impl(
-        schema,
-        source,
-        root_value,
-        context_value,
-        variable_values,
-        operation_name,
-        field_resolver,
-        middleware) -> MaybeAwaitable[ExecutionResult]:
+    schema,
+    source,
+    root_value,
+    context_value,
+    variable_values,
+    operation_name,
+    field_resolver,
+    middleware,
+    execution_context_class,
+) -> MaybeAwaitable[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
     schema_validation_errors = validate_schema(schema)
@@ -139,6 +150,7 @@ def graphql_impl(
 
     # Validate
     from .validation import validate
+
     validation_errors = validate(schema, document)
     if validation_errors:
         return ExecutionResult(data=None, errors=validation_errors)
@@ -152,4 +164,6 @@ def graphql_impl(
         variable_values,
         operation_name,
         field_resolver,
-        middleware)
+        middleware,
+        execution_context_class,
+    )

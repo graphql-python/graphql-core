@@ -1,7 +1,7 @@
 from inspect import isawaitable
 from typing import (
     Any, Awaitable, Dict, Iterable, List, NamedTuple, Optional, Set, Union,
-    Tuple, cast)
+    Tuple, Type, cast)
 
 from ..error import GraphQLError, INVALID, located_error
 from ..language import (
@@ -69,6 +69,7 @@ def execute(
         variable_values: Dict[str, Any]=None,
         operation_name: str=None,
         field_resolver: GraphQLFieldResolver=None,
+        execution_context_class: Type[ExecutionContext]=ExecutionContext,
         middleware: Middleware=None
         ) -> MaybeAwaitable[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -87,7 +88,7 @@ def execute(
 
     # If a valid execution context cannot be created due to incorrect
     #  arguments, a "Response" with only errors is returned.
-    exe_context = ExecutionContext.build(
+    exe_context = execution_context_class.build(
         schema, document, root_value, context_value,
         variable_values, operation_name, field_resolver, middleware)
 
