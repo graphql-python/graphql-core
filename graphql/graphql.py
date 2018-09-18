@@ -3,11 +3,10 @@ from inspect import isawaitable
 from typing import Any, Awaitable, Callable, Dict, Union, Type, cast
 
 from .error import GraphQLError
-from .execution import execute, ExecutionResult, Middleware
+from .execution import execute, ExecutionResult, ExecutionContext, Middleware
 from .language import parse, Source
 from .pyutils import MaybeAwaitable
 from .type import GraphQLSchema, validate_schema
-from .execution.execute import ExecutionResult, ExecutionContext
 
 __all__ = ["graphql", "graphql_sync"]
 
