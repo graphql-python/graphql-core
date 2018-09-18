@@ -69,8 +69,8 @@ def execute(
         variable_values: Dict[str, Any]=None,
         operation_name: str=None,
         field_resolver: GraphQLFieldResolver=None,
-        execution_context_class: Type[ExecutionContext]=ExecutionContext,
-        middleware: Middleware=None
+        middleware: Middleware=None,
+        execution_context_class: Type['ExecutionContext']=None,
         ) -> MaybeAwaitable[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -85,6 +85,9 @@ def execute(
     """
     # If arguments are missing or incorrect, throw an error.
     assert_valid_execution_arguments(schema, document, variable_values)
+
+    if execution_context_class is None:
+        execution_context_class = ExecutionContext
 
     # If a valid execution context cannot be created due to incorrect
     #  arguments, a "Response" with only errors is returned.
