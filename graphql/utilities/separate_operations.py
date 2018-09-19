@@ -19,10 +19,9 @@ DepGraph = Dict[str, Set[str]]
 def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
     """Separate operations in a given AST document.
 
-    separate_operations accepts a single AST document which may contain many
-    operations and fragments and returns a collection of AST documents each of
-    which contains a single operation as well the fragment definitions it
-    refers to.
+    This function accepts a single AST document which may contain many operations and
+    fragments and returns a collection of AST documents each of which contains a single
+    operation as well the fragment definitions it refers to.
     """
 
     # Populate metadata and build a dependency graph.
@@ -90,8 +89,8 @@ def collect_transitive_dependencies(
 ) -> None:
     """Collect transitive dependencies.
 
-    From a dependency graph, collects a list of transitive dependencies by
-    recursing through a dependency graph.
+    From a dependency graph, collects a list of transitive dependencies by recursing
+    through a dependency graph.
     """
     immediate_deps = dep_graph[from_name]
     for to_name in immediate_deps:

@@ -6,8 +6,8 @@ __all__ = ["suggestion_list"]
 def suggestion_list(input_: str, options: Collection[str]):
     """Get list with suggestions for a given input.
 
-    Given an invalid input string and list of valid options, returns a filtered
-    list of valid options sorted based on their similarity with the input.
+    Given an invalid input string and list of valid options, returns a filtered list
+    of valid options sorted based on their similarity with the input.
     """
     options_by_distance = {}
     input_threshold = len(input_) // 2
@@ -24,12 +24,11 @@ def suggestion_list(input_: str, options: Collection[str]):
 def lexical_distance(a_str: str, b_str: str) -> int:
     """Computes the lexical distance between strings A and B.
 
-    The "distance" between two strings is given by counting the minimum number
-    of edits needed to transform string A into string B. An edit can be an
-    insertion, deletion, or substitution of a single character, or a swap of
-    two adjacent characters.
+    The "distance" between two strings is given by counting the minimum number of edits
+    needed to transform string A into string B. An edit can be an insertion, deletion,
+    or substitution of a single character, or a swap of two adjacent characters.
 
-    This distance can be useful for detecting typos in input or sorting
+    This distance can be useful for detecting typos in input or sorting.
     """
     if a_str == b_str:
         return 0

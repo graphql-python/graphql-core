@@ -94,9 +94,9 @@ def print_schema_definition(schema: GraphQLSchema) -> Optional[str]:
 def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
     """Check whether this schema uses the common naming convention.
 
-    GraphQL schema define root types for each type of operation. These types
-    are the same as any other type and can be named in any manner, however
-    there is a common naming convention:
+    GraphQL schema define root types for each type of operation. These types are the
+    same as any other type and can be named in any manner, however there is a common
+    naming convention:
 
     schema {
       query: Query

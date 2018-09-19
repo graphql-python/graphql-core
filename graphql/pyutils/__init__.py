@@ -1,7 +1,7 @@
 """Python Utils
 
-This package contains dependency-free Python utility functions used
-throughout the codebase.
+This package contains dependency-free Python utility functions used throughout the
+codebase.
 
 Each utility should belong in its own file and be the default export.
 

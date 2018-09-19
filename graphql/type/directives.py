@@ -25,8 +25,8 @@ def is_directive(directive: Any) -> bool:
 class GraphQLDirective:
     """GraphQL Directive
 
-    Directives are used by the GraphQL runtime as a way of modifying execution
-    behavior. Type system creators will usually not create these directly.
+    Directives are used by the GraphQL runtime as a way of modifying execution behavior.
+    Type system creators will usually not create these directly.
     """
 
     def __init__(

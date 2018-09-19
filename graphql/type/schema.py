@@ -35,9 +35,9 @@ def is_schema(schema: Any) -> bool:
 class GraphQLSchema:
     """Schema Definition
 
-    A Schema is created by supplying the root types of each type of operation,
-    query and mutation (optional). A schema definition is then supplied to the
-    validator and executor.
+    A Schema is created by supplying the root types of each type of operation, query
+    and mutation (optional). A schema definition is then supplied to the validator
+    and executor.
 
     Example::
 
@@ -45,11 +45,11 @@ class GraphQLSchema:
           query=MyAppQueryRootType,
           mutation=MyAppMutationRootType)
 
-    Note: If a list of `directives` are provided to GraphQLSchema, that will be
-    the exact list of directives represented and allowed. If `directives` is
-    not provided, then a default set of the specified directives (e.g. @include
-    and @skip) will be used. If you wish to provide *additional* directives to
-    these specified directives, you must explicitly declare them. Example::
+    Note: If a list of `directives` are provided to GraphQLSchema, that will be the
+    exact list of directives represented and allowed. If `directives` is not provided,
+    then a default set of the specified directives (e.g. @include and @skip) will be
+    used. If you wish to provide *additional* directives to these specified directives,
+    you must explicitly declare them. Example::
 
         const MyAppSchema = GraphQLSchema(
           ...
@@ -77,10 +77,10 @@ class GraphQLSchema:
     ) -> None:
         """Initialize GraphQL schema.
 
-        If this schema was built from a source known to be valid, then it may
-        be marked with assume_valid to avoid an additional type system
-        validation. Otherwise check for common mistakes during construction
-        to produce clear and early error messages.
+        If this schema was built from a source known to be valid, then it may be marked
+        with `assume_valid` to avoid an additional type system validation. Otherwise
+        check for common mistakes during construction to produce clear and early error
+        messages.
         """
         if assume_valid:
             # If this schema was built from a source known to be valid,

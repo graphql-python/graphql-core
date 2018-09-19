@@ -256,8 +256,8 @@ def get_named_type(type_):  # noqa: F811
 def resolve_thunk(thunk: Any) -> Any:
     """Resolve the given thunk.
 
-    Used while defining GraphQL types to allow for circular references in
-    otherwise immutable type definitions.
+    Used while defining GraphQL types to allow for circular references in otherwise
+    immutable type definitions.
     """
     return thunk() if callable(thunk) else thunk
 
@@ -275,12 +275,12 @@ GraphQLScalarLiteralParser = Callable
 class GraphQLScalarType(GraphQLNamedType):
     """Scalar Type Definition
 
-    The leaf values of any request and input values to arguments are
-    Scalars (or Enums) and are defined with a name and a series of functions
-    used to parse input from ast or variables and to ensure validity.
+    The leaf values of any request and input values to arguments are Scalars (or Enums)
+    and are defined with a name and a series of functions used to parse input from ast
+    or variables and to ensure validity.
 
-    If a type's serialize function does not return a value (i.e. it returns
-    `None`), then no error will be included in the response.
+    If a type's serialize function does not return a value (i.e. it returns `None`),
+    then no error will be included in the response.
 
     Example:
 
@@ -442,9 +442,9 @@ class GraphQLResolveInfo(NamedTuple):
 
     This is always passed as the first argument to the resolvers.
 
-    Note that contrary to the JavaScript implementation, the context
-    (commonly used to represent an authenticated user, or request-specific
-    caches) is included here and not passed as an additional argument.
+    Note that contrary to the JavaScript implementation, the context (commonly used to
+    represent an authenticated user, or request-specific caches) is included here and
+    not passed as an additional argument.
     """
 
     field_name: str
@@ -528,8 +528,8 @@ GraphQLInterfaceList = Sequence["GraphQLInterfaceType"]
 class GraphQLObjectType(GraphQLNamedType):
     """Object Type Definition
 
-    Almost all of the GraphQL types you define will be object types.
-    Object types have a name, but most importantly describe their fields.
+    Almost all of the GraphQL types you define will be object types. Object types have
+    a name, but most importantly describe their fields.
 
     Example::
 
@@ -540,9 +540,9 @@ class GraphQLObjectType(GraphQLNamedType):
                 lambda obj, info, **args: f'{obj.number} {obj.street}')
         })
 
-    When two types need to refer to each other, or a type needs to refer to
-    itself in a field, you can use a lambda function with no arguments (a
-    so-called "thunk") to supply the fields lazily.
+    When two types need to refer to each other, or a type needs to refer to itself in
+    a field, you can use a lambda function with no arguments (a so-called "thunk")
+    to supply the fields lazily.
 
     Example::
 
@@ -652,10 +652,10 @@ def assert_object_type(type_: Any) -> GraphQLObjectType:
 class GraphQLInterfaceType(GraphQLNamedType):
     """Interface Type Definition
 
-    When a field can return one of a heterogeneous set of types, a Interface
-    type is used to describe what types are possible, what fields are in common
-    across all types, as well as a function to determine which type is actually
-    used when the field is resolved.
+    When a field can return one of a heterogeneous set of types, an Interface type
+    is used to describe what types are possible, what fields are in common across
+    all types, as well as a function to determine which type is actually used when
+    the field is resolved.
 
     Example::
 
@@ -1019,10 +1019,10 @@ GraphQLInputFieldMap = Dict[str, "GraphQLInputField"]
 class GraphQLInputObjectType(GraphQLNamedType):
     """Input Object Type Definition
 
-    An input object defines a structured collection of fields which may be
-    supplied to a field argument.
+    An input object defines a structured collection of fields which may be supplied
+    to a field argument.
 
-    Using `NonNull` will ensure that a value must be provided by the query
+    Using `NonNull` will ensure that a value must be provided by the query.
 
     Example::
 
@@ -1152,9 +1152,8 @@ def is_required_input_field(field: GraphQLInputField) -> bool:
 class GraphQLList(Generic[GT], GraphQLWrappingType[GT]):
     """List Type Wrapper
 
-    A list is a wrapping type which points to another type.
-    Lists are often created within the context of defining the fields of
-    an object type.
+    A list is a wrapping type which points to another type. Lists are often created
+    within the context of defining the fields of an object type.
 
     Example::
 
@@ -1192,11 +1191,11 @@ GNT = TypeVar("GNT", bound="GraphQLNullableType")
 class GraphQLNonNull(GraphQLWrappingType[GNT], Generic[GNT]):
     """Non-Null Type Wrapper
 
-    A non-null is a wrapping type which points to another type.
-    Non-null types enforce that their values are never null and can ensure
-    an error is raised if this ever occurs during a request. It is useful for
-    fields which you can make a strong guarantee on non-nullability,
-    for example usually the id field of a database row will never be null.
+    A non-null is a wrapping type which points to another type. Non-null types enforce
+    that their values are never null and can ensure an error is raised if this ever
+    occurs during a request. It is useful for fields which you can make a strong
+    guarantee on non-nullability, for example usually the id field of a database row
+    will never be null.
 
     Example::
 

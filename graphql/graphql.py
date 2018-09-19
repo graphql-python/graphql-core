@@ -24,40 +24,37 @@ async def graphql(
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
-    This is the primary entry point function for fulfilling GraphQL operations
-    by parsing, validating, and executing a GraphQL document along side a
-    GraphQL schema.
+    This is the primary entry point function for fulfilling GraphQL operations by
+    parsing, validating, and executing a GraphQL document along side a GraphQL schema.
 
-    More sophisticated GraphQL servers, such as those which persist queries,
-    may wish to separate the validation and execution phases to a static time
-    tooling step, and a server runtime step.
+    More sophisticated GraphQL servers, such as those which persist queries, may wish
+    to separate the validation and execution phases to a static time tooling step,
+    and a server runtime step.
 
     Accepts the following arguments:
 
     :arg schema:
       The GraphQL type system to use when validating and executing a query.
     :arg source:
-      A GraphQL language formatted string representing the requested
-      operation.
+      A GraphQL language formatted string representing the requested operation.
     :arg root_value:
-      The value provided as the first argument to resolver functions on the
-      top level type (e.g. the query object type).
+      The value provided as the first argument to resolver functions on the top level
+      type (e.g. the query object type).
     :arg context_value:
       The context value is provided as an attribute of the second argument
-      (the resolve info) to resolver functions. It is used to pass shared
-      information useful at any point during query execution, for example the
-      currently logged in user and connections to databases or other services.
+      (the resolve info) to resolver functions. It is used to pass shared information
+      useful at any point during query execution, for example the currently logged in
+      user and connections to databases or other services.
     :arg variable_values:
-      A mapping of variable name to runtime value to use for all variables
-      defined in the request string.
+      A mapping of variable name to runtime value to use for all variables defined
+      in the request string.
     :arg operation_name:
-      The name of the operation to use if request string contains multiple
-      possible operations. Can be omitted if request string contains only
-      one operation.
+      The name of the operation to use if request string contains multiple possible
+      operations. Can be omitted if request string contains only one operation.
     :arg field_resolver:
       A resolver function to use when one is not provided by the schema.
-      If not provided, the default field resolver is used (which looks for
-      a value or method on the source value with the field's name).
+      If not provided, the default field resolver is used (which looks for a value
+      or method on the source value with the field's name).
     :arg middleware:
       The middleware to wrap the resolvers with
     :arg execution_context_class:
@@ -95,10 +92,10 @@ def graphql_sync(
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
-    The graphql_sync function also fulfills GraphQL operations by parsing,
-    validating, and executing a GraphQL document along side a GraphQL schema.
-    However, it guarantees to complete synchronously (or throw an error)
-    assuming that all field resolvers are also synchronous.
+    The graphql_sync function also fulfills GraphQL operations by parsing, validating,
+    and executing a GraphQL document along side a GraphQL schema. However, it guarantees
+    to complete synchronously (or throw an error) assuming that all field resolvers
+    are also synchronous.
     """
     result = graphql_impl(
         schema,

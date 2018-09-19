@@ -1,11 +1,11 @@
 Building a Type Schema
 ----------------------
 
-Using the classes in the :mod:`graphql.type` sub-package as building blocks,
-you can build a complete GraphQL type schema.
+Using the classes in the :mod:`graphql.type` sub-package as building blocks, you can
+build a complete GraphQL type schema.
 
-Let's take the following schema as an example, which will allow us to
-query our favorite heroes from the Star Wars trilogy::
+Let's take the following schema as an example, which will allow us to query our favorite
+heroes from the Star Wars trilogy::
 
     enum Episode { NEWHOPE, EMPIRE, JEDI }
 
@@ -38,15 +38,15 @@ query our favorite heroes from the Star Wars trilogy::
       droid(id: String!): Droid
     }
 
-We have been using the so called GraphQL schema definition language (SDL) here
-to describe the schema. While it is also possible to build a schema directly
-from this notation using GraphQL-core-next, let's first create that schema
-manually by assembling the types defined here using Python classes, adding
-resolver functions written in Python for querying the data.
+We have been using the so called GraphQL schema definition language (SDL) here to
+describe the schema. While it is also possible to build a schema directly from this
+notation using GraphQL-core-next, let's first create that schema manually by assembling
+the types defined here using Python classes, adding resolver functions written in Python
+for querying the data.
 
 First, we need to import all the building blocks from the :mod:`graphql.type`
-sub-package. Note that you don't need to import from the sub-packages, since
-nearly everything is also available directly in the top :mod:`graphql` package::
+sub-package. Note that you don't need to import from the sub-packages, since nearly
+everything is also available directly in the top :mod:`graphql` package::
 
     from graphql import (
         GraphQLArgument, GraphQLEnumType, GraphQLEnumValue,
@@ -61,8 +61,8 @@ Next, we need to build the enum type ``Episode``::
         'JEDI': GraphQLEnumValue(6, description='Released in 1983.')
         }, description='One of the films in the Star Wars Trilogy')
 
-If you don't need the descriptions for the enum values, you can also define
-the enum type like this using an underlying Python ``Enum`` type::
+If you don't need the descriptions for the enum values, you can also define the enum
+type like this using an underlying Python ``Enum`` type::
 
     from enum import Enum
 
@@ -75,8 +75,8 @@ the enum type like this using an underlying Python ``Enum`` type::
         'Episode', EpisodeEnum,
         description='One of the films in the Star Wars Trilogy')
 
-You can also use a Python dictionary instead of a Python ``Enum`` type to
-define the GraphQL enum type::
+You can also use a Python dictionary instead of a Python ``Enum`` type to define the
+GraphQL enum type::
 
     episode_enum = GraphQLEnumType(
         'Episode', {'NEWHOPE': 4, 'EMPIRE': 5, 'JEDI': 6},
@@ -104,16 +104,14 @@ Our schema also contains a ``Character`` interface. Here is how we build it::
         resolve_type=get_character_type,
         description='A character in the Star Wars Trilogy')
 
-Note that we did not pass the dictionary of fields to the
-``GraphQLInterfaceType`` directly, but using a lambda function (a
-so-called "thunk"). This is necessary because the fields are referring
-back to the character interface that we are just defining. Whenever you
-have such recursive definitions in GraphQL-core-next, you need to use thunks.
-Otherwise, you can pass everything directly.
+Note that we did not pass the dictionary of fields to the ``GraphQLInterfaceType``
+directly, but using a lambda function (a so-called "thunk"). This is necessary because
+the fields are referring back to the character interface that we are just defining.
+Whenever you have such recursive definitions in GraphQL-core-next, you need to use
+thunks. Otherwise, you can pass everything directly.
 
-Characters in the Star Wars trilogy are either humans or droids.
-So we define a ``Human`` and a ``Droid`` type,
-which both implement the ``Character`` interface::
+Characters in the Star Wars trilogy are either humans or droids. So we define a
+``Human`` and a ``Droid`` type, which both implement the ``Character`` interface::
 
     human_type = GraphQLObjectType('Human', lambda: {
         'id': GraphQLField(
@@ -168,8 +166,8 @@ which both implement the ``Character`` interface::
         interfaces=[character_interface],
         description='A mechanical creature in the Star Wars universe.')
 
-Now that we have defined all used result types, we can construct the ``Query``
-type for our schema::
+Now that we have defined all used result types, we can construct the ``Query`` type for
+our schema::
 
     query_type = GraphQLObjectType('Query', lambda: {
         'hero': GraphQLField(character_interface, args={
@@ -191,5 +189,5 @@ Using our query type we can define our schema::
 
     schema = GraphQLSchema(query_type)
 
-Note that you can also pass a mutation type and a subscription type as
-additional arguments to the ``GraphQLSchema``.
+Note that you can also pass a mutation type and a subscription type as additional
+arguments to the ``GraphQLSchema``.

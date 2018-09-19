@@ -416,37 +416,37 @@ __TypeKind: GraphQLEnumType = GraphQLEnumType(
         ),
         "OBJECT": GraphQLEnumValue(
             TypeKind.OBJECT,
-            description="Indicates this type is an object. "
-            "`fields` and `interfaces` are valid fields.",
+            description="Indicates this type is an object."
+            " `fields` and `interfaces` are valid fields.",
         ),
         "INTERFACE": GraphQLEnumValue(
             TypeKind.INTERFACE,
-            description="Indicates this type is an interface. "
-            "`fields` and `possibleTypes` are valid fields.",
+            description="Indicates this type is an interface."
+            " `fields` and `possibleTypes` are valid fields.",
         ),
         "UNION": GraphQLEnumValue(
             TypeKind.UNION,
-            description="Indicates this type is a union. "
-            "`possibleTypes` is a valid field.",
+            description="Indicates this type is a union."
+            " `possibleTypes` is a valid field.",
         ),
         "ENUM": GraphQLEnumValue(
             TypeKind.ENUM,
-            description="Indicates this type is an enum. "
-            "`enumValues` is a valid field.",
+            description="Indicates this type is an enum."
+            " `enumValues` is a valid field.",
         ),
         "INPUT_OBJECT": GraphQLEnumValue(
             TypeKind.INPUT_OBJECT,
-            description="Indicates this type is an input object. "
-            "`inputFields` is a valid field.",
+            description="Indicates this type is an input object."
+            " `inputFields` is a valid field.",
         ),
         "LIST": GraphQLEnumValue(
             TypeKind.LIST,
-            description="Indicates this type is a list. " "`ofType` is a valid field.",
+            description="Indicates this type is a list. `ofType` is a valid field.",
         ),
         "NON_NULL": GraphQLEnumValue(
             TypeKind.NON_NULL,
-            description="Indicates this type is a non-null. "
-            "`ofType` is a valid field.",
+            description="Indicates this type is a non-null."
+            " `ofType` is a valid field.",
         ),
     },
 )

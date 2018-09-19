@@ -59,8 +59,8 @@ Create a GraphQL language AST from a Python value:
 
 .. autofunction:: ast_from_value
 
-A helper to use within recursive-descent visitors which need to be aware of
-the GraphQL type system:
+A helper to use within recursive-descent visitors which need to be aware of the GraphQL
+type system:
 
 .. autoclass:: TypeInfo
 

@@ -1,40 +1,40 @@
 """GraphQL-core-next
 
-The primary `graphql` package includes everything you need to define a GraphQL
+The primary :mod:`graphql` package includes everything you need to define a GraphQL
 schema and fulfill GraphQL requests.
 
-GraphQL-core-next provides a reference implementation for the GraphQL
-specification but is also a useful utility for operating on GraphQL files
-and building sophisticated tools.
+GraphQL-core-next provides a reference implementation for the GraphQL specification
+but is also a useful utility for operating on GraphQL files and building sophisticated
+tools.
 
-This top-level package exports a general purpose function for fulfilling all
-steps of the GraphQL specification in a single operation, but also includes
-utilities for every part of the GraphQL specification:
+This top-level package exports a general purpose function for fulfilling all steps
+of the GraphQL specification in a single operation, but also includes utilities
+for every part of the GraphQL specification:
 
   - Parsing the GraphQL language.
   - Building a GraphQL type schema.
   - Validating a GraphQL request against a type schema.
   - Executing a GraphQL request against a type schema.
 
-This also includes utility functions for operating on GraphQL types and
-GraphQL documents to facilitate building tools.
+This also includes utility functions for operating on GraphQL types and GraphQL
+documents to facilitate building tools.
 
-You may also import from each sub-package directly. For example, the
-following two import statements are equivalent::
+You may also import from each sub-package directly. For example, the following two
+import statements are equivalent::
 
     from graphql import parse
     from graphql.language import parse
 
 The sub-packages of GraphQL-core-next are:
 
-  - `graphql/language`: Parse and operate on the GraphQL language.
-  - `graphql/type`: Define GraphQL types and schema.
-  - `graphql/validation`: The Validation phase of fulfilling a GraphQL result.
-  - `graphql/execution`: The Execution phase of fulfilling a GraphQL request.
-  - `graphql/error`: Creating and format GraphQL errors.
-  - `graphql/utilities`:
+  - :mod:`graphql.language`: Parse and operate on the GraphQL language.
+  - :mod:`graphql.type`: Define GraphQL types and schema.
+  - :mod:`graphql.validation`: The Validation phase of fulfilling a GraphQL result.
+  - :mod:`graphql.execution`: The Execution phase of fulfilling a GraphQL request.
+  - :mod:`graphql.error`: Creating and format GraphQL errors.
+  - :mod:`graphql.utilities`:
      Common useful computations upon the GraphQL language and type objects.
-  - `graphql/subscription`: Subscribe to data updates.
+  - :mod:`graphql/subscription`: Subscribe to data updates.
 """
 
 __version__ = "1.0.1"

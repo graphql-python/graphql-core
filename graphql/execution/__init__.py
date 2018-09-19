@@ -1,7 +1,7 @@
 """GraphQL Execution
 
-The `graphql.execution` package is responsible for the execution phase
-of fulfilling a GraphQL request.
+The :mod:`graphql.execution` package is responsible for the execution phase of
+fulfilling a GraphQL request.
 """
 
 from .execute import (

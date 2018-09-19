@@ -75,16 +75,15 @@ def parse(
 
     Throws GraphQLError if a syntax error is encountered.
 
-    By default, the parser creates AST nodes that know the location
-    in the source that they correspond to. The `no_location` option
-    disables that behavior for performance or testing.
+    By default, the parser creates AST nodes that know the location in the source that
+    they correspond to. The `no_location` option disables that behavior for
+    performance or testing.
 
     Experimental features:
 
-    If `experimental_fragment_variables` is set to True, the parser will
-    understand and parse variable definitions contained in a fragment
-    definition. They'll be represented in the `variable_definitions` field
-    of the `FragmentDefinitionNode`.
+    If `experimental_fragment_variables` is set to True, the parser will understand
+    and parse variable definitions contained in a fragment definition. They'll be
+    represented in the `variable_definitions` field of the `FragmentDefinitionNode`.
 
     The syntax is identical to normal, query-defined variables. For example::
 
@@ -119,10 +118,10 @@ def parse_value(source: SourceType, **options: dict) -> ValueNode:
 
     Throws GraphQLError if a syntax error is encountered.
 
-    This is useful within tools that operate upon GraphQL Values directly and
-    in isolation of complete GraphQL documents.
+    This is useful within tools that operate upon GraphQL Values directly and in
+    isolation of complete GraphQL documents.
 
-    Consider providing the results to the utility function: value_from_ast().
+    Consider providing the results to the utility function: `value_from_ast()`.
     """
     if isinstance(source, str):
         source = Source(source)
@@ -141,7 +140,7 @@ def parse_type(source: SourceType, **options: dict) -> TypeNode:
     This is useful within tools that operate upon GraphQL Types directly and
     in isolation of complete GraphQL documents.
 
-    Consider providing the results to the utility function: type_from_ast().
+    Consider providing the results to the utility function: `type_from_ast()`.
     """
     if isinstance(source, str):
         source = Source(source)

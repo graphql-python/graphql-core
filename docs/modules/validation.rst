@@ -10,9 +10,9 @@ Validation
 Rules
 -----
 
-This list includes all validation rules defined by the GraphQL spec.
-The order of the rules in this list has been adjusted to lead to the
-most clear output when encountering multiple validation errors:
+This list includes all validation rules defined by the GraphQL spec. The order of the
+rules in this list has been adjusted to lead to the most clear output when encountering
+multiple validation errors:
 
 .. autodata:: specified_rules
 

@@ -99,6 +99,5 @@ Visitor
 .. autoclass:: ParallelVisitor
 .. autoclass:: TypeInfoVisitor
 
-The module also exports the constants :const:`BREAK`, :const:`SKIP`,
-:const:`REMOVE` and :const:`IDLE` that are used as special return values
-in the :class:`Visitor` methods.
+The module also exports the constants :const:`BREAK`, :const:`SKIP`, :const:`REMOVE` and
+:const:`IDLE` that are used as special return values in the :class:`Visitor` methods.

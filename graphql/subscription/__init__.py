@@ -1,6 +1,6 @@
 """GraphQL Subscription
 
-The `graphql.subscription` package is responsible for subscribing to updates
+The :mod:`graphql.subscription` package is responsible for subscribing to updates
 on specific data.
 """
 

@@ -1,11 +1,10 @@
 Validating GraphQL Queries
 --------------------------
 
-When executing GraphQL queries, the second step that happens under the hood
-after parsing the source code is a validation against the given schema using
-the rules of the GraphQL specification. You can also run the validation step
-manually by calling the :func:`graphql.validation.validate` function, passing
-the schema and the AST document::
+When executing GraphQL queries, the second step that happens under the hood after
+parsing the source code is a validation against the given schema using the rules of the
+GraphQL specification. You can also run the validation step manually by calling the
+:func:`graphql.validation.validate` function, passing the schema and the AST document::
 
     from graphql import parse, validate
 
@@ -19,8 +18,8 @@ the schema and the AST document::
         }
         """))
 
-As a result, you will get a complete list of all errors that the validators
-has found. In this case, we will get::
+As a result, you will get a complete list of all errors that the validators has found.
+In this case, we will get::
 
     [GraphQLError(
         "Expected type String!, found NEWHOPE.",
@@ -34,8 +33,8 @@ has found. In this case, we will get::
          " sub selection of subfields. Did you mean 'friends { ... }'?",
          locations=[SourceLocation(line=6, column=9)])]
 
-These rules are implemented in the :mod:`graphql.validation.rules` module.
-Instead of the default rules, you can also use a subset or create custom
-rules. The rules are based on the :class:`graphql.validation.ValidationRule`
-class which is based on the :class:`graphql.language.Visitor` class which
-provides a way of walking through an AST document using the visitor pattern.
+These rules are implemented in the :mod:`graphql.validation.rules` module. Instead of
+the default rules, you can also use a subset or create custom rules. The rules are based
+on the :class:`graphql.validation.ValidationRule` class which is based on the
+:class:`graphql.language.Visitor` class which provides a way of walking through an AST
+document using the visitor pattern.

@@ -1,7 +1,7 @@
 """GraphQL Language
 
-The `graphql.language` package is responsible for parsing and operating
-on the GraphQL language.
+The :mod:`graphql.language` package is responsible for parsing and operating on the
+GraphQL language.
 """
 
 from .location import get_location, SourceLocation

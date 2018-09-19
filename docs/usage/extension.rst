@@ -1,12 +1,12 @@
 Extending a Schema
 ------------------
 
-With GraphQL-core-next you can also extend a given schema using type
-extensions. For example, we might want to add a ``lastName`` property to our
-``Human`` data type to retrieve only the last name of the person.
+With GraphQL-core-next you can also extend a given schema using type extensions. For
+example, we might want to add a ``lastName`` property to our ``Human`` data type to
+retrieve only the last name of the person.
 
-This can be achieved with the :func:`graphql.utilities.extend_schema`
-function as follows::
+This can be achieved with the :func:`graphql.utilities.extend_schema` function as
+follows::
 
     from graphql import extend_schema, parse
 
@@ -16,10 +16,9 @@ function as follows::
         }
         """))
 
-Note that this function expects the extensions as an AST, which we can
-get using the :func:`graphql.language.parse` function. Also note that
-the `extend_schema` function does not alter the original schema, but
-returns a new schema object.
+Note that this function expects the extensions as an AST, which we can get using the
+:func:`graphql.language.parse` function. Also note that the `extend_schema` function
+does not alter the original schema, but returns a new schema object.
 
 We also need to attach a resolver function to the new field::
 
@@ -45,3 +44,4 @@ This query will give the following result::
     ExecutionResult(
         data={'human': {'lastName': 'Skywalker', 'homePlanet': 'Tatooine'}},
         errors=None)
+
