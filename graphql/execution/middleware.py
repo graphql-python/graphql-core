@@ -1,8 +1,7 @@
-from functools import partial
+from functools import partial, reduce
 from inspect import isfunction
-from itertools import chain
 
-from typing import Callable, Iterator, Dict, Tuple, Any, Iterable, Optional, cast
+from typing import Callable, Iterator, Dict, Tuple, Any, Optional
 
 __all__ = ["MiddlewareManager"]
 
@@ -41,8 +40,10 @@ class MiddlewareManager:
         if self._middleware_resolvers is None:
             return field_resolver
         if field_resolver not in self._cached_resolvers:
-            self._cached_resolvers[field_resolver] = middleware_chain(
-                field_resolver, self._middleware_resolvers
+            self._cached_resolvers[field_resolver] = reduce(
+                lambda chained_fns, next_fn: partial(next_fn, chained_fns),
+                self._middleware_resolvers,
+                field_resolver,
             )
         return self._cached_resolvers[field_resolver]
 
@@ -56,19 +57,3 @@ def get_middleware_resolvers(middlewares: Tuple[Any, ...]) -> Iterator[Callable]
             resolver_func = getattr(middleware, "resolve", None)
             if resolver_func is not None:
                 yield resolver_func
-
-
-def middleware_chain(
-    func: GraphQLFieldResolver, middlewares: Iterable[Callable]
-) -> GraphQLFieldResolver:
-    """Chain the given function with the provided middlewares.
-
-    Returns a new resolver function that is the chain of both.
-    """
-    if not middlewares:
-        return func
-    middlewares = chain((func,), middlewares)
-    last_func: Optional[GraphQLFieldResolver] = None
-    for middleware in middlewares:
-        last_func = partial(middleware, last_func) if last_func else middleware
-    return cast(GraphQLFieldResolver, last_func)
