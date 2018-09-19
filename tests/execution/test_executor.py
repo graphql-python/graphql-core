@@ -5,7 +5,7 @@ from typing import cast
 from pytest import raises, mark
 
 from graphql.error import GraphQLError
-from graphql.execution import execute
+from graphql.execution import execute, ExecutionContext
 from graphql.language import parse, OperationDefinitionNode, FieldNode
 from graphql.type import (
     GraphQLSchema,
@@ -844,5 +844,25 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert execute(schema, query, field_resolver=custom_resolver) == (
             {"foo": "foo"},
+            None,
+        )
+
+    def uses_a_custom_execution_context_class():
+        query = parse("{ foo }")
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {"foo": GraphQLField(GraphQLString, resolve=lambda *_args: "bar")},
+            )
+        )
+
+        class TestExecutionContext(ExecutionContext):
+            def resolve_field(self, parent_type, source, field_nodes, path):
+                result = super().resolve_field(parent_type, source, field_nodes, path)
+                return result * 2
+
+        assert execute(schema, query, execution_context_class=TestExecutionContext) == (
+            {"foo": "barbar"},
             None,
         )
