@@ -2,10 +2,15 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 from ..language import (
-    DocumentNode, ExecutableDefinitionNode, FragmentDefinitionNode,
-    OperationDefinitionNode, Visitor, visit)
+    DocumentNode,
+    ExecutableDefinitionNode,
+    FragmentDefinitionNode,
+    OperationDefinitionNode,
+    Visitor,
+    visit,
+)
 
-__all__ = ['separate_operations']
+__all__ = ["separate_operations"]
 
 
 DepGraph = Dict[str, Set[str]]
@@ -34,8 +39,7 @@ def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
     for operation in operations:
         operation_name = op_name(operation)
         dependencies: Set[str] = set()
-        collect_transitive_dependencies(
-            dependencies, dep_graph, operation_name)
+        collect_transitive_dependencies(dependencies, dep_graph, operation_name)
 
         # The list of definition nodes to be included for this operation,
         # sorted to retain the same order as the original document.
@@ -44,14 +48,12 @@ def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
             definitions.append(fragments[name])
             definitions.sort(key=lambda n: positions.get(n, 0))
 
-        separated_document_asts[operation_name] = DocumentNode(
-            definitions=definitions)
+        separated_document_asts[operation_name] = DocumentNode(definitions=definitions)
 
     return separated_document_asts
 
 
 class SeparateOperations(Visitor):
-
     def __init__(self):
         super().__init__()
         self.operations: List[OperationDefinitionNode] = []
@@ -80,12 +82,12 @@ class SeparateOperations(Visitor):
 
 def op_name(operation: OperationDefinitionNode) -> str:
     """Provide the empty string for anonymous operations."""
-    return operation.name.value if operation.name else ''
+    return operation.name.value if operation.name else ""
 
 
 def collect_transitive_dependencies(
-        collected: Set[str], dep_graph: DepGraph,
-        from_name: str) -> None:
+    collected: Set[str], dep_graph: DepGraph, from_name: str
+) -> None:
     """Collect transitive dependencies.
 
     From a dependency graph, collects a list of transitive dependencies by

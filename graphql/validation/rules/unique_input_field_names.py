@@ -4,7 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, ObjectFieldNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ['UniqueInputFieldNamesRule', 'duplicate_input_field_message']
+__all__ = ["UniqueInputFieldNamesRule", "duplicate_input_field_message"]
 
 
 def duplicate_input_field_message(field_name: str) -> str:
@@ -34,8 +34,12 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
         known_names = self.known_names
         field_name = node.name.value
         if field_name in known_names:
-            self.report_error(GraphQLError(duplicate_input_field_message(
-                field_name), [known_names[field_name], node.name]))
+            self.report_error(
+                GraphQLError(
+                    duplicate_input_field_message(field_name),
+                    [known_names[field_name], node.name],
+                )
+            )
         else:
             known_names[field_name] = node.name
         return False

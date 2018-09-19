@@ -5,15 +5,15 @@ from ..language import parse
 from ..type import GraphQLSchema
 from ..utilities.introspection_query import get_introspection_query
 
-__all__ = ['introspection_from_schema']
+__all__ = ["introspection_from_schema"]
 
 
 IntrospectionSchema = Dict[str, Any]
 
 
 def introspection_from_schema(
-        schema: GraphQLSchema,
-        descriptions: bool=True) -> IntrospectionSchema:
+    schema: GraphQLSchema, descriptions: bool = True
+) -> IntrospectionSchema:
     """Build an IntrospectionQuery from a GraphQLSchema
 
     IntrospectionQuery is useful for utilities that care about type and field
@@ -25,10 +25,12 @@ def introspection_from_schema(
     query_ast = parse(get_introspection_query(descriptions))
 
     from ..execution.execute import execute, ExecutionResult
+
     result = execute(schema, query_ast)
     if not isinstance(result, ExecutionResult):
-        raise RuntimeError('Introspection cannot be executed')
+        raise RuntimeError("Introspection cannot be executed")
     if result.errors or not result.data:
         raise result.errors[0] if result.errors else GraphQLError(
-                'Introspection did not return a result')
+            "Introspection did not return a result"
+        )
     return result.data

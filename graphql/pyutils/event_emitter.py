@@ -5,13 +5,13 @@ from inspect import isawaitable
 
 from collections import defaultdict
 
-__all__ = ['EventEmitter', 'EventEmitterAsyncIterator']
+__all__ = ["EventEmitter", "EventEmitterAsyncIterator"]
 
 
 class EventEmitter:
     """A very simple EventEmitter."""
 
-    def __init__(self, loop: Optional[AbstractEventLoop]=None) -> None:
+    def __init__(self, loop: Optional[AbstractEventLoop] = None) -> None:
         self.loop = loop
         self.listeners: Dict[str, List[Callable]] = defaultdict(list)
 
@@ -44,11 +44,11 @@ class EventEmitterAsyncIterator:
     """
 
     def __init__(self, event_emitter: EventEmitter, event_name: str) -> None:
-        self.queue: Queue = Queue(
-            loop=cast(AbstractEventLoop, event_emitter.loop))
+        self.queue: Queue = Queue(loop=cast(AbstractEventLoop, event_emitter.loop))
         event_emitter.add_listener(event_name, self.queue.put)
         self.remove_listener = lambda: event_emitter.remove_listener(
-            event_name, self.queue.put)
+            event_name, self.queue.put
+        )
         self.closed = False
 
     def __aiter__(self):

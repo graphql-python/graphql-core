@@ -4,7 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, FragmentDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ['UniqueFragmentNamesRule', 'duplicate_fragment_name_message']
+__all__ = ["UniqueFragmentNamesRule", "duplicate_fragment_name_message"]
 
 
 def duplicate_fragment_name_message(frag_name: str) -> str:
@@ -29,9 +29,12 @@ class UniqueFragmentNamesRule(ASTValidationRule):
         known_fragment_names = self.known_fragment_names
         fragment_name = node.name.value
         if fragment_name in known_fragment_names:
-            self.report_error(GraphQLError(
-                duplicate_fragment_name_message(fragment_name),
-                [known_fragment_names[fragment_name], node.name]))
+            self.report_error(
+                GraphQLError(
+                    duplicate_fragment_name_message(fragment_name),
+                    [known_fragment_names[fragment_name], node.name],
+                )
+            )
         else:
             known_fragment_names[fragment_name] = node.name
         return self.SKIP

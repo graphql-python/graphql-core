@@ -2,7 +2,7 @@ from typing import Any
 
 from ..error import INVALID
 
-__all__ = ['is_invalid']
+__all__ = ["is_invalid"]
 
 
 def is_invalid(value: Any) -> bool:

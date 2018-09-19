@@ -4,12 +4,15 @@ from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
 from . import ValidationContext, ValidationRule
 
-__all__ = ['NoUnusedVariablesRule', 'unused_variable_message']
+__all__ = ["NoUnusedVariablesRule", "unused_variable_message"]
 
 
-def unused_variable_message(var_name: str, op_name: str=None) -> str:
-    return (f"Variable '${var_name}' is never used in operation '{op_name}'."
-            if op_name else f"Variable '${var_name}' is never used.")
+def unused_variable_message(var_name: str, op_name: str = None) -> str:
+    return (
+        f"Variable '${var_name}' is never used in operation '{op_name}'."
+        if op_name
+        else f"Variable '${var_name}' is never used."
+    )
 
 
 class NoUnusedVariablesRule(ValidationRule):
@@ -26,8 +29,7 @@ class NoUnusedVariablesRule(ValidationRule):
     def enter_operation_definition(self, *_args):
         self.variable_defs.clear()
 
-    def leave_operation_definition(
-            self, operation: OperationDefinitionNode, *_args):
+    def leave_operation_definition(self, operation: OperationDefinitionNode, *_args):
         variable_name_used: Set[str] = set()
         usages = self.context.get_recursive_variable_usages(operation)
         op_name = operation.name.value if operation.name else None
@@ -38,9 +40,11 @@ class NoUnusedVariablesRule(ValidationRule):
         for variable_def in self.variable_defs:
             variable_name = variable_def.variable.name.value
             if variable_name not in variable_name_used:
-                self.report_error(GraphQLError(unused_variable_message(
-                    variable_name, op_name), [variable_def]))
+                self.report_error(
+                    GraphQLError(
+                        unused_variable_message(variable_name, op_name), [variable_def]
+                    )
+                )
 
-    def enter_variable_definition(
-            self, definition: VariableDefinitionNode, *_args):
+    def enter_variable_definition(self, definition: VariableDefinitionNode, *_args):
         self.variable_defs.append(definition)

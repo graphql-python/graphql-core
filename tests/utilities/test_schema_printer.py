@@ -1,13 +1,27 @@
 from graphql.language import DirectiveLocation
 from graphql.pyutils import dedent
 from graphql.type import (
-    GraphQLArgument, GraphQLBoolean, GraphQLEnumType, GraphQLEnumValue,
-    GraphQLField, GraphQLInputObjectType, GraphQLInt, GraphQLInterfaceType,
-    GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLScalarType,
-    GraphQLSchema, GraphQLString, GraphQLUnionType, GraphQLType,
-    GraphQLNullableType, GraphQLInputField, GraphQLDirective)
-from graphql.utilities import (
-    build_schema, print_schema, print_introspection_schema)
+    GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLEnumType,
+    GraphQLEnumValue,
+    GraphQLField,
+    GraphQLInputObjectType,
+    GraphQLInt,
+    GraphQLInterfaceType,
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLScalarType,
+    GraphQLSchema,
+    GraphQLString,
+    GraphQLUnionType,
+    GraphQLType,
+    GraphQLNullableType,
+    GraphQLInputField,
+    GraphQLDirective,
+)
+from graphql.utilities import build_schema, print_schema, print_introspection_schema
 
 
 def print_for_test(schema: GraphQLSchema) -> str:
@@ -18,8 +32,7 @@ def print_for_test(schema: GraphQLSchema) -> str:
 
 
 def print_single_field_schema(field: GraphQLField):
-    Query = GraphQLObjectType(
-        name='Query', fields={'singleField': field})
+    Query = GraphQLObjectType(name="Query", fields={"singleField": field})
     return print_for_test(GraphQLSchema(query=Query))
 
 
@@ -32,70 +45,83 @@ def non_null(type_: GraphQLNullableType):
 
 
 def describe_type_system_printer():
-
     def prints_string_field():
         output = print_single_field_schema(GraphQLField(GraphQLString))
-        assert output == dedent("""
+        assert output == dedent(
+            """
             type Query {
               singleField: String
             }
-            """)
+            """
+        )
 
     def prints_list_of_string_field():
-        output = print_single_field_schema(
-            GraphQLField(list_of(GraphQLString)))
-        assert output == dedent("""
+        output = print_single_field_schema(GraphQLField(list_of(GraphQLString)))
+        assert output == dedent(
+            """
             type Query {
               singleField: [String]
             }
-            """)
+            """
+        )
 
     def prints_non_null_string_field():
-        output = print_single_field_schema(
-            GraphQLField(non_null(GraphQLString)))
-        assert output == dedent("""
+        output = print_single_field_schema(GraphQLField(non_null(GraphQLString)))
+        assert output == dedent(
+            """
             type Query {
               singleField: String!
             }
-            """)
+            """
+        )
 
     def prints_non_null_list_of_string_field():
         output = print_single_field_schema(
-            GraphQLField(non_null(list_of(GraphQLString))))
-        assert output == dedent("""
+            GraphQLField(non_null(list_of(GraphQLString)))
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField: [String]!
             }
-            """)
+            """
+        )
 
     def prints_list_of_non_null_string_field():
         output = print_single_field_schema(
-            GraphQLField((list_of(non_null(GraphQLString)))))
-        assert output == dedent("""
+            GraphQLField((list_of(non_null(GraphQLString))))
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField: [String!]
             }
-            """)
+            """
+        )
 
     def prints_non_null_list_of_non_null_string_field():
-        output = print_single_field_schema(GraphQLField(
-            non_null(list_of(non_null(GraphQLString)))))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(non_null(list_of(non_null(GraphQLString))))
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField: [String!]!
             }
-            """)
+            """
+        )
 
     def prints_object_field():
         FooType = GraphQLObjectType(
-            name='Foo', fields={'str': GraphQLField(GraphQLString)})
+            name="Foo", fields={"str": GraphQLField(GraphQLString)}
+        )
 
-        Query = GraphQLObjectType(
-            name='Query', fields={'foo': GraphQLField(FooType)})
+        Query = GraphQLObjectType(name="Query", fields={"foo": GraphQLField(FooType)})
 
         Schema = GraphQLSchema(query=Query)
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             type Foo {
               str: String
             }
@@ -103,119 +129,172 @@ def describe_type_system_printer():
             type Query {
               foo: Foo
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_int_arg():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={'argOne': GraphQLArgument(GraphQLInt)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString, args={"argOne": GraphQLArgument(GraphQLInt)}
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int): String
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_int_arg_with_default():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={'argOne': GraphQLArgument(GraphQLInt, default_value=2)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={"argOne": GraphQLArgument(GraphQLInt, default_value=2)},
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int = 2): String
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_string_arg_with_default():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={'argOne': GraphQLArgument(
-                GraphQLString, default_value='tes\t de\fault')}))
-        assert output == dedent(r"""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={
+                    "argOne": GraphQLArgument(
+                        GraphQLString, default_value="tes\t de\fault"
+                    )
+                },
+            )
+        )
+        assert output == dedent(
+            r"""
             type Query {
               singleField(argOne: String = "tes\t de\fault"): String
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_int_arg_with_default_null():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={'argOne': GraphQLArgument(GraphQLInt, default_value=None)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={"argOne": GraphQLArgument(GraphQLInt, default_value=None)},
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int = null): String
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_non_null_int_arg():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={'argOne': GraphQLArgument(non_null(GraphQLInt))}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={"argOne": GraphQLArgument(non_null(GraphQLInt))},
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int!): String
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_multiple_args():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={
-                'argOne': GraphQLArgument(GraphQLInt),
-                'argTwo': GraphQLArgument(GraphQLString)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={
+                    "argOne": GraphQLArgument(GraphQLInt),
+                    "argTwo": GraphQLArgument(GraphQLString),
+                },
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int, argTwo: String): String
             }
-            """)
+            """
+        )
 
     def prints_string_field_with_multiple_args_first_is_default():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={
-                'argOne': GraphQLArgument(GraphQLInt, default_value=1),
-                'argTwo': GraphQLArgument(GraphQLString),
-                'argThree': GraphQLArgument(GraphQLBoolean)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={
+                    "argOne": GraphQLArgument(GraphQLInt, default_value=1),
+                    "argTwo": GraphQLArgument(GraphQLString),
+                    "argThree": GraphQLArgument(GraphQLBoolean),
+                },
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
             }
-            """)  # noqa
+            """  # noqa
+        )
 
     def prints_string_field_with_multiple_args_second_is_default():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={
-                'argOne': GraphQLArgument(GraphQLInt),
-                'argTwo': GraphQLArgument(GraphQLString, default_value="foo"),
-                'argThree': GraphQLArgument(GraphQLBoolean)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={
+                    "argOne": GraphQLArgument(GraphQLInt),
+                    "argTwo": GraphQLArgument(GraphQLString, default_value="foo"),
+                    "argThree": GraphQLArgument(GraphQLBoolean),
+                },
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
             }
-            """)  # noqa
+            """  # noqa
+        )
 
     def prints_string_field_with_multiple_args_last_is_default():
-        output = print_single_field_schema(GraphQLField(
-            type_=GraphQLString,
-            args={
-                'argOne': GraphQLArgument(GraphQLInt),
-                'argTwo': GraphQLArgument(GraphQLString),
-                'argThree':
-                    GraphQLArgument(GraphQLBoolean, default_value=False)}))
-        assert output == dedent("""
+        output = print_single_field_schema(
+            GraphQLField(
+                type_=GraphQLString,
+                args={
+                    "argOne": GraphQLArgument(GraphQLInt),
+                    "argTwo": GraphQLArgument(GraphQLString),
+                    "argThree": GraphQLArgument(GraphQLBoolean, default_value=False),
+                },
+            )
+        )
+        assert output == dedent(
+            """
             type Query {
               singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
             }
-            """)  # noqa
+            """  # noqa
+        )
 
     def prints_custom_query_root_type():
         CustomQueryType = GraphQLObjectType(
-            'CustomQueryType', {'bar': GraphQLField(GraphQLString)})
+            "CustomQueryType", {"bar": GraphQLField(GraphQLString)}
+        )
 
         Schema = GraphQLSchema(CustomQueryType)
 
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: CustomQueryType
             }
@@ -223,25 +302,26 @@ def describe_type_system_printer():
             type CustomQueryType {
               bar: String
             }
-            """)
+            """
+        )
 
     def prints_interface():
         FooType = GraphQLInterfaceType(
-            name='Foo',
-            fields={'str': GraphQLField(GraphQLString)})
+            name="Foo", fields={"str": GraphQLField(GraphQLString)}
+        )
 
         BarType = GraphQLObjectType(
-            name='Bar',
-            fields={'str': GraphQLField(GraphQLString)},
-            interfaces=[FooType])
+            name="Bar",
+            fields={"str": GraphQLField(GraphQLString)},
+            interfaces=[FooType],
+        )
 
-        Root = GraphQLObjectType(
-            name='Root',
-            fields={'bar': GraphQLField(BarType)})
+        Root = GraphQLObjectType(name="Root", fields={"bar": GraphQLField(BarType)})
 
         Schema = GraphQLSchema(Root, types=[BarType])
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: Root
             }
@@ -257,31 +337,33 @@ def describe_type_system_printer():
             type Root {
               bar: Bar
             }
-            """)
+            """
+        )
 
     def prints_multiple_interfaces():
         FooType = GraphQLInterfaceType(
-            name='Foo',
-            fields={'str': GraphQLField(GraphQLString)})
+            name="Foo", fields={"str": GraphQLField(GraphQLString)}
+        )
 
         BaazType = GraphQLInterfaceType(
-            name='Baaz',
-            fields={'int': GraphQLField(GraphQLInt)})
+            name="Baaz", fields={"int": GraphQLField(GraphQLInt)}
+        )
 
         BarType = GraphQLObjectType(
-            name='Bar',
+            name="Bar",
             fields={
-                'str': GraphQLField(GraphQLString),
-                'int': GraphQLField(GraphQLInt)},
-            interfaces=[FooType, BaazType])
+                "str": GraphQLField(GraphQLString),
+                "int": GraphQLField(GraphQLInt),
+            },
+            interfaces=[FooType, BaazType],
+        )
 
-        Root = GraphQLObjectType(
-            name='Root',
-            fields={'bar': GraphQLField(BarType)})
+        Root = GraphQLObjectType(name="Root", fields={"bar": GraphQLField(BarType)})
 
         Schema = GraphQLSchema(Root, types=[BarType])
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: Root
             }
@@ -302,34 +384,34 @@ def describe_type_system_printer():
             type Root {
               bar: Bar
             }
-            """)
+            """
+        )
 
     def prints_unions():
         FooType = GraphQLObjectType(
-            name='Foo',
-            fields={'bool': GraphQLField(GraphQLBoolean)})
+            name="Foo", fields={"bool": GraphQLField(GraphQLBoolean)}
+        )
 
         BarType = GraphQLObjectType(
-            name='Bar',
-            fields={'str': GraphQLField(GraphQLString)})
+            name="Bar", fields={"str": GraphQLField(GraphQLString)}
+        )
 
-        SingleUnion = GraphQLUnionType(
-            name='SingleUnion',
-            types=[FooType])
+        SingleUnion = GraphQLUnionType(name="SingleUnion", types=[FooType])
 
-        MultipleUnion = GraphQLUnionType(
-            name='MultipleUnion',
-            types=[FooType, BarType])
+        MultipleUnion = GraphQLUnionType(name="MultipleUnion", types=[FooType, BarType])
 
         Root = GraphQLObjectType(
-            name='Root',
+            name="Root",
             fields={
-                'single': GraphQLField(SingleUnion),
-                'multiple': GraphQLField(MultipleUnion)})
+                "single": GraphQLField(SingleUnion),
+                "multiple": GraphQLField(MultipleUnion),
+            },
+        )
 
         Schema = GraphQLSchema(Root)
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: Root
             }
@@ -350,21 +432,27 @@ def describe_type_system_printer():
             }
 
             union SingleUnion = Foo
-            """)
+            """
+        )
 
     def prints_input_type():
         InputType = GraphQLInputObjectType(
-            name='InputType',
-            fields={'int': GraphQLInputField(GraphQLInt)})
+            name="InputType", fields={"int": GraphQLInputField(GraphQLInt)}
+        )
 
         Root = GraphQLObjectType(
-            name='Root',
-            fields={'str': GraphQLField(
-                GraphQLString, args={'argOne': GraphQLArgument(InputType)})})
+            name="Root",
+            fields={
+                "str": GraphQLField(
+                    GraphQLString, args={"argOne": GraphQLArgument(InputType)}
+                )
+            },
+        )
 
         Schema = GraphQLSchema(Root)
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: Root
             }
@@ -376,20 +464,20 @@ def describe_type_system_printer():
             type Root {
               str(argOne: InputType): String
             }
-            """)
+            """
+        )
 
     def prints_custom_scalar():
         OddType = GraphQLScalarType(
-            name='Odd',
-            serialize=lambda value: value if value % 2 else None)
+            name="Odd", serialize=lambda value: value if value % 2 else None
+        )
 
-        Root = GraphQLObjectType(
-            name='Root',
-            fields={'odd': GraphQLField(OddType)})
+        Root = GraphQLObjectType(name="Root", fields={"odd": GraphQLField(OddType)})
 
         Schema = GraphQLSchema(Root)
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: Root
             }
@@ -399,23 +487,25 @@ def describe_type_system_printer():
             type Root {
               odd: Odd
             }
-            """)
+            """
+        )
 
     def prints_enum():
         RGBType = GraphQLEnumType(
-            name='RGB',
+            name="RGB",
             values={
-                'RED': GraphQLEnumValue(0),
-                'GREEN': GraphQLEnumValue(1),
-                'BLUE': GraphQLEnumValue(2)})
+                "RED": GraphQLEnumValue(0),
+                "GREEN": GraphQLEnumValue(1),
+                "BLUE": GraphQLEnumValue(2),
+            },
+        )
 
-        Root = GraphQLObjectType(
-            name='Root',
-            fields={'rgb': GraphQLField(RGBType)})
+        Root = GraphQLObjectType(name="Root", fields={"rgb": GraphQLField(RGBType)})
 
         Schema = GraphQLSchema(Root)
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             schema {
               query: Root
             }
@@ -429,82 +519,93 @@ def describe_type_system_printer():
             type Root {
               rgb: RGB
             }
-            """)
+            """
+        )
 
     def prints_custom_directives():
         Query = GraphQLObjectType(
-            name='Query',
-            fields={'field': GraphQLField(GraphQLString)})
+            name="Query", fields={"field": GraphQLField(GraphQLString)}
+        )
 
         CustomDirective = GraphQLDirective(
-            name='customDirective',
-            locations=[DirectiveLocation.FIELD])
+            name="customDirective", locations=[DirectiveLocation.FIELD]
+        )
 
-        Schema = GraphQLSchema(
-            query=Query,
-            directives=[CustomDirective])
+        Schema = GraphQLSchema(query=Query, directives=[CustomDirective])
         output = print_for_test(Schema)
-        assert output == dedent("""
+        assert output == dedent(
+            """
             directive @customDirective on FIELD
 
             type Query {
               field: String
             }
-            """)
+            """
+        )
 
     def one_line_prints_a_short_description():
-        description = 'This field is awesome'
-        output = print_single_field_schema(GraphQLField(
-            GraphQLString, description=description))
-        assert output == dedent('''
+        description = "This field is awesome"
+        output = print_single_field_schema(
+            GraphQLField(GraphQLString, description=description)
+        )
+        assert output == dedent(
+            '''
             type Query {
               """This field is awesome"""
               singleField: String
             }
-            ''')
-        recreated_root = build_schema(output).type_map['Query']
-        recreated_field = recreated_root.fields['singleField']
+            '''
+        )
+        recreated_root = build_schema(output).type_map["Query"]
+        recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
     def does_not_one_line_print_a_description_that_ends_with_a_quote():
         description = 'This field is "awesome"'
-        output = print_single_field_schema(GraphQLField(
-            GraphQLString, description=description))
-        assert output == dedent('''
+        output = print_single_field_schema(
+            GraphQLField(GraphQLString, description=description)
+        )
+        assert output == dedent(
+            '''
             type Query {
               """
               This field is "awesome"
               """
               singleField: String
             }
-            ''')
-        recreated_root = build_schema(output).type_map['Query']
-        recreated_field = recreated_root.fields['singleField']
+            '''
+        )
+        recreated_root = build_schema(output).type_map["Query"]
+        recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
     def preserves_leading_spaces_when_printing_a_description():
         description = '    This field is "awesome"'
-        output = print_single_field_schema(GraphQLField(
-            GraphQLString, description=description))
-        assert output == dedent('''
+        output = print_single_field_schema(
+            GraphQLField(GraphQLString, description=description)
+        )
+        assert output == dedent(
+            '''
             type Query {
               """    This field is "awesome"
               """
               singleField: String
             }
-            ''')
-        recreated_root = build_schema(output).type_map['Query']
-        recreated_field = recreated_root.fields['singleField']
+            '''
+        )
+        recreated_root = build_schema(output).type_map["Query"]
+        recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
     def prints_introspection_schema():
         Root = GraphQLObjectType(
-            name='Root',
-            fields={'onlyField': GraphQLField(GraphQLString)})
+            name="Root", fields={"onlyField": GraphQLField(GraphQLString)}
+        )
 
         Schema = GraphQLSchema(Root)
         output = print_introspection_schema(Schema)
-        assert output == dedent('''
+        assert output == dedent(
+            '''
             schema {
               query: Root
             }
@@ -734,4 +835,5 @@ def describe_type_system_printer():
               """Indicates this type is a non-null. `ofType` is a valid field."""
               NON_NULL
             }
-            ''')  # noqa
+            '''  # noqa
+        )

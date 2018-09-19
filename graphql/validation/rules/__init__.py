@@ -5,10 +5,12 @@ from typing import Type
 from ...error import GraphQLError
 from ...language.visitor import Visitor
 from ..validation_context import (
-    ASTValidationContext, SDLValidationContext, ValidationContext)
+    ASTValidationContext,
+    SDLValidationContext,
+    ValidationContext,
+)
 
-__all__ = [
-    'ASTValidationRule', 'SDLValidationRule', 'ValidationRule', 'RuleType']
+__all__ = ["ASTValidationRule", "SDLValidationRule", "ValidationRule", "RuleType"]
 
 
 class ASTValidationRule(Visitor):

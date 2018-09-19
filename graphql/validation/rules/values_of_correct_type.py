@@ -2,37 +2,61 @@ from typing import Optional, cast
 
 from ...error import GraphQLError
 from ...language import (
-    BooleanValueNode, EnumValueNode, FloatValueNode, IntValueNode,
-    NullValueNode, ListValueNode, ObjectFieldNode, ObjectValueNode,
-    StringValueNode, ValueNode, print_ast)
+    BooleanValueNode,
+    EnumValueNode,
+    FloatValueNode,
+    IntValueNode,
+    NullValueNode,
+    ListValueNode,
+    ObjectFieldNode,
+    ObjectValueNode,
+    StringValueNode,
+    ValueNode,
+    print_ast,
+)
 from ...pyutils import is_invalid, or_list, suggestion_list
 from ...type import (
-    GraphQLEnumType, GraphQLScalarType, GraphQLType,
-    get_named_type, get_nullable_type, is_enum_type, is_input_object_type,
-    is_list_type, is_non_null_type, is_required_input_field, is_scalar_type)
+    GraphQLEnumType,
+    GraphQLScalarType,
+    GraphQLType,
+    get_named_type,
+    get_nullable_type,
+    is_enum_type,
+    is_input_object_type,
+    is_list_type,
+    is_non_null_type,
+    is_required_input_field,
+    is_scalar_type,
+)
 from . import ValidationRule
 
 __all__ = [
-    'ValuesOfCorrectTypeRule',
-    'bad_value_message', 'required_field_message', 'unknown_field_message']
+    "ValuesOfCorrectTypeRule",
+    "bad_value_message",
+    "required_field_message",
+    "unknown_field_message",
+]
 
 
-def bad_value_message(
-        type_name: str, value_name: str, message: str=None) -> str:
-    return f'Expected type {type_name}, found {value_name}' + (
-        f'; {message}' if message else '.')
+def bad_value_message(type_name: str, value_name: str, message: str = None) -> str:
+    return f"Expected type {type_name}, found {value_name}" + (
+        f"; {message}" if message else "."
+    )
 
 
 def required_field_message(
-        type_name: str, field_name: str, field_type_name: str) -> str:
-    return (f'Field {type_name}.{field_name} of required type'
-            f' {field_type_name} was not provided.')
+    type_name: str, field_name: str, field_type_name: str
+) -> str:
+    return (
+        f"Field {type_name}.{field_name} of required type"
+        f" {field_type_name} was not provided."
+    )
 
 
-def unknown_field_message(
-        type_name: str, field_name: str, message: str=None) -> str:
-    return f'Field {field_name} is not defined by type {type_name}' + (
-        f'; {message}' if message else '.')
+def unknown_field_message(type_name: str, field_name: str, message: str = None) -> str:
+    return f"Field {field_name} is not defined by type {type_name}" + (
+        f"; {message}" if message else "."
+    )
 
 
 class ValuesOfCorrectTypeRule(ValidationRule):
@@ -45,8 +69,9 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     def enter_null_value(self, node: NullValueNode, *_args):
         type_ = self.context.get_input_type()
         if is_non_null_type(type_):
-            self.report_error(GraphQLError(
-                bad_value_message(type_, print_ast(node)), node))
+            self.report_error(
+                GraphQLError(bad_value_message(type_, print_ast(node)), node)
+            )
 
     def enter_list_value(self, node: ListValueNode, *_args):
         # Note: TypeInfo will traverse into a list's item type, so look to the
@@ -68,28 +93,43 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             field_node = field_node_map.get(field_name)
             if not field_node and is_required_input_field(field_def):
                 field_type = field_def.type
-                self.report_error(GraphQLError(required_field_message(
-                    type_.name, field_name, str(field_type)), node))
+                self.report_error(
+                    GraphQLError(
+                        required_field_message(type_.name, field_name, str(field_type)),
+                        node,
+                    )
+                )
 
     def enter_object_field(self, node: ObjectFieldNode, *_args):
         parent_type = get_named_type(self.context.get_parent_input_type())
         field_type = self.context.get_input_type()
         if not field_type and is_input_object_type(parent_type):
-            suggestions = suggestion_list(
-                node.name.value, list(parent_type.fields))
-            did_you_mean = (f'Did you mean {or_list(suggestions)}?'
-                            if suggestions else None)
-            self.report_error(GraphQLError(unknown_field_message(
-                parent_type.name, node.name.value, did_you_mean), node))
+            suggestions = suggestion_list(node.name.value, list(parent_type.fields))
+            did_you_mean = (
+                f"Did you mean {or_list(suggestions)}?" if suggestions else None
+            )
+            self.report_error(
+                GraphQLError(
+                    unknown_field_message(
+                        parent_type.name, node.name.value, did_you_mean
+                    ),
+                    node,
+                )
+            )
 
     def enter_enum_value(self, node: EnumValueNode, *_args):
         type_ = get_named_type(self.context.get_input_type())
         if not is_enum_type(type_):
             self.is_valid_scalar(node)
         elif node.value not in type_.values:
-            self.report_error(GraphQLError(bad_value_message(
-                type_.name, print_ast(node),
-                enum_type_suggestion(type_, node)), node))
+            self.report_error(
+                GraphQLError(
+                    bad_value_message(
+                        type_.name, print_ast(node), enum_type_suggestion(type_, node)
+                    ),
+                    node,
+                )
+            )
 
     def enter_int_value(self, node: IntValueNode, *_args):
         self.is_valid_scalar(node)
@@ -117,9 +157,16 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         type_ = get_named_type(location_type)
 
         if not is_scalar_type(type_):
-            self.report_error(GraphQLError(bad_value_message(
-                location_type, print_ast(node),
-                enum_type_suggestion(type_, node)), node))
+            self.report_error(
+                GraphQLError(
+                    bad_value_message(
+                        location_type,
+                        print_ast(node),
+                        enum_type_suggestion(type_, node),
+                    ),
+                    node,
+                )
+            )
             return
 
         # Scalars determine if a literal value is valid via parse_literal()
@@ -128,20 +175,26 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         try:
             parse_result = type_.parse_literal(node)
             if is_invalid(parse_result):
-                self.report_error(GraphQLError(bad_value_message(
-                    location_type, print_ast(node)), node))
+                self.report_error(
+                    GraphQLError(
+                        bad_value_message(location_type, print_ast(node)), node
+                    )
+                )
         except Exception as error:
             # Ensure a reference to the original error is maintained.
-            self.report_error(GraphQLError(bad_value_message(
-                location_type, print_ast(node), str(error)),
-                node, original_error=error))
+            self.report_error(
+                GraphQLError(
+                    bad_value_message(location_type, print_ast(node), str(error)),
+                    node,
+                    original_error=error,
+                )
+            )
 
 
 def enum_type_suggestion(type_: GraphQLType, node: ValueNode) -> Optional[str]:
     if is_enum_type(type_):
         type_ = cast(GraphQLEnumType, type_)
-        suggestions = suggestion_list(
-            print_ast(node), list(type_.values))
+        suggestions = suggestion_list(print_ast(node), list(type_.values))
         if suggestions:
-            return f'Did you mean the enum value {or_list(suggestions)}?'
+            return f"Did you mean the enum value {or_list(suggestions)}?"
     return None

@@ -1,6 +1,14 @@
 from copy import copy
 from typing import (
-    TYPE_CHECKING, Any, Callable, List, NamedTuple, Sequence, Tuple, Union)
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    List,
+    NamedTuple,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from ..pyutils import snake_to_camel
 from . import ast
@@ -11,8 +19,15 @@ if TYPE_CHECKING:  # pragma: no cover
     from ..utilities import TypeInfo  # noqa: F401
 
 __all__ = [
-    'Visitor', 'ParallelVisitor', 'TypeInfoVisitor', 'visit',
-    'BREAK', 'SKIP', 'REMOVE', 'IDLE']
+    "Visitor",
+    "ParallelVisitor",
+    "TypeInfoVisitor",
+    "visit",
+    "BREAK",
+    "SKIP",
+    "REMOVE",
+    "IDLE",
+]
 
 
 # Special return values for the visitor function:
@@ -22,67 +37,73 @@ BREAK, SKIP, REMOVE, IDLE = True, False, Ellipsis, None
 
 # Default map from visitor kinds to their traversable node attributes:
 QUERY_DOCUMENT_KEYS = {
-    'name': (),
-
-    'document': ('definitions',),
-    'operation_definition': (
-        'name', 'variable_definitions', 'directives', 'selection_set'),
-    'variable_definition': ('variable', 'type', 'default_value', 'directives'),
-    'variable': ('name',),
-    'selection_set': ('selections',),
-    'field': ('alias', 'name', 'arguments', 'directives', 'selection_set'),
-    'argument': ('name', 'value'),
-
-    'fragment_spread': ('name', 'directives'),
-    'inline_fragment': ('type_condition', 'directives', 'selection_set'),
-    'fragment_definition': (
+    "name": (),
+    "document": ("definitions",),
+    "operation_definition": (
+        "name",
+        "variable_definitions",
+        "directives",
+        "selection_set",
+    ),
+    "variable_definition": ("variable", "type", "default_value", "directives"),
+    "variable": ("name",),
+    "selection_set": ("selections",),
+    "field": ("alias", "name", "arguments", "directives", "selection_set"),
+    "argument": ("name", "value"),
+    "fragment_spread": ("name", "directives"),
+    "inline_fragment": ("type_condition", "directives", "selection_set"),
+    "fragment_definition": (
         # Note: fragment variable definitions are experimental and may be
         # changed or removed in the future.
-        'name', 'variable_definitions',
-        'type_condition', 'directives', 'selection_set'),
-    'int_value': (),
-    'float_value': (),
-    'string_value': (),
-    'boolean_value': (),
-    'enum_value': (),
-    'list_value': ('values',),
-    'object_value': ('fields',),
-    'object_field': ('name', 'value'),
-
-    'directive': ('name', 'arguments'),
-
-    'named_type': ('name',),
-    'list_type': ('type',),
-    'non_null_type': ('type',),
-
-    'schema_definition': ('directives', 'operation_types',),
-    'operation_type_definition': ('type',),
-
-    'scalar_type_definition': ('description', 'name', 'directives',),
-    'object_type_definition': (
-        'description', 'name', 'interfaces', 'directives', 'fields'),
-    'field_definition': (
-        'description', 'name', 'arguments', 'type', 'directives'),
-    'input_value_definition': (
-        'description', 'name', 'type', 'default_value', 'directives'),
-    'interface_type_definition': (
-        'description', 'name', 'directives', 'fields'),
-    'union_type_definition': ('description', 'name', 'directives', 'types'),
-    'enum_type_definition': ('description', 'name', 'directives', 'values'),
-    'enum_value_definition': ('description', 'name', 'directives',),
-    'input_object_type_definition': (
-        'description', 'name', 'directives', 'fields'),
-
-    'directive_definition': ('description', 'name', 'arguments', 'locations'),
-
-    'schema_extension': ('directives', 'operation_types'),
-
-    'scalar_type_extension': ('name', 'directives'),
-    'object_type_extension': ('name', 'interfaces', 'directives', 'fields'),
-    'interface_type_extension': ('name', 'directives', 'fields'),
-    'union_type_extension': ('name', 'directives', 'types'),
-    'enum_type_extension': ('name', 'directives', 'values'),
-    'input_object_type_extension': ('name', 'directives', 'fields')
+        "name",
+        "variable_definitions",
+        "type_condition",
+        "directives",
+        "selection_set",
+    ),
+    "int_value": (),
+    "float_value": (),
+    "string_value": (),
+    "boolean_value": (),
+    "enum_value": (),
+    "list_value": ("values",),
+    "object_value": ("fields",),
+    "object_field": ("name", "value"),
+    "directive": ("name", "arguments"),
+    "named_type": ("name",),
+    "list_type": ("type",),
+    "non_null_type": ("type",),
+    "schema_definition": ("directives", "operation_types"),
+    "operation_type_definition": ("type",),
+    "scalar_type_definition": ("description", "name", "directives"),
+    "object_type_definition": (
+        "description",
+        "name",
+        "interfaces",
+        "directives",
+        "fields",
+    ),
+    "field_definition": ("description", "name", "arguments", "type", "directives"),
+    "input_value_definition": (
+        "description",
+        "name",
+        "type",
+        "default_value",
+        "directives",
+    ),
+    "interface_type_definition": ("description", "name", "directives", "fields"),
+    "union_type_definition": ("description", "name", "directives", "types"),
+    "enum_type_definition": ("description", "name", "directives", "values"),
+    "enum_value_definition": ("description", "name", "directives"),
+    "input_object_type_definition": ("description", "name", "directives", "fields"),
+    "directive_definition": ("description", "name", "arguments", "locations"),
+    "schema_extension": ("directives", "operation_types"),
+    "scalar_type_extension": ("name", "directives"),
+    "object_type_extension": ("name", "interfaces", "directives", "fields"),
+    "interface_type_extension": ("name", "directives", "fields"),
+    "union_type_extension": ("name", "directives", "types"),
+    "enum_type_extension": ("name", "directives", "values"),
+    "input_object_type_extension": ("name", "directives", "fields"),
 }
 
 
@@ -137,25 +158,25 @@ class Visitor:
         """Verify that all defined handlers are valid."""
         super().__init_subclass__(**kwargs)
         for attr, val in cls.__dict__.items():
-            if attr.startswith('_'):
+            if attr.startswith("_"):
                 continue
-            attr = attr.split('_', 1)
+            attr = attr.split("_", 1)
             attr, kind = attr if len(attr) > 1 else (attr[0], None)
-            if attr in ('enter', 'leave'):
+            if attr in ("enter", "leave"):
                 if kind:
-                    name = snake_to_camel(kind) + 'Node'
+                    name = snake_to_camel(kind) + "Node"
                     try:
                         node_cls = getattr(ast, name)
                         if not issubclass(node_cls, Node):
                             raise AttributeError
                     except AttributeError:
-                        raise AttributeError(f'Invalid AST node kind: {kind}')
+                        raise AttributeError(f"Invalid AST node kind: {kind}")
 
     @classmethod
     def get_visit_fn(cls, kind, is_leaving=False) -> Callable:
         """Get the visit function for the given node kind and direction."""
-        method = 'leave' if is_leaving else 'enter'
-        visit_fn = getattr(cls, f'{method}_{kind}', None)
+        method = "leave" if is_leaving else "enter"
+        visit_fn = getattr(cls, f"{method}_{kind}", None)
         if not visit_fn:
             visit_fn = getattr(cls, method, None)
         return visit_fn
@@ -192,9 +213,9 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Node:
     a dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
-        raise TypeError(f'Not an AST Node: {root!r}')
+        raise TypeError(f"Not an AST Node: {root!r}")
     if not isinstance(visitor, Visitor):
-        raise TypeError(f'Not an AST Visitor class: {visitor!r}')
+        raise TypeError(f"Not an AST Visitor class: {visitor!r}")
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
@@ -262,7 +283,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Node:
             result = None
         else:
             if not isinstance(node, Node):
-                raise TypeError(f'Not an AST Node: {node!r}')
+                raise TypeError(f"Not an AST Node: {node!r}")
             visit_fn = visitor.get_visit_fn(node.kind, is_leaving)
             if visit_fn:
                 result = visit_fn(visitor, node, key, parent, path, ancestors)
@@ -356,7 +377,7 @@ class ParallelVisitor(Visitor):
 class TypeInfoVisitor(Visitor):
     """A visitor which maintains a provided TypeInfo."""
 
-    def __init__(self, type_info: 'TypeInfo', visitor: Visitor) -> None:
+    def __init__(self, type_info: "TypeInfo", visitor: Visitor) -> None:
         self.type_info = type_info
         self.visitor = visitor
 

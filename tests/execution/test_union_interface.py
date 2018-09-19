@@ -3,8 +3,15 @@ from typing import NamedTuple, Union, List
 from graphql.execution import execute
 from graphql.language import parse
 from graphql.type import (
-    GraphQLBoolean, GraphQLField, GraphQLInterfaceType, GraphQLList,
-    GraphQLObjectType, GraphQLSchema, GraphQLString, GraphQLUnionType)
+    GraphQLBoolean,
+    GraphQLField,
+    GraphQLInterfaceType,
+    GraphQLList,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+    GraphQLUnionType,
+)
 
 
 class Dog(NamedTuple):
@@ -26,23 +33,24 @@ class Person(NamedTuple):
 
     name: str
     pets: List[Pet]
-    friends: List['Person']
+    friends: List["Person"]
 
 
-NamedType = GraphQLInterfaceType('Named', {
-    'name': GraphQLField(GraphQLString)})
+NamedType = GraphQLInterfaceType("Named", {"name": GraphQLField(GraphQLString)})
 
-DogType = GraphQLObjectType('Dog', {
-    'name': GraphQLField(GraphQLString),
-    'barks': GraphQLField(GraphQLBoolean)},
+DogType = GraphQLObjectType(
+    "Dog",
+    {"name": GraphQLField(GraphQLString), "barks": GraphQLField(GraphQLBoolean)},
     interfaces=[NamedType],
-    is_type_of=lambda value, info: isinstance(value, Dog))
+    is_type_of=lambda value, info: isinstance(value, Dog),
+)
 
-CatType = GraphQLObjectType('Cat', {
-        'name': GraphQLField(GraphQLString),
-        'meows': GraphQLField(GraphQLBoolean)},
+CatType = GraphQLObjectType(
+    "Cat",
+    {"name": GraphQLField(GraphQLString), "meows": GraphQLField(GraphQLBoolean)},
     interfaces=[NamedType],
-    is_type_of=lambda value, info: isinstance(value, Cat))
+    is_type_of=lambda value, info: isinstance(value, Cat),
+)
 
 
 def resolve_pet_type(value, info):
@@ -52,28 +60,31 @@ def resolve_pet_type(value, info):
         return CatType
 
 
-PetType = GraphQLUnionType(
-    'Pet', [DogType, CatType], resolve_type=resolve_pet_type)
+PetType = GraphQLUnionType("Pet", [DogType, CatType], resolve_type=resolve_pet_type)
 
-PersonType = GraphQLObjectType('Person', {
-        'name': GraphQLField(GraphQLString),
-        'pets': GraphQLField(GraphQLList(PetType)),
-        'friends': GraphQLField(GraphQLList(NamedType))},
+PersonType = GraphQLObjectType(
+    "Person",
+    {
+        "name": GraphQLField(GraphQLString),
+        "pets": GraphQLField(GraphQLList(PetType)),
+        "friends": GraphQLField(GraphQLList(NamedType)),
+    },
     interfaces=[NamedType],
-    is_type_of=lambda value, info: isinstance(value, Person))
+    is_type_of=lambda value, info: isinstance(value, Person),
+)
 
 schema = GraphQLSchema(PersonType, types=[PetType])
 
-garfield = Cat('Garfield', False)
-odie = Dog('Odie', True)
-liz = Person('Liz', [], [])
-john = Person('John', [garfield, odie], [liz, odie])
+garfield = Cat("Garfield", False)
+odie = Dog("Odie", True)
+liz = Person("Liz", [], [])
+john = Person("John", [garfield, odie], [liz, odie])
 
 
 def describe_execute_union_and_intersection_types():
-
     def can_introspect_on_union_and_intersection_types():
-        ast = parse("""
+        ast = parse(
+            """
             {
               Named: __type(name: "Named") {
                 kind
@@ -94,31 +105,41 @@ def describe_execute_union_and_intersection_types():
                 inputFields { name }
               }
             }
-            """)
+            """
+        )
 
-        assert execute(schema, ast) == ({
-            'Named': {
-                'kind': 'INTERFACE',
-                'name': 'Named',
-                'fields': [{'name': 'name'}],
-                'interfaces': None,
-                'possibleTypes': [
-                    {'name': 'Person'}, {'name': 'Dog'}, {'name': 'Cat'}],
-                'enumValues': None,
-                'inputFields': None},
-            'Pet': {
-                'kind': 'UNION',
-                'name': 'Pet',
-                'fields': None,
-                'interfaces': None,
-                'possibleTypes': [{'name': 'Dog'}, {'name': 'Cat'}],
-                'enumValues': None,
-                'inputFields': None}},
-            None)
+        assert execute(schema, ast) == (
+            {
+                "Named": {
+                    "kind": "INTERFACE",
+                    "name": "Named",
+                    "fields": [{"name": "name"}],
+                    "interfaces": None,
+                    "possibleTypes": [
+                        {"name": "Person"},
+                        {"name": "Dog"},
+                        {"name": "Cat"},
+                    ],
+                    "enumValues": None,
+                    "inputFields": None,
+                },
+                "Pet": {
+                    "kind": "UNION",
+                    "name": "Pet",
+                    "fields": None,
+                    "interfaces": None,
+                    "possibleTypes": [{"name": "Dog"}, {"name": "Cat"}],
+                    "enumValues": None,
+                    "inputFields": None,
+                },
+            },
+            None,
+        )
 
     def executes_using_union_types():
         # NOTE: This is an *invalid* query, but it should be *executable*.
-        ast = parse("""
+        ast = parse(
+            """
             {
               __typename
               name
@@ -129,19 +150,25 @@ def describe_execute_union_and_intersection_types():
                 meows
               }
             }
-            """)
+            """
+        )
 
-        assert execute(schema, ast, john) == ({
-            '__typename': 'Person',
-            'name': 'John',
-            'pets': [
-                {'__typename': 'Cat', 'name': 'Garfield', 'meows': False},
-                {'__typename': 'Dog', 'name': 'Odie', 'barks': True}]},
-            None)
+        assert execute(schema, ast, john) == (
+            {
+                "__typename": "Person",
+                "name": "John",
+                "pets": [
+                    {"__typename": "Cat", "name": "Garfield", "meows": False},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+            },
+            None,
+        )
 
     def executes_union_types_with_inline_fragment():
         # This is the valid version of the query in the above test.
-        ast = parse("""
+        ast = parse(
+            """
             {
               __typename
               name
@@ -157,19 +184,25 @@ def describe_execute_union_and_intersection_types():
                 }
               }
             }
-            """)
+            """
+        )
 
-        assert execute(schema, ast, john) == ({
-            '__typename': 'Person',
-            'name': 'John',
-            'pets': [
-                {'__typename': 'Cat', 'name': 'Garfield', 'meows': False},
-                {'__typename': 'Dog', 'name': 'Odie', 'barks': True}]},
-            None)
+        assert execute(schema, ast, john) == (
+            {
+                "__typename": "Person",
+                "name": "John",
+                "pets": [
+                    {"__typename": "Cat", "name": "Garfield", "meows": False},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+            },
+            None,
+        )
 
     def executes_using_interface_types():
         # NOTE: This is an *invalid* query, but it should be a *executable*.
-        ast = parse("""
+        ast = parse(
+            """
             {
               __typename
               name
@@ -180,19 +213,25 @@ def describe_execute_union_and_intersection_types():
                 meows
               }
             }
-            """)
+            """
+        )
 
-        assert execute(schema, ast, john) == ({
-            '__typename': 'Person',
-            'name': 'John',
-            'friends': [
-                {'__typename': 'Person', 'name': 'Liz'},
-                {'__typename': 'Dog', 'name': 'Odie', 'barks': True}]},
-            None)
+        assert execute(schema, ast, john) == (
+            {
+                "__typename": "Person",
+                "name": "John",
+                "friends": [
+                    {"__typename": "Person", "name": "Liz"},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+            },
+            None,
+        )
 
     def executes_interface_types_with_inline_fragment():
         # This is the valid version of the query in the above test.
-        ast = parse("""
+        ast = parse(
+            """
             {
               __typename
               name
@@ -207,18 +246,24 @@ def describe_execute_union_and_intersection_types():
                 }
               }
             }
-            """)
+            """
+        )
 
-        assert execute(schema, ast, john) == ({
-            '__typename': 'Person',
-            'name': 'John',
-            'friends': [
-                {'__typename': 'Person', 'name': 'Liz'},
-                {'__typename': 'Dog', 'name': 'Odie', 'barks': True}]},
-            None)
+        assert execute(schema, ast, john) == (
+            {
+                "__typename": "Person",
+                "name": "John",
+                "friends": [
+                    {"__typename": "Person", "name": "Liz"},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+            },
+            None,
+        )
 
     def allows_fragment_conditions_to_be_abstract_types():
-        ast = parse("""
+        ast = parse(
+            """
             {
               __typename
               name
@@ -248,47 +293,62 @@ def describe_execute_union_and_intersection_types():
                 meows
               }
             }
-            """)
+            """
+        )
 
-        assert execute(schema, ast, john) == ({
-            '__typename': 'Person',
-            'name': 'John',
-            'pets': [
-                {'__typename': 'Cat', 'name': 'Garfield', 'meows': False},
-                {'__typename': 'Dog', 'name': 'Odie', 'barks': True}],
-            'friends': [
-                {'__typename': 'Person', 'name': 'Liz'},
-                {'__typename': 'Dog', 'name': 'Odie', 'barks': True}]},
-            None)
+        assert execute(schema, ast, john) == (
+            {
+                "__typename": "Person",
+                "name": "John",
+                "pets": [
+                    {"__typename": "Cat", "name": "Garfield", "meows": False},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+                "friends": [
+                    {"__typename": "Person", "name": "Liz"},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+            },
+            None,
+        )
 
     def gets_execution_info_in_resolver():
         encountered = {}
 
         def resolve_type(obj, info):
-            encountered['context'] = info.context
-            encountered['schema'] = info.schema
-            encountered['root_value'] = info.root_value
+            encountered["context"] = info.context
+            encountered["schema"] = info.schema
+            encountered["root_value"] = info.root_value
             return PersonType2
 
-        NamedType2 = GraphQLInterfaceType('Named', {
-            'name': GraphQLField(GraphQLString)},
-            resolve_type=resolve_type)
+        NamedType2 = GraphQLInterfaceType(
+            "Named", {"name": GraphQLField(GraphQLString)}, resolve_type=resolve_type
+        )
 
-        PersonType2 = GraphQLObjectType('Person', {
-            'name': GraphQLField(GraphQLString),
-            'friends': GraphQLField(GraphQLList(NamedType2))},
-            interfaces=[NamedType2])
+        PersonType2 = GraphQLObjectType(
+            "Person",
+            {
+                "name": GraphQLField(GraphQLString),
+                "friends": GraphQLField(GraphQLList(NamedType2)),
+            },
+            interfaces=[NamedType2],
+        )
 
         schema2 = GraphQLSchema(PersonType2)
 
-        john2 = Person('John', [], [liz])
+        john2 = Person("John", [], [liz])
 
-        context = {'authToken': '123abc'}
+        context = {"authToken": "123abc"}
 
-        ast = parse('{ name, friends { name } }')
+        ast = parse("{ name, friends { name } }")
 
-        assert execute(schema2, ast, john2, context) == ({
-            'name': 'John', 'friends': [{'name': 'Liz'}]}, None)
+        assert execute(schema2, ast, john2, context) == (
+            {"name": "John", "friends": [{"name": "Liz"}]},
+            None,
+        )
 
         assert encountered == {
-            'schema': schema2, 'root_value': john2, 'context': context}
+            "schema": schema2,
+            "root_value": john2,
+            "context": context,
+        }

@@ -7,32 +7,62 @@ from .source import Source
 from ..pyutils import camel_to_snake
 
 __all__ = [
-    'Location', 'Node',
-    'NameNode', 'DocumentNode', 'DefinitionNode',
-    'ExecutableDefinitionNode', 'OperationDefinitionNode',
-    'VariableDefinitionNode',
-    'SelectionSetNode', 'SelectionNode',
-    'FieldNode', 'ArgumentNode',
-    'FragmentSpreadNode', 'InlineFragmentNode', 'FragmentDefinitionNode',
-    'ValueNode', 'VariableNode',
-    'IntValueNode', 'FloatValueNode', 'StringValueNode',
-    'BooleanValueNode', 'NullValueNode',
-    'EnumValueNode', 'ListValueNode', 'ObjectValueNode', 'ObjectFieldNode',
-    'DirectiveNode', 'TypeNode', 'NamedTypeNode',
-    'ListTypeNode', 'NonNullTypeNode',
-    'TypeSystemDefinitionNode', 'SchemaDefinitionNode',
-    'OperationType', 'OperationTypeDefinitionNode',
-    'TypeDefinitionNode',
-    'ScalarTypeDefinitionNode', 'ObjectTypeDefinitionNode',
-    'FieldDefinitionNode', 'InputValueDefinitionNode',
-    'InterfaceTypeDefinitionNode', 'UnionTypeDefinitionNode',
-    'EnumTypeDefinitionNode', 'EnumValueDefinitionNode',
-    'InputObjectTypeDefinitionNode',
-    'DirectiveDefinitionNode', 'SchemaExtensionNode',
-    'TypeExtensionNode', 'TypeSystemExtensionNode', 'ScalarTypeExtensionNode',
-    'ObjectTypeExtensionNode', 'InterfaceTypeExtensionNode',
-    'UnionTypeExtensionNode', 'EnumTypeExtensionNode',
-    'InputObjectTypeExtensionNode']
+    "Location",
+    "Node",
+    "NameNode",
+    "DocumentNode",
+    "DefinitionNode",
+    "ExecutableDefinitionNode",
+    "OperationDefinitionNode",
+    "VariableDefinitionNode",
+    "SelectionSetNode",
+    "SelectionNode",
+    "FieldNode",
+    "ArgumentNode",
+    "FragmentSpreadNode",
+    "InlineFragmentNode",
+    "FragmentDefinitionNode",
+    "ValueNode",
+    "VariableNode",
+    "IntValueNode",
+    "FloatValueNode",
+    "StringValueNode",
+    "BooleanValueNode",
+    "NullValueNode",
+    "EnumValueNode",
+    "ListValueNode",
+    "ObjectValueNode",
+    "ObjectFieldNode",
+    "DirectiveNode",
+    "TypeNode",
+    "NamedTypeNode",
+    "ListTypeNode",
+    "NonNullTypeNode",
+    "TypeSystemDefinitionNode",
+    "SchemaDefinitionNode",
+    "OperationType",
+    "OperationTypeDefinitionNode",
+    "TypeDefinitionNode",
+    "ScalarTypeDefinitionNode",
+    "ObjectTypeDefinitionNode",
+    "FieldDefinitionNode",
+    "InputValueDefinitionNode",
+    "InterfaceTypeDefinitionNode",
+    "UnionTypeDefinitionNode",
+    "EnumTypeDefinitionNode",
+    "EnumValueDefinitionNode",
+    "InputObjectTypeDefinitionNode",
+    "DirectiveDefinitionNode",
+    "SchemaExtensionNode",
+    "TypeExtensionNode",
+    "TypeSystemExtensionNode",
+    "ScalarTypeExtensionNode",
+    "ObjectTypeExtensionNode",
+    "InterfaceTypeExtensionNode",
+    "UnionTypeExtensionNode",
+    "EnumTypeExtensionNode",
+    "InputObjectTypeExtensionNode",
+]
 
 
 class Location(NamedTuple):
@@ -48,7 +78,7 @@ class Location(NamedTuple):
     source: Source  # Source document the AST represents
 
     def __str__(self):
-        return f'{self.start}:{self.end}'
+        return f"{self.start}:{self.end}"
 
     def __eq__(self, other):
         if isinstance(other, Location):
@@ -63,21 +93,23 @@ class Location(NamedTuple):
 
 class OperationType(Enum):
 
-    QUERY = 'query'
-    MUTATION = 'mutation'
-    SUBSCRIPTION = 'subscription'
+    QUERY = "query"
+    MUTATION = "mutation"
+    SUBSCRIPTION = "subscription"
 
 
 # Base AST Node
 
+
 class Node:
     """AST nodes"""
-    __slots__ = 'loc',
+
+    __slots__ = ("loc",)
 
     loc: Optional[Location]
 
-    kind: str = 'ast'  # the kind of the node as a snake_case string
-    keys = ['loc']  # the names of the attributes of this node
+    kind: str = "ast"  # the kind of the node as a snake_case string
+    keys = ["loc"]  # the names of the attributes of this node
 
     def __init__(self, **kwargs):
         """Initialize the node with the given keyword arguments."""
@@ -86,15 +118,16 @@ class Node:
 
     def __repr__(self):
         """Get a simple representation of the node."""
-        name, loc = self.__class__.__name__, getattr(self, 'loc', None)
-        return f'{name} at {loc}' if loc else name
+        name, loc = self.__class__.__name__, getattr(self, "loc", None)
+        return f"{name} at {loc}" if loc else name
 
     def __eq__(self, other):
         """Test whether two nodes are equal (recursively)."""
-        return (isinstance(other, Node) and
-                self.__class__ == other.__class__ and
-                all(getattr(self, key) == getattr(other, key)
-                for key in self.keys))
+        return (
+            isinstance(other, Node)
+            and self.__class__ == other.__class__
+            and all(getattr(self, key) == getattr(other, key) for key in self.keys)
+        )
 
     def __hash__(self):
         return id(self)
@@ -107,12 +140,13 @@ class Node:
         """Create a deep copy of the node"""
         # noinspection PyArgumentList
         return self.__class__(
-            **{key: deepcopy(getattr(self, key), memo) for key in self.keys})
+            **{key: deepcopy(getattr(self, key), memo) for key in self.keys}
+        )
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         name = cls.__name__
-        if name.endswith('Node'):
+        if name.endswith("Node"):
             name = name[:-4]
         cls.kind = camel_to_snake(name)
         keys = []
@@ -125,18 +159,20 @@ class Node:
 
 # Name
 
+
 class NameNode(Node):
-    __slots__ = 'value',
+    __slots__ = ("value",)
 
     value: str
 
 
 # Document
 
-class DocumentNode(Node):
-    __slots__ = 'definitions',
 
-    definitions: List['DefinitionNode']
+class DocumentNode(Node):
+    __slots__ = ("definitions",)
+
+    definitions: List["DefinitionNode"]
 
 
 class DefinitionNode(Node):
@@ -144,112 +180,114 @@ class DefinitionNode(Node):
 
 
 class ExecutableDefinitionNode(DefinitionNode):
-    __slots__ = 'name', 'directives', 'variable_definitions', 'selection_set'
+    __slots__ = "name", "directives", "variable_definitions", "selection_set"
 
     name: Optional[NameNode]
-    directives: Optional[List['DirectiveNode']]
-    variable_definitions: List['VariableDefinitionNode']
-    selection_set: 'SelectionSetNode'
+    directives: Optional[List["DirectiveNode"]]
+    variable_definitions: List["VariableDefinitionNode"]
+    selection_set: "SelectionSetNode"
 
 
 class OperationDefinitionNode(ExecutableDefinitionNode):
-    __slots__ = 'operation',
+    __slots__ = ("operation",)
 
     operation: OperationType
 
 
 class VariableDefinitionNode(Node):
-    __slots__ = 'variable', 'type', 'default_value', 'directives'
+    __slots__ = "variable", "type", "default_value", "directives"
 
-    variable: 'VariableNode'
-    type: 'TypeNode'
-    default_value: Optional['ValueNode']
-    directives: Optional[List['DirectiveNode']]
+    variable: "VariableNode"
+    type: "TypeNode"
+    default_value: Optional["ValueNode"]
+    directives: Optional[List["DirectiveNode"]]
 
 
 class SelectionSetNode(Node):
-    __slots__ = 'selections',
+    __slots__ = ("selections",)
 
-    selections: List['SelectionNode']
+    selections: List["SelectionNode"]
 
 
 class SelectionNode(Node):
-    __slots__ = 'directives',
+    __slots__ = ("directives",)
 
-    directives: Optional[List['DirectiveNode']]
+    directives: Optional[List["DirectiveNode"]]
 
 
 class FieldNode(SelectionNode):
-    __slots__ = 'alias', 'name', 'arguments', 'selection_set'
+    __slots__ = "alias", "name", "arguments", "selection_set"
 
     alias: Optional[NameNode]
     name: NameNode
-    arguments: Optional[List['ArgumentNode']]
+    arguments: Optional[List["ArgumentNode"]]
     selection_set: Optional[SelectionSetNode]
 
 
 class ArgumentNode(Node):
-    __slots__ = 'name', 'value'
+    __slots__ = "name", "value"
 
     name: NameNode
-    value: 'ValueNode'
+    value: "ValueNode"
 
 
 # Fragments
 
+
 class FragmentSpreadNode(SelectionNode):
-    __slots__ = 'name',
+    __slots__ = ("name",)
 
     name: NameNode
 
 
 class InlineFragmentNode(SelectionNode):
-    __slots__ = 'type_condition', 'selection_set'
+    __slots__ = "type_condition", "selection_set"
 
-    type_condition: 'NamedTypeNode'
+    type_condition: "NamedTypeNode"
     selection_set: SelectionSetNode
 
 
 class FragmentDefinitionNode(ExecutableDefinitionNode):
-    __slots__ = 'type_condition',
+    __slots__ = ("type_condition",)
 
     name: NameNode
-    type_condition: 'NamedTypeNode'
+    type_condition: "NamedTypeNode"
 
 
 # Values
+
 
 class ValueNode(Node):
     __slots__ = ()
 
 
 class VariableNode(ValueNode):
-    __slots__ = 'name',
+    __slots__ = ("name",)
 
     name: NameNode
 
 
 class IntValueNode(ValueNode):
-    __slots__ = 'value',
+    __slots__ = ("value",)
 
     value: str
 
 
 class FloatValueNode(ValueNode):
-    __slots__ = 'value',
+    __slots__ = ("value",)
 
     value: str
 
 
 class StringValueNode(ValueNode):
-    __slots__ = 'value', 'block'
+    __slots__ = "value", "block"
 
     value: str
     block: Optional[bool]
 
 
 class BooleanValueNode(ValueNode):
-    __slots__ = 'value',
+    __slots__ = ("value",)
 
     value: bool
 
@@ -259,25 +297,25 @@ class NullValueNode(ValueNode):
 
 
 class EnumValueNode(ValueNode):
-    __slots__ = 'value',
+    __slots__ = ("value",)
 
     value: str
 
 
 class ListValueNode(ValueNode):
-    __slots__ = 'values',
+    __slots__ = ("values",)
 
     values: List[ValueNode]
 
 
 class ObjectValueNode(ValueNode):
-    __slots__ = 'fields',
+    __slots__ = ("fields",)
 
-    fields: List['ObjectFieldNode']
+    fields: List["ObjectFieldNode"]
 
 
 class ObjectFieldNode(Node):
-    __slots__ = 'name', 'value'
+    __slots__ = "name", "value"
 
     name: NameNode
     value: ValueNode
@@ -285,8 +323,9 @@ class ObjectFieldNode(Node):
 
 # Directives
 
+
 class DirectiveNode(Node):
-    __slots__ = 'name', 'arguments'
+    __slots__ = "name", "arguments"
 
     name: NameNode
     arguments: List[ArgumentNode]
@@ -294,43 +333,45 @@ class DirectiveNode(Node):
 
 # Type Reference
 
+
 class TypeNode(Node):
     __slots__ = ()
 
 
 class NamedTypeNode(TypeNode):
-    __slots__ = 'name',
+    __slots__ = ("name",)
 
     name: NameNode
 
 
 class ListTypeNode(TypeNode):
-    __slots__ = 'type',
+    __slots__ = ("type",)
 
     type: TypeNode
 
 
 class NonNullTypeNode(TypeNode):
-    __slots__ = 'type',
+    __slots__ = ("type",)
 
     type: Union[NamedTypeNode, ListTypeNode]
 
 
 # Type System Definition
 
+
 class TypeSystemDefinitionNode(DefinitionNode):
     __slots__ = ()
 
 
 class SchemaDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = 'directives', 'operation_types'
+    __slots__ = "directives", "operation_types"
 
     directives: Optional[List[DirectiveNode]]
-    operation_types: List['OperationTypeDefinitionNode']
+    operation_types: List["OperationTypeDefinitionNode"]
 
 
 class OperationTypeDefinitionNode(Node):
-    __slots__ = 'operation', 'type'
+    __slots__ = "operation", "type"
 
     operation: OperationType
     type: NamedTypeNode
@@ -338,8 +379,9 @@ class OperationTypeDefinitionNode(Node):
 
 # Type Definition
 
+
 class TypeDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = 'description', 'name', 'directives'
+    __slots__ = "description", "name", "directives"
 
     description: Optional[StringValueNode]
     name: NameNode
@@ -351,42 +393,42 @@ class ScalarTypeDefinitionNode(TypeDefinitionNode):
 
 
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'interfaces', 'fields'
+    __slots__ = "interfaces", "fields"
 
     interfaces: Optional[List[NamedTypeNode]]
-    fields: Optional[List['FieldDefinitionNode']]
+    fields: Optional[List["FieldDefinitionNode"]]
 
 
 class FieldDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'arguments', 'type'
+    __slots__ = "arguments", "type"
 
-    arguments: Optional[List['InputValueDefinitionNode']]
+    arguments: Optional[List["InputValueDefinitionNode"]]
     type: TypeNode
 
 
 class InputValueDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'type', 'default_value'
+    __slots__ = "type", "default_value"
 
     type: TypeNode
     default_value: Optional[ValueNode]
 
 
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'fields',
+    __slots__ = ("fields",)
 
-    fields: Optional[List['FieldDefinitionNode']]
+    fields: Optional[List["FieldDefinitionNode"]]
 
 
 class UnionTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'types',
+    __slots__ = ("types",)
 
     types: Optional[List[NamedTypeNode]]
 
 
 class EnumTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'values',
+    __slots__ = ("values",)
 
-    values: Optional[List['EnumValueDefinitionNode']]
+    values: Optional[List["EnumValueDefinitionNode"]]
 
 
 class EnumValueDefinitionNode(TypeDefinitionNode):
@@ -394,15 +436,16 @@ class EnumValueDefinitionNode(TypeDefinitionNode):
 
 
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = 'fields',
+    __slots__ = ("fields",)
 
     fields: Optional[List[InputValueDefinitionNode]]
 
 
 # Directive Definitions
 
+
 class DirectiveDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = 'description', 'name', 'arguments', 'locations'
+    __slots__ = "description", "name", "arguments", "locations"
 
     description: Optional[StringValueNode]
     name: NameNode
@@ -412,8 +455,9 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 
 # Type System Extensions
 
+
 class SchemaExtensionNode(Node):
-    __slots__ = 'directives', 'operation_types'
+    __slots__ = "directives", "operation_types"
 
     directives: Optional[List[DirectiveNode]]
     operation_types: Optional[List[OperationTypeDefinitionNode]]
@@ -421,8 +465,9 @@ class SchemaExtensionNode(Node):
 
 # Type Extensions
 
+
 class TypeExtensionNode(TypeSystemDefinitionNode):
-    __slots__ = 'name', 'directives'
+    __slots__ = "name", "directives"
 
     name: NameNode
     directives: Optional[List[DirectiveNode]]
@@ -436,31 +481,31 @@ class ScalarTypeExtensionNode(TypeExtensionNode):
 
 
 class ObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = 'interfaces', 'fields'
+    __slots__ = "interfaces", "fields"
 
     interfaces: Optional[List[NamedTypeNode]]
     fields: Optional[List[FieldDefinitionNode]]
 
 
 class InterfaceTypeExtensionNode(TypeExtensionNode):
-    __slots__ = 'fields',
+    __slots__ = ("fields",)
 
     fields: Optional[List[FieldDefinitionNode]]
 
 
 class UnionTypeExtensionNode(TypeExtensionNode):
-    __slots__ = 'types',
+    __slots__ = ("types",)
 
     types: Optional[List[NamedTypeNode]]
 
 
 class EnumTypeExtensionNode(TypeExtensionNode):
-    __slots__ = 'values',
+    __slots__ = ("values",)
 
     values: Optional[List[EnumValueDefinitionNode]]
 
 
 class InputObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = 'fields',
+    __slots__ = ("fields",)
 
     fields: Optional[List[InputValueDefinitionNode]]

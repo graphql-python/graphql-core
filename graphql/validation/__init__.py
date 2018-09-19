@@ -49,8 +49,7 @@ from .rules.no_unused_fragments import NoUnusedFragmentsRule
 from .rules.no_unused_variables import NoUnusedVariablesRule
 
 # Spec Section: "Field Selection Merging"
-from .rules.overlapping_fields_can_be_merged import (
-    OverlappingFieldsCanBeMergedRule)
+from .rules.overlapping_fields_can_be_merged import OverlappingFieldsCanBeMergedRule
 
 # Spec Section: "Fragment spread is possible"
 from .rules.possible_fragment_spreads import PossibleFragmentSpreadsRule
@@ -68,8 +67,7 @@ from .rules.single_field_subscriptions import SingleFieldSubscriptionsRule
 from .rules.unique_argument_names import UniqueArgumentNamesRule
 
 # Spec Section: "Directives Are Unique Per Location"
-from .rules.unique_directives_per_location import (
-    UniqueDirectivesPerLocationRule)
+from .rules.unique_directives_per_location import UniqueDirectivesPerLocationRule
 
 # Spec Section: "Fragment Name Uniqueness"
 from .rules.unique_fragment_names import UniqueFragmentNamesRule
@@ -93,19 +91,36 @@ from .rules.variables_are_input_types import VariablesAreInputTypesRule
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
 __all__ = [
-    'validate', 'ValidationContext',
-    'ValidationRule', 'ASTValidationRule', 'SDLValidationRule',
-    'specified_rules',
-    'ExecutableDefinitionsRule', 'FieldsOnCorrectTypeRule',
-    'FragmentsOnCompositeTypesRule', 'KnownArgumentNamesRule',
-    'KnownDirectivesRule', 'KnownFragmentNamesRule', 'KnownTypeNamesRule',
-    'LoneAnonymousOperationRule', 'NoFragmentCyclesRule',
-    'NoUndefinedVariablesRule', 'NoUnusedFragmentsRule',
-    'NoUnusedVariablesRule', 'OverlappingFieldsCanBeMergedRule',
-    'PossibleFragmentSpreadsRule', 'ProvidedRequiredArgumentsRule',
-    'ScalarLeafsRule', 'SingleFieldSubscriptionsRule',
-    'UniqueArgumentNamesRule', 'UniqueDirectivesPerLocationRule',
-    'UniqueFragmentNamesRule', 'UniqueInputFieldNamesRule',
-    'UniqueOperationNamesRule', 'UniqueVariableNamesRule',
-    'ValuesOfCorrectTypeRule', 'VariablesAreInputTypesRule',
-    'VariablesInAllowedPositionRule']
+    "validate",
+    "ValidationContext",
+    "ValidationRule",
+    "ASTValidationRule",
+    "SDLValidationRule",
+    "specified_rules",
+    "ExecutableDefinitionsRule",
+    "FieldsOnCorrectTypeRule",
+    "FragmentsOnCompositeTypesRule",
+    "KnownArgumentNamesRule",
+    "KnownDirectivesRule",
+    "KnownFragmentNamesRule",
+    "KnownTypeNamesRule",
+    "LoneAnonymousOperationRule",
+    "NoFragmentCyclesRule",
+    "NoUndefinedVariablesRule",
+    "NoUnusedFragmentsRule",
+    "NoUnusedVariablesRule",
+    "OverlappingFieldsCanBeMergedRule",
+    "PossibleFragmentSpreadsRule",
+    "ProvidedRequiredArgumentsRule",
+    "ScalarLeafsRule",
+    "SingleFieldSubscriptionsRule",
+    "UniqueArgumentNamesRule",
+    "UniqueDirectivesPerLocationRule",
+    "UniqueFragmentNamesRule",
+    "UniqueInputFieldNamesRule",
+    "UniqueOperationNamesRule",
+    "UniqueVariableNamesRule",
+    "ValuesOfCorrectTypeRule",
+    "VariablesAreInputTypesRule",
+    "VariablesInAllowedPositionRule",
+]

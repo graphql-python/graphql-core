@@ -7,9 +7,7 @@ JSON objects in a more complex demo.
 
 from typing import Sequence, Iterator
 
-__all__ = [
-    'get_droid', 'get_friends', 'get_hero', 'get_human',
-    'get_secret_backstory']
+__all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_backstory"]
 
 # These are classes which correspond to the schema.
 # They represent the shape of the data visited during field resolution.
@@ -24,7 +22,7 @@ class Character:
 
 # noinspection PyPep8Naming
 class Human(Character):
-    type = 'Human'
+    type = "Human"
     homePlanet: str
 
     # noinspection PyShadowingBuiltins
@@ -36,7 +34,7 @@ class Human(Character):
 
 # noinspection PyPep8Naming
 class Droid(Character):
-    type = 'Droid'
+    type = "Droid"
     primaryFunction: str
 
     # noinspection PyShadowingBuiltins
@@ -47,59 +45,60 @@ class Droid(Character):
 
 
 luke = Human(
-    id='1000',
-    name='Luke Skywalker',
-    friends=['1002', '1003', '2000', '2001'],
+    id="1000",
+    name="Luke Skywalker",
+    friends=["1002", "1003", "2000", "2001"],
     appearsIn=[4, 5, 6],
-    homePlanet='Tatooine')
+    homePlanet="Tatooine",
+)
 
 vader = Human(
-    id='1001',
-    name='Darth Vader',
-    friends=['1004'],
+    id="1001",
+    name="Darth Vader",
+    friends=["1004"],
     appearsIn=[4, 5, 6],
-    homePlanet='Tatooine')
+    homePlanet="Tatooine",
+)
 
 han = Human(
-    id='1002',
-    name='Han Solo',
-    friends=['1000', '1003', '2001'],
+    id="1002",
+    name="Han Solo",
+    friends=["1000", "1003", "2001"],
     appearsIn=[4, 5, 6],
-    homePlanet=None)
+    homePlanet=None,
+)
 
 leia = Human(
-    id='1003',
-    name='Leia Organa',
-    friends=['1000', '1002', '2000', '2001'],
+    id="1003",
+    name="Leia Organa",
+    friends=["1000", "1002", "2000", "2001"],
     appearsIn=[4, 5, 6],
-    homePlanet='Alderaan')
+    homePlanet="Alderaan",
+)
 
 tarkin = Human(
-    id='1004',
-    name='Wilhuff Tarkin',
-    friends=['1001'],
-    appearsIn=[4],
-    homePlanet=None)
+    id="1004", name="Wilhuff Tarkin", friends=["1001"], appearsIn=[4], homePlanet=None
+)
 
-human_data = {
-    '1000': luke, '1001': vader, '1002': han, '1003': leia, '1004': tarkin}
+human_data = {"1000": luke, "1001": vader, "1002": han, "1003": leia, "1004": tarkin}
 
 threepio = Droid(
-    id='2000',
-    name='C-3PO',
-    friends=['1000', '1002', '1003', '2001'],
+    id="2000",
+    name="C-3PO",
+    friends=["1000", "1002", "1003", "2001"],
     appearsIn=[4, 5, 6],
-    primaryFunction='Protocol')
+    primaryFunction="Protocol",
+)
 
 artoo = Droid(
-    id='2001',
-    name='R2-D2',
-    friends=['1000', '1002', '1003'],
+    id="2001",
+    name="R2-D2",
+    friends=["1000", "1002", "1003"],
     appearsIn=[4, 5, 6],
-    primaryFunction='Astromech')
+    primaryFunction="Astromech",
+)
 
-droid_data = {
-    '2000': threepio, '2001': artoo}
+droid_data = {"2000": threepio, "2001": artoo}
 
 
 # noinspection PyShadowingBuiltins
@@ -136,4 +135,4 @@ def get_droid(id: str) -> Droid:
 
 def get_secret_backstory(character: Character) -> str:
     """Raise an error when attempting to get the secret backstory."""
-    raise RuntimeError('secretBackstory is secret.')
+    raise RuntimeError("secretBackstory is secret.")

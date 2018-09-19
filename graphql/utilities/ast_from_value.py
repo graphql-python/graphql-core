@@ -2,19 +2,35 @@ import re
 from typing import Any, Iterable, List, Mapping, Optional, cast
 
 from ..language import (
-    BooleanValueNode, EnumValueNode, FloatValueNode, IntValueNode,
-    ListValueNode, NameNode, NullValueNode, ObjectFieldNode,
-    ObjectValueNode, StringValueNode, ValueNode)
+    BooleanValueNode,
+    EnumValueNode,
+    FloatValueNode,
+    IntValueNode,
+    ListValueNode,
+    NameNode,
+    NullValueNode,
+    ObjectFieldNode,
+    ObjectValueNode,
+    StringValueNode,
+    ValueNode,
+)
 from ..pyutils import is_nullish, is_invalid
 from ..type import (
-    GraphQLID, GraphQLInputType, GraphQLInputObjectType,
-    GraphQLList, GraphQLNonNull,
-    is_enum_type, is_input_object_type, is_list_type,
-    is_non_null_type, is_scalar_type)
+    GraphQLID,
+    GraphQLInputType,
+    GraphQLInputObjectType,
+    GraphQLList,
+    GraphQLNonNull,
+    is_enum_type,
+    is_input_object_type,
+    is_list_type,
+    is_non_null_type,
+    is_scalar_type,
+)
 
-__all__ = ['ast_from_value']
+__all__ = ["ast_from_value"]
 
-_re_integer_string = re.compile('^-?(0|[1-9][0-9]*)$')
+_re_integer_string = re.compile("^-?(0|[1-9][0-9]*)$")
 
 
 def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
@@ -56,8 +72,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         item_type = type_.of_type
         if isinstance(value, Iterable) and not isinstance(value, str):
             value_nodes = [
-                ast_from_value(item, item_type)  # type: ignore
-                for item in value]
+                ast_from_value(item, item_type) for item in value  # type: ignore
+            ]
             return ListValueNode(values=value_nodes)
         return ast_from_value(value, item_type)  # type: ignore
 
@@ -73,8 +89,11 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
             if field_name in value:
                 field_value = ast_from_value(value[field_name], field.type)
                 if field_value:
-                    append_node(ObjectFieldNode(
-                        name=NameNode(value=field_name), value=field_value))
+                    append_node(
+                        ObjectFieldNode(
+                            name=NameNode(value=field_name), value=field_value
+                        )
+                    )
         return ObjectValueNode(fields=field_nodes)
 
     if is_scalar_type(type_) or is_enum_type(type_):
@@ -90,9 +109,9 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
         # Python ints and floats correspond nicely to Int and Float values.
         if isinstance(serialized, int):
-            return IntValueNode(value=f'{serialized:d}')
+            return IntValueNode(value=f"{serialized:d}")
         if isinstance(serialized, float):
-            return FloatValueNode(value=f'{serialized:g}')
+            return FloatValueNode(value=f"{serialized:g}")
 
         if isinstance(serialized, str):
             # Enum types use Enum literals.
@@ -105,6 +124,6 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
             return StringValueNode(value=serialized)
 
-        raise TypeError(f'Cannot convert value to AST: {serialized!r}')
+        raise TypeError(f"Cannot convert value to AST: {serialized!r}")
 
-    raise TypeError(f'Unknown type: {type_!r}.')
+    raise TypeError(f"Unknown type: {type_!r}.")

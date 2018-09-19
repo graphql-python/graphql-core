@@ -4,11 +4,11 @@ from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, FragmentSpreadNode
 from . import ValidationContext, ValidationRule
 
-__all__ = ['NoFragmentCyclesRule', 'cycle_error_message']
+__all__ = ["NoFragmentCyclesRule", "cycle_error_message"]
 
 
 def cycle_error_message(frag_name: str, spread_names: List[str]) -> str:
-    via = f" via {', '.join(spread_names)}" if spread_names else ''
+    via = f" via {', '.join(spread_names)}" if spread_names else ""
     return f"Cannot spread fragment '{frag_name}' within itself{via}."
 
 
@@ -43,8 +43,7 @@ class NoFragmentCyclesRule(ValidationRule):
         visited_frags = self.visited_frags
         visited_frags.add(fragment_name)
 
-        spread_nodes = self.context.get_fragment_spreads(
-            fragment.selection_set)
+        spread_nodes = self.context.get_fragment_spreads(fragment.selection_set)
         if not spread_nodes:
             return
 
@@ -65,9 +64,11 @@ class NoFragmentCyclesRule(ValidationRule):
             else:
                 cycle_path = spread_path[cycle_index:]
                 fragment_names = [s.name.value for s in cycle_path[:-1]]
-                self.report_error(GraphQLError(
-                    cycle_error_message(spread_name, fragment_names),
-                    cycle_path))
+                self.report_error(
+                    GraphQLError(
+                        cycle_error_message(spread_name, fragment_names), cycle_path
+                    )
+                )
             spread_path.pop()
 
         del spread_path_index[fragment_name]

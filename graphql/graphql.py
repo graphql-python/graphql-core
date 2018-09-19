@@ -3,11 +3,10 @@ from inspect import isawaitable
 from typing import Any, Awaitable, Callable, Dict, Union, Type, cast
 
 from .error import GraphQLError
-from .execution import execute, ExecutionResult, Middleware
+from .execution import execute, ExecutionResult, ExecutionContext, Middleware
 from .language import parse, Source
 from .pyutils import MaybeAwaitable
 from .type import GraphQLSchema, validate_schema
-from .execution.execute import ExecutionResult, ExecutionContext
 
 __all__ = ["graphql", "graphql_sync"]
 
@@ -15,12 +14,12 @@ __all__ = ["graphql", "graphql_sync"]
 async def graphql(
     schema: GraphQLSchema,
     source: Union[str, Source],
-    root_value: Any=None,
-    context_value: Any=None,
-    variable_values: Dict[str, Any]=None,
-    operation_name: str=None,
-    field_resolver: Callable=None,
-    middleware: Middleware=None,
+    root_value: Any = None,
+    context_value: Any = None,
+    variable_values: Dict[str, Any] = None,
+    operation_name: str = None,
+    field_resolver: Callable = None,
+    middleware: Middleware = None,
     execution_context_class: Type[ExecutionContext] = ExecutionContext,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
@@ -86,12 +85,12 @@ async def graphql(
 def graphql_sync(
     schema: GraphQLSchema,
     source: Union[str, Source],
-    root_value: Any=None,
-    context_value: Any=None,
-    variable_values: Dict[str, Any]=None,
-    operation_name: str=None,
-    field_resolver: Callable=None,
-    middleware: Middleware=None,
+    root_value: Any = None,
+    context_value: Any = None,
+    variable_values: Dict[str, Any] = None,
+    operation_name: str = None,
+    field_resolver: Callable = None,
+    middleware: Middleware = None,
     execution_context_class: Type[ExecutionContext] = ExecutionContext,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
@@ -116,8 +115,7 @@ def graphql_sync(
     # Assert that the execution was synchronous.
     if isawaitable(result):
         ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
-        raise RuntimeError(
-            "GraphQL execution failed to complete synchronously.")
+        raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
     return cast(ExecutionResult, result)
 

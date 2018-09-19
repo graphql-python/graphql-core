@@ -2,12 +2,12 @@ from typing import Optional
 
 from ..language import DocumentNode, OperationDefinitionNode
 
-__all__ = ['get_operation_ast']
+__all__ = ["get_operation_ast"]
 
 
 def get_operation_ast(
-        document_ast: DocumentNode, operation_name: Optional[str]=None
-        ) -> Optional[OperationDefinitionNode]:
+    document_ast: DocumentNode, operation_name: Optional[str] = None
+) -> Optional[OperationDefinitionNode]:
     """Get operation AST node.
 
     Returns an operation AST given a document AST and optionally an operation

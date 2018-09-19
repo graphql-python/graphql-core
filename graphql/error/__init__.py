@@ -12,5 +12,11 @@ from .format_error import format_error
 from .invalid import INVALID, InvalidType
 
 __all__ = [
-    'INVALID', 'InvalidType', 'GraphQLError', 'GraphQLSyntaxError',
-    'format_error', 'print_error', 'located_error']
+    "INVALID",
+    "InvalidType",
+    "GraphQLError",
+    "GraphQLSyntaxError",
+    "format_error",
+    "print_error",
+    "located_error",
+]

@@ -2,91 +2,121 @@ from functools import partial
 
 from graphql.validation import UniqueDirectivesPerLocationRule
 from graphql.validation.rules.unique_directives_per_location import (
-    duplicate_directive_message)
+    duplicate_directive_message
+)
 
-from .harness import (
-    expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule)
+from .harness import expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule
 
 expect_sdl_errors = partial(
-    expect_sdl_errors_from_rule, UniqueDirectivesPerLocationRule)
+    expect_sdl_errors_from_rule, UniqueDirectivesPerLocationRule
+)
 
 
 def duplicate_directive(directive_name, l1, c1, l2, c2):
     return {
-        'message': duplicate_directive_message(directive_name),
-        'locations': [(l1, c1), (l2, c2)]}
+        "message": duplicate_directive_message(directive_name),
+        "locations": [(l1, c1), (l2, c2)],
+    }
 
 
 def describe_validate_directives_are_unique_per_location():
-
     def no_directives():
-        expect_passes_rule(UniqueDirectivesPerLocationRule, """
+        expect_passes_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             {
               field
             }
-            """)
+            """,
+        )
 
     def unique_directives_in_different_locations():
-        expect_passes_rule(UniqueDirectivesPerLocationRule, """
+        expect_passes_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type @directiveA {
               field @directiveB
             }
-            """)
+            """,
+        )
 
     def unique_directives_in_same_locations():
-        expect_passes_rule(UniqueDirectivesPerLocationRule, """
+        expect_passes_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type @directiveA @directiveB {
               field @directiveA @directiveB
             }
-            """)
+            """,
+        )
 
     def same_directives_in_different_locations():
-        expect_passes_rule(UniqueDirectivesPerLocationRule, """
+        expect_passes_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type @directiveA {
               field @directiveA
             }
-            """)
+            """,
+        )
 
     def same_directives_in_similar_locations():
-        expect_passes_rule(UniqueDirectivesPerLocationRule, """
+        expect_passes_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type {
               field @directive
               field @directive
             }
-            """)
+            """,
+        )
 
     def duplicate_directives_in_one_location():
-        expect_fails_rule(UniqueDirectivesPerLocationRule, """
+        expect_fails_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type {
               field @directive @directive @directive
             }
-            """, [
-            duplicate_directive('directive', 3, 21, 3, 32),
-            duplicate_directive('directive', 3, 21, 3, 43),
-        ])
+            """,
+            [
+                duplicate_directive("directive", 3, 21, 3, 32),
+                duplicate_directive("directive", 3, 21, 3, 43),
+            ],
+        )
 
     def different_duplicate_directives_in_one_location():
-        expect_fails_rule(UniqueDirectivesPerLocationRule, """
+        expect_fails_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type {
               field @directiveA @directiveB @directiveA @directiveB
             }
-            """, [
-            duplicate_directive('directiveA', 3, 21, 3, 45),
-            duplicate_directive('directiveB', 3, 33, 3, 57),
-        ])
+            """,
+            [
+                duplicate_directive("directiveA", 3, 21, 3, 45),
+                duplicate_directive("directiveB", 3, 33, 3, 57),
+            ],
+        )
 
     def different_duplicate_directives_in_many_locations():
-        expect_fails_rule(UniqueDirectivesPerLocationRule, """
+        expect_fails_rule(
+            UniqueDirectivesPerLocationRule,
+            """
             fragment Test on Type @directive @directive {
               field @directive @directive
             }
-            """, [
-            duplicate_directive('directive', 2, 35, 2, 46),
-            duplicate_directive('directive', 3, 21, 3, 32),
-        ])
+            """,
+            [
+                duplicate_directive("directive", 2, 35, 2, 46),
+                duplicate_directive("directive", 3, 21, 3, 32),
+            ],
+        )
 
     def duplicate_directives_on_sdl_definitions():
-        assert expect_sdl_errors("""
+        assert (
+            expect_sdl_errors(
+                """
             schema @directive @directive { query: Dummy }
             extend schema @directive @directive
 
@@ -104,16 +134,20 @@ def describe_validate_directives_are_unique_per_location():
 
             input TestInput @directive @directive
             extend input TestInput @directive @directive
-            """) == [
-            duplicate_directive('directive', 2, 20, 2, 31),
-            duplicate_directive('directive', 3, 27, 3, 38),
-            duplicate_directive('directive', 5, 31, 5, 42),
-            duplicate_directive('directive', 6, 38, 6, 49),
-            duplicate_directive('directive', 8, 29, 8, 40),
-            duplicate_directive('directive', 9, 36, 9, 47),
-            duplicate_directive('directive', 11, 37, 11, 48),
-            duplicate_directive('directive', 12, 44, 12, 55),
-            duplicate_directive('directive', 14, 29, 14, 40),
-            duplicate_directive('directive', 15, 36, 15, 47),
-            duplicate_directive('directive', 17, 29, 17, 40),
-            duplicate_directive('directive', 18, 36, 18, 47)]
+            """
+            )
+            == [
+                duplicate_directive("directive", 2, 20, 2, 31),
+                duplicate_directive("directive", 3, 27, 3, 38),
+                duplicate_directive("directive", 5, 31, 5, 42),
+                duplicate_directive("directive", 6, 38, 6, 49),
+                duplicate_directive("directive", 8, 29, 8, 40),
+                duplicate_directive("directive", 9, 36, 9, 47),
+                duplicate_directive("directive", 11, 37, 11, 48),
+                duplicate_directive("directive", 12, 44, 12, 55),
+                duplicate_directive("directive", 14, 29, 14, 40),
+                duplicate_directive("directive", 15, 36, 15, 47),
+                duplicate_directive("directive", 17, 29, 17, 40),
+                duplicate_directive("directive", 18, 36, 18, 47),
+            ]
+        )

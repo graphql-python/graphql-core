@@ -1,15 +1,16 @@
 from .location import SourceLocation
 
-__all__ = ['Source']
+__all__ = ["Source"]
 
 
 class Source:
     """A representation of source input to GraphQL."""
 
-    __slots__ = 'body', 'name', 'location_offset'
+    __slots__ = "body", "name", "location_offset"
 
-    def __init__(self, body: str, name: str=None,
-                 location_offset: SourceLocation=None) -> None:
+    def __init__(
+        self, body: str, name: str = None, location_offset: SourceLocation = None
+    ) -> None:
         """Initialize source input.
 
 
@@ -22,7 +23,7 @@ class Source:
         """
 
         self.body = body
-        self.name = name or 'GraphQL request'
+        self.name = name or "GraphQL request"
         if not location_offset:
             location_offset = SourceLocation(1, 1)
         elif not isinstance(location_offset, SourceLocation):
@@ -30,10 +31,12 @@ class Source:
             location_offset = SourceLocation._make(location_offset)
         if location_offset.line <= 0:
             raise ValueError(
-                'line in location_offset is 1-indexed and must be positive')
+                "line in location_offset is 1-indexed and must be positive"
+            )
         if location_offset.column <= 0:
             raise ValueError(
-                'column in location_offset is 1-indexed and must be positive')
+                "column in location_offset is 1-indexed and must be positive"
+            )
         self.location_offset = location_offset
 
     def get_location(self, position: int) -> SourceLocation:

@@ -1,27 +1,31 @@
 from graphql.validation import NoUndefinedVariablesRule
-from graphql.validation.rules.no_undefined_variables import (
-    undefined_var_message)
+from graphql.validation.rules.no_undefined_variables import undefined_var_message
 
 from .harness import expect_fails_rule, expect_passes_rule
 
 
 def undef_var(var_name, l1, c1, op_name, l2, c2):
     return {
-        'message': undefined_var_message(var_name, op_name),
-        'locations': [(l1, c1), (l2, c2)]}
+        "message": undefined_var_message(var_name, op_name),
+        "locations": [(l1, c1), (l2, c2)],
+    }
 
 
 def describe_validate_no_undefined_variables():
-
     def all_variables_defined():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c)
             }
-            """)
+            """,
+        )
 
     def all_variables_deeply_defined():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a) {
                 field(b: $b) {
@@ -29,10 +33,13 @@ def describe_validate_no_undefined_variables():
                 }
               }
             }
-            """)
+            """,
+        )
 
     def all_variables_deeply_in_inline_fragments_defined():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
            query Foo($a: String, $b: String, $c: String) {
              ... on Type {
                field(a: $a) {
@@ -44,10 +51,13 @@ def describe_validate_no_undefined_variables():
                }
              }
            }
-           """)
+           """,
+        )
 
     def all_variables_in_fragments_deeply_defined():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
             }
@@ -64,10 +74,13 @@ def describe_validate_no_undefined_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """)
+            """,
+        )
 
     def variable_within_single_fragment_defined_in_multiple_operations():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String) {
               ...FragA
             }
@@ -77,10 +90,13 @@ def describe_validate_no_undefined_variables():
             fragment FragA on Type {
               field(a: $a)
             }
-            """)
+            """,
+        )
 
     def variable_within_fragments_defined_in_operations():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String) {
               ...FragA
             }
@@ -93,10 +109,13 @@ def describe_validate_no_undefined_variables():
             fragment FragB on Type {
               field(b: $b)
             }
-            """)
+            """,
+        )
 
     def variable_within_recursive_fragment_defined():
-        expect_passes_rule(NoUndefinedVariablesRule, """
+        expect_passes_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String) {
               ...FragA
             }
@@ -105,50 +124,60 @@ def describe_validate_no_undefined_variables():
                 ...FragA
               }
             }
-            """)
+            """,
+        )
 
     def variable_not_defined():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c, d: $d)
             }
-            """, [
-            undef_var('d', 3, 45, 'Foo', 2, 13)
-        ])
+            """,
+            [undef_var("d", 3, 45, "Foo", 2, 13)],
+        )
 
     def variable_not_defined_by_unnamed_query():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             {
               field(a: $a)
             }
-            """, [
-            undef_var('a', 3, 24, '', 2, 13)
-        ])
+            """,
+            [undef_var("a", 3, 24, "", 2, 13)],
+        )
 
     def multiple_variables_not_defined():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($b: String) {
               field(a: $a, b: $b, c: $c)
             }
-            """, [
-            undef_var('a', 3, 24, 'Foo', 2, 13),
-            undef_var('c', 3, 38, 'Foo', 2, 13)
-        ])
+            """,
+            [undef_var("a", 3, 24, "Foo", 2, 13), undef_var("c", 3, 38, "Foo", 2, 13)],
+        )
 
     def variable_in_fragment_not_defined_by_unnamed_query():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             {
               ...FragA
             }
             fragment FragA on Type {
               field(a: $a)
             }
-            """, [
-            undef_var('a', 6, 24, '', 2, 13)
-        ])
+            """,
+            [undef_var("a", 6, 24, "", 2, 13)],
+        )
 
     def variable_in_fragment_not_defined_by_operation():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String, $b: String) {
               ...FragA
             }
@@ -165,12 +194,14 @@ def describe_validate_no_undefined_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """, [
-            undef_var('c', 16, 24, 'Foo', 2, 13)
-        ])
+            """,
+            [undef_var("c", 16, 24, "Foo", 2, 13)],
+        )
 
     def multiple_variables_in_fragments_not_defined():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($b: String) {
               ...FragA
             }
@@ -187,13 +218,14 @@ def describe_validate_no_undefined_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """, [
-            undef_var('a', 6, 24, 'Foo', 2, 13),
-            undef_var('c', 16, 24, 'Foo', 2, 13)
-        ])
+            """,
+            [undef_var("a", 6, 24, "Foo", 2, 13), undef_var("c", 16, 24, "Foo", 2, 13)],
+        )
 
     def single_variable_in_fragment_not_defined_by_multiple_operations():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($a: String) {
               ...FragAB
             }
@@ -203,13 +235,14 @@ def describe_validate_no_undefined_variables():
             fragment FragAB on Type {
               field(a: $a, b: $b)
             }
-            """, [
-            undef_var('b', 9, 31, 'Foo', 2, 13),
-            undef_var('b', 9, 31, 'Bar', 5, 13)
-        ])
+            """,
+            [undef_var("b", 9, 31, "Foo", 2, 13), undef_var("b", 9, 31, "Bar", 5, 13)],
+        )
 
     def variables_in_fragment_not_defined_by_multiple_operations():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($b: String) {
               ...FragAB
             }
@@ -219,13 +252,14 @@ def describe_validate_no_undefined_variables():
             fragment FragAB on Type {
               field(a: $a, b: $b)
             }
-            """, [
-            undef_var('a', 9, 24, 'Foo', 2, 13),
-            undef_var('b', 9, 31, 'Bar', 5, 13)
-        ])
+            """,
+            [undef_var("a", 9, 24, "Foo", 2, 13), undef_var("b", 9, 31, "Bar", 5, 13)],
+        )
 
     def variable_in_fragment_used_by_other_operation():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($b: String) {
               ...FragA
             }
@@ -238,13 +272,14 @@ def describe_validate_no_undefined_variables():
             fragment FragB on Type {
               field(b: $b)
             }
-            """, [
-            undef_var('a', 9, 24, 'Foo', 2, 13),
-            undef_var('b', 12, 24, 'Bar', 5, 13)
-        ])
+            """,
+            [undef_var("a", 9, 24, "Foo", 2, 13), undef_var("b", 12, 24, "Bar", 5, 13)],
+        )
 
     def multiple_undefined_variables_produce_multiple_errors():
-        expect_fails_rule(NoUndefinedVariablesRule, """
+        expect_fails_rule(
+            NoUndefinedVariablesRule,
+            """
             query Foo($b: String) {
               ...FragAB
             }
@@ -259,11 +294,13 @@ def describe_validate_no_undefined_variables():
             fragment FragC on Type {
               field2(c: $c)
             }
-            """, [
-            undef_var('a', 9, 25, 'Foo', 2, 13),
-            undef_var('a', 11, 25, 'Foo', 2, 13),
-            undef_var('c', 14, 25, 'Foo', 2, 13),
-            undef_var('b', 9, 32, 'Bar', 5, 13),
-            undef_var('b', 11, 32, 'Bar', 5, 13),
-            undef_var('c', 14, 25, 'Bar', 5, 13),
-        ])
+            """,
+            [
+                undef_var("a", 9, 25, "Foo", 2, 13),
+                undef_var("a", 11, 25, "Foo", 2, 13),
+                undef_var("c", 14, 25, "Foo", 2, 13),
+                undef_var("b", 9, 32, "Bar", 5, 13),
+                undef_var("b", 11, 32, "Bar", 5, 13),
+                undef_var("c", 14, 25, "Bar", 5, 13),
+            ],
+        )

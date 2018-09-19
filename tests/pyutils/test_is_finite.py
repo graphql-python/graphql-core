@@ -5,7 +5,6 @@ from graphql.pyutils import is_finite
 
 
 def describe_is_finite():
-
     def null_is_not_finite():
         assert is_finite(None) is False
 
@@ -15,7 +14,7 @@ def describe_is_finite():
         assert is_finite(True) is True
 
     def strings_are_not_finite():
-        assert is_finite('string') is False
+        assert is_finite("string") is False
 
     def ints_are_finite():
         assert is_finite(0) is True

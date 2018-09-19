@@ -4,7 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, ArgumentNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ['UniqueArgumentNamesRule', 'duplicate_arg_message']
+__all__ = ["UniqueArgumentNamesRule", "duplicate_arg_message"]
 
 
 def duplicate_arg_message(arg_name: str) -> str:
@@ -32,9 +32,12 @@ class UniqueArgumentNamesRule(ASTValidationRule):
         known_arg_names = self.known_arg_names
         arg_name = node.name.value
         if arg_name in known_arg_names:
-            self.report_error(GraphQLError(
-                duplicate_arg_message(arg_name),
-                [known_arg_names[arg_name], node.name]))
+            self.report_error(
+                GraphQLError(
+                    duplicate_arg_message(arg_name),
+                    [known_arg_names[arg_name], node.name],
+                )
+            )
         else:
             known_arg_names[arg_name] = node.name
         return self.SKIP

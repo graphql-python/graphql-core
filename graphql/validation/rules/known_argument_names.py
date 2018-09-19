@@ -1,34 +1,37 @@
 from typing import cast, Dict, List, Union
 
 from ...error import GraphQLError
-from ...language import (
-    ArgumentNode, DirectiveDefinitionNode, DirectiveNode, SKIP)
+from ...language import ArgumentNode, DirectiveDefinitionNode, DirectiveNode, SKIP
 from ...pyutils import quoted_or_list, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
 __all__ = [
-    'KnownArgumentNamesRule', 'KnownArgumentNamesOnDirectivesRule',
-    'unknown_arg_message', 'unknown_directive_arg_message']
+    "KnownArgumentNamesRule",
+    "KnownArgumentNamesOnDirectivesRule",
+    "unknown_arg_message",
+    "unknown_directive_arg_message",
+]
 
 
 def unknown_arg_message(
-        arg_name: str, field_name: str, type_name: str,
-        suggested_args: List[str]) -> str:
-    message = (f"Unknown argument '{arg_name}' on field '{field_name}'"
-               f" of type '{type_name}'.")
+    arg_name: str, field_name: str, type_name: str, suggested_args: List[str]
+) -> str:
+    message = (
+        f"Unknown argument '{arg_name}' on field '{field_name}'"
+        f" of type '{type_name}'."
+    )
     if suggested_args:
-        message += f' Did you mean {quoted_or_list(suggested_args)}?'
+        message += f" Did you mean {quoted_or_list(suggested_args)}?"
     return message
 
 
 def unknown_directive_arg_message(
-        arg_name: str, directive_name: str,
-        suggested_args: List[str]) -> str:
-    message = (f"Unknown argument '{arg_name}'"
-               f" on directive '@{directive_name}'.")
+    arg_name: str, directive_name: str, suggested_args: List[str]
+) -> str:
+    message = f"Unknown argument '{arg_name}'" f" on directive '@{directive_name}'."
     if suggested_args:
-        message += f' Did you mean {quoted_or_list(suggested_args)}?'
+        message += f" Did you mean {quoted_or_list(suggested_args)}?"
     return message
 
 
@@ -40,23 +43,21 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[
-            ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
         directive_args: Dict[str, List[str]] = {}
 
         schema = context.schema
-        defined_directives = (
-            schema.directives if schema else specified_directives)
+        defined_directives = schema.directives if schema else specified_directives
         for directive in cast(List, defined_directives):
             directive_args[directive.name] = list(directive.args)
 
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                directive_args[def_.name.value] = [
-                    arg.name.value for arg in def_.arguments
-                ] if def_.arguments else []
+                directive_args[def_.name.value] = (
+                    [arg.name.value for arg in def_.arguments] if def_.arguments else []
+                )
 
         self.directive_args = directive_args
 
@@ -68,9 +69,14 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
                 arg_name = arg_node.name.value
                 if arg_name not in known_args:
                     suggestions = suggestion_list(arg_name, known_args)
-                    self.report_error(GraphQLError(
-                        unknown_directive_arg_message(
-                            arg_name, directive_name, suggestions), arg_node))
+                    self.report_error(
+                        GraphQLError(
+                            unknown_directive_arg_message(
+                                arg_name, directive_name, suggestions
+                            ),
+                            arg_node,
+                        )
+                    )
         return SKIP
 
 
@@ -86,8 +92,7 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
 
-    def enter_argument(
-            self, arg_node: ArgumentNode, *args):
+    def enter_argument(self, arg_node: ArgumentNode, *args):
         context = self.context
         arg_def = context.get_argument()
         field_def = context.get_field_def()
@@ -96,7 +101,14 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
             arg_name = arg_node.name.value
             field_name = args[3][-1].name.value
             known_args_names = list(field_def.args)
-            context.report_error(GraphQLError(
-                unknown_arg_message(
-                    arg_name, field_name, parent_type.name,
-                    suggestion_list(arg_name, known_args_names)), arg_node))
+            context.report_error(
+                GraphQLError(
+                    unknown_arg_message(
+                        arg_name,
+                        field_name,
+                        parent_type.name,
+                        suggestion_list(arg_name, known_args_names),
+                    ),
+                    arg_node,
+                )
+            )

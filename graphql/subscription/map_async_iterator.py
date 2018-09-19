@@ -3,7 +3,7 @@ from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
 from typing import AsyncIterable, Callable
 
-__all__ = ['MapAsyncIterator']
+__all__ = ["MapAsyncIterator"]
 
 
 # noinspection PyAttributeOutsideInit
@@ -17,8 +17,12 @@ class MapAsyncIterator:
     will also be closed.
     """
 
-    def __init__(self, iterable: AsyncIterable, callback: Callable,
-                 reject_callback: Callable=None) -> None:
+    def __init__(
+        self,
+        iterable: AsyncIterable,
+        callback: Callable,
+        reject_callback: Callable = None,
+    ) -> None:
         self.iterator = iterable.__aiter__()
         self.callback = callback
         self.reject_callback = reject_callback
@@ -38,8 +42,7 @@ class MapAsyncIterator:
             aclose = ensure_future(self._close_event.wait())
             anext = ensure_future(self.iterator.__anext__())
 
-            done, pending = await wait(
-                [aclose, anext], return_when=FIRST_COMPLETED)
+            done, pending = await wait([aclose, anext], return_when=FIRST_COMPLETED)
             for task in pending:
                 task.cancel()
 
@@ -48,8 +51,9 @@ class MapAsyncIterator:
 
             error = anext.exception()
             if error:
-                if not self.reject_callback or isinstance(error, (
-                        StopAsyncIteration, GeneratorExit)):
+                if not self.reject_callback or isinstance(
+                    error, (StopAsyncIteration, GeneratorExit)
+                ):
                     raise error
                 result = self.reject_callback(error)
             else:
@@ -60,7 +64,7 @@ class MapAsyncIterator:
 
     async def athrow(self, type_, value=None, traceback=None):
         if not self.is_closed:
-            athrow = getattr(self.iterator, 'athrow', None)
+            athrow = getattr(self.iterator, "athrow", None)
             if athrow:
                 await athrow(type_, value, traceback)
             else:
@@ -75,7 +79,7 @@ class MapAsyncIterator:
 
     async def aclose(self):
         if not self.is_closed:
-            aclose = getattr(self.iterator, 'aclose', None)
+            aclose = getattr(self.iterator, "aclose", None)
             if aclose:
                 try:
                     await aclose()

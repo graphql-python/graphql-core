@@ -4,9 +4,9 @@ from graphql.utilities import separate_operations
 
 
 def describe_separate_operations():
-
     def separates_one_ast_into_multiple_maintaining_document_order():
-        ast = parse("""
+        ast = parse(
+            """
             {
               ...Y
               ...X
@@ -42,13 +42,15 @@ def describe_separate_operations():
               something
             }
 
-            """)
+            """
+        )
 
         separated_asts = separate_operations(ast)
 
-        assert list(separated_asts) == ['', 'One', 'Two']
+        assert list(separated_asts) == ["", "One", "Two"]
 
-        assert print_ast(separated_asts['']) == dedent("""
+        assert print_ast(separated_asts[""]) == dedent(
+            """
             {
               ...Y
               ...X
@@ -61,9 +63,11 @@ def describe_separate_operations():
             fragment Y on T {
               fieldY
             }
-            """)
+            """
+        )
 
-        assert print_ast(separated_asts['One']) == dedent("""
+        assert print_ast(separated_asts["One"]) == dedent(
+            """
             query One {
               foo
               bar
@@ -83,9 +87,11 @@ def describe_separate_operations():
             fragment B on T {
               something
             }
-            """)
+            """
+        )
 
-        assert print_ast(separated_asts['Two']) == dedent("""
+        assert print_ast(separated_asts["Two"]) == dedent(
+            """
             fragment A on T {
               field
               ...B
@@ -104,10 +110,12 @@ def describe_separate_operations():
             fragment B on T {
               something
             }
-            """)
+            """
+        )
 
     def survives_circular_dependencies():
-        ast = parse("""
+        ast = parse(
+            """
             query One {
               ...A
             }
@@ -123,13 +131,15 @@ def describe_separate_operations():
             query Two {
               ...B
             }
-            """)
+            """
+        )
 
         separated_asts = separate_operations(ast)
 
-        assert list(separated_asts) == ['One', 'Two']
+        assert list(separated_asts) == ["One", "Two"]
 
-        assert print_ast(separated_asts['One']) == dedent("""
+        assert print_ast(separated_asts["One"]) == dedent(
+            """
             query One {
               ...A
             }
@@ -141,9 +151,11 @@ def describe_separate_operations():
             fragment B on T {
               ...A
             }
-            """)
+            """
+        )
 
-        assert print_ast(separated_asts['Two']) == dedent("""
+        assert print_ast(separated_asts["Two"]) == dedent(
+            """
             fragment A on T {
               ...B
             }
@@ -155,4 +167,5 @@ def describe_separate_operations():
             query Two {
               ...B
             }
-            """)
+            """
+        )

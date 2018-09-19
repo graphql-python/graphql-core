@@ -2,15 +2,20 @@ from typing import Union, cast
 
 from ...error import GraphQLError
 from ...language import (
-    DirectiveDefinitionNode, DocumentNode, ExecutableDefinitionNode,
-    SchemaDefinitionNode, SchemaExtensionNode, TypeDefinitionNode)
+    DirectiveDefinitionNode,
+    DocumentNode,
+    ExecutableDefinitionNode,
+    SchemaDefinitionNode,
+    SchemaExtensionNode,
+    TypeDefinitionNode,
+)
 from . import ASTValidationRule
 
-__all__ = ['ExecutableDefinitionsRule', 'non_executable_definitions_message']
+__all__ = ["ExecutableDefinitionsRule", "non_executable_definitions_message"]
 
 
 def non_executable_definitions_message(def_name: str) -> str:
-    return f'The {def_name} definition is not executable.'
+    return f"The {def_name} definition is not executable."
 
 
 class ExecutableDefinitionsRule(ASTValidationRule):
@@ -23,11 +28,19 @@ class ExecutableDefinitionsRule(ASTValidationRule):
     def enter_document(self, node: DocumentNode, *_args):
         for definition in node.definitions:
             if not isinstance(definition, ExecutableDefinitionNode):
-                self.report_error(GraphQLError(
-                    non_executable_definitions_message(
-                        'schema' if isinstance(definition, (
-                            SchemaDefinitionNode, SchemaExtensionNode))
-                        else cast(Union[
-                            DirectiveDefinitionNode, TypeDefinitionNode],
-                            definition).name.value), [definition]))
+                self.report_error(
+                    GraphQLError(
+                        non_executable_definitions_message(
+                            "schema"
+                            if isinstance(
+                                definition, (SchemaDefinitionNode, SchemaExtensionNode)
+                            )
+                            else cast(
+                                Union[DirectiveDefinitionNode, TypeDefinitionNode],
+                                definition,
+                            ).name.value
+                        ),
+                        [definition],
+                    )
+                )
         return self.SKIP

@@ -5,12 +5,14 @@ from .graphql_error import GraphQLError
 if TYPE_CHECKING:  # pragma: no cover
     from ..language.ast import Node  # noqa
 
-__all__ = ['located_error']
+__all__ = ["located_error"]
 
 
-def located_error(original_error: Union[Exception, GraphQLError],
-                  nodes: Sequence['Node'],
-                  path: Sequence[Union[str, int]]) -> GraphQLError:
+def located_error(
+    original_error: Union[Exception, GraphQLError],
+    nodes: Sequence["Node"],
+    path: Sequence[Union[str, int]],
+) -> GraphQLError:
     """Located GraphQL Error
 
     Given an arbitrary Error, presumably thrown while attempting to execute a
@@ -41,5 +43,4 @@ def located_error(original_error: Union[Exception, GraphQLError],
         nodes = original_error.nodes or nodes  # type: ignore
     except AttributeError:
         pass
-    return GraphQLError(
-        message, nodes, source, positions, path, original_error)
+    return GraphQLError(message, nodes, source, positions, path, original_error)

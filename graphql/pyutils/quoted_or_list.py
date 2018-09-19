@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from .or_list import or_list
 
-__all__ = ['quoted_or_list']
+__all__ = ["quoted_or_list"]
 
 
 def quoted_or_list(items: List[str]) -> Optional[str]:
