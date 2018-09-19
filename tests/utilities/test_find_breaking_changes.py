@@ -636,7 +636,7 @@ def describe_find_breaking_changes():
               field1: String
             }
             """
-        )  # noqa
+        )
 
         assert find_arg_changes(old_schema, new_schema).breaking_changes == [
             (
@@ -799,7 +799,7 @@ def describe_find_breaking_changes():
                 field1: String
             }
             """
-        )  # noqa
+        )
 
         new_schema = build_schema(
             """
@@ -844,7 +844,7 @@ def describe_find_breaking_changes():
               field1: String
             }
             """
-        )  # noqa
+        )
 
         expected_breaking_changes = [
             (BreakingChangeType.TYPE_REMOVED, "Int was removed."),

@@ -133,7 +133,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
 
         schema_with_def = build_schema(
             """
-              schema {
+            schema {
               query: QueryRoot
               mutation: MutationRoot
             }
@@ -165,7 +165,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
 
         schema_with_def = build_schema(
             """
-              schema {
+            schema {
               query: QueryRoot
               subscription: SubscriptionRoot
             }
@@ -184,10 +184,10 @@ def describe_type_system_a_schema_must_have_object_root_types():
     def rejects_a_schema_without_a_query_type():
         schema = build_schema(
             """
-          type Mutation {
-            test: String
-          }
-          """
+            type Mutation {
+              test: String
+            }
+            """
         )
         assert validate_schema(schema) == [
             {"message": "Query root type must be provided.", "locations": None}
@@ -343,47 +343,47 @@ def describe_type_system_a_schema_must_have_object_root_types():
             schema,
             parse(
                 """
-            extend schema {
-              query: SomeInputObject
-            }
-            """
+                extend schema {
+                  query: SomeInputObject
+                }
+                """
             ),
         )
         schema = extend_schema(
             schema,
             parse(
                 """
-            extend schema {
-              mutation: SomeInputObject
-            }
-            """
+                extend schema {
+                  mutation: SomeInputObject
+                }
+                """
             ),
         )
         schema = extend_schema(
             schema,
             parse(
                 """
-            extend schema {
-              subscription: SomeInputObject
-            }
-            """
+                extend schema {
+                  subscription: SomeInputObject
+                }
+                """
             ),
         )
         assert validate_schema(schema) == [
             {
                 "message": "Query root type must be Object type,"
                 " it cannot be SomeInputObject.",
-                "locations": [(3, 22)],
+                "locations": [(3, 26)],
             },
             {
                 "message": "Mutation root type must be Object type"
                 " if provided, it cannot be SomeInputObject.",
-                "locations": [(3, 25)],
+                "locations": [(3, 29)],
             },
             {
                 "message": "Subscription root type must be Object type"
                 " if provided, it cannot be SomeInputObject.",
-                "locations": [(3, 29)],
+                "locations": [(3, 33)],
             },
         ]
 
@@ -521,17 +521,17 @@ def describe_type_system_union_types_must_be_valid():
             schema,
             parse(
                 """
-            directive @test on UNION
+                directive @test on UNION
 
-            extend union BadUnion @test
-            """
+                extend union BadUnion @test
+                """
             ),
         )
         assert validate_schema(schema) == [
             {
                 "message": "Union type BadUnion must define one or more"
                 " member types.",
-                "locations": [(6, 13), (4, 13)],
+                "locations": [(6, 13), (4, 17)],
             }
         ]
 

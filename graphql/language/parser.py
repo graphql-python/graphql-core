@@ -107,7 +107,9 @@ def parse(
         source,
         no_location=no_location,
         experimental_fragment_variables=experimental_fragment_variables,
-        experimental_variable_definition_directives=experimental_variable_definition_directives,  # noqa
+        experimental_variable_definition_directives=(
+            experimental_variable_definition_directives
+        ),
     )
     return parse_document(lexer)
 

@@ -553,7 +553,7 @@ def describe_schema_builder():
               addHelloScalars(str: String, int: Int, bool: Boolean): HelloScalars
             }
             """
-        )  # noqa
+        )
         output = cycle_output(body)
         assert output == body
 
@@ -575,7 +575,7 @@ def describe_schema_builder():
               subscribeHelloScalars(str: String, int: Int, bool: Boolean): HelloScalars
             }
             """
-        )  # noqa
+        )
         output = cycle_output(body)
         assert output == body
 

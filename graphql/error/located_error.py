@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Sequence, Union
 from .graphql_error import GraphQLError
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ..language.ast import Node  # noqa
+    from ..language.ast import Node  # noqa: F401
 
 __all__ = ["located_error"]
 

@@ -90,7 +90,7 @@ TestType = GraphQLObjectType(
         "fieldWithDefaultArgumentValue": field_with_input_arg(
             GraphQLArgument(GraphQLString, default_value="Hello World")
         ),
-        "fieldWithNonNullableStringInputAndDefaultArgumentValue": field_with_input_arg(
+        "fieldWithNonNullableStringInputAndDefaultArgValue": field_with_input_arg(
             GraphQLArgument(GraphQLNonNull(GraphQLString), default_value="Hello World")
         ),
         "fieldWithNestedInputObject": field_with_input_arg(
@@ -162,7 +162,8 @@ def describe_execute_handles_inputs():
 
                 assert result == (
                     {
-                        "fieldWithObjectInput": "{'a': None, 'b': None, 'c': 'C', 'd': None}"  # noqa
+                        "fieldWithObjectInput": "{'a': None, 'b': None,"
+                        " 'c': 'C', 'd': None}"
                     },
                     None,
                 )
@@ -907,14 +908,12 @@ def describe_execute_handles_inputs():
             result = execute_query(
                 """
                 query optionalVariable($optional: String) {
-                  fieldWithNonNullableStringInputAndDefaultArgumentValue(input: $optional)
+                  fieldWithNonNullableStringInputAndDefaultArgValue(input: $optional)
                 }
-                """  # noqa
+                """
             )
 
             assert result == (
-                {
-                    "fieldWithNonNullableStringInputAndDefaultArgumentValue": "'Hello World'"  # noqa
-                },
+                {"fieldWithNonNullableStringInputAndDefaultArgValue": "'Hello World'"},
                 None,
             )

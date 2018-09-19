@@ -457,7 +457,7 @@ def describe_extend_schema():
               DEPRECATED @deprecated(reason: "do not use")
             }
             """
-        )  # noqa
+        )
         deprecated_field_def = extended_schema.get_type(
             "TypeWithDeprecatedField"
         ).fields["newDeprecatedField"]

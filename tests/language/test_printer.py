@@ -195,4 +195,4 @@ def describe_block_string():
               query
             }
             '''
-        )  # noqa
+        )

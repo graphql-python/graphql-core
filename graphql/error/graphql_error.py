@@ -4,9 +4,9 @@ from .format_error import format_error
 from .print_error import print_error
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ..language.ast import Node  # noqa
-    from ..language.location import SourceLocation  # noqa
-    from ..language.source import Source  # noqa
+    from ..language.ast import Node  # noqa: F401
+    from ..language.location import SourceLocation  # noqa: F401
+    from ..language.source import Source  # noqa: F401
 
 __all__ = ["GraphQLError"]
 

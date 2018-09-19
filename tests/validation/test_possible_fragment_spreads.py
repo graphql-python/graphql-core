@@ -37,7 +37,7 @@ def describe_validate_possible_fragment_spreads():
             """
             fragment objectWithinObjectAnon on Dog { ... on Dog { barkVolume } }
             """,
-        )  # noqa
+        )
 
     def object_into_implemented_interface():
         expect_passes_rule(
@@ -186,7 +186,7 @@ def describe_validate_possible_fragment_spreads():
             fragment invalidUnionWithinInterface on Pet { ...humanOrAlienFragment }
             fragment humanOrAlienFragment on HumanOrAlien { __typename }
             """,
-            [error("humanOrAlienFragment", "Pet", "HumanOrAlien", 2, 59)],  # noqa
+            [error("humanOrAlienFragment", "Pet", "HumanOrAlien", 2, 59)],
         )
 
     def union_into_non_overlapping_union():
@@ -196,7 +196,7 @@ def describe_validate_possible_fragment_spreads():
             fragment invalidUnionWithinUnion on CatOrDog { ...humanOrAlienFragment }
             fragment humanOrAlienFragment on HumanOrAlien { __typename }
             """,
-            [error("humanOrAlienFragment", "CatOrDog", "HumanOrAlien", 2, 60)],  # noqa
+            [error("humanOrAlienFragment", "CatOrDog", "HumanOrAlien", 2, 60)],
         )
 
     def interface_into_non_implementing_object():
@@ -206,7 +206,7 @@ def describe_validate_possible_fragment_spreads():
             fragment invalidInterfaceWithinObject on Cat { ...intelligentFragment }
             fragment intelligentFragment on Intelligent { iq }
             """,
-            [error("intelligentFragment", "Cat", "Intelligent", 2, 60)],  # noqa
+            [error("intelligentFragment", "Cat", "Intelligent", 2, 60)],
         )
 
     def interface_into_non_overlapping_interface():
@@ -239,5 +239,5 @@ def describe_validate_possible_fragment_spreads():
             fragment invalidInterfaceWithinUnion on HumanOrAlien { ...petFragment }
             fragment petFragment on Pet { name }
             """,
-            [error("petFragment", "HumanOrAlien", "Pet", 2, 68)],  # noqa
+            [error("petFragment", "HumanOrAlien", "Pet", 2, 68)],
         )

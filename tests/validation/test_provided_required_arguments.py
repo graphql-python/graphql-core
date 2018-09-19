@@ -269,7 +269,7 @@ def describe_validate_provided_required_arguments():
                 """
                 )
                 == []
-            )  # noqa
+            )
 
         def missing_arg_on_directive_defined_inside_sdl():
             assert (

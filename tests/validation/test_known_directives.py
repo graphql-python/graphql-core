@@ -310,7 +310,7 @@ def describe_known_directives():
                 }
 
                 extend schema @onSchema
-                """,  # noqa
+                """,
                     schema_with_sdl_directives,
                 )
                 == []
@@ -345,7 +345,7 @@ def describe_known_directives():
                 }
 
                 extend schema @onObject
-                """,  # noqa
+                """,  # noqa: E501
                     schema_with_sdl_directives,
                 )
                 == [

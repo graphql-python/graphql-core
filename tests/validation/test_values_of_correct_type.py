@@ -184,7 +184,7 @@ def describe_validate_values_of_correct_type():
                   }
                 }
                 """,
-            )  # noqa
+            )
 
     def describe_invalid_string_values():
         def int_into_string():
@@ -809,7 +809,7 @@ def describe_validate_values_of_correct_type():
                   }
                 }
                 """,
-            )  # noqa
+            )
 
         def full_object():
             expect_passes_rule(
