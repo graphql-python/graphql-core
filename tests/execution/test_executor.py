@@ -20,6 +20,7 @@ from graphql.type import (
     GraphQLResolveInfo,
     ResponsePath,
 )
+from .util import compare_query_results_unordered
 
 
 def describe_execute_handles_basic_execution_tasks():
@@ -417,67 +418,70 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        assert await execute(schema, ast, Data()) == (
-            {
-                "syncOk": "sync ok",
-                "syncError": None,
-                "syncRawError": None,
-                "syncReturnError": None,
-                "syncReturnErrorList": ["sync0", None, "sync2", None],
-                "asyncOk": "async ok",
-                "asyncError": None,
-                "asyncRawError": None,
-                "asyncReturnError": None,
-                "asyncReturnErrorWithExtensions": None,
-            },
-            [
+        compare_query_results_unordered(
+            await execute(schema, ast, Data()),
+            (
                 {
-                    "message": "Error getting syncError",
-                    "locations": [(3, 15)],
-                    "path": ["syncError"],
+                    "syncOk": "sync ok",
+                    "syncError": None,
+                    "syncRawError": None,
+                    "syncReturnError": None,
+                    "syncReturnErrorList": ["sync0", None, "sync2", None],
+                    "asyncOk": "async ok",
+                    "asyncError": None,
+                    "asyncRawError": None,
+                    "asyncReturnError": None,
+                    "asyncReturnErrorWithExtensions": None,
                 },
-                {
-                    "message": "Error getting syncRawError",
-                    "locations": [(4, 15)],
-                    "path": ["syncRawError"],
-                },
-                {
-                    "message": "Error getting syncReturnError",
-                    "locations": [(5, 15)],
-                    "path": ["syncReturnError"],
-                },
-                {
-                    "message": "Error getting syncReturnErrorList1",
-                    "locations": [(6, 15)],
-                    "path": ["syncReturnErrorList", 1],
-                },
-                {
-                    "message": "Error getting syncReturnErrorList3",
-                    "locations": [(6, 15)],
-                    "path": ["syncReturnErrorList", 3],
-                },
-                {
-                    "message": "Error getting asyncError",
-                    "locations": [(8, 15)],
-                    "path": ["asyncError"],
-                },
-                {
-                    "message": "Error getting asyncRawError",
-                    "locations": [(9, 15)],
-                    "path": ["asyncRawError"],
-                },
-                {
-                    "message": "Error getting asyncReturnError",
-                    "locations": [(10, 15)],
-                    "path": ["asyncReturnError"],
-                },
-                {
-                    "message": "Error getting asyncReturnErrorWithExtensions",
-                    "locations": [(11, 15)],
-                    "path": ["asyncReturnErrorWithExtensions"],
-                    "extensions": {"foo": "bar"},
-                },
-            ],
+                [
+                    {
+                        "message": "Error getting syncError",
+                        "locations": [(3, 15)],
+                        "path": ["syncError"],
+                    },
+                    {
+                        "message": "Error getting syncRawError",
+                        "locations": [(4, 15)],
+                        "path": ["syncRawError"],
+                    },
+                    {
+                        "message": "Error getting syncReturnError",
+                        "locations": [(5, 15)],
+                        "path": ["syncReturnError"],
+                    },
+                    {
+                        "message": "Error getting syncReturnErrorList1",
+                        "locations": [(6, 15)],
+                        "path": ["syncReturnErrorList", 1],
+                    },
+                    {
+                        "message": "Error getting syncReturnErrorList3",
+                        "locations": [(6, 15)],
+                        "path": ["syncReturnErrorList", 3],
+                    },
+                    {
+                        "message": "Error getting asyncError",
+                        "locations": [(8, 15)],
+                        "path": ["asyncError"],
+                    },
+                    {
+                        "message": "Error getting asyncRawError",
+                        "locations": [(9, 15)],
+                        "path": ["asyncRawError"],
+                    },
+                    {
+                        "message": "Error getting asyncReturnError",
+                        "locations": [(10, 15)],
+                        "path": ["asyncReturnError"],
+                    },
+                    {
+                        "message": "Error getting asyncReturnErrorWithExtensions",
+                        "locations": [(11, 15)],
+                        "path": ["asyncReturnErrorWithExtensions"],
+                        "extensions": {"foo": "bar"},
+                    },
+                ],
+            ),
         )
 
     def full_response_path_is_included_for_non_nullable_fields():
@@ -893,19 +897,15 @@ def describe_execute_handles_basic_execution_tasks():
                 {
                     "foo": GraphQLField(GraphQLBoolean, resolve=f),
                     "bar": GraphQLField(GraphQLBoolean, resolve=f),
-                }
+                },
             )
         )
 
-        query = '{foo, bar}'
+        query = "{foo, bar}"
         ast = parse(query)
 
         res = await asyncio.wait_for(
-            execute(schema, ast),
-            1.0,  # don't wait forever for the test to fail
+            execute(schema, ast), 1.0  # don't wait forever for the test to fail
         )
 
-        assert res == (
-            {"foo": True, "bar": True},
-            None,
-        )
+        assert res == ({"foo": True, "bar": True}, None)
