@@ -866,3 +866,46 @@ def describe_execute_handles_basic_execution_tasks():
             {"foo": "barbar"},
             None,
         )
+
+    @mark.asyncio
+    async def resolve_fields_in_parallel():
+        class Barrier(object):
+            # Makes progress only if at least `count` callers are `wait()`ing.
+            def __init__(self, count):
+                self.ev = asyncio.Event()
+                self.count = count
+
+            async def wait(self):
+                self.count -= 1
+                if self.count == 0:
+                    self.ev.set()
+
+                return await self.ev.wait()
+
+        barrier = Barrier(2)
+
+        async def f(*args):
+            return await barrier.wait()
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Object",
+                {
+                    "foo": GraphQLField(GraphQLBoolean, resolve=f),
+                    "bar": GraphQLField(GraphQLBoolean, resolve=f),
+                }
+            )
+        )
+
+        query = '{foo, bar}'
+        ast = parse(query)
+
+        res = await asyncio.wait_for(
+            execute(schema, ast),
+            1.0,  # don't wait forever for the test to fail
+        )
+
+        assert res == (
+            {"foo": True, "bar": True},
+            None,
+        )
