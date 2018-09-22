@@ -5,7 +5,7 @@ from typing import cast
 from pytest import raises, mark
 
 from graphql.error import GraphQLError
-from graphql.execution import execute, ExecutionContext
+from graphql.execution import execute
 from graphql.language import parse, OperationDefinitionNode, FieldNode
 from graphql.type import (
     GraphQLSchema,
@@ -830,106 +830,3 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         assert execute(schema, query) == ({"foo": None}, None)
-
-
-def describe_customize_execution():
-    def uses_a_custom_field_resolver():
-        query = parse("{ foo }")
-
-        schema = GraphQLSchema(
-            GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)})
-        )
-
-        # For the purposes of test, just return the name of the field!
-        def custom_resolver(_source, info, **_args):
-            return info.field_name
-
-        assert execute(schema, query, field_resolver=custom_resolver) == (
-            {"foo": "foo"},
-            None,
-        )
-
-    def uses_a_custom_execution_context_class():
-        query = parse("{ foo }")
-
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {"foo": GraphQLField(GraphQLString, resolve=lambda *_args: "bar")},
-            )
-        )
-
-        class TestExecutionContext(ExecutionContext):
-            def resolve_field(self, parent_type, source, field_nodes, path):
-                result = super().resolve_field(parent_type, source, field_nodes, path)
-                return result * 2
-
-        assert execute(schema, query, execution_context_class=TestExecutionContext) == (
-            {"foo": "barbar"},
-            None,
-        )
-
-
-def describe_parallel_execution():
-    class Barrier:
-        """Barrier that makes progress only after a certain number of waits."""
-
-        def __init__(self, number: int) -> None:
-            self.event = asyncio.Event()
-            self.number = number
-
-        async def wait(self) -> bool:
-            self.number -= 1
-            if not self.number:
-                self.event.set()
-            return await self.event.wait()
-
-    @mark.asyncio
-    async def resolve_fields_in_parallel():
-        barrier = Barrier(2)
-
-        async def resolve(*_args):
-            return await barrier.wait()
-
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(GraphQLBoolean, resolve=resolve),
-                    "bar": GraphQLField(GraphQLBoolean, resolve=resolve),
-                },
-            )
-        )
-
-        ast = parse("{foo, bar}")
-        # raises TimeoutError if not parallel
-        result = await asyncio.wait_for(execute(schema, ast), 1.0)
-
-        assert result == ({"foo": True, "bar": True}, None)
-
-    @mark.asyncio
-    async def resolve_list_in_parallel():
-        barrier = Barrier(2)
-
-        async def resolve(*_args):
-            return await barrier.wait()
-
-        async def resolve_list(*args):
-            return [resolve(*args), resolve(*args)]
-
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        GraphQLList(GraphQLBoolean), resolve=resolve_list
-                    )
-                },
-            )
-        )
-
-        ast = parse("{foo}")
-        # raises TimeoutError if not parallel
-        result = await asyncio.wait_for(execute(schema, ast), 1.0)
-
-        assert result == ({"foo": [True, True]}, None)

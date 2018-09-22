@@ -1119,25 +1119,26 @@ def default_resolve_type_fn(
 
     # Otherwise, test each possible type.
     possible_types = info.schema.get_possible_types(abstract_type)
-    is_type_of_results_async = []
+    awaitable_is_type_of_results: List[Awaitable] = []
+    append_awaitable_results = awaitable_is_type_of_results.append
+    awaitable_types: List[GraphQLObjectType] = []
+    append_awaitable_types = awaitable_types.append
 
     for type_ in possible_types:
         if type_.is_type_of:
             is_type_of_result = type_.is_type_of(value, info)
 
             if isawaitable(is_type_of_result):
-                is_type_of_results_async.append((is_type_of_result, type_))
+                append_awaitable_results(cast(Awaitable, is_type_of_result))
+                append_awaitable_types(type_)
             elif is_type_of_result:
                 return type_
 
-    if is_type_of_results_async:
+    if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
         async def get_type():
-            is_type_of_results = [
-                (await is_type_of_result, type_)
-                for is_type_of_result, type_ in is_type_of_results_async
-            ]
-            for is_type_of_result, type_ in is_type_of_results:
+            is_type_of_results = await gather(*awaitable_is_type_of_results)
+            for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
                     return type_
 
