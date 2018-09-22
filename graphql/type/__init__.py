@@ -1,7 +1,6 @@
 """GraphQL Type System
 
-The :mod:`graphql.type` package is responsible for defining GraphQL types
-and schema.
+The :mod:`graphql.type` package is responsible for defining GraphQL types and schema.
 """
 
 from .schema import (

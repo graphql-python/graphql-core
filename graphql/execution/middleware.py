@@ -11,10 +11,10 @@ GraphQLFieldResolver = Callable[..., Any]
 class MiddlewareManager:
     """Manager for the middleware chain.
 
-    This class helps to wrap resolver functions with the provided middleware
-    functions and/or objects. The functions take the next middleware function
-    as first argument. If middleware is provided as an object, it must provide
-    a method 'resolve' that is used as the middleware function.
+    This class helps to wrap resolver functions with the provided middleware functions
+    and/or objects. The functions take the next middleware function as first argument.
+    If middleware is provided as an object, it must provide a method `resolve` that is
+    used as the middleware function.
     """
 
     __slots__ = "middlewares", "_middleware_resolvers", "_cached_resolvers"
@@ -34,8 +34,8 @@ class MiddlewareManager:
     ) -> GraphQLFieldResolver:
         """Wrap the provided resolver with the middleware.
 
-        Returns a function that chains the middleware functions with the
-        provided resolver function
+        Returns a function that chains the middleware functions with the provided
+        resolver function
         """
         if self._middleware_resolvers is None:
             return field_resolver

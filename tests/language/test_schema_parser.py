@@ -441,7 +441,7 @@ def describe_schema_parser():
         assert definition.loc == (1, 49)
 
     def simple_field_with_two_args():
-        body = "\ntype Hello {\n" "  world(argOne: Boolean, argTwo: Int): String\n}"
+        body = "\ntype Hello {\n  world(argOne: Boolean, argTwo: Int): String\n}"
         definition = assert_definitions(body, (0, 61))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))

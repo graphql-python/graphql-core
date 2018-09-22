@@ -315,8 +315,8 @@ def description_lines(description: str, max_len: int) -> List[str]:
     raw_lines = description.splitlines()
     for raw_line in raw_lines:
         if raw_line:
-            # For > 120 character long lines, cut at space boundaries into
-            # sublines of ~80 chars.
+            # For > 120 character long lines, cut at space boundaries into sublines
+            # of ~80 chars.
             extend_lines(break_line(raw_line, max_len))
         else:
             append_line(raw_line)

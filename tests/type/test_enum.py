@@ -227,7 +227,7 @@ def describe_type_system_enum_values():
         assert result == ({"favoriteEnum": "GREEN"}, None)
 
     def accepts_enum_literals_as_input_arguments_to_subscriptions():
-        doc = "subscription ($color: Color!) {" " subscribeToEnum(color: $color) }"
+        doc = "subscription ($color: Color!) { subscribeToEnum(color: $color) }"
         result = execute_query(doc, {"color": "GREEN"})
 
         assert result == ({"subscribeToEnum": "GREEN"}, None)

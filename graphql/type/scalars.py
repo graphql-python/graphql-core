@@ -136,8 +136,8 @@ def serialize_string(value: Any) -> str:
         return "true" if value else "false"
     if is_finite(value):
         return str(value)
-    # do not serialize builtin types as strings,
-    # but allow serialization of custom types via their __str__ method
+    # do not serialize builtin types as strings, but allow serialization of custom
+    # types via their `__str__` method
     if type(value).__module__ == "builtins":
         raise TypeError(f"String cannot represent value: {value!r}")
     return str(value)
@@ -203,8 +203,8 @@ def serialize_id(value: Any) -> str:
         return value
     if is_integer(value):
         return str(int(value))
-    # do not serialize builtin types as IDs,
-    # but allow serialization of custom types via their __str__ method
+    # do not serialize builtin types as IDs, but allow serialization of custom types
+    # via their `__str__` method
     if type(value).__module__ == "builtins":
         raise TypeError(f"ID cannot represent value: {value!r}")
     return str(value)

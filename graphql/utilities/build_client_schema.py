@@ -40,14 +40,14 @@ def build_client_schema(
 ) -> GraphQLSchema:
     """Build a GraphQLSchema for use by client tools.
 
-    Given the result of a client running the introspection query, creates and
-    returns a GraphQLSchema instance which can be then used with all
-    GraphQL-core-next tools, but cannot be used to execute a query, as
-    introspection does not represent the "resolver", "parse" or "serialize"
-    functions or any other server-internal mechanisms.
+    Given the result of a client running the introspection query, creates and returns
+    a GraphQLSchema instance which can be then used with all GraphQL-core-next tools,
+    but cannot be used to execute a query, as introspection does not represent the
+    "resolver", "parse" or "serialize" functions or any other server-internal
+    mechanisms.
 
-    This function expects a complete introspection result. Don't forget to
-    check the "errors" field of a server response before calling this function.
+    This function expects a complete introspection result. Don't forget to check the
+    "errors" field of a server response before calling this function.
     """
     # Get the schema from the introspection result.
     schema_introspection = introspection["__schema"]
@@ -57,15 +57,15 @@ def build_client_schema(
         type_["name"]: type_ for type_ in schema_introspection["types"]
     }
 
-    # A cache to use to store the actual GraphQLType definition objects by
-    # name. Initialize to the GraphQL built in scalars. All functions below are
-    # inline so that this type def cache is within the scope of the closure.
+    # A cache to use to store the actual GraphQLType definition objects by name.
+    # Initialize to the GraphQL built in scalars. All functions below are inline so
+    # that this type def cache is within the scope of the closure.
     type_def_cache: Dict[str, GraphQLNamedType] = {
         **specified_scalar_types,
         **introspection_types,
     }
 
-    # Given a type reference in introspection, return the GraphQLType instance.
+    # Given a type reference in introspection, return the GraphQLType instance,
     # preferring cached instances before building new instances.
     def get_type(type_ref: Dict) -> GraphQLType:
         kind = type_ref.get("kind")
@@ -120,8 +120,7 @@ def build_client_schema(
         interface_type = get_type(type_ref)
         return assert_interface_type(interface_type)
 
-    # Given a type's introspection result, construct the correct
-    # GraphQLType instance.
+    # Given a type's introspection result, construct the correct GraphQLType instance.
     def build_type(type_: Dict) -> GraphQLNamedType:
         if type_ and "name" in type_ and "kind" in type_:
             builder = type_builders.get(cast(str, type_["kind"]))
@@ -311,8 +310,8 @@ def build_client_schema(
             args=build_arg_value_def_map(directive_introspection["args"]),
         )
 
-    # Iterate through all types, getting the type definition for each, ensuring
-    # that any type not directly referenced by a field will get created.
+    # Iterate through all types, getting the type definition for each, ensuring that
+    # any type not directly referenced by a field will get created.
     types = [get_named_type(name) for name in type_introspection_map]
 
     # Get the root Query, Mutation, and Subscription types.
@@ -326,8 +325,8 @@ def build_client_schema(
         get_object_type(subscription_type_ref) if subscription_type_ref else None
     )
 
-    # Get the directives supported by Introspection, assuming empty-set if
-    # directives were not queried for.
+    # Get the directives supported by Introspection, assuming empty-set if directives
+    # were not queried for.
     directive_introspections = schema_introspection.get("directives")
     directives = (
         [

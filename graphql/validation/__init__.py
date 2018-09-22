@@ -1,7 +1,7 @@
 """GraphQL Validation
 
-The :mod:`graphql.validation` package fulfills the Validation phase of fulfilling
-a GraphQL result.
+The :mod:`graphql.validation` package fulfills the Validation phase of fulfilling a
+GraphQL result.
 """
 
 from .validate import validate

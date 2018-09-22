@@ -755,32 +755,32 @@ def describe_type_system_enum_types_must_be_well_defined():
         schema1 = schema_with_enum("#value")
         msg = validate_schema(schema1)[0].message
         assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/" " but '#value' does not."
+            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but '#value' does not."
         )
 
         schema2 = schema_with_enum("1value")
         msg = validate_schema(schema2)[0].message
         assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/" " but '1value' does not."
+            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but '1value' does not."
         )
 
         schema3 = schema_with_enum("KEBAB-CASE")
         msg = validate_schema(schema3)[0].message
         assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/" " but 'KEBAB-CASE' does not."
+            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but 'KEBAB-CASE' does not."
         )
 
         schema4 = schema_with_enum("true")
         msg = validate_schema(schema4)[0].message
-        assert msg == ("Enum type SomeEnum cannot include value: true.")
+        assert msg == "Enum type SomeEnum cannot include value: true."
 
         schema5 = schema_with_enum("false")
         msg = validate_schema(schema5)[0].message
-        assert msg == ("Enum type SomeEnum cannot include value: false.")
+        assert msg == "Enum type SomeEnum cannot include value: false."
 
         schema6 = schema_with_enum("null")
         msg = validate_schema(schema6)[0].message
-        assert msg == ("Enum type SomeEnum cannot include value: null.")
+        assert msg == "Enum type SomeEnum cannot include value: null."
 
 
 def describe_type_system_object_fields_must_have_output_types():
@@ -838,7 +838,7 @@ def describe_type_system_object_fields_must_have_output_types():
             )
         msg = str(exc_info.value)
         assert msg == (
-            "Query fields cannot be resolved:" " Field type must be an output type."
+            "Query fields cannot be resolved: Field type must be an output type."
         )
 
 
@@ -877,7 +877,7 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
                 """
             )
         msg = str(exc_info.value)
-        assert msg == ("BadObject interfaces must be GraphQLInterface objects.")
+        assert msg == "BadObject interfaces must be GraphQLInterface objects."
 
     def rejects_an_object_implementing_the_same_interface_twice():
         schema = build_schema(

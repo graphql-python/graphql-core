@@ -16,8 +16,8 @@ def camel_to_snake(s):
 def snake_to_camel(s, upper=True):
     """Convert from snake_case to CamelCase
 
-    If upper is set, then convert to upper CamelCase,
-    otherwise the first character keeps its case.
+    If upper is set, then convert to upper CamelCase, otherwise the first character
+    keeps its case.
     """
     s = _re_snake_to_camel.sub(lambda m: m.group(2).upper(), s)
     if upper:

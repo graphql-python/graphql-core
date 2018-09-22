@@ -73,16 +73,16 @@ def build_ast_schema(
     This takes the ast of a schema document produced by the parse function in
     src/language/parser.py.
 
-    If no schema definition is provided, then it will look for types named
-    Query and Mutation.
+    If no schema definition is provided, then it will look for types named Query
+    and Mutation.
 
-    Given that AST it constructs a GraphQLSchema. The resulting schema
-    has no resolve methods, so execution will use default resolvers.
+    Given that AST it constructs a GraphQLSchema. The resulting schema has no
+    resolve methods, so execution will use default resolvers.
 
-    When building a schema from a GraphQL service's introspection result, it
-    might be safe to assume the schema is valid. Set `assume_valid` to True
-    to assume the produced schema is valid. Set `assume_valid_sdl` to True to
-    assume it is already a valid SDL document.
+    When building a schema from a GraphQL service's introspection result, it might
+    be safe to assume the schema is valid. Set `assume_valid` to True to assume the
+    produced schema is valid. Set `assume_valid_sdl` to True to assume it is already
+    a valid SDL document.
     """
     if not isinstance(document_ast, DocumentNode):
         raise TypeError("Must provide a Document AST.")
@@ -142,9 +142,9 @@ def build_ast_schema(
     if not any(directive.name == "deprecated" for directive in directives):
         directives.append(GraphQLDeprecatedDirective)
 
-    # Note: While this could make early assertions to get the correctly
-    # typed values below, that would throw immediately while type system
-    # validation with validate_schema will produce more actionable results.
+    # Note: While this could make early assertions to get the correctly typed values
+    # below, that would throw immediately while type system validation with
+    # `validate_schema()` will produce more actionable results.
     query_type = operation_types.get(OperationType.QUERY)
     mutation_type = operation_types.get(OperationType.MUTATION)
     subscription_type = operation_types.get(OperationType.SUBSCRIPTION)
@@ -251,9 +251,9 @@ class ASTDefinitionBuilder:
         )
 
     def build_field(self, field: FieldDefinitionNode) -> GraphQLField:
-        # Note: While this could make assertions to get the correctly typed
-        # value, that would throw immediately while type system validation
-        # with validate_schema() will produce more actionable results.
+        # Note: While this could make assertions to get the correctly typed value, that
+        # would throw immediately while type system validation with `validate_schema()`
+        # will produce more actionable results.
         type_ = self._build_wrapped_type(field.type)
         type_ = cast(GraphQLOutputType, type_)
         return GraphQLField(
@@ -265,9 +265,9 @@ class ASTDefinitionBuilder:
         )
 
     def build_input_field(self, value: InputValueDefinitionNode) -> GraphQLInputField:
-        # Note: While this could make assertions to get the correctly typed
-        # value, that would throw immediately while type system validation
-        # with validate_schema() will produce more actionable results.
+        # Note: While this could make assertions to get the correctly typed value, that
+        # would throw immediately while type system validation with `validate_schema()`
+        # will produce more actionable results.
         type_ = self._build_wrapped_type(value.type)
         type_ = cast(GraphQLInputType, type_)
         return GraphQLInputField(
@@ -304,9 +304,9 @@ class ASTDefinitionBuilder:
             name=type_def.name.value,
             description=type_def.description.value if type_def.description else None,
             fields=lambda: self._make_field_def_map(type_def),
-            # While this could make early assertions to get the correctly typed
-            # values, that would throw immediately while type system validation
-            # with validate_schema will produce more actionable results.
+            # Note: While this could make early assertions to get the correctly typed
+            # values, that would throw immediately while type system validation with
+            # `validate_schema()` will produce more actionable results.
             interfaces=(
                 lambda: [self.build_type(ref) for ref in interfaces]  # type: ignore
             )
@@ -326,9 +326,9 @@ class ASTDefinitionBuilder:
         )
 
     def _make_arg(self, value_node: InputValueDefinitionNode) -> GraphQLArgument:
-        # Note: While this could make assertions to get the correctly typed
-        # value, that would throw immediately while type system validation
-        # with validate_schema will produce more actionable results.
+        # Note: While this could make assertions to get the correctly typed value, that
+        # would throw immediately while type system validation with `validate_schema()`
+        # will produce more actionable results.
         type_ = self._build_wrapped_type(value_node.type)
         type_ = cast(GraphQLInputType, type_)
         return GraphQLArgument(
@@ -385,9 +385,9 @@ class ASTDefinitionBuilder:
         return GraphQLUnionType(
             name=type_def.name.value,
             description=type_def.description.value if type_def.description else None,
-            # Note: While this could make assertions to get the correctly typed
-            # values below, that would throw immediately while type system
-            # validation with validate_schema will get more actionable results.
+            # Note: While this could make assertions to get the correctly typed values
+            # below, that would throw immediately while type system validation with
+            # `validate_schema()` will get more actionable results.
             types=(lambda: [self.build_type(ref) for ref in types])  # type: ignore
             if types
             else [],

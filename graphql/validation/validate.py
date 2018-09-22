@@ -19,19 +19,18 @@ def validate(
 ) -> List[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
-    Validation runs synchronously, returning a list of encountered errors, or
-    an empty list if no errors were encountered and the document is valid.
+    Validation runs synchronously, returning a list of encountered errors, or an empty
+    list if no errors were encountered and the document is valid.
 
-    A list of specific validation rules may be provided. If not provided, the
-    default list of rules defined by the GraphQL specification will be used.
+    A list of specific validation rules may be provided. If not provided, the default
+    list of rules defined by the GraphQL specification will be used.
 
-    Each validation rule is a ValidationRule object which is a visitor object
-    that holds a ValidationContext (see the language/visitor API).
-    Visitor methods are expected to return GraphQLErrors, or lists of
-    GraphQLErrors when invalid.
+    Each validation rule is a ValidationRule object which is a visitor object that holds
+    a ValidationContext (see the language/visitor API). Visitor methods are expected to
+    return GraphQLErrors, or lists of GraphQLErrors when invalid.
 
-    Optionally a custom TypeInfo instance may be provided. If not provided, one
-    will be created from the provided schema.
+    Optionally a custom TypeInfo instance may be provided. If not provided, one will be
+    created from the provided schema.
     """
     if not document_ast or not isinstance(document_ast, DocumentNode):
         raise TypeError("You must provide a document node.")
@@ -71,8 +70,8 @@ def validate_sdl(
 def assert_valid_sdl(document_ast: DocumentNode) -> None:
     """Assert document is valid SDL.
 
-    Utility function which asserts a SDL document is valid by throwing an error
-    if it is invalid.
+    Utility function which asserts a SDL document is valid by throwing an error if it
+    is invalid.
     """
 
     errors = validate_sdl(document_ast)
@@ -85,8 +84,8 @@ def assert_valid_sdl_extension(
 ) -> None:
     """Assert document is a valid SDL extension.
 
-    Utility function which asserts a SDL document is valid by throwing an error
-    if it is invalid.
+    Utility function which asserts a SDL document is valid by throwing an error if it
+    is invalid.
     """
 
     errors = validate_sdl(document_ast, schema)

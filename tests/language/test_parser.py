@@ -208,13 +208,13 @@ def describe_parser():
         doc = parse(
             dedent(
                 """
-            {
-              node(id: 4) {
-                id,
-                name
-              }
-            }
-            """
+                {
+                  node(id: 4) {
+                    id,
+                    name
+                  }
+                }
+                """
             )
         )
         assert isinstance(doc, DocumentNode)
@@ -302,12 +302,12 @@ def describe_parser():
         doc = parse(
             dedent(
                 """
-            query {
-              node {
-                id
-              }
-            }
-            """
+                query {
+                  node {
+                    id
+                  }
+                }
+                """
             )
         )
         assert isinstance(doc, DocumentNode)

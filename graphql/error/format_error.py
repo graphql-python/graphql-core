@@ -10,8 +10,8 @@ __all__ = ["format_error"]
 def format_error(error: "GraphQLError") -> dict:
     """Format a GraphQL error
 
-    Given a GraphQLError, format it according to the rules described by the
-    Response Format, Errors section of the GraphQL Specification.
+    Given a GraphQLError, format it according to the rules described by the "Response
+    Format, Errors" section of the GraphQL Specification.
     """
     if not error:
         raise ValueError("Received null or undefined error.")

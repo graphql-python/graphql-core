@@ -80,7 +80,7 @@ def describe_printer_query_document():
 
     def experimental_prints_fragment_with_variable_directives():
         query_ast_with_variable_directive = parse(
-            "fragment Foo($foo: TestType @test) on TestType" " @testDirective { id }",
+            "fragment Foo($foo: TestType @test) on TestType @testDirective { id }",
             experimental_fragment_variables=True,
             experimental_variable_definition_directives=True,
         )

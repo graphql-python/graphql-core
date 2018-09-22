@@ -363,7 +363,7 @@ def describe_find_breaking_changes():
         expected_field_changes = [
             (
                 BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
-                "A required field requiredField on input type" " InputType1 was added.",
+                "A required field requiredField on input type InputType1 was added.",
             )
         ]
 
@@ -604,7 +604,7 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg15 has changed type from [[Int]!]" " to [[Int!]!]",
+                "Type1.field1 arg arg15 has changed type from [[Int]!] to [[Int!]!]",
             ),
         ]
 
@@ -866,7 +866,7 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-                "TypeInUnion2 was removed from union type" " UnionTypeThatLosesAType.",
+                "TypeInUnion2 was removed from union type UnionTypeThatLosesAType.",
             ),
             (
                 BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
@@ -874,11 +874,11 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "ArgThatChanges.field1 arg id has changed" " type from Int to String",
+                "ArgThatChanges.field1 arg id has changed type from Int to String",
             ),
             (
                 BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
-                "TypeThatGainsInterface1 no longer implements" " interface Interface1.",
+                "TypeThatGainsInterface1 no longer implements interface Interface1.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
@@ -890,7 +890,7 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                "A required arg arg1 on directive" " NonNullDirectiveAdded was added",
+                "A required arg arg1 on directive NonNullDirectiveAdded was added",
             ),
             (
                 BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
@@ -974,7 +974,7 @@ def describe_find_breaking_changes():
         assert find_added_non_null_directive_args(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                "A required arg" " newRequiredArg on directive DirectiveName was added",
+                "A required arg newRequiredArg on directive DirectiveName was added",
             )
         ]
 

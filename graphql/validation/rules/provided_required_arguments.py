@@ -40,8 +40,8 @@ def missing_directive_arg_message(
 class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
     """Provided required arguments on directives
 
-    A directive is only valid if all required (non-null without a
-    default value) arguments have been provided.
+    A directive is only valid if all required (non-null without a default value)
+    arguments have been provided.
     """
 
     context: Union[ValidationContext, SDLValidationContext]
@@ -103,8 +103,8 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
 class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
     """Provided required arguments
 
-    A field or directive is only valid if all required (non-null without a
-    default value) field arguments have been provided.
+    A field or directive is only valid if all required (non-null without a default
+    value) field arguments have been provided.
     """
 
     context: ValidationContext

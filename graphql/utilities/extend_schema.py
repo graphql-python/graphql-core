@@ -66,21 +66,19 @@ def extend_schema(
 ) -> GraphQLSchema:
     """Extend the schema with extensions from a given document.
 
-    Produces a new schema given an existing schema and a document which may
-    contain GraphQL type extensions and definitions. The original schema will
-    remain unaltered.
+    Produces a new schema given an existing schema and a document which may contain
+    GraphQL type extensions and definitions. The original schema will remain unaltered.
 
-    Because a schema represents a graph of references, a schema cannot be
-    extended without effectively making an entire copy. We do not know until
-    it's too late if subgraphs remain unchanged.
+    Because a schema represents a graph of references, a schema cannot be extended
+    without effectively making an entire copy. We do not know until it's too late if
+    subgraphs remain unchanged.
 
-    This algorithm copies the provided schema, applying extensions while
-    producing the copy. The original schema remains unaltered.
+    This algorithm copies the provided schema, applying extensions while producing the
+    copy. The original schema remains unaltered.
 
-    When extending a schema with a known valid extension, it might be safe to
-    assume the schema is valid. Set `assume_valid` to true to assume the
-    produced schema is valid. Set `assume_valid_sdl` to True to assume it is
-    already a valid SDL document.
+    When extending a schema with a known valid extension, it might be safe to assume the
+    schema is valid. Set `assume_valid` to true to assume the produced schema is valid.
+    Set `assume_valid_sdl` to True to assume it is already a valid SDL document.
     """
 
     if not is_schema(schema):
@@ -98,8 +96,8 @@ def extend_schema(
     type_definition_map: Dict[str, Any] = {}
     type_extensions_map: Dict[str, Any] = defaultdict(list)
 
-    # New directives and types are separate because a directives and types can
-    # have the same name. For example, a type named "skip".
+    # New directives and types are separate because a directives and types can have the
+    # same name. For example, a type named "skip".
     directive_definitions: List[DirectiveDefinitionNode] = []
 
     schema_def: Optional[SchemaDefinitionNode] = None
@@ -112,8 +110,8 @@ def extend_schema(
         elif isinstance(def_, SchemaExtensionNode):
             schema_extensions.append(def_)
         elif isinstance(def_, TypeDefinitionNode):
-            # Sanity check that none of the defined types conflict with the
-            # schema's existing types.
+            # Sanity check that none of the defined types conflict with the schema's
+            # existing types.
             type_name = def_.name.value
             if schema.get_type(type_name):
                 raise GraphQLError(
@@ -123,8 +121,8 @@ def extend_schema(
                 )
             type_definition_map[type_name] = def_
         elif isinstance(def_, TypeExtensionNode):
-            # Sanity check that this type extension exists within the
-            # schema's existing types.
+            # Sanity check that this type extension exists within the schema's existing
+            # types.
             extended_type_name = def_.name.value
             existing_type = schema.get_type(extended_type_name)
             if not existing_type:
@@ -146,8 +144,8 @@ def extend_schema(
                 )
             directive_definitions.append(def_)
 
-    # If this document contains no new types, extensions, or directives then
-    # return the same unmodified GraphQLSchema instance.
+    # If this document contains no new types, extensions, or directives then return the
+    # same unmodified GraphQLSchema instance.
     if (
         not type_extensions_map
         and not type_definition_map
@@ -157,8 +155,8 @@ def extend_schema(
     ):
         return schema
 
-    # Below are functions used for producing this schema that have closed over
-    # this scope and have access to the schema, cache, and newly defined types.
+    # Below are functions used for producing this schema that have closed over this
+    # scope and have access to the schema, cache, and newly defined types.
 
     def get_merged_directives() -> List[GraphQLDirective]:
         if not schema.directives:
@@ -414,10 +412,10 @@ def extend_schema(
         if extensions:
             for extension in extensions:
                 for named_type in extension.types:
-                    # Note: While this could make early assertions to get the
-                    # correctly typed values, that would throw immediately
-                    # while type system validation with validate_schema() will
-                    # produce more actionable results.
+                    # Note: While this could make early assertions to get the correctly
+                    # typed values, that would throw immediately while type system
+                    # validation with `validate_schema()` will produce more actionable
+                    # results.
                     possible_types.append(ast_builder.build_type(named_type))
 
         return cast(List[GraphQLObjectType], possible_types)
@@ -438,10 +436,10 @@ def extend_schema(
         # If there are any extensions to the interfaces, apply those here.
         for extension in type_extensions_map[type_.name]:
             for named_type in extension.interfaces:
-                # Note: While this could make early assertions to get the
-                # correctly typed values, that would throw immediately while
-                # type system validation with validate_schema() will produce
-                # more actionable results.
+                # Note: While this could make early assertions to get the correctly
+                # typed values, that would throw immediately while type system
+                # validation with `validate_schema()` will produce more actionable
+                # results.
                 interfaces.append(cast(GraphQLInterfaceType, build_type(named_type)))
 
         return interfaces
@@ -520,10 +518,9 @@ def extend_schema(
                 raise TypeError(
                     f"Must provide only one {operation.value} type in schema."
                 )
-            # Note: While this could make early assertions to get the
-            # correctly typed values, that would throw immediately while
-            # type system validation with validate_schema() will produce
-            # more actionable results.
+            # Note: While this could make early assertions to get the correctly typed
+            # values, that would throw immediately while type system validation with
+            # `validate_schema()` will produce more actionable results.
             operation_types[operation] = ast_builder.build_type(operation_type.type)
 
     # Then, incorporate schema definition and all schema extensions.
@@ -533,20 +530,20 @@ def extend_schema(
                 operation = operation_type.operation
                 if operation_types[operation]:
                     raise TypeError(
-                        f"Must provide only one {operation.value}" " type in schema."
+                        f"Must provide only one {operation.value} type in schema."
                     )
-                # Note: While this could make early assertions to get the
-                # correctly typed values, that would throw immediately while
-                # type system validation with validate_schema() will produce
-                # more actionable results.
+                # Note: While this could make early assertions to get the correctly
+                # typed values, that would throw immediately while type system
+                # validation with `validate_schema()` will produce more actionable
+                # results.
                 operation_types[operation] = ast_builder.build_type(operation_type.type)
 
     schema_extension_ast_nodes = (
         schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())
     ) + tuple(schema_extensions)
 
-    # Iterate through all types, getting the type definition for each, ensuring
-    # that any type not directly referenced by a value will get created.
+    # Iterate through all types, getting the type definition for each, ensuring that
+    # any type not directly referenced by a value will get created.
     types = list(map(extend_named_type, schema.type_map.values()))
     # do the same with new types
     types.extend(map(ast_builder.build_type, type_definition_map.values()))

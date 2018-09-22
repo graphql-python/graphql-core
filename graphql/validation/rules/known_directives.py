@@ -29,8 +29,8 @@ def misplaced_directive_message(directive_name: str, location: str) -> str:
 class KnownDirectivesRule(ASTValidationRule):
     """Known directives
 
-    A GraphQL document is only valid if all `@directives` are known by the
-    schema and legally positioned.
+    A GraphQL document is only valid if all `@directives` are known by the schema and
+    legally positioned.
     """
 
     context: Union[ValidationContext, SDLValidationContext]

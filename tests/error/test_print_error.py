@@ -48,10 +48,10 @@ def describe_print_error():
             Source(
                 dedent(
                     """
-            type Foo {
-              field: String
-            }
-        """
+                    type Foo {
+                      field: String
+                    }
+                    """
                 ),
                 "SourceA",
             )
@@ -63,10 +63,10 @@ def describe_print_error():
             Source(
                 dedent(
                     """
-            type Foo {
-              field: Int
-            }
-        """
+                    type Foo {
+                      field: Int
+                    }
+                    """
                 ),
                 "SourceB",
             )

@@ -10,11 +10,11 @@ __all__ = ["MapAsyncIterator"]
 class MapAsyncIterator:
     """Map an AsyncIterable over a callback function.
 
-    Given an AsyncIterable and a callback function, return an AsyncIterator
-    which produces values mapped via calling the callback function.
+    Given an AsyncIterable and a callback function, return an AsyncIterator which
+    produces values mapped via calling the callback function.
 
-    When the resulting AsyncIterator is closed, the underlying AsyncIterable
-    will also be closed.
+    When the resulting AsyncIterator is closed, the underlying AsyncIterable will also
+    be closed.
     """
 
     def __init__(

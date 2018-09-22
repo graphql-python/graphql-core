@@ -1,15 +1,14 @@
 """Star Wars GraphQL schema
 
-This is designed to be an end-to-end test, demonstrating the full
-GraphQL stack.
+This is designed to be an end-to-end test, demonstrating the full GraphQL stack.
 
-We will create a GraphQL schema that describes the major characters
-in the original Star Wars trilogy.
+We will create a GraphQL schema that describes the major characters in the original
+Star Wars trilogy.
 
 NOTE: This may contain spoilers for the original Star Wars trilogy.
 
-Using our shorthand to describe type systems, the type system for our
-Star Wars example is::
+Using our shorthand to describe type systems, the type system for our Star Wars example
+is::
 
     enum Episode { NEWHOPE, EMPIRE, JEDI }
 
@@ -152,7 +151,7 @@ human_type = GraphQLObjectType(
         "secretBackstory": GraphQLField(
             GraphQLString,
             resolve=lambda human, _info: get_secret_backstory(human),
-            description="Where are they from" " and how they came to be who they are.",
+            description="Where are they from and how they came to be who they are.",
         ),
     },
     interfaces=[character_interface],

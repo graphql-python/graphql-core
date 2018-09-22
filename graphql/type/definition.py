@@ -127,9 +127,9 @@ __all__ = [
 class GraphQLType:
     """Base class for all GraphQL types"""
 
-    # Note: We don't use slots for GraphQLType objects because memory
-    # considerations are not really important for the schema definition
-    # and it would make caching properties slower or more complicated.
+    # Note: We don't use slots for GraphQLType objects because memory considerations
+    # are not really important for the schema definition and it would make caching
+    # properties slower or more complicated.
 
 
 # There are predicates for each kind of GraphQL type.
@@ -338,7 +338,7 @@ class GraphQLScalarType(GraphQLNamedType):
             isinstance(node, ScalarTypeExtensionNode) for node in extension_ast_nodes
         ):
             raise TypeError(
-                f"{name} extension AST nodes" " must be ScalarTypeExtensionNode."
+                f"{name} extension AST nodes must be ScalarTypeExtensionNode."
             )
         self.serialize = serialize  # type: ignore
         self.parse_value = parse_value or default_value_parser
@@ -584,7 +584,7 @@ class GraphQLObjectType(GraphQLNamedType):
             isinstance(node, ObjectTypeExtensionNode) for node in extension_ast_nodes
         ):
             raise TypeError(
-                f"{name} extension AST nodes" " must be ObjectTypeExtensionNodes."
+                f"{name} extension AST nodes must be ObjectTypeExtensionNodes."
             )
         self._fields = fields
         self._interfaces = interfaces
@@ -611,7 +611,7 @@ class GraphQLObjectType(GraphQLNamedType):
             for value in fields.values()
         ):
             raise TypeError(
-                f"{self.name} fields must be" " GraphQLField or output type objects."
+                f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
             name: value if isinstance(value, GraphQLField) else GraphQLField(value)
@@ -694,7 +694,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
             isinstance(node, InterfaceTypeExtensionNode) for node in extension_ast_nodes
         ):
             raise TypeError(
-                f"{name} extension AST nodes" " must be InterfaceTypeExtensionNodes."
+                f"{name} extension AST nodes must be InterfaceTypeExtensionNodes."
             )
         self._fields = fields
         self.resolve_type = resolve_type
@@ -721,7 +721,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
             for value in fields.values()
         ):
             raise TypeError(
-                f"{self.name} fields must be" " GraphQLField or output type objects."
+                f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
             name: value if isinstance(value, GraphQLField) else GraphQLField(value)
@@ -745,9 +745,9 @@ GraphQLTypeList = Sequence[GraphQLObjectType]
 class GraphQLUnionType(GraphQLNamedType):
     """Union Type Definition
 
-    When a field can return one of a heterogeneous set of types, a Union type
-    is used to describe what types are possible as well as providing a function
-    to determine which type is actually used when the field is resolved.
+    When a field can return one of a heterogeneous set of types, a Union type is used
+    to describe what types are possible as well as providing a function to determine
+    which type is actually used when the field is resolved.
 
     Example:
 
@@ -834,9 +834,9 @@ GraphQLEnumValueMap = Dict[str, "GraphQLEnumValue"]
 class GraphQLEnumType(GraphQLNamedType):
     """Enum Type Definition
 
-    Some leaf values of requests and input values are Enums. GraphQL serializes
-    Enum values as strings, however internally Enums can be represented by any
-    kind of type, often integers. They can also be provided as a Python Enum.
+    Some leaf values of requests and input values are Enums. GraphQL serializes Enum
+    values as strings, however internally Enums can be represented by any kind of type,
+    often integers. They can also be provided as a Python Enum.
 
     Example::
 
@@ -855,11 +855,11 @@ class GraphQLEnumType(GraphQLNamedType):
 
         RGBType = GraphQLEnumType('RGB', enum.Enum)
 
-    Instead of raw values, you can also specify GraphQLEnumValue objects
-    with more detail like description or deprecation information.
+    Instead of raw values, you can also specify GraphQLEnumValue objects with more
+    detail like description or deprecation information.
 
-    Note: If a value is not provided in a definition, the name of the enum
-    value will be used as its internal value when the value is serialized.
+    Note: If a value is not provided in a definition, the name of the enum value will
+    be used as its internal value when the value is serialized.
     """
 
     values: GraphQLEnumValueMap
@@ -1064,7 +1064,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
             for node in extension_ast_nodes
         ):
             raise TypeError(
-                f"{name} extension AST nodes" " must be InputObjectTypeExtensionNode."
+                f"{name} extension AST nodes must be InputObjectTypeExtensionNode."
             )
         self._fields = fields
 

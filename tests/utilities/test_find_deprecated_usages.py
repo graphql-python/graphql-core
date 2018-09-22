@@ -48,7 +48,7 @@ def describe_find_deprecated_usages():
         error_messages = [err.message for err in errors]
 
         assert error_messages == [
-            "The field Query.deprecatedField is deprecated." " Some field reason."
+            "The field Query.deprecatedField is deprecated. Some field reason."
         ]
 
     def should_report_usage_of_deprecated_enums():

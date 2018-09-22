@@ -72,7 +72,7 @@ def describe_graphql_error():
         assert "msg" in str(e)
         assert "(1:3)" in str(e)
         assert repr(e) == (
-            "GraphQLError('msg'," " locations=[SourceLocation(line=1, column=3)])"
+            "GraphQLError('msg', locations=[SourceLocation(line=1, column=3)])"
         )
 
     def serializes_to_include_path():
@@ -80,7 +80,7 @@ def describe_graphql_error():
         # noinspection PyArgumentEqualDefault
         e = GraphQLError("msg", None, None, None, path)
         assert e.path is path
-        assert repr(e) == ("GraphQLError('msg'," " path=['path', 3, 'to', 'field'])")
+        assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
 
     def default_error_formatter_includes_path():
         path = ["path", 3, "to", "field"]

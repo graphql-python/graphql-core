@@ -19,8 +19,8 @@ def introspection_from_schema(
     IntrospectionQuery is useful for utilities that care about type and field
     relationships, but do not need to traverse through those relationships.
 
-    This is the inverse of build_client_schema. The primary use case is outside
-    of the server context, for instance when doing schema comparisons.
+    This is the inverse of build_client_schema. The primary use case is outside of the
+    server context, for instance when doing schema comparisons.
     """
     query_ast = parse(get_introspection_query(descriptions))
 

@@ -53,8 +53,8 @@ QUERY_DOCUMENT_KEYS = {
     "fragment_spread": ("name", "directives"),
     "inline_fragment": ("type_condition", "directives", "selection_set"),
     "fragment_definition": (
-        # Note: fragment variable definitions are experimental and may be
-        # changed or removed in the future.
+        # Note: fragment variable definitions are experimental and may be changed or
+        # removed in the future.
         "name",
         "variable_definitions",
         "type_condition",
@@ -110,10 +110,9 @@ QUERY_DOCUMENT_KEYS = {
 class Visitor:
     """Visitor that walks through an AST.
 
-    Visitors can define two generic methods "enter" and "leave".
-    The former will be called when a node is entered in the traversal,
-    the latter is called after visiting the node and its child nodes.
-    These methods have the following signature::
+    Visitors can define two generic methods "enter" and "leave". The former will be
+    called when a node is entered in the traversal, the latter is called after visiting
+    the node and its child nodes. These methods have the following signature::
 
         def enter(self, node, key, parent, path, ancestors):
             # The return value has the following meaning:
@@ -143,12 +142,11 @@ class Visitor:
 
     Note: ancestors includes arrays which contain the parent of visited node.
 
-    You can also define node kind specific methods by suffixing them
-    with an underscore followed by the kind of the node to be visited.
-    For instance, to visit field nodes, you would defined the methods
-    enter_field() and/or leave_field(), with the same signature as above.
-    If no kind specific method has been defined for a given node, the
-    generic method is called.
+    You can also define node kind specific methods by suffixing them with an underscore
+    followed by the kind of the node to be visited. For instance, to visit `field`
+    nodes, you would defined the methods `enter_field()` and/or `leave_field()`, with
+    the same signature as above. If no kind specific method has been defined for a given
+    node, the generic method is called.
     """
 
     # Provide special return values as attributes
@@ -195,22 +193,21 @@ class Stack(NamedTuple):
 def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Node:
     """Visit each node in an AST.
 
-    visit() will walk through an AST using a depth first traversal, calling
-    the visitor's enter methods at each node in the traversal, and calling the
-    leave methods after visiting that node and all of its child nodes.
+    `visit()` will walk through an AST using a depth first traversal, calling the
+    visitor's enter methods at each node in the traversal, and calling the leave methods
+    after visiting that node and all of its child nodes.
 
-    By returning different values from the enter and leave methods,
-    the behavior of the visitor can be altered, including skipping over
-    a sub-tree of the AST (by returning False), editing the AST by returning
-    a value or None to remove the value, or to stop the whole traversal
-    by returning BREAK.
+    By returning different values from the enter and leave methods, the behavior of the
+    visitor can be altered, including skipping over a sub-tree of the AST (by returning
+    False), editing the AST by returning a value or None to remove the value, or to stop
+    the whole traversal by returning BREAK.
 
-    When using visit() to edit an AST, the original AST will not be modified,
-    and a new version of the AST with the changes applied will be returned
-    from the visit function.
+    When using `visit()` to edit an AST, the original AST will not be modified, and a
+    new version of the AST with the changes applied will be returned from the visit
+    function.
 
-    To customize the node attributes to be used for traversal, you can provide
-    a dictionary visitor_keys mapping node kinds to node attributes.
+    To customize the node attributes to be used for traversal, you can provide a
+    dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
         raise TypeError(f"Not an AST Node: {root!r}")

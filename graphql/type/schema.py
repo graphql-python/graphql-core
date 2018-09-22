@@ -83,13 +83,12 @@ class GraphQLSchema:
         messages.
         """
         if assume_valid:
-            # If this schema was built from a source known to be valid,
-            # then it may be marked with assume_valid to avoid an additional
-            # type system validation.
+            # If this schema was built from a source known to be valid, then it may be
+            # marked with assume_valid to avoid an additional type system validation.
             self._validation_errors: Optional[List[GraphQLError]] = []
         else:
-            # Otherwise check for common mistakes during construction to
-            # produce clear and early error messages.
+            # Otherwise check for common mistakes during construction to produce clear
+            # and early error messages.
             if types is None:
                 types = []
             elif isinstance(types, tuple):

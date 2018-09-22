@@ -7,6 +7,7 @@ from graphql.language import Node, Source
 def describe_format_error():
     def throw_if_not_an_error():
         with raises(ValueError):
+            # noinspection PyTypeChecker
             format_error(None)
 
     def format_graphql_error():
@@ -35,5 +36,6 @@ def describe_format_error():
         }
 
     def add_default_message():
+        # noinspection PyTypeChecker
         error = format_error(GraphQLError(None))
         assert error["message"] == "An unknown error occurred."

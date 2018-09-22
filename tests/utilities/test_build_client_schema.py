@@ -30,10 +30,10 @@ def check_schema(server_schema):
     """Test that the client side introspection gives the same result.
 
     Given a server's schema, a client may query that server with introspection,
-    and use the result to produce a client-side representation of the schema
-    by using "build_client_schema". If the client then runs the introspection
-    query against the client-side schema, it should get a result identical to
-    what was returned by the server.
+    and use the result to produce a client-side representation of the schema by using
+    `build_client_schema`. If the client then runs the introspection query against
+    the client-side schema, it should get a result identical to what was returned
+    by the server.
     """
     initial_introspection = introspection_from_schema(server_schema)
     client_schema = build_client_schema(initial_introspection)
@@ -513,7 +513,7 @@ def describe_type_system_build_schema_from_introspection():
 
         result = graphql_sync(
             client_schema,
-            "query Limited($v: CustomScalar) {" " foo(custom1: 123, custom2: $v) }",
+            "query Limited($v: CustomScalar) { foo(custom1: 123, custom2: $v) }",
             Data(),
             variable_values={"v": "baz"},
         )

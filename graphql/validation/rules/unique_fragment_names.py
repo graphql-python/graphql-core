@@ -14,8 +14,7 @@ def duplicate_fragment_name_message(frag_name: str) -> str:
 class UniqueFragmentNamesRule(ASTValidationRule):
     """Unique fragment names
 
-    A GraphQL document is only valid if all defined fragments have unique
-    names.
+    A GraphQL document is only valid if all defined fragments have unique names.
     """
 
     def __init__(self, context: ASTValidationContext) -> None:

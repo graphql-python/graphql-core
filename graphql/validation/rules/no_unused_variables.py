@@ -18,8 +18,8 @@ def unused_variable_message(var_name: str, op_name: str = None) -> str:
 class NoUnusedVariablesRule(ValidationRule):
     """No unused variables
 
-    A GraphQL operation is only valid if all variables defined by an operation
-    are used, either directly or within a spread fragment.
+    A GraphQL operation is only valid if all variables defined by an operation are used,
+    either directly or within a spread fragment.
     """
 
     def __init__(self, context: ValidationContext) -> None:

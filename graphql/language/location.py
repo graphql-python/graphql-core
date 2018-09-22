@@ -16,7 +16,7 @@ class SourceLocation(NamedTuple):
 def get_location(source: "Source", position: int) -> SourceLocation:
     """Get the line and column for a character position in the source.
 
-    Takes a Source and a UTF-8 character offset, and returns the corresponding
-    line and column as a SourceLocation.
+    Takes a Source and a UTF-8 character offset, and returns the corresponding line and
+    column as a SourceLocation.
     """
     return source.get_location(position)

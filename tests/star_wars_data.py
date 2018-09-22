@@ -1,8 +1,8 @@
 """This defines a basic set of data for our Star Wars Schema.
 
-This data is hard coded for the sake of the demo, but you could imagine
-fetching this data from a backend service rather than from hardcoded
-JSON objects in a more complex demo.
+This data is hard coded for the sake of the demo, but you could imagine fetching this
+data from a backend service rather than from hardcoded JSON objects in a more complex
+demo.
 """
 
 from typing import Sequence, Iterator
@@ -133,6 +133,7 @@ def get_droid(id: str) -> Droid:
     return droid_data.get(id)
 
 
+# noinspection PyUnusedLocal
 def get_secret_backstory(character: Character) -> str:
     """Raise an error when attempting to get the secret backstory."""
     raise RuntimeError("secretBackstory is secret.")

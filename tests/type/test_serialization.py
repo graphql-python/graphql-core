@@ -25,27 +25,27 @@ def describe_type_system_scalar_coercion():
         # values as Int to avoid accidental data loss.
         with raises(TypeError) as exc_info:
             GraphQLInt.serialize(0.1)
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: 0.1")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: 0.1"
         with raises(TypeError) as exc_info:
             GraphQLInt.serialize(1.1)
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: 1.1")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: 1.1"
         with raises(TypeError) as exc_info:
             GraphQLInt.serialize(-1.1)
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: -1.1")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: -1.1"
         with raises(TypeError) as exc_info:
             GraphQLInt.serialize("-1.1")
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: '-1.1'")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: '-1.1'"
         # Maybe a safe JavaScript int, but bigger than 2^32, so not
         # representable as a GraphQL Int
         with raises(Exception) as exc_info:
             GraphQLInt.serialize(9876504321)
         assert str(exc_info.value) == (
-            "Int cannot represent non 32-bit signed integer value:" " 9876504321"
+            "Int cannot represent non 32-bit signed integer value: 9876504321"
         )
         with raises(Exception) as exc_info:
             GraphQLInt.serialize(-9876504321)
         assert str(exc_info.value) == (
-            "Int cannot represent non 32-bit signed integer value:" " -9876504321"
+            "Int cannot represent non 32-bit signed integer value: -9876504321"
         )
         # Too big to represent as an Int in JavaScript or GraphQL
         with raises(Exception) as exc_info:
@@ -60,20 +60,20 @@ def describe_type_system_scalar_coercion():
         )
         with raises(Exception) as exc_info:
             GraphQLInt.serialize("one")
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: 'one'")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: 'one'"
         # Doesn't represent number
         with raises(Exception) as exc_info:
             GraphQLInt.serialize("")
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: ''")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: ''"
         with raises(Exception) as exc_info:
             GraphQLInt.serialize(nan)
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: nan")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: nan"
         with raises(Exception) as exc_info:
             GraphQLInt.serialize(inf)
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: inf")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: inf"
         with raises(Exception) as exc_info:
             GraphQLInt.serialize([5])
-        assert str(exc_info.value) == ("Int cannot represent non-integer value: [5]")
+        assert str(exc_info.value) == "Int cannot represent non-integer value: [5]"
 
     def serializes_output_as_float():
         assert GraphQLFloat.serialize(1) == 1.0
@@ -89,10 +89,10 @@ def describe_type_system_scalar_coercion():
 
         with raises(Exception) as exc_info:
             GraphQLFloat.serialize(nan)
-        assert str(exc_info.value) == ("Float cannot represent non numeric value: nan")
+        assert str(exc_info.value) == "Float cannot represent non numeric value: nan"
         with raises(Exception) as exc_info:
             GraphQLFloat.serialize(inf)
-        assert str(exc_info.value) == ("Float cannot represent non numeric value: inf")
+        assert str(exc_info.value) == "Float cannot represent non numeric value: inf"
         with raises(Exception) as exc_info:
             GraphQLFloat.serialize("one")
         assert str(exc_info.value) == (
@@ -100,10 +100,10 @@ def describe_type_system_scalar_coercion():
         )
         with raises(Exception) as exc_info:
             GraphQLFloat.serialize("")
-        assert str(exc_info.value) == ("Float cannot represent non numeric value: ''")
+        assert str(exc_info.value) == "Float cannot represent non numeric value: ''"
         with raises(Exception) as exc_info:
             GraphQLFloat.serialize([5])
-        assert str(exc_info.value) == ("Float cannot represent non numeric value: [5]")
+        assert str(exc_info.value) == "Float cannot represent non numeric value: [5]"
 
     def serializes_output_as_string():
         assert GraphQLString.serialize("string") == "string"
@@ -120,15 +120,15 @@ def describe_type_system_scalar_coercion():
 
         with raises(Exception) as exc_info:
             GraphQLString.serialize(nan)
-        assert str(exc_info.value) == ("String cannot represent value: nan")
+        assert str(exc_info.value) == "String cannot represent value: nan"
 
         with raises(Exception) as exc_info:
             GraphQLString.serialize([1])
-        assert str(exc_info.value) == ("String cannot represent value: [1]")
+        assert str(exc_info.value) == "String cannot represent value: [1]"
 
         with raises(Exception) as exc_info:
             GraphQLString.serialize({})
-        assert str(exc_info.value) == ("String cannot represent value: {}")
+        assert str(exc_info.value) == "String cannot represent value: {}"
 
     def serializes_output_as_boolean():
         assert GraphQLBoolean.serialize(1) is True
@@ -186,7 +186,7 @@ def describe_type_system_scalar_coercion():
 
         with raises(Exception) as exc_info:
             GraphQLID.serialize(True)
-        assert str(exc_info.value) == ("ID cannot represent value: True")
+        assert str(exc_info.value) == "ID cannot represent value: True"
 
         with raises(Exception) as exc_info:
             GraphQLID.serialize(3.14)

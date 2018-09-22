@@ -129,12 +129,10 @@ _KIND_FOR_PUNCT = {
 class Lexer:
     """GraphQL Lexer
 
-    A Lexer is a stateful stream generator in that every time
-    it is advanced, it returns the next token in the Source. Assuming the
-    source lexes, the final Token emitted by the lexer will be of kind
-    EOF, after which the lexer will repeatedly return the same EOF token
-    whenever called.
-
+    A Lexer is a stateful stream generator in that every time it is advanced, it returns
+    the next token in the Source. Assuming the source lexes, the final Token emitted by
+    the lexer will be of kind EOF, after which the lexer will repeatedly return the same
+    EOF token whenever called.
     """
 
     def __init__(
@@ -173,10 +171,9 @@ class Lexer:
     def read_token(self, prev: Token) -> Token:
         """Get the next token from the source starting at the given position.
 
-        This skips over whitespace and comments until it finds the next
-        lexable token, then lexes punctuators immediately or calls the
-        appropriate helper function for more complicated tokens.
-
+        This skips over whitespace and comments until it finds the next lexable token,
+        then lexes punctuators immediately or calls the appropriate helper function fo
+        more complicated tokens.
         """
         source = self.source
         body = source.body
@@ -213,10 +210,8 @@ class Lexer:
     def position_after_whitespace(self, body, start_position: int) -> int:
         """Go to next position after a whitespace.
 
-        Reads from body starting at startPosition until it finds a
-        non-whitespace or commented character, then returns the position
-        of that character for lexing.
-
+        Reads from body starting at startPosition until it finds a non-whitespace or
+        commented character, then returns the position of that character for lexing.
         """
         body_length = len(body)
         position = start_position
@@ -269,7 +264,6 @@ def read_number(source: Source, start, char, line, col, prev) -> Token:
     """Reads a number token from the source file.
 
     Either a float or an int depending on whether a decimal point appears.
-
     """
     body = source.body
     position = start
@@ -450,9 +444,9 @@ def read_block_string(source: Source, start, line, col, prev) -> Token:
 def uni_char_code(a, b, c, d):
     """Convert unicode characters to integers.
 
-    Converts four hexadecimal chars to the integer that the
-    string represents. For example, uni_char_code('0','0','0','f')
-    will return 15, and uni_char_code('0','0','f','f') returns 255.
+    Converts four hexadecimal chars to the integer that the string represents.
+    For example, uni_char_code('0','0','0','f') will return 15,
+    and uni_char_code('0','0','f','f') returns 255.
 
     Returns a negative number on error, if a char was invalid.
 

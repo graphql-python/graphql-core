@@ -41,7 +41,7 @@ def describe_coerce_value():
         def returns_error_for_array_input_as_string():
             result = coerce_value([1, 2, 3], GraphQLID)
             assert expect_error(result) == [
-                f"Expected type ID;" " ID cannot represent value: [1, 2, 3]"
+                f"Expected type ID; ID cannot represent value: [1, 2, 3]"
             ]
 
     def describe_for_graphql_int():
@@ -52,7 +52,7 @@ def describe_coerce_value():
         def returns_no_error_for_numeric_looking_string():
             result = coerce_value("1", GraphQLInt)
             assert expect_error(result) == [
-                f"Expected type Int;" " Int cannot represent non-integer value: '1'"
+                f"Expected type Int; Int cannot represent non-integer value: '1'"
             ]
 
         def returns_value_for_negative_int_input():
@@ -70,7 +70,7 @@ def describe_coerce_value():
         def returns_a_single_error_for_empty_string_as_value():
             result = coerce_value("", GraphQLInt)
             assert expect_error(result) == [
-                "Expected type Int; Int cannot represent" " non-integer value: ''"
+                "Expected type Int; Int cannot represent non-integer value: ''"
             ]
 
         def returns_a_single_error_for_2_32_input_as_int():
@@ -83,31 +83,31 @@ def describe_coerce_value():
         def returns_a_single_error_for_float_input_as_int():
             result = coerce_value(1.5, GraphQLInt)
             assert expect_error(result) == [
-                "Expected type Int;" " Int cannot represent non-integer value: 1.5"
+                "Expected type Int; Int cannot represent non-integer value: 1.5"
             ]
 
         def returns_a_single_error_for_nan_input_as_int():
             result = coerce_value(nan, GraphQLInt)
             assert expect_error(result) == [
-                "Expected type Int;" " Int cannot represent non-integer value: nan"
+                "Expected type Int; Int cannot represent non-integer value: nan"
             ]
 
         def returns_a_single_error_for_infinity_input_as_int():
             result = coerce_value(inf, GraphQLInt)
             assert expect_error(result) == [
-                "Expected type Int;" " Int cannot represent non-integer value: inf"
+                "Expected type Int; Int cannot represent non-integer value: inf"
             ]
 
         def returns_a_single_error_for_char_input():
             result = coerce_value("a", GraphQLInt)
             assert expect_error(result) == [
-                "Expected type Int;" " Int cannot represent non-integer value: 'a'"
+                "Expected type Int; Int cannot represent non-integer value: 'a'"
             ]
 
         def returns_a_single_error_for_string_input():
             result = coerce_value("meow", GraphQLInt)
             assert expect_error(result) == [
-                "Expected type Int;" " Int cannot represent non-integer value: 'meow'"
+                "Expected type Int; Int cannot represent non-integer value: 'meow'"
             ]
 
     def describe_for_graphql_float():
@@ -126,7 +126,7 @@ def describe_coerce_value():
         def returns_error_for_numeric_looking_string():
             result = coerce_value("1", GraphQLFloat)
             assert expect_error(result) == [
-                "Expected type Float;" " Float cannot represent non numeric value: '1'"
+                "Expected type Float; Float cannot represent non numeric value: '1'"
             ]
 
         def returns_null_for_null_value():
@@ -136,32 +136,31 @@ def describe_coerce_value():
         def returns_a_single_error_for_empty_string_input():
             result = coerce_value("", GraphQLFloat)
             assert expect_error(result) == [
-                "Expected type Float;" " Float cannot represent non numeric value: ''"
+                "Expected type Float; Float cannot represent non numeric value: ''"
             ]
 
         def returns_a_single_error_for_nan_input():
             result = coerce_value(nan, GraphQLFloat)
             assert expect_error(result) == [
-                "Expected type Float;" " Float cannot represent non numeric value: nan"
+                "Expected type Float; Float cannot represent non numeric value: nan"
             ]
 
         def returns_a_single_error_for_infinity_input():
             result = coerce_value(inf, GraphQLFloat)
             assert expect_error(result) == [
-                "Expected type Float;" " Float cannot represent non numeric value: inf"
+                "Expected type Float; Float cannot represent non numeric value: inf"
             ]
 
         def returns_a_single_error_for_char_input():
             result = coerce_value("a", GraphQLFloat)
             assert expect_error(result) == [
-                "Expected type Float;" " Float cannot represent non numeric value: 'a'"
+                "Expected type Float; Float cannot represent non numeric value: 'a'"
             ]
 
         def returns_a_single_error_for_string_input():
             result = coerce_value("meow", GraphQLFloat)
             assert expect_error(result) == [
-                "Expected type Float;"
-                " Float cannot represent non numeric value: 'meow'"
+                "Expected type Float; Float cannot represent non numeric value: 'meow'"
             ]
 
     def describe_for_graphql_enum():
@@ -223,18 +222,18 @@ def describe_coerce_value():
         def returns_error_for_a_missing_required_field():
             result = coerce_value({"bar": 123}, TestInputObject)
             assert expect_error(result) == [
-                "Field value.foo" " of required type Int! was not provided."
+                "Field value.foo of required type Int! was not provided."
             ]
 
         def returns_error_for_an_unknown_field():
             result = coerce_value({"foo": 123, "unknownField": 123}, TestInputObject)
             assert expect_error(result) == [
-                "Field 'unknownField' is not defined" " by type TestInputObject."
+                "Field 'unknownField' is not defined by type TestInputObject."
             ]
 
         def returns_error_for_a_misspelled_field():
             result = coerce_value({"foo": 123, "bart": 123}, TestInputObject)
             assert expect_error(result) == [
-                "Field 'bart' is not defined"
-                " by type TestInputObject; did you mean bar?"
+                "Field 'bart' is not defined by type TestInputObject;"
+                " did you mean bar?"
             ]

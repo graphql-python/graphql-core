@@ -67,8 +67,9 @@ __all__ = [
 
 class Location(NamedTuple):
     """AST Location
-    Contains a range of UTF-8 character offsets and token references that
-    identify the region of the source from which the AST derived.
+
+    Contains a range of UTF-8 character offsets and token references that identify the
+    region of the source from which the AST derived.
     """
 
     start: int  # character offset at which this Node begins

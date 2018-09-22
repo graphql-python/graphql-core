@@ -69,7 +69,7 @@ def describe_validate_supports_full_validation():
         assert [error.message for error in errors] == [
             "Cannot query field 'catOrDog' on type 'QueryRoot'."
             " Did you mean 'catOrDog'?",
-            "Cannot query field 'furColor' on type 'Cat'." " Did you mean 'furColor'?",
+            "Cannot query field 'furColor' on type 'Cat'. Did you mean 'furColor'?",
             "Cannot query field 'isHousetrained' on type 'Dog'."
             " Did you mean 'isHousetrained'?",
         ]

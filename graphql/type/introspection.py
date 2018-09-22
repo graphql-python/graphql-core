@@ -184,11 +184,11 @@ __DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
         ),
         "INPUT_OBJECT": GraphQLEnumValue(
             DirectiveLocation.INPUT_OBJECT,
-            description="Location adjacent to" " an input object type definition.",
+            description="Location adjacent to an input object type definition.",
         ),
         "INPUT_FIELD_DEFINITION": GraphQLEnumValue(
             DirectiveLocation.INPUT_FIELD_DEFINITION,
-            description="Location adjacent to" " an input object field definition.",
+            description="Location adjacent to an input object field definition.",
         ),
     },
 )

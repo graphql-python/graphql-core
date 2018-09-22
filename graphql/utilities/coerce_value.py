@@ -35,8 +35,8 @@ def coerce_value(
 ) -> CoercedValue:
     """Coerce a Python value given a GraphQL Type.
 
-    Returns either a value which is valid for the provided type or a list of
-    encountered coercion errors.
+    Returns either a value which is valid for the provided type or a list of encountered
+    coercion errors.
     """
     # A value must be provided if the type is non-null.
     if is_non_null_type(type_):
@@ -58,9 +58,8 @@ def coerce_value(
         return of_value(None)
 
     if is_scalar_type(type_):
-        # Scalars determine if a value is valid via parse_value(), which can
-        # throw to indicate failure. If it throws, maintain a reference to
-        # the original error.
+        # Scalars determine if a value is valid via `parse_value()`, which can throw to
+        # indicate failure. If it throws, maintain a reference to the original error.
         type_ = cast(GraphQLScalarType, type_)
         try:
             parse_result = type_.parse_value(value)

@@ -36,8 +36,8 @@ def undefined_field_message(
 class FieldsOnCorrectTypeRule(ValidationRule):
     """Fields on correct type
 
-    A GraphQL document is only valid if all fields selected are defined by the
-    parent type, or are an allowed meta field such as __typename.
+    A GraphQL document is only valid if all fields selected are defined by the parent
+    type, or are an allowed meta field such as `__typename`.
     """
 
     def enter_field(self, node: FieldNode, *_args):
@@ -47,7 +47,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
         field_def = self.context.get_field_def()
         if field_def:
             return
-        #  This field doesn't exist, lets look for suggestions.
+        # This field doesn't exist, lets look for suggestions.
         schema = self.context.schema
         field_name = node.name.value
         # First determine if there are any suggested types to condition on.
@@ -109,8 +109,8 @@ def get_suggested_type_names(
 def get_suggested_field_names(type_: GraphQLOutputType, field_name: str) -> List[str]:
     """Get a list of suggested field names.
 
-    For the field name provided, determine if there are any similar field names
-    that may be the result of a typo.
+    For the field name provided, determine if there are any similar field names that may
+    be the result of a typo.
     """
     if is_object_type(type_) or is_interface_type(type_):
         possible_field_names = list(type_.fields)  # type: ignore

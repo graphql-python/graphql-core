@@ -41,8 +41,8 @@ _re_newline = re.compile(r"\r\n|[\n\r]")
 def highlight_source_at_location(source: "Source", location: "SourceLocation") -> str:
     """Highlight source at given location.
 
-    This renders a helpful description of the location of the error in the
-    GraphQL Source document.
+    This renders a helpful description of the location of the error in the GraphQL
+    Source document.
     """
     first_line_column_offset = source.location_offset.column - 1
     body = " " * first_line_column_offset + source.body

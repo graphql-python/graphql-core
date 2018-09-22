@@ -40,9 +40,9 @@ def get_variable_values(
 ) -> CoercedVariableValues:
     """Get coerced variable values based on provided definitions.
 
-    Prepares a dict of variable values of the correct type based on the
-    provided variable definitions and arbitrary input. If the input cannot be
-    parsed to match the variable definitions, a GraphQLError will be thrown.
+    Prepares a dict of variable values of the correct type based on the provided
+    variable definitions and arbitrary input. If the input cannot be parsed to match
+    the variable definitions, a GraphQLError will be thrown.
     """
     errors: List[GraphQLError] = []
     coerced_values: Dict[str, Any] = {}
@@ -65,8 +65,8 @@ def get_variable_values(
             has_value = var_name in inputs
             value = inputs[var_name] if has_value else INVALID
             if not has_value and var_def_node.default_value:
-                # If no value was provided to a variable with a default value,
-                # use the default value
+                # If no value was provided to a variable with a default value, use the
+                # default value.
                 coerced_values[var_name] = value_from_ast(
                     var_def_node.default_value, var_type
                 )
@@ -83,12 +83,12 @@ def get_variable_values(
                 )
             elif has_value:
                 if value is None:
-                    # If the explicit value `None` was provided, an entry in
-                    # the coerced values must exist as the value `None`.
+                    # If the explicit value `None` was provided, an entry in the
+                    # coerced values must exist as the value `None`.
                     coerced_values[var_name] = None
                 else:
-                    # Otherwise, a non-null value was provided, coerce it to
-                    # the expected type or report an error if coercion fails.
+                    # Otherwise, a non-null value was provided, coerce it to the
+                    # expected type or report an error if coercion fails.
                     coerced = coerce_value(value, var_type, var_def_node)
                     coercion_errors = coerced.errors
                     if coercion_errors:
@@ -114,8 +114,8 @@ def get_argument_values(
 ) -> Dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
 
-    Prepares an dict of argument values given a list of argument definitions
-    and list of argument AST nodes.
+    Prepares an dict of argument values given a list of argument definitions and list
+    of argument AST nodes.
     """
     coerced_values: Dict[str, Any] = {}
     arg_defs = type_def.args
@@ -135,12 +135,12 @@ def get_argument_values(
             has_value = argument_node is not None
             is_null = has_value and isinstance(argument_node.value, NullValueNode)
         if not has_value and arg_def.default_value is not INVALID:
-            # If no argument was provided where the definition has a default
-            # value, use the default value.
+            # If no argument was provided where the definition has a default value,
+            # use the default value.
             coerced_values[name] = arg_def.default_value
         elif (not has_value or is_null) and is_non_null_type(arg_type):
-            # If no argument or a null value was provided to an argument with a
-            # non-null type (required), produce a field error.
+            # If no argument or a null value was provided to an argument with a non-null
+            # type (required), produce a field error.
             if is_null:
                 raise GraphQLError(
                     f"Argument '{name}' of non-null type"
@@ -163,23 +163,22 @@ def get_argument_values(
                 )
         elif has_value:
             if isinstance(argument_node.value, NullValueNode):
-                # If the explicit value `None` was provided, an entry in the
-                # coerced values must exist as the value `None`.
+                # If the explicit value `None` was provided, an entry in the coerced
+                # values must exist as the value `None`.
                 coerced_values[name] = None
             elif isinstance(argument_node.value, VariableNode):
                 variable_name = argument_node.value.name.value
-                # Note: This Does no further checking that this variable is
-                # correct. This assumes that this query has been validated and
-                # the variable usage here is of the correct type.
+                # Note: This Does no further checking that this variable is correct.
+                # This assumes that this query has been validated and the variable
+                # usage here is of the correct type.
                 coerced_values[name] = variable_values[variable_name]
             else:
                 value_node = argument_node.value
                 coerced_value = value_from_ast(value_node, arg_type, variable_values)
                 if coerced_value is INVALID:
-                    # Note: values_of_correct_type validation should catch
-                    # this before execution. This is a runtime check to
-                    # ensure execution does not continue with an invalid
-                    # argument value.
+                    # Note: `values_of_correct_type` validation should catch this before
+                    # execution. This is a runtime check to ensure execution does not
+                    # continue with an invalid argument value.
                     raise GraphQLError(
                         f"Argument '{name}'"
                         f" has invalid value {print_ast(value_node)}.",
@@ -205,9 +204,8 @@ def get_directive_values(
 ) -> Optional[Dict[str, Any]]:
     """Get coerced argument values based on provided nodes.
 
-    Prepares a dict of argument values given a directive definition and
-    an AST node which may contain directives. Optionally also accepts a
-    dict of variable values.
+    Prepares a dict of argument values given a directive definition and an AST node
+    which may contain directives. Optionally also accepts a dict of variable values.
 
     If the directive does not exist on the node, returns None.
     """

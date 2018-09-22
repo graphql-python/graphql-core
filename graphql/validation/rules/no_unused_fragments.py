@@ -14,9 +14,8 @@ def unused_fragment_message(frag_name: str) -> str:
 class NoUnusedFragmentsRule(ValidationRule):
     """No unused fragments
 
-    A GraphQL document is only valid if all fragment definitions are
-    spread within operations, or spread within other fragments spread
-    within operations.
+    A GraphQL document is only valid if all fragment definitions are spread within
+    operations, or spread within other fragments spread within operations.
     """
 
     def __init__(self, context: ValidationContext) -> None:

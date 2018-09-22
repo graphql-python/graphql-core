@@ -36,8 +36,8 @@ _re_integer_string = re.compile("^-?(0|[1-9][0-9]*)$")
 def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     """Produce a GraphQL Value AST given a Python value.
 
-    A GraphQL type must be provided, which will be used to interpret different
-    Python values.
+    A GraphQL type must be provided, which will be used to interpret different Python
+    values.
 
     | JSON Value    | GraphQL Value        |
     | ------------- | -------------------- |
@@ -65,8 +65,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     if is_invalid(value):
         return None
 
-    # Convert Python list to GraphQL list. If the GraphQLType is a list, but
-    # the value is not a list, convert the value using the list's item type.
+    # Convert Python list to GraphQL list. If the GraphQLType is a list, but the value
+    # is not a list, convert the value using the list's item type.
     if is_list_type(type_):
         type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
@@ -77,8 +77,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
             return ListValueNode(values=value_nodes)
         return ast_from_value(value, item_type)  # type: ignore
 
-    # Populate the fields of the input object by creating ASTs from each value
-    # in the Python dict according to the fields in the input type.
+    # Populate the fields of the input object by creating ASTs from each value in the
+    # Python dict according to the fields in the input type.
     if is_input_object_type(type_):
         if value is None or not isinstance(value, Mapping):
             return None
@@ -97,8 +97,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         return ObjectValueNode(fields=field_nodes)
 
     if is_scalar_type(type_) or is_enum_type(type_):
-        # Since value is an internally represented value, it must be serialized
-        # to an externally represented value before converting into an AST.
+        # Since value is an internally represented value, it must be serialized to an
+        # externally represented value before converting into an AST.
         serialized = type_.serialize(value)  # type: ignore
         if is_nullish(serialized):
             return None

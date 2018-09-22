@@ -22,9 +22,9 @@ from graphql.utilities import build_ast_schema, build_schema, print_schema
 def cycle_output(body: str) -> str:
     """Full cycle test.
 
-    This function does a full cycle of going from a string with the contents of
-    the DSL, parsed in a schema AST, materializing that schema AST into an in-
-    memory GraphQLSchema, and then finally printing that GraphQL into the DSL.
+    This function does a full cycle of going from a string with the contents of the DSL,
+    parsed in a schema AST, materializing that schema AST into an in-memory
+    GraphQLSchema, and then finally printing that GraphQL into the DSL.
     """
     ast = parse(body)
     schema = build_ast_schema(ast)
@@ -663,41 +663,41 @@ def describe_schema_builder():
         schema_ast = parse(
             dedent(
                 """
-            schema {
-              query: Query
-            }
+                schema {
+                  query: Query
+                }
 
-            type Query
-            {
-              testField(testArg: TestInput): TestUnion
-            }
+                type Query
+                {
+                  testField(testArg: TestInput): TestUnion
+                }
 
-            input TestInput
-            {
-              testInputField: TestEnum
-            }
+                input TestInput
+                {
+                  testInputField: TestEnum
+                }
 
-            enum TestEnum
-            {
-              TEST_VALUE
-            }
+                enum TestEnum
+                {
+                  TEST_VALUE
+                }
 
-            union TestUnion = TestType
+                union TestUnion = TestType
 
-            interface TestInterface
-            {
-              interfaceField: String
-            }
+                interface TestInterface
+                {
+                  interfaceField: String
+                }
 
-            type TestType implements TestInterface
-            {
-              interfaceField: String
-            }
+                type TestType implements TestInterface
+                {
+                  interfaceField: String
+                }
 
-            scalar TestScalar
+                scalar TestScalar
 
-            directive @test(arg: TestScalar) on FIELD
-            """
+                directive @test(arg: TestScalar) on FIELD
+                """
             )
         )
         schema = build_ast_schema(schema_ast)
@@ -733,29 +733,29 @@ def describe_schema_builder():
         assert print_ast(test_field.ast_node) == (
             "testField(testArg: TestInput): TestUnion"
         )
-        assert print_ast(test_field.args["testArg"].ast_node) == ("testArg: TestInput")
+        assert print_ast(test_field.args["testArg"].ast_node) == "testArg: TestInput"
         assert print_ast(test_input.fields["testInputField"].ast_node) == (
             "testInputField: TestEnum"
         )
-        assert print_ast(test_enum.values["TEST_VALUE"].ast_node) == ("TEST_VALUE")
+        assert print_ast(test_enum.values["TEST_VALUE"].ast_node) == "TEST_VALUE"
         assert print_ast(test_interface.fields["interfaceField"].ast_node) == (
             "interfaceField: String"
         )
-        assert print_ast(test_directive.args["arg"].ast_node) == ("arg: TestScalar")
+        assert print_ast(test_directive.args["arg"].ast_node) == "arg: TestScalar"
 
     def root_operation_type_with_custom_names():
         schema = build_schema(
             dedent(
                 """
-            schema {
-              query: SomeQuery
-              mutation: SomeMutation
-              subscription: SomeSubscription
-            }
-            type SomeQuery { str: String }
-            type SomeMutation { str: String }
-            type SomeSubscription { str: String }
-        """
+                schema {
+                  query: SomeQuery
+                  mutation: SomeMutation
+                  subscription: SomeSubscription
+                }
+                type SomeQuery { str: String }
+                type SomeMutation { str: String }
+                type SomeSubscription { str: String }
+                """
             )
         )
 
@@ -767,10 +767,10 @@ def describe_schema_builder():
         schema = build_schema(
             dedent(
                 """
-            type Query { str: String }
-            type Mutation { str: String }
-            type Subscription { str: String }
-        """
+                type Query { str: String }
+                type Mutation { str: String }
+                type Subscription { str: String }
+                """
             )
         )
 
@@ -782,11 +782,11 @@ def describe_schema_builder():
         schema = build_schema(
             dedent(
                 """
-            # Invalid schema, because it is missing query root type
-            type Mutation {
-              str: String
-            }
-            """
+                # Invalid schema, because it is missing query root type
+                type Mutation {
+                  str: String
+                }
+                """
             )
         )
         errors = validate_schema(schema)
@@ -990,7 +990,7 @@ def describe_failures():
         with raises(TypeError) as exc_info:
             build_ast_schema(doc)
         msg = str(exc_info.value)
-        assert msg == ("Specified subscription type 'Awesome' not found in document.")
+        assert msg == "Specified subscription type 'Awesome' not found in document."
 
     def does_not_consider_directive_names():
         body = dedent(

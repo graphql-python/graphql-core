@@ -67,7 +67,7 @@ def describe_ast_from_value():
         with raises(TypeError) as exc_info:
             assert ast_from_value(1e40, GraphQLInt)
         msg = str(exc_info.value)
-        assert msg == ("Int cannot represent non 32-bit signed integer value: 1e+40")
+        assert msg == "Int cannot represent non 32-bit signed integer value: 1e+40"
 
     def converts_float_values_to_float_asts():
         # luckily in Python we can discern between float and int

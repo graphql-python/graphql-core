@@ -62,8 +62,8 @@ def unknown_field_message(type_name: str, field_name: str, message: str = None) 
 class ValuesOfCorrectTypeRule(ValidationRule):
     """Value literals of correct type
 
-    A GraphQL document is only valid if all value literals are of the type
-    expected at their position.
+    A GraphQL document is only valid if all value literals are of the type expected at
+    their position.
     """
 
     def enter_null_value(self, node: NullValueNode, *_args):
@@ -74,8 +74,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
 
     def enter_list_value(self, node: ListValueNode, *_args):
-        # Note: TypeInfo will traverse into a list's item type, so look to the
-        # parent input type to check if it is a list.
+        # Note: TypeInfo will traverse into a list's item type, so look to the parent
+        # input type to check if it is a list.
         type_ = get_nullable_type(self.context.get_parent_input_type())
         if not is_list_type(type_):
             self.is_valid_scalar(node)
@@ -146,8 +146,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     def is_valid_scalar(self, node: ValueNode) -> None:
         """Check whether this is a valid scalar.
 
-        Any value literal may be a valid representation of a Scalar, depending
-        on that scalar type.
+        Any value literal may be a valid representation of a Scalar, depending on that
+        scalar type.
         """
         # Report any error at the full type expected by the location.
         location_type = self.context.get_input_type()
@@ -169,8 +169,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
             return
 
-        # Scalars determine if a literal value is valid via parse_literal()
-        # which may throw or return an invalid value to indicate failure.
+        # Scalars determine if a literal value is valid via `parse_literal()` which may
+        # throw or return an invalid value to indicate failure.
         type_ = cast(GraphQLScalarType, type_)
         try:
             parse_result = type_.parse_literal(node)

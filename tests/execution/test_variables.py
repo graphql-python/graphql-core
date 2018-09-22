@@ -897,7 +897,7 @@ def describe_execute_handles_inputs():
                 {"fieldWithDefaultArgumentValue": None},
                 [
                     {
-                        "message": "Argument 'input' has invalid value" " WRONG_TYPE.",
+                        "message": "Argument 'input' has invalid value WRONG_TYPE.",
                         "locations": [(3, 56)],
                         "path": ["fieldWithDefaultArgumentValue"],
                     }

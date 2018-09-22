@@ -86,7 +86,7 @@ def describe_get_operation_root_type():
         assert isinstance(operation, OperationDefinitionNode)
         with raises(GraphQLError) as exc_info:
             get_operation_root_type(test_schema, operation)
-        assert exc_info.value.message == ("Schema is not configured for mutations.")
+        assert exc_info.value.message == "Schema is not configured for mutations."
 
     def throws_when_subscription_type_not_defined_in_schema():
         test_schema = GraphQLSchema()
@@ -95,7 +95,7 @@ def describe_get_operation_root_type():
         assert isinstance(operation, OperationDefinitionNode)
         with raises(GraphQLError) as exc_info:
             get_operation_root_type(test_schema, operation)
-        assert exc_info.value.message == ("Schema is not configured for subscriptions.")
+        assert exc_info.value.message == "Schema is not configured for subscriptions."
 
     def throws_when_operation_not_a_valid_operation_kind():
         test_schema = GraphQLSchema()

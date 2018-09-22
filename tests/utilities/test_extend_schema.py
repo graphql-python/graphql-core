@@ -1047,7 +1047,7 @@ def describe_extend_schema():
         with raises(GraphQLError) as exc_info:
             extend_schema(extended_schema, replacement_ast)
         assert str(exc_info.value).startswith(
-            "Directive 'meow' already exists in the schema." " It cannot be redefined."
+            "Directive 'meow' already exists in the schema. It cannot be redefined."
         )
 
     def does_not_allow_replacing_an_existing_type():

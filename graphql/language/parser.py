@@ -76,8 +76,8 @@ def parse(
     Throws GraphQLError if a syntax error is encountered.
 
     By default, the parser creates AST nodes that know the location in the source that
-    they correspond to. The `no_location` option disables that behavior for
-    performance or testing.
+    they correspond to. The `no_location` option disables that behavior for performance
+    or testing.
 
     Experimental features:
 
@@ -378,8 +378,8 @@ def parse_fragment_definition(lexer: Lexer) -> FragmentDefinitionNode:
     """FragmentDefinition"""
     start = lexer.token
     expect_keyword(lexer, "fragment")
-    # Experimental support for defining variables within fragments changes
-    # the grammar of FragmentDefinition
+    # Experimental support for defining variables within fragments changes the grammar
+    # of FragmentDefinition
     if lexer.experimental_fragment_variables:
         return FragmentDefinitionNode(
             name=parse_fragment_name(lexer),
@@ -1055,8 +1055,7 @@ def parse_directive_location(lexer: Lexer) -> NameNode:
 def loc(lexer: Lexer, start_token: Token) -> Optional[Location]:
     """Return a location object.
 
-    Used to identify the place in the source that created
-    a given parsed object.
+    Used to identify the place in the source that created a given parsed object.
     """
     if not lexer.no_location:
         end_token = lexer.last_token
@@ -1075,8 +1074,8 @@ def peek(lexer: Lexer, kind: TokenKind):
 def skip(lexer: Lexer, kind: TokenKind) -> bool:
     """Conditionally skip the next token.
 
-    If the next token is of the given kind, return true after advancing
-    the lexer. Otherwise, do not change the parser state and return false.
+    If the next token is of the given kind, return true after advancing the lexer.
+    Otherwise, do not change the parser state and return false.
     """
     match = lexer.token.kind == kind
     if match:
@@ -1087,8 +1086,8 @@ def skip(lexer: Lexer, kind: TokenKind) -> bool:
 def expect(lexer: Lexer, kind: TokenKind) -> Token:
     """Check kind of the next token.
 
-    If the next token is of the given kind, return that token after advancing
-    the lexer. Otherwise, do not change the parser state and throw an error.
+    If the next token is of the given kind, return that token after advancing the lexer.
+    Otherwise, do not change the parser state and throw an error.
     """
     token = lexer.token
     if token.kind == kind:
@@ -1102,9 +1101,8 @@ def expect(lexer: Lexer, kind: TokenKind) -> Token:
 def expect_keyword(lexer: Lexer, value: str) -> Token:
     """Check next token for given keyword
 
-    If the next token is a keyword with the given value, return that token
-    after advancing the lexer. Otherwise, do not change the parser state and
-    return false.
+    If the next token is a keyword with the given value, return that token after
+    advancing the lexer. Otherwise, do not change the parser state and return False.
     """
     token = lexer.token
     if token.kind == TokenKind.NAME and token.value == value:
@@ -1130,9 +1128,8 @@ def any_nodes(
     """Fetch any matching nodes, possibly none.
 
     Returns a possibly empty list of parse nodes, determined by the `parse_fn`.
-    This list begins with a lex token of `open_kind` and ends with a lex token
-    of `close_kind`. Advances the parser to the next lex token after the
-    closing token.
+    This list begins with a lex token of `open_kind` and ends with a lex token of
+    `close_kind`. Advances the parser to the next lex token after the closing token.
     """
     expect(lexer, open_kind)
     nodes: List[Node] = []
@@ -1151,9 +1148,8 @@ def many_nodes(
     """Fetch matching nodes, at least one.
 
     Returns a non-empty list of parse nodes, determined by the `parse_fn`.
-    This list begins with a lex token of `open_kind` and ends with a lex token
-    of `close_kind`. Advances the parser to the next lex token after the
-    closing token.
+    This list begins with a lex token of `open_kind` and ends with a lex token of
+    `close_kind`. Advances the parser to the next lex token after the closing token.
     """
     expect(lexer, open_kind)
     nodes = [parse_fn(lexer)]

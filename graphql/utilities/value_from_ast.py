@@ -34,8 +34,8 @@ def value_from_ast(
 ) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 
-    A GraphQL type must be provided, which will be used to interpret different
-    GraphQL Value literals.
+    A GraphQL type must be provided, which will be used to interpret different GraphQL
+    Value literals.
 
     Returns `INVALID` when the value could not be validly coerced according
     to the provided type.
@@ -75,8 +75,8 @@ def value_from_ast(
         if variable_value is None and is_non_null_type(type_):
             return INVALID
         # Note: This does no further checking that this variable is correct.
-        # This assumes that this query has been validated and the variable
-        # usage here is of the correct type.
+        # This assumes that this query has been validated and the variable usage here
+        # is of the correct type.
         return variable_value
 
     if is_list_type(type_):
@@ -87,9 +87,8 @@ def value_from_ast(
             append_value = coerced_values.append
             for item_node in value_node.values:
                 if is_missing_variable(item_node, variables):
-                    # If an array contains a missing variable, it is either
-                    # coerced to None or if the item type is non-null, it
-                    # is considered invalid.
+                    # If an array contains a missing variable, it is either coerced to
+                    # None or if the item type is non-null, it is considered invalid.
                     if is_non_null_type(item_type):
                         return INVALID
                     append_value(None)
@@ -135,9 +134,8 @@ def value_from_ast(
         return enum_value.value
 
     if is_scalar_type(type_):
-        # Scalars fulfill parsing a literal value via parse_literal().
-        # Invalid values represent a failure to parse correctly, in which case
-        # INVALID is returned.
+        # Scalars fulfill parsing a literal value via `parse_literal()`. Invalid values
+        # represent a failure to parse correctly, in which case INVALID is returned.
         type_ = cast(GraphQLScalarType, type_)
         try:
             if variables:
@@ -154,7 +152,7 @@ def value_from_ast(
 def is_missing_variable(
     value_node: ValueNode, variables: Dict[str, Any] = None
 ) -> bool:
-    """Check if value_node is a variable not defined in the variables dict."""
+    """Check if `value_node` is a variable not defined in the `variables` dict."""
     return isinstance(value_node, VariableNode) and (
         not variables or is_invalid(variables.get(value_node.name.value, INVALID))
     )

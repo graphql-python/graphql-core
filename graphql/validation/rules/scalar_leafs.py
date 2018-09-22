@@ -28,8 +28,8 @@ def required_subselection_message(field_name: str, type_: str) -> str:
 class ScalarLeafsRule(ValidationRule):
     """Scalar leafs
 
-    A GraphQL document is valid only if all leaf fields (fields without
-    sub selections) are of scalar or enum types.
+    A GraphQL document is valid only if all leaf fields (fields without sub selections)
+    are of scalar or enum types.
     """
 
     def enter_field(self, node: FieldNode, *_args):

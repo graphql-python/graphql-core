@@ -32,16 +32,16 @@ def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
     positions = visitor.positions
     dep_graph = visitor.dep_graph
 
-    # For each operation, produce a new synthesized AST which includes only
-    # what is necessary for completing that operation.
+    # For each operation, produce a new synthesized AST which includes only what is
+    # necessary for completing that operation.
     separated_document_asts = {}
     for operation in operations:
         operation_name = op_name(operation)
         dependencies: Set[str] = set()
         collect_transitive_dependencies(dependencies, dep_graph, operation_name)
 
-        # The list of definition nodes to be included for this operation,
-        # sorted to retain the same order as the original document.
+        # The list of definition nodes to be included for this operation, sorted to
+        # retain the same order as the original document.
         definitions: List[ExecutableDefinitionNode] = [operation]
         for name in dependencies:
             definitions.append(fragments[name])

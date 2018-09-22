@@ -14,8 +14,8 @@ def non_input_type_on_var_message(variable_name: str, type_name: str) -> str:
 class VariablesAreInputTypesRule(ValidationRule):
     """Variables are input types
 
-    A GraphQL operation is only valid if all the variables it defines are of
-    input types (scalar, enum, or input object).
+    A GraphQL operation is only valid if all the variables it defines are of input types
+    (scalar, enum, or input object).
     """
 
     def enter_variable_definition(self, node: VariableDefinitionNode, *_args):

@@ -121,9 +121,8 @@ def execute(
     Returns an ExecutionResult (if all encountered resolvers are synchronous),
     or a coroutine object eventually yielding an ExecutionResult.
 
-    If the arguments to this function do not result in a legal execution
-    context, a GraphQLError will be thrown immediately explaining the invalid
-    input.
+    If the arguments to this function do not result in a legal execution context,
+    a GraphQLError will be thrown immediately explaining the invalid input.
     """
     # If arguments are missing or incorrect, throw an error.
     assert_valid_execution_arguments(schema, document, variable_values)
@@ -131,8 +130,8 @@ def execute(
     if execution_context_class is None:
         execution_context_class = ExecutionContext
 
-    # If a valid execution context cannot be created due to incorrect
-    #  arguments, a "Response" with only errors is returned.
+    # If a valid execution context cannot be created due to incorrect arguments,
+    # a "Response" with only errors is returned.
     exe_context = execution_context_class.build(
         schema,
         document,
@@ -148,13 +147,13 @@ def execute(
     if isinstance(exe_context, list):
         return ExecutionResult(data=None, errors=exe_context)
 
-    # Return a possible coroutine object that will eventually yield the data
-    # described by the "Response" section of the GraphQL specification.
+    # Return a possible coroutine object that will eventually yield the data described
+    # by the "Response" section of the GraphQL specification.
     #
-    # If errors are encountered while executing a GraphQL field, only that
-    # field and its descendants will be omitted, and sibling fields will still
-    # be executed. An execution which encounters errors will still result in a
-    # coroutine object that can be executed without errors.
+    # If errors are encountered while executing a GraphQL field, only that field and
+    # its descendants will be omitted, and sibling fields will still be executed. An
+    # execution which encounters errors will still result in a coroutine object that
+    # can be executed without errors.
 
     data = exe_context.execute_operation(exe_context.operation, root_value)
     return exe_context.build_response(data)
@@ -163,8 +162,8 @@ def execute(
 class ExecutionContext:
     """Data that must be available at all points during query execution.
 
-    Namely, schema of the type system that is currently executing,
-    and the fragments defined in the query document.
+    Namely, schema of the type system that is currently executing, and the fragments
+    defined in the query document.
     """
 
     schema: GraphQLSchema
@@ -216,8 +215,8 @@ class ExecutionContext:
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
         """Build an execution context
 
-        Constructs a ExecutionContext object from the arguments passed to
-        execute, which we will pass throughout the other execution methods.
+        Constructs a ExecutionContext object from the arguments passed to execute, which
+        we will pass throughout the other execution methods.
 
         Throws a GraphQLError if a valid execution context cannot be created.
         """
@@ -300,8 +299,8 @@ class ExecutionContext:
     ) -> MaybeAwaitable[ExecutionResult]:
         """Build response.
 
-        Given a completed execution context and data, build the (data, errors)
-        response defined by the "Response" section of the GraphQL spec.
+        Given a completed execution context and data, build the (data, errors) response
+        defined by the "Response" section of the GraphQL spec.
         """
         if isawaitable(data):
 
@@ -313,8 +312,8 @@ class ExecutionContext:
         errors = self.errors
         if not errors:
             return ExecutionResult(data, None)
-        # sort the error list in order to make it deterministic,
-        # since we might have been using parallel execution
+        # Sort the error list in order to make it deterministic, since we might have
+        # been using parallel execution.
         errors.sort(key=lambda error: (error.locations, error.path, error.message))
         return ExecutionResult(data, errors)
 
@@ -330,9 +329,9 @@ class ExecutionContext:
 
         path = None
 
-        # Errors from sub-fields of a NonNull type may propagate to the top
-        # level, at which point we still log the error and null the parent
-        # field, which in this case is the entire response.
+        # Errors from sub-fields of a NonNull type may propagate to the top level, at
+        # which point we still log the error and null the parent field, which in this
+        # case is the entire response.
         #
         # Similar to complete_value_catching_error.
         try:
@@ -372,8 +371,7 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Dict[str, Any]]:
         """Execute the given fields serially.
 
-        Implements the "Evaluating selection sets" section of the spec
-        for "write" mode.
+        Implements the "Evaluating selection sets" section of the spec for "write" mode.
         """
         results: Dict[str, Any] = {}
         for response_name, field_nodes in fields.items():
@@ -421,8 +419,7 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Dict[str, Any]]:
         """Execute the given fields concurrently.
 
-        Implements the "Evaluating selection sets" section of the spec
-        for "read" mode.
+        Implements the "Evaluating selection sets" section of the spec for "read" mode.
         """
         results = {}
         awaitable_fields: List[str] = []
@@ -465,12 +462,12 @@ class ExecutionContext:
     ) -> Dict[str, List[FieldNode]]:
         """Collect fields.
 
-        Given a selection_set, adds all of the fields in that selection to
-        the passed in map of fields, and returns it at the end.
+        Given a selection_set, adds all of the fields in that selection to the passed in
+        map of fields, and returns it at the end.
 
-        collect_fields requires the "runtime type" of an object. For a field
-        which returns an Interface or Union type, the "runtime type" will be
-        the actual Object type returned by that field.
+        collect_fields requires the "runtime type" of an object. For a field which
+        returns an Interface or Union type, the "runtime type" will be the actual
+        Object type returned by that field.
         """
         for selection in selection_set.selections:
             if isinstance(selection, FieldNode):
@@ -511,8 +508,8 @@ class ExecutionContext:
     ) -> bool:
         """Check if node should be included
 
-        Determines if a field should be included based on the @include and
-        @skip directives, where @skip has higher precedence than @include.
+        Determines if a field should be included based on the @include and @skip
+        directives, where @skip has higher precedence than @include.
         """
         skip = get_directive_values(GraphQLSkipDirective, node, self.variable_values)
         if skip and skip["if"]:
@@ -551,8 +548,8 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         path: ResponsePath,
     ) -> GraphQLResolveInfo:
-        # The resolve function's first argument is a collection of
-        # information about the current execution state.
+        # The resolve function's first argument is a collection of information about
+        # the current execution state.
         return GraphQLResolveInfo(
             field_nodes[0].name.value,
             field_nodes,
@@ -576,10 +573,9 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Any]:
         """Resolve the field on the given source object.
 
-        In particular, this figures out the value that the field returns
-        by calling its resolve function, then calls complete_value to await
-        coroutine objects, serialize scalars, or execute the sub-selection-set
-        for objects.
+        In particular, this figures out the value that the field returns by calling its
+        resolve function, then calls complete_value to await coroutine objects,
+        serialize scalars, or execute the sub-selection-set for objects.
         """
         field_node = field_nodes[0]
         field_name = field_node.name.value
@@ -595,8 +591,8 @@ class ExecutionContext:
 
         info = self.build_resolve_info(field_def, field_nodes, parent_type, path)
 
-        # Get the resolve function, regardless of if its result is normal
-        # or abrupt (error).
+        # Get the resolve function, regardless of if its result is normal or abrupt
+        # (error).
         result = self.resolve_field_value_or_error(
             field_def, field_nodes, resolve_fn, source, info
         )
@@ -614,12 +610,12 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
     ) -> Union[Exception, Any]:
         try:
-            # Build a dictionary of arguments from the field.arguments AST,
-            # using the variables scope to fulfill any variable references.
+            # Build a dictionary of arguments from the field.arguments AST, using the
+            # variables scope to fulfill any variable references.
             args = get_argument_values(field_def, field_nodes[0], self.variable_values)
 
-            # Note that contrary to the JavaScript implementation,
-            # we pass the context value as part of the resolve info.
+            # Note that contrary to the JavaScript implementation, we pass the context
+            # value as part of the resolve info.
             result = resolve_fn(source, info, **args)
             if isawaitable(result):
                 # noinspection PyShadowingNames
@@ -648,8 +644,8 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Any]:
         """Complete a value while catching an error.
 
-        This is a small wrapper around completeValue which detects and logs
-        errors in the execution context.
+        This is a small wrapper around completeValue which detects and logs errors in
+        the execution context.
         """
         try:
             if isawaitable(result):
@@ -692,12 +688,12 @@ class ExecutionContext:
             raw_error = GraphQLError(str(raw_error), original_error=raw_error)
         error = located_error(raw_error, field_nodes, response_path_as_list(path))
 
-        # If the field type is non-nullable, then it is resolved without any
-        # protection from errors, however it still properly locates the error.
+        # If the field type is non-nullable, then it is resolved without any protection
+        # from errors, however it still properly locates the error.
         if is_non_null_type(return_type):
             raise error
-        # Otherwise, error protection is applied, logging the error and
-        # resolving a null value for this field if one is encountered.
+        # Otherwise, error protection is applied, logging the error and resolving a
+        # null value for this field if one is encountered.
         self.errors.append(error)
         return None
 
@@ -711,32 +707,31 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Any]:
         """Complete a value.
 
-        Implements the instructions for completeValue as defined in the
-        "Field entries" section of the spec.
+        Implements the instructions for completeValue as defined in the "Field entries"
+        section of the spec.
 
-        If the field type is Non-Null, then this recursively completes the
-        value for the inner type. It throws a field error if that completion
-        returns null, as per the "Nullability" section of the spec.
+        If the field type is Non-Null, then this recursively completes the value for the
+        inner type. It throws a field error if that completion returns null, as per the
+        "Nullability" section of the spec.
 
-        If the field type is a List, then this recursively completes the value
-        for the inner type on each item in the list.
+        If the field type is a List, then this recursively completes the value for the
+        inner type on each item in the list.
 
-        If the field type is a Scalar or Enum, ensures the completed value is a
-        legal value of the type by calling the `serialize` method of GraphQL
-        type definition.
+        If the field type is a Scalar or Enum, ensures the completed value is a legal
+        value of the type by calling the `serialize` method of GraphQL type definition.
 
-        If the field is an abstract type, determine the runtime type of the
-        value and then complete based on that type
+        If the field is an abstract type, determine the runtime type of the value and
+        then complete based on that type.
 
-        Otherwise, the field type expects a sub-selection set, and will
-        complete the value by evaluating all sub-selections.
+        Otherwise, the field type expects a sub-selection set, and will complete the
+        value by evaluating all sub-selections.
         """
         # If result is an Exception, throw a located error.
         if isinstance(result, Exception):
             raise result
 
-        # If field type is NonNull, complete for inner type, and throw field
-        # error if result is null.
+        # If field type is NonNull, complete for inner type, and throw field error if
+        # result is null.
         if is_non_null_type(return_type):
             completed = self.complete_value(
                 cast(GraphQLNonNull, return_type).of_type,
@@ -762,13 +757,13 @@ class ExecutionContext:
                 cast(GraphQLList, return_type), field_nodes, info, path, result
             )
 
-        # If field type is a leaf type, Scalar or Enum, serialize to a valid
-        # value, returning null if serialization is not possible.
+        # If field type is a leaf type, Scalar or Enum, serialize to a valid value,
+        # returning null if serialization is not possible.
         if is_leaf_type(return_type):
             return self.complete_leaf_value(cast(GraphQLLeafType, return_type), result)
 
-        # If field type is an abstract type, Interface or Union, determine the
-        # runtime Object type and complete for that type.
+        # If field type is an abstract type, Interface or Union, determine the runtime
+        # Object type and complete for that type.
         if is_abstract_type(return_type):
             return self.complete_abstract_value(
                 cast(GraphQLAbstractType, return_type), field_nodes, info, path, result
@@ -793,8 +788,7 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Any]:
         """Complete a list value.
 
-        Complete a list value by completing each item in the list with the
-        inner type.
+        Complete a list value by completing each item in the list with the inner type.
         """
         if not isinstance(result, Iterable) or isinstance(result, str):
             raise TypeError(
@@ -802,17 +796,17 @@ class ExecutionContext:
                 f" {info.parent_type.name}.{info.field_name}."
             )
 
-        # This is specified as a simple map, however we're optimizing the path
-        # where the list contains no coroutine objects by avoiding creating
-        # another coroutine object.
+        # This is specified as a simple map, however we're optimizing the path where
+        # the list contains no coroutine objects by avoiding creating another coroutine
+        # object.
         item_type = return_type.of_type
         awaitable_indices: List[int] = []
         append_awaitable = awaitable_indices.append
         completed_results: List[Any] = []
         append_result = completed_results.append
         for index, item in enumerate(result):
-            # No need to modify the info object containing the path,
-            # since from here on it is not ever accessed by resolver functions.
+            # No need to modify the info object containing the path, since from here on
+            # it is not ever accessed by resolver functions.
             field_path = add_path(path, index)
             completed_item = self.complete_value_catching_error(
                 item_type, field_nodes, info, field_path, item
@@ -842,8 +836,8 @@ class ExecutionContext:
     def complete_leaf_value(return_type: GraphQLLeafType, result: Any) -> Any:
         """Complete a leaf value.
 
-        Complete a Scalar or Enum by serializing to a valid value, returning
-        null if serialization is not possible.
+        Complete a Scalar or Enum by serializing to a valid value, returning null if
+        serialization is not possible.
         """
         serialized_result = return_type.serialize(result)
         if is_invalid(serialized_result):
@@ -862,8 +856,8 @@ class ExecutionContext:
     ) -> MaybeAwaitable[Any]:
         """Complete an abstract value.
 
-        Complete a value of an abstract type by determining the runtime object
-        type of that value, then complete the value for that type.
+        Complete a value of an abstract type by determining the runtime object type of
+        that value, then complete the value for that type.
         """
         resolve_type = return_type.resolve_type
         runtime_type = (
@@ -946,9 +940,9 @@ class ExecutionContext:
         result: Any,
     ) -> MaybeAwaitable[Dict[str, Any]]:
         """Complete an Object value by executing all sub-selections."""
-        # If there is an is_type_of predicate function, call it with the
-        # current result. If is_type_of returns false, then raise an error
-        # rather than continuing execution.
+        # If there is an `is_type_of()` predicate function, call it with the current
+        # result. If `is_type_of()` returns False, then raise an error rather than
+        #  continuing execution.
         if return_type.is_type_of:
             is_type_of = return_type.is_type_of(result, info)
 
@@ -988,10 +982,10 @@ class ExecutionContext:
     ) -> Dict[str, List[FieldNode]]:
         """Collect subfields.
 
-        # A cached collection of relevant subfields with regard to the
-        # return type is kept in the execution context as _subfields_cache.
-        # This ensures the subfields are not repeatedly calculated,
-        # which saves overhead when resolving lists of values.
+        A cached collection of relevant subfields with regard to the return type is
+        kept in the execution context as `_subfields_cache`. This ensures the
+        subfields are not repeatedly calculated, which saves overhead when resolving
+        lists of values.
         """
         cache_key = return_type, tuple(field_nodes)
         sub_field_nodes = self._subfields_cache.get(cache_key)
@@ -1018,29 +1012,29 @@ def assert_valid_execution_arguments(
 ) -> None:
     """Check that the arguments are acceptable.
 
-    Essential assertions before executing to provide developer feedback for
-    improper use of the GraphQL library.
+    Essential assertions before executing to provide developer feedback for improper use
+    of the GraphQL library.
     """
     if not document:
         raise TypeError("Must provide document")
 
-    #  If the schema used for execution is invalid, throw an error.
+    # If the schema used for execution is invalid, throw an error.
     assert_valid_schema(schema)
 
     # Variables, if provided, must be a dictionary.
     if not (raw_variable_values is None or isinstance(raw_variable_values, dict)):
         raise TypeError(
-            "Variables must be provided as a dictionary where each property is"
-            " a variable value. Perhaps look to see if an unparsed JSON string"
-            " was provided."
+            "Variables must be provided as a dictionary where each property is a"
+            " variable value. Perhaps look to see if an unparsed JSON string was"
+            " provided."
         )
 
 
 def response_path_as_list(path: ResponsePath) -> List[Union[str, int]]:
     """Get response path as a list.
 
-    Given a ResponsePath (found in the `path` entry in the information provided
-    as the last argument to a field resolver), return a list of the path keys.
+    Given a ResponsePath (found in the `path` entry in the information provided as the
+    last argument to a field resolver), return a list of the path keys.
     """
     flattened: List[Union[str, int]] = []
     append = flattened.append
@@ -1054,8 +1048,7 @@ def response_path_as_list(path: ResponsePath) -> List[Union[str, int]]:
 def add_path(prev: Optional[ResponsePath], key: Union[str, int]) -> ResponsePath:
     """Add a key to a response path.
 
-    Given a ResponsePath and a key, return a new ResponsePath containing the
-    new key.
+    Given a ResponsePath and a key, return a new ResponsePath containing the new key.
     """
     return ResponsePath(prev, key)
 
@@ -1065,13 +1058,12 @@ def get_field_def(
 ) -> GraphQLField:
     """Get field definition.
 
-    This method looks up the field on the given type definition.
-    It has special casing for the two introspection fields, __schema
-    and __typename. __typename is special because it can always be
-    queried as a field, even in situations where no other fields
-    are allowed, like on a Union. __schema could get automatically
-    added to the query type, but that would require mutating type
-    definitions, which would cause issues.
+    This method looks up the field on the given type definition. It has special casing
+    for the two introspection fields, `__schema` and `__typename`. `__typename` is
+    special because it can always be queried as a field, even in situations where no
+    other fields are allowed, like on a Union. `__schema` could get automatically
+    added to the query type, but that would require mutating type definitions, which
+    would cause issues.
     """
     if field_name == "__schema" and schema.query_type == parent_type:
         return SchemaMetaFieldDef
@@ -1102,15 +1094,14 @@ def default_resolve_type_fn(
 ) -> MaybeAwaitable[Optional[Union[GraphQLObjectType, str]]]:
     """Default type resolver function.
 
-    If a resolveType function is not given, then a default resolve behavior is
-    used which attempts two strategies:
+    If a resolveType function is not given, then a default resolve behavior is used
+    which attempts two strategies:
 
-    First, See if the provided value has a `__typename` field defined, if so,
-    use that value as name of the resolved type.
+    First, See if the provided value has a `__typename` field defined, if so, use that
+    value as name of the resolved type.
 
-    Otherwise, test each possible type for the abstract type by calling
-    is_type_of for the object being coerced, returning the first type that
-    matches.
+    Otherwise, test each possible type for the abstract type by calling `is_type_of`
+    for the object being coerced, returning the first type that matches.
     """
 
     # First, look for `__typename`.
@@ -1150,15 +1141,15 @@ def default_resolve_type_fn(
 def default_field_resolver(source, info, **args):
     """Default field resolver.
 
-    If a resolve function is not given, then a default resolve behavior is used
-    which takes the property of the source object of the same name as the field
-    and returns it as the result, or if it's a function, returns the result
-    of calling that function while passing along args and context.
+    If a resolve function is not given, then a default resolve behavior is used which
+    takes the property of the source object of the same name as the field and returns
+    it as the result, or if it's a function, returns the result of calling that function
+    while passing along args and context.
 
-    For dictionaries, the field names are used as keys, for all other objects
-    they are used as attribute names.
+    For dictionaries, the field names are used as keys, for all other objects they are
+    used as attribute names.
     """
-    # ensure source is a value for which property access is acceptable.
+    # Ensure source is a value for which property access is acceptable.
     field_name = info.field_name
     value = (
         source.get(field_name)

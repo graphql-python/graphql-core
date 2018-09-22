@@ -56,9 +56,9 @@ class VariableUsageVisitor(Visitor):
 class ASTValidationContext:
     """Utility class providing a context for validation of an AST.
 
-    An instance of this class is passed as the context attribute to all
-    Validators, allowing access to commonly useful contextual information
-    from within a validation rule.
+    An instance of this class is passed as the context attribute to all Validators,
+    allowing access to commonly useful contextual information from within a validation
+    rule.
     """
 
     document: DocumentNode
@@ -75,9 +75,9 @@ class ASTValidationContext:
 class SDLValidationContext(ASTValidationContext):
     """Utility class providing a context for validation of an SDL ast.
 
-    An instance of this class is passed as the context attribute to all
-    Validators, allowing access to commonly useful contextual information
-    from within a validation rule.
+    An instance of this class is passed as the context attribute to all Validators,
+    allowing access to commonly useful contextual information from within a validation
+    rule.
     """
 
     schema: Optional[GraphQLSchema]
@@ -90,9 +90,9 @@ class SDLValidationContext(ASTValidationContext):
 class ValidationContext(ASTValidationContext):
     """Utility class providing a context for validation using a GraphQL schema.
 
-    An instance of this class is passed as the context attribute to all
-    Validators, allowing access to commonly useful contextual information
-    from within a validation rule.
+    An instance of this class is passed as the context attribute to all Validators,
+    allowing access to commonly useful contextual information from within a validation
+    rule.
     """
 
     schema: GraphQLSchema

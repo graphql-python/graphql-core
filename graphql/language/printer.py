@@ -43,8 +43,8 @@ class PrintAstVisitor(Visitor):
         name, op, selection_set = node.name, node.operation, node.selection_set
         var_defs = wrap("(", join(node.variable_definitions, ", "), ")")
         directives = join(node.directives, " ")
-        # Anonymous queries with no directives or variable definitions can use
-        # the query short form.
+        # Anonymous queries with no directives or variable definitions can use the
+        # query short form.
         return (
             join([op.value, join([name, var_defs]), directives, selection_set], " ")
             if (name or directives or var_defs or op != OperationType.QUERY)
@@ -93,8 +93,8 @@ class PrintAstVisitor(Visitor):
         )
 
     def leave_fragment_definition(self, node, *_args):
-        # Note: fragment variable definitions are experimental and may b
-        # changed or removed in the future.
+        # Note: fragment variable definitions are experimental and may be changed or
+        # removed in the future.
         return (
             f"fragment {node.name}"
             f"{wrap('(', join(node.variable_definitions, ', '), ')')}"
@@ -304,9 +304,9 @@ class PrintAstVisitor(Visitor):
 def print_block_string(value: str, is_description: bool = False) -> str:
     """Print a block string.
 
-    Prints a block string in the indented block form by adding a leading and
-    trailing blank line. However, if a block string starts with whitespace and
-    is a single-line, adding a leading blank line would strip that whitespace.
+    Prints a block string in the indented block form by adding a leading and trailing
+    blank line. However, if a block string starts with whitespace and is a single-line,
+    adding a leading blank line would strip that whitespace.
     """
     escaped = value.replace('"""', '\\"""')
     if value.startswith((" ", "\t")) and "\n" not in value:
@@ -322,8 +322,8 @@ def print_block_string(value: str, is_description: bool = False) -> str:
 def join(strings: Optional[Sequence[str]], separator: str = "") -> str:
     """Join strings in a given sequence.
 
-    Return an empty string if it is None or empty, otherwise
-    join all items together separated by separator if provided.
+    Return an empty string if it is None or empty, otherwise join all items together
+    separated by separator if provided.
     """
     return separator.join(s for s in strings if s) if strings else ""
 
@@ -331,8 +331,8 @@ def join(strings: Optional[Sequence[str]], separator: str = "") -> str:
 def block(strings: Sequence[str]) -> str:
     """Return strings inside a block.
 
-    Given a sequence of strings, return a string with each item on its own
-    line, wrapped in an indented "{ }" block.
+    Given a sequence of strings, return a string with each item on its own line, wrapped
+    in an indented "{ }" block.
     """
     return "{\n" + indent(join(strings, "\n")) + "\n}" if strings else ""
 
@@ -340,8 +340,8 @@ def block(strings: Sequence[str]) -> str:
 def wrap(start: str, string: str, end: str = "") -> str:
     """Wrap string inside other strings at start and end.
 
-    If the string is not None or empty, then wrap with start and end,
-    otherwise return an empty string.
+    If the string is not None or empty, then wrap with start and end, otherwise return
+    an empty string.
     """
     return f"{start}{string}{end}" if string else ""
 
@@ -349,7 +349,7 @@ def wrap(start: str, string: str, end: str = "") -> str:
 def indent(string):
     """Indent string with two spaces.
 
-    If the string is not None or empty, add two spaces at the beginning
-    of every line inside the string.
+    If the string is not None or empty, add two spaces at the beginning of every line
+    inside the string.
     """
     return "  " + string.replace("\n", "\n  ") if string else string

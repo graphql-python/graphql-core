@@ -58,23 +58,20 @@ def reason_message(reason: "ConflictReasonMessage") -> str:
 class OverlappingFieldsCanBeMergedRule(ValidationRule):
     """Overlapping fields can be merged
 
-    A selection set is only valid if all fields (including spreading any
-    fragments) either correspond to distinct response names or can be merged
-    without ambiguity.
+    A selection set is only valid if all fields (including spreading any fragments)
+    either correspond to distinct response names or can be merged without ambiguity.
     """
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        # A memoization for when two fragments are compared "between" each
-        # other for conflicts.
-        # Two fragments may be compared many times, so memoizing this can
+        # A memoization for when two fragments are compared "between" each other for
+        # conflicts. Two fragments may be compared many times, so memoizing this can
         # dramatically improve the performance of this validator.
         self.compared_fragment_pairs = PairSet()
 
-        # A cache for the "field map" and list of fragment names found in any
-        # given selection set.
-        # Selection sets may be asked for this information multiple times,
-        # so this improves the performance of this validator.
+        # A cache for the "field map" and list of fragment names found in any given
+        # selection set. Selection sets may be asked for this information multiple
+        # times, so this improves the performance of this validator.
         self.cached_fields_and_fragment_names: Dict = {}
 
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args):
@@ -169,8 +166,8 @@ def find_conflicts_within_selection_set(
 ) -> List[Conflict]:
     """Find conflicts within selection set.
 
-    Find all conflicts found "within" a selection set, including those found
-    via spreading in fragments.
+    Find all conflicts found "within" a selection set, including those found via
+    spreading in fragments.
 
     Called when visiting each SelectionSet in the GraphQL Document.
     """
@@ -192,8 +189,8 @@ def find_conflicts_within_selection_set(
 
     if fragment_names:
         compared_fragments: Set[str] = set()
-        # (B) Then collect conflicts between these fields and those represented
-        # by each spread fragment name found.
+        # (B) Then collect conflicts between these fields and those represented by each
+        # spread fragment name found.
         for i, fragment_name in enumerate(fragment_names):
             collect_conflicts_between_fields_and_fragment(
                 context,
@@ -205,10 +202,10 @@ def find_conflicts_within_selection_set(
                 field_map,
                 fragment_name,
             )
-            # (C) Then compare this fragment with all other fragments found in
-            # this selection set to collect conflicts within fragments spread
-            # together. This compares each item in the list of fragment names
-            # to every other item in that same list (except for itself).
+            # (C) Then compare this fragment with all other fragments found in this
+            # selection set to collect conflicts within fragments spread together.
+            # This compares each item in the list of fragment names to every other
+            # item in that same list (except for itself).
             for other_fragment_name in fragment_names[i + 1 :]:
                 collect_conflicts_between_fragments(
                     context,
@@ -235,8 +232,8 @@ def collect_conflicts_between_fields_and_fragment(
 ) -> None:
     """Collect conflicts between fields and fragment.
 
-    Collect all conflicts found between a set of fields and a fragment
-    reference including via spreading in any nested fragments.
+    Collect all conflicts found between a set of fields and a fragment reference
+    including via spreading in any nested fragments.
     """
     # Memoize so a fragment is not compared for conflicts more than once.
     if fragment_name in compared_fragments:
@@ -255,8 +252,8 @@ def collect_conflicts_between_fields_and_fragment(
     if field_map is field_map2:
         return
 
-    # (D) First collect any conflicts between the provided collection of fields
-    # and the collection of fields represented by the given fragment.
+    # (D) First collect any conflicts between the provided collection of fields and the
+    # collection of fields represented by the given fragment.
     collect_conflicts_between(
         context,
         conflicts,
@@ -267,8 +264,8 @@ def collect_conflicts_between_fields_and_fragment(
         field_map2,
     )
 
-    # (E) Then collect any conflicts between the provided collection of fields
-    # and any fragment names found in the given fragment.
+    # (E) Then collect any conflicts between the provided collection of fields and any
+    # fragment names found in the given fragment.
     for fragment_name2 in fragment_names2:
         collect_conflicts_between_fields_and_fragment(
             context,
@@ -293,8 +290,8 @@ def collect_conflicts_between_fragments(
 ) -> None:
     """Collect conflicts between fragments.
 
-    Collect all conflicts found between two fragments, including via spreading
-    in any nested fragments
+    Collect all conflicts found between two fragments, including via spreading in any
+    nested fragments.
     """
     # No need to compare a fragment to itself.
     if fragment_name1 == fragment_name2:
@@ -332,8 +329,8 @@ def collect_conflicts_between_fragments(
         field_map2,
     )
 
-    # (G) Then collect conflicts between the first fragment and any nested
-    # fragments spread in the second fragment.
+    # (G) Then collect conflicts between the first fragment and any nested fragments
+    # spread in the second fragment.
     for nested_fragment_name2 in fragment_names2:
         collect_conflicts_between_fragments(
             context,
@@ -345,8 +342,8 @@ def collect_conflicts_between_fragments(
             nested_fragment_name2,
         )
 
-    # (G) Then collect conflicts between the second fragment and any nested
-    # fragments spread in the first fragment.
+    # (G) Then collect conflicts between the second fragment and any nested fragments
+    # spread in the first fragment.
     for nested_fragment_name1 in fragment_names1:
         collect_conflicts_between_fragments(
             context,
@@ -371,9 +368,9 @@ def find_conflicts_between_sub_selection_sets(
 ) -> List[Conflict]:
     """Find conflicts between sub selection sets.
 
-    Find all conflicts found between two selection sets, including those found
-    via spreading in fragments. Called when determining if conflicts exist
-    between the sub-fields of two overlapping fields.
+    Find all conflicts found between two selection sets, including those found via
+    spreading in fragments. Called when determining if conflicts exist between the
+    sub-fields of two overlapping fields.
     """
     conflicts: List[Conflict] = []
 
@@ -395,8 +392,8 @@ def find_conflicts_between_sub_selection_sets(
         field_map2,
     )
 
-    # (I) Then collect conflicts between the first collection of fields and
-    # those referenced by each fragment name associated with the second.
+    # (I) Then collect conflicts between the first collection of fields and those
+    # referenced by each fragment name associated with the second.
     if fragment_names2:
         compared_fragments: Set[str] = set()
         for fragment_name2 in fragment_names2:
@@ -411,8 +408,8 @@ def find_conflicts_between_sub_selection_sets(
                 fragment_name2,
             )
 
-    # (I) Then collect conflicts between the second collection of fields and
-    # those referenced by each fragment name associated with the first.
+    # (I) Then collect conflicts between the second collection of fields and those
+    # referenced by each fragment name associated with the first.
     if fragment_names1:
         compared_fragments = set()
         for fragment_name1 in fragment_names1:
@@ -427,9 +424,9 @@ def find_conflicts_between_sub_selection_sets(
                 fragment_name1,
             )
 
-    # (J) Also collect conflicts between any fragment names by the first and
-    # fragment names by the second. This compares each item in the first set of
-    # names to each item in the second set of names.
+    # (J) Also collect conflicts between any fragment names by the first and fragment
+    # names by the second. This compares each item in the first set of names to each
+    # item in the second set of names.
     for fragment_name1 in fragment_names1:
         for fragment_name2 in fragment_names2:
             collect_conflicts_between_fragments(
@@ -453,14 +450,14 @@ def collect_conflicts_within(
     field_map: NodeAndDefCollection,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
-    # A field map is a keyed collection, where each key represents a response
-    # name and the value at that key is a list of all fields which provide that
-    # response name. For every response name, if there are multiple fields,
-    # they must be compared to find a potential conflict.
+    # A field map is a keyed collection, where each key represents a response name and
+    # the value at that key is a list of all fields which provide that response name.
+    # For every response name, if there are multiple fields, they must be compared to
+    # find a potential conflict.
     for response_name, fields in field_map.items():
-        # This compares every field in the list to every other field in this
-        # list (except to itself). If the list only has one item, nothing needs
-        # to be compared.
+        # This compares every field in the list to every other field in this list
+        # (except to itself). If the list only has one item, nothing needs to be
+        # compared.
         if len(fields) > 1:
             for i, field in enumerate(fields):
                 for other_field in fields[i + 1 :]:
@@ -489,16 +486,16 @@ def collect_conflicts_between(
 ) -> None:
     """Collect all Conflicts between two collections of fields.
 
-    This is similar to, but different from the `collectConflictsWithin`
-    function above. This check assumes that `collectConflictsWithin` has
-    already been called on each provided collection of fields. This is true
-    because this validator traverses each individual selection set.
+    This is similar to, but different from the `collectConflictsWithin` function above.
+    This check assumes that `collectConflictsWithin` has already been called on each
+    provided collection of fields. This is true because this validator traverses each
+    individual selection set.
     """
-    # A field map is a keyed collection, where each key represents a response
-    # name and the value at that key is a list of all fields which provide that
-    # response name. For any response name which appears in both provided field
-    # maps, each field from the first field map must be compared to every field
-    # in the second field map to find potential conflicts.
+    # A field map is a keyed collection, where each key represents a response name and
+    # the value at that key is a list of all fields which provide that response name.
+    # For any response name which appears in both provided field maps, each field from
+    # the first field map must be compared to every field in the second field map to
+    # find potential conflicts.
     for response_name, fields1 in field_map1.items():
         fields2 = field_map2.get(response_name)
         if fields2:
@@ -528,20 +525,18 @@ def find_conflict(
 ) -> Optional[Conflict]:
     """Find conflict.
 
-    Determines if there is a conflict between two particular fields, including
-    comparing their sub-fields.
+    Determines if there is a conflict between two particular fields, including comparing
+    their sub-fields.
     """
     parent_type1, node1, def1 = field1
     parent_type2, node2, def2 = field2
 
-    # If it is known that two fields could not possibly apply at the same
-    # time, due to the parent types, then it is safe to permit them to diverge
-    # in aliased field or arguments used as they will not present any ambiguity
-    # by differing.
-    # It is known that two parent types could never overlap if they are
-    # different Object types. Interface or Union types might overlap - if not
-    # in the current state of the schema, then perhaps in some future version,
-    # thus may not safely diverge.
+    # If it is known that two fields could not possibly apply at the same time, due to
+    # the parent types, then it is safe to permit them to diverge in aliased field or
+    # arguments used as they will not present any ambiguity by differing. It is known
+    # that two parent types could never overlap if they are different Object types.
+    # Interface or Union types might overlap - if not in the current state of the
+    # schema, then perhaps in some future version, thus may not safely diverge.
     are_mutually_exclusive = parent_fields_are_mutually_exclusive or (
         parent_type1 != parent_type2
         and is_object_type(parent_type1)
@@ -565,7 +560,7 @@ def find_conflict(
 
         # Two field calls must have the same arguments.
         if not same_arguments(node1.arguments or [], node2.arguments or []):
-            return ((response_name, "they have differing arguments"), [node1], [node2])
+            return (response_name, "they have differing arguments"), [node1], [node2]
 
     if type1 and type2 and do_types_conflict(type1, type2):
         return (
@@ -574,9 +569,9 @@ def find_conflict(
             [node2],
         )
 
-    # Collect and compare sub-fields. Use the same "visited fragment names"
-    # list for both collections so fields in a fragment reference are never
-    # compared to themselves.
+    # Collect and compare sub-fields. Use the same "visited fragment names" list for
+    # both collections so fields in a fragment reference are never compared to
+    # themselves.
     selection_set1 = node1.selection_set
     selection_set2 = node2.selection_set
     if selection_set1 and selection_set2:
@@ -619,8 +614,8 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     """Check whether two types conflict
 
     Two types conflict if both types could not apply to a value simultaneously.
-    Composite types are ignored as their individual field types will be
-    compared later recursively. However List and Non-Null types must match.
+    Composite types are ignored as their individual field types will be compared later
+    recursively. However List and Non-Null types must match.
     """
     if is_list_type(type1):
         return (
@@ -655,9 +650,9 @@ def get_fields_and_fragment_names(
 ) -> Tuple[NodeAndDefCollection, List[str]]:
     """Get fields and referenced fragment names
 
-    Given a selection set, return the collection of fields (a mapping of
-    response name to field nodes and definitions) as well as a list of fragment
-    names referenced via fragment spreads.
+    Given a selection set, return the collection of fields (a mapping of response name
+    to field nodes and definitions) as well as a list of fragment names referenced via
+    fragment spreads.
     """
     cached = cached_fields_and_fragment_names.get(selection_set)
     if not cached:
@@ -678,9 +673,8 @@ def get_referenced_fields_and_fragment_names(
 ) -> Tuple[NodeAndDefCollection, List[str]]:
     """Get referenced fields and nested fragment names
 
-    Given a reference to a fragment, return the represented collection of
-    fields as well as a list of nested fragment names referenced via fragment
-    spreads.
+    Given a reference to a fragment, return the represented collection of fields as well
+    as a list of nested fragment names referenced via fragment spreads.
     """
     # Short-circuit building a type from the node if possible.
     cached = cached_fields_and_fragment_names.get(fragment.selection_set)
@@ -737,8 +731,8 @@ def subfield_conflicts(
 ) -> Optional[Conflict]:
     """Check whether there are conflicts between sub-fields.
 
-    Given a series of Conflicts which occurred between two sub-fields,
-    generate a single Conflict.
+    Given a series of Conflicts which occurred between two sub-fields, generate a single
+    Conflict.
     """
     if conflicts:
         return (
@@ -752,8 +746,8 @@ def subfield_conflicts(
 class PairSet:
     """Pair set
 
-    A way to keep track of pairs of things when the ordering of the pair does
-    not matter. We do this by maintaining a sort of double adjacency sets.
+    A way to keep track of pairs of things when the ordering of the pair does not
+    matter. We do this by maintaining a sort of double adjacency sets.
     """
 
     __slots__ = ("_data",)
@@ -766,9 +760,9 @@ class PairSet:
         result = first and first.get(b)
         if result is None:
             return False
-        # are_mutually_exclusive being false is a superset of being true,
-        # hence if we want to know if this PairSet "has" these two with no
-        # exclusivity, we have to ensure it was added as such.
+        # `are_mutually_exclusive` being False is a superset of being True, hence if we
+        # want to know if this PairSet "has" these two with no exclusivity, we have to
+        # ensure it was added as such.
         if not are_mutually_exclusive:
             return not result
         return True

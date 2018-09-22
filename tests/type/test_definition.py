@@ -385,7 +385,7 @@ def describe_field_config_must_be_a_dict():
             if obj_type.fields:
                 pass
         msg = str(exc_info.value)
-        assert msg == ("SomeObject fields must be GraphQLField or output type objects.")
+        assert msg == "SomeObject fields must be GraphQLField or output type objects."
 
     def rejects_an_object_type_with_incorrectly_typed_fields():
         invalid_field = cast(GraphQLField, [GraphQLField(GraphQLString)])
@@ -394,7 +394,7 @@ def describe_field_config_must_be_a_dict():
             if obj_type.fields:
                 pass
         msg = str(exc_info.value)
-        assert msg == ("SomeObject fields must be GraphQLField or output type objects.")
+        assert msg == "SomeObject fields must be GraphQLField or output type objects."
 
     def accepts_an_object_type_with_output_type_as_field():
         # this is a shortcut syntax for simple fields
@@ -438,7 +438,7 @@ def describe_field_args_must_be_a_dict():
                 {"badField": GraphQLField(GraphQLString, args=invalid_args)},
             )
         msg = str(exc_info.value)
-        assert msg == ("Field args must be a dict with argument names as keys.")
+        assert msg == "Field args must be a dict with argument names as keys."
 
     def does_not_accept_is_deprecated_as_argument():
         kwargs = dict(is_deprecated=True)
@@ -531,13 +531,13 @@ def describe_type_system_object_fields_must_have_valid_resolve_values():
         with raises(TypeError) as exc_info:
             schema_with_object_with_field_resolver({})
         msg = str(exc_info.value)
-        assert msg == ("Field resolver must be a function if provided,  but got: {}.")
+        assert msg == "Field resolver must be a function if provided,  but got: {}."
 
     def rejects_a_constant_scalar_value_resolver():
         with raises(TypeError) as exc_info:
             schema_with_object_with_field_resolver(0)
         msg = str(exc_info.value)
-        assert msg == ("Field resolver must be a function if provided,  but got: 0.")
+        assert msg == "Field resolver must be a function if provided,  but got: 0."
 
 
 def describe_type_system_interface_types_must_be_resolvable():
@@ -589,7 +589,7 @@ def describe_type_system_union_types_must_be_resolvable():
             )
         msg = str(exc_info.value)
         assert msg == (
-            "SomeUnion must provide 'resolve_type' as a function," " but got: {}."
+            "SomeUnion must provide 'resolve_type' as a function, but got: {}."
         )
 
 
@@ -691,7 +691,7 @@ def describe_type_system_object_types_must_be_assertable():
             )
         msg = str(exc_info.value)
         assert msg == (
-            "AnotherObject must provide 'is_type_of' as a function," " but got: {}."
+            "AnotherObject must provide 'is_type_of' as a function, but got: {}."
         )
 
 
@@ -781,7 +781,7 @@ def describe_type_system_input_objects_fields_must_not_have_resolvers():
                 pass
         msg = str(exc_info.value)
         assert msg == (
-            "SomeInputObject fields must be GraphQLInputField" " or input type objects."
+            "SomeInputObject fields must be GraphQLInputField or input type objects."
         )
 
     def rejects_an_input_object_type_with_resolver_constant():
@@ -816,7 +816,7 @@ def describe_type_system_enum_types_must_be_well_defined():
             GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
         msg = str(exc_info.value)
         assert msg == (
-            "SomeEnum values must be an Enum" " or a dict with value names as keys."
+            "SomeEnum values must be an Enum or a dict with value names as keys."
         )
 
     def does_not_allow_is_deprecated():
@@ -889,7 +889,7 @@ def describe_type_system_non_null_must_only_accept_non_nullable_types():
                 f" but got: {type_}."
             )
             if isinstance(type_, GraphQLNonNull)
-            else ("Can only create a wrapper for a GraphQLType," f" but got: {type_}.")
+            else "Can only create a wrapper for a GraphQLType," f" but got: {type_}."
         )
 
 

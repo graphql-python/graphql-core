@@ -44,8 +44,8 @@ def is_type_sub_type_of(
 ) -> bool:
     """Check whether a type is subtype of another type in a given schema.
 
-    Provided a type and a super type, return true if the first type is either
-    equal or a subset of the second super type (covariant).
+    Provided a type and a super type, return true if the first type is either equal or
+    a subset of the second super type (covariant).
     """
     # Equivalent type is a valid subtype
     if maybe_subtype is super_type:
@@ -79,8 +79,8 @@ def is_type_sub_type_of(
         # If super_type is not a list, maybe_subtype must also be not a list.
         return False
 
-    # If super_type type is an abstract type, maybe_subtype type may be a
-    # currently possible object type.
+    # If super_type type is an abstract type, maybe_subtype type may be a currently
+    # possible object type.
     # noinspection PyTypeChecker
     if (
         is_abstract_type(super_type)
@@ -99,11 +99,11 @@ def is_type_sub_type_of(
 def do_types_overlap(schema, type_a, type_b):
     """Check whether two types overlap in a given schema.
 
-    Provided two composite types, determine if they "overlap". Two composite
-    types overlap when the Sets of possible concrete types for each intersect.
+    Provided two composite types, determine if they "overlap". Two composite types
+    overlap when the Sets of possible concrete types for each intersect.
 
-    This is often used to determine if a fragment of a given type could
-    possibly be visited in a context of another type.
+    This is often used to determine if a fragment of a given type could possibly be
+    visited in a context of another type.
 
     This function is commutative.
     """
@@ -113,8 +113,8 @@ def do_types_overlap(schema, type_a, type_b):
 
     if is_abstract_type(type_a):
         if is_abstract_type(type_b):
-            # If both types are abstract, then determine if there is any
-            # intersection between possible concrete types of each.
+            # If both types are abstract, then determine if there is any intersection
+            # between possible concrete types of each.
             return any(
                 schema.is_possible_type(type_b, type_)
                 for type_ in schema.get_possible_types(type_a)

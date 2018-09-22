@@ -14,7 +14,6 @@ class LoneAnonymousOperationRule(ASTValidationRule):
 
     A GraphQL document is only valid if when it contains an anonymous operation
     (the query short-hand) that it contains only that one operation definition.
-
     """
 
     def __init__(self, context: ASTValidationContext) -> None:

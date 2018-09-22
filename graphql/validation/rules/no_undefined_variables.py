@@ -18,8 +18,8 @@ def undefined_var_message(var_name: str, op_name: str = None) -> str:
 class NoUndefinedVariablesRule(ValidationRule):
     """No undefined variables
 
-    A GraphQL operation is only valid if all variables encountered, both
-    directly and via fragment spreads, are defined by that operation.
+    A GraphQL operation is only valid if all variables encountered, both directly and
+    via fragment spreads, are defined by that operation.
     """
 
     def __init__(self, context: ValidationContext) -> None:

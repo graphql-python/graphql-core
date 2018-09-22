@@ -14,8 +14,7 @@ def duplicate_operation_name_message(operation_name: str) -> str:
 class UniqueOperationNamesRule(ASTValidationRule):
     """Unique operation names
 
-    A GraphQL document is only valid if all defined operations have unique
-    names.
+    A GraphQL document is only valid if all defined operations have unique names.
     """
 
     def __init__(self, context: ASTValidationContext) -> None:

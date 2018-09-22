@@ -1,7 +1,7 @@
 """GraphQL Utilities
 
-The :mod:`graphql.utilities` package contains common useful computations to use
-with the GraphQL language and type objects.
+The :mod:`graphql.utilities` package contains common useful computations to use with
+the GraphQL language and type objects.
 """
 
 # The GraphQL query recommended for a full schema introspection.

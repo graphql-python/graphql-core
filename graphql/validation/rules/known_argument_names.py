@@ -83,8 +83,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
     """Known argument names
 
-    A GraphQL field is only valid if all supplied arguments are defined by
-    that field.
+    A GraphQL field is only valid if all supplied arguments are defined by that field.
     """
 
     context: ValidationContext

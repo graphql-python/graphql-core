@@ -14,8 +14,8 @@ def duplicate_input_field_message(field_name: str) -> str:
 class UniqueInputFieldNamesRule(ASTValidationRule):
     """Unique input field names
 
-    A GraphQL input object value is only valid if all supplied fields are
-    uniquely named.
+    A GraphQL input object value is only valid if all supplied fields are uniquely
+    named.
     """
 
     def __init__(self, context: ASTValidationContext) -> None:

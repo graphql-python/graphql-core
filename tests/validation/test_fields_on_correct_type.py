@@ -261,7 +261,7 @@ def describe_fields_on_correct_type_error_message():
 
     def works_with_no_small_numbers_of_field_suggestion():
         assert undefined_field_message("f", "T", [], ["z", "y"]) == (
-            "Cannot query field 'f' on type 'T'." " Did you mean 'z' or 'y'?"
+            "Cannot query field 'f' on type 'T'. Did you mean 'z' or 'y'?"
         )
 
     def only_shows_one_set_of_suggestions_at_a_time_preferring_types():

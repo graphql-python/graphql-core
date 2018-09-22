@@ -155,6 +155,7 @@ def describe_middleware():
             )
 
             with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
                 execute(
                     GraphQLSchema(test_type), doc, None, middleware={"bad": "value"}
                 )

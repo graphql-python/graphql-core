@@ -21,8 +21,8 @@ def non_executable_definitions_message(def_name: str) -> str:
 class ExecutableDefinitionsRule(ASTValidationRule):
     """Executable definitions
 
-    A GraphQL document is only valid for execution if all definitions are
-    either operation or fragment definitions.
+    A GraphQL document is only valid for execution if all definitions are either
+    operation or fragment definitions.
     """
 
     def enter_document(self, node: DocumentNode, *_args):

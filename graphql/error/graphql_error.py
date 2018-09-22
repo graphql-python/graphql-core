@@ -14,10 +14,10 @@ __all__ = ["GraphQLError"]
 class GraphQLError(Exception):
     """GraphQL Error
 
-    A GraphQLError describes an Error found during the parse, validate, or
-    execute phases of performing a GraphQL operation. In addition to a message,
-    it also includes information about the locations in a GraphQL document
-    and/or execution result that correspond to the Error.
+    A GraphQLError describes an Error found during the parse, validate, or execute
+    phases of performing a GraphQL operation. In addition to a message, it also includes
+    information about the locations in a GraphQL document and/or execution result that
+    correspond to the Error.
     """
 
     message: str
@@ -29,12 +29,12 @@ class GraphQLError(Exception):
     locations: Optional[List["SourceLocation"]]
     """Source locations
 
-    A list of (line, column) locations within the source
-    GraphQL document which correspond to this error.
+    A list of (line, column) locations within the source GraphQL document which
+    correspond to this error.
 
-    Errors during validation often contain multiple locations, for example
-    to point out two things with the same name. Errors during execution
-    include a single location, the field which produced the error.
+    Errors during validation often contain multiple locations, for example to point out
+    two things with the same name. Errors during execution include a single location,
+    the field which produced the error.
     """
 
     path: Optional[List[Union[str, int]]]
@@ -43,22 +43,22 @@ class GraphQLError(Exception):
     nodes: Optional[List["Node"]]
     """The source GraphQL document for the first location of this error
 
-    Note that if this Error represents more than one node, the source
-    may not represent nodes after the first node.
+    Note that if this Error represents more than one node, the source may not represent
+    nodes after the first node.
     """
 
     source: Optional["Source"]
     """The source GraphQL document for the first location of this error
 
-    Note that if this Error represents more than one node, the source may
-    not represent nodes after the first node.
+    Note that if this Error represents more than one node, the source may not represent
+    nodes after the first node.
     """
 
     positions: Optional[Sequence[int]]
     """Error positions
 
-    A list of character offsets within the source GraphQL document
-    which correspond to this error.
+    A list of character offsets within the source GraphQL document which correspond
+    to this error.
     """
 
     original_error: Optional[Exception]

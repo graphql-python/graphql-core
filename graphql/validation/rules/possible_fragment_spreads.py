@@ -30,9 +30,9 @@ def type_incompatible_anon_spread_message(parent_type: str, frag_type: str) -> s
 class PossibleFragmentSpreadsRule(ValidationRule):
     """Possible fragment spread
 
-    A fragment spread is only valid if the type condition could ever possibly
-    be true: if there is a non-empty intersection of the possible parent types,
-    and possible types which pass the type condition.
+    A fragment spread is only valid if the type condition could ever possibly be true:
+    if there is a non-empty intersection of the possible parent types, and possible
+    types which pass the type condition.
     """
 
     def enter_inline_fragment(self, node: InlineFragmentNode, *_args):

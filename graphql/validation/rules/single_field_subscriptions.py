@@ -16,7 +16,7 @@ def single_field_only_message(name: Optional[str]) -> str:
 class SingleFieldSubscriptionsRule(ASTValidationRule):
     """Subscriptions must only include one field.
 
-    A GraphQL subscription is valid only if it contains a single root
+    A GraphQL subscription is valid only if it contains a single root.
     """
 
     def enter_operation_definition(self, node: OperationDefinitionNode, *_args):

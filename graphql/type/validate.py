@@ -40,11 +40,11 @@ __all__ = ["validate_schema", "assert_valid_schema"]
 def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
     """Validate a GraphQL schema.
 
-    Implements the "Type Validation" sub-sections of the specification's
-    "Type System" section.
+    Implements the "Type Validation" sub-sections of the specification's "Type System"
+    section.
 
-    Validation runs synchronously, returning a list of encountered errors, or
-    an empty list if no errors were encountered and the Schema is valid.
+    Validation runs synchronously, returning a list of encountered errors, or an empty
+    list if no errors were encountered and the Schema is valid.
     """
     # First check to ensure the provided value is in fact a GraphQLSchema.
     if not is_schema(schema):
@@ -61,8 +61,8 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
         context.validate_directives()
         context.validate_types()
 
-        # Persist the results of validation before returning to ensure
-        # validation does not run multiple times for this schema.
+        # Persist the results of validation before returning to ensure validation does
+        # not run multiple times for this schema.
         errors = context.errors
         schema._validation_errors = errors
 
@@ -244,7 +244,7 @@ class SchemaValidationContext:
             field_nodes = get_all_field_nodes(type_, field_name)
             if len(field_nodes) > 1:
                 self.report_error(
-                    f"Field {type_.name}.{field_name}" " can only be defined once.",
+                    f"Field {type_.name}.{field_name} can only be defined once.",
                     field_nodes,
                 )
                 continue
@@ -321,8 +321,8 @@ class SchemaValidationContext:
                 )
                 continue
 
-            # Assert interface field type is satisfied by object field type,
-            # by being a valid subtype. (covariant)
+            # Assert interface field type is satisfied by object field type, by being
+            # a valid subtype (covariant).
             if not is_type_sub_type_of(self.schema, obj_field.type, iface_field.type):
                 self.report_error(
                     f"Interface field {iface.name}.{field_name}"
@@ -387,7 +387,7 @@ class SchemaValidationContext:
 
         if not member_types:
             self.report_error(
-                f"Union type {union.name}" " must define one or more member types.",
+                f"Union type {union.name} must define one or more member types.",
                 get_all_nodes(union),
             )
 

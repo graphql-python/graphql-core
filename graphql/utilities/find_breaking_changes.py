@@ -102,8 +102,8 @@ def find_breaking_changes(
 ) -> List[BreakingChange]:
     """Find breaking changes.
 
-    Given two schemas, returns a list containing descriptions of all the
-    types of breaking changes covered by the other functions down below.
+    Given two schemas, returns a list containing descriptions of all the types of
+    breaking changes covered by the other functions down below.
     """
     return (
         find_removed_types(old_schema, new_schema)
@@ -130,8 +130,8 @@ def find_dangerous_changes(
 ) -> List[DangerousChange]:
     """Find dangerous changes.
 
-    Given two schemas, returns a list containing descriptions of all the types
-    of potentially dangerous changes covered by the other functions down below.
+    Given two schemas, returns a list containing descriptions of all the types of
+    potentially dangerous changes covered by the other functions down below.
     """
     return (
         find_arg_changes(old_schema, new_schema).dangerous_changes
@@ -149,8 +149,8 @@ def find_removed_types(
 ) -> List[BreakingChange]:
     """Find removed types.
 
-    Given two schemas, returns a list containing descriptions of any breaking
-    changes in the newSchema related to removing an entire type.
+    Given two schemas, returns a list containing descriptions of any breaking changes
+    in the newSchema related to removing an entire type.
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map
@@ -171,8 +171,8 @@ def find_types_that_changed_kind(
 ) -> List[BreakingChange]:
     """Find types that changed kind
 
-    Given two schemas, returns a list containing descriptions of any breaking
-    changes in the newSchema related to changing the type of a type.
+    Given two schemas, returns a list containing descriptions of any breaking changes
+    in the newSchema related to changing the type of a type.
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map
@@ -199,10 +199,9 @@ def find_arg_changes(
 ) -> BreakingAndDangerousChanges:
     """Find argument changes.
 
-    Given two schemas, returns a list containing descriptions of any
-    breaking or dangerous changes in the new_schema related to arguments
-    (such as removal or change of type of an argument, or a change in an
-    argument's default value).
+    Given two schemas, returns a list containing descriptions of any breaking or
+    dangerous changes in the new_schema related to arguments (such as removal or change
+    of type of an argument, or a change in an argument's default value).
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map
@@ -509,8 +508,7 @@ def is_change_safe_for_input_object_field_or_field_arg(
         )
     elif is_non_null_type(old_type):
         return (
-            # if they're both non-null,
-            # make sure the underlying types are compatible
+            # if they're both non-null, make sure the underlying types are compatible
             (
                 is_non_null_type(new_type)
                 and is_change_safe_for_input_object_field_or_field_arg(
@@ -536,8 +534,8 @@ def find_types_removed_from_unions(
 ) -> List[BreakingChange]:
     """Find types removed from unions.
 
-    Given two schemas, returns a list containing descriptions of any breaking
-    changes in the new_schema related to removing types from a union type.
+    Given two schemas, returns a list containing descriptions of any breaking changes
+    in the new_schema related to removing types from a union type.
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map
@@ -567,8 +565,8 @@ def find_types_added_to_unions(
 ) -> List[DangerousChange]:
     """Find types added to union.
 
-    Given two schemas, returns a list containing descriptions of any dangerous
-    changes in the new_schema related to adding types to a union type.
+    Given two schemas, returns a list containing descriptions of any dangerous changes
+    in the new_schema related to adding types to a union type.
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map
@@ -598,8 +596,8 @@ def find_values_removed_from_enums(
 ) -> List[BreakingChange]:
     """Find values removed from enums.
 
-    Given two schemas, returns a list containing descriptions of any breaking
-    changes in the new_schema related to removing values from an enum type.
+    Given two schemas, returns a list containing descriptions of any breaking changes
+    in the new_schema related to removing values from an enum type.
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map
@@ -628,8 +626,8 @@ def find_values_added_to_enums(
 ) -> List[DangerousChange]:
     """Find values added to enums.
 
-    Given two schemas, returns a list containing descriptions of any dangerous
-    changes in the new_schema related to adding values to an enum type.
+    Given two schemas, returns a list containing descriptions of any dangerous changes
+    in the new_schema related to adding values to an enum type.
     """
     old_type_map = old_schema.type_map
     new_type_map = new_schema.type_map

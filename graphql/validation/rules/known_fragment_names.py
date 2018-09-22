@@ -12,8 +12,8 @@ def unknown_fragment_message(fragment_name: str) -> str:
 class KnownFragmentNamesRule(ValidationRule):
     """Known fragment names
 
-    A GraphQL document is only valid if all `...Fragment` fragment spreads
-    refer to fragments defined in the same document.
+    A GraphQL document is only valid if all `...Fragment` fragment spreads refer to
+    fragments defined in the same document.
     """
 
     def enter_fragment_spread(self, node: FragmentSpreadNode, *_args):

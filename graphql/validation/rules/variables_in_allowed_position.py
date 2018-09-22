@@ -41,12 +41,11 @@ class VariablesInAllowedPositionRule(ValidationRule):
             var_name = node.name.value
             var_def = var_def_map.get(var_name)
             if var_def and type_:
-                # A var type is allowed if it is the same or more strict
-                # (e.g. is a subtype of) than the expected type.
-                # It can be more strict if the variable type is non-null
-                # when the expected type is nullable.
-                # If both are list types, the variable item type can be
-                # more strict than the expected item type (contravariant).
+                # A var type is allowed if it is the same or more strict (e.g. is a
+                # subtype of) than the expected type. It can be more strict if the
+                # variable type is non-null when the expected type is nullable. If both
+                # are list types, the variable item type can be more strict than the
+                # expected item type (contravariant).
                 schema = self.context.schema
                 var_type = type_from_ast(schema, var_def.type)
                 if var_type and not allowed_variable_usage(
@@ -72,9 +71,9 @@ def allowed_variable_usage(
 ) -> bool:
     """Check for allowed variable usage.
 
-    Returns True if the variable is allowed in the location it was found,
-    which includes considering if default values exist for either the variable
-    or the location at which it is located.
+    Returns True if the variable is allowed in the location it was found, which includes
+    considering if default values exist for either the variable or the location at which
+    it is located.
     """
     if is_non_null_type(location_type) and not is_non_null_type(var_type):
         has_non_null_variable_default_value = var_default_value and not isinstance(

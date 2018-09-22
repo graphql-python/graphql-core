@@ -14,8 +14,8 @@ def duplicate_arg_message(arg_name: str) -> str:
 class UniqueArgumentNamesRule(ASTValidationRule):
     """Unique argument names
 
-    A GraphQL field or directive is only valid if all supplied arguments are
-    uniquely named.
+    A GraphQL field or directive is only valid if all supplied arguments are uniquely
+    named.
     """
 
     def __init__(self, context: ASTValidationContext) -> None:

@@ -24,9 +24,9 @@ def fragment_on_non_composite_error_message(frag_name: str, type_: str) -> str:
 class FragmentsOnCompositeTypesRule(ValidationRule):
     """Fragments on composite type
 
-    Fragments use a type condition to determine if they apply, since fragments
-    can only be spread into a composite type (object, interface, or union), the
-    type condition must also be a composite type.
+    Fragments use a type condition to determine if they apply, since fragments can only
+    be spread into a composite type (object, interface, or union), the type condition
+    must also be a composite type.
     """
 
     def enter_inline_fragment(self, node: InlineFragmentNode, *_args):

@@ -54,10 +54,9 @@ GetFieldDefType = Callable[
 class TypeInfo:
     """Utility class for keeping track of type definitions.
 
-    TypeInfo is a utility class which, given a GraphQL schema,
-    can keep track of the current field and type definitions at any point
-    in a GraphQL document AST during a recursive descent by calling
-    `enter(node)` and `leave(node)`.
+    TypeInfo is a utility class which, given a GraphQL schema, can keep track of the
+    current field and type definitions at any point in a GraphQL document AST during
+    a recursive descent by calling `enter(node)` and `leave(node)`.
     """
 
     def __init__(
@@ -68,12 +67,12 @@ class TypeInfo:
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
-        The experimental optional second parameter is only needed in order to
-        support non-spec-compliant codebases. You should never need to use it.
-        It may disappear in the future.
+        The experimental optional second parameter is only needed in order to support
+        non-spec-compliant codebases. You should never need to use it. It may disappear
+        in the future.
 
-        Initial type may be provided in rare cases to facilitate traversals
-        beginning somewhere other than documents.
+        Initial type may be provided in rare cases to facilitate traversals beginning
+        somewhere other than documents.
         """
         self._schema = schema
         self._type_stack: List[Optional[GraphQLOutputType]] = []
@@ -268,9 +267,9 @@ def get_field_def(
 ) -> Optional[GraphQLField]:
     """Get field definition.
 
-    Not exactly the same as the executor's definition of getFieldDef, in this
-    statically evaluated environment we do not always have an Object type,
-    and need to handle Interface and Union types.
+    Not exactly the same as the executor's definition of `get_field_def()`, in this
+    statically evaluated environment we do not always have an Object type, and need
+    to handle Interface and Union types.
     """
     name = field_node.name.value
     if name == "__schema" and schema.query_type is parent_type:

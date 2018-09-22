@@ -322,15 +322,13 @@ from .utilities import (
     build_schema,
     # @deprecated: Get the description from a schema AST node.
     get_description,
-    # Extends an existing GraphQLSchema from a parsed GraphQL Schema
-    # language AST.
+    # Extends an existing GraphQLSchema from a parsed GraphQL Schema language AST.
     extend_schema,
     # Sort a GraphQLSchema.
     lexicographic_sort_schema,
     # Print a GraphQLSchema to GraphQL Schema language.
     print_schema,
-    # Prints the built-in introspection schema in the Schema Language
-    # format.
+    # Prints the built-in introspection schema in the Schema Language format.
     print_introspection_schema,
     # Print a GraphQLType to GraphQL Schema language.
     print_type,
@@ -342,8 +340,8 @@ from .utilities import (
     value_from_ast_untyped,
     # Create a GraphQL language AST from a Python value.
     ast_from_value,
-    # A helper to use within recursive-descent visitors which need to be aware
-    # of the GraphQL type system.
+    # A helper to use within recursive-descent visitors which need to be aware of the
+    # GraphQL type system.
     TypeInfo,
     # Coerces a Python value to a GraphQL type, or produces errors.
     coerce_value,
