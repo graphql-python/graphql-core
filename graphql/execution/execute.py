@@ -1,3 +1,4 @@
+from asyncio import gather
 from inspect import isawaitable
 from typing import (
     Any,
@@ -437,12 +438,17 @@ class ExecutionContext:
         # Otherwise, results is a map from field name to the result of
         # resolving that field, which is possibly a coroutine object.
         # Return a coroutine object that will yield this same map, but with
-        # any coroutines awaited and replaced with the values they yielded.
+        # any coroutines awaited in parallel and replaced with the values they
+        # yielded.
         async def get_results():
-            return {
-                key: await value if isawaitable(value) else value
-                for key, value in results.items()
-            }
+            async def await_kv(key, value):
+                return key, await value if isawaitable(value) else value
+
+            pairs = await gather(
+                *(await_kv(key, value) for key, value in results.items())
+            )
+
+            return dict(pairs)
 
         return get_results()
 

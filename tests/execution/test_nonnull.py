@@ -13,6 +13,8 @@ from graphql.type import (
     GraphQLString,
 )
 
+from .util import compare_query_results_unordered
+
 sync_error = RuntimeError("sync")
 sync_non_null_error = RuntimeError("syncNonNull")
 promise_error = RuntimeError("promise")
@@ -254,70 +256,73 @@ def describe_execute_handles_non_nullable_types():
         @mark.asyncio
         async def throws():
             result = await execute_query(query, ThrowingData())
-            assert result == (
-                data,
-                [
-                    {
-                        "message": str(sync_error),
-                        "path": ["syncNest", "sync"],
-                        "locations": [(4, 17)],
-                    },
-                    {
-                        "message": str(sync_error),
-                        "path": ["syncNest", "syncNest", "sync"],
-                        "locations": [(6, 28)],
-                    },
-                    {
-                        "message": str(promise_error),
-                        "path": ["syncNest", "promise"],
-                        "locations": [(5, 17)],
-                    },
-                    {
-                        "message": str(promise_error),
-                        "path": ["syncNest", "syncNest", "promise"],
-                        "locations": [(6, 33)],
-                    },
-                    {
-                        "message": str(sync_error),
-                        "path": ["syncNest", "promiseNest", "sync"],
-                        "locations": [(7, 31)],
-                    },
-                    {
-                        "message": str(promise_error),
-                        "path": ["syncNest", "promiseNest", "promise"],
-                        "locations": [(7, 36)],
-                    },
-                    {
-                        "message": str(sync_error),
-                        "path": ["promiseNest", "sync"],
-                        "locations": [(10, 17)],
-                    },
-                    {
-                        "message": str(sync_error),
-                        "path": ["promiseNest", "syncNest", "sync"],
-                        "locations": [(12, 28)],
-                    },
-                    {
-                        "message": str(promise_error),
-                        "path": ["promiseNest", "promise"],
-                        "locations": [(11, 17)],
-                    },
-                    {
-                        "message": str(promise_error),
-                        "path": ["promiseNest", "syncNest", "promise"],
-                        "locations": [(12, 33)],
-                    },
-                    {
-                        "message": str(sync_error),
-                        "path": ["promiseNest", "promiseNest", "sync"],
-                        "locations": [(13, 31)],
-                    },
-                    {
-                        "message": str(promise_error),
-                        "path": ["promiseNest", "promiseNest", "promise"],
-                        "locations": [(13, 36)],
-                    },
-                ],
+            compare_query_results_unordered(
+                result,
+                (
+                    data,
+                    [
+                        {
+                            "message": str(sync_error),
+                            "path": ["syncNest", "sync"],
+                            "locations": [(4, 17)],
+                        },
+                        {
+                            "message": str(sync_error),
+                            "path": ["syncNest", "syncNest", "sync"],
+                            "locations": [(6, 28)],
+                        },
+                        {
+                            "message": str(promise_error),
+                            "path": ["syncNest", "promise"],
+                            "locations": [(5, 17)],
+                        },
+                        {
+                            "message": str(promise_error),
+                            "path": ["syncNest", "syncNest", "promise"],
+                            "locations": [(6, 33)],
+                        },
+                        {
+                            "message": str(sync_error),
+                            "path": ["syncNest", "promiseNest", "sync"],
+                            "locations": [(7, 31)],
+                        },
+                        {
+                            "message": str(promise_error),
+                            "path": ["syncNest", "promiseNest", "promise"],
+                            "locations": [(7, 36)],
+                        },
+                        {
+                            "message": str(sync_error),
+                            "path": ["promiseNest", "sync"],
+                            "locations": [(10, 17)],
+                        },
+                        {
+                            "message": str(sync_error),
+                            "path": ["promiseNest", "syncNest", "sync"],
+                            "locations": [(12, 28)],
+                        },
+                        {
+                            "message": str(promise_error),
+                            "path": ["promiseNest", "promise"],
+                            "locations": [(11, 17)],
+                        },
+                        {
+                            "message": str(promise_error),
+                            "path": ["promiseNest", "syncNest", "promise"],
+                            "locations": [(12, 33)],
+                        },
+                        {
+                            "message": str(sync_error),
+                            "path": ["promiseNest", "promiseNest", "sync"],
+                            "locations": [(13, 31)],
+                        },
+                        {
+                            "message": str(promise_error),
+                            "path": ["promiseNest", "promiseNest", "promise"],
+                            "locations": [(13, 36)],
+                        },
+                    ],
+                ),
             )
 
     def describe_nulls_first_nullable_after_long_chain_of_non_null_fields():
@@ -378,120 +383,125 @@ def describe_execute_handles_non_nullable_types():
 
         @mark.asyncio
         async def returns_null():
-            result = await execute_query(query, NullingData())
-            assert result == (
-                data,
-                [
-                    {
-                        "message": "Cannot return null for non-nullable field"
-                        " DataType.syncNonNull.",
-                        "path": [
-                            "syncNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNull",
-                        ],
-                        "locations": [(8, 25)],
-                    },
-                    {
-                        "message": "Cannot return null for non-nullable field"
-                        " DataType.syncNonNull.",
-                        "path": [
-                            "promiseNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNull",
-                        ],
-                        "locations": [(19, 25)],
-                    },
-                    {
-                        "message": "Cannot return null for non-nullable field"
-                        " DataType.promiseNonNull.",
-                        "path": [
-                            "anotherNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "promiseNonNull",
-                        ],
-                        "locations": [(30, 25)],
-                    },
-                    {
-                        "message": "Cannot return null for non-nullable field"
-                        " DataType.promiseNonNull.",
-                        "path": [
-                            "anotherPromiseNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "promiseNonNull",
-                        ],
-                        "locations": [(41, 25)],
-                    },
-                ],
+            compare_query_results_unordered(
+                await execute_query(query, NullingData()),
+                (
+                    data,
+                    [
+                        {
+                            "message": "Cannot return null for non-nullable field"
+                            " DataType.syncNonNull.",
+                            "path": [
+                                "syncNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNull",
+                            ],
+                            "locations": [(8, 25)],
+                        },
+                        {
+                            "message": "Cannot return null for non-nullable field"
+                            " DataType.syncNonNull.",
+                            "path": [
+                                "promiseNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNull",
+                            ],
+                            "locations": [(19, 25)],
+                        },
+                        {
+                            "message": "Cannot return null for non-nullable field"
+                            " DataType.promiseNonNull.",
+                            "path": [
+                                "anotherNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "promiseNonNull",
+                            ],
+                            "locations": [(30, 25)],
+                        },
+                        {
+                            "message": "Cannot return null for non-nullable field"
+                            " DataType.promiseNonNull.",
+                            "path": [
+                                "anotherPromiseNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "promiseNonNull",
+                            ],
+                            "locations": [(41, 25)],
+                        },
+                    ],
+                ),
             )
 
         @mark.asyncio
         async def throws():
             result = await execute_query(query, ThrowingData())
-            assert result == (
-                data,
-                [
-                    {
-                        "message": str(sync_non_null_error),
-                        "path": [
-                            "syncNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNull",
-                        ],
-                        "locations": [(8, 25)],
-                    },
-                    {
-                        "message": str(sync_non_null_error),
-                        "path": [
-                            "promiseNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNull",
-                        ],
-                        "locations": [(19, 25)],
-                    },
-                    {
-                        "message": str(promise_non_null_error),
-                        "path": [
-                            "anotherNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "promiseNonNull",
-                        ],
-                        "locations": [(30, 25)],
-                    },
-                    {
-                        "message": str(promise_non_null_error),
-                        "path": [
-                            "anotherPromiseNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "syncNonNullNest",
-                            "promiseNonNullNest",
-                            "promiseNonNull",
-                        ],
-                        "locations": [(41, 25)],
-                    },
-                ],
+            compare_query_results_unordered(
+                result,
+                (
+                    data,
+                    [
+                        {
+                            "message": str(sync_non_null_error),
+                            "path": [
+                                "syncNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNull",
+                            ],
+                            "locations": [(8, 25)],
+                        },
+                        {
+                            "message": str(sync_non_null_error),
+                            "path": [
+                                "promiseNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNull",
+                            ],
+                            "locations": [(19, 25)],
+                        },
+                        {
+                            "message": str(promise_non_null_error),
+                            "path": [
+                                "anotherNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "promiseNonNull",
+                            ],
+                            "locations": [(30, 25)],
+                        },
+                        {
+                            "message": str(promise_non_null_error),
+                            "path": [
+                                "anotherPromiseNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "syncNonNullNest",
+                                "promiseNonNullNest",
+                                "promiseNonNull",
+                            ],
+                            "locations": [(41, 25)],
+                        },
+                    ],
+                ),
             )
 
     def describe_nulls_the_top_level_if_non_nullable_field():
