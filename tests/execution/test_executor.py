@@ -20,7 +20,6 @@ from graphql.type import (
     GraphQLResolveInfo,
     ResponsePath,
 )
-from .util import compare_query_results_unordered
 
 
 def describe_execute_handles_basic_execution_tasks():
@@ -418,70 +417,67 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        compare_query_results_unordered(
-            await execute(schema, ast, Data()),
-            (
+        assert await execute(schema, ast, Data()) == (
+            {
+                "syncOk": "sync ok",
+                "syncError": None,
+                "syncRawError": None,
+                "syncReturnError": None,
+                "syncReturnErrorList": ["sync0", None, "sync2", None],
+                "asyncOk": "async ok",
+                "asyncError": None,
+                "asyncRawError": None,
+                "asyncReturnError": None,
+                "asyncReturnErrorWithExtensions": None,
+            },
+            [
                 {
-                    "syncOk": "sync ok",
-                    "syncError": None,
-                    "syncRawError": None,
-                    "syncReturnError": None,
-                    "syncReturnErrorList": ["sync0", None, "sync2", None],
-                    "asyncOk": "async ok",
-                    "asyncError": None,
-                    "asyncRawError": None,
-                    "asyncReturnError": None,
-                    "asyncReturnErrorWithExtensions": None,
+                    "message": "Error getting syncError",
+                    "locations": [(3, 15)],
+                    "path": ["syncError"],
                 },
-                [
-                    {
-                        "message": "Error getting syncError",
-                        "locations": [(3, 15)],
-                        "path": ["syncError"],
-                    },
-                    {
-                        "message": "Error getting syncRawError",
-                        "locations": [(4, 15)],
-                        "path": ["syncRawError"],
-                    },
-                    {
-                        "message": "Error getting syncReturnError",
-                        "locations": [(5, 15)],
-                        "path": ["syncReturnError"],
-                    },
-                    {
-                        "message": "Error getting syncReturnErrorList1",
-                        "locations": [(6, 15)],
-                        "path": ["syncReturnErrorList", 1],
-                    },
-                    {
-                        "message": "Error getting syncReturnErrorList3",
-                        "locations": [(6, 15)],
-                        "path": ["syncReturnErrorList", 3],
-                    },
-                    {
-                        "message": "Error getting asyncError",
-                        "locations": [(8, 15)],
-                        "path": ["asyncError"],
-                    },
-                    {
-                        "message": "Error getting asyncRawError",
-                        "locations": [(9, 15)],
-                        "path": ["asyncRawError"],
-                    },
-                    {
-                        "message": "Error getting asyncReturnError",
-                        "locations": [(10, 15)],
-                        "path": ["asyncReturnError"],
-                    },
-                    {
-                        "message": "Error getting asyncReturnErrorWithExtensions",
-                        "locations": [(11, 15)],
-                        "path": ["asyncReturnErrorWithExtensions"],
-                        "extensions": {"foo": "bar"},
-                    },
-                ],
-            ),
+                {
+                    "message": "Error getting syncRawError",
+                    "locations": [(4, 15)],
+                    "path": ["syncRawError"],
+                },
+                {
+                    "message": "Error getting syncReturnError",
+                    "locations": [(5, 15)],
+                    "path": ["syncReturnError"],
+                },
+                {
+                    "message": "Error getting syncReturnErrorList1",
+                    "locations": [(6, 15)],
+                    "path": ["syncReturnErrorList", 1],
+                },
+                {
+                    "message": "Error getting syncReturnErrorList3",
+                    "locations": [(6, 15)],
+                    "path": ["syncReturnErrorList", 3],
+                },
+                {
+                    "message": "Error getting asyncError",
+                    "locations": [(8, 15)],
+                    "path": ["asyncError"],
+                },
+                {
+                    "message": "Error getting asyncRawError",
+                    "locations": [(9, 15)],
+                    "path": ["asyncRawError"],
+                },
+                {
+                    "message": "Error getting asyncReturnError",
+                    "locations": [(10, 15)],
+                    "path": ["asyncReturnError"],
+                },
+                {
+                    "message": "Error getting asyncReturnErrorWithExtensions",
+                    "locations": [(11, 15)],
+                    "path": ["asyncReturnErrorWithExtensions"],
+                    "extensions": {"foo": "bar"},
+                },
+            ],
         )
 
     def full_response_path_is_included_for_non_nullable_fields():
@@ -873,39 +869,35 @@ def describe_execute_handles_basic_execution_tasks():
 
     @mark.asyncio
     async def resolve_fields_in_parallel():
-        class Barrier(object):
-            # Makes progress only if at least `count` callers are `wait()`ing.
-            def __init__(self, count):
-                self.ev = asyncio.Event()
-                self.count = count
+        class Barrier:
+            """Barrier that makes progress only after a certain number of waits."""
+
+            def __init__(self, number):
+                self.event = asyncio.Event()
+                self.number = number
 
             async def wait(self):
-                self.count -= 1
-                if self.count == 0:
-                    self.ev.set()
-
-                return await self.ev.wait()
+                self.number -= 1
+                if not self.number:
+                    self.event.set()
+                return await self.event.wait()
 
         barrier = Barrier(2)
 
-        async def f(*args):
+        async def resolve(*_args):
             return await barrier.wait()
 
         schema = GraphQLSchema(
             GraphQLObjectType(
                 "Object",
                 {
-                    "foo": GraphQLField(GraphQLBoolean, resolve=f),
-                    "bar": GraphQLField(GraphQLBoolean, resolve=f),
+                    "foo": GraphQLField(GraphQLBoolean, resolve=resolve),
+                    "bar": GraphQLField(GraphQLBoolean, resolve=resolve),
                 },
             )
         )
 
-        query = "{foo, bar}"
-        ast = parse(query)
+        ast = parse("{foo, bar}")
+        result = await asyncio.wait_for(execute(schema, ast), 1.0)
 
-        res = await asyncio.wait_for(
-            execute(schema, ast), 1.0  # don't wait forever for the test to fail
-        )
-
-        assert res == ({"foo": True, "bar": True}, None)
+        assert result == ({"foo": True, "bar": True}, None)

@@ -310,7 +310,13 @@ class ExecutionContext:
 
             return build_response_async()
         data = cast(Optional[Dict[str, Any]], data)
-        return ExecutionResult(data=data, errors=self.errors or None)
+        errors = self.errors
+        if not errors:
+            return ExecutionResult(data, None)
+        # sort the error list in order to make it deterministic,
+        # since we might have been using parallel execution
+        errors.sort(key=lambda error: (error.locations, error.path, error.message))
+        return ExecutionResult(data, errors)
 
     def execute_operation(
         self, operation: OperationDefinitionNode, root_value: Any
@@ -418,9 +424,8 @@ class ExecutionContext:
         Implements the "Evaluating selection sets" section of the spec
         for "read" mode.
         """
-        is_async = False
-
         results = {}
+        awaitable_fields = []
         for response_name, field_nodes in fields.items():
             field_path = add_path(path, response_name)
             result = self.resolve_field(
@@ -428,27 +433,25 @@ class ExecutionContext:
             )
             if result is not INVALID:
                 results[response_name] = result
-                if not is_async and isawaitable(result):
-                    is_async = True
+                if isawaitable(result):
+                    awaitable_fields.append(response_name)
 
         #  If there are no coroutines, we can just return the object
-        if not is_async:
+        if not awaitable_fields:
             return results
 
-        # Otherwise, results is a map from field name to the result of
-        # resolving that field, which is possibly a coroutine object.
-        # Return a coroutine object that will yield this same map, but with
-        # any coroutines awaited in parallel and replaced with the values they
-        # yielded.
+        # Otherwise, results is a map from field name to the result of resolving that
+        # field, which is possibly a coroutine object. Return a coroutine object that
+        # will yield this same map, but with any coroutines awaited in parallel and
+        # replaced with the values they yielded.
         async def get_results():
-            async def await_kv(key, value):
-                return key, await value if isawaitable(value) else value
-
-            pairs = await gather(
-                *(await_kv(key, value) for key, value in results.items())
+            results.update(
+                zip(
+                    awaitable_fields,
+                    await gather(*(results[field] for field in awaitable_fields)),
+                )
             )
-
-            return dict(pairs)
+            return results
 
         return get_results()
 
