@@ -831,6 +831,8 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert execute(schema, query) == ({"foo": None}, None)
 
+
+def describe_customize_execution():
     def uses_a_custom_field_resolver():
         query = parse("{ foo }")
 
@@ -867,21 +869,23 @@ def describe_execute_handles_basic_execution_tasks():
             None,
         )
 
+
+def describe_parallel_execution():
+    class Barrier:
+        """Barrier that makes progress only after a certain number of waits."""
+
+        def __init__(self, number: int) -> None:
+            self.event = asyncio.Event()
+            self.number = number
+
+        async def wait(self) -> bool:
+            self.number -= 1
+            if not self.number:
+                self.event.set()
+            return await self.event.wait()
+
     @mark.asyncio
     async def resolve_fields_in_parallel():
-        class Barrier:
-            """Barrier that makes progress only after a certain number of waits."""
-
-            def __init__(self, number):
-                self.event = asyncio.Event()
-                self.number = number
-
-            async def wait(self):
-                self.number -= 1
-                if not self.number:
-                    self.event.set()
-                return await self.event.wait()
-
         barrier = Barrier(2)
 
         async def resolve(*_args):
@@ -889,7 +893,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         schema = GraphQLSchema(
             GraphQLObjectType(
-                "Object",
+                "Query",
                 {
                     "foo": GraphQLField(GraphQLBoolean, resolve=resolve),
                     "bar": GraphQLField(GraphQLBoolean, resolve=resolve),
@@ -898,6 +902,34 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         ast = parse("{foo, bar}")
+        # raises TimeoutError if not parallel
         result = await asyncio.wait_for(execute(schema, ast), 1.0)
 
         assert result == ({"foo": True, "bar": True}, None)
+
+    @mark.asyncio
+    async def resolve_list_in_parallel():
+        barrier = Barrier(2)
+
+        async def resolve(*_args):
+            return await barrier.wait()
+
+        async def resolve_list(*args):
+            return [resolve(*args), resolve(*args)]
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(
+                        GraphQLList(GraphQLBoolean), resolve=resolve_list
+                    )
+                },
+            )
+        )
+
+        ast = parse("{foo}")
+        # raises TimeoutError if not parallel
+        result = await asyncio.wait_for(execute(schema, ast), 1.0)
+
+        assert result == ({"foo": [True, True]}, None)

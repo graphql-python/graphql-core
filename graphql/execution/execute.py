@@ -425,7 +425,8 @@ class ExecutionContext:
         for "read" mode.
         """
         results = {}
-        awaitable_fields = []
+        awaitable_fields: List[str] = []
+        append_awaitable = awaitable_fields.append
         for response_name, field_nodes in fields.items():
             field_path = add_path(path, response_name)
             result = self.resolve_field(
@@ -434,7 +435,7 @@ class ExecutionContext:
             if result is not INVALID:
                 results[response_name] = result
                 if isawaitable(result):
-                    awaitable_fields.append(response_name)
+                    append_awaitable(response_name)
 
         #  If there are no coroutines, we can just return the object
         if not awaitable_fields:
@@ -805,9 +806,10 @@ class ExecutionContext:
         # where the list contains no coroutine objects by avoiding creating
         # another coroutine object.
         item_type = return_type.of_type
-        is_async = False
+        awaitable_indices: List[int] = []
+        append_awaitable = awaitable_indices.append
         completed_results: List[Any] = []
-        append = completed_results.append
+        append_result = completed_results.append
         for index, item in enumerate(result):
             # No need to modify the info object containing the path,
             # since from here on it is not ever accessed by resolver functions.
@@ -816,20 +818,25 @@ class ExecutionContext:
                 item_type, field_nodes, info, field_path, item
             )
 
-            if not is_async and isawaitable(completed_item):
-                is_async = True
-            append(completed_item)
+            if isawaitable(completed_item):
+                append_awaitable(index)
+            append_result(completed_item)
 
-        if is_async:
+        if not awaitable_indices:
+            return completed_results
 
-            async def get_completed_results():
-                return [
-                    await value if isawaitable(value) else value
-                    for value in completed_results
-                ]
+        # noinspection PyShadowingNames
+        async def get_completed_results():
+            for index, result in zip(
+                awaitable_indices,
+                await gather(
+                    *(completed_results[index] for index in awaitable_indices)
+                ),
+            ):
+                completed_results[index] = result
+            return completed_results
 
-            return get_completed_results()
-        return completed_results
+        return get_completed_results()
 
     @staticmethod
     def complete_leaf_value(return_type: GraphQLLeafType, result: Any) -> Any:
