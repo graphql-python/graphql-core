@@ -176,12 +176,12 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @test
-                }
+                    type Query {
+                      foo: String @test
+                    }
 
-                directive @test on FIELD_DEFINITION
-                """
+                    directive @test on FIELD_DEFINITION
+                    """
                 )
                 == []
             )
@@ -190,10 +190,10 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @deprecated
-                }
-                """
+                    type Query {
+                      foo: String @deprecated
+                    }
+                    """
                 )
                 == []
             )
@@ -202,11 +202,11 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                schema @deprecated {
-                  query: Query
-                }
-                directive @deprecated on SCHEMA
-                """
+                    schema @deprecated {
+                      query: Query
+                    }
+                    directive @deprecated on SCHEMA
+                    """
                 )
                 == []
             )
@@ -222,10 +222,10 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                directive @test on OBJECT
+                    directive @test on OBJECT
 
-                extend type Query @test
-                """,
+                    extend type Query @test
+                    """,
                     schema,
                 )
                 == []
@@ -244,8 +244,8 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                extend type Query @test
-                """,
+                    extend type Query @test
+                    """,
                     schema,
                 )
                 == []
@@ -262,55 +262,55 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                extend type Query @unknown
-                """,
+                    extend type Query @unknown
+                    """,
                     schema,
                 )
-                == [unknown_directive("unknown", 2, 35)]
+                == [unknown_directive("unknown", 2, 39)]
             )
 
         def with_well_placed_directives():
             assert (
                 expect_sdl_errors(
                     """
-                type MyObj implements MyInterface @onObject {
-                  myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
-                }
+                    type MyObj implements MyInterface @onObject {
+                      myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
+                    }
 
-                extend type MyObj @onObject
+                    extend type MyObj @onObject
 
-                scalar MyScalar @onScalar
+                    scalar MyScalar @onScalar
 
-                extend scalar MyScalar @onScalar
+                    extend scalar MyScalar @onScalar
 
-                interface MyInterface @onInterface {
-                  myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
-                }
+                    interface MyInterface @onInterface {
+                      myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
+                    }
 
-                extend interface MyInterface @onInterface
+                    extend interface MyInterface @onInterface
 
-                union MyUnion @onUnion = MyObj | Other
+                    union MyUnion @onUnion = MyObj | Other
 
-                extend union MyUnion @onUnion
+                    extend union MyUnion @onUnion
 
-                enum MyEnum @onEnum {
-                  MY_VALUE @onEnumValue
-                }
+                    enum MyEnum @onEnum {
+                      MY_VALUE @onEnumValue
+                    }
 
-                extend enum MyEnum @onEnum
+                    extend enum MyEnum @onEnum
 
-                input MyInput @onInputObject {
-                  myField: Int @onInputFieldDefinition
-                }
+                    input MyInput @onInputObject {
+                      myField: Int @onInputFieldDefinition
+                    }
 
-                extend input MyInput @onInputObject
+                    extend input MyInput @onInputObject
 
-                schema @onSchema {
-                  query: MyQuery
-                }
+                    schema @onSchema {
+                      query: MyQuery
+                    }
 
-                extend schema @onSchema
-                """,
+                    extend schema @onSchema
+                    """,  # noqa: E501
                     schema_with_sdl_directives,
                 )
                 == []
@@ -320,58 +320,58 @@ def describe_known_directives():
             assert (
                 expect_sdl_errors(
                     """
-                type MyObj implements MyInterface @onInterface {
-                  myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
-                }
+                    type MyObj implements MyInterface @onInterface {
+                      myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
+                    }
 
-                scalar MyScalar @onEnum
+                    scalar MyScalar @onEnum
 
-                interface MyInterface @onObject {
-                  myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
-                }
+                    interface MyInterface @onObject {
+                      myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
+                    }
 
-                union MyUnion @onEnumValue = MyObj | Other
+                    union MyUnion @onEnumValue = MyObj | Other
 
-                enum MyEnum @onScalar {
-                  MY_VALUE @onUnion
-                }
+                    enum MyEnum @onScalar {
+                      MY_VALUE @onUnion
+                    }
 
-                input MyInput @onEnum {
-                  myField: Int @onArgumentDefinition
-                }
+                    input MyInput @onEnum {
+                      myField: Int @onArgumentDefinition
+                    }
 
-                schema @onObject {
-                  query: MyQuery
-                }
+                    schema @onObject {
+                      query: MyQuery
+                    }
 
-                extend schema @onObject
-                """,  # noqa: E501
+                    extend schema @onObject
+                    """,  # noqa: E501
                     schema_with_sdl_directives,
                 )
                 == [
-                    misplaced_directive("onInterface", "object", 2, 51),
+                    misplaced_directive("onInterface", "object", 2, 55),
                     misplaced_directive(
-                        "onInputFieldDefinition", "argument definition", 3, 38
+                        "onInputFieldDefinition", "argument definition", 3, 42
                     ),
                     misplaced_directive(
-                        "onInputFieldDefinition", "field definition", 3, 71
+                        "onInputFieldDefinition", "field definition", 3, 75
                     ),
-                    misplaced_directive("onEnum", "scalar", 6, 33),
-                    misplaced_directive("onObject", "interface", 8, 39),
+                    misplaced_directive("onEnum", "scalar", 6, 37),
+                    misplaced_directive("onObject", "interface", 8, 43),
                     misplaced_directive(
-                        "onInputFieldDefinition", "argument definition", 9, 38
+                        "onInputFieldDefinition", "argument definition", 9, 42
                     ),
                     misplaced_directive(
-                        "onInputFieldDefinition", "field definition", 9, 71
+                        "onInputFieldDefinition", "field definition", 9, 75
                     ),
-                    misplaced_directive("onEnumValue", "union", 12, 31),
-                    misplaced_directive("onScalar", "enum", 14, 29),
-                    misplaced_directive("onUnion", "enum value", 15, 28),
-                    misplaced_directive("onEnum", "input object", 18, 31),
+                    misplaced_directive("onEnumValue", "union", 12, 35),
+                    misplaced_directive("onScalar", "enum", 14, 33),
+                    misplaced_directive("onUnion", "enum value", 15, 32),
+                    misplaced_directive("onEnum", "input object", 18, 35),
                     misplaced_directive(
-                        "onArgumentDefinition", "input field definition", 19, 32
+                        "onArgumentDefinition", "input field definition", 19, 36
                     ),
-                    misplaced_directive("onObject", "schema", 22, 24),
-                    misplaced_directive("onObject", "schema", 26, 31),
+                    misplaced_directive("onObject", "schema", 22, 28),
+                    misplaced_directive("onObject", "schema", 26, 35),
                 ]
             )

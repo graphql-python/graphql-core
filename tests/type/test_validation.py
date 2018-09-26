@@ -652,17 +652,17 @@ def describe_type_system_input_objects_must_have_fields():
             schema,
             parse(
                 """
-            directive @test on INPUT_OBJECT
+                directive @test on INPUT_OBJECT
 
-            extend input SomeInputObject @test
-            """
+                extend input SomeInputObject @test
+                """
             ),
         )
         assert validate_schema(schema) == [
             {
                 "message": "Input Object type SomeInputObject"
                 " must define one or more fields.",
-                "locations": [(6, 13), (4, 13)],
+                "locations": [(6, 13), (4, 17)],
             }
         ]
 
@@ -711,17 +711,17 @@ def describe_type_system_enum_types_must_be_well_defined():
             schema,
             parse(
                 """
-            directive @test on ENUM
+                directive @test on ENUM
 
-            extend enum SomeEnum @test
-            """
+                extend enum SomeEnum @test
+                """
             ),
         )
 
         assert validate_schema(schema) == [
             {
                 "message": "Enum type SomeEnum must define one or more values.",
-                "locations": [(6, 13), (4, 13)],
+                "locations": [(6, 13), (4, 17)],
             }
         ]
 
@@ -952,21 +952,21 @@ def describe_type_system_interface_extensions_should_be_valid():
             schema,
             parse(
                 """
-            extend interface AnotherInterface {
-              newField: String
-            }
+                extend interface AnotherInterface {
+                  newField: String
+                }
 
-            extend type AnotherObject {
-              differentNewField: String
-            }
-            """
+                extend type AnotherObject {
+                  differentNewField: String
+                }
+                """
             ),
         )
         assert validate_schema(extended_schema) == [
             {
                 "message": "Interface field AnotherInterface.newField expected"
                 " but AnotherObject does not provide it.",
-                "locations": [(3, 15), (10, 13), (6, 13)],
+                "locations": [(3, 19), (10, 13), (6, 17)],
             }
         ]
 
@@ -990,14 +990,14 @@ def describe_type_system_interface_extensions_should_be_valid():
             schema,
             parse(
                 """
-            extend interface AnotherInterface {
-              newField(test: Boolean): String
-            }
+                extend interface AnotherInterface {
+                  newField(test: Boolean): String
+                }
 
-            extend type AnotherObject {
-              newField: String
-            }
-        """
+                extend type AnotherObject {
+                  newField: String
+                }
+                """
             ),
         )
         assert validate_schema(extended_schema) == [
@@ -1005,7 +1005,7 @@ def describe_type_system_interface_extensions_should_be_valid():
                 "message": "Interface field argument"
                 " AnotherInterface.newField(test:) expected"
                 " but AnotherObject.newField does not provide it.",
-                "locations": [(3, 24), (7, 15)],
+                "locations": [(3, 28), (7, 19)],
             }
         ]
 
@@ -1029,27 +1029,27 @@ def describe_type_system_interface_extensions_should_be_valid():
             schema,
             parse(
                 """
-            extend interface AnotherInterface {
-              newInterfaceField: NewInterface
-            }
+                extend interface AnotherInterface {
+                  newInterfaceField: NewInterface
+                }
 
-            interface NewInterface {
-              newField: String
-            }
+                interface NewInterface {
+                  newField: String
+                }
 
-            interface MismatchingInterface {
-              newField: String
-            }
+                interface MismatchingInterface {
+                  newField: String
+                }
 
-            extend type AnotherObject {
-              newInterfaceField: MismatchingInterface
-            }
+                extend type AnotherObject {
+                  newInterfaceField: MismatchingInterface
+                }
 
-            # Required to prevent unused interface errors
-            type DummyObject implements NewInterface & MismatchingInterface {
-              newField: String
-            }
-            """
+                # Required to prevent unused interface errors
+                type DummyObject implements NewInterface & MismatchingInterface {
+                  newField: String
+                }
+                """
             ),
         )
         assert validate_schema(extended_schema) == [
@@ -1058,7 +1058,7 @@ def describe_type_system_interface_extensions_should_be_valid():
                 " expects type NewInterface"
                 " but AnotherObject.newInterfaceField"
                 " is type MismatchingInterface.",
-                "locations": [(3, 34), (15, 34)],
+                "locations": [(3, 38), (15, 38)],
             }
         ]
 

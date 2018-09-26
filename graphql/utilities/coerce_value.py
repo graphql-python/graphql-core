@@ -166,7 +166,7 @@ def coerce_value(
                 errors = add(
                     errors,
                     coercion_error(
-                        f"Field '{field_name}'" f" is not defined by type {type_.name}",
+                        f"Field '{field_name}' is not defined by type {type_.name}",
                         blame_node,
                         path,
                         did_you_mean,

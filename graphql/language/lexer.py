@@ -278,7 +278,7 @@ def read_number(source: Source, start, char, line, col, prev) -> Token:
             raise GraphQLSyntaxError(
                 source,
                 position,
-                "Invalid number," f" unexpected digit after 0: {print_char(char)}.",
+                f"Invalid number, unexpected digit after 0: {print_char(char)}.",
             )
     else:
         position = read_digits(source, position, char)

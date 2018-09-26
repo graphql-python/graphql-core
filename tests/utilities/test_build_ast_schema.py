@@ -36,10 +36,10 @@ def describe_schema_builder():
         schema = build_ast_schema(
             parse(
                 """
-            type Query {
-              str: String
-            }
-            """
+                type Query {
+                  str: String
+                }
+                """
             )
         )
 

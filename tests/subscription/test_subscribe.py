@@ -93,7 +93,7 @@ async def create_subscription(
 
     def send_important_email(new_email):
         data["inbox"]["emails"].append(new_email)
-        # Returns true if the event was consumed by a subscriber.
+        # Returns True if the event was consumed by a subscriber.
         return pubsub.emit(
             "importantEmail",
             {"importantEmail": {"email": new_email, "inbox": data["inbox"]}},
@@ -402,28 +402,28 @@ def describe_subscription_initialization_phase():
             )
 
         # Returning an error
-        def return_error(*args):
+        def return_error(*_args):
             return TypeError("test error")
 
         subscription_returning_error_schema = email_schema_with_resolvers(return_error)
         await test_reports_error(subscription_returning_error_schema)
 
         # Throwing an error
-        def throw_error(*args):
+        def throw_error(*_args):
             raise TypeError("test error")
 
         subscription_throwing_error_schema = email_schema_with_resolvers(throw_error)
         await test_reports_error(subscription_throwing_error_schema)
 
         # Resolving to an error
-        async def resolve_error(*args):
+        async def resolve_error(*_args):
             return TypeError("test error")
 
         subscription_resolving_error_schema = email_schema_with_resolvers(resolve_error)
         await test_reports_error(subscription_resolving_error_schema)
 
         # Rejecting with an error
-        async def reject_error(*args):
+        async def reject_error(*_args):
             return TypeError("test error")
 
         subscription_rejecting_error_schema = email_schema_with_resolvers(reject_error)
@@ -431,9 +431,8 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def resolves_to_an_error_if_variables_were_wrong_type():
-        # If we receive variables that cannot be coerced correctly, subscribe()
-        # will resolve to an ExecutionResult that contains an informative error
-        # description.
+        # If we receive variables that cannot be coerced correctly, subscribe() will
+        # resolve to an ExecutionResult that contains an informative error description.
         ast = parse(
             """
             subscription ($priority: Int) {
@@ -669,14 +668,14 @@ def describe_subscription_publish_phase():
             erroring_email_schema,
             parse(
                 """
-            subscription {
-              importantEmail {
-                email {
-                  subject
+                subscription {
+                  importantEmail {
+                    email {
+                      subject
+                    }
+                  }
                 }
-              }
-            }
-            """
+                """
             ),
         )
 
@@ -690,14 +689,14 @@ def describe_subscription_publish_phase():
             [
                 {
                     "message": "Never leave",
-                    "locations": [(3, 15)],
+                    "locations": [(3, 19)],
                     "path": ["importantEmail"],
                 }
             ],
         )
 
-        # However that does not close the response event stream. Subsequent
-        # events are still executed.
+        # However that does not close the response event stream. Subsequent events are
+        # still executed.
         payload3 = await anext(subscription)
         assert payload3 == ({"importantEmail": {"email": {"subject": "Bonjour"}}}, None)
 
@@ -716,14 +715,14 @@ def describe_subscription_publish_phase():
             erroring_email_schema,
             parse(
                 """
-            subscription {
-              importantEmail {
-                email {
-                  subject
+                subscription {
+                  importantEmail {
+                    email {
+                      subject
+                    }
+                  }
                 }
-              }
-            }
-            """
+                """
             ),
         )
 

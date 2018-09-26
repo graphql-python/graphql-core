@@ -853,7 +853,7 @@ def describe_type_system_list_must_accept_only_types():
             assert GraphQLList(type_)
         msg = str(exc_info.value)
         assert msg == (
-            "Can only create a wrapper for a GraphQLType," f" but got: {type_}."
+            f"Can only create a wrapper for a GraphQLType, but got: {type_}."
         )
 
 
@@ -889,7 +889,7 @@ def describe_type_system_non_null_must_only_accept_non_nullable_types():
                 f" but got: {type_}."
             )
             if isinstance(type_, GraphQLNonNull)
-            else "Can only create a wrapper for a GraphQLType," f" but got: {type_}."
+            else f"Can only create a wrapper for a GraphQLType, but got: {type_}."
         )
 
 

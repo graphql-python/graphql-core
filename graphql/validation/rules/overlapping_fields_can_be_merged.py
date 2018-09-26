@@ -564,7 +564,7 @@ def find_conflict(
 
     if type1 and type2 and do_types_conflict(type1, type2):
         return (
-            (response_name, "they return conflicting types" f" {type1} and {type2}"),
+            (response_name, f"they return conflicting types {type1} and {type2}"),
             [node1],
             [node2],
         )

@@ -112,7 +112,7 @@ class SchemaValidationContext:
             self.report_error("Query root type must be provided.", schema.ast_node)
         elif not is_object_type(query_type):
             self.report_error(
-                "Query root type must be Object type," f" it cannot be {query_type}.",
+                f"Query root type must be Object type, it cannot be {query_type}.",
                 get_operation_type_node(schema, query_type, OperationType.QUERY),
             )
 

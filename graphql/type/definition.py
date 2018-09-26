@@ -158,7 +158,7 @@ class GraphQLWrappingType(GraphQLType, Generic[GT]):
     def __init__(self, type_: GT) -> None:
         if not is_type(type_):
             raise TypeError(
-                "Can only create a wrapper for a GraphQLType, but got:" f" {type_}."
+                f"Can only create a wrapper for a GraphQLType, but got: {type_}."
             )
         self.of_type = type_
 

@@ -560,10 +560,10 @@ def describe_execute_handles_non_nullable_types():
                 schema_with_non_null_arg,
                 parse(
                     """
-                query {
-                  withNonNullArg (cannotBeNull: "literal value")
-                }
-                """
+                    query {
+                      withNonNullArg (cannotBeNull: "literal value")
+                    }
+                    """
                 ),
             )
 
@@ -574,10 +574,10 @@ def describe_execute_handles_non_nullable_types():
                 schema_with_non_null_arg,
                 parse(
                     """
-                query ($testVar: String = "default value") {
-                  withNonNullArg (cannotBeNull: $testVar)
-                }
-                """
+                    query ($testVar: String = "default value") {
+                      withNonNullArg (cannotBeNull: $testVar)
+                    }
+                    """
                 ),
                 variable_values={},
             )  # intentionally missing variable
@@ -592,10 +592,10 @@ def describe_execute_handles_non_nullable_types():
                 schema_with_non_null_arg,
                 parse(
                     """
-                query {
-                  withNonNullArg
-                }
-                """
+                    query {
+                      withNonNullArg
+                    }
+                    """
                 ),
             )
 
@@ -605,7 +605,7 @@ def describe_execute_handles_non_nullable_types():
                     {
                         "message": "Argument 'cannotBeNull' of required type"
                         " 'String!' was not provided.",
-                        "locations": [(3, 19)],
+                        "locations": [(3, 23)],
                         "path": ["withNonNullArg"],
                     }
                 ],
@@ -619,10 +619,10 @@ def describe_execute_handles_non_nullable_types():
                 schema_with_non_null_arg,
                 parse(
                     """
-                query {
-                  withNonNullArg(cannotBeNull: null)
-                }
-                """
+                    query {
+                      withNonNullArg(cannotBeNull: null)
+                    }
+                    """
                 ),
             )
 
@@ -632,7 +632,7 @@ def describe_execute_handles_non_nullable_types():
                     {
                         "message": "Argument 'cannotBeNull' of non-null type"
                         " 'String!' must not be null.",
-                        "locations": [(3, 48)],
+                        "locations": [(3, 52)],
                         "path": ["withNonNullArg"],
                     }
                 ],
@@ -646,10 +646,10 @@ def describe_execute_handles_non_nullable_types():
                 schema_with_non_null_arg,
                 parse(
                     """
-                query ($testVar: String) {
-                  withNonNullArg(cannotBeNull: $testVar)
-                }
-                """
+                    query ($testVar: String) {
+                      withNonNullArg(cannotBeNull: $testVar)
+                    }
+                    """
                 ),
                 variable_values={},
             )  # intentionally missing variable
@@ -662,7 +662,7 @@ def describe_execute_handles_non_nullable_types():
                         " 'String!' was provided the variable"
                         " '$testVar' which was not provided"
                         " a runtime value.",
-                        "locations": [(3, 48)],
+                        "locations": [(3, 52)],
                         "path": ["withNonNullArg"],
                     }
                 ],
@@ -673,10 +673,10 @@ def describe_execute_handles_non_nullable_types():
                 schema_with_non_null_arg,
                 parse(
                     """
-                query ($testVar: String = "default value") {
-                  withNonNullArg (cannotBeNull: $testVar)
-                }
-                """
+                    query ($testVar: String = "default value") {
+                      withNonNullArg (cannotBeNull: $testVar)
+                    }
+                    """
                 ),
                 variable_values={"testVar": None},
             )
@@ -687,7 +687,7 @@ def describe_execute_handles_non_nullable_types():
                     {
                         "message": "Argument 'cannotBeNull' of non-null type"
                         " 'String!' must not be null.",
-                        "locations": [(3, 49)],
+                        "locations": [(3, 53)],
                         "path": ["withNonNullArg"],
                     }
                 ],

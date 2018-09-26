@@ -554,7 +554,7 @@ def find_types_removed_from_unions(
                 types_removed_from_union.append(
                     BreakingChange(
                         BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-                        f"{type_name} was removed" f" from union type {old_type_name}.",
+                        f"{type_name} was removed from union type {old_type_name}.",
                     )
                 )
     return types_removed_from_union

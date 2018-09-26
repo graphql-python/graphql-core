@@ -30,7 +30,6 @@ def is_valid_name_error(name: str, node: Node = None) -> Optional[GraphQLError]:
         )
     if not re_name.match(name):
         return GraphQLError(
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/" f" but {name!r} does not.",
-            node,
+            f"Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but {name!r} does not.", node
         )
     return None

@@ -29,7 +29,7 @@ def unknown_arg_message(
 def unknown_directive_arg_message(
     arg_name: str, directive_name: str, suggested_args: List[str]
 ) -> str:
-    message = f"Unknown argument '{arg_name}'" f" on directive '@{directive_name}'."
+    message = f"Unknown argument '{arg_name}' on directive '@{directive_name}'."
     if suggested_args:
         message += f" Did you mean {quoted_or_list(suggested_args)}?"
     return message

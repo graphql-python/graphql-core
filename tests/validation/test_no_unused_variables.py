@@ -118,7 +118,7 @@ def describe_validate_no_unused_variables():
             query ($a: String, $b: String, $c: String) {
               field(a: $a, b: $b)
             }
-        """,
+            """,
             [unused_var("c", None, 2, 44)],
         )
 

@@ -215,11 +215,11 @@ def describe_schema_parser():
         )
         assert_syntax_error(
             """
-          extend "Description" type Hello {
-            world: String
-          }""",
+            extend "Description" type Hello {
+              world: String
+            }""",
             "Unexpected String 'Description'",
-            (2, 18),
+            (2, 20),
         )
 
     def schema_extension():

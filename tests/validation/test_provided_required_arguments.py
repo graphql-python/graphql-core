@@ -46,129 +46,129 @@ def describe_validate_provided_required_arguments():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              dog {
-                isHousetrained(atOtherHomes: true)
-              }
-            }""",
+                {
+                  dog {
+                    isHousetrained(atOtherHomes: true)
+                  }
+                }""",
             )
 
         def no_arg_on_optional_arg():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              dog {
-                isHousetrained
-              }
-            }""",
+                {
+                  dog {
+                    isHousetrained
+                  }
+                }""",
             )
 
         def no_arg_on_non_null_field_with_default():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                nonNullFieldWithDefault
-              }
-            }""",
+                {
+                  complicatedArgs {
+                    nonNullFieldWithDefault
+                  }
+                }""",
             )
 
         def multiple_args():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleReqs(req1: 1, req2: 2)
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleReqs(req1: 1, req2: 2)
+                  }
+                }
+                """,
             )
 
         def multiple_args_reverse_order():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleReqs(req2: 2, req1: 1)
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleReqs(req2: 2, req1: 1)
+                  }
+                }
+                """,
             )
 
         def no_args_on_multiple_optional():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleOpts
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleOpts
+                  }
+                }
+                """,
             )
 
         def one_arg_on_multiple_optional():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleOpts(opt1: 1)
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleOpts(opt1: 1)
+                  }
+                }
+                """,
             )
 
         def second_arg_on_multiple_optional():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-                complicatedArgs {
-                    multipleOpts(opt2: 1)
+                {
+                    complicatedArgs {
+                        multipleOpts(opt2: 1)
+                    }
                 }
-            }
-            """,
+                """,
             )
 
         def multiple_reqs_on_mixed_list():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleOptAndReq(req1: 3, req2: 4)
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleOptAndReq(req1: 3, req2: 4)
+                  }
+                }
+                """,
             )
 
         def multiple_reqs_and_one_opt_on_mixed_list():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
+                  }
+                }
+                """,
             )
 
         def all_reqs_and_opts_on_mixed_list():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              complicatedArgs {
-                multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
-              }
-            }
-            """,
+                {
+                  complicatedArgs {
+                    multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
+                  }
+                }
+                """,
             )
 
     def describe_invalid_non_nullable_value():
@@ -219,25 +219,25 @@ def describe_validate_provided_required_arguments():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              dog @unknown
-            }
-            """,
+                {
+                  dog @unknown
+                }
+                """,
             )
 
         def with_directives_of_valid_type():
             expect_passes_rule(
                 ProvidedRequiredArgumentsRule,
                 """
-            {
-              dog @include(if: true) {
-                name
-              }
-              human @skip(if: false) {
-                name
-              }
-            }
-            """,
+                {
+                  dog @include(if: true) {
+                    name
+                  }
+                  human @skip(if: false) {
+                    name
+                  }
+                }
+                """,
             )
 
         def with_directive_with_missing_types():
@@ -261,12 +261,12 @@ def describe_validate_provided_required_arguments():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                foo: String @test
-                }
+                    type Query {
+                    foo: String @test
+                    }
 
-                directive @test(arg1: String, arg2: String! = "") on FIELD_DEFINITION
-                """
+                    directive @test(arg1: String, arg2: String! = "") on FIELD_DEFINITION
+                    """  # noqa: E501
                 )
                 == []
             )
@@ -275,39 +275,39 @@ def describe_validate_provided_required_arguments():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @test
-                }
+                    type Query {
+                      foo: String @test
+                    }
 
-                directive @test(arg: String!) on FIELD_DEFINITION
-                """
+                    directive @test(arg: String!) on FIELD_DEFINITION
+                    """
                 )
-                == [missing_directive_arg("test", "arg", "String!", 3, 31)]
+                == [missing_directive_arg("test", "arg", "String!", 3, 35)]
             )
 
         def missing_arg_on_standard_directive():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @include
-                }
-                """
+                    type Query {
+                      foo: String @include
+                    }
+                    """
                 )
-                == [missing_directive_arg("include", "if", "Boolean!", 3, 31)]
+                == [missing_directive_arg("include", "if", "Boolean!", 3, 35)]
             )
 
         def missing_arg_on_overridden_standard_directive():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @deprecated
-                }
-                directive @deprecated(reason: String!) on FIELD
-                """
+                    type Query {
+                      foo: String @deprecated
+                    }
+                    directive @deprecated(reason: String!) on FIELD
+                    """
                 )
-                == [missing_directive_arg("deprecated", "reason", "String!", 3, 31)]
+                == [missing_directive_arg("deprecated", "reason", "String!", 3, 35)]
             )
 
         def missing_arg_on_directive_defined_in_schema_extension():
@@ -321,13 +321,13 @@ def describe_validate_provided_required_arguments():
             assert (
                 expect_sdl_errors(
                     """
-                directive @test(arg: String!) on OBJECT
+                    directive @test(arg: String!) on OBJECT
 
-                extend type Query  @test
-                """,
+                    extend type Query  @test
+                    """,
                     schema,
                 )
-                == [missing_directive_arg("test", "arg", "String!", 4, 36)]
+                == [missing_directive_arg("test", "arg", "String!", 4, 40)]
             )
 
         def missing_arg_on_directive_used_in_schema_extension():
@@ -343,9 +343,9 @@ def describe_validate_provided_required_arguments():
             assert (
                 expect_sdl_errors(
                     """
-                extend type Query  @test
-                """,
+                    extend type Query  @test
+                    """,
                     schema,
                 )
-                == [missing_directive_arg("test", "arg", "String!", 2, 36)]
+                == [missing_directive_arg("test", "arg", "String!", 2, 40)]
             )

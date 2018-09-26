@@ -635,23 +635,23 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ...on IntBox {
-                          scalar
-                        }
-                        ...on NonNullStringBox1 {
-                          scalar
-                        }
-                      }
+                {
+                  someBox {
+                    ...on IntBox {
+                      scalar
                     }
-                    """,
+                    ...on NonNullStringBox1 {
+                      scalar
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
                             "scalar", "they return conflicting types Int and String!"
                         ),
-                        "locations": [(5, 27), (8, 27)],
+                        "locations": [(5, 23), (8, 23)],
                     }
                 ],
             )
@@ -664,21 +664,21 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                      {
-                        someBox {
-                            ... on SomeBox {
-                            deepBox {
-                              unrelatedField
-                            }
-                          }
-                          ... on StringBox {
-                            deepBox {
-                              unrelatedField
-                            }
-                          }
-                        }
+                {
+                  someBox {
+                      ... on SomeBox {
+                      deepBox {
+                        unrelatedField
                       }
-                      """,
+                    }
+                    ... on StringBox {
+                      deepBox {
+                        unrelatedField
+                      }
+                    }
+                  }
+                }
+                """,
             )
 
         def disallows_differing_return_types_despite_no_overlap():
@@ -686,23 +686,23 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          scalar
-                        }
-                        ... on StringBox {
-                          scalar
-                        }
-                      }
+                {
+                  someBox {
+                    ... on IntBox {
+                      scalar
                     }
-                    """,
+                    ... on StringBox {
+                      scalar
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
                             "scalar", "they return conflicting types Int and String"
                         ),
-                        "locations": [(5, 27), (8, 27)],
+                        "locations": [(5, 23), (8, 23)],
                     }
                 ],
             )
@@ -712,49 +712,49 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          deepBox {
-                            ...X
-                          }
-                        }
-                      }
-                      someBox {
-                        ... on StringBox {
-                          deepBox {
-                            ...Y
-                          }
-                        }
-                      }
-                      memoed: someBox {
-                        ... on IntBox {
-                          deepBox {
-                            ...X
-                          }
-                        }
-                      }
-                      memoed: someBox {
-                        ... on StringBox {
-                          deepBox {
-                            ...Y
-                          }
-                        }
-                      }
-                      other: someBox {
+                {
+                  someBox {
+                    ... on IntBox {
+                      deepBox {
                         ...X
                       }
-                      other: someBox {
+                    }
+                  }
+                  someBox {
+                    ... on StringBox {
+                      deepBox {
                         ...Y
                       }
                     }
-                    fragment X on SomeBox {
-                      scalar
+                  }
+                  memoed: someBox {
+                    ... on IntBox {
+                      deepBox {
+                        ...X
+                      }
                     }
-                    fragment Y on SomeBox {
-                      scalar: unrelatedField
+                  }
+                  memoed: someBox {
+                    ... on StringBox {
+                      deepBox {
+                        ...Y
+                      }
                     }
-                    """,
+                  }
+                  other: someBox {
+                    ...X
+                  }
+                  other: someBox {
+                    ...Y
+                  }
+                }
+                fragment X on SomeBox {
+                  scalar
+                }
+                fragment Y on SomeBox {
+                  scalar: unrelatedField
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
@@ -766,7 +766,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                                 )
                             ],
                         ),
-                        "locations": [(31, 23), (39, 23), (34, 23), (42, 23)],
+                        "locations": [(31, 19), (39, 19), (34, 19), (42, 19)],
                         "path": None,
                     }
                 ],
@@ -777,23 +777,23 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on NonNullStringBox1 {
-                          scalar
-                        }
-                        ... on StringBox {
-                          scalar
-                        }
-                      }
+                {
+                  someBox {
+                    ... on NonNullStringBox1 {
+                      scalar
                     }
-                    """,
+                    ... on StringBox {
+                      scalar
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
                             "scalar", "they return conflicting types String! and String"
                         ),
-                        "locations": [(5, 27), (8, 27)],
+                        "locations": [(5, 23), (8, 23)],
                     }
                 ],
             )
@@ -803,21 +803,21 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          box: listStringBox {
-                            scalar
-                          }
-                        }
-                        ... on StringBox {
-                          box: stringBox {
-                            scalar
-                          }
-                        }
+                {
+                  someBox {
+                    ... on IntBox {
+                      box: listStringBox {
+                        scalar
                       }
                     }
-                    """,
+                    ... on StringBox {
+                      box: stringBox {
+                        scalar
+                      }
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
@@ -825,7 +825,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                             "they return conflicting types"
                             " [StringBox] and StringBox",
                         ),
-                        "locations": [(5, 27), (10, 27)],
+                        "locations": [(5, 23), (10, 23)],
                     }
                 ],
             )
@@ -834,21 +834,21 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          box: stringBox {
-                            scalar
-                          }
-                        }
-                        ... on StringBox {
-                          box: listStringBox {
-                            scalar
-                          }
-                        }
+                {
+                  someBox {
+                    ... on IntBox {
+                      box: stringBox {
+                        scalar
                       }
                     }
-                    """,
+                    ... on StringBox {
+                      box: listStringBox {
+                        scalar
+                      }
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
@@ -856,7 +856,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                             "they return conflicting types"
                             " StringBox and [StringBox]",
                         ),
-                        "locations": [(5, 27), (10, 27)],
+                        "locations": [(5, 23), (10, 23)],
                     }
                 ],
             )
@@ -866,28 +866,28 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          box: stringBox {
-                            val: scalar
-                            val: unrelatedField
-                          }
-                        }
-                        ... on StringBox {
-                          box: stringBox {
-                            val: scalar
-                          }
-                        }
+                {
+                  someBox {
+                    ... on IntBox {
+                      box: stringBox {
+                        val: scalar
+                        val: unrelatedField
                       }
                     }
-                    """,
+                    ... on StringBox {
+                      box: stringBox {
+                        val: scalar
+                      }
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
                             "val", "scalar and unrelatedField are different fields"
                         ),
-                        "locations": [(6, 29), (7, 29)],
+                        "locations": [(6, 25), (7, 25)],
                     }
                 ],
             )
@@ -897,21 +897,21 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          box: stringBox {
-                            scalar
-                          }
-                        }
-                        ... on StringBox {
-                          box: intBox {
-                            scalar
-                          }
-                        }
+                {
+                  someBox {
+                    ... on IntBox {
+                      box: stringBox {
+                        scalar
                       }
                     }
-                    """,
+                    ... on StringBox {
+                      box: intBox {
+                        scalar
+                      }
+                    }
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
@@ -923,7 +923,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                                 )
                             ],
                         ),
-                        "locations": [(5, 27), (6, 29), (10, 27), (11, 29)],
+                        "locations": [(5, 23), (6, 25), (10, 23), (11, 25)],
                         "path": None,
                     }
                 ],
@@ -934,17 +934,17 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ... on IntBox {
-                          scalar: unrelatedField
-                        }
-                        ... on StringBox {
-                          scalar
-                        }
-                      }
+                {
+                  someBox {
+                    ... on IntBox {
+                      scalar: unrelatedField
                     }
-                    """,
+                    ... on StringBox {
+                      scalar
+                    }
+                  }
+                }
+                """,
             )
 
         def same_wrapped_scalar_return_types():
@@ -952,17 +952,17 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ...on NonNullStringBox1 {
-                          scalar
-                        }
-                        ...on NonNullStringBox2 {
-                          scalar
-                        }
-                      }
+                {
+                  someBox {
+                    ...on NonNullStringBox1 {
+                      scalar
                     }
-                    """,
+                    ...on NonNullStringBox2 {
+                      scalar
+                    }
+                  }
+                }
+                """,
             )
 
         def allows_inline_typeless_fragments():
@@ -970,13 +970,13 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      a
-                      ... {
-                        a
-                      }
-                    }
-                    """,
+                {
+                  a
+                  ... {
+                    a
+                  }
+                }
+                """,
             )
 
         def compares_deep_types_including_list():
@@ -984,25 +984,25 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      connection {
-                        ...edgeID
-                        edges {
-                          node {
-                            id: name
-                          }
-                        }
+                {
+                  connection {
+                    ...edgeID
+                    edges {
+                      node {
+                        id: name
                       }
                     }
+                  }
+                }
 
-                    fragment edgeID on Connection {
-                      edges {
-                        node {
-                          id
-                        }
-                      }
+                fragment edgeID on Connection {
+                  edges {
+                    node {
+                      id
                     }
-                    """,
+                  }
+                }
+                """,
                 [
                     {
                         "message": fields_conflict_message(
@@ -1010,12 +1010,12 @@ def describe_validate_overlapping_fields_can_be_merged():
                             [("node", [("id", "name and id are different fields")])],
                         ),
                         "locations": [
-                            (5, 25),
-                            (6, 27),
-                            (7, 29),
-                            (14, 23),
-                            (15, 25),
-                            (16, 27),
+                            (5, 21),
+                            (6, 23),
+                            (7, 25),
+                            (14, 19),
+                            (15, 21),
+                            (16, 23),
                         ],
                         "path": None,
                     }
@@ -1027,17 +1027,17 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      someBox {
-                        ...on UnknownType {
-                          scalar
-                        }
-                        ...on NonNullStringBox2 {
-                          scalar
-                        }
-                      }
+                {
+                  someBox {
+                    ...on UnknownType {
+                      scalar
                     }
-                    """,
+                    ...on NonNullStringBox2 {
+                      scalar
+                    }
+                  }
+                }
+                """,
             )
 
         def error_message_contains_hint_for_alias_conflict():
@@ -1063,12 +1063,12 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema_with_keywords,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      foo {
-                        constructor
-                      }
-                    }
-                    """,
+                {
+                  foo {
+                    constructor
+                  }
+                }
+                """,
             )
 
         def works_for_field_names_that_are_python_keywords():
@@ -1082,12 +1082,12 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema_with_keywords,
                 OverlappingFieldsCanBeMergedRule,
                 """
-                    {
-                      foo {
-                        class
-                      }
-                    }
-                    """,
+                {
+                  foo {
+                    class
+                  }
+                }
+                """,
             )
 
     def does_not_infinite_loop_on_recursive_fragments():

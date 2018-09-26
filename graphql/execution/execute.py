@@ -842,7 +842,7 @@ class ExecutionContext:
         serialized_result = return_type.serialize(result)
         if is_invalid(serialized_result):
             raise TypeError(
-                f"Expected a value of type '{return_type}'" f" but received: {result!r}"
+                f"Expected a value of type '{return_type}' but received: {result!r}"
             )
         return serialized_result
 
@@ -1084,8 +1084,7 @@ def invalid_return_type_error(
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
-        f"Expected value of type '{return_type.name}'" f" but got: {result!r}.",
-        field_nodes,
+        f"Expected value of type '{return_type.name}' but got: {result!r}.", field_nodes
     )
 
 

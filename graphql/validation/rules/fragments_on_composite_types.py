@@ -16,9 +16,7 @@ def inline_fragment_on_non_composite_error_message(type_: str) -> str:
 
 
 def fragment_on_non_composite_error_message(frag_name: str, type_: str) -> str:
-    return (
-        f"Fragment '{frag_name}'" f" cannot condition on non composite type '{type_}'."
-    )
+    return f"Fragment '{frag_name}' cannot condition on non composite type '{type_}'."
 
 
 class FragmentsOnCompositeTypesRule(ValidationRule):

@@ -143,7 +143,7 @@ def build_client_schema(
         interfaces = object_introspection.get("interfaces")
         if interfaces is None:
             raise TypeError(
-                "Introspection result missing interfaces:" f" {object_introspection!r}"
+                f"Introspection result missing interfaces: {object_introspection!r}"
             )
         return GraphQLObjectType(
             name=object_introspection["name"],
@@ -180,7 +180,7 @@ def build_client_schema(
     def build_enum_def(enum_introspection: Dict) -> GraphQLEnumType:
         if enum_introspection.get("enumValues") is None:
             raise TypeError(
-                "Introspection result missing enumValues:" f" {enum_introspection!r}"
+                f"Introspection result missing enumValues: {enum_introspection!r}"
             )
         return GraphQLEnumType(
             name=enum_introspection["name"],
@@ -222,7 +222,7 @@ def build_client_schema(
     def build_field(field_introspection: Dict) -> GraphQLField:
         if field_introspection.get("args") is None:
             raise TypeError(
-                "Introspection result missing field args:" f" {field_introspection!r}"
+                f"Introspection result missing field args: {field_introspection!r}"
             )
         return GraphQLField(
             get_output_type(field_introspection["type"]),
@@ -234,7 +234,7 @@ def build_client_schema(
     def build_field_def_map(type_introspection: Dict) -> Dict[str, GraphQLField]:
         if type_introspection.get("fields") is None:
             raise TypeError(
-                "Introspection result missing fields:" f" {type_introspection!r}"
+                f"Introspection result missing fields: {type_introspection!r}"
             )
         return {
             field_introspection["name"]: build_field(field_introspection)

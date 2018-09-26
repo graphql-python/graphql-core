@@ -8,7 +8,7 @@ __all__ = ["VariablesAreInputTypesRule", "non_input_type_on_var_message"]
 
 
 def non_input_type_on_var_message(variable_name: str, type_name: str) -> str:
-    return f"Variable '${variable_name}'" f" cannot be non-input type '{type_name}'."
+    return f"Variable '${variable_name}' cannot be non-input type '{type_name}'."
 
 
 class VariablesAreInputTypesRule(ValidationRule):

@@ -215,53 +215,53 @@ def describe_validate_known_argument_names():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @test(unknown: "")
-                }
+                    type Query {
+                      foo: String @test(unknown: "")
+                    }
 
-                directive @test(arg: String) on FIELD_DEFINITION
-                """
+                    directive @test(arg: String) on FIELD_DEFINITION
+                    """
                 )
-                == [unknown_directive_arg("unknown", "test", [], 3, 37)]
+                == [unknown_directive_arg("unknown", "test", [], 3, 41)]
             )
 
         def misspelled_arg_name_is_reported_on_directive_defined_inside_sdl():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @test(agr: "")
-                }
+                    type Query {
+                      foo: String @test(agr: "")
+                    }
 
-                directive @test(arg: String) on FIELD_DEFINITION
-                """
+                    directive @test(arg: String) on FIELD_DEFINITION
+                    """
                 )
-                == [unknown_directive_arg("agr", "test", ["arg"], 3, 37)]
+                == [unknown_directive_arg("agr", "test", ["arg"], 3, 41)]
             )
 
         def unknown_arg_on_standard_directive():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @deprecated(unknown: "")
-                }
-                """
+                    type Query {
+                      foo: String @deprecated(unknown: "")
+                    }
+                    """
                 )
-                == [unknown_directive_arg("unknown", "deprecated", [], 3, 43)]
+                == [unknown_directive_arg("unknown", "deprecated", [], 3, 47)]
             )
 
         def unknown_arg_on_overridden_standard_directive():
             assert (
                 expect_sdl_errors(
                     """
-                type Query {
-                  foo: String @deprecated(reason: "")
-                }
-                directive @deprecated(arg: String) on FIELD
-                """
+                    type Query {
+                      foo: String @deprecated(reason: "")
+                    }
+                    directive @deprecated(arg: String) on FIELD
+                    """
                 )
-                == [unknown_directive_arg("reason", "deprecated", [], 3, 43)]
+                == [unknown_directive_arg("reason", "deprecated", [], 3, 47)]
             )
 
         def unknown_arg_on_directive_defined_in_schema_extension():
@@ -275,13 +275,13 @@ def describe_validate_known_argument_names():
             assert (
                 expect_sdl_errors(
                     """
-                directive @test(arg: String) on OBJECT
+                    directive @test(arg: String) on OBJECT
 
-                extend type Query  @test(unknown: "")
-                """,
+                    extend type Query  @test(unknown: "")
+                    """,
                     schema,
                 )
-                == [unknown_directive_arg("unknown", "test", [], 4, 42)]
+                == [unknown_directive_arg("unknown", "test", [], 4, 46)]
             )
 
         def unknown_arg_on_directive_used_in_schema_extension():
@@ -297,9 +297,9 @@ def describe_validate_known_argument_names():
             assert (
                 expect_sdl_errors(
                     """
-                extend type Query @test(unknown: "")
-                """,
+                    extend type Query @test(unknown: "")
+                    """,
                     schema,
                 )
-                == [unknown_directive_arg("unknown", "test", [], 2, 41)]
+                == [unknown_directive_arg("unknown", "test", [], 2, 45)]
             )

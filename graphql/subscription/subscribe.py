@@ -103,7 +103,7 @@ async def create_source_event_stream(
 
     Returns a coroutine that yields an AsyncIterable.
 
-    If the client-provided invalid arguments, the source stream could not be created,
+    If the client provided invalid arguments, the source stream could not be created,
     or the resolver did not return an AsyncIterable, this function will throw an error,
     which should be caught and handled by the caller.
 
@@ -173,5 +173,5 @@ async def create_source_event_stream(
     if isinstance(event_stream, AsyncIterable):
         return cast(AsyncIterable, event_stream)
     raise TypeError(
-        "Subscription field must return AsyncIterable." f" Received: {event_stream!r}"
+        f"Subscription field must return AsyncIterable. Received: {event_stream!r}"
     )

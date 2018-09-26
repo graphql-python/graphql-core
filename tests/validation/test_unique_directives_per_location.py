@@ -117,37 +117,37 @@ def describe_validate_directives_are_unique_per_location():
         assert (
             expect_sdl_errors(
                 """
-            schema @directive @directive { query: Dummy }
-            extend schema @directive @directive
+                schema @directive @directive { query: Dummy }
+                extend schema @directive @directive
 
-            scalar TestScalar @directive @directive
-            extend scalar TestScalar @directive @directive
+                scalar TestScalar @directive @directive
+                extend scalar TestScalar @directive @directive
 
-            type TestObject @directive @directive
-            extend type TestObject @directive @directive
+                type TestObject @directive @directive
+                extend type TestObject @directive @directive
 
-            interface TestInterface @directive @directive
-            extend interface TestInterface @directive @directive
+                interface TestInterface @directive @directive
+                extend interface TestInterface @directive @directive
 
-            union TestUnion @directive @directive
-            extend union TestUnion @directive @directive
+                union TestUnion @directive @directive
+                extend union TestUnion @directive @directive
 
-            input TestInput @directive @directive
-            extend input TestInput @directive @directive
-            """
+                input TestInput @directive @directive
+                extend input TestInput @directive @directive
+                """
             )
             == [
-                duplicate_directive("directive", 2, 20, 2, 31),
-                duplicate_directive("directive", 3, 27, 3, 38),
-                duplicate_directive("directive", 5, 31, 5, 42),
-                duplicate_directive("directive", 6, 38, 6, 49),
-                duplicate_directive("directive", 8, 29, 8, 40),
-                duplicate_directive("directive", 9, 36, 9, 47),
-                duplicate_directive("directive", 11, 37, 11, 48),
-                duplicate_directive("directive", 12, 44, 12, 55),
-                duplicate_directive("directive", 14, 29, 14, 40),
-                duplicate_directive("directive", 15, 36, 15, 47),
-                duplicate_directive("directive", 17, 29, 17, 40),
-                duplicate_directive("directive", 18, 36, 18, 47),
+                duplicate_directive("directive", 2, 24, 2, 35),
+                duplicate_directive("directive", 3, 31, 3, 42),
+                duplicate_directive("directive", 5, 35, 5, 46),
+                duplicate_directive("directive", 6, 42, 6, 53),
+                duplicate_directive("directive", 8, 33, 8, 44),
+                duplicate_directive("directive", 9, 40, 9, 51),
+                duplicate_directive("directive", 11, 41, 11, 52),
+                duplicate_directive("directive", 12, 48, 12, 59),
+                duplicate_directive("directive", 14, 33, 14, 44),
+                duplicate_directive("directive", 15, 40, 15, 51),
+                duplicate_directive("directive", 17, 33, 17, 44),
+                duplicate_directive("directive", 18, 40, 18, 51),
             ]
         )

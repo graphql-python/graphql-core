@@ -90,17 +90,17 @@ def describe_validate_unique_fragment_names():
         expect_fails_rule(
             UniqueFragmentNamesRule,
             """
-              {
-                ...fragA
-              }
-              fragment fragA on Type {
-                fieldA
-              }
-              fragment fragA on Type {
-                fieldB
-              }
-              """,
-            [duplicate_fragment("fragA", 5, 24, 8, 24)],
+            {
+              ...fragA
+            }
+            fragment fragA on Type {
+              fieldA
+            }
+            fragment fragA on Type {
+              fieldB
+            }
+            """,
+            [duplicate_fragment("fragA", 5, 22, 8, 22)],
         )
 
     def fragments_named_the_same_without_being_referenced():
