@@ -736,3 +736,31 @@ def describe_subscription_publish_phase():
 
         with raises(StopAsyncIteration):
             await anext(subscription)
+
+    @mark.asyncio
+    async def should_work_with_async_resolve_function():
+        async def subscribe_fn(_event, _info):
+            yield {"email": {"subject": "Hello"}}
+
+        async def resolve_fn(event, _info):
+            return event
+
+        async_email_schema = email_schema_with_resolvers(subscribe_fn, resolve_fn)
+
+        subscription = await subscribe(
+            async_email_schema,
+            parse(
+                """
+                subscription {
+                  importantEmail {
+                    email {
+                      subject
+                    }
+                  }
+                }
+                """
+            ),
+        )
+
+        payload = await anext(subscription)
+        assert payload == ({"importantEmail": {"email": {"subject": "Hello"}}}, None)

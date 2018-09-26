@@ -74,7 +74,7 @@ async def subscribe(
         as it is nearly identical to the "ExecuteQuery" algorithm, for which `execute`
         is also used.
         """
-        return execute(
+        result = execute(
             schema,
             document,
             payload,
@@ -83,6 +83,7 @@ async def subscribe(
             operation_name,
             field_resolver,
         )
+        return await result if isawaitable(result) else result
 
     return MapAsyncIterator(result_or_stream, map_source_to_response)
 
