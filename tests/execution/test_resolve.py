@@ -1,7 +1,5 @@
 from json import dumps
 
-from pytest import fixture
-
 from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,
@@ -14,12 +12,11 @@ from graphql.type import (
 
 
 def describe_execute_resolve_function():
-    @fixture
-    def test_schema(test_field):
+    def _test_schema(test_field):
         return GraphQLSchema(GraphQLObjectType("Query", {"test": test_field}))
 
     def default_function_accesses_attributes():
-        schema = test_schema(GraphQLField(GraphQLString))
+        schema = _test_schema(GraphQLField(GraphQLString))
 
         class Source:
             test = "testValue"
@@ -30,14 +27,14 @@ def describe_execute_resolve_function():
         )
 
     def default_function_accesses_keys():
-        schema = test_schema(GraphQLField(GraphQLString))
+        schema = _test_schema(GraphQLField(GraphQLString))
 
         source = {"test": "testValue"}
 
         assert graphql_sync(schema, "{ test }", source) == ({"test": "testValue"}, None)
 
     def default_function_calls_methods():
-        schema = test_schema(GraphQLField(GraphQLString))
+        schema = _test_schema(GraphQLField(GraphQLString))
 
         class Source:
             _secret = "testValue"
@@ -51,7 +48,7 @@ def describe_execute_resolve_function():
         )
 
     def default_function_passes_args_and_context():
-        schema = test_schema(
+        schema = _test_schema(
             GraphQLField(GraphQLInt, args={"addend1": GraphQLArgument(GraphQLInt)})
         )
 
@@ -73,7 +70,7 @@ def describe_execute_resolve_function():
         )
 
     def uses_provided_resolve_function():
-        schema = test_schema(
+        schema = _test_schema(
             GraphQLField(
                 GraphQLString,
                 args={

@@ -1,6 +1,6 @@
 from inspect import isawaitable
 
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
 from graphql import graphql_sync
 from graphql.execution import execute
@@ -9,25 +9,23 @@ from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQL
 
 
 def describe_execute_synchronously_when_possible():
-    @fixture
-    def resolve_sync(root_value, info_):
+    def _resolve_sync(root_value, info_):
         return root_value
 
-    @fixture
-    async def resolve_async(root_value, info_):
+    async def _resolve_async(root_value, info_):
         return root_value
 
     schema = GraphQLSchema(
         GraphQLObjectType(
             "Query",
             {
-                "syncField": GraphQLField(GraphQLString, resolve=resolve_sync),
-                "asyncField": GraphQLField(GraphQLString, resolve=resolve_async),
+                "syncField": GraphQLField(GraphQLString, resolve=_resolve_sync),
+                "asyncField": GraphQLField(GraphQLString, resolve=_resolve_async),
             },
         ),
         GraphQLObjectType(
             "Mutation",
-            {"syncMutationField": GraphQLField(GraphQLString, resolve=resolve_sync)},
+            {"syncMutationField": GraphQLField(GraphQLString, resolve=_resolve_sync)},
         ),
     )
 

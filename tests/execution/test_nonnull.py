@@ -1,6 +1,6 @@
 import re
 from inspect import isawaitable
-from pytest import fixture, mark
+from pytest import mark
 
 from graphql.execution import execute
 from graphql.language import parse
@@ -533,8 +533,7 @@ def describe_execute_handles_non_nullable_types():
     def describe_handles_non_null_argument():
 
         # noinspection PyPep8Naming
-        @fixture
-        def resolve(_obj, _info, cannotBeNull):
+        def _resolve(_obj, _info, cannotBeNull):
             if isinstance(cannotBeNull, str):
                 return f"Passed: {cannotBeNull}"
 
@@ -549,7 +548,7 @@ def describe_execute_handles_non_nullable_types():
                                 GraphQLNonNull(GraphQLString)
                             )
                         },
-                        resolve=resolve,
+                        resolve=_resolve,
                     )
                 },
             )

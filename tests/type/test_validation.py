@@ -1,6 +1,6 @@
 from typing import cast
 
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
 from graphql.language import parse
 from graphql.type import (
@@ -784,8 +784,7 @@ def describe_type_system_enum_types_must_be_well_defined():
 
 
 def describe_type_system_object_fields_must_have_output_types():
-    @fixture
-    def schema_with_object_field_of_type(field_type):
+    def _schema_with_object_field_of_type(field_type):
         BadObjectType = GraphQLObjectType(
             "BadObject", {"badField": GraphQLField(field_type)}
         )
@@ -796,13 +795,13 @@ def describe_type_system_object_fields_must_have_output_types():
 
     @mark.parametrize("type_", output_types)
     def accepts_an_output_type_as_an_object_field_type(type_):
-        schema = schema_with_object_field_of_type(type_)
+        schema = _schema_with_object_field_of_type(type_)
         assert validate_schema(schema) == []
 
     def rejects_an_empty_object_field_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_object_field_of_type(None)
+            _schema_with_object_field_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -810,7 +809,7 @@ def describe_type_system_object_fields_must_have_output_types():
     def rejects_a_non_output_type_as_an_object_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_object_field_of_type(type_)
+            _schema_with_object_field_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -818,7 +817,7 @@ def describe_type_system_object_fields_must_have_output_types():
     def rejects_a_non_type_value_as_an_object_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_object_field_of_type(type_)
+            _schema_with_object_field_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -1064,8 +1063,7 @@ def describe_type_system_interface_extensions_should_be_valid():
 
 
 def describe_type_system_interface_fields_must_have_output_types():
-    @fixture
-    def schema_with_interface_field_of_type(field_type):
+    def _schema_with_interface_field_of_type(field_type):
         BadInterfaceType = GraphQLInterfaceType(
             "BadInterface", {"badField": GraphQLField(field_type)}
         )
@@ -1081,13 +1079,13 @@ def describe_type_system_interface_fields_must_have_output_types():
 
     @mark.parametrize("type_", output_types)
     def accepts_an_output_type_as_an_interface_field_type(type_):
-        schema = schema_with_interface_field_of_type(type_)
+        schema = _schema_with_interface_field_of_type(type_)
         assert validate_schema(schema) == []
 
     def rejects_an_empty_interface_field_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_interface_field_of_type(None)
+            _schema_with_interface_field_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -1095,7 +1093,7 @@ def describe_type_system_interface_fields_must_have_output_types():
     def rejects_a_non_output_type_as_an_interface_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_interface_field_of_type(type_)
+            _schema_with_interface_field_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -1103,7 +1101,7 @@ def describe_type_system_interface_fields_must_have_output_types():
     def rejects_a_non_type_value_as_an_interface_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_interface_field_of_type(type_)
+            _schema_with_interface_field_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -1151,8 +1149,7 @@ def describe_type_system_interface_fields_must_have_output_types():
 
 
 def describe_type_system_field_arguments_must_have_input_types():
-    @fixture
-    def schema_with_arg_of_type(arg_type):
+    def _schema_with_arg_of_type(arg_type):
         BadObjectType = GraphQLObjectType(
             "BadObject",
             {
@@ -1167,13 +1164,13 @@ def describe_type_system_field_arguments_must_have_input_types():
 
     @mark.parametrize("type_", input_types)
     def accepts_an_input_type_as_a_field_arg_type(type_):
-        schema = schema_with_arg_of_type(type_)
+        schema = _schema_with_arg_of_type(type_)
         assert validate_schema(schema) == []
 
     def rejects_an_empty_field_arg_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_arg_of_type(None)
+            _schema_with_arg_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
 
@@ -1181,7 +1178,7 @@ def describe_type_system_field_arguments_must_have_input_types():
     def rejects_a_non_input_type_as_a_field_arg_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_arg_of_type(type_)
+            _schema_with_arg_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
 
@@ -1189,7 +1186,7 @@ def describe_type_system_field_arguments_must_have_input_types():
     def rejects_a_non_type_value_as_a_field_arg_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_arg_of_type(type_)
+            _schema_with_arg_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
 
@@ -1215,8 +1212,7 @@ def describe_type_system_field_arguments_must_have_input_types():
 
 
 def describe_type_system_input_object_fields_must_have_input_types():
-    @fixture
-    def schema_with_input_field_of_type(input_field_type):
+    def _schema_with_input_field_of_type(input_field_type):
         BadInputObjectType = GraphQLInputObjectType(
             "BadInputObject", {"badField": GraphQLInputField(input_field_type)}
         )
@@ -1234,13 +1230,13 @@ def describe_type_system_input_object_fields_must_have_input_types():
 
     @mark.parametrize("type_", input_types)
     def accepts_an_input_type_as_an_input_fieldtype(type_):
-        schema = schema_with_input_field_of_type(type_)
+        schema = _schema_with_input_field_of_type(type_)
         assert validate_schema(schema) == []
 
     def rejects_an_empty_input_field_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_input_field_of_type(None)
+            _schema_with_input_field_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
 
@@ -1248,7 +1244,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
     def rejects_a_non_input_type_as_an_input_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_input_field_of_type(type_)
+            _schema_with_input_field_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
 
@@ -1256,7 +1252,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
     def rejects_a_non_type_value_as_an_input_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            schema_with_input_field_of_type(type_)
+            _schema_with_input_field_of_type(type_)
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
 

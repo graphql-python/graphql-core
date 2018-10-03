@@ -1,5 +1,3 @@
-from pytest import fixture
-
 from graphql.type import (
     GraphQLField,
     GraphQLFloat,
@@ -42,24 +40,26 @@ def describe_type_comparators():
             assert is_equal_type(GraphQLNonNull(GraphQLInt), GraphQLInt) is False
 
     def describe_is_type_sub_type_of():
-        @fixture
-        def test_schema(field_type: GraphQLOutputType = GraphQLString):
+        def _test_schema(field_type: GraphQLOutputType = GraphQLString):
             return GraphQLSchema(
                 query=GraphQLObjectType("Query", {"field": GraphQLField(field_type)})
             )
 
         def same_reference_is_subtype():
             assert (
-                is_type_sub_type_of(test_schema(), GraphQLString, GraphQLString) is True
+                is_type_sub_type_of(_test_schema(), GraphQLString, GraphQLString)
+                is True
             )
 
         def int_is_not_subtype_of_float():
-            assert is_type_sub_type_of(test_schema(), GraphQLInt, GraphQLFloat) is False
+            assert (
+                is_type_sub_type_of(_test_schema(), GraphQLInt, GraphQLFloat) is False
+            )
 
         def non_null_is_subtype_of_nullable():
             assert (
                 is_type_sub_type_of(
-                    test_schema(), GraphQLNonNull(GraphQLInt), GraphQLInt
+                    _test_schema(), GraphQLNonNull(GraphQLInt), GraphQLInt
                 )
                 is True
             )
@@ -67,25 +67,25 @@ def describe_type_comparators():
         def nullable_is_not_subtype_of_non_null():
             assert (
                 is_type_sub_type_of(
-                    test_schema(), GraphQLInt, GraphQLNonNull(GraphQLInt)
+                    _test_schema(), GraphQLInt, GraphQLNonNull(GraphQLInt)
                 )
                 is False
             )
 
         def item_is_not_subtype_of_list():
             assert not is_type_sub_type_of(
-                test_schema(), GraphQLInt, GraphQLList(GraphQLInt)
+                _test_schema(), GraphQLInt, GraphQLList(GraphQLInt)
             )
 
         def list_is_not_subtype_of_item():
             assert not is_type_sub_type_of(
-                test_schema(), GraphQLList(GraphQLInt), GraphQLInt
+                _test_schema(), GraphQLList(GraphQLInt), GraphQLInt
             )
 
         def member_is_subtype_of_union():
             member = GraphQLObjectType("Object", {"field": GraphQLField(GraphQLString)})
             union = GraphQLUnionType("Union", [member])
-            schema = test_schema(union)
+            schema = _test_schema(union)
             assert is_type_sub_type_of(schema, member, union)
 
         def implementation_is_subtype_of_interface():
@@ -97,5 +97,5 @@ def describe_type_comparators():
                 fields={"field": GraphQLField(GraphQLString)},
                 interfaces=[iface],
             )
-            schema = test_schema(impl)
+            schema = _test_schema(impl)
             assert is_type_sub_type_of(schema, impl, iface)

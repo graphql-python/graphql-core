@@ -1,6 +1,6 @@
 from typing import cast, Dict
 
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
 from graphql.error import INVALID
 from graphql.type import (
@@ -514,8 +514,7 @@ def describe_object_interfaces_must_be_a_sequence():
 
 
 def describe_type_system_object_fields_must_have_valid_resolve_values():
-    @fixture
-    def schema_with_object_with_field_resolver(resolve_value):
+    def _schema_with_object_with_field_resolver(resolve_value):
         BadResolverType = GraphQLObjectType(
             "BadResolver",
             {"bad_field": GraphQLField(GraphQLString, resolve=resolve_value)},
@@ -525,17 +524,17 @@ def describe_type_system_object_fields_must_have_valid_resolve_values():
         )
 
     def accepts_a_lambda_as_an_object_field_resolver():
-        schema_with_object_with_field_resolver(lambda _obj, _info: {})
+        _schema_with_object_with_field_resolver(lambda _obj, _info: {})
 
     def rejects_an_empty_object_field_resolver():
         with raises(TypeError) as exc_info:
-            schema_with_object_with_field_resolver({})
+            _schema_with_object_with_field_resolver({})
         msg = str(exc_info.value)
         assert msg == "Field resolver must be a function if provided,  but got: {}."
 
     def rejects_a_constant_scalar_value_resolver():
         with raises(TypeError) as exc_info:
-            schema_with_object_with_field_resolver(0)
+            _schema_with_object_with_field_resolver(0)
         msg = str(exc_info.value)
         assert msg == "Field resolver must be a function if provided,  but got: 0."
 
