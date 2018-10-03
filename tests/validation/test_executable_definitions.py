@@ -1,6 +1,6 @@
 from graphql.validation import ExecutableDefinitionsRule
 from graphql.validation.rules.executable_definitions import (
-    non_executable_definitions_message
+    non_executable_definitions_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule

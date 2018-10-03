@@ -5,8 +5,7 @@ name = "pypi"
 
 [dev-packages]
 graphql-core-next = {path = ".", editable = true}
-# Line below commented as causes issues with Pipenv
-# black = "18.6b4"
+# black = "*"
 flake8 = "*"
 mypy = "*"
 pytest = "*"
@@ -17,3 +16,4 @@ sphinx = "*"
 sphinx_rtd_theme = "*"
 python-coveralls = "*"
 pytest-cov = "*"
+

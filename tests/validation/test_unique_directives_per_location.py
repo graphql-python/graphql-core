@@ -2,7 +2,7 @@ from functools import partial
 
 from graphql.validation import UniqueDirectivesPerLocationRule
 from graphql.validation.rules.unique_directives_per_location import (
-    duplicate_directive_message
+    duplicate_directive_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule, expect_sdl_errors_from_rule

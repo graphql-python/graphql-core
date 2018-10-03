@@ -12,9 +12,13 @@ install:
     - pipenv install --dev
 
 script:
+    - flake8 --version
     - flake8 graphql tests
+    - black --version
     - black graphql tests --check
+    - mypy --version
     - mypy graphql
+    - pytest --version
     - pytest --cov-report term-missing --cov=graphql
 
 after_success:

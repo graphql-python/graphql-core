@@ -13,7 +13,7 @@ from graphql.type import (
 )
 from graphql.utilities import get_introspection_query
 from graphql.validation.rules.provided_required_arguments import (
-    missing_field_arg_message
+    missing_field_arg_message,
 )
 
 

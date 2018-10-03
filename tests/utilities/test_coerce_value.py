@@ -164,14 +164,16 @@ def describe_coerce_value():
             ]
 
     def describe_for_graphql_enum():
-        TestEnum = GraphQLEnumType("TestEnum", {"FOO": "InternalFoo", "BAR": 123456789})
+        TestEnum = GraphQLEnumType(
+            "TestEnum", {"FOO": "InternalFoo", "BAR": 123_456_789}
+        )
 
         def returns_no_error_for_a_known_enum_name():
             foo_result = coerce_value("FOO", TestEnum)
             assert expect_value(foo_result) == "InternalFoo"
 
             bar_result = coerce_value("BAR", TestEnum)
-            assert expect_value(bar_result) == 123456789
+            assert expect_value(bar_result) == 123_456_789
 
         def results_error_for_misspelled_enum_value():
             result = coerce_value("foo", TestEnum)

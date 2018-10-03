@@ -1,6 +1,6 @@
 from graphql.validation import UniqueFragmentNamesRule
 from graphql.validation.rules.unique_fragment_names import (
-    duplicate_fragment_name_message
+    duplicate_fragment_name_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule

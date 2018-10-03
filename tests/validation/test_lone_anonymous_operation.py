@@ -1,6 +1,6 @@
 from graphql.validation import LoneAnonymousOperationRule
 from graphql.validation.rules.lone_anonymous_operation import (
-    anonymous_operation_not_alone_message
+    anonymous_operation_not_alone_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule

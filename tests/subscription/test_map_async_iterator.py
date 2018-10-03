@@ -260,12 +260,12 @@ def describe_map_async_iterator():
 
         # Make sure it is blocked
         doubles_future = ensure_future(anext(doubles))
-        await sleep(.05)
+        await sleep(0.05)
         assert not doubles_future.done()
 
         # Unblock and watch StopAsyncIteration propagate
         await doubles.aclose()
-        await sleep(.05)
+        await sleep(0.05)
         assert doubles_future.done()
         assert isinstance(doubles_future.exception(), StopAsyncIteration)
 

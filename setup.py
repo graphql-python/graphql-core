@@ -37,6 +37,7 @@ setup(
         "pytest-asyncio",
         "pytest-cov",
         "pytest-describe",
+        "black",
         "flake8",
         "mypy",
         "tox",

@@ -1,6 +1,6 @@
 from graphql.validation import UniqueInputFieldNamesRule
 from graphql.validation.rules.unique_input_field_names import (
-    duplicate_input_field_message
+    duplicate_input_field_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule

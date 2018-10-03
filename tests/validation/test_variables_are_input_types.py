@@ -1,6 +1,6 @@
 from graphql.validation import VariablesAreInputTypesRule
 from graphql.validation.rules.variables_are_input_types import (
-    non_input_type_on_var_message
+    non_input_type_on_var_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule

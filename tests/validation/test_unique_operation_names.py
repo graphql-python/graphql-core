@@ -1,6 +1,6 @@
 from graphql.validation import UniqueOperationNamesRule
 from graphql.validation.rules.unique_operation_names import (
-    duplicate_operation_name_message
+    duplicate_operation_name_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule

@@ -11,7 +11,7 @@ from graphql.type import (
 )
 from graphql.validation import OverlappingFieldsCanBeMergedRule
 from graphql.validation.rules.overlapping_fields_can_be_merged import (
-    fields_conflict_message
+    fields_conflict_message,
 )
 
 from .harness import (

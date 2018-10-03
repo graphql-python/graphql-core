@@ -1,6 +1,6 @@
 from graphql.validation import SingleFieldSubscriptionsRule
 from graphql.validation.rules.single_field_subscriptions import (
-    single_field_only_message
+    single_field_only_message,
 )
 
 from .harness import expect_fails_rule, expect_passes_rule
