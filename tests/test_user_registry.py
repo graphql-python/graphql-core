@@ -24,7 +24,6 @@ from graphql import (
     GraphQLInt,
     GraphQLNonNull,
     GraphQLObjectType,
-    GraphQLResolveInfo,
     GraphQLSchema,
     GraphQLString,
 )
@@ -43,42 +42,61 @@ class User(NamedTuple):
     verified: bool = False
 
 
-class UserRegistry:
-    """"Simulation of a user registry with asynchronous database backend access."""
-
-    registry: Dict[str, User]
-
-    def __init__(self, **users):
-        self.registry = users
-
-    async def get(self, id_):
-        await sleep(0)
-        return self.registry.get(id_)
-
-    async def create(self, **kwargs):
-        await sleep(0)
-        id_ = str(len(self.registry))
-        user = User(id=id_, **kwargs)
-        self.registry[id_] = user
-        return user
-
-    async def update(self, id_, **kwargs):
-        await sleep(0)
-        user = self.registry[id_]._replace(**kwargs)
-        self.registry[id_] = user
-        return user
-
-    async def delete(self, id_):
-        await sleep(0)
-        return self.registry.pop(id_)
-
-
 class MutationEnum(Enum):
     """Mutation event type"""
 
     CREATED = "created"
     UPDATED = "updated"
     DELETED = "deleted"
+
+
+class UserRegistry:
+    """"Simulation of a user registry with asynchronous database backend access."""
+
+    def __init__(self, **users) -> None:
+        self._registry: Dict[str, User] = users
+        self._emitter = EventEmitter()
+
+    async def get(self, id_: str) -> User:
+        """Get a user object from the registry"""
+        await sleep(0)
+        return self._registry.get(id_)
+
+    async def create(self, **kwargs) -> User:
+        """Get a user object in the registry"""
+        await sleep(0)
+        id_ = str(len(self._registry))
+        user = User(id=id_, **kwargs)
+        self._registry[id_] = user
+        self.emit_event(MutationEnum.CREATED, user)
+        return user
+
+    async def update(self, id_: str, **kwargs) -> User:
+        """Update a user object in the registry"""
+        await sleep(0)
+        # noinspection PyProtectedMember
+        user = self._registry[id_]._replace(**kwargs)
+        self._registry[id_] = user
+        self.emit_event(MutationEnum.UPDATED, user)
+        return user
+
+    async def delete(self, id_: str) -> User:
+        """Update a user object in the registry"""
+        await sleep(0)
+        user = self._registry.pop(id_)
+        self.emit_event(MutationEnum.DELETED, user)
+        return user
+
+    def emit_event(self, mutation: MutationEnum, user: User) -> None:
+        """Emit mutation events for the given object and its class"""
+        emit = self._emitter.emit
+        payload = {"user": user, "mutation": mutation.value}
+        emit("User", payload)  # notify all user subscriptions
+        emit(f"User_{user.id}", payload)  # notify single user subscriptions
+
+    def event_iterator(self, id_: str) -> EventEmitterAsyncIterator:
+        event_name = "User" if id_ is None else f"User_{id_}"
+        return EventEmitterAsyncIterator(self._emitter, event_name)
 
 
 mutation_type = GraphQLEnumType("MutationType", MutationEnum)
@@ -110,16 +128,6 @@ subscription_user_type = GraphQLObjectType(
 )
 
 
-def emit_user_mutation_event(
-    info: GraphQLResolveInfo, mutation: MutationEnum, user: User
-) -> None:
-    """Emit mutation events for the given object and its class."""
-    emit = info.context["event_emitter"].emit
-    payload = {"user": user, "mutation": mutation.value}
-    emit("User", payload)  # notify all user subscriptions
-    emit(f"User_{user.id}", payload)  # notify single user subscriptions
-
-
 async def resolve_user(_root, info, **args):
     """Resolver function for fetching a user object"""
     return await info.context["registry"].get(args["id"])
@@ -128,7 +136,6 @@ async def resolve_user(_root, info, **args):
 async def resolve_create_user(_root, info, data):
     """Resolver function for creating a user object"""
     user = await info.context["registry"].create(**data)
-    emit_user_mutation_event(info, MutationEnum.CREATED, user)
     return user
 
 
@@ -136,7 +143,6 @@ async def resolve_create_user(_root, info, data):
 async def resolve_update_user(_root, info, id, data):
     """Resolver function for updating a user object"""
     user = await info.context["registry"].update(id, **data)
-    emit_user_mutation_event(info, MutationEnum.UPDATED, user)
     return user
 
 
@@ -145,16 +151,14 @@ async def resolve_delete_user(_root, info, id):
     """Resolver function for deleting a user object"""
     user = await info.context["registry"].get(id)
     await info.context["registry"].delete(user.id)
-    emit_user_mutation_event(info, MutationEnum.DELETED, user)
     return True
 
 
 # noinspection PyShadowingBuiltins
 async def subscribe_user(_root, info, id=None):
     """Subscribe to mutations of a specific user object or all user objects"""
-    event_emitter = info.context["event_emitter"]
-    event_name = "User" if id is None else f"User_{id}"
-    async for msg in EventEmitterAsyncIterator(event_emitter, event_name):
+    async_iterator = info.context["registry"].event_iterator(id)
+    async for msg in async_iterator:
         yield msg
 
 
@@ -210,7 +214,7 @@ schema = GraphQLSchema(
 
 @fixture
 def context():
-    return {"event_emitter": EventEmitter(), "registry": UserRegistry()}
+    return {"registry": UserRegistry()}
 
 
 def describe_query():
@@ -256,8 +260,10 @@ def describe_mutation():
 
             return receive
 
-        context["event_emitter"].add_listener("User", receiver("User"))
-        context["event_emitter"].add_listener("User_0", receiver("User_0"))
+        # noinspection PyProtectedMember
+        add_listener = context["registry"]._emitter.add_listener
+        add_listener("User", receiver("User"))
+        add_listener("User_0", receiver("User_0"))
 
         query = """
             mutation ($userData: UserInputType!) {
@@ -301,8 +307,10 @@ def describe_mutation():
 
             return receive
 
-        context["event_emitter"].add_listener("User", receiver("User"))
-        context["event_emitter"].add_listener("User_0", receiver("User_0"))
+        # noinspection PyProtectedMember
+        add_listener = context["registry"]._emitter.add_listener
+        add_listener("User", receiver("User"))
+        add_listener("User_0", receiver("User_0"))
 
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
@@ -355,8 +363,10 @@ def describe_mutation():
 
             return receive
 
-        context["event_emitter"].add_listener("User", receiver("User"))
-        context["event_emitter"].add_listener("User_0", receiver("User_0"))
+        # noinspection PyProtectedMember
+        add_listener = context["registry"]._emitter.add_listener
+        add_listener("User", receiver("User"))
+        add_listener("User_0", receiver("User_0"))
 
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
