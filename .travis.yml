@@ -10,7 +10,6 @@ python:
 install:
     - pip install pipenv black
     - pipenv install --dev
-    - pip install python-coveralls
 
 script:
     - flake8 --version
