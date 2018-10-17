@@ -139,8 +139,7 @@ def describe_execute_handles_inputs():
                 result = execute_query(
                     """
                     {
-                      fieldWithObjectInput(
-                        input: {a: "foo", b: "bar", c: "baz"})
+                      fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
                     }
                     """
                 )
@@ -207,8 +206,7 @@ def describe_execute_handles_inputs():
                 result = execute_query(
                     """
                     {
-                      fieldWithObjectInput(
-                        input: {c: "foo", d: "SerializedValue"})
+                      fieldWithObjectInput(input: {c: "foo", d: "SerializedValue"})
                     }
                     """
                 )
@@ -222,7 +220,7 @@ def describe_execute_handles_inputs():
             doc = """
                 query ($input: TestInputObject) {
                   fieldWithObjectInput(input: $input)
-                    }
+                }
                 """
 
             def executes_with_complex_input():

@@ -225,11 +225,12 @@ def type_map_directive_reducer(
     # Directives are not validated until validate_schema() is called.
     if not is_directive(directive):
         return map_
+    directive = cast(GraphQLDirective, directive)
     return reduce(
         lambda prev_map, arg: type_map_reducer(prev_map, arg.type),  # type: ignore
         directive.args.values(),
         map_,
-    )  # type: ignore
+    )
 
 
 # Reduce functions for type maps:

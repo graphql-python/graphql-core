@@ -14,6 +14,6 @@ pytest-asyncio = "*"
 tox = "*"
 sphinx = "*"
 sphinx_rtd_theme = "*"
-python-coveralls = "*"
+# python-coveralls = "*"
 pytest-cov = "*"
 
