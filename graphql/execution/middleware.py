@@ -15,6 +15,9 @@ class MiddlewareManager:
     and/or objects. The functions take the next middleware function as first argument.
     If middleware is provided as an object, it must provide a method `resolve` that is
     used as the middleware function.
+
+    Note that since resolvers return "MaybeAwaitable" values, all middleware functions
+    must be aware of this and check whether values are awaitable before awaiting them.
     """
 
     __slots__ = "middlewares", "_middleware_resolvers", "_cached_resolvers"
@@ -35,7 +38,7 @@ class MiddlewareManager:
         """Wrap the provided resolver with the middleware.
 
         Returns a function that chains the middleware functions with the provided
-        resolver function
+        resolver function.
         """
         if self._middleware_resolvers is None:
             return field_resolver

@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import mark, raises
 
 from graphql.execution import MiddlewareManager, execute
 from graphql.language.parser import parse
@@ -50,6 +50,36 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(reverse_middleware)
             result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
+            )
+
+            assert result.data == {"first": "eno", "second": "owt"}
+
+        @mark.asyncio
+        async def single_async_function():
+            doc = parse("{ first second }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                async def first(self, _info):
+                    return "one"
+
+                async def second(self, _info):
+                    return "two"
+
+            test_type = GraphQLObjectType(
+                "TestType",
+                {
+                    "first": GraphQLField(GraphQLString),
+                    "second": GraphQLField(GraphQLString),
+                },
+            )
+
+            async def reverse_middleware(next_, *args, **kwargs):
+                return (await next_(*args, **kwargs))[::-1]
+
+            middlewares = MiddlewareManager(reverse_middleware)
+            result = await execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
@@ -113,6 +143,46 @@ def describe_middleware():
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "Devloser"}
+
+            middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
+            )
+            assert result.data == {"field": "devloseR"}
+
+        @mark.asyncio
+        async def with_async_function_and_object():
+            doc = parse("{ field }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                async def field(self, _info):
+                    return "resolved"
+
+            test_type = GraphQLObjectType(
+                "TestType", {"field": GraphQLField(GraphQLString)}
+            )
+
+            async def reverse_middleware(next_, *args, **kwargs):
+                return (await next_(*args, **kwargs))[::-1]
+
+            class CaptitalizeMiddleware:
+
+                # noinspection PyMethodMayBeStatic
+                async def resolve(self, next_, *args, **kwargs):
+                    return (await next_(*args, **kwargs)).capitalize()
+
+            middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
+            result = await execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
+            )
+            assert result.data == {"field": "Devloser"}
+
+            middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
+            result = await execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
+            )
+            assert result.data == {"field": "devloseR"}
 
     def describe_without_manager():
         def no_middleware():
