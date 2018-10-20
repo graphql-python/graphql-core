@@ -66,10 +66,7 @@ SourceType = Union[Source, str]
 
 
 def parse(
-    source: SourceType,
-    no_location=False,
-    experimental_fragment_variables=False,
-    experimental_variable_definition_directives=False,
+    source: SourceType, no_location=False, experimental_fragment_variables=False
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -90,13 +87,6 @@ def parse(
         fragment A($var: Boolean = false) on T  {
           ...
         }
-
-    If `experimental_variable_definition_directives` is set to True, the parser
-    understands directives on variable definitions::
-
-        query Foo($var: String = "abc" @variable_definition_directive) {
-          ...
-        }
     """
     if isinstance(source, str):
         source = Source(source)
@@ -106,9 +96,6 @@ def parse(
         source,
         no_location=no_location,
         experimental_fragment_variables=experimental_fragment_variables,
-        experimental_variable_definition_directives=(
-            experimental_variable_definition_directives
-        ),
     )
     return parse_document(lexer)
 
@@ -246,22 +233,13 @@ def parse_variable_definitions(lexer: Lexer) -> List[VariableDefinitionNode]:
 def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
     """VariableDefinition: Variable: Type DefaultValue? Directives[Const]?"""
     start = lexer.token
-    if lexer.experimental_variable_definition_directives:
-        return VariableDefinitionNode(
-            variable=parse_variable(lexer),
-            type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
-            default_value=parse_value_literal(lexer, True)
-            if skip(lexer, TokenKind.EQUALS)
-            else None,
-            directives=parse_directives(lexer, True),
-            loc=loc(lexer, start),
-        )
     return VariableDefinitionNode(
         variable=parse_variable(lexer),
         type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
         default_value=parse_value_literal(lexer, True)
         if skip(lexer, TokenKind.EQUALS)
         else None,
+        directives=parse_directives(lexer, True),
         loc=loc(lexer, start),
     )
 

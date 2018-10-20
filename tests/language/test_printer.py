@@ -64,11 +64,9 @@ def describe_printer_query_document():
             """
         )
 
-    def experimental_prints_query_with_variable_directives():
+    def prints_query_with_variable_directives():
         query_ast_with_variable_directive = parse(
-            "query ($foo: TestType = {a: 123}"
-            " @testDirective(if: true) @test) { id }",
-            experimental_variable_definition_directives=True,
+            "query ($foo: TestType = {a: 123}" " @testDirective(if: true) @test) { id }"
         )
         assert print_ast(query_ast_with_variable_directive) == dedent(
             """
@@ -82,7 +80,6 @@ def describe_printer_query_document():
         query_ast_with_variable_directive = parse(
             "fragment Foo($foo: TestType @test) on TestType @testDirective { id }",
             experimental_fragment_variables=True,
-            experimental_variable_definition_directives=True,
         )
         assert print_ast(query_ast_with_variable_directive) == dedent(
             """

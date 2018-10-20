@@ -127,7 +127,7 @@ def describe_known_directives():
             """,
         )
 
-    def experimental_with_well_placed_variable_definition_directive():
+    def with_well_placed_variable_definition_directive():
         expect_passes_rule(
             KnownDirectivesRule,
             """
@@ -135,7 +135,6 @@ def describe_known_directives():
               name
             }
             """,
-            experimental_variable_definition_directives=True,
         )
 
     def with_misplaced_directives():
@@ -159,7 +158,7 @@ def describe_known_directives():
             ],
         )
 
-    def experimental_with_misplaced_variable_definition_directive():
+    def with_misplaced_variable_definition_directive():
         expect_fails_rule(
             KnownDirectivesRule,
             """
@@ -168,7 +167,6 @@ def describe_known_directives():
             }
             """,
             [misplaced_directive("onField", "variable definition", 2, 37)],
-            experimental_variable_definition_directives=True,
         )
 
     def describe_within_sdl():
