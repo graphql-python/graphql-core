@@ -9,6 +9,7 @@ from graphql.type import (
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInt,
+    GraphQLList,
     GraphQLNonNull,
     GraphQLString,
 )
@@ -199,13 +200,13 @@ def describe_coerce_value():
             result = coerce_value({"foo": 123}, TestInputObject)
             assert expect_value(result) == {"foo": 123}
 
-        def returns_error_for_a_non_dict_value():
+        def returns_an_error_for_a_non_dict_value():
             result = coerce_value(123, TestInputObject)
             assert expect_error(result) == [
                 "Expected type TestInputObject to be a dict."
             ]
 
-        def returns_error_for_an_invalid_field():
+        def returns_an_error_for_an_invalid_field():
             result = coerce_value({"foo": "abc"}, TestInputObject)
             assert expect_error(result) == [
                 "Expected type Int at value.foo;"
@@ -239,3 +240,50 @@ def describe_coerce_value():
                 "Field 'bart' is not defined by type TestInputObject;"
                 " did you mean bar?"
             ]
+
+    def describe_for_graphql_list():
+        TestList = GraphQLList(GraphQLInt)
+
+        def returns_no_error_for_a_valid_input():
+            result = coerce_value([1, 2, 3], TestList)
+            assert expect_value(result) == [1, 2, 3]
+
+        def returns_an_error_for_an_invalid_input():
+            result = coerce_value([1, "b", True], TestList)
+            assert expect_error(result) == [
+                "Expected type Int at value[1];"
+                " Int cannot represent non-integer value: 'b'",
+                "Expected type Int at value[2];"
+                " Int cannot represent non-integer value: True",
+            ]
+
+        def returns_a_list_for_a_non_list_value():
+            result = coerce_value(42, TestList)
+            assert expect_value(result) == [42]
+
+        def returns_null_for_a_null_value():
+            result = coerce_value(None, TestList)
+            assert expect_value(result) is None
+
+    def describe_for_nested_graphql_list():
+        TestNestedList = GraphQLList(GraphQLList(GraphQLInt))
+
+        def returns_no_error_for_a_valid_input():
+            result = coerce_value([[1], [2], [3]], TestNestedList)
+            assert expect_value(result) == [[1], [2], [3]]
+
+        def returns_a_list_for_a_non_list_value():
+            result = coerce_value(42, TestNestedList)
+            assert expect_value(result) == [[42]]
+
+        def returns_null_for_a_null_value():
+            result = coerce_value(None, TestNestedList)
+            assert expect_value(result) is None
+
+        def returns_nested_list_for_nested_non_list_values():
+            result = coerce_value([1, 2, 3], TestNestedList)
+            assert expect_value(result) == [[1], [2], [3]]
+
+        def returns_nested_null_for_nested_null_values():
+            result = coerce_value([42, [None], None], TestNestedList)
+            assert expect_value(result) == [[42], [None], None]
