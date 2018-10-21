@@ -333,19 +333,16 @@ def parse_fragment(lexer: Lexer) -> Union[FragmentSpreadNode, InlineFragmentNode
     """
     start = lexer.token
     expect(lexer, TokenKind.SPREAD)
-    if peek(lexer, TokenKind.NAME) and lexer.token.value != "on":
+
+    has_type_condition = skip_keyword(lexer, "on")
+    if not has_type_condition and peek(lexer, TokenKind.NAME):
         return FragmentSpreadNode(
             name=parse_fragment_name(lexer),
             directives=parse_directives(lexer, False),
             loc=loc(lexer, start),
         )
-    if lexer.token.value == "on":
-        lexer.advance()
-        type_condition: Optional[NamedTypeNode] = parse_named_type(lexer)
-    else:
-        type_condition = None
     return InlineFragmentNode(
-        type_condition=type_condition,
+        type_condition=parse_named_type(lexer) if has_type_condition else None,
         directives=parse_directives(lexer, False),
         selection_set=parse_selection_set(lexer),
         loc=loc(lexer, start),
@@ -362,14 +359,14 @@ def parse_fragment_definition(lexer: Lexer) -> FragmentDefinitionNode:
         return FragmentDefinitionNode(
             name=parse_fragment_name(lexer),
             variable_definitions=parse_variable_definitions(lexer),
-            type_condition=expect_keyword(lexer, "on") and parse_named_type(lexer),
+            type_condition=parse_type_condition(lexer),
             directives=parse_directives(lexer, False),
             selection_set=parse_selection_set(lexer),
             loc=loc(lexer, start),
         )
     return FragmentDefinitionNode(
         name=parse_fragment_name(lexer),
-        type_condition=expect_keyword(lexer, "on") and parse_named_type(lexer),
+        type_condition=parse_type_condition(lexer),
         directives=parse_directives(lexer, False),
         selection_set=parse_selection_set(lexer),
         loc=loc(lexer, start),
@@ -387,6 +384,12 @@ def parse_fragment_name(lexer: Lexer) -> NameNode:
     if lexer.token.value == "on":
         raise unexpected(lexer)
     return parse_name(lexer)
+
+
+def parse_type_condition(lexer: Lexer) -> NamedTypeNode:
+    """TypeCondition: NamedType"""
+    expect_keyword(lexer, "on")
+    return parse_named_type(lexer)
 
 
 # Implement the parsing rules in the Values section.
@@ -648,8 +651,7 @@ def parse_object_type_definition(lexer: Lexer) -> ObjectTypeDefinitionNode:
 def parse_implements_interfaces(lexer: Lexer) -> List[NamedTypeNode]:
     """ImplementsInterfaces"""
     types: List[NamedTypeNode] = []
-    if lexer.token.value == "implements":
-        lexer.advance()
+    if skip_keyword(lexer, "implements"):
         # optional leading ampersand
         skip(lexer, TokenKind.AMP)
         append = types.append
@@ -1052,13 +1054,13 @@ def peek(lexer: Lexer, kind: TokenKind):
 def skip(lexer: Lexer, kind: TokenKind) -> bool:
     """Conditionally skip the next token.
 
-    If the next token is of the given kind, return true after advancing the lexer.
-    Otherwise, do not change the parser state and return false.
+    If the next token is of the given kind, return True after advancing the lexer.
+    Otherwise, do not change the parser state and return False.
     """
-    match = lexer.token.kind == kind
-    if match:
+    if lexer.token.kind == kind:
         lexer.advance()
-    return match
+        return True
+    return False
 
 
 def expect(lexer: Lexer, kind: TokenKind) -> Token:
@@ -1076,19 +1078,30 @@ def expect(lexer: Lexer, kind: TokenKind) -> Token:
     )
 
 
-def expect_keyword(lexer: Lexer, value: str) -> Token:
-    """Check next token for given keyword
+def skip_keyword(lexer: Lexer, value: str) -> bool:
+    """Conditionally skip the next keyword.
 
-    If the next token is a keyword with the given value, return that token after
-    advancing the lexer. Otherwise, do not change the parser state and return False.
+    If the next token is a keyword with the given value, return True after advancing
+    the lexer. Otherwise, do not change the parser state and return False.
     """
     token = lexer.token
     if token.kind == TokenKind.NAME and token.value == value:
         lexer.advance()
-        return token
-    raise GraphQLSyntaxError(
-        lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
-    )
+        return True
+    return False
+
+
+def expect_keyword(lexer: Lexer, value: str) -> None:
+    """Check next token for given keyword.
+
+    If the next token is a keyword with the given value, advance the lexer. Otherwise,
+    do not change the parser state and throw an error.
+    """
+    if not skip_keyword(lexer, value):
+        token = lexer.token
+        raise GraphQLSyntaxError(
+            lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
+        )
 
 
 def unexpected(lexer: Lexer, at_token: Token = None) -> GraphQLError:
