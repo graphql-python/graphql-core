@@ -14,7 +14,7 @@ from ..language import (
     StringValueNode,
     ValueNode,
 )
-from ..pyutils import is_nullish, is_invalid
+from ..pyutils import inspect, is_nullish, is_invalid
 from ..type import (
     GraphQLID,
     GraphQLInputType,
@@ -124,6 +124,6 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
             return StringValueNode(value=serialized)
 
-        raise TypeError(f"Cannot convert value to AST: {serialized!r}")
+        raise TypeError(f"Cannot convert value to AST: {inspect(serialized)}")
 
-    raise TypeError(f"Unknown type: {type_!r}.")
+    raise TypeError(f"Unknown type: {inspect(type_)}.")

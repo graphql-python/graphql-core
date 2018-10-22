@@ -64,6 +64,13 @@ def inspect(value: Any) -> str:
     elif isgenerator(value):
         type_ = "generator"
     else:
+        # stringify (only) the well-known GraphQL types
+        from ..type import GraphQLNamedType, GraphQLScalarType, GraphQLWrappingType
+
+        if isinstance(
+            value, (GraphQLNamedType, GraphQLScalarType, GraphQLWrappingType)
+        ):
+            return str(value)
         try:
             name = type(value).__name__
             if not name or "<" in name or ">" in name:

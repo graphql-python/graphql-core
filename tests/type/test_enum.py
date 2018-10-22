@@ -31,9 +31,6 @@ class Complex1:
 class Complex2:
     some_random_value = 123
 
-    def __repr__(self):
-        return "Complex2"
-
 
 complex1 = Complex1()
 complex2 = Complex2()
@@ -325,7 +322,7 @@ def describe_type_system_enum_values():
             [
                 {
                     "message": "Expected a value of type 'Complex'"
-                    " but received: Complex2",
+                    " but received: <Complex2 instance>",
                     "locations": [(6, 15)],
                     "path": ["bad"],
                 }

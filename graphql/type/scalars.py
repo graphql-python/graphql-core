@@ -2,7 +2,7 @@ from math import isfinite
 from typing import Any
 
 from ..error import INVALID
-from ..pyutils import is_finite, is_integer
+from ..pyutils import inspect, is_finite, is_integer
 from ..language.ast import (
     BooleanValueNode,
     FloatValueNode,
@@ -51,20 +51,20 @@ def serialize_int(value: Any) -> int:
             if num != float_value:
                 raise ValueError
     except (OverflowError, ValueError, TypeError):
-        raise TypeError(f"Int cannot represent non-integer value: {value!r}")
+        raise TypeError(f"Int cannot represent non-integer value: {inspect(value)}")
     if not MIN_INT <= num <= MAX_INT:
         raise TypeError(
-            f"Int cannot represent non 32-bit signed integer value: {value!r}"
+            f"Int cannot represent non 32-bit signed integer value: {inspect(value)}"
         )
     return num
 
 
 def coerce_int(value: Any) -> int:
     if not is_integer(value):
-        raise TypeError(f"Int cannot represent non-integer value: {value!r}")
+        raise TypeError(f"Int cannot represent non-integer value: {inspect(value)}")
     if not MIN_INT <= value <= MAX_INT:
         raise TypeError(
-            f"Int cannot represent non 32-bit signed integer value: {value!r}"
+            f"Int cannot represent non 32-bit signed integer value: {inspect(value)}"
         )
     return int(value)
 
@@ -100,13 +100,13 @@ def serialize_float(value: Any) -> float:
         if not isfinite(num):
             raise ValueError
     except (ValueError, TypeError):
-        raise TypeError(f"Float cannot represent non numeric value: {value!r}")
+        raise TypeError(f"Float cannot represent non numeric value: {inspect(value)}")
     return num
 
 
 def coerce_float(value: Any) -> float:
     if not is_finite(value):
-        raise TypeError(f"Float cannot represent non numeric value: {value!r}")
+        raise TypeError(f"Float cannot represent non numeric value: {inspect(value)}")
     return float(value)
 
 
@@ -139,13 +139,13 @@ def serialize_string(value: Any) -> str:
     # do not serialize builtin types as strings, but allow serialization of custom
     # types via their `__str__` method
     if type(value).__module__ == "builtins":
-        raise TypeError(f"String cannot represent value: {value!r}")
+        raise TypeError(f"String cannot represent value: {inspect(value)}")
     return str(value)
 
 
 def coerce_string(value: Any) -> str:
     if not isinstance(value, str):
-        raise TypeError(f"String cannot represent a non string value: {value!r}")
+        raise TypeError(f"String cannot represent a non string value: {inspect(value)}")
     return value
 
 
@@ -173,12 +173,14 @@ def serialize_boolean(value: Any) -> bool:
         return value
     if is_finite(value):
         return bool(value)
-    raise TypeError(f"Boolean cannot represent a non boolean value: {value!r}")
+    raise TypeError(f"Boolean cannot represent a non boolean value: {inspect(value)}")
 
 
 def coerce_boolean(value: Any) -> bool:
     if not isinstance(value, bool):
-        raise TypeError(f"Boolean cannot represent a non boolean value: {value!r}")
+        raise TypeError(
+            f"Boolean cannot represent a non boolean value: {inspect(value)}"
+        )
     return value
 
 
@@ -206,13 +208,13 @@ def serialize_id(value: Any) -> str:
     # do not serialize builtin types as IDs, but allow serialization of custom types
     # via their `__str__` method
     if type(value).__module__ == "builtins":
-        raise TypeError(f"ID cannot represent value: {value!r}")
+        raise TypeError(f"ID cannot represent value: {inspect(value)}")
     return str(value)
 
 
 def coerce_id(value: Any) -> str:
     if not isinstance(value, str) and not is_integer(value):
-        raise TypeError(f"ID cannot represent value: {value!r}")
+        raise TypeError(f"ID cannot represent value: {inspect(value)}")
     if isinstance(value, float):
         value = int(value)
     return str(value)

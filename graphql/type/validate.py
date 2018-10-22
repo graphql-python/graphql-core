@@ -28,6 +28,7 @@ from .definition import (
     is_union_type,
     is_required_argument,
 )
+from ..pyutils import inspect
 from ..utilities.assert_valid_name import is_valid_name_error
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
 from .directives import GraphQLDirective, is_directive
@@ -48,7 +49,7 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
     """
     # First check to ensure the provided value is in fact a GraphQLSchema.
     if not is_schema(schema):
-        raise TypeError(f"Expected {schema!r} to be a GraphQL schema.")
+        raise TypeError(f"Expected {inspect(schema)} to be a GraphQL schema.")
 
     # If this Schema has already been validated, return the previous results.
     # noinspection PyProtectedMember
@@ -140,7 +141,7 @@ class SchemaValidationContext:
             # Ensure all directives are in fact GraphQL directives.
             if not is_directive(directive):
                 self.report_error(
-                    f"Expected directive but got: {directive!r}.",
+                    f"Expected directive but got: {inspect(directive)}.",
                     getattr(directive, "ast_node", None),
                 )
                 continue
@@ -168,7 +169,7 @@ class SchemaValidationContext:
                 if not is_input_type(arg.type):
                     self.report_error(
                         f"The type of @{directive.name}({arg_name}:)"
-                        f" must be Input Type but got: {arg.type!r}.",
+                        f" must be Input Type but got: {inspect(arg.type)}.",
                         get_directive_arg_type_node(directive, arg_name),
                     )
 
@@ -192,7 +193,7 @@ class SchemaValidationContext:
             # Ensure all provided types are in fact GraphQL type.
             if not is_named_type(type_):
                 self.report_error(
-                    f"Expected GraphQL named type but got: {type_!r}.",
+                    f"Expected GraphQL named type but got: {inspect(type)}.",
                     type_.ast_node if type_ else None,
                 )
                 continue
@@ -253,7 +254,7 @@ class SchemaValidationContext:
             if not is_output_type(field.type):
                 self.report_error(
                     f"The type of {type_.name}.{field_name}"
-                    " must be Output Type but got: {field.type!r}.",
+                    " must be Output Type but got: {inspect(field.type)}.",
                     get_field_type_node(type_, field_name),
                 )
 
@@ -279,7 +280,7 @@ class SchemaValidationContext:
                     self.report_error(
                         "Field argument"
                         f" {type_.name}.{field_name}({arg_name}:)"
-                        f" must be Input Type but got: {arg.type!r}.",
+                        f" must be Input Type but got: {inspect(arg.type)}.",
                         get_field_arg_type_node(type_, field_name, arg_name),
                     )
 
@@ -289,7 +290,7 @@ class SchemaValidationContext:
             if not is_interface_type(iface):
                 self.report_error(
                     f"Type {obj.name} must only implement Interface"
-                    f" types, it cannot implement {iface!r}.",
+                    f" types, it cannot implement {inspect(iface)}.",
                     get_implements_interface_node(obj, iface),
                 )
                 continue
@@ -450,7 +451,7 @@ class SchemaValidationContext:
             if not is_input_type(field.type):
                 self.report_error(
                     f"The type of {input_obj.name}.{field_name}"
-                    f" must be Input Type but got: {field.type!r}.",
+                    f" must be Input Type but got: {inspect(field.type)}.",
                     field.ast_node.type if field.ast_node else None,
                 )
 

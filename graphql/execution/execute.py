@@ -27,7 +27,7 @@ from ..language import (
     SelectionSetNode,
 )
 from .middleware import MiddlewareManager
-from ..pyutils import is_invalid, is_nullish, MaybeAwaitable
+from ..pyutils import inspect, is_invalid, is_nullish, MaybeAwaitable
 from ..utilities import get_operation_root_type, type_from_ast
 from ..type import (
     GraphQLAbstractType,
@@ -234,7 +234,7 @@ class ExecutionContext:
                 raise TypeError(
                     "Middleware must be passed as a list or tuple of functions"
                     " or objects, or as a single MiddlewareManager object."
-                    f" Got {middleware!r} instead."
+                    f" Got {inspect(middleware)} instead."
                 )
 
         for definition in document.definitions:
@@ -776,7 +776,9 @@ class ExecutionContext:
             )
 
         # Not reachable. All possible output types have been considered.
-        raise TypeError(f"Cannot complete value of unexpected type {return_type}.")
+        raise TypeError(
+            f"Cannot complete value of unexpected type '{inspect(return_type)}'."
+        )
 
     def complete_list_value(
         self,
@@ -842,7 +844,8 @@ class ExecutionContext:
         serialized_result = return_type.serialize(result)
         if is_invalid(serialized_result):
             raise TypeError(
-                f"Expected a value of type '{return_type}' but received: {result!r}"
+                f"Expected a value of type '{inspect(return_type)}'"
+                f" but received: {inspect(result)}"
             )
         return serialized_result
 
@@ -914,7 +917,7 @@ class ExecutionContext:
                 f"Abstract type {return_type.name} must resolve"
                 " to an Object type at runtime"
                 f" for field {info.parent_type.name}.{info.field_name}"
-                f" with value {result!r}, received '{runtime_type}'."
+                f" with value {inspect(result)}, received '{inspect(runtime_type)}'."
                 f" Either the {return_type.name} type should provide"
                 ' a "resolve_type" function or each possible type should'
                 ' provide an "is_type_of" function.',
@@ -1084,7 +1087,8 @@ def invalid_return_type_error(
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
-        f"Expected value of type '{return_type.name}' but got: {result!r}.", field_nodes
+        f"Expected value of type '{return_type.name}' but got: {inspect(result)}.",
+        field_nodes,
     )
 
 

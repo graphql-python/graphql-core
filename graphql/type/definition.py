@@ -42,7 +42,7 @@ from ..language import (
     UnionTypeExtensionNode,
     ValueNode,
 )
-from ..pyutils import MaybeAwaitable, cached_property
+from ..pyutils import MaybeAwaitable, cached_property, inspect
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -344,6 +344,12 @@ class GraphQLScalarType(GraphQLNamedType):
         self.parse_value = parse_value or default_value_parser
         self.parse_literal = parse_literal or value_from_ast_untyped
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}({self})>"
+
 
 def is_scalar_type(type_: Any) -> bool:
     return isinstance(type_, GraphQLScalarType)
@@ -400,7 +406,7 @@ class GraphQLField:
         if resolve is not None and not callable(resolve):
             raise TypeError(
                 "Field resolver must be a function if provided, "
-                f" but got: {resolve!r}."
+                f" but got: {inspect(resolve)}."
             )
         if description is not None and not isinstance(description, str):
             raise TypeError("The description must be a string.")
@@ -576,7 +582,7 @@ class GraphQLObjectType(GraphQLNamedType):
         if is_type_of is not None and not callable(is_type_of):
             raise TypeError(
                 f"{name} must provide 'is_type_of' as a function,"
-                f" but got: {is_type_of!r}."
+                f" but got: {inspect(is_type_of)}."
             )
         if ast_node and not isinstance(ast_node, ObjectTypeDefinitionNode):
             raise TypeError(f"{name} AST node must be an ObjectTypeDefinitionNode.")
@@ -686,7 +692,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         if resolve_type is not None and not callable(resolve_type):
             raise TypeError(
                 f"{name} must provide 'resolve_type' as a function,"
-                f" but got: {resolve_type!r}."
+                f" but got: {inspect(resolve_type)}."
             )
         if ast_node and not isinstance(ast_node, InterfaceTypeDefinitionNode):
             raise TypeError(f"{name} AST node must be an InterfaceTypeDefinitionNode.")
@@ -784,7 +790,7 @@ class GraphQLUnionType(GraphQLNamedType):
         if resolve_type is not None and not callable(resolve_type):
             raise TypeError(
                 f"{name} must provide 'resolve_type' as a function,"
-                f" but got: {resolve_type!r}."
+                f" but got: {inspect(resolve_type)}."
             )
         if ast_node and not isinstance(ast_node, UnionTypeDefinitionNode):
             raise TypeError(f"{name} AST node must be a UnionTypeDefinitionNode.")

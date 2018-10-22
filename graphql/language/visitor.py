@@ -10,7 +10,7 @@ from typing import (
     Union,
 )
 
-from ..pyutils import snake_to_camel
+from ..pyutils import inspect, snake_to_camel
 from . import ast
 
 from .ast import Node
@@ -210,9 +210,9 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Node:
     dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
-        raise TypeError(f"Not an AST Node: {root!r}")
+        raise TypeError(f"Not an AST Node: {inspect(root)}")
     if not isinstance(visitor, Visitor):
-        raise TypeError(f"Not an AST Visitor class: {visitor!r}")
+        raise TypeError(f"Not an AST Visitor class: {inspect(visitor)}")
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
@@ -280,7 +280,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Node:
             result = None
         else:
             if not isinstance(node, Node):
-                raise TypeError(f"Not an AST Node: {node!r}")
+                raise TypeError(f"Not an AST Node: {inspect(node)}")
             visit_fn = visitor.get_visit_fn(node.kind, is_leaving)
             if visit_fn:
                 result = visit_fn(visitor, node, key, parent, path, ancestors)

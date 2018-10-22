@@ -59,6 +59,7 @@ from .directive_locations import DirectiveLocation
 from .lexer import Lexer, Token, TokenKind
 from .source import Source
 from ..error import GraphQLError, GraphQLSyntaxError
+from ..pyutils import inspect
 
 __all__ = ["parse", "parse_type", "parse_value"]
 
@@ -91,7 +92,7 @@ def parse(
     if isinstance(source, str):
         source = Source(source)
     elif not isinstance(source, Source):
-        raise TypeError(f"Must provide Source. Received: {source!r}")
+        raise TypeError(f"Must provide Source. Received: {inspect(source)}")
     lexer = Lexer(
         source,
         no_location=no_location,

@@ -2,6 +2,7 @@ from typing import cast, Callable, Dict, List, Sequence
 
 from ..error import INVALID
 from ..language import DirectiveLocation, parse_value
+from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -82,7 +83,7 @@ def build_client_schema(
             return GraphQLNonNull(assert_nullable_type(nullable_type))
         name = type_ref.get("name")
         if not name:
-            raise TypeError(f"Unknown type reference: {type_ref!r}")
+            raise TypeError(f"Unknown type reference: {inspect(type_ref)}")
         return get_named_type(name)
 
     def get_named_type(type_name: str) -> GraphQLNamedType:
@@ -129,7 +130,7 @@ def build_client_schema(
         raise TypeError(
             "Invalid or incomplete introspection result."
             " Ensure that a full introspection query is used in order"
-            f" to build a client schema: {type_!r}"
+            f" to build a client schema: {inspect(type_)}"
         )
 
     def build_scalar_def(scalar_introspection: Dict) -> GraphQLScalarType:
@@ -143,7 +144,8 @@ def build_client_schema(
         interfaces = object_introspection.get("interfaces")
         if interfaces is None:
             raise TypeError(
-                f"Introspection result missing interfaces: {object_introspection!r}"
+                "Introspection result missing interfaces:"
+                f" {inspect(object_introspection)}"
             )
         return GraphQLObjectType(
             name=object_introspection["name"],
@@ -167,7 +169,7 @@ def build_client_schema(
         if possible_types is None:
             raise TypeError(
                 "Introspection result missing possibleTypes:"
-                f" {union_introspection!r}"
+                f" {inspect(union_introspection)}"
             )
         return GraphQLUnionType(
             name=union_introspection["name"],
@@ -180,7 +182,8 @@ def build_client_schema(
     def build_enum_def(enum_introspection: Dict) -> GraphQLEnumType:
         if enum_introspection.get("enumValues") is None:
             raise TypeError(
-                f"Introspection result missing enumValues: {enum_introspection!r}"
+                "Introspection result missing enumValues:"
+                f" {inspect(enum_introspection)}"
             )
         return GraphQLEnumType(
             name=enum_introspection["name"],
@@ -200,7 +203,7 @@ def build_client_schema(
         if input_object_introspection.get("inputFields") is None:
             raise TypeError(
                 "Introspection result missing inputFields:"
-                f" {input_object_introspection!r}"
+                f" {inspect(input_object_introspection)}"
             )
         return GraphQLInputObjectType(
             name=input_object_introspection["name"],
@@ -222,7 +225,8 @@ def build_client_schema(
     def build_field(field_introspection: Dict) -> GraphQLField:
         if field_introspection.get("args") is None:
             raise TypeError(
-                f"Introspection result missing field args: {field_introspection!r}"
+                "Introspection result missing field args:"
+                f" {inspect(field_introspection)}"
             )
         return GraphQLField(
             get_output_type(field_introspection["type"]),
@@ -234,7 +238,7 @@ def build_client_schema(
     def build_field_def_map(type_introspection: Dict) -> Dict[str, GraphQLField]:
         if type_introspection.get("fields") is None:
             raise TypeError(
-                f"Introspection result missing fields: {type_introspection!r}"
+                "Introspection result missing fields:" f" {type_introspection}"
             )
         return {
             field_introspection["name"]: build_field(field_introspection)
@@ -291,12 +295,12 @@ def build_client_schema(
         if directive_introspection.get("args") is None:
             raise TypeError(
                 "Introspection result missing directive args:"
-                f" {directive_introspection!r}"
+                f" {inspect(directive_introspection)}"
             )
         if directive_introspection.get("locations") is None:
             raise TypeError(
                 "Introspection result missing directive locations:"
-                f" {directive_introspection!r}"
+                f" {inspect(directive_introspection)}"
             )
         return GraphQLDirective(
             name=directive_introspection["name"],

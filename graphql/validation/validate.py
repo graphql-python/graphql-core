@@ -3,6 +3,7 @@ from typing import List, Sequence
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, TypeInfoVisitor, visit
 from ..type import GraphQLSchema, assert_valid_schema
+from ..pyutils import inspect
 from ..utilities import TypeInfo
 from .rules import RuleType
 from .specified_rules import specified_rules, specified_sdl_rules
@@ -39,7 +40,7 @@ def validate(
     if type_info is None:
         type_info = TypeInfo(schema)
     elif not isinstance(type_info, TypeInfo):
-        raise TypeError(f"Not a TypeInfo object: {type_info!r}")
+        raise TypeError(f"Not a TypeInfo object: {inspect(type_info)}")
     if rules is None:
         rules = specified_rules
     elif not isinstance(rules, (list, tuple)):

@@ -3,7 +3,7 @@ from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast
-from ..pyutils import is_invalid, is_nullish
+from ..pyutils import inspect, is_invalid, is_nullish
 from ..type import (
     DEFAULT_DEPRECATION_REASON,
     GraphQLArgument,
@@ -139,7 +139,7 @@ def print_type(type_: GraphQLNamedType) -> str:
     if is_input_object_type(type_):
         type_ = cast(GraphQLInputObjectType, type_)
         return print_input_object(type_)
-    raise TypeError(f"Unknown type: {type_!r}")
+    raise TypeError(f"Unknown type: {inspect(type_)}")
 
 
 def print_scalar(type_: GraphQLScalarType) -> str:

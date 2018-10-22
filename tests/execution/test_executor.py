@@ -780,9 +780,6 @@ def describe_execute_handles_basic_execution_tasks():
             def __init__(self, value):
                 self.value = value
 
-            def __repr__(self):
-                return f"{self.__class__.__name__}({self.value!r})"
-
         SpecialType = GraphQLObjectType(
             "SpecialType",
             {"value": GraphQLField(GraphQLString)},
@@ -809,7 +806,7 @@ def describe_execute_handles_basic_execution_tasks():
             [
                 {
                     "message": "Expected value of type 'SpecialType' but got:"
-                    " NotSpecial('bar').",
+                    " <NotSpecial instance>.",
                     "locations": [(1, 3)],
                     "path": ["specials", 1],
                 }

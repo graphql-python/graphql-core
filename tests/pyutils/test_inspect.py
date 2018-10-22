@@ -4,6 +4,14 @@ from pytest import mark
 
 from graphql.error import INVALID
 from graphql.pyutils import inspect
+from graphql import (
+    GraphQLField,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLObjectType,
+    GraphQLNonNull,
+    GraphQLString,
+)
 
 
 def describe_inspect():
@@ -141,3 +149,13 @@ def describe_inspect():
             "{<class TestClass>: {<exception ValueError>},"
             " <exception class ValueError>: {<TestClass instance>}}"
         )
+
+    def graphql_types():
+        assert inspect(GraphQLInt) == "Int"
+        assert inspect(GraphQLString) == "String"
+        assert inspect(GraphQLNonNull(GraphQLString)) == "String!"
+        assert inspect(GraphQLList(GraphQLString)) == "[String]"
+        test_object_type = GraphQLObjectType(
+            "TestObjectType", {"test": GraphQLField(GraphQLString)}
+        )
+        assert inspect(test_object_type) == "TestObjectType"

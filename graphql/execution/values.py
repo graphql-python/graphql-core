@@ -15,6 +15,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
+from ..pyutils import inspect
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -95,7 +96,7 @@ def get_variable_values(
                         for error in coercion_errors:
                             error.message = (
                                 f"Variable '${var_name}' got invalid"
-                                f" value {value!r}; {error.message}"
+                                f" value {inspect(value)}; {error.message}"
                             )
                         errors.extend(coercion_errors)
                     else:
