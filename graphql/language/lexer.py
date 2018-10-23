@@ -171,9 +171,9 @@ class Lexer:
     def read_token(self, prev: Token) -> Token:
         """Get the next token from the source starting at the given position.
 
-        This skips over whitespace and comments until it finds the next lexable token,
-        then lexes punctuators immediately or calls the appropriate helper function fo
-        more complicated tokens.
+        This skips over whitespace until it finds the next lexable token, then lexes
+        punctuators immediately or calls the appropriate helper function for more
+        complicated tokens.
         """
         source = self.source
         body = source.body
@@ -210,8 +210,8 @@ class Lexer:
     def position_after_whitespace(self, body, start_position: int) -> int:
         """Go to next position after a whitespace.
 
-        Reads from body starting at startPosition until it finds a non-whitespace or
-        commented character, then returns the position of that character for lexing.
+        Reads from body starting at start_position until it finds a non-whitespace
+        character, then returns the position of that character for lexing.
         """
         body_length = len(body)
         position = start_position
