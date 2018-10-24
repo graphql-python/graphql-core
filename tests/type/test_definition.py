@@ -701,13 +701,14 @@ def describe_union_types_must_be_list():
     def accepts_a_union_type_with_function_returning_a_list_of_types():
         schema_with_field_type(GraphQLUnionType("SomeUnion", lambda: [ObjectType]))
 
-    def rejects_a_union_type_without_types():
+    def accepts_a_union_type_without_types():
         with raises(TypeError) as exc_info:
             # noinspection PyArgumentList
             schema_with_field_type(GraphQLUnionType("SomeUnion"))
         msg = str(exc_info.value)
         assert "missing 1 required positional argument: 'types'" in msg
         schema_with_field_type(GraphQLUnionType("SomeUnion", None))
+        schema_with_field_type(GraphQLUnionType("SomeUnion", []))
 
     def rejects_a_union_type_with_incorrectly_typed_types():
         with raises(TypeError) as exc_info:
