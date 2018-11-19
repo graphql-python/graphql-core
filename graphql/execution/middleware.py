@@ -1,7 +1,7 @@
 from functools import partial, reduce
 from inspect import isfunction
 
-from typing import Callable, Iterator, Dict, Tuple, Any, Optional
+from typing import Callable, Iterator, Dict, List, Tuple, Any, Optional
 
 __all__ = ["MiddlewareManager"]
 
@@ -23,12 +23,12 @@ class MiddlewareManager:
     __slots__ = "middlewares", "_middleware_resolvers", "_cached_resolvers"
 
     _cached_resolvers: Dict[GraphQLFieldResolver, GraphQLFieldResolver]
-    _middleware_resolvers: Optional[Iterator[Callable]]
+    _middleware_resolvers: Optional[List[Callable]]
 
     def __init__(self, *middlewares: Any) -> None:
         self.middlewares = middlewares
         self._middleware_resolvers = (
-            get_middleware_resolvers(middlewares) if middlewares else None
+            list(get_middleware_resolvers(middlewares)) if middlewares else None
         )
         self._cached_resolvers = {}
 
