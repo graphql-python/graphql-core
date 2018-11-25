@@ -55,6 +55,39 @@ def describe_middleware():
 
             assert result.data == {"first": "eno", "second": "owt"}
 
+        def two_functions_and_field_resolvers():
+            doc = parse("{ first second }")
+
+            # noinspection PyMethodMayBeStatic
+            class Data:
+                first = "one"
+                second = "two"
+
+            test_type = GraphQLObjectType(
+                "TestType",
+                {
+                    "first": GraphQLField(
+                        GraphQLString, resolve=lambda obj, _info: obj.first
+                    ),
+                    "second": GraphQLField(
+                        GraphQLString, resolve=lambda obj, _info: obj.second
+                    ),
+                },
+            )
+
+            def reverse_middleware(next_, *args, **kwargs):
+                return next_(*args, **kwargs)[::-1]
+
+            def capitalize_middleware(next_, *args, **kwargs):
+                return next_(*args, **kwargs).capitalize()
+
+            middlewares = MiddlewareManager(reverse_middleware, capitalize_middleware)
+            result = execute(
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
+            )
+
+            assert result.data == {"first": "Eno", "second": "Owt"}
+
         @mark.asyncio
         async def single_async_function():
             doc = parse("{ first second }")
