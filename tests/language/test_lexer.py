@@ -96,6 +96,12 @@ def describe_lexer():
         )
 
     # noinspection PyArgumentEqualDefault
+    def lexes_empty_string():
+        token = lex_one('""')
+        assert token == Token(TokenKind.STRING, 0, 2, 1, 1, None, "")
+        assert token.value == ""
+
+    # noinspection PyArgumentEqualDefault
     def lexes_strings():
         assert lex_one('"simple"') == Token(
             TokenKind.STRING, 0, 8, 1, 1, None, "simple"

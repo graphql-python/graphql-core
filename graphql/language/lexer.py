@@ -52,9 +52,9 @@ class Token:
         self.kind = kind
         self.start, self.end = start, end
         self.line, self.column = line, column
-        self.prev: Optional[Token] = prev or None
+        self.prev: Optional[Token] = prev
         self.next: Optional[Token] = None
-        self.value: Optional[str] = value or None
+        self.value: Optional[str] = value
 
     def __repr__(self):
         return "<Token {} at {}-{} ({}/{})>".format(

@@ -388,6 +388,12 @@ def describe_parse_value():
         assert isinstance(result, NullValueNode)
         assert result.loc == (0, 4)
 
+    def parses_empty_strings():
+        result = parse_value('""')
+        assert isinstance(result, StringValueNode)
+        assert result.value == ""
+        assert result.loc == (0, 2)
+
     def parses_list_values():
         result = parse_value('[123 "abc"]')
         assert isinstance(result, ListValueNode)
