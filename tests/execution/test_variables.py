@@ -630,6 +630,8 @@ def describe_execute_handles_inputs():
                 ],
             )
 
+            assert isinstance(result.errors[0].original_error, TypeError)
+
         def reports_error_for_non_provided_variables_for_non_nullable_inputs():
             # Note: this test would typically fail validation before
             # encountering this execution error, however for queries which

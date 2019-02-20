@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import NamedTuple
 
 from pytest import mark
 
@@ -15,9 +16,22 @@ from graphql.type import (
     GraphQLUnionType,
 )
 
-Dog = namedtuple("Dog", "name woofs")
-Cat = namedtuple("Cat", "name meows")
-Human = namedtuple("Human", "name")
+
+class Dog(NamedTuple):
+
+    name: str
+    woofs: bool
+
+
+class Cat(NamedTuple):
+
+    name: str
+    meows: bool
+
+
+class Human(NamedTuple):
+
+    name: str
 
 
 async def is_type_of_error(*_args):

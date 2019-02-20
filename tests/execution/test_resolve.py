@@ -53,6 +53,8 @@ def describe_execute_resolve_function():
         )
 
         class Adder:
+            _num: int
+
             def __init__(self, num):
                 self._num = num
 

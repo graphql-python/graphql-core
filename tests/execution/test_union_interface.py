@@ -26,14 +26,11 @@ class Cat(NamedTuple):
     meows: bool
 
 
-Pet = Union[Dog, Cat]
-
-
 class Person(NamedTuple):
 
     name: str
-    pets: List[Pet]
-    friends: List["Person"]
+    pets: List[Union[Dog, Cat]]
+    friends: List[Union[Dog, Cat, "Person"]]
 
 
 NamedType = GraphQLInterfaceType("Named", {"name": GraphQLField(GraphQLString)})
