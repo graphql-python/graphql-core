@@ -21,8 +21,12 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
-    is_non_null_type,
-    is_scalar_type,
+    assert_enum_type,
+    assert_input_object_type,
+    assert_interface_type,
+    assert_object_type,
+    assert_scalar_type,
+    assert_union_type,
     specified_directives,
     validate_schema,
 )
@@ -174,11 +178,9 @@ def describe_extend_schema():
             }
             """
         )
+        query_type = assert_object_type(extended_schema.get_type("Query"))
 
-        assert (
-            extended_schema.get_type("Query").fields["newField"].description
-            == "New field description."
-        )
+        assert query_type.fields["newField"].description == "New field description."
 
     def extends_objects_by_adding_new_fields():
         extended_schema = extend_test_schema(
@@ -199,9 +201,9 @@ def describe_extend_schema():
             """
         )
 
-        foo_type = extended_schema.get_type("Foo")
-        foo_field = extended_schema.get_type("Query").fields["foo"]
-        assert foo_field.type == foo_type
+        foo_type = assert_object_type(extended_schema.get_type("Foo"))
+        query_type = assert_object_type(extended_schema.get_type("Query"))
+        assert query_type.fields["foo"].type == foo_type
 
     def extends_enums_by_adding_new_values():
         extended_schema = extend_test_schema(
@@ -222,7 +224,8 @@ def describe_extend_schema():
         )
 
         some_enum_type = extended_schema.get_type("SomeEnum")
-        enum_field = extended_schema.get_type("Query").fields["someEnum"]
+        query_type = assert_object_type(extended_schema.get_type("Query"))
+        enum_field = query_type.fields["someEnum"]
         assert enum_field.type == some_enum_type
 
     def extends_unions_by_adding_new_types():
@@ -238,7 +241,8 @@ def describe_extend_schema():
         )
 
         some_union_type = extended_schema.get_type("SomeUnion")
-        union_field = extended_schema.get_type("Query").fields["someUnion"]
+        query_type = assert_object_type(extended_schema.get_type("Query"))
+        union_field = query_type.fields["someUnion"]
         assert union_field.type == some_union_type
 
     def allows_extension_of_union_by_adding_itself():
@@ -270,10 +274,12 @@ def describe_extend_schema():
         )
 
         some_input_type = extended_schema.get_type("SomeInput")
-        input_field = extended_schema.get_type("Query").fields["someInput"]
+        query_type = assert_object_type(extended_schema.get_type("Query"))
+        input_field = query_type.fields["someInput"]
         assert input_field.args["input"].type == some_input_type
 
         foo_directive = extended_schema.get_directive("foo")
+        assert foo_directive
         assert foo_directive.args["input"].type == some_input_type
 
     def extends_scalars_by_adding_new_directives():
@@ -283,11 +289,11 @@ def describe_extend_schema():
             """
         )
 
-        some_scalar = extended_schema.get_type("SomeScalar")
-        assert len(some_scalar.extension_ast_nodes) == 1
-        assert print_ast(some_scalar.extension_ast_nodes[0]) == (
+        some_scalar = assert_scalar_type(extended_schema.get_type("SomeScalar"))
+        assert some_scalar.extension_ast_nodes
+        assert list(map(print_ast, some_scalar.extension_ast_nodes)) == [
             "extend scalar SomeScalar @foo"
-        )
+        ]
 
     def correctly_assigns_ast_nodes_to_new_and_extended_types():
         extended_schema = extend_test_schema(
@@ -358,19 +364,34 @@ def describe_extend_schema():
         )
         extended_twice_schema = extend_schema(extended_schema, ast)
 
-        query = extended_twice_schema.get_type("Query")
-        some_scalar = extended_twice_schema.get_type("SomeScalar")
-        some_enum = extended_twice_schema.get_type("SomeEnum")
-        some_union = extended_twice_schema.get_type("SomeUnion")
-        some_input = extended_twice_schema.get_type("SomeInput")
-        some_interface = extended_twice_schema.get_type("SomeInterface")
+        query = assert_object_type(extended_twice_schema.get_type("Query"))
+        some_enum = assert_enum_type(extended_twice_schema.get_type("SomeEnum"))
+        some_union = assert_union_type(extended_twice_schema.get_type("SomeUnion"))
+        some_scalar = assert_scalar_type(extended_twice_schema.get_type("SomeScalar"))
+        some_input = assert_input_object_type(
+            extended_twice_schema.get_type("SomeInput")
+        )
+        some_interface = assert_interface_type(
+            extended_twice_schema.get_type("SomeInterface")
+        )
 
-        test_input = extended_twice_schema.get_type("TestInput")
-        test_enum = extended_twice_schema.get_type("TestEnum")
-        test_union = extended_twice_schema.get_type("TestUnion")
-        test_interface = extended_twice_schema.get_type("TestInterface")
-        test_type = extended_twice_schema.get_type("TestType")
+        test_input = assert_input_object_type(
+            extended_twice_schema.get_type("TestInput")
+        )
+        test_enum = assert_enum_type(extended_twice_schema.get_type("TestEnum"))
+        test_union = assert_union_type(extended_twice_schema.get_type("TestUnion"))
+        test_type = assert_object_type(extended_twice_schema.get_type("TestType"))
+        test_interface = assert_interface_type(
+            extended_twice_schema.get_type("TestInterface")
+        )
         test_directive = extended_twice_schema.get_directive("test")
+        assert test_directive
+
+        assert test_type.extension_ast_nodes is None
+        assert test_enum.extension_ast_nodes is None
+        assert test_union.extension_ast_nodes is None
+        assert test_input.extension_ast_nodes is None
+        assert test_interface.extension_ast_nodes is None
 
         assert len(query.extension_ast_nodes) == 2
         assert len(some_scalar.extension_ast_nodes) == 2
@@ -379,28 +400,25 @@ def describe_extend_schema():
         assert len(some_input.extension_ast_nodes) == 2
         assert len(some_interface.extension_ast_nodes) == 2
 
-        assert test_type.extension_ast_nodes is None
-        assert test_enum.extension_ast_nodes is None
-        assert test_union.extension_ast_nodes is None
-        assert test_input.extension_ast_nodes is None
-        assert test_interface.extension_ast_nodes is None
-
-        restored_extension_ast = DocumentNode(
-            definitions=[
-                *query.extension_ast_nodes,
-                *some_scalar.extension_ast_nodes,
-                *some_enum.extension_ast_nodes,
-                *some_union.extension_ast_nodes,
-                *some_input.extension_ast_nodes,
-                *some_interface.extension_ast_nodes,
-                test_input.ast_node,
-                test_enum.ast_node,
-                test_union.ast_node,
-                test_interface.ast_node,
-                test_type.ast_node,
-                test_directive.ast_node,
-            ]
-        )
+        definitions = [
+            test_input.ast_node,
+            test_enum.ast_node,
+            test_union.ast_node,
+            test_interface.ast_node,
+            test_type.ast_node,
+            test_directive.ast_node,
+        ]
+        for extension_ast_nodes in [
+            query.extension_ast_nodes,
+            some_scalar.extension_ast_nodes,
+            some_enum.extension_ast_nodes,
+            some_union.extension_ast_nodes,
+            some_input.extension_ast_nodes,
+            some_interface.extension_ast_nodes,
+        ]:
+            if extension_ast_nodes:
+                definitions.extend(extension_ast_nodes)
+        restored_extension_ast = DocumentNode(definitions=definitions)
 
         assert print_schema(
             extend_schema(test_schema, restored_extension_ast)
@@ -413,11 +431,14 @@ def describe_extend_schema():
             print_ast(query.fields["oneMoreNewField"].ast_node)
             == "oneMoreNewField: TestUnion"
         )
-        assert print_ast(some_enum.values["NEW_VALUE"].ast_node) == "NEW_VALUE"
-        assert (
-            print_ast(some_enum.values["ONE_MORE_NEW_VALUE"].ast_node)
-            == "ONE_MORE_NEW_VALUE"
-        )
+
+        new_value = some_enum.values["NEW_VALUE"]
+        assert some_enum
+        assert print_ast(new_value.ast_node) == "NEW_VALUE"
+
+        one_more_new_value = some_enum.values["ONE_MORE_NEW_VALUE"]
+        assert one_more_new_value
+        assert print_ast(one_more_new_value.ast_node) == "ONE_MORE_NEW_VALUE"
         assert print_ast(some_input.fields["newField"].ast_node) == "newField: String"
         assert (
             print_ast(some_input.fields["oneMoreNewField"].ast_node)
@@ -435,7 +456,11 @@ def describe_extend_schema():
             print_ast(test_input.fields["testInputField"].ast_node)
             == "testInputField: TestEnum"
         )
-        assert print_ast(test_enum.values["TEST_VALUE"].ast_node) == "TEST_VALUE"
+
+        test_value = test_enum.values["TEST_VALUE"]
+        assert test_value
+        assert print_ast(test_value.ast_node) == "TEST_VALUE"
+
         assert (
             print_ast(test_interface.fields["interfaceField"].ast_node)
             == "interfaceField: String"
@@ -458,14 +483,15 @@ def describe_extend_schema():
             }
             """
         )
-        deprecated_field_def = extended_schema.get_type(
-            "TypeWithDeprecatedField"
+
+        deprecated_field_def = assert_object_type(
+            extended_schema.get_type("TypeWithDeprecatedField")
         ).fields["newDeprecatedField"]
         assert deprecated_field_def.is_deprecated is True
         assert deprecated_field_def.deprecation_reason == "not used anymore"
 
-        deprecated_enum_def = extended_schema.get_type(
-            "EnumWithDeprecatedValue"
+        deprecated_enum_def = assert_enum_type(
+            extended_schema.get_type("EnumWithDeprecatedValue")
         ).values["DEPRECATED"]
         assert deprecated_enum_def.is_deprecated is True
         assert deprecated_enum_def.deprecation_reason == "do not use"
@@ -478,7 +504,8 @@ def describe_extend_schema():
             }
             """
         )
-        deprecated_field_def = extended_schema.get_type("Foo").fields["deprecatedField"]
+        foo_type = assert_object_type(extended_schema.get_type("Foo"))
+        deprecated_field_def = foo_type.fields["deprecatedField"]
         assert deprecated_field_def.is_deprecated is True
         assert deprecated_field_def.deprecation_reason == "not used anymore"
 
@@ -490,8 +517,8 @@ def describe_extend_schema():
             }
             """
         )
-
-        deprecated_enum_def = extended_schema.get_type("SomeEnum").values["DEPRECATED"]
+        enum_type = assert_enum_type(extended_schema.get_type("SomeEnum"))
+        deprecated_enum_def = enum_type.values["DEPRECATED"]
         assert deprecated_enum_def.is_deprecated is True
         assert deprecated_enum_def.deprecation_reason == "do not use"
 
@@ -993,16 +1020,16 @@ def describe_extend_schema():
         )
 
         extended_directive = extended_schema.get_directive("profile")
+        assert extended_directive
         assert extended_directive.name == "profile"
-        assert DirectiveLocation.QUERY in extended_directive.locations
-        assert DirectiveLocation.FIELD in extended_directive.locations
+        assert extended_directive.locations == [
+            DirectiveLocation.QUERY,
+            DirectiveLocation.FIELD,
+        ]
 
         args = extended_directive.args
-        assert list(args.keys()) == ["enable", "tag"]
-        arg0, arg1 = args.values()
-        assert is_non_null_type(arg0.type) is True
-        assert is_scalar_type(arg0.type.of_type) is True
-        assert is_scalar_type(arg1.type) is True
+        assert list(args) == ["enable", "tag"]
+        assert [str(arg.type) for arg in args.values()] == ["Boolean!", "String"]
 
     def rejects_invalid_sdl():
         sdl = """
@@ -1348,7 +1375,7 @@ def describe_extend_schema():
             )
             schema = extend_schema(schema, ast)
 
-            nodes = schema.extension_ast_nodes
+            nodes = schema.extension_ast_nodes or []
             assert "".join(print_ast(node) + "\n" for node in nodes) == dedent(
                 """
                 extend schema {

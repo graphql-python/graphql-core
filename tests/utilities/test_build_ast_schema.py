@@ -1,5 +1,4 @@
 from collections import namedtuple
-from typing import cast
 
 from pytest import raises
 
@@ -9,10 +8,12 @@ from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
-    GraphQLEnumType,
-    GraphQLObjectType,
-    GraphQLInputObjectType,
-    GraphQLInterfaceType,
+    assert_enum_type,
+    assert_input_object_type,
+    assert_interface_type,
+    assert_object_type,
+    assert_scalar_type,
+    assert_union_type,
     validate_schema,
 )
 from graphql.pyutils import dedent
@@ -637,8 +638,7 @@ def describe_schema_builder():
         ast = parse(body)
         schema = build_ast_schema(ast)
 
-        my_enum = schema.get_type("MyEnum")
-        my_enum = cast(GraphQLEnumType, my_enum)
+        my_enum = assert_enum_type(schema.get_type("MyEnum"))
 
         value = my_enum.values["VALUE"]
         assert value.is_deprecated is False
@@ -651,7 +651,7 @@ def describe_schema_builder():
         assert other_value.is_deprecated is True
         assert other_value.deprecation_reason == "Terrible reasons"
 
-        root_fields = schema.get_type("Query").fields
+        root_fields = assert_object_type(schema.get_type("Query")).fields
         field1 = root_fields["field1"]
         assert field1.is_deprecated is True
         assert field1.deprecation_reason == "No longer supported"
@@ -701,18 +701,15 @@ def describe_schema_builder():
             )
         )
         schema = build_ast_schema(schema_ast)
-        query = schema.get_type("Query")
-        query = cast(GraphQLObjectType, query)
-        test_input = schema.get_type("TestInput")
-        test_input = cast(GraphQLInputObjectType, test_input)
-        test_enum = schema.get_type("TestEnum")
-        test_enum = cast(GraphQLEnumType, test_enum)
-        test_union = schema.get_type("TestUnion")
-        test_interface = schema.get_type("TestInterface")
-        test_interface = cast(GraphQLInterfaceType, test_interface)
-        test_type = schema.get_type("TestType")
-        test_scalar = schema.get_type("TestScalar")
+        query = assert_object_type(schema.get_type("Query"))
+        test_input = assert_input_object_type(schema.get_type("TestInput"))
+        test_enum = assert_enum_type(schema.get_type("TestEnum"))
+        test_union = assert_union_type(schema.get_type("TestUnion"))
+        test_interface = assert_interface_type(schema.get_type("TestInterface"))
+        test_type = assert_object_type(schema.get_type("TestType"))
+        test_scalar = assert_scalar_type(schema.get_type("TestScalar"))
         test_directive = schema.get_directive("test")
+        assert test_directive
 
         restored_schema_ast = DocumentNode(
             definitions=[
@@ -737,7 +734,9 @@ def describe_schema_builder():
         assert print_ast(test_input.fields["testInputField"].ast_node) == (
             "testInputField: TestEnum"
         )
-        assert print_ast(test_enum.values["TEST_VALUE"].ast_node) == "TEST_VALUE"
+        test_enum_value = test_enum.values["TEST_VALUE"]
+        assert test_enum_value
+        assert print_ast(test_enum_value.ast_node) == "TEST_VALUE"
         assert print_ast(test_interface.fields["interfaceField"].ast_node) == (
             "interfaceField: String"
         )

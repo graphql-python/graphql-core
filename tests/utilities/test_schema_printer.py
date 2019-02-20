@@ -20,6 +20,7 @@ from graphql.type import (
     GraphQLNullableType,
     GraphQLInputField,
     GraphQLDirective,
+    assert_object_type,
 )
 from graphql.utilities import build_schema, print_schema, print_introspection_schema
 
@@ -32,8 +33,8 @@ def print_for_test(schema: GraphQLSchema) -> str:
 
 
 def print_single_field_schema(field: GraphQLField):
-    Query = GraphQLObjectType(name="Query", fields={"singleField": field})
-    return print_for_test(GraphQLSchema(query=Query))
+    query = GraphQLObjectType(name="Query", fields={"singleField": field})
+    return print_for_test(GraphQLSchema(query=query))
 
 
 def list_of(type_: GraphQLType):
@@ -112,14 +113,14 @@ def describe_type_system_printer():
         )
 
     def prints_object_field():
-        FooType = GraphQLObjectType(
+        foo_type = GraphQLObjectType(
             name="Foo", fields={"str": GraphQLField(GraphQLString)}
         )
 
-        Query = GraphQLObjectType(name="Query", fields={"foo": GraphQLField(FooType)})
+        query = GraphQLObjectType(name="Query", fields={"foo": GraphQLField(foo_type)})
 
-        Schema = GraphQLSchema(query=Query)
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query=query)
+        output = print_for_test(schema)
         assert output == dedent(
             """
             type Foo {
@@ -286,13 +287,13 @@ def describe_type_system_printer():
         )
 
     def prints_custom_query_root_type():
-        CustomQueryType = GraphQLObjectType(
+        custom_query_type = GraphQLObjectType(
             "CustomQueryType", {"bar": GraphQLField(GraphQLString)}
         )
 
-        Schema = GraphQLSchema(CustomQueryType)
+        schema = GraphQLSchema(custom_query_type)
 
-        output = print_for_test(Schema)
+        output = print_for_test(schema)
         assert output == dedent(
             """
             schema {
@@ -306,26 +307,22 @@ def describe_type_system_printer():
         )
 
     def prints_interface():
-        FooType = GraphQLInterfaceType(
+        foo_type = GraphQLInterfaceType(
             name="Foo", fields={"str": GraphQLField(GraphQLString)}
         )
 
-        BarType = GraphQLObjectType(
+        bar_type = GraphQLObjectType(
             name="Bar",
             fields={"str": GraphQLField(GraphQLString)},
-            interfaces=[FooType],
+            interfaces=[foo_type],
         )
 
-        Root = GraphQLObjectType(name="Root", fields={"bar": GraphQLField(BarType)})
+        query = GraphQLObjectType(name="Query", fields={"bar": GraphQLField(bar_type)})
 
-        Schema = GraphQLSchema(Root, types=[BarType])
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query, types=[bar_type])
+        output = print_for_test(schema)
         assert output == dedent(
             """
-            schema {
-              query: Root
-            }
-
             type Bar implements Foo {
               str: String
             }
@@ -334,40 +331,36 @@ def describe_type_system_printer():
               str: String
             }
 
-            type Root {
+            type Query {
               bar: Bar
             }
             """
         )
 
     def prints_multiple_interfaces():
-        FooType = GraphQLInterfaceType(
+        foo_type = GraphQLInterfaceType(
             name="Foo", fields={"str": GraphQLField(GraphQLString)}
         )
 
-        BaazType = GraphQLInterfaceType(
+        baaz_type = GraphQLInterfaceType(
             name="Baaz", fields={"int": GraphQLField(GraphQLInt)}
         )
 
-        BarType = GraphQLObjectType(
+        bar_type = GraphQLObjectType(
             name="Bar",
             fields={
                 "str": GraphQLField(GraphQLString),
                 "int": GraphQLField(GraphQLInt),
             },
-            interfaces=[FooType, BaazType],
+            interfaces=[foo_type, baaz_type],
         )
 
-        Root = GraphQLObjectType(name="Root", fields={"bar": GraphQLField(BarType)})
+        query = GraphQLObjectType(name="Query", fields={"bar": GraphQLField(bar_type)})
 
-        Schema = GraphQLSchema(Root, types=[BarType])
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query, types=[bar_type])
+        output = print_for_test(schema)
         assert output == dedent(
             """
-            schema {
-              query: Root
-            }
-
             interface Baaz {
               int: Int
             }
@@ -381,41 +374,39 @@ def describe_type_system_printer():
               str: String
             }
 
-            type Root {
+            type Query {
               bar: Bar
             }
             """
         )
 
     def prints_unions():
-        FooType = GraphQLObjectType(
+        foo_type = GraphQLObjectType(
             name="Foo", fields={"bool": GraphQLField(GraphQLBoolean)}
         )
 
-        BarType = GraphQLObjectType(
+        bar_type = GraphQLObjectType(
             name="Bar", fields={"str": GraphQLField(GraphQLString)}
         )
 
-        SingleUnion = GraphQLUnionType(name="SingleUnion", types=[FooType])
+        single_union = GraphQLUnionType(name="SingleUnion", types=[foo_type])
 
-        MultipleUnion = GraphQLUnionType(name="MultipleUnion", types=[FooType, BarType])
+        multiple_union = GraphQLUnionType(
+            name="MultipleUnion", types=[foo_type, bar_type]
+        )
 
-        Root = GraphQLObjectType(
-            name="Root",
+        query = GraphQLObjectType(
+            name="Query",
             fields={
-                "single": GraphQLField(SingleUnion),
-                "multiple": GraphQLField(MultipleUnion),
+                "single": GraphQLField(single_union),
+                "multiple": GraphQLField(multiple_union),
             },
         )
 
-        Schema = GraphQLSchema(Root)
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query)
+        output = print_for_test(schema)
         assert output == dedent(
             """
-            schema {
-              query: Root
-            }
-
             type Bar {
               str: String
             }
@@ -426,7 +417,7 @@ def describe_type_system_printer():
 
             union MultipleUnion = Foo | Bar
 
-            type Root {
+            type Query {
               single: SingleUnion
               multiple: MultipleUnion
             }
@@ -436,62 +427,56 @@ def describe_type_system_printer():
         )
 
     def prints_input_type():
-        InputType = GraphQLInputObjectType(
+        input_type = GraphQLInputObjectType(
             name="InputType", fields={"int": GraphQLInputField(GraphQLInt)}
         )
 
-        Root = GraphQLObjectType(
-            name="Root",
+        query = GraphQLObjectType(
+            name="Query",
             fields={
                 "str": GraphQLField(
-                    GraphQLString, args={"argOne": GraphQLArgument(InputType)}
+                    GraphQLString, args={"argOne": GraphQLArgument(input_type)}
                 )
             },
         )
 
-        Schema = GraphQLSchema(Root)
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query)
+        output = print_for_test(schema)
         assert output == dedent(
             """
-            schema {
-              query: Root
-            }
-
             input InputType {
               int: Int
             }
 
-            type Root {
+            type Query {
               str(argOne: InputType): String
             }
             """
         )
 
     def prints_custom_scalar():
-        OddType = GraphQLScalarType(
-            name="Odd", serialize=lambda value: value if value % 2 else None
-        )
+        def serialize(value):
+            assert isinstance(value, int)
+            return value if value % 2 else None
 
-        Root = GraphQLObjectType(name="Root", fields={"odd": GraphQLField(OddType)})
+        odd_type = GraphQLScalarType(name="Odd", serialize=serialize)
 
-        Schema = GraphQLSchema(Root)
-        output = print_for_test(Schema)
+        query = GraphQLObjectType(name="Query", fields={"odd": GraphQLField(odd_type)})
+
+        schema = GraphQLSchema(query)
+        output = print_for_test(schema)
         assert output == dedent(
             """
-            schema {
-              query: Root
-            }
-
             scalar Odd
 
-            type Root {
+            type Query {
               odd: Odd
             }
             """
         )
 
     def prints_enum():
-        RGBType = GraphQLEnumType(
+        rgb_type = GraphQLEnumType(
             name="RGB",
             values={
                 "RED": GraphQLEnumValue(0),
@@ -500,14 +485,14 @@ def describe_type_system_printer():
             },
         )
 
-        Root = GraphQLObjectType(name="Root", fields={"rgb": GraphQLField(RGBType)})
+        query = GraphQLObjectType(name="Query", fields={"rgb": GraphQLField(rgb_type)})
 
-        Schema = GraphQLSchema(Root)
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query)
+        output = print_for_test(schema)
         assert output == dedent(
             """
-            schema {
-              query: Root
+            type Query {
+              rgb: RGB
             }
 
             enum RGB {
@@ -515,24 +500,20 @@ def describe_type_system_printer():
               GREEN
               BLUE
             }
-
-            type Root {
-              rgb: RGB
-            }
             """
         )
 
     def prints_custom_directives():
-        Query = GraphQLObjectType(
+        query = GraphQLObjectType(
             name="Query", fields={"field": GraphQLField(GraphQLString)}
         )
 
-        CustomDirective = GraphQLDirective(
+        custom_directive = GraphQLDirective(
             name="customDirective", locations=[DirectiveLocation.FIELD]
         )
 
-        Schema = GraphQLSchema(query=Query, directives=[CustomDirective])
-        output = print_for_test(Schema)
+        schema = GraphQLSchema(query=query, directives=[custom_directive])
+        output = print_for_test(schema)
         assert output == dedent(
             """
             directive @customDirective on FIELD
@@ -556,7 +537,8 @@ def describe_type_system_printer():
             }
             '''
         )
-        recreated_root = build_schema(output).type_map["Query"]
+        schema = build_schema(output)
+        recreated_root = assert_object_type(schema.type_map["Query"])
         recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
@@ -575,7 +557,8 @@ def describe_type_system_printer():
             }
             '''
         )
-        recreated_root = build_schema(output).type_map["Query"]
+        schema = build_schema(output)
+        recreated_root = assert_object_type(schema.type_map["Query"])
         recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
@@ -593,23 +576,20 @@ def describe_type_system_printer():
             }
             '''
         )
-        recreated_root = build_schema(output).type_map["Query"]
+        schema = build_schema(output)
+        recreated_root = assert_object_type(schema.type_map["Query"])
         recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
     def prints_introspection_schema():
-        Root = GraphQLObjectType(
-            name="Root", fields={"onlyField": GraphQLField(GraphQLString)}
+        query = GraphQLObjectType(
+            name="Query", fields={"onlyField": GraphQLField(GraphQLString)}
         )
 
-        Schema = GraphQLSchema(Root)
-        output = print_introspection_schema(Schema)
+        schema = GraphQLSchema(query)
+        output = print_introspection_schema(schema)
         assert output == dedent(
             '''
-            schema {
-              query: Root
-            }
-
             """
             Directs the executor to include this field or fragment only when the `if` argument is true.
             """
