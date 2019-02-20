@@ -178,12 +178,12 @@ def describe_type_predicates():
             assert is_list_type(GraphQLList(ObjectType)) is True
             assert_list_type(GraphQLList(ObjectType))
 
-        def returns_false_for_an_unwrapped_type():
+        def returns_false_for_a_unwrapped_type():
             assert is_list_type(ObjectType) is False
             with raises(TypeError):
                 assert_list_type(ObjectType)
 
-        def returns_true_for_a_non_list_wrapped_type():
+        def returns_false_for_a_non_list_wrapped_type():
             assert is_list_type(GraphQLNonNull(GraphQLList(ObjectType))) is False
             with raises(TypeError):
                 assert_list_type(GraphQLNonNull(GraphQLList(ObjectType)))
@@ -198,7 +198,7 @@ def describe_type_predicates():
             with raises(TypeError):
                 assert_non_null_type(ObjectType)
 
-        def returns_true_for_a_not_non_null_wrapped_type():
+        def returns_false_for_a_not_non_null_wrapped_type():
             assert is_non_null_type(GraphQLList(GraphQLNonNull(ObjectType))) is False
             with raises(TypeError):
                 assert_non_null_type(GraphQLList(GraphQLNonNull(ObjectType)))
