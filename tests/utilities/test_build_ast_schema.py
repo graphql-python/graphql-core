@@ -8,6 +8,7 @@ from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    assert_directive,
     assert_enum_type,
     assert_input_object_type,
     assert_interface_type,
@@ -708,8 +709,7 @@ def describe_schema_builder():
         test_interface = assert_interface_type(schema.get_type("TestInterface"))
         test_type = assert_object_type(schema.get_type("TestType"))
         test_scalar = assert_scalar_type(schema.get_type("TestScalar"))
-        test_directive = schema.get_directive("test")
-        assert test_directive
+        test_directive = assert_directive(schema.get_directive("test"))
 
         restored_schema_ast = DocumentNode(
             definitions=[

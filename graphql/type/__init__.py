@@ -6,6 +6,8 @@ The :mod:`graphql.type` package is responsible for defining GraphQL types and sc
 from .schema import (
     # Predicate
     is_schema,
+    # Assertion
+    assert_schema,
     # GraphQL Schema definition
     GraphQLSchema,
 )
@@ -95,6 +97,8 @@ from .definition import (
 from .directives import (
     # Predicate
     is_directive,
+    # Assertion
+    assert_directive,
     # Directives Definition
     GraphQLDirective,
     # Built-in Directives defined by the Spec
@@ -134,6 +138,7 @@ from .validate import validate_schema, assert_valid_schema
 
 __all__ = [
     "is_schema",
+    "assert_schema",
     "GraphQLSchema",
     "is_type",
     "is_scalar_type",
@@ -210,6 +215,7 @@ __all__ = [
     "GraphQLResolveInfo",
     "ResponsePath",
     "is_directive",
+    "assert_directive",
     "is_specified_directive",
     "specified_directives",
     "GraphQLDirective",

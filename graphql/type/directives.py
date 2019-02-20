@@ -1,11 +1,13 @@
 from typing import Any, Dict, Sequence, cast
 
 from ..language import ast, DirectiveLocation
+from ..pyutils import inspect
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
 from .scalars import GraphQLBoolean, GraphQLString
 
 __all__ = [
     "is_directive",
+    "assert_directive",
     "is_specified_directive",
     "specified_directives",
     "GraphQLDirective",
@@ -15,11 +17,6 @@ __all__ = [
     "DirectiveLocation",
     "DEFAULT_DEPRECATION_REASON",
 ]
-
-
-def is_directive(directive: Any) -> bool:
-    """Test if the given value is a GraphQL directive."""
-    return isinstance(directive, GraphQLDirective)
 
 
 class GraphQLDirective:
@@ -88,6 +85,17 @@ class GraphQLDirective:
 
     def __repr__(self):
         return f"<{self.__class__.__name__}({self})>"
+
+
+def is_directive(directive: Any) -> bool:
+    """Test if the given value is a GraphQL directive."""
+    return isinstance(directive, GraphQLDirective)
+
+
+def assert_directive(directive: Any) -> GraphQLDirective:
+    if not is_directive(directive):
+        raise TypeError(f"Expected {inspect(directive)} to be a GraphQL directive.")
+    return cast(GraphQLDirective, directive)
 
 
 # Used to conditionally include fields or fragments.

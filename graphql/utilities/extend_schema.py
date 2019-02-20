@@ -41,6 +41,7 @@ from ..type import (
     GraphQLSchema,
     GraphQLType,
     GraphQLUnionType,
+    assert_schema,
     is_enum_type,
     is_input_object_type,
     is_interface_type,
@@ -48,7 +49,6 @@ from ..type import (
     is_non_null_type,
     is_object_type,
     is_scalar_type,
-    is_schema,
     is_union_type,
     is_introspection_type,
     is_specified_scalar_type,
@@ -80,9 +80,7 @@ def extend_schema(
     schema is valid. Set `assume_valid` to true to assume the produced schema is valid.
     Set `assume_valid_sdl` to True to assume it is already a valid SDL document.
     """
-
-    if not is_schema(schema):
-        raise TypeError("Must provide valid GraphQLSchema")
+    assert_schema(schema)
 
     if not isinstance(document_ast, DocumentNode):
         "Must provide valid Document AST"

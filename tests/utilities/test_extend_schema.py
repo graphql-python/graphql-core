@@ -21,6 +21,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
+    assert_directive,
     assert_enum_type,
     assert_input_object_type,
     assert_interface_type,
@@ -278,8 +279,7 @@ def describe_extend_schema():
         input_field = query_type.fields["someInput"]
         assert input_field.args["input"].type == some_input_type
 
-        foo_directive = extended_schema.get_directive("foo")
-        assert foo_directive
+        foo_directive = assert_directive(extended_schema.get_directive("foo"))
         assert foo_directive.args["input"].type == some_input_type
 
     def extends_scalars_by_adding_new_directives():
@@ -384,8 +384,7 @@ def describe_extend_schema():
         test_interface = assert_interface_type(
             extended_twice_schema.get_type("TestInterface")
         )
-        test_directive = extended_twice_schema.get_directive("test")
-        assert test_directive
+        test_directive = assert_directive(extended_twice_schema.get_directive("test"))
 
         assert test_type.extension_ast_nodes is None
         assert test_enum.extension_ast_nodes is None
@@ -1019,8 +1018,7 @@ def describe_extend_schema():
             """
         )
 
-        extended_directive = extended_schema.get_directive("profile")
-        assert extended_directive
+        extended_directive = assert_directive(extended_schema.get_directive("profile"))
         assert extended_directive.name == "profile"
         assert extended_directive.locations == [
             DirectiveLocation.QUERY,

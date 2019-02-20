@@ -2,6 +2,7 @@ from operator import attrgetter
 from typing import Any, Callable, List, Optional, Sequence, Set, Union, cast
 
 from ..error import GraphQLError
+from ..pyutils import inspect
 from ..language import (
     EnumValueDefinitionNode,
     FieldDefinitionNode,
@@ -28,12 +29,11 @@ from .definition import (
     is_union_type,
     is_required_argument,
 )
-from ..pyutils import inspect
 from ..utilities.assert_valid_name import is_valid_name_error
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
 from .directives import GraphQLDirective, is_directive
 from .introspection import is_introspection_type
-from .schema import GraphQLSchema, is_schema
+from .schema import GraphQLSchema, assert_schema
 
 __all__ = ["validate_schema", "assert_valid_schema"]
 
@@ -48,8 +48,7 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
     list if no errors were encountered and the Schema is valid.
     """
     # First check to ensure the provided value is in fact a GraphQLSchema.
-    if not is_schema(schema):
-        raise TypeError(f"Expected {inspect(schema)} to be a GraphQL schema.")
+    assert_schema(schema)
 
     # If this Schema has already been validated, return the previous results.
     # noinspection PyProtectedMember
@@ -70,7 +69,7 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
     return errors
 
 
-def assert_valid_schema(schema: GraphQLSchema):
+def assert_valid_schema(schema: GraphQLSchema) -> None:
     """Utility function which asserts a schema is valid.
 
     Throws a TypeError if the schema is invalid.

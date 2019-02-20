@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, ca
 
 from ..error import GraphQLError
 from ..language import ast
+from ..pyutils import inspect
 from .definition import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
@@ -21,15 +22,10 @@ from .definition import (
 from .directives import GraphQLDirective, specified_directives, is_directive
 from .introspection import introspection_types
 
-__all__ = ["GraphQLSchema", "is_schema"]
+__all__ = ["GraphQLSchema", "is_schema", "assert_schema"]
 
 
 TypeMap = Dict[str, GraphQLNamedType]
-
-
-def is_schema(schema: Any) -> bool:
-    """Test if the given value is a GraphQL schema."""
-    return isinstance(schema, GraphQLSchema)
 
 
 class GraphQLSchema:
@@ -175,6 +171,17 @@ class GraphQLSchema:
     @property
     def validation_errors(self):
         return self._validation_errors
+
+
+def is_schema(schema: Any) -> bool:
+    """Test if the given value is a GraphQL schema."""
+    return isinstance(schema, GraphQLSchema)
+
+
+def assert_schema(schema: Any) -> GraphQLSchema:
+    if not is_schema(schema):
+        raise TypeError(f"Expected {inspect(schema)} to be a GraphQL schema.")
+    return cast(GraphQLSchema, schema)
 
 
 def type_map_reducer(map_: TypeMap, type_: GraphQLNamedType = None) -> TypeMap:

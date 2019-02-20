@@ -105,6 +105,8 @@ from .type import (
     is_introspection_type,
     is_specified_directive,
     # Assertions
+    assert_schema,
+    assert_directive,
     assert_type,
     assert_scalar_type,
     assert_object_type,
@@ -419,6 +421,8 @@ __all__ = [
     "is_specified_scalar_type",
     "is_introspection_type",
     "is_specified_directive",
+    "assert_schema",
+    "assert_directive",
     "assert_type",
     "assert_scalar_type",
     "assert_object_type",
