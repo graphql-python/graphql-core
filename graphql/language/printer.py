@@ -182,7 +182,7 @@ class PrintAstVisitor(Visitor):
         args = node.arguments
         args = (
             wrap("(\n", indent(join(args, "\n")), "\n)")
-            if any("\n" in arg for arg in args)
+            if has_multiline_items(args)
             else wrap("(", join(args, ", "), ")")
         )
         directives = wrap(" ", join(node.directives, " "))
@@ -239,7 +239,7 @@ class PrintAstVisitor(Visitor):
         args = node.arguments
         args = (
             wrap("(\n", indent(join(args, "\n")), "\n)")
-            if any("\n" in arg for arg in args)
+            if has_multiline_items(args)
             else wrap("(", join(args, ", "), ")")
         )
         locations = join(node.locations, " | ")
@@ -309,14 +309,14 @@ def print_block_string(value: str, is_description: bool = False) -> str:
     adding a leading blank line would strip that whitespace.
     """
     escaped = value.replace('"""', '\\"""')
-    if value.startswith((" ", "\t")) and "\n" not in value:
-        if escaped.endswith('"'):
-            escaped += "\n"
-        return f'"""{escaped}"""'
-    else:
+    if is_multiline(value) or not value.startswith((" ", "\t")):
         if not is_description:
             escaped = indent(escaped)
         return f'"""\n{escaped}\n"""'
+    else:
+        if escaped.endswith('"'):
+            escaped += "\n"
+        return f'"""{escaped}"""'
 
 
 def join(strings: Optional[Sequence[str]], separator: str = "") -> str:
@@ -346,10 +346,20 @@ def wrap(start: str, string: str, end: str = "") -> str:
     return f"{start}{string}{end}" if string else ""
 
 
-def indent(string):
+def indent(string: str) -> str:
     """Indent string with two spaces.
 
     If the string is not None or empty, add two spaces at the beginning of every line
     inside the string.
     """
     return "  " + string.replace("\n", "\n  ") if string else string
+
+
+def is_multiline(string: str) -> bool:
+    """Check whether a string consists of multiple lines."""
+    return "\n" in string
+
+
+def has_multiline_items(maybe_list: Optional[Sequence[str]]):
+    """Check whether one of the items in the list has multiple lines."""
+    return maybe_list and any(is_multiline(item) for item in maybe_list)
