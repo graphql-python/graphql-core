@@ -1,5 +1,4 @@
 import asyncio
-from json import dumps
 from typing import cast
 
 from pytest import raises, mark
@@ -7,6 +6,7 @@ from pytest import raises, mark
 from graphql.error import GraphQLError
 from graphql.execution import execute
 from graphql.language import parse, OperationDefinitionNode, FieldNode
+from graphql.pyutils import inspect
 from graphql.type import (
     GraphQLSchema,
     GraphQLObjectType,
@@ -31,37 +31,30 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         with raises(TypeError) as exc_info:
-            assert execute(schema, None)
+            assert execute(schema=schema, document=None)
 
         assert str(exc_info.value) == "Must provide document"
 
     # noinspection PyTypeChecker
     def throws_if_no_schema_is_provided():
+        document = parse("{ field }")
+
         with raises(TypeError) as exc_info:
-            assert execute(schema=None, document=parse("{ field }"))
+            assert execute(schema=None, document=document)
 
         assert str(exc_info.value) == "Expected None to be a GraphQL schema."
 
-    def accepts_an_object_with_named_properties_as_arguments():
-        doc = "query Example { a }"
-
-        data = "rootValue"
-
+    def accepts_positional_arguments():
         schema = GraphQLSchema(
             GraphQLObjectType(
                 "Type",
-                {
-                    "a": GraphQLField(
-                        GraphQLString, resolve=lambda root_value, *args: root_value
-                    )
-                },
+                {"a": GraphQLField(GraphQLString, resolve=lambda obj, *args: obj)},
             )
         )
 
-        assert execute(schema, document=parse(doc), root_value=data) == (
-            {"a": "rootValue"},
-            None,
-        )
+        result = execute(schema, parse("{ a }"), "rootValue")
+
+        assert result == ({"a": "rootValue"}, None)
 
     @mark.asyncio
     async def executes_arbitrary_code():
@@ -85,6 +78,7 @@ def describe_execute_handles_basic_execution_tasks():
 
             f = "Fish"
 
+            # Called only by DataType::pic static resolver
             def pic(self, _info, size=50):
                 return f"Pic of size: {size}"
 
@@ -111,61 +105,6 @@ def describe_execute_handles_basic_execution_tasks():
         async def promise_data():
             await asyncio.sleep(0)
             return Data()
-
-        doc = """
-            query Example($size: Int) {
-              a,
-              b,
-              x: c
-              ...c
-              f
-              ...on DataType {
-                pic(size: $size)
-                promise {
-                  a
-                }
-              }
-              deep {
-                a
-                b
-                c
-                deeper {
-                  a
-                  b
-                }
-              }
-            }
-
-            fragment c on DataType {
-              d
-              e
-            }
-            """
-
-        ast = parse(doc)
-        expected = (
-            {
-                "a": "Apple",
-                "b": "Banana",
-                "x": "Cookie",
-                "d": "Donut",
-                "e": "Egg",
-                "f": "Fish",
-                "pic": "Pic of size: 100",
-                "promise": {"a": "Apple"},
-                "deep": {
-                    "a": "Already Been Done",
-                    "b": "Boring",
-                    "c": ["Contrived", None, "Confusing"],
-                    "deeper": [
-                        {"a": "Apple", "b": "Banana"},
-                        None,
-                        {"a": "Apple", "b": "Banana"},
-                    ],
-                },
-            },
-            None,
-        )
 
         DataType = GraphQLObjectType(
             "DataType",
@@ -196,20 +135,78 @@ def describe_execute_handles_basic_execution_tasks():
             },
         )
 
-        schema = GraphQLSchema(DataType)
+        document = parse(
+            """
+            query ($size: Int) {
+              a,
+              b,
+              x: c
+              ...c
+              f
+              ...on DataType {
+                pic(size: $size)
+                promise {
+                  a
+                }
+              }
+              deep {
+                a
+                b
+                c
+                deeper {
+                  a
+                  b
+                }
+              }
+            }
 
-        assert (
-            await execute(
-                schema,
-                ast,
-                Data(),
-                variable_values={"size": 100},
-                operation_name="Example",
-            )
-            == expected
+            fragment c on DataType {
+              d
+              e
+            }
+            """
+        )
+
+        result = await execute(
+            GraphQLSchema(DataType), document, Data(), variable_values={"size": 100}
+        )
+
+        assert result == (
+            {
+                "a": "Apple",
+                "b": "Banana",
+                "x": "Cookie",
+                "d": "Donut",
+                "e": "Egg",
+                "f": "Fish",
+                "pic": "Pic of size: 100",
+                "promise": {"a": "Apple"},
+                "deep": {
+                    "a": "Already Been Done",
+                    "b": "Boring",
+                    "c": ["Contrived", None, "Confusing"],
+                    "deeper": [
+                        {"a": "Apple", "b": "Banana"},
+                        None,
+                        {"a": "Apple", "b": "Banana"},
+                    ],
+                },
+            },
+            None,
         )
 
     def merges_parallel_fragments():
+        Type = GraphQLObjectType(
+            "Type",
+            lambda: {
+                "a": GraphQLField(GraphQLString, resolve=lambda *_args: "Apple"),
+                "b": GraphQLField(GraphQLString, resolve=lambda *_args: "Banana"),
+                "c": GraphQLField(GraphQLString, resolve=lambda *_args: "Cherry"),
+                "deep": GraphQLField(Type, resolve=lambda *_args: {}),
+            },
+        )
+        schema = GraphQLSchema(Type)
+
         ast = parse(
             """
             { a, ...FragOne, ...FragTwo }
@@ -226,18 +223,8 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        Type = GraphQLObjectType(
-            "Type",
-            lambda: {
-                "a": GraphQLField(GraphQLString, resolve=lambda *_args: "Apple"),
-                "b": GraphQLField(GraphQLString, resolve=lambda *_args: "Banana"),
-                "c": GraphQLField(GraphQLString, resolve=lambda *_args: "Cherry"),
-                "deep": GraphQLField(Type, resolve=lambda *_args: {}),
-            },
-        )
-        schema = GraphQLSchema(Type)
-
-        assert execute(schema, ast) == (
+        result = execute(schema, ast)
+        assert result == (
             {
                 "a": "Apple",
                 "b": "Banana",
@@ -252,27 +239,27 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
     def provides_info_about_current_execution_state():
-        ast = parse("query ($var: String) { result: test }")
-
-        infos = []
+        resolved_infos = []
 
         def resolve(_obj, info):
-            infos.append(info)
+            resolved_infos.append(info)
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Test", {"test": GraphQLField(GraphQLString, resolve=resolve)}
-            )
+        test_type = GraphQLObjectType(
+            "Test", {"test": GraphQLField(GraphQLString, resolve=resolve)}
         )
 
+        schema = GraphQLSchema(test_type)
+
+        document = parse("query ($var: String) { result: test }")
         root_value = {"root": "val"}
+        variable_values = {"var": "abc"}
+        execute(schema, document, root_value, variable_values=variable_values)
 
-        execute(schema, ast, root_value, variable_values={"var": "abc"})
-
-        assert len(infos) == 1
-        operation = cast(OperationDefinitionNode, ast.definitions[0])
+        assert len(resolved_infos) == 1
+        operation = cast(OperationDefinitionNode, document.definitions[0])
+        assert operation and operation.kind == "operation_definition"
         field = cast(FieldNode, operation.selection_set.selections[0])
-        assert infos[0] == GraphQLResolveInfo(
+        assert resolved_infos[0] == GraphQLResolveInfo(
             field_name="test",
             field_nodes=[field],
             return_type=GraphQLString,
@@ -282,17 +269,15 @@ def describe_execute_handles_basic_execution_tasks():
             fragments={},
             root_value=root_value,
             operation=operation,
-            variable_values={"var": "abc"},
+            variable_values=variable_values,
             context=None,
         )
 
     def threads_root_value_context_correctly():
-        doc = "query Example { a }"
+        resolved_values = []
 
         class Data:
             context_thing = "thing"
-
-        resolved_values = []
 
         def resolve(obj, _info):
             resolved_values.append(obj)
@@ -303,18 +288,14 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        execute(schema, parse(doc), Data())
+        document = parse("query Example { a }")
+        root_value = Data()
+        execute(schema, document, root_value)
 
         assert len(resolved_values) == 1
-        assert resolved_values[0].context_thing == "thing"
+        assert resolved_values[0] is root_value
 
     def correctly_threads_arguments():
-        doc = """
-            query Example {
-              b(numArg: 123, stringArg: "foo")
-            }
-            """
-
         resolved_args = []
 
         def resolve(_obj, _info, **args):
@@ -336,14 +317,24 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        execute(schema, parse(doc))
+        document = parse(
+            """
+            query Example {
+              b(numArg: 123, stringArg: "foo")
+            }
+            """
+        )
+
+        execute(schema, document)
 
         assert len(resolved_args) == 1
         assert resolved_args[0] == {"numArg": 123, "stringArg": "foo"}
 
     @mark.asyncio
     async def nulls_out_error_subtrees():
-        doc = """{
+        document = parse(
+            """
+            {
               syncOk
               syncError
               syncRawError
@@ -354,7 +345,28 @@ def describe_execute_handles_basic_execution_tasks():
               asyncRawError
               asyncReturnError
               asyncReturnErrorWithExtensions
-            }"""
+            }
+            """
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Type",
+                {
+                    "syncOk": GraphQLField(GraphQLString),
+                    "syncError": GraphQLField(GraphQLString),
+                    "syncRawError": GraphQLField(GraphQLString),
+                    "syncReturnError": GraphQLField(GraphQLString),
+                    "syncReturnErrorList": GraphQLField(GraphQLList(GraphQLString)),
+                    "asyncOk": GraphQLField(GraphQLString),
+                    "asyncError": GraphQLField(GraphQLString),
+                    "asyncErrorWithExtensions": GraphQLField(GraphQLString),
+                    "asyncRawError": GraphQLField(GraphQLString),
+                    "asyncReturnError": GraphQLField(GraphQLString),
+                    "asyncReturnErrorWithExtensions": GraphQLField(GraphQLString),
+                },
+            )
+        )
 
         # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Data:
@@ -396,28 +408,9 @@ def describe_execute_handles_basic_execution_tasks():
                     extensions={"foo": "bar"},
                 )
 
-        ast = parse(doc)
+        result = await execute(schema, document, Data())
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Type",
-                {
-                    "syncOk": GraphQLField(GraphQLString),
-                    "syncError": GraphQLField(GraphQLString),
-                    "syncRawError": GraphQLField(GraphQLString),
-                    "syncReturnError": GraphQLField(GraphQLString),
-                    "syncReturnErrorList": GraphQLField(GraphQLList(GraphQLString)),
-                    "asyncOk": GraphQLField(GraphQLString),
-                    "asyncError": GraphQLField(GraphQLString),
-                    "asyncErrorWithExtensions": GraphQLField(GraphQLString),
-                    "asyncRawError": GraphQLField(GraphQLString),
-                    "asyncReturnError": GraphQLField(GraphQLString),
-                    "asyncReturnErrorWithExtensions": GraphQLField(GraphQLString),
-                },
-            )
-        )
-
-        assert await execute(schema, ast, Data()) == (
+        assert result == (
             {
                 "syncOk": "sync ok",
                 "syncError": None,
@@ -433,47 +426,47 @@ def describe_execute_handles_basic_execution_tasks():
             [
                 {
                     "message": "Error getting syncError",
-                    "locations": [(3, 15)],
+                    "locations": [(4, 15)],
                     "path": ["syncError"],
                 },
                 {
                     "message": "Error getting syncRawError",
-                    "locations": [(4, 15)],
+                    "locations": [(5, 15)],
                     "path": ["syncRawError"],
                 },
                 {
                     "message": "Error getting syncReturnError",
-                    "locations": [(5, 15)],
+                    "locations": [(6, 15)],
                     "path": ["syncReturnError"],
                 },
                 {
                     "message": "Error getting syncReturnErrorList1",
-                    "locations": [(6, 15)],
+                    "locations": [(7, 15)],
                     "path": ["syncReturnErrorList", 1],
                 },
                 {
                     "message": "Error getting syncReturnErrorList3",
-                    "locations": [(6, 15)],
+                    "locations": [(7, 15)],
                     "path": ["syncReturnErrorList", 3],
                 },
                 {
                     "message": "Error getting asyncError",
-                    "locations": [(8, 15)],
+                    "locations": [(9, 15)],
                     "path": ["asyncError"],
                 },
                 {
                     "message": "Error getting asyncRawError",
-                    "locations": [(9, 15)],
+                    "locations": [(10, 15)],
                     "path": ["asyncRawError"],
                 },
                 {
                     "message": "Error getting asyncReturnError",
-                    "locations": [(10, 15)],
+                    "locations": [(11, 15)],
                     "path": ["asyncReturnError"],
                 },
                 {
                     "message": "Error getting asyncReturnErrorWithExtensions",
-                    "locations": [(11, 15)],
+                    "locations": [(12, 15)],
                     "path": ["asyncReturnErrorWithExtensions"],
                     "extensions": {"foo": "bar"},
                 },
@@ -496,12 +489,14 @@ def describe_execute_handles_basic_execution_tasks():
             },
         )
 
-        query_type = GraphQLObjectType(
-            "query", lambda: {"nullableA": GraphQLField(A, resolve=resolve_ok)}
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "query", lambda: {"nullableA": GraphQLField(A, resolve=resolve_ok)}
+            )
         )
-        schema = GraphQLSchema(query_type)
 
-        query = """
+        document = parse(
+            """
             query {
               nullableA {
                 aliasedA: nullableA {
@@ -514,8 +509,9 @@ def describe_execute_handles_basic_execution_tasks():
               }
             }
             """
+        )
 
-        assert execute(schema, parse(query)) == (
+        assert execute(schema, document) == (
             {"nullableA": {"aliasedA": None}},
             [
                 {
@@ -527,75 +523,76 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
     def uses_the_inline_operation_if_no_operation_name_is_provided():
-        doc = "{ a }"
-
-        class Data:
-            a = "b"
-
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        assert execute(schema, ast, Data()) == ({"a": "b"}, None)
+        document = parse("{ a }")
+
+        class Data:
+            a = "b"
+
+        result = execute(schema, document, Data())
+        assert result == ({"a": "b"}, None)
 
     def uses_the_only_operation_if_no_operation_name_is_provided():
-        doc = "query Example { a }"
-
-        class Data:
-            a = "b"
-
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        assert execute(schema, ast, Data()) == ({"a": "b"}, None)
+        document = parse("query Example { a }")
+
+        class Data:
+            a = "b"
+
+        result = execute(schema, document, Data())
+        assert result == ({"a": "b"}, None)
 
     def uses_the_named_operation_if_operation_name_is_provided():
-        doc = "query Example { first: a } query OtherExample { second: a }"
-
-        class Data:
-            a = "b"
-
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        assert execute(schema, ast, Data(), operation_name="OtherExample") == (
-            {"second": "b"},
-            None,
+        document = parse(
+            """
+            query Example { first: a }
+            query OtherExample { second: a }
+            """
         )
+
+        class Data:
+            a = "b"
+
+        result = execute(schema, document, Data(), operation_name="OtherExample")
+        assert result == ({"second": "b"}, None)
 
     def provides_error_if_no_operation_is_provided():
-        doc = "fragment Example on Type { a }"
-
-        class Data:
-            a = "b"
-
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        assert execute(schema, ast, Data()) == (
-            None,
-            [{"message": "Must provide an operation."}],
-        )
+        document = parse("fragment Example on Type { a }")
+
+        class Data:
+            a = "b"
+
+        result = execute(schema, document, Data())
+        assert result == (None, [{"message": "Must provide an operation."}])
 
     def errors_if_no_operation_name_is_provided_with_multiple_operations():
-        doc = "query Example { a } query OtherExample { a }"
-
-        class Data:
-            a = "b"
-
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        assert execute(schema, ast, Data()) == (
+        document = parse(
+            """
+            query Example { a }
+            query OtherExample { a }
+            """
+        )
+
+        result = execute(schema, document)
+        assert result == (
             None,
             [
                 {
@@ -606,66 +603,101 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
     def errors_if_unknown_operation_name_is_provided():
-        doc = "query Example { a } query OtherExample { a }"
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        assert execute(schema, ast, operation_name="UnknownExample") == (
+        document = parse(
+            """
+            query Example { a }
+            query OtherExample { a }
+            """
+        )
+
+        result = execute(schema, document, operation_name="UnknownExample")
+        assert result == (
             None,
             [{"message": "Unknown operation named 'UnknownExample'."}],
         )
 
     def uses_the_query_schema_for_queries():
-        doc = "query Q { a } mutation M { c } subscription S { a }"
-
-        class Data:
-            a = "b"
-            c = "d"
-
-        ast = parse(doc)
         schema = GraphQLSchema(
             GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
             GraphQLObjectType("M", {"c": GraphQLField(GraphQLString)}),
             GraphQLObjectType("S", {"a": GraphQLField(GraphQLString)}),
         )
 
-        assert execute(schema, ast, Data(), operation_name="Q") == ({"a": "b"}, None)
-
-    def uses_the_mutation_schema_for_mutations():
-        doc = "query Q { a } mutation M { c }"
+        document = parse(
+            """
+            query Q { a }
+            mutation M { c }
+            subscription S { a }
+            """
+        )
 
         class Data:
             a = "b"
             c = "d"
 
-        ast = parse(doc)
+        result = execute(schema, document, Data(), operation_name="Q")
+        assert result == ({"a": "b"}, None)
+
+    def uses_the_mutation_schema_for_mutations():
         schema = GraphQLSchema(
             GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
             GraphQLObjectType("M", {"c": GraphQLField(GraphQLString)}),
         )
 
-        assert execute(schema, ast, Data(), operation_name="M") == ({"c": "d"}, None)
-
-    def uses_the_subscription_schema_for_subscriptions():
-        doc = "query Q { a } subscription S { a }"
+        document = parse(
+            """
+            query Q { a }
+            mutation M { c }
+            """
+        )
 
         class Data:
             a = "b"
             c = "d"
 
-        ast = parse(doc)
+        result = execute(schema, document, Data(), operation_name="M")
+        assert result == ({"c": "d"}, None)
+
+    def uses_the_subscription_schema_for_subscriptions():
         schema = GraphQLSchema(
             query=GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
             subscription=GraphQLObjectType("S", {"a": GraphQLField(GraphQLString)}),
         )
 
-        assert execute(schema, ast, Data(), operation_name="S") == ({"a": "b"}, None)
+        document = parse(
+            """
+            query Q { a }
+            subscription S { a }
+            """
+        )
+
+        class Data:
+            a = "b"
+            c = "d"
+
+        result = execute(schema, document, Data(), operation_name="S")
+        assert result == ({"a": "b"}, None)
 
     @mark.asyncio
     async def correct_field_ordering_despite_execution_order():
-        doc = "{ a, b, c, d, e}"
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Type",
+                {
+                    "a": GraphQLField(GraphQLString),
+                    "b": GraphQLField(GraphQLString),
+                    "c": GraphQLField(GraphQLString),
+                    "d": GraphQLField(GraphQLString),
+                    "e": GraphQLField(GraphQLString),
+                },
+            )
+        )
+
+        document = parse("{ a, b, c, d, e}")
 
         # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class Data:
@@ -684,28 +716,17 @@ def describe_execute_handles_basic_execution_tasks():
             def e(self, _info):
                 return "e"
 
-        ast = parse(doc)
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Type",
-                {
-                    "a": GraphQLField(GraphQLString),
-                    "b": GraphQLField(GraphQLString),
-                    "c": GraphQLField(GraphQLString),
-                    "d": GraphQLField(GraphQLString),
-                    "e": GraphQLField(GraphQLString),
-                },
-            )
-        )
-
-        result = await execute(schema, ast, Data())
+        result = await execute(schema, document, Data())
 
         assert result == ({"a": "a", "b": "b", "c": "c", "d": "d", "e": "e"}, None)
 
-        assert list(result.data) == ["a", "b", "c", "d", "e"]
-
     def avoids_recursion():
-        doc = """
+        schema = GraphQLSchema(
+            GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
+        )
+
+        document = parse(
+            """
             query Q {
               a
               ...Frag
@@ -717,30 +738,25 @@ def describe_execute_handles_basic_execution_tasks():
               ...Frag
             }
             """
+        )
 
         class Data:
             a = "b"
 
-        ast = parse(doc)
-        schema = GraphQLSchema(
-            GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
-        )
+        result = execute(schema, document, Data(), operation_name="Q")
 
-        query_result = execute(schema, ast, Data(), operation_name="Q")
-
-        assert query_result == ({"a": "b"}, None)
+        assert result == ({"a": "b"}, None)
 
     def does_not_include_illegal_fields_in_output():
-        doc = "mutation M { thisIsIllegalDoNotIncludeMe }"
-        ast = parse(doc)
         schema = GraphQLSchema(
-            GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
-            GraphQLObjectType("M", {"c": GraphQLField(GraphQLString)}),
+            GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)})
         )
 
-        mutation_result = execute(schema, ast)
+        document = parse("{ thisIsIllegalDoNotIncludeMe }")
 
-        assert mutation_result == ({}, None)
+        result = execute(schema, document)
+
+        assert result == ({}, None)
 
     def does_not_include_arguments_that_were_not_set():
         schema = GraphQLSchema(
@@ -756,27 +772,29 @@ def describe_execute_handles_basic_execution_tasks():
                             "d": GraphQLArgument(GraphQLInt),
                             "e": GraphQLArgument(GraphQLInt),
                         },
-                        resolve=lambda _source, _info, **args: args and dumps(args),
+                        resolve=lambda _source, _info, **args: inspect(args),
                     )
                 },
             )
         )
 
-        query = parse("{ field(a: true, c: false, e: 0) }")
+        document = parse("{ field(a: true, c: false, e: 0) }")
 
-        assert execute(schema, query) == (
-            {"field": '{"a": true, "c": false, "e": 0}'},
+        assert execute(schema, document) == (
+            {"field": "{'a': True, 'c': False, 'e': 0}"},
             None,
         )
 
     def fails_when_an_is_type_of_check_is_not_met():
         class Special:
-            # noinspection PyShadowingNames
+            value: str
+
             def __init__(self, value):
                 self.value = value
 
         class NotSpecial:
-            # noinspection PyShadowingNames
+            value: str
+
             def __init__(self, value):
                 self.value = value
 
@@ -788,20 +806,15 @@ def describe_execute_handles_basic_execution_tasks():
 
         schema = GraphQLSchema(
             GraphQLObjectType(
-                "Query",
-                {
-                    "specials": GraphQLField(
-                        GraphQLList(SpecialType),
-                        resolve=lambda root_value, *_args: root_value["specials"],
-                    )
-                },
+                "Query", {"specials": GraphQLField(GraphQLList(SpecialType))}
             )
         )
 
-        query = parse("{ specials { value } }")
-        value = {"specials": [Special("foo"), NotSpecial("bar")]}
+        document = parse("{ specials { value } }")
+        root_value = {"specials": [Special("foo"), NotSpecial("bar")]}
 
-        assert execute(schema, query, value) == (
+        result = execute(schema, document, root_value)
+        assert result == (
             {"specials": [{"value": "foo"}, None]},
             [
                 {
@@ -814,7 +827,11 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
     def executes_ignoring_invalid_non_executable_definitions():
-        query = parse(
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)})
+        )
+
+        document = parse(
             """
             { foo }
 
@@ -822,8 +839,18 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
+        result = execute(schema, document)
+        assert result == ({"foo": None}, None)
+
+    def uses_a_custom_field_resolver():
         schema = GraphQLSchema(
             GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)})
         )
+        document = parse("{ foo }")
 
-        assert execute(schema, query) == ({"foo": None}, None)
+        def field_resolver(source_, info):
+            # For the purposes of test, just return the name of the field!
+            return info.field_name
+
+        result = execute(schema, document, field_resolver=field_resolver)
+        assert result == ({"foo": "foo"}, None)
