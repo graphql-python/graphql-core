@@ -1,3 +1,4 @@
+from sys import exc_info
 from typing import Any, Dict, List, Optional, Sequence, Union, TYPE_CHECKING
 
 from .format_error import format_error
@@ -118,12 +119,21 @@ class GraphQLError(Exception):
             path = list(path)
         self.path = path or None  # type: ignore
         self.original_error = original_error
-        if not extensions and original_error:
-            try:
-                extensions = original_error.extensions  # type: ignore
-            except AttributeError:
-                pass
+        if original_error:
+            if not self.__traceback__:
+                self.__traceback__ = original_error.__traceback__
+            if original_error.__cause__:
+                self.__cause__ = original_error.__cause__
+            elif original_error.__context__:
+                self.__context__ = original_error.__context__
+            if not extensions:
+                try:
+                    extensions = original_error.extensions  # type: ignore
+                except AttributeError:
+                    pass
         self.extensions = extensions or {}
+        if not self.__traceback__:
+            self.__traceback__ = exc_info()[2]
 
     def __str__(self):
         return print_error(self)

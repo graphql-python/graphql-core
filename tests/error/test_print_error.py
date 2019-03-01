@@ -44,7 +44,7 @@ def describe_print_error():
         )
 
     def prints_an_error_with_nodes_from_different_sources():
-        source_a = parse(
+        doc_a = parse(
             Source(
                 dedent(
                     """
@@ -56,10 +56,11 @@ def describe_print_error():
                 "SourceA",
             )
         )
-        field_type_a = (
-            cast(ObjectTypeDefinitionNode, source_a.definitions[0]).fields[0].type
-        )
-        source_b = parse(
+        op_a = doc_a.definitions[0]
+        op_a = cast(ObjectTypeDefinitionNode, op_a)
+        assert op_a and op_a.kind == "object_type_definition" and op_a.fields
+        field_a = op_a.fields[0]
+        doc_b = parse(
             Source(
                 dedent(
                     """
@@ -71,12 +72,15 @@ def describe_print_error():
                 "SourceB",
             )
         )
-        field_type_b = (
-            cast(ObjectTypeDefinitionNode, source_b.definitions[0]).fields[0].type
-        )
+        op_b = doc_b.definitions[0]
+        op_b = cast(ObjectTypeDefinitionNode, op_b)
+        assert op_b and op_b.kind == "object_type_definition" and op_b.fields
+        field_b = op_b.fields[0]
+        assert field_a and field_b
         error = GraphQLError(
-            "Example error with two nodes", [field_type_a, field_type_b]
+            "Example error with two nodes", [field_a.type, field_b.type]
         )
+
         printed_error = print_error(error)
         assert printed_error == dedent(
             """
