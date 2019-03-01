@@ -159,3 +159,11 @@ def describe_inspect():
             "TestObjectType", {"test": GraphQLField(GraphQLString)}
         )
         assert inspect(test_object_type) == "TestObjectType"
+
+    def custom_inspect():
+        class TestClass:
+            @staticmethod
+            def __inspect__():
+                return "<custom magic method inspect>"
+
+        assert inspect(TestClass()) == "<custom magic method inspect>"

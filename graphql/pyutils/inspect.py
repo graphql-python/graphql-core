@@ -19,7 +19,7 @@ def inspect(value: Any) -> str:
 
     Used to print values in error messages. We do not use repr() in order to not
     leak too much of the inner Python representation of unknown objects, and we
-    do not use json.dumps() because no all objects can be serialized as JSON and
+    do not use json.dumps() because not all objects can be serialized as JSON and
     we want to output strings with single quotes like Python repr() does it.
     """
     if isinstance(value, (bool, int, float, str)) or value in (None, INVALID):
@@ -71,6 +71,15 @@ def inspect(value: Any) -> str:
             value, (GraphQLNamedType, GraphQLScalarType, GraphQLWrappingType)
         ):
             return str(value)
+        # check if we have a custom inspect method
+        try:
+            inspect_method = value.__inspect__
+            if not callable(inspect_method):
+                raise AttributeError
+        except AttributeError:
+            pass
+        else:
+            return inspect_method()
         try:
             name = type(value).__name__
             if not name or "<" in name or ">" in name:
