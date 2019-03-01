@@ -1,38 +1,21 @@
 from graphql.language import parse
-from graphql.type import (
-    GraphQLEnumType,
-    GraphQLEnumValue,
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLField,
-    GraphQLString,
-    GraphQLArgument,
-)
-from graphql.utilities import find_deprecated_usages
+from graphql.utilities import build_schema, find_deprecated_usages
 
 
 def describe_find_deprecated_usages():
 
-    enum_type = GraphQLEnumType(
-        "EnumType",
-        {
-            "ONE": GraphQLEnumValue(),
-            "TWO": GraphQLEnumValue(deprecation_reason="Some enum reason."),
-        },
-    )
+    schema = build_schema(
+        """
+        enum EnumType {
+          ONE
+          TWO @deprecated(reason: "Some enum reason.")
+        }
 
-    schema = GraphQLSchema(
-        GraphQLObjectType(
-            "Query",
-            {
-                "normalField": GraphQLField(
-                    GraphQLString, args={"enumArg": GraphQLArgument(enum_type)}
-                ),
-                "deprecatedField": GraphQLField(
-                    GraphQLString, deprecation_reason="Some field reason."
-                ),
-            },
-        )
+        type Query {
+          normalField(enumArg: EnumType): String
+          deprecatedField: String @deprecated(reason: "Some field reason.")
+        }
+        """
     )
 
     def should_report_empty_set_for_no_deprecated_usages():

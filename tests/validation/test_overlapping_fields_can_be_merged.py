@@ -1,14 +1,4 @@
-from graphql.type import (
-    GraphQLField,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLInterfaceType,
-    GraphQLList,
-    GraphQLNonNull,
-    GraphQLObjectType,
-    GraphQLSchema,
-    GraphQLString,
-)
+from graphql.utilities import build_schema
 from graphql.validation import OverlappingFieldsCanBeMergedRule
 from graphql.validation.rules.overlapping_fields_can_be_merged import (
     fields_conflict_message,
@@ -529,101 +519,69 @@ def describe_validate_overlapping_fields_can_be_merged():
 
     def describe_return_types_must_be_unambiguous():
 
-        SomeBox = GraphQLInterfaceType(
-            "SomeBox",
-            lambda: {
-                "deepBox": GraphQLField(SomeBox),
-                "unrelatedField": GraphQLField(GraphQLString),
-            },
-        )
+        schema = build_schema(
+            """
+            interface SomeBox {
+              deepBox: SomeBox
+              unrelatedField: String
+            }
 
-        StringBox = GraphQLObjectType(
-            "StringBox",
-            lambda: {
-                "scalar": GraphQLField(GraphQLString),
-                "deepBox": GraphQLField(StringBox),
-                "unrelatedField": GraphQLField(GraphQLString),
-                "listStringBox": GraphQLField(GraphQLList(StringBox)),
-                "stringBox": GraphQLField(StringBox),
-                "intBox": GraphQLField(IntBox),
-            },
-            interfaces=[SomeBox],
-        )
+            type StringBox implements SomeBox {
+              scalar: String
+              deepBox: StringBox
+              unrelatedField: String
+              listStringBox: [StringBox]
+              stringBox: StringBox
+              intBox: IntBox
+            }
 
-        IntBox = GraphQLObjectType(
-            "IntBox",
-            lambda: {
-                "scalar": GraphQLField(GraphQLInt),
-                "deepBox": GraphQLField(IntBox),
-                "unrelatedField": GraphQLField(GraphQLString),
-                "listStringBox": GraphQLField(GraphQLList(StringBox)),
-                "stringBox": GraphQLField(StringBox),
-                "intBox": GraphQLField(IntBox),
-            },
-            interfaces=[SomeBox],
-        )
+            type IntBox implements SomeBox {
+              scalar: Int
+              deepBox: IntBox
+              unrelatedField: String
+              listStringBox: [StringBox]
+              stringBox: StringBox
+              intBox: IntBox
+            }
 
-        NonNullStringBox1 = GraphQLInterfaceType(
-            "NonNullStringBox1", {"scalar": GraphQLField(GraphQLNonNull(GraphQLString))}
-        )
+            interface NonNullStringBox1 {
+              scalar: String!
+            }
 
-        NonNullStringBox1Impl = GraphQLObjectType(
-            "NonNullStringBox1Impl",
-            {
-                "scalar": GraphQLField(GraphQLNonNull(GraphQLString)),
-                "deepBox": GraphQLField(StringBox),
-                "unrelatedField": GraphQLField(GraphQLString),
-            },
-            interfaces=[SomeBox, NonNullStringBox1],
-        )
+            type NonNullStringBox1Impl implements SomeBox & NonNullStringBox1 {
+              scalar: String!
+              unrelatedField: String
+              deepBox: SomeBox
+            }
 
-        NonNullStringBox2 = GraphQLInterfaceType(
-            "NonNullStringBox2", {"scalar": GraphQLField(GraphQLNonNull(GraphQLString))}
-        )
+            interface NonNullStringBox2 {
+              scalar: String!
+            }
 
-        NonNullStringBox2Impl = GraphQLObjectType(
-            "NonNullStringBox2Impl",
-            {
-                "scalar": GraphQLField(GraphQLNonNull(GraphQLString)),
-                "unrelatedField": GraphQLField(GraphQLString),
-                "deepBox": GraphQLField(StringBox),
-            },
-            interfaces=[SomeBox, NonNullStringBox2],
-        )
+            type NonNullStringBox2Impl implements SomeBox & NonNullStringBox2 {
+              scalar: String!
+              unrelatedField: String
+              deepBox: SomeBox
+            }
 
-        Connection = GraphQLObjectType(
-            "Connection",
-            {
-                "edges": GraphQLField(
-                    GraphQLList(
-                        GraphQLObjectType(
-                            "Edge",
-                            {
-                                "node": GraphQLField(
-                                    GraphQLObjectType(
-                                        "Node",
-                                        {
-                                            "id": GraphQLField(GraphQLID),
-                                            "name": GraphQLField(GraphQLString),
-                                        },
-                                    )
-                                )
-                            },
-                        )
-                    )
-                )
-            },
-        )
+            type Connection {
+              edges: [Edge]
+            }
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "QueryRoot",
-                {
-                    "someBox": GraphQLField(SomeBox),
-                    "connection": GraphQLField(Connection),
-                },
-            ),
-            types=[IntBox, StringBox, NonNullStringBox1Impl, NonNullStringBox2Impl],
+            type Edge {
+              node: Node
+            }
+
+            type Node {
+              id: ID
+              name: String
+            }
+
+            type Query {
+              someBox: SomeBox
+              connection: Connection
+            }
+            """
         )
 
         def conflicting_return_types_which_potentially_overlap():
@@ -1051,12 +1009,16 @@ def describe_validate_overlapping_fields_can_be_merged():
             )
 
         def works_for_field_names_that_are_js_keywords():
-            FooType = GraphQLObjectType(
-                "Foo", {"constructor": GraphQLField(GraphQLString)}
-            )
+            schema_with_keywords = build_schema(
+                """
+                type Foo {
+                  constructor: String
+                }
 
-            schema_with_keywords = GraphQLSchema(
-                GraphQLObjectType("query", lambda: {"foo": GraphQLField(FooType)})
+                type Query {
+                  foo: Foo
+                }
+                """
             )
 
             expect_passes_rule_with_schema(
@@ -1072,10 +1034,16 @@ def describe_validate_overlapping_fields_can_be_merged():
             )
 
         def works_for_field_names_that_are_python_keywords():
-            FooType = GraphQLObjectType("Foo", {"class": GraphQLField(GraphQLString)})
+            schema_with_keywords = build_schema(
+                """
+                type Foo {
+                  class: String
+                }
 
-            schema_with_keywords = GraphQLSchema(
-                GraphQLObjectType("query", lambda: {"foo": GraphQLField(FooType)})
+                type Query {
+                  foo: Foo
+                }
+                """
             )
 
             expect_passes_rule_with_schema(
