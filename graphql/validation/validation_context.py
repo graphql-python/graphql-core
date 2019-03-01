@@ -67,51 +67,14 @@ class ASTValidationContext:
     def __init__(self, ast: DocumentNode) -> None:
         self.document = ast
         self.errors = []
-
-    def report_error(self, error: GraphQLError):
-        self.errors.append(error)
-
-
-class SDLValidationContext(ASTValidationContext):
-    """Utility class providing a context for validation of an SDL ast.
-
-    An instance of this class is passed as the context attribute to all Validators,
-    allowing access to commonly useful contextual information from within a validation
-    rule.
-    """
-
-    schema: Optional[GraphQLSchema]
-
-    def __init__(self, ast: DocumentNode, schema: GraphQLSchema = None) -> None:
-        super().__init__(ast)
-        self.schema = schema
-
-
-class ValidationContext(ASTValidationContext):
-    """Utility class providing a context for validation using a GraphQL schema.
-
-    An instance of this class is passed as the context attribute to all Validators,
-    allowing access to commonly useful contextual information from within a validation
-    rule.
-    """
-
-    schema: GraphQLSchema
-
-    def __init__(
-        self, schema: GraphQLSchema, ast: DocumentNode, type_info: TypeInfo
-    ) -> None:
-        super().__init__(ast)
-        self.schema = schema
-        self._type_info = type_info
         self._fragments: Optional[Dict[str, FragmentDefinitionNode]] = None
         self._fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]] = {}
         self._recursively_referenced_fragments: Dict[
             OperationDefinitionNode, List[FragmentDefinitionNode]
         ] = {}
-        self._variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]] = {}
-        self._recursive_variable_usages: Dict[
-            OperationDefinitionNode, List[VariableUsage]
-        ] = {}
+
+    def report_error(self, error: GraphQLError):
+        self.errors.append(error)
 
     def get_fragment(self, name: str) -> Optional[FragmentDefinitionNode]:
         fragments = self._fragments
@@ -171,6 +134,43 @@ class ValidationContext(ASTValidationContext):
                             append_node(fragment.selection_set)
             self._recursively_referenced_fragments[operation] = fragments
         return fragments
+
+
+class SDLValidationContext(ASTValidationContext):
+    """Utility class providing a context for validation of an SDL ast.
+
+    An instance of this class is passed as the context attribute to all Validators,
+    allowing access to commonly useful contextual information from within a validation
+    rule.
+    """
+
+    schema: Optional[GraphQLSchema]
+
+    def __init__(self, ast: DocumentNode, schema: GraphQLSchema = None) -> None:
+        super().__init__(ast)
+        self.schema = schema
+
+
+class ValidationContext(ASTValidationContext):
+    """Utility class providing a context for validation using a GraphQL schema.
+
+    An instance of this class is passed as the context attribute to all Validators,
+    allowing access to commonly useful contextual information from within a validation
+    rule.
+    """
+
+    schema: GraphQLSchema
+
+    def __init__(
+        self, schema: GraphQLSchema, ast: DocumentNode, type_info: TypeInfo
+    ) -> None:
+        super().__init__(ast)
+        self.schema = schema
+        self._type_info = type_info
+        self._variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]] = {}
+        self._recursive_variable_usages: Dict[
+            OperationDefinitionNode, List[VariableUsage]
+        ] = {}
 
     def get_variable_usages(self, node: NodeWithSelectionSet) -> List[VariableUsage]:
         usages = self._variable_usages.get(node)

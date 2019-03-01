@@ -2,7 +2,7 @@ from typing import Dict, List, Set
 
 from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, FragmentSpreadNode
-from . import ValidationContext, ValidationRule
+from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ["NoFragmentCyclesRule", "cycle_error_message"]
 
@@ -12,10 +12,10 @@ def cycle_error_message(frag_name: str, spread_names: List[str]) -> str:
     return f"Cannot spread fragment '{frag_name}' within itself{via}."
 
 
-class NoFragmentCyclesRule(ValidationRule):
+class NoFragmentCyclesRule(ASTValidationRule):
     """No fragment cycles"""
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         # Tracks already visited fragments to maintain O(N) and to ensure that
         # cycles are not redundantly reported.

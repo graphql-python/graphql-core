@@ -2,7 +2,7 @@ from typing import List
 
 from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, OperationDefinitionNode
-from . import ValidationContext, ValidationRule
+from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ["NoUnusedFragmentsRule", "unused_fragment_message"]
 
@@ -11,14 +11,14 @@ def unused_fragment_message(frag_name: str) -> str:
     return f"Fragment '{frag_name}' is never used."
 
 
-class NoUnusedFragmentsRule(ValidationRule):
+class NoUnusedFragmentsRule(ASTValidationRule):
     """No unused fragments
 
     A GraphQL document is only valid if all fragment definitions are spread within
     operations, or spread within other fragments spread within operations.
     """
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         self.operation_defs: List[OperationDefinitionNode] = []
         self.fragment_defs: List[FragmentDefinitionNode] = []
