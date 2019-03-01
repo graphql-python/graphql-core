@@ -22,6 +22,11 @@ unit tests.
 A more detailed documentation for GraphQL-core-next can be found at
 [graphql-core-next.readthedocs.io](https://graphql-core-next.readthedocs.io/).
 
+The documentation for GraphQL.js can be found at [graphql.org/graphql-js/](https://graphql.org/graphql-js/).
+
+The documentation for GraphQL itself can be found at [graphql.org](https://graphql.org/).
+
+
 There will be also [blog articles](https://cito.github.io/tags/graphql/) with more usage
 examples.
 
