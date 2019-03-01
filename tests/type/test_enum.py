@@ -5,6 +5,7 @@ from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
     GraphQLEnumType,
+    GraphQLEnumValue,
     GraphQLField,
     GraphQLInt,
     GraphQLObjectType,
@@ -300,10 +301,12 @@ def describe_type_system_enum_values():
 
     def presents_a_values_property_for_complex_enums():
         values = ComplexEnum.values
-        assert len(values) == 2
         assert isinstance(values, dict)
-        assert values["ONE"].value is complex1
-        assert values["TWO"].value is complex2
+        assert all(isinstance(value, GraphQLEnumValue) for value in values.values())
+        assert {key: value.value for key, value in values.items()} == {
+            "ONE": complex1,
+            "TWO": complex2,
+        }
 
     def may_be_internally_represented_with_complex_values():
         result = execute_query(

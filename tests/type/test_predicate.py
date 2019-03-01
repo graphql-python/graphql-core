@@ -53,7 +53,7 @@ from graphql.type import (
 )
 
 ObjectType = GraphQLObjectType("Object", {})
-InterfaceType = GraphQLInterfaceType("Interface")
+InterfaceType = GraphQLInterfaceType("Interface", {})
 UnionType = GraphQLUnionType("Union", types=[ObjectType])
 EnumType = GraphQLEnumType("Enum", values={"foo": {}})
 InputObjectType = GraphQLInputObjectType("InputObject", {})

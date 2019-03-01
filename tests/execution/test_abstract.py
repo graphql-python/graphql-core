@@ -1,4 +1,4 @@
-from collections import namedtuple
+from typing import NamedTuple
 
 from graphql import graphql_sync
 from graphql.error import format_error
@@ -13,9 +13,22 @@ from graphql.type import (
     GraphQLUnionType,
 )
 
-Dog = namedtuple("Dog", "name woofs")
-Cat = namedtuple("Cat", "name meows")
-Human = namedtuple("Human", "name")
+
+class Dog(NamedTuple):
+
+    name: str
+    woofs: bool
+
+
+class Cat(NamedTuple):
+
+    name: str
+    meows: bool
+
+
+class Human(NamedTuple):
+
+    name: str
 
 
 def get_is_type_of(type_):
@@ -322,7 +335,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             resolve_type=lambda *_args: [],
         )
 
-        fooObject = GraphQLObjectType(
+        foo_object = GraphQLObjectType(
             "FooObject", {"bar": GraphQLField(GraphQLString)}, interfaces=[fooInterface]
         )
 
@@ -331,7 +344,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 "Query",
                 {"foo": GraphQLField(fooInterface, resolve=lambda *_args: "dummy")},
             ),
-            types=[fooObject],
+            types=[foo_object],
         )
 
         result = graphql_sync(schema, "{ foo { bar } }")

@@ -14,14 +14,14 @@ def assert_syntax_error(text, message, location):
     with raises(GraphQLSyntaxError) as exc_info:
         lex_one(text)
     error = exc_info.value
-    assert message in error.message
+    assert error.message == f"Syntax Error: {message}"
     assert error.locations == [location]
 
 
 def describe_lexer():
     def disallows_uncommon_control_characters():
         assert_syntax_error(
-            "\x07", "Cannot contain the invalid character '\\x07'", (1, 1)
+            "\x07", "Cannot contain the invalid character '\\x07'.", (1, 1)
         )
 
     # noinspection PyArgumentEqualDefault
@@ -141,8 +141,8 @@ def describe_lexer():
             "Invalid character within String: '\\x00'.",
             (1, 19),
         )
-        assert_syntax_error('"multi\nline"', "Unterminated string", (1, 7))
-        assert_syntax_error('"multi\rline"', "Unterminated string", (1, 7))
+        assert_syntax_error('"multi\nline"', "Unterminated string.", (1, 7))
+        assert_syntax_error('"multi\rline"', "Unterminated string.", (1, 7))
         assert_syntax_error(
             '"bad \\x esc"', "Invalid character escape sequence: '\\x'.", (1, 7)
         )
@@ -258,7 +258,9 @@ def describe_lexer():
         assert_syntax_error(
             "1.e1", "Invalid number, expected digit but got: 'e'.", (1, 3)
         )
-        assert_syntax_error(".123", "Cannot parse the unexpected character '.'", (1, 1))
+        assert_syntax_error(
+            ".123", "Cannot parse the unexpected character '.'.", (1, 1)
+        )
         assert_syntax_error(
             "1.A", "Invalid number, expected digit but got: 'A'.", (1, 3)
         )
@@ -289,13 +291,13 @@ def describe_lexer():
         assert lex_one("|") == Token(TokenKind.PIPE, 0, 1, 1, 1, None, None)
 
     def lex_reports_useful_unknown_character_error():
-        assert_syntax_error("..", "Cannot parse the unexpected character '.'", (1, 1))
-        assert_syntax_error("?", "Cannot parse the unexpected character '?'", (1, 1))
+        assert_syntax_error("..", "Cannot parse the unexpected character '.'.", (1, 1))
+        assert_syntax_error("?", "Cannot parse the unexpected character '?'.", (1, 1))
         assert_syntax_error(
-            "\u203B", "Cannot parse the unexpected character '\u203B'", (1, 1)
+            "\u203B", "Cannot parse the unexpected character '\u203B'.", (1, 1)
         )
         assert_syntax_error(
-            "\u200b", "Cannot parse the unexpected character '\\u200b'", (1, 1)
+            "\u200b", "Cannot parse the unexpected character '\\u200b'.", (1, 1)
         )
 
     # noinspection PyArgumentEqualDefault

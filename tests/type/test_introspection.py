@@ -871,9 +871,7 @@ def describe_introspection():
             "TestType",
             {
                 "field": GraphQLField(
-                    GraphQLString,
-                    args={"complex": GraphQLArgument(TestInputObject)},
-                    resolve=lambda obj, info, **args: repr(args.get("complex")),
+                    GraphQLString, args={"complex": GraphQLArgument(TestInputObject)}
                 )
             },
         )
