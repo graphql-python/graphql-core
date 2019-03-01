@@ -31,7 +31,7 @@ The sub-packages of GraphQL-core-next are:
   - :mod:`graphql.type`: Define GraphQL types and schema.
   - :mod:`graphql.validation`: The Validation phase of fulfilling a GraphQL result.
   - :mod:`graphql.execution`: The Execution phase of fulfilling a GraphQL request.
-  - :mod:`graphql.error`: Creating and format GraphQL errors.
+  - :mod:`graphql.error`: Creating and formatting GraphQL errors.
   - :mod:`graphql.utilities`:
      Common useful computations upon the GraphQL language and type objects.
   - :mod:`graphql/subscription`: Subscribe to data updates.
