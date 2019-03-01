@@ -21,14 +21,14 @@ from graphql.pyutils import dedent
 from graphql.utilities import build_ast_schema, build_schema, print_schema
 
 
-def cycle_output(body: str) -> str:
+def cycle_sdl(sdl: str) -> str:
     """Full cycle test.
 
-    This function does a full cycle of going from a string with the contents of the DSL,
+    This function does a full cycle of going from a string with the contents of the SDL,
     parsed in a schema AST, materializing that schema AST into an in-memory
-    GraphQLSchema, and then finally printing that GraphQL into the DSL.
+    GraphQLSchema, and then finally printing that GraphQL into the SDÖ.
     """
-    ast = parse(body)
+    ast = parse(sdl)
     schema = build_ast_schema(ast)
     return print_schema(schema)
 
@@ -70,7 +70,7 @@ def describe_schema_builder():
         )
 
     def simple_type():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
               str: String
@@ -81,11 +81,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def with_directives():
-        body = dedent(
+        sdl = dedent(
             """
             directive @foo(arg: Int) on FIELD
 
@@ -94,11 +93,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def supports_descriptions():
-        body = dedent(
+        sdl = dedent(
             '''
             """This is a directive"""
             directive @foo(
@@ -122,25 +120,24 @@ def describe_schema_builder():
             }
             '''
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def maintains_skip_and_include_directives():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
                 str: String
             }
             """
         )
-        schema = build_ast_schema(parse(body))
+        schema = build_schema(sdl)
         assert len(schema.directives) == 3
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
 
     def overriding_directives_excludes_specified():
-        body = dedent(
+        sdl = dedent(
             """
             directive @skip on FIELD
             directive @include on FIELD
@@ -151,7 +148,7 @@ def describe_schema_builder():
             }
             """
         )
-        schema = build_ast_schema(parse(body))
+        schema = build_schema(sdl)
         assert len(schema.directives) == 3
         get_directive = schema.get_directive
         assert get_directive("skip") is not GraphQLSkipDirective
@@ -162,7 +159,7 @@ def describe_schema_builder():
         assert get_directive("deprecated") is not None
 
     def overriding_skip_directive_excludes_built_in_one():
-        body = dedent(
+        sdl = dedent(
             """
             directive @skip on FIELD
 
@@ -171,7 +168,7 @@ def describe_schema_builder():
             }
             """
         )
-        schema = build_ast_schema(parse(body))
+        schema = build_schema(sdl)
         assert len(schema.directives) == 3
         assert schema.get_directive("skip") is not GraphQLSkipDirective
         assert schema.get_directive("skip") is not None
@@ -179,7 +176,7 @@ def describe_schema_builder():
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
 
     def adding_directives_maintains_skip_and_include_directives():
-        body = dedent(
+        sdl = dedent(
             """
             directive @foo(arg: Int) on FIELD
 
@@ -188,7 +185,7 @@ def describe_schema_builder():
             }
             """
         )
-        schema = build_ast_schema(parse(body))
+        schema = build_schema(sdl)
         assert len(schema.directives) == 4
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
@@ -196,7 +193,7 @@ def describe_schema_builder():
         assert schema.get_directive("foo") is not None
 
     def type_modifiers():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
               nonNullStr: String!
@@ -207,11 +204,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def recursive_type():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
               str: String
@@ -219,11 +215,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def two_types_circular():
-        body = dedent(
+        sdl = dedent(
             """
             schema {
               query: TypeOne
@@ -240,11 +235,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def single_argument_field():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
               str(int: Int): String
@@ -255,22 +249,20 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_multiple_arguments():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
               str(int: Int, bool: Boolean): String
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_interface():
-        body = dedent(
+        sdl = dedent(
             """
             type Query implements WorldInterface {
               str: String
@@ -281,11 +273,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_output_enum():
-        body = dedent(
+        sdl = dedent(
             """
             enum Hello {
               WORLD
@@ -296,11 +287,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_input_enum():
-        body = dedent(
+        sdl = dedent(
             """
             enum Hello {
               WORLD
@@ -311,11 +301,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def multiple_value_enum():
-        body = dedent(
+        sdl = dedent(
             """
             enum Hello {
               WO
@@ -327,11 +316,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_union():
-        body = dedent(
+        sdl = dedent(
             """
             union Hello = World
 
@@ -344,11 +332,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def multiple_union():
-        body = dedent(
+        sdl = dedent(
             """
             union Hello = WorldOne | WorldTwo
 
@@ -365,8 +352,7 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def can_build_recursive_union():
         # invalid schema cannot be built with Python
@@ -486,7 +472,7 @@ def describe_schema_builder():
         )
 
     def custom_scalar():
-        body = dedent(
+        sdl = dedent(
             """
             scalar CustomScalar
 
@@ -495,11 +481,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def input_object():
-        body = dedent(
+        sdl = dedent(
             """
             input Input {
               int: Int
@@ -510,22 +495,20 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_argument_field_with_default():
-        body = dedent(
+        sdl = dedent(
             """
             type Query {
               str(int: Int = 2): String
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def custom_scalar_argument_field_with_default():
-        body = dedent(
+        sdl = dedent(
             """
             scalar CustomScalar
 
@@ -534,11 +517,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_mutation():
-        body = dedent(
+        sdl = dedent(
             """
             schema {
               query: HelloScalars
@@ -556,11 +538,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_subscription():
-        body = dedent(
+        sdl = dedent(
             """
             schema {
               query: HelloScalars
@@ -578,11 +559,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def unreferenced_type_implementing_referenced_interface():
-        body = dedent(
+        sdl = dedent(
             """
             type Concrete implements Iface {
               key: String
@@ -597,11 +577,10 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def unreferenced_type_implementing_referenced_union():
-        body = dedent(
+        sdl = dedent(
             """
             type Concrete {
               key: String
@@ -614,11 +593,10 @@ def describe_schema_builder():
             union Union = Concrete
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
     def supports_deprecated_directive():
-        body = dedent(
+        sdl = dedent(
             """
             enum MyEnum {
               VALUE
@@ -633,11 +611,9 @@ def describe_schema_builder():
             }
             """
         )
-        output = cycle_output(body)
-        assert output == body
+        assert cycle_sdl(sdl) == sdl
 
-        ast = parse(body)
-        schema = build_ast_schema(ast)
+        schema = build_schema(sdl)
 
         my_enum = assert_enum_type(schema.get_type("MyEnum"))
 
@@ -661,47 +637,40 @@ def describe_schema_builder():
         assert field2.deprecation_reason == "Because I said so"
 
     def correctly_assign_ast_nodes():
-        schema_ast = parse(
-            dedent(
-                """
-                schema {
-                  query: Query
-                }
+        sdl = dedent(
+            """
+            schema {
+              query: Query
+            }
 
-                type Query
-                {
-                  testField(testArg: TestInput): TestUnion
-                }
+            type Query {
+              testField(testArg: TestInput): TestUnion
+            }
 
-                input TestInput
-                {
-                  testInputField: TestEnum
-                }
+            input TestInput {
+              testInputField: TestEnum
+            }
 
-                enum TestEnum
-                {
-                  TEST_VALUE
-                }
+            enum TestEnum {
+              TEST_VALUE
+            }
 
-                union TestUnion = TestType
+            union TestUnion = TestType
 
-                interface TestInterface
-                {
-                  interfaceField: String
-                }
+            interface TestInterface {
+              interfaceField: String
+            }
 
-                type TestType implements TestInterface
-                {
-                  interfaceField: String
-                }
+            type TestType implements TestInterface {
+              interfaceField: String
+            }
 
-                scalar TestScalar
+            scalar TestScalar
 
-                directive @test(arg: TestScalar) on FIELD
-                """
-            )
+            directive @test(arg: TestScalar) on FIELD
+            """
         )
-        schema = build_ast_schema(schema_ast)
+        schema = build_schema(sdl)
         query = assert_object_type(schema.get_type("Query"))
         test_input = assert_input_object_type(schema.get_type("TestInput"))
         test_enum = assert_enum_type(schema.get_type("TestEnum"))
@@ -724,7 +693,7 @@ def describe_schema_builder():
                 test_directive.ast_node,
             ]
         )
-        assert print_ast(restored_schema_ast) == print_ast(schema_ast)
+        assert print_ast(restored_schema_ast) == sdl
 
         test_field = query.fields["testField"]
         assert print_ast(test_field.ast_node) == (
@@ -744,18 +713,16 @@ def describe_schema_builder():
 
     def root_operation_type_with_custom_names():
         schema = build_schema(
-            dedent(
-                """
-                schema {
-                  query: SomeQuery
-                  mutation: SomeMutation
-                  subscription: SomeSubscription
-                }
-                type SomeQuery { str: String }
-                type SomeMutation { str: String }
-                type SomeSubscription { str: String }
-                """
-            )
+            """
+            schema {
+              query: SomeQuery
+              mutation: SomeMutation
+              subscription: SomeSubscription
+            }
+            type SomeQuery { str: String }
+            type SomeMutation { str: String }
+            type SomeSubscription { str: String }
+            """
         )
 
         assert schema.query_type.name == "SomeQuery"
@@ -764,13 +731,11 @@ def describe_schema_builder():
 
     def default_root_operation_type_names():
         schema = build_schema(
-            dedent(
-                """
-                type Query { str: String }
-                type Mutation { str: String }
-                type Subscription { str: String }
-                """
-            )
+            """
+            type Query { str: String }
+            type Mutation { str: String }
+            type Subscription { str: String }
+            """
         )
 
         assert schema.query_type.name == "Query"
@@ -779,45 +744,40 @@ def describe_schema_builder():
 
     def can_build_invalid_schema():
         schema = build_schema(
-            dedent(
-                """
-                # Invalid schema, because it is missing query root type
-                type Mutation {
-                  str: String
-                }
-                """
-            )
+            """
+            # Invalid schema, because it is missing query root type
+            type Mutation {
+              str: String
+            }
+            """
         )
         errors = validate_schema(schema)
         assert errors
 
     def rejects_invalid_sdl():
-        doc = parse(
-            """
+        sdl = """
             type Query {
               foo: String @unknown
             }
             """
-        )
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Unknown directive 'unknown'."
 
     def allows_to_disable_sdl_validation():
-        body = """
+        sdl = """
             type Query {
               foo: String @unknown
             }
             """
-        build_schema(body, assume_valid=True)
-        build_schema(body, assume_valid_sdl=True)
+        build_schema(sdl, assume_valid=True)
+        build_schema(sdl, assume_valid_sdl=True)
 
 
 def describe_failures():
     def allows_only_a_single_query_type():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Hello
               query: Yellow
@@ -831,16 +791,13 @@ def describe_failures():
               isColor: Boolean
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Must provide only one query type in schema."
 
     def allows_only_a_single_mutation_type():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Hello
               mutation: Hello
@@ -855,16 +812,13 @@ def describe_failures():
               isColor: Boolean
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Must provide only one mutation type in schema."
 
     def allows_only_a_single_subscription_type():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Hello
               subscription: Hello
@@ -878,16 +832,13 @@ def describe_failures():
               isColor: Boolean
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Must provide only one subscription type in schema."
 
     def unknown_type_referenced():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Hello
             }
@@ -896,43 +847,34 @@ def describe_failures():
               bar: Bar
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert "Type 'Bar' not found in document." in msg
 
     def unknown_type_in_interface_list():
-        body = dedent(
-            """
+        sdl = """
             type Query implements Bar {
               field: String
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert "Type 'Bar' not found in document." in msg
 
     def unknown_type_in_union_list():
-        body = dedent(
-            """
+        sdl = """
             union TestUnion = Bar
             type Query { testUnion: TestUnion }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert "Type 'Bar' not found in document." in msg
 
     def unknown_query_type():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Wat
             }
@@ -941,16 +883,13 @@ def describe_failures():
               str: String
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified query type 'Wat' not found in document."
 
     def unknown_mutation_type():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Hello
               mutation: Wat
@@ -960,16 +899,13 @@ def describe_failures():
               str: String
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified mutation type 'Wat' not found in document."
 
     def unknown_subscription_type():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Hello
               mutation: Wat
@@ -984,32 +920,26 @@ def describe_failures():
               str: String
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified subscription type 'Awesome' not found in document."
 
     def does_not_consider_directive_names():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Foo
             }
 
             directive @ Foo on QUERY
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified query type 'Foo' not found in document."
 
     def does_not_consider_operation_names():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Foo
             }
@@ -1018,32 +948,26 @@ def describe_failures():
               str: String
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified query type 'Foo' not found in document."
 
     def does_not_consider_fragment_names():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Foo
             }
 
             fragment Foo on Type { field }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified query type 'Foo' not found in document."
 
     def forbids_duplicate_type_definitions():
-        body = dedent(
-            """
+        sdl = """
             schema {
               query: Repeated
             }
@@ -1056,9 +980,7 @@ def describe_failures():
               id: String
             }
             """
-        )
-        doc = parse(body)
         with raises(TypeError) as exc_info:
-            build_ast_schema(doc)
+            build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Type 'Repeated' was defined more than once."
