@@ -1,116 +1,114 @@
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.language import DirectiveLocation
+from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
-    GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLID,
-    GraphQLInputField,
-    GraphQLInputObjectType,
     GraphQLInt,
-    GraphQLInterfaceType,
-    GraphQLList,
-    GraphQLNonNull,
     GraphQLObjectType,
-    GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
-    GraphQLUnionType,
 )
-from graphql.utilities import build_client_schema, introspection_from_schema
+from graphql.utilities import (
+    build_schema,
+    build_client_schema,
+    introspection_from_schema,
+    print_schema,
+)
 
 
-def check_schema(server_schema):
+def cycle_introspection(sdl_string):
     """Test that the client side introspection gives the same result.
 
-    Given a server's schema, a client may query that server with introspection,
-    and use the result to produce a client-side representation of the schema by using
-    `build_client_schema`. If the client then runs the introspection query against
-    the client-side schema, it should get a result identical to what was returned
-    by the server.
+    This function does a full cycle of going from a string with the contents of the SDL,
+    build in-memory GraphQLSchema from it, produce a client-side representation of the
+    schema by using "build_client_schema" and then finally printing that that schema
+    into the SDL.
     """
+    server_schema = build_schema(sdl_string)
     initial_introspection = introspection_from_schema(server_schema)
     client_schema = build_client_schema(initial_introspection)
+    # If the client then runs the introspection query against the client-side schema,
+    # it should get a result identical to what was returned by the server
     second_introspection = introspection_from_schema(client_schema)
     assert initial_introspection == second_introspection
+    return print_schema(client_schema)
 
 
 def describe_type_system_build_schema_from_introspection():
     def builds_a_simple_schema():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Simple",
-                {
-                    "string": GraphQLField(
-                        GraphQLString, description="This is a string field"
-                    )
-                },
-                description="This is a simple type",
-            )
+        sdl = dedent(
+            '''
+            schema {
+              query: Simple
+            }
+
+            """This is simple type"""
+            type Simple {
+              """This is a string field"""
+              string: String
+            }
+            '''
         )
-        check_schema(schema)
+
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_simple_schema_with_all_operation_types():
-        query_type = GraphQLObjectType(
-            "QueryType",
-            {
-                "string": GraphQLField(
-                    GraphQLString, description="This is a string field."
-                )
-            },
-            description="This is a simple query type",
+        sdl = dedent(
+            '''
+            schema {
+              query: QueryType
+              mutation: MutationType
+              subscription: SubscriptionType
+            }
+
+            """This is a simple mutation type"""
+            type MutationType {
+              """Set the string field"""
+              string: String
+            }
+
+            """This is a simple query type"""
+            type QueryType {
+              """This is a string field"""
+              string: String
+            }
+
+            """This is a simple subscription type"""
+            type SubscriptionType {
+              """This is a string field"""
+              string: String
+            }
+            '''
         )
 
-        mutation_type = GraphQLObjectType(
-            "MutationType",
-            {
-                "setString": GraphQLField(
-                    GraphQLString,
-                    description="Set the string field",
-                    args={"value": GraphQLArgument(GraphQLString)},
-                )
-            },
-            description="This is a simple mutation type",
-        )
-
-        subscription_type = GraphQLObjectType(
-            "SubscriptionType",
-            {
-                "string": GraphQLField(
-                    GraphQLString, description="This is a string field"
-                )
-            },
-            description="This is a simple subscription type",
-        )
-
-        schema = GraphQLSchema(query_type, mutation_type, subscription_type)
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def uses_built_in_scalars_when_possible():
-        custom_scalar = GraphQLScalarType("CustomScalar", serialize=lambda: None)
+        sdl = dedent(
+            """
+            scalar CustomScalar
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Scalars",
-                {
-                    "int": GraphQLField(GraphQLInt),
-                    "float": GraphQLField(GraphQLFloat),
-                    "string": GraphQLField(GraphQLString),
-                    "boolean": GraphQLField(GraphQLBoolean),
-                    "id": GraphQLField(GraphQLID),
-                    "custom": GraphQLField(custom_scalar),
-                },
-            )
+            type Query {
+              int: Int
+              float: Float
+              string: String
+              boolean: Boolean
+              id: ID
+              custom: CustomScalar
+            }
+            """
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
+        schema = build_schema(sdl)
         introspection = introspection_from_schema(schema)
         client_schema = build_client_schema(introspection)
 
@@ -122,169 +120,160 @@ def describe_type_system_build_schema_from_introspection():
         assert client_schema.get_type("ID") is GraphQLID
 
         # Custom are built
+        custom_scalar = schema.get_type("CustomScalar")
         assert client_schema.get_type("CustomScalar") is not custom_scalar
 
     def builds_a_schema_with_a_recursive_type_reference():
-        recur_type = GraphQLObjectType(
-            "Recur", lambda: {"recur": GraphQLField(recur_type)}
-        )
-        schema = GraphQLSchema(recur_type)
+        sdl = dedent(
+            """
+            schema {
+              query: Recur
+            }
 
-        check_schema(schema)
+            type Recur {
+              recur: Recur
+            }
+            """
+        )
+
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_a_circular_type_reference():
-        dog_type = GraphQLObjectType(
-            "Dog", lambda: {"bestFriend": GraphQLField(human_type)}
-        )
-        human_type = GraphQLObjectType(
-            "Human", lambda: {"bestFriend": GraphQLField(dog_type)}
-        )
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Circular",
-                {"dog": GraphQLField(dog_type), "human": GraphQLField(human_type)},
-            )
+        sdl = dedent(
+            """
+            type Dog {
+              bestFriend: Human
+            }
+
+            type Human {
+              bestFriend: Dog
+            }
+
+            type Query {
+              dog: Dog
+              human: Human
+            }
+            """
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_an_interface():
-        friendly_type = GraphQLInterfaceType(
-            "Friendly",
-            lambda: {
-                "bestFriend": GraphQLField(
-                    friendly_type, description="The best friend of this friendly thing."
-                )
-            },
-        )
-        dog_type = GraphQLObjectType(
-            "DogType",
-            lambda: {"bestFriend": GraphQLField(friendly_type)},
-            interfaces=[friendly_type],
-        )
-        human_type = GraphQLObjectType(
-            "Human",
-            lambda: {"bestFriend": GraphQLField(friendly_type)},
-            interfaces=[friendly_type],
-        )
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "WithInterface", {"friendly": GraphQLField(friendly_type)}
-            ),
-            types=[dog_type, human_type],
+        sdl = dedent(
+            '''
+            type Dog implements Friendly {
+              bestFriend: Friendly
+            }
+
+            interface Friendly {
+              """The best friend of this friendly thing"""
+              bestFriend: Friendly
+            }
+
+            type Human implements Friendly {
+              bestFriend: Friendly
+            }
+
+            type Query {
+              friendly: Friendly
+            }
+            '''
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_an_implicit_interface():
-        friendly_type = GraphQLInterfaceType(
-            "Friendly",
-            lambda: {
-                "bestFriend": GraphQLField(
-                    friendly_type, description="The best friend of this friendly thing."
-                )
-            },
-        )
-        dog_type = GraphQLObjectType(
-            "DogType",
-            lambda: {"bestFriend": GraphQLField(dog_type)},
-            interfaces=[friendly_type],
-        )
-        schema = GraphQLSchema(
-            GraphQLObjectType("WithInterface", {"dog": GraphQLField(dog_type)})
+        sdl = dedent(
+            '''
+            type Dog implements Friendly {
+              bestFriend: Friendly
+            }
+
+            interface Friendly {
+              """The best friend of this friendly thing"""
+              bestFriend: Friendly
+            }
+
+            type Query {
+              dog: Dog
+            }
+            '''
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_a_union():
-        dog_type = GraphQLObjectType(
-            "Dog", lambda: {"bestFriend": GraphQLField(friendly_type)}
-        )
-        human_type = GraphQLObjectType(
-            "Human", lambda: {"bestFriend": GraphQLField(friendly_type)}
-        )
-        friendly_type = GraphQLUnionType("Friendly", types=[dog_type, human_type])
-        schema = GraphQLSchema(
-            GraphQLObjectType("WithUnion", {"friendly": GraphQLField(friendly_type)})
+        sdl = dedent(
+            """
+            type Dog {
+              bestFriend: Friendly
+            }
+
+            union Friendly = Dog | Human
+
+            type Human {
+              bestFriend: Friendly
+            }
+
+            type Query {
+              friendly: Friendly
+            }
+            """
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_complex_field_values():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "ComplexFields",
-                {
-                    "string": GraphQLField(GraphQLString),
-                    "listOfString": GraphQLField(GraphQLList(GraphQLString)),
-                    "nonNullString": GraphQLField(GraphQLNonNull(GraphQLString)),
-                    "nonNullListOfString": GraphQLField(
-                        GraphQLNonNull(GraphQLList(GraphQLString))
-                    ),
-                    "nonNullListOfNonNullString": GraphQLField(
-                        GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString)))
-                    ),
-                },
-            )
+        sdl = dedent(
+            """
+            type Query {
+              string: String
+              listOfString: [String]
+              nonNullString: String!
+              nonNullListOfString: [String]!
+              nonNullListOfNonNullString: [String!]!
+            }
+            """
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_field_arguments():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "ArgFields",
-                {
-                    "one": GraphQLField(
-                        GraphQLString,
-                        description="A field with a single arg",
-                        args={
-                            "intArg": GraphQLArgument(
-                                GraphQLInt, description="This is an int arg"
-                            )
-                        },
-                    ),
-                    "two": GraphQLField(
-                        GraphQLString,
-                        description="A field with two args",
-                        args={
-                            "listArg": GraphQLArgument(
-                                GraphQLList(GraphQLInt),
-                                description="This is a list of int arg",
-                            ),
-                            "requiredArg": GraphQLArgument(
-                                GraphQLNonNull(GraphQLBoolean),
-                                description="This is a required arg",
-                            ),
-                        },
-                    ),
-                },
-            )
+        sdl = dedent(
+            '''
+            type Query {
+              """A field with a single arg"""
+              one(
+                """This is an int arg"""
+                intArg: Int
+              ): String
+
+              """A field with a two args"""
+              two(
+                """This is an list of int arg"""
+                listArg: [Int]
+
+                """This is a required arg"""
+                requiredArg: Boolean!
+              ): String
+            }
+            '''
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_default_value_on_custom_scalar_field():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "ArgFields",
-                {
-                    "testField": GraphQLField(
-                        GraphQLString,
-                        args={
-                            "testArg": GraphQLArgument(
-                                GraphQLScalarType(
-                                    "CustomScalar", serialize=lambda value: value
-                                ),
-                                default_value="default",
-                            )
-                        },
-                    )
-                },
-            )
+        sdl = dedent(
+            """
+            scalar CustomScalar
+
+            type Query {
+              testField(testArg: CustomScalar = "default"): String
+            }
+            """
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_an_enum():
         food_enum = GraphQLEnumType(
@@ -318,10 +307,11 @@ def describe_type_system_build_schema_from_introspection():
             )
         )
 
-        check_schema(schema)
-
         introspection = introspection_from_schema(schema)
         client_schema = build_client_schema(introspection)
+        second_introspection = introspection_from_schema(client_schema)
+        assert second_introspection == introspection
+
         client_food_enum = client_schema.get_type("Food")
 
         # It's also an Enum type on the client.
@@ -343,165 +333,105 @@ def describe_type_system_build_schema_from_introspection():
         assert all(value.ast_node is None for value in values)
 
     def builds_a_schema_with_an_input_object():
-        address_type = GraphQLInputObjectType(
-            "Address",
-            {
-                "street": GraphQLInputField(
-                    GraphQLNonNull(GraphQLString),
-                    description="What street is this address?",
-                ),
-                "city": GraphQLInputField(
-                    GraphQLNonNull(GraphQLString),
-                    description="The city the address is within?",
-                ),
-                "country": GraphQLInputField(
-                    GraphQLString,
-                    default_value="USA",
-                    description="The country (blank will assume USA).",
-                ),
-            },
-            description="An input address",
+        sdl = dedent(
+            '''
+            """An input address"""
+            input Address {
+              """What street is this address?"""
+              street: String!
+
+              """The city the address is within?"""
+              city: String!
+
+              """The country (blank will assume USA)."""
+              country: String = "USA"
+            }
+
+            type Query {
+              """Get a geocode from an address"""
+              geocode(
+                """The address to lookup"""
+                address: Address
+              ): String
+            }
+            '''
         )
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "HasInputObjectFields",
-                {
-                    "geocode": GraphQLField(
-                        GraphQLString,
-                        args={
-                            "address": GraphQLArgument(
-                                address_type, description="The address to lookup"
-                            )
-                        },
-                        description="Get a geocode from an address",
-                    )
-                },
-            )
-        )
-
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_field_arguments_with_default_values():
-        geo_type = GraphQLInputObjectType(
-            "Geo",
-            {
-                "lat": GraphQLInputField(GraphQLFloat),
-                "lon": GraphQLInputField(GraphQLFloat),
-            },
+        sdl = dedent(
+            """
+            input Geo {
+              lat: Float
+              lon: Float
+            }
+
+            type Query {
+              defaultInt(intArg: Int = 30): String
+              defaultList(listArg: [Int] = [1, 2, 3]): String
+              defaultObject(objArg: Geo = {lat: 37.485, lon: -122.148}): String
+              defaultNull(intArg: Int = null): String
+              noDefault(intArg: Int): String
+            }
+            """
         )
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "ArgFields",
-                {
-                    "defaultInt": GraphQLField(
-                        GraphQLString,
-                        args={"intArg": GraphQLArgument(GraphQLInt, default_value=10)},
-                    ),
-                    "defaultList": GraphQLField(
-                        GraphQLString,
-                        args={
-                            "listArg": GraphQLArgument(
-                                GraphQLList(GraphQLInt), default_value=[1, 2, 3]
-                            )
-                        },
-                    ),
-                    "defaultObject": GraphQLField(
-                        GraphQLString,
-                        args={
-                            "objArg": GraphQLArgument(
-                                geo_type, default_value={"lat": 37.485, "lon": -122.148}
-                            )
-                        },
-                    ),
-                    "defaultNull": GraphQLField(
-                        GraphQLString,
-                        args={
-                            "intArg": GraphQLArgument(GraphQLInt, default_value=None)
-                        },
-                    ),
-                    "noDefaults": GraphQLField(
-                        GraphQLString, args={"intArg": GraphQLArgument(GraphQLInt)}
-                    ),
-                },
-            )
-        )
-
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_custom_directives():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Simple",
-                {
-                    "string": GraphQLField(
-                        GraphQLString, description="This is a string field"
-                    )
-                },
-                description="This is a simple type",
-            ),
-            directives=[
-                GraphQLDirective(
-                    "customDirective",
-                    [DirectiveLocation.FIELD],
-                    description="This is a custom directive",
-                )
-            ],
+        sdl = dedent(
+            '''
+            """This is a custom directive"""
+            directive @customDirective on FIELD
+
+            type Query {
+              string: String
+            }
+            '''
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_aware_of_deprecation():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Simple",
-                {
-                    "shinyString": GraphQLField(
-                        GraphQLString, description="This is a shiny string field"
-                    ),
-                    "deprecatedString": GraphQLField(
-                        GraphQLString,
-                        description="This is a deprecated string field",
-                        deprecation_reason="Use shinyString",
-                    ),
-                    "color": GraphQLField(
-                        GraphQLEnumType(
-                            "Color",
-                            {
-                                "RED": GraphQLEnumValue(description="So rosy"),
-                                "GREEN": GraphQLEnumValue(description="So grassy"),
-                                "BLUE": GraphQLEnumValue(description="So calming"),
-                                "MAUVE": GraphQLEnumValue(
-                                    description="So sickening",
-                                    deprecation_reason="No longer in fashion",
-                                ),
-                            },
-                        )
-                    ),
-                },
-                description="This is a simple type",
-            )
+        sdl = dedent(
+            '''
+            enum Color {
+              """So rosy"""
+              RED
+
+              """So grassy"""
+              GREEN
+
+              """So calming"""
+              BLUE
+
+              """So sickening"""
+              MAUVE @deprecated(reason: "No longer in fashion")
+            }
+
+            type Query {
+              """This is a shiny string field"""
+              shinyString: String
+
+              """This is a deprecated string field"""
+              deprecatedString: String @deprecated(reason: "Use shinyString")
+              color: Color
+            }
+            '''
         )
 
-        check_schema(schema)
+        assert cycle_introspection(sdl) == sdl
 
     def can_use_client_schema_for_limited_execution():
-        custom_scalar = GraphQLScalarType("CustomScalar", serialize=lambda: None)
+        schema = build_schema(
+            """
+            scalar CustomScalar
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        GraphQLString,
-                        args={
-                            "custom1": GraphQLArgument(custom_scalar),
-                            "custom2": GraphQLArgument(custom_scalar),
-                        },
-                    )
-                },
-            )
+            type Query {
+              foo(custom1: CustomScalar, custom2: CustomScalar): String
+            }
+            """
         )
 
         introspection = introspection_from_schema(schema)
@@ -605,27 +535,12 @@ def describe_throws_when_given_incomplete_introspection():
 
 def describe_very_deep_decorators_are_not_supported():
     def fails_on_very_deep_lists_more_than_7_levels():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        GraphQLList(
-                            GraphQLList(
-                                GraphQLList(
-                                    GraphQLList(
-                                        GraphQLList(
-                                            GraphQLList(
-                                                GraphQLList(GraphQLList(GraphQLString))
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                },
-            )
+        schema = build_schema(
+            """
+            type Query {
+              foo: [[[[[[[[String]]]]]]]]
+            }
+            """
         )
 
         introspection = introspection_from_schema(schema)
@@ -639,29 +554,12 @@ def describe_very_deep_decorators_are_not_supported():
         )
 
     def fails_on_a_very_deep_non_null_more_than_7_levels():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        GraphQLList(
-                            GraphQLNonNull(
-                                GraphQLList(
-                                    GraphQLNonNull(
-                                        GraphQLList(
-                                            GraphQLNonNull(
-                                                GraphQLList(
-                                                    GraphQLNonNull(GraphQLString)
-                                                )
-                                            )
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                },
-            )
+        schema = build_schema(
+            """
+            type Query {
+              foo: [[[[String!]!]!]!]
+            }
+            """
         )
 
         introspection = introspection_from_schema(schema)
@@ -675,30 +573,16 @@ def describe_very_deep_decorators_are_not_supported():
         )
 
     def succeeds_on_deep_types_less_or_equal_7_levels():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        # e.g., fully non-null 3D matrix
-                        GraphQLNonNull(
-                            GraphQLList(
-                                GraphQLNonNull(
-                                    GraphQLList(
-                                        GraphQLNonNull(
-                                            GraphQLList(GraphQLNonNull(GraphQLString))
-                                        )
-                                    )
-                                )
-                            )
-                        )
-                    )
-                },
-            )
+        # e.g., fully non-null 3D matrix
+        sdl = dedent(
+            """
+            type Query {
+              foo: [[[String!]!]!]!
+            }
+            """
         )
 
-        introspection = introspection_from_schema(schema)
-        build_client_schema(introspection)
+        assert cycle_introspection(sdl) == sdl
 
     def describe_prevents_infinite_recursion_on_invalid_introspection():
         def recursive_interfaces():
