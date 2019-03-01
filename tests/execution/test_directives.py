@@ -11,7 +11,7 @@ schema = GraphQLSchema(
 
 
 # noinspection PyMethodMayBeStatic
-class Data:
+class RootValue:
     def a(self, *_args):
         return "a"
 
@@ -19,8 +19,9 @@ class Data:
         return "b"
 
 
-def execute_test_query(doc):
-    return execute(schema, parse(doc), Data)
+def execute_test_query(query):
+    document = parse(query)
+    return execute(schema, document, RootValue())
 
 
 def describe_execute_handles_directives():
