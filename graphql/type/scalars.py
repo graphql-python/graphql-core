@@ -122,7 +122,7 @@ GraphQLFloat = GraphQLScalarType(
     description="The `Float` scalar type represents"
     " signed double-precision fractional values"
     " as specified by [IEEE 754]"
-    "(http://en.wikipedia.org/wiki/IEEE_floating_point).",
+    "(https://en.wikipedia.org/wiki/IEEE_floating_point).",
     serialize=serialize_float,
     parse_value=coerce_float,
     parse_literal=parse_float_literal,

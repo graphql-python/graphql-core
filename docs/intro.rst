@@ -85,11 +85,11 @@ in the current development or want to report issues or send pull requests.
 .. _GraphQl-core-next: https://github.com/graphql-python/graphql-core-next
 .. _GitHub repository of GraphQL-core-next: https://github.com/graphql-python/graphql-core-next
 .. _Specification for GraphQL: https://facebook.github.io/graphql/
-.. _Language: http://facebook.github.io/graphql/draft/#sec-Language
-.. _Type System: http://facebook.github.io/graphql/draft/#sec-Type-System
-.. _Introspection: http://facebook.github.io/graphql/draft/#sec-Introspection
-.. _Validation: http://facebook.github.io/graphql/draft/#sec-Validation
-.. _Execution: http://facebook.github.io/graphql/draft/#sec-Execution
-.. _Response: http://facebook.github.io/graphql/draft/#sec-Response
+.. _Language: https://facebook.github.io/graphql/draft/#sec-Language
+.. _Type System: https://facebook.github.io/graphql/draft/#sec-Type-System
+.. _Introspection: https://facebook.github.io/graphql/draft/#sec-Introspection
+.. _Validation: https://facebook.github.io/graphql/draft/#sec-Validation
+.. _Execution: https://facebook.github.io/graphql/draft/#sec-Execution
+.. _Response: https://facebook.github.io/graphql/draft/#sec-Response
 .. _pip: https://pip.pypa.io/
 .. _pipenv: https://github.com/pypa/pipenv
