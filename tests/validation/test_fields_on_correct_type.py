@@ -1,7 +1,13 @@
+from functools import partial
+
 from graphql.validation import FieldsOnCorrectTypeRule
 from graphql.validation.rules.fields_on_correct_type import undefined_field_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, FieldsOnCorrectTypeRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def undefined_field(field, type_, suggested_types, suggested_fields, line, column):
@@ -15,71 +21,64 @@ def undefined_field(field, type_, suggested_types, suggested_fields, line, colum
 
 def describe_validate_fields_on_correct_type():
     def object_field_selection():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment objectFieldSelection on Dog {
               __typename
               name
             }
-            """,
+            """
         )
 
     def aliased_object_field_selection():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment aliasedObjectFieldSelection on Dog {
               tn : __typename
               otherName : name
             }
-            """,
+            """
         )
 
     def interface_field_selection():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment interfaceFieldSelection on Pet {
               __typename
               name
             }
-            """,
+            """
         )
 
     def aliased_interface_field_selection():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment interfaceFieldSelection on Pet {
               otherName : name
             }
-            """,
+            """
         )
 
     def lying_alias_selection():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment lyingAliasSelection on Dog {
               name : nickname
             }
-            """,
+            """
         )
 
     def ignores_fields_on_unknown_type():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment unknownSelection on UnknownType {
               unknownField
             }
-            """,
+            """
         )
 
     def reports_errors_when_type_is_known_again():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment typeKnownAgain on Pet {
               unknown_pet_field {
@@ -96,8 +95,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def field_not_defined_on_fragment():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment fieldNotDefined on Dog {
               meowVolume
@@ -107,8 +105,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def ignores_deeply_unknown_field():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment deepFieldNotDefined on Dog {
               unknown_field {
@@ -120,10 +117,9 @@ def describe_validate_fields_on_correct_type():
         )
 
     def sub_field_not_defined():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
-              fragment subFieldNotDefined on Human {
+            fragment subFieldNotDefined on Human {
               pets {
                 unknown_field
               }
@@ -133,8 +129,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def field_not_defined_on_inline_fragment():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment fieldNotDefined on Pet {
               ... on Dog {
@@ -146,8 +141,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def aliased_field_target_not_defined():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment aliasedFieldTargetNotDefined on Dog {
               volume : mooVolume
@@ -157,8 +151,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def aliased_lying_field_target_not_defined():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment aliasedLyingFieldTargetNotDefined on Dog {
               barkVolume : kawVolume
@@ -168,8 +161,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def not_defined_on_interface():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment notDefinedOnInterface on Pet {
               tailLength
@@ -179,8 +171,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def defined_on_implementors_but_not_on_interface():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment definedOnImplementorsButNotInterface on Pet {
               nickname
@@ -190,18 +181,16 @@ def describe_validate_fields_on_correct_type():
         )
 
     def meta_field_selection_on_union():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment directFieldSelectionOnUnion on CatOrDog {
               __typename
             }
-            """,
+            """
         )
 
     def direct_field_selection_on_union():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
             fragment directFieldSelectionOnUnion on CatOrDog {
               directField
@@ -211,8 +200,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def defined_on_implementors_queried_on_union():
-        expect_fails_rule(
-            FieldsOnCorrectTypeRule,
+        assert_errors(
             """
               fragment definedOnImplementorsQueriedOnUnion on CatOrDog {
               name
@@ -231,8 +219,7 @@ def describe_validate_fields_on_correct_type():
         )
 
     def valid_field_in_inline_fragment():
-        expect_passes_rule(
-            FieldsOnCorrectTypeRule,
+        assert_valid(
             """
             fragment objectFieldSelection on Pet {
               ... on Dog {
@@ -242,7 +229,7 @@ def describe_validate_fields_on_correct_type():
                 name
               }
             }
-            """,
+            """
         )
 
 

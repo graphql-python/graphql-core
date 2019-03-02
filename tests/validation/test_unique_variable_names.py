@@ -1,7 +1,13 @@
+from functools import partial
+
 from graphql.validation import UniqueVariableNamesRule
 from graphql.validation.rules.unique_variable_names import duplicate_variable_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, UniqueVariableNamesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def duplicate_variable(name, l1, c1, l2, c2):
@@ -13,17 +19,15 @@ def duplicate_variable(name, l1, c1, l2, c2):
 
 def describe_validate_unique_variable_names():
     def unique_variable_names():
-        expect_passes_rule(
-            UniqueVariableNamesRule,
+        assert_valid(
             """
             query A($x: Int, $y: String) { __typename }
             query B($x: String, $y: Int) { __typename }
-            """,
+            """
         )
 
     def duplicate_variable_names():
-        expect_fails_rule(
-            UniqueVariableNamesRule,
+        assert_errors(
             """
             query A($x: Int, $x: Int, $x: String) { __typename }
             query B($x: String, $x: Int) { __typename }

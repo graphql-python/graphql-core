@@ -1,10 +1,16 @@
+from functools import partial
+
 from graphql.validation import ScalarLeafsRule
 from graphql.validation.rules.scalar_leafs import (
     no_subselection_allowed_message,
     required_subselection_message,
 )
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, ScalarLeafsRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def no_scalar_subselection(field, type_, line, column):
@@ -23,18 +29,16 @@ def missing_obj_subselection(field, type_, line, column):
 
 def describe_validate_scalar_leafs():
     def valid_scalar_selection():
-        expect_passes_rule(
-            ScalarLeafsRule,
+        assert_valid(
             """
             fragment scalarSelection on Dog {
               barks
             }
-            """,
+            """
         )
 
     def object_type_missing_selection():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             query directQueryOnObjectWithoutSubFields {
               human
@@ -44,8 +48,7 @@ def describe_validate_scalar_leafs():
         )
 
     def interface_type_missing_selection():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             {
               human { pets }
@@ -55,18 +58,16 @@ def describe_validate_scalar_leafs():
         )
 
     def valid_scalar_selection_with_args():
-        expect_passes_rule(
-            ScalarLeafsRule,
+        assert_valid(
             """
             fragment scalarSelectionWithArgs on Dog {
               doesKnowCommand(dogCommand: SIT)
             }
-            """,
+            """
         )
 
     def scalar_selection_not_allowed_on_boolean():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             fragment scalarSelectionsNotAllowedOnBoolean on Dog {
               barks { sinceWhen }
@@ -76,8 +77,7 @@ def describe_validate_scalar_leafs():
         )
 
     def scalar_selection_not_allowed_on_enum():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             fragment scalarSelectionsNotAllowedOnEnum on Cat {
               furColor { inHexdec }
@@ -87,8 +87,7 @@ def describe_validate_scalar_leafs():
         )
 
     def scalar_selection_not_allowed_with_args():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             fragment scalarSelectionsNotAllowedWithArgs on Dog {
               doesKnowCommand(dogCommand: SIT) { sinceWhen }
@@ -98,8 +97,7 @@ def describe_validate_scalar_leafs():
         )
 
     def scalar_selection_not_allowed_with_directives():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             fragment scalarSelectionsNotAllowedWithDirectives on Dog {
               name @include(if: true) { isAlsoHumanName }
@@ -109,8 +107,7 @@ def describe_validate_scalar_leafs():
         )
 
     def scalar_selection_not_allowed_with_directives_and_args():
-        expect_fails_rule(
-            ScalarLeafsRule,
+        assert_errors(
             """
             fragment scalarSelectionsNotAllowedWithDirectivesAndArgs on Dog {
               doesKnowCommand(dogCommand: SIT) @include(if: true) { sinceWhen }

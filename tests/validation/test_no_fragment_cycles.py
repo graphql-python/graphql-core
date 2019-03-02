@@ -1,41 +1,43 @@
+from functools import partial
+
 from graphql.validation import NoFragmentCyclesRule
 from graphql.validation.rules.no_fragment_cycles import cycle_error_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, NoFragmentCyclesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_no_circular_fragment_spreads():
     def single_reference_is_valid():
-        expect_passes_rule(
-            NoFragmentCyclesRule,
+        assert_valid(
             """
             fragment fragA on Dog { ...fragB }
             fragment fragB on Dog { name }
-            """,
+            """
         )
 
     def spreading_twice_is_not_circular():
-        expect_passes_rule(
-            NoFragmentCyclesRule,
+        assert_valid(
             """
             fragment fragA on Dog { ...fragB, ...fragB }
             fragment fragB on Dog { name }
-            """,
+            """
         )
 
     def spreading_twice_indirectly_is_not_circular():
-        expect_passes_rule(
-            NoFragmentCyclesRule,
+        assert_valid(
             """
             fragment fragA on Dog { ...fragB, ...fragC }
             fragment fragB on Dog { ...fragC }
             fragment fragC on Dog { name }
-            """,
+            """
         )
 
     def double_spread_within_abstract_types():
-        expect_passes_rule(
-            NoFragmentCyclesRule,
+        assert_valid(
             """
             fragment nameFragment on Pet {
               ... on Dog { name }
@@ -45,22 +47,20 @@ def describe_validate_no_circular_fragment_spreads():
               ... on Dog { ...nameFragment }
               ... on Cat { ...nameFragment }
             }
-            """,
+            """
         )
 
     def does_not_raise_false_positive_on_unknown_fragment():
-        expect_passes_rule(
-            NoFragmentCyclesRule,
+        assert_valid(
             """
             fragment nameFragment on Pet {
               ...UnknownFragment
             }
-            """,
+            """
         )
 
     def spreading_recursively_within_field_fails():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Human { relatives { ...fragA } },
             """,
@@ -68,8 +68,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_directly():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Dog { ...fragA }
             """,
@@ -77,8 +76,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_directly_within_inline_fragment():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Pet {
               ... on Dog {
@@ -90,8 +88,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_indirectly():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Dog { ...fragB }
             fragment fragB on Dog { ...fragA }
@@ -105,8 +102,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_indirectly_reports_opposite_order():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragB on Dog { ...fragA }
             fragment fragA on Dog { ...fragB }
@@ -120,8 +116,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_indirectly_within_inline_fragment():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Pet {
               ... on Dog {
@@ -143,8 +138,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_deeply():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Dog { ...fragB }
             fragment fragB on Dog { ...fragC }
@@ -174,8 +168,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_deeply_two_paths():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Dog { ...fragB, ...fragC }
             fragment fragB on Dog { ...fragA }
@@ -194,8 +187,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_deeply_two_paths_alt_traverse_order():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Dog { ...fragC }
             fragment fragB on Dog { ...fragC }
@@ -214,8 +206,7 @@ def describe_validate_no_circular_fragment_spreads():
         )
 
     def no_spreading_itself_deeply_and_immediately():
-        expect_fails_rule(
-            NoFragmentCyclesRule,
+        assert_errors(
             """
             fragment fragA on Dog { ...fragB }
             fragment fragB on Dog { ...fragB, ...fragC }

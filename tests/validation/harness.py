@@ -1,4 +1,7 @@
-from graphql.language.parser import parse
+from typing import List, Optional, Type
+
+from graphql.error import GraphQLError
+from graphql.language import parse, print_ast
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -25,6 +28,7 @@ from graphql.type.directives import (
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
 )
+from graphql.validation import ValidationRule, SDLValidationRule
 from graphql.validation.validate import validate, validate_sdl
 
 Being = GraphQLInterfaceType(
@@ -227,11 +231,11 @@ def raise_type_error(message):
 InvalidScalar = GraphQLScalarType(
     name="Invalid",
     serialize=lambda value: value,
-    parse_literal=lambda node: raise_type_error(
-        f"Invalid scalar is always invalid: {node.value}"
+    parse_literal=lambda value_node: raise_type_error(
+        f"Invalid scalar is always invalid: {print_ast(value_node)}"
     ),
-    parse_value=lambda node: raise_type_error(
-        f"Invalid scalar is always invalid: {node}"
+    parse_value=lambda value: raise_type_error(
+        f"Invalid scalar is always invalid: {value!r}"
     ),
 )
 
@@ -289,34 +293,25 @@ test_schema = GraphQLSchema(
 )
 
 
-def expect_valid(schema, rule, query_string):
-    errors = validate(schema, parse(query_string), [rule])
-    assert errors == [], "Should validate"
+def assert_validation_errors(
+    rule: Type[ValidationRule],
+    query_str: str,
+    errors: List[GraphQLError],
+    schema: GraphQLSchema = test_schema,
+) -> List[GraphQLError]:
+    doc = parse(query_str)
+    returned_errors = validate(schema, doc, [rule])
+    assert returned_errors == errors
+    return returned_errors
 
 
-def expect_invalid(schema, rule, query_string, expected_errors):
-    errors = validate(schema, parse(query_string), [rule])
-    assert errors, "Should not validate"
-    assert errors == expected_errors
-    return errors
-
-
-def expect_passes_rule(rule, query_string):
-    expect_valid(test_schema, rule, query_string)
-
-
-def expect_fails_rule(rule, query_string, errors):
-    return expect_invalid(test_schema, rule, query_string, errors)
-
-
-def expect_passes_rule_with_schema(schema, rule, query_string):
-    return expect_valid(schema, rule, query_string)
-
-
-def expect_fails_rule_with_schema(schema, rule, query_string, errors):
-    return expect_invalid(schema, rule, query_string, errors)
-
-
-def expect_sdl_errors_from_rule(rule, sdl_string, schema=None):
-    errors = validate_sdl(parse(sdl_string), schema, [rule])
-    return errors
+def assert_sdl_validation_errors(
+    rule: Type[SDLValidationRule],
+    sdl_str: str,
+    errors: List[GraphQLError],
+    schema: Optional[GraphQLSchema] = None,
+) -> List[GraphQLError]:
+    doc = parse(sdl_str)
+    returned_errors = validate_sdl(doc, schema, [rule])
+    assert returned_errors == errors
+    return returned_errors

@@ -1,25 +1,29 @@
+from functools import partial
+
 from graphql.validation import SingleFieldSubscriptionsRule
 from graphql.validation.rules.single_field_subscriptions import (
     single_field_only_message,
 )
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, SingleFieldSubscriptionsRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_subscriptions_with_single_field():
     def valid_subscription():
-        expect_passes_rule(
-            SingleFieldSubscriptionsRule,
+        assert_valid(
             """
             subscription ImportantEmails {
               importantEmails
             }
-            """,
+            """
         )
 
     def fails_with_more_than_one_root_field():
-        expect_fails_rule(
-            SingleFieldSubscriptionsRule,
+        assert_errors(
             """
             subscription ImportantEmails {
               importantEmails
@@ -35,8 +39,7 @@ def describe_validate_subscriptions_with_single_field():
         )
 
     def fails_with_more_than_one_root_field_including_introspection():
-        expect_fails_rule(
-            SingleFieldSubscriptionsRule,
+        assert_errors(
             """
             subscription ImportantEmails {
               importantEmails
@@ -52,8 +55,7 @@ def describe_validate_subscriptions_with_single_field():
         )
 
     def fails_with_many_more_than_one_root_field():
-        expect_fails_rule(
-            SingleFieldSubscriptionsRule,
+        assert_errors(
             """
             subscription ImportantEmails {
               importantEmails
@@ -70,8 +72,7 @@ def describe_validate_subscriptions_with_single_field():
         )
 
     def fails_with_more_than_one_root_field_in_anonymous_subscriptions():
-        expect_fails_rule(
-            SingleFieldSubscriptionsRule,
+        assert_errors(
             """
             subscription {
               importantEmails

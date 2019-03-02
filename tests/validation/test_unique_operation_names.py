@@ -1,9 +1,15 @@
+from functools import partial
+
 from graphql.validation import UniqueOperationNamesRule
 from graphql.validation.rules.unique_operation_names import (
     duplicate_operation_name_message,
 )
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, UniqueOperationNamesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def duplicate_op(op_name, l1, c1, l2, c2):
@@ -15,38 +21,34 @@ def duplicate_op(op_name, l1, c1, l2, c2):
 
 def describe_validate_unique_operation_names():
     def no_operations():
-        expect_passes_rule(
-            UniqueOperationNamesRule,
+        assert_valid(
             """
             fragment fragA on Type {
               field
             }
-            """,
+            """
         )
 
     def one_anon_operation():
-        expect_passes_rule(
-            UniqueOperationNamesRule,
+        assert_valid(
             """
             {
               field
             }
-            """,
+            """
         )
 
     def one_named_operation():
-        expect_passes_rule(
-            UniqueOperationNamesRule,
+        assert_valid(
             """
             query Foo {
               field
             }
-            """,
+            """
         )
 
     def multiple_operations():
-        expect_passes_rule(
-            UniqueOperationNamesRule,
+        assert_valid(
             """
             query Foo {
               field
@@ -55,12 +57,11 @@ def describe_validate_unique_operation_names():
             query Bar {
               field
             }
-            """,
+            """
         )
 
     def multiple_operations_of_different_types():
-        expect_passes_rule(
-            UniqueOperationNamesRule,
+        assert_valid(
             """
             query Foo {
               field
@@ -73,12 +74,11 @@ def describe_validate_unique_operation_names():
             subscription Baz {
               field
             }
-            """,
+            """
         )
 
     def fragment_and_operation_named_the_same():
-        expect_passes_rule(
-            UniqueOperationNamesRule,
+        assert_valid(
             """
             query Foo {
               ...Foo
@@ -86,12 +86,11 @@ def describe_validate_unique_operation_names():
             fragment Foo on Type {
               field
             }
-            """,
+            """
         )
 
     def multiple_operations_of_same_name():
-        expect_fails_rule(
-            UniqueOperationNamesRule,
+        assert_errors(
             """
             query Foo {
               fieldA
@@ -104,8 +103,7 @@ def describe_validate_unique_operation_names():
         )
 
     def multiple_ops_of_same_name_of_different_types_mutation():
-        expect_fails_rule(
-            UniqueOperationNamesRule,
+        assert_errors(
             """
             query Foo {
               fieldA
@@ -118,8 +116,7 @@ def describe_validate_unique_operation_names():
         )
 
     def multiple_ops_of_same_name_of_different_types_subscription():
-        expect_fails_rule(
-            UniqueOperationNamesRule,
+        assert_errors(
             """
             query Foo {
               fieldA

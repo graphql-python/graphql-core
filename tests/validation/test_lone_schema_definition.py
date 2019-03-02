@@ -7,9 +7,11 @@ from graphql.validation.rules.lone_schema_definition import (
     cannot_define_schema_within_extension_message,
 )
 
-from .harness import expect_sdl_errors_from_rule
+from .harness import assert_sdl_validation_errors
 
-expect_sdl_errors = partial(expect_sdl_errors_from_rule, LoneSchemaDefinitionRule)
+assert_sdl_errors = partial(assert_sdl_validation_errors, LoneSchemaDefinitionRule)
+
+assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 
 def schema_definition_not_alone(line, column):
@@ -28,58 +30,47 @@ def cannot_define_schema_within_extension(line, column):
 
 def describe_validate_schema_definition_should_be_alone():
     def no_schema():
-        assert (
-            expect_sdl_errors(
-                """
-                type Query {
-                  foo: String
-                }
-                """
-            )
-            == []
+        assert_sdl_valid(
+            """
+            type Query {
+              foo: String
+            }
+            """
         )
 
     def one_schema_definition():
-        assert (
-            expect_sdl_errors(
-                """
-                schema {
-                  query: Foo
-                }
+        assert_sdl_valid(
+            """
+            schema {
+              query: Foo
+            }
 
-                type Foo {
-                  foo: String
-                }
-                """
-            )
-            == []
+            type Foo {
+              foo: String
+            }
+            """
         )
 
     def multiple_schema_definitions():
-        assert (
-            expect_sdl_errors(
-                """
-                schema {
-                  query: Foo
-                }
+        assert_sdl_errors(
+            """
+            schema {
+              query: Foo
+            }
 
-                type Foo {
-                  foo: String
-                }
+            type Foo {
+              foo: String
+            }
 
-                schema {
-                  mutation: Foo
-                }
+            schema {
+              mutation: Foo
+            }
 
-                schema {
-                  subscription: Foo
-                }
-                """
-            )
-            == [
-                schema_definition_not_alone(10, 17),
-                schema_definition_not_alone(14, 17),
-            ]
+            schema {
+              subscription: Foo
+            }
+            """,
+            [schema_definition_not_alone(10, 13), schema_definition_not_alone(14, 13)],
         )
 
     def define_schema_in_schema_extension():
@@ -91,16 +82,13 @@ def describe_validate_schema_definition_should_be_alone():
             """
         )
 
-        assert (
-            expect_sdl_errors(
-                """
-                schema {
-                  query: Foo
-                }
-                """,
-                schema,
-            )
-            == []
+        assert_sdl_valid(
+            """
+            schema {
+              query: Foo
+            }
+            """,
+            schema=schema,
         )
 
     def redefine_schema_in_schema_extension():
@@ -116,16 +104,14 @@ def describe_validate_schema_definition_should_be_alone():
             """
         )
 
-        assert (
-            expect_sdl_errors(
-                """
-                schema {
-                  mutation: Foo
-                }
-                """,
-                schema,
-            )
-            == [cannot_define_schema_within_extension(2, 17)]
+        assert_sdl_errors(
+            """
+            schema {
+              mutation: Foo
+            }
+            """,
+            [cannot_define_schema_within_extension(2, 13)],
+            schema,
         )
 
     def redefine_implicit_schema_in_schema_extension():
@@ -141,16 +127,14 @@ def describe_validate_schema_definition_should_be_alone():
             """
         )
 
-        assert (
-            expect_sdl_errors(
-                """
-                schema {
-                  mutation: Foo
-                }
-                """,
-                schema,
-            )
-            == [cannot_define_schema_within_extension(2, 17)]
+        assert_sdl_errors(
+            """
+            schema {
+              mutation: Foo
+            }
+            """,
+            [cannot_define_schema_within_extension(2, 13)],
+            schema,
         )
 
     def extend_schema_in_schema_extension():
@@ -166,14 +150,11 @@ def describe_validate_schema_definition_should_be_alone():
             """
         )
 
-        assert (
-            expect_sdl_errors(
-                """
-                extend schema {
-                  mutation: Foo
-                }
-                """,
-                schema,
-            )
-            == []
+        assert_sdl_valid(
+            """
+            extend schema {
+              mutation: Foo
+            }
+            """,
+            schema=schema,
         )

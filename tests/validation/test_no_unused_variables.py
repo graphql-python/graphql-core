@@ -1,7 +1,13 @@
+from functools import partial
+
 from graphql.validation import NoUnusedVariablesRule
 from graphql.validation.rules.no_unused_variables import unused_variable_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, NoUnusedVariablesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def unused_var(var_name, op_name, line, column):
@@ -13,18 +19,16 @@ def unused_var(var_name, op_name, line, column):
 
 def describe_validate_no_unused_variables():
     def uses_all_variables():
-        expect_passes_rule(
-            NoUnusedVariablesRule,
+        assert_valid(
             """
             query ($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c)
             }
-            """,
+            """
         )
 
     def uses_all_variables_deeply():
-        expect_passes_rule(
-            NoUnusedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a) {
@@ -33,12 +37,11 @@ def describe_validate_no_unused_variables():
                 }
               }
             }
-            """,
+            """
         )
 
     def uses_all_variables_deeply_in_inline_fragments():
-        expect_passes_rule(
-            NoUnusedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String, $b: String, $c: String) {
               ... on Type {
@@ -51,12 +54,11 @@ def describe_validate_no_unused_variables():
                 }
               }
             }
-            """,
+            """
         )
 
     def uses_all_variables_in_fragment():
-        expect_passes_rule(
-            NoUnusedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
@@ -74,12 +76,11 @@ def describe_validate_no_unused_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """,
+            """
         )
 
     def variable_used_by_fragment_in_multiple_operations():
-        expect_passes_rule(
-            NoUnusedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String) {
               ...FragA
@@ -93,12 +94,11 @@ def describe_validate_no_unused_variables():
             fragment FragB on Type {
               field(b: $b)
             }
-            """,
+            """
         )
 
     def variable_used_by_recursive_fragment():
-        expect_passes_rule(
-            NoUnusedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String) {
               ...FragA
@@ -108,12 +108,11 @@ def describe_validate_no_unused_variables():
                 ...FragA
               }
             }
-            """,
+            """
         )
 
     def variable_not_used():
-        expect_fails_rule(
-            NoUnusedVariablesRule,
+        assert_errors(
             """
             query ($a: String, $b: String, $c: String) {
               field(a: $a, b: $b)
@@ -123,8 +122,7 @@ def describe_validate_no_unused_variables():
         )
 
     def multiple_variables_not_used():
-        expect_fails_rule(
-            NoUnusedVariablesRule,
+        assert_errors(
             """
             query Foo($a: String, $b: String, $c: String) {
               field(b: $b)
@@ -134,8 +132,7 @@ def describe_validate_no_unused_variables():
         )
 
     def variable_not_used_in_fragments():
-        expect_fails_rule(
-            NoUnusedVariablesRule,
+        assert_errors(
             """
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
@@ -158,8 +155,7 @@ def describe_validate_no_unused_variables():
         )
 
     def multiple_variables_not_used_in_fragments():
-        expect_fails_rule(
-            NoUnusedVariablesRule,
+        assert_errors(
             """
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
@@ -182,8 +178,7 @@ def describe_validate_no_unused_variables():
         )
 
     def variable_not_used_by_unreferenced_fragment():
-        expect_fails_rule(
-            NoUnusedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               ...FragA
@@ -199,8 +194,7 @@ def describe_validate_no_unused_variables():
         )
 
     def variable_not_used_by_fragment_used_by_other_operation():
-        expect_fails_rule(
-            NoUnusedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               ...FragA

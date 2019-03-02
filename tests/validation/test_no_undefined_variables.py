@@ -1,7 +1,13 @@
+from functools import partial
+
 from graphql.validation import NoUndefinedVariablesRule
 from graphql.validation.rules.no_undefined_variables import undefined_var_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, NoUndefinedVariablesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def undef_var(var_name, l1, c1, op_name, l2, c2):
@@ -13,18 +19,16 @@ def undef_var(var_name, l1, c1, op_name, l2, c2):
 
 def describe_validate_no_undefined_variables():
     def all_variables_defined():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c)
             }
-            """,
+            """
         )
 
     def all_variables_deeply_defined():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a) {
@@ -33,30 +37,28 @@ def describe_validate_no_undefined_variables():
                 }
               }
             }
-            """,
+            """
         )
 
     def all_variables_deeply_in_inline_fragments_defined():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
-           query Foo($a: String, $b: String, $c: String) {
-             ... on Type {
-               field(a: $a) {
-                 field(b: $b) {
-                   ... on Type {
-                     field(c: $c)
-                   }
-                 }
-               }
-             }
-           }
-           """,
+            query Foo($a: String, $b: String, $c: String) {
+              ... on Type {
+                field(a: $a) {
+                  field(b: $b) {
+                    ... on Type {
+                      field(c: $c)
+                    }
+                  }
+                }
+              }
+            }
+            """
         )
 
     def all_variables_in_fragments_deeply_defined():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
@@ -74,12 +76,11 @@ def describe_validate_no_undefined_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """,
+            """
         )
 
     def variable_within_single_fragment_defined_in_multiple_operations():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String) {
               ...FragA
@@ -90,12 +91,11 @@ def describe_validate_no_undefined_variables():
             fragment FragA on Type {
               field(a: $a)
             }
-            """,
+            """
         )
 
     def variable_within_fragments_defined_in_operations():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String) {
               ...FragA
@@ -109,12 +109,11 @@ def describe_validate_no_undefined_variables():
             fragment FragB on Type {
               field(b: $b)
             }
-            """,
+            """
         )
 
     def variable_within_recursive_fragment_defined():
-        expect_passes_rule(
-            NoUndefinedVariablesRule,
+        assert_valid(
             """
             query Foo($a: String) {
               ...FragA
@@ -124,12 +123,11 @@ def describe_validate_no_undefined_variables():
                 ...FragA
               }
             }
-            """,
+            """
         )
 
     def variable_not_defined():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c, d: $d)
@@ -139,8 +137,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def variable_not_defined_by_unnamed_query():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             {
               field(a: $a)
@@ -150,8 +147,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def multiple_variables_not_defined():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               field(a: $a, b: $b, c: $c)
@@ -161,8 +157,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def variable_in_fragment_not_defined_by_unnamed_query():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             {
               ...FragA
@@ -175,8 +170,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def variable_in_fragment_not_defined_by_operation():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($a: String, $b: String) {
               ...FragA
@@ -199,8 +193,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def multiple_variables_in_fragments_not_defined():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               ...FragA
@@ -223,8 +216,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def single_variable_in_fragment_not_defined_by_multiple_operations():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($a: String) {
               ...FragAB
@@ -240,8 +232,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def variables_in_fragment_not_defined_by_multiple_operations():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               ...FragAB
@@ -257,8 +248,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def variable_in_fragment_used_by_other_operation():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               ...FragA
@@ -277,8 +267,7 @@ def describe_validate_no_undefined_variables():
         )
 
     def multiple_undefined_variables_produce_multiple_errors():
-        expect_fails_rule(
-            NoUndefinedVariablesRule,
+        assert_errors(
             """
             query Foo($b: String) {
               ...FragAB

@@ -1,13 +1,18 @@
+from functools import partial
+
 from graphql.validation import VariablesInAllowedPositionRule
 from graphql.validation.rules.variables_in_allowed_position import bad_var_pos_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, VariablesInAllowedPositionRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_variables_are_in_allowed_positions():
     def boolean_to_boolean():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($booleanArg: Boolean)
             {
@@ -15,12 +20,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 booleanArgField(booleanArg: $booleanArg)
               }
             }
-            """,
+            """
         )
 
     def boolean_to_boolean_in_fragment():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             fragment booleanArgFrag on ComplicatedArgs {
               booleanArgField(booleanArg: $booleanArg)
@@ -31,11 +35,10 @@ def describe_validate_variables_are_in_allowed_positions():
                 ...booleanArgFrag
               }
             }
-            """,
+            """
         )
 
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($booleanArg: Boolean)
             {
@@ -46,12 +49,11 @@ def describe_validate_variables_are_in_allowed_positions():
             fragment booleanArgFrag on ComplicatedArgs {
               booleanArgField(booleanArg: $booleanArg)
             }
-            """,
+            """
         )
 
     def non_null_boolean_to_boolean():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($nonNullBooleanArg: Boolean!)
             {
@@ -59,12 +61,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 booleanArgField(booleanArg: $nonNullBooleanArg)
               }
             }
-            """,
+            """
         )
 
     def non_null_boolean_to_boolean_within_fragment():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             fragment booleanArgFrag on ComplicatedArgs {
               booleanArgField(booleanArg: $nonNullBooleanArg)
@@ -76,12 +77,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 ...booleanArgFrag
               }
             }
-            """,
+            """
         )
 
     def array_of_string_to_array_of_string():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($stringListVar: [String])
             {
@@ -89,12 +89,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 stringListArgField(stringListArg: $stringListVar)
               }
             }
-            """,
+            """
         )
 
     def array_of_non_null_string_to_array_of_string():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($stringListVar: [String!])
             {
@@ -102,12 +101,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 stringListArgField(stringListArg: $stringListVar)
               }
             }
-            """,
+            """
         )
 
     def string_to_array_of_string_in_item_position():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($stringVar: String)
             {
@@ -115,12 +113,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 stringListArgField(stringListArg: [$stringVar])
               }
             }
-            """,
+            """
         )
 
     def non_null_string_to_array_of_string_in_item_position():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($stringVar: String!)
             {
@@ -128,12 +125,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 stringListArgField(stringListArg: [$stringVar])
               }
             }
-            """,
+            """
         )
 
     def complex_input_to_complex_input():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($complexVar: ComplexInput)
             {
@@ -141,12 +137,11 @@ def describe_validate_variables_are_in_allowed_positions():
                 complexArgField(complexArg: $complexVar)
               }
             }
-            """,
+            """
         )
 
     def complex_input_to_complex_input_in_field_position():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($boolVar: Boolean = false)
             {
@@ -154,23 +149,21 @@ def describe_validate_variables_are_in_allowed_positions():
                 complexArgField(complexArg: {requiredArg: $boolVar})
               }
             }
-            """,
+            """
         )
 
     def non_null_boolean_to_non_null_boolean_in_directive():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($boolVar: Boolean!)
             {
               dog @include(if: $boolVar)
             }
-            """,
+            """
         )
 
     def int_to_non_null_int():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             query Query($intArg: Int) {
               complicatedArgs {
@@ -187,8 +180,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def int_to_non_null_int_within_fragment():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             fragment nonNullIntArgFieldFrag on ComplicatedArgs {
               nonNullIntArgField(nonNullIntArg: $intArg)
@@ -209,8 +201,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def int_to_non_null_int_within_nested_fragment():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             fragment outerFrag on ComplicatedArgs {
               ...nonNullIntArgFieldFrag
@@ -235,8 +226,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def string_to_boolean():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             query Query($stringVar: String) {
               complicatedArgs {
@@ -253,8 +243,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def string_to_array_of_string():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             query Query($stringVar: String) {
               complicatedArgs {
@@ -271,8 +260,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def boolean_to_non_null_boolean_in_directive():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             query Query($boolVar: Boolean) {
               dog @include(if: $boolVar)
@@ -287,8 +275,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def string_to_non_null_boolean_in_directive():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             query Query($stringVar: String) {
               dog @include(if: $stringVar)
@@ -303,8 +290,7 @@ def describe_validate_variables_are_in_allowed_positions():
         )
 
     def array_of_string_to_array_of_non_null_string():
-        expect_fails_rule(
-            VariablesInAllowedPositionRule,
+        assert_errors(
             """
             query Query($stringListVar: [String])
             {
@@ -325,8 +311,7 @@ def describe_validate_variables_are_in_allowed_positions():
 
     def describe_allows_optional_nullable_variables_with_default_values():
         def int_to_non_null_int_fails_when_var_provides_null_default_value():
-            expect_fails_rule(
-                VariablesInAllowedPositionRule,
+            assert_errors(
                 """
                 query Query($intVar: Int = null) {
                   complicatedArgs {
@@ -343,35 +328,32 @@ def describe_validate_variables_are_in_allowed_positions():
             )
 
     def int_to_non_null_int_when_var_provides_non_null_default_value():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($intVar: Int = 1) {
               complicatedArgs {
                 nonNullIntArgField(nonNullIntArg: $intVar)
               }
             }
-            """,
+            """
         )
 
     def int_to_non_null_int_when_optional_arg_provides_default_value():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($intVar: Int) {
               complicatedArgs {
                 nonNullFieldWithDefault(nonNullIntArg: $intVar)
               }
             }
-            """,
+            """
         )
 
     def bool_to_non_null_bool_in_directive_with_default_value_with_option():
-        expect_passes_rule(
-            VariablesInAllowedPositionRule,
+        assert_valid(
             """
             query Query($boolVar: Boolean = false) {
               dog @include(if: $boolVar)
             }
-            """,
+            """
         )

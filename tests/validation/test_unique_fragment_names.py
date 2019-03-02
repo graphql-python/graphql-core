@@ -1,9 +1,15 @@
+from functools import partial
+
 from graphql.validation import UniqueFragmentNamesRule
 from graphql.validation.rules.unique_fragment_names import (
     duplicate_fragment_name_message,
 )
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, UniqueFragmentNamesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def duplicate_fragment(frag_name, l1, c1, l2, c2):
@@ -15,18 +21,16 @@ def duplicate_fragment(frag_name, l1, c1, l2, c2):
 
 def describe_validate_unique_fragment_names():
     def no_fragments():
-        expect_passes_rule(
-            UniqueFragmentNamesRule,
+        assert_valid(
             """
             {
               field
             }
-            """,
+            """
         )
 
     def one_fragment():
-        expect_passes_rule(
-            UniqueFragmentNamesRule,
+        assert_valid(
             """
             {
               ...fragA
@@ -34,12 +38,11 @@ def describe_validate_unique_fragment_names():
             fragment fragA on Type {
               field
             }
-            """,
+            """
         )
 
     def many_fragments():
-        expect_passes_rule(
-            UniqueFragmentNamesRule,
+        assert_valid(
             """
             {
               ...fragA
@@ -55,12 +58,11 @@ def describe_validate_unique_fragment_names():
             fragment fragC on Type {
               fieldC
             }
-            """,
+            """
         )
 
     def inline_fragments_are_always_unique():
-        expect_passes_rule(
-            UniqueFragmentNamesRule,
+        assert_valid(
             """
             {
               ...on Type {
@@ -70,12 +72,11 @@ def describe_validate_unique_fragment_names():
                 fieldB
               }
             }
-            """,
+            """
         )
 
     def fragment_and_operation_named_the_same():
-        expect_passes_rule(
-            UniqueFragmentNamesRule,
+        assert_valid(
             """
             query Foo {
               ...Foo
@@ -83,12 +84,11 @@ def describe_validate_unique_fragment_names():
             fragment Foo on Type {
               field
             }
-            """,
+            """
         )
 
     def fragments_named_the_same():
-        expect_fails_rule(
-            UniqueFragmentNamesRule,
+        assert_errors(
             """
             {
               ...fragA
@@ -104,8 +104,7 @@ def describe_validate_unique_fragment_names():
         )
 
     def fragments_named_the_same_without_being_referenced():
-        expect_fails_rule(
-            UniqueFragmentNamesRule,
+        assert_errors(
             """
             fragment fragA on Type {
               fieldA

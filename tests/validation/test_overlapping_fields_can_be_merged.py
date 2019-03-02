@@ -1,101 +1,98 @@
+from functools import partial
+
 from graphql.utilities import build_schema
 from graphql.validation import OverlappingFieldsCanBeMergedRule
 from graphql.validation.rules.overlapping_fields_can_be_merged import (
     fields_conflict_message,
 )
 
-from .harness import (
-    expect_fails_rule,
-    expect_fails_rule_with_schema,
-    expect_passes_rule,
-    expect_passes_rule_with_schema,
-)
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, OverlappingFieldsCanBeMergedRule)
+
+assert_valid = partial(assert_errors, errors=[])
+
+
+def assert_valid_with_schema(schema, query_str):
+    assert_errors(query_str, [], schema)
 
 
 def describe_validate_overlapping_fields_can_be_merged():
     def unique_fields():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment uniqueFields on Dog {
               name
               nickname
             }
-            """,
+            """
         )
 
     def identical_fields():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment mergeIdenticalFields on Dog {
               name
               name
             }
-            """,
+            """
         )
 
     def identical_fields_with_identical_args():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment mergeIdenticalFieldsWithIdenticalArgs on Dog {
               doesKnowCommand(dogCommand: SIT)
               doesKnowCommand(dogCommand: SIT)
             }
-            """,
+            """
         )
 
     def identical_fields_with_identical_directives():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment mergeSameFieldsWithSameDirectives on Dog {
               name @include(if: true)
               name @include(if: true)
             }
-            """,
+            """
         )
 
     def different_args_with_different_aliases():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment differentArgsWithDifferentAliases on Dog {
               knowsSit: doesKnowCommand(dogCommand: SIT)
               knowsDown: doesKnowCommand(dogCommand: DOWN)
             }
-            """,
+            """
         )
 
     def different_directives_with_different_aliases():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment differentDirectivesWithDifferentAliases on Dog {
               nameIfTrue: name @include(if: true)
               nameIfFalse: name @include(if: false)
             }
-            """,
+            """
         )
 
     def different_skip_or_include_directives_accepted():
         # Note: Differing skip/include directives don't create an ambiguous
         # return value and are acceptable in conditions where differing runtime
         # values may have the same desired effect of including/skipping a field
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment differentDirectivesWithDifferentAliases on Dog {
               name @include(if: true)
               name @include(if: false)
             }
-            """,
+            """
         )
 
     def same_aliases_with_different_field_targets():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             fragment sameAliasesWithDifferentFieldTargets on Dog {
               fido: name
@@ -114,8 +111,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def same_aliases_allowed_on_non_overlapping_fields():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment sameAliasesWithDifferentFieldTargets on Pet {
               ... on Dog {
@@ -125,12 +121,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                 name: nickname
               }
             }
-            """,
+            """
         )
 
     def alias_masking_direct_field_access():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             fragment aliasMaskingDirectFieldAccess on Dog {
               name: nickname
@@ -148,8 +143,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def different_args_second_adds_an_argument():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             fragment conflictingArgs on Dog {
               doesKnowCommand
@@ -167,8 +161,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def different_args_second_missing_an_argument():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             fragment conflictingArgs on Dog {
               doesKnowCommand(dogCommand: SIT)
@@ -186,8 +179,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def conflicting_args():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             fragment conflictingArgs on Dog {
               doesKnowCommand(dogCommand: SIT)
@@ -207,8 +199,7 @@ def describe_validate_overlapping_fields_can_be_merged():
     def allows_different_args_where_no_conflict_is_possible():
         # This is valid since no object can be both a "Dog" and a "Cat", thus
         # these fields can never overlap.
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment conflictingArgs on Pet {
               ... on Dog {
@@ -218,12 +209,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                 name
               }
             }
-            """,
+            """
         )
 
     def encounters_conflict_in_fragments():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               ...A
@@ -247,8 +237,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def reports_each_conflict_once():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               f1 {
@@ -295,8 +284,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def deep_conflict():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               field {
@@ -318,8 +306,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def deep_conflict_with_multiple_issues():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               field {
@@ -348,8 +335,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def very_deep_conflict():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               field {
@@ -384,8 +370,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def reports_deep_conflict_to_nearest_common_ancestor():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               field {
@@ -414,8 +399,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def reports_deep_conflict_to_nearest_common_ancestor_in_fragments():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               field {
@@ -452,8 +436,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def reports_deep_conflict_in_nested_fragments():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             {
               field {
@@ -501,8 +484,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def ignores_unknown_fragments():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             {
               field
@@ -514,7 +496,7 @@ def describe_validate_overlapping_fields_can_be_merged():
               field
               ...OtherUnknown
             }
-            """,
+            """
         )
 
     def describe_return_types_must_be_unambiguous():
@@ -589,9 +571,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             # Object type IntBox and the interface type NonNullStringBox1.
             # While that condition does not exist in the current schema, the
             # schema could expand in the future to allow this.
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -612,15 +592,14 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "locations": [(5, 23), (8, 23)],
                     }
                 ],
+                schema,
             )
 
         def compatible_return_shapes_on_different_return_types():
             # In this case `deepBox` returns `SomeBox` in the first usage, and
             # `StringBox` in the second usage. These types are not the same!
             # However this is valid because the return *shapes* are compatible.
-            expect_passes_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   someBox {
@@ -637,12 +616,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema,
             )
 
         def disallows_differing_return_types_despite_no_overlap():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -663,12 +641,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "locations": [(5, 23), (8, 23)],
                     }
                 ],
+                schema,
             )
 
         def reports_correctly_when_a_non_exclusive_follows_an_exclusive():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -728,12 +705,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "path": None,
                     }
                 ],
+                schema,
             )
 
         def disallows_differing_return_type_nullability_despite_no_overlap():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -754,12 +730,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "locations": [(5, 23), (8, 23)],
                     }
                 ],
+                schema,
             )
 
         def disallows_differing_return_type_list_despite_no_overlap_1():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -786,11 +761,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "locations": [(5, 23), (10, 23)],
                     }
                 ],
+                schema,
             )
 
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -817,12 +791,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "locations": [(5, 23), (10, 23)],
                     }
                 ],
+                schema,
             )
 
         def disallows_differing_subfields():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -848,12 +821,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "locations": [(6, 25), (7, 25)],
                     }
                 ],
+                schema,
             )
 
         def disallows_differing_deep_return_types_despite_no_overlap():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   someBox {
@@ -885,12 +857,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "path": None,
                     }
                 ],
+                schema,
             )
 
         def allows_non_conflicting_overlapping_types():
-            expect_passes_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   someBox {
@@ -903,12 +874,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema,
             )
 
         def same_wrapped_scalar_return_types():
-            expect_passes_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   someBox {
@@ -921,12 +891,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema,
             )
 
         def allows_inline_typeless_fragments():
-            expect_passes_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   a
@@ -935,12 +904,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema,
             )
 
         def compares_deep_types_including_list():
-            expect_fails_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_errors(
                 """
                 {
                   connection {
@@ -978,12 +946,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                         "path": None,
                     }
                 ],
+                schema,
             )
 
         def ignores_unknown_types():
-            expect_passes_rule_with_schema(
-                schema,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   someBox {
@@ -996,6 +963,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema,
             )
 
         def error_message_contains_hint_for_alias_conflict():
@@ -1021,9 +989,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """
             )
 
-            expect_passes_rule_with_schema(
-                schema_with_keywords,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   foo {
@@ -1031,6 +997,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema_with_keywords,
             )
 
         def works_for_field_names_that_are_python_keywords():
@@ -1046,9 +1013,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """
             )
 
-            expect_passes_rule_with_schema(
-                schema_with_keywords,
-                OverlappingFieldsCanBeMergedRule,
+            assert_valid(
                 """
                 {
                   foo {
@@ -1056,37 +1021,34 @@ def describe_validate_overlapping_fields_can_be_merged():
                   }
                 }
                 """,
+                schema=schema_with_keywords,
             )
 
     def does_not_infinite_loop_on_recursive_fragments():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment fragA on Human { name, relatives { name, ...fragA } }
-            """,
+            """
         )
 
     def does_not_infinite_loop_on_immediately_recursive_fragments():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment fragA on Human { name, ...fragA }
-            """,
+            """
         )
 
     def does_not_infinite_loop_on_transitively_recursive_fragments():
-        expect_passes_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_valid(
             """
             fragment fragA on Human { name, ...fragB }
             fragment fragB on Human { name, ...fragC }
             fragment fragC on Human { name, ...fragA }
-            """,
+            """
         )
 
     def finds_invalid_case_even_with_immediately_recursive_fragment():
-        expect_fails_rule(
-            OverlappingFieldsCanBeMergedRule,
+        assert_errors(
             """
             fragment sameAliasesWithDifferentFieldTargets on Dog {
               ...sameAliasesWithDifferentFieldTargets

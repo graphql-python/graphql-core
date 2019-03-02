@@ -1,9 +1,15 @@
+from functools import partial
+
 from graphql.validation import ExecutableDefinitionsRule
 from graphql.validation.rules.executable_definitions import (
     non_executable_definitions_message,
 )
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, ExecutableDefinitionsRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def non_executable_definition(def_name, line, column):
@@ -15,20 +21,18 @@ def non_executable_definition(def_name, line, column):
 
 def describe_validate_executable_definitions():
     def with_only_operation():
-        expect_passes_rule(
-            ExecutableDefinitionsRule,
+        assert_valid(
             """
             query Foo {
               dog {
                 name
               }
             }
-            """,
+            """
         )
 
     def with_operation_and_fragment():
-        expect_passes_rule(
-            ExecutableDefinitionsRule,
+        assert_valid(
             """
             query Foo {
               dog {
@@ -40,12 +44,11 @@ def describe_validate_executable_definitions():
             fragment Frag on Dog {
               name
             }
-            """,
+            """
         )
 
     def with_type_definition():
-        expect_fails_rule(
-            ExecutableDefinitionsRule,
+        assert_errors(
             """
             query Foo {
               dog {
@@ -68,8 +71,7 @@ def describe_validate_executable_definitions():
         )
 
     def with_schema_definition():
-        expect_fails_rule(
-            ExecutableDefinitionsRule,
+        assert_errors(
             """
             schema {
               query: Query

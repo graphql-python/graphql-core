@@ -1,7 +1,13 @@
+from functools import partial
+
 from graphql.validation import KnownTypeNamesRule
 from graphql.validation.rules.known_type_names import unknown_type_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, KnownTypeNamesRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def unknown_type(type_name, suggested_types, line, column):
@@ -13,8 +19,7 @@ def unknown_type(type_name, suggested_types, line, column):
 
 def describe_validate_known_type_names():
     def known_type_names_are_valid():
-        expect_passes_rule(
-            KnownTypeNamesRule,
+        assert_valid(
             """
             query Foo($var: String, $required: [String!]!) {
               user(id: 4) {
@@ -24,12 +29,11 @@ def describe_validate_known_type_names():
             fragment PetFields on Pet {
               name
             }
-            """,
+            """
         )
 
     def unknown_type_names_are_invalid():
-        expect_fails_rule(
-            KnownTypeNamesRule,
+        assert_errors(
             """
             query Foo($var: JumbledUpLetters) {
               user(id: 4) {
@@ -49,8 +53,7 @@ def describe_validate_known_type_names():
         )
 
     def ignores_type_definitions():
-        expect_fails_rule(
-            KnownTypeNamesRule,
+        assert_errors(
             """
             type NotInTheSchema {
               field: FooBar

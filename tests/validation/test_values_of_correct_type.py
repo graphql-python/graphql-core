@@ -1,3 +1,5 @@
+from functools import partial
+
 from graphql.validation import ValuesOfCorrectTypeRule
 from graphql.validation.rules.values_of_correct_type import (
     bad_value_message,
@@ -5,7 +7,11 @@ from graphql.validation.rules.values_of_correct_type import (
     unknown_field_message,
 )
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, ValuesOfCorrectTypeRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def bad_value(type_name, value, line, column, message=None):
@@ -32,164 +38,150 @@ def unknown_field(type_name, field_name, line, column, message=None):
 def describe_validate_values_of_correct_type():
     def describe_valid_values():
         def good_int_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     intArgField(intArg: 2)
                   }
                 }
-                """,
+                """
             )
 
         def good_negative_int_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     intArgField(intArg: -2)
                   }
                 }
-                """,
+                """
             )
 
         def good_boolean_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     booleanArgField(intArg: true)
                   }
                 }
-                """,
+                """
             )
 
         def good_string_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     stringArgField(intArg: "foo")
                   }
                 }
-                """,
+                """
             )
 
         def good_float_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     floatArgField(intArg: 1.1)
                   }
                 }
-                """,
+                """
             )
 
         def good_negative_float_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     floatArgField(intArg: -1.1)
                   }
                 }
-                """,
+                """
             )
 
         def int_into_id():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     idArgField(idArg: 1)
                   }
                 }
-                """,
+                """
             )
 
         def string_into_id():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     idArgField(idArg: "someIdString")
                   }
                 }
-                """,
+                """
             )
 
         def good_enum_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   dog {
                     doesKnowCommand(dogCommand: SIT)
                   }
                 }
-                """,
+                """
             )
 
         def enum_with_undefined_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     enumArgField(enumArg: UNKNOWN)
                   }
                 }
-                """,
+                """
             )
 
         def enum_with_null_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     enumArgField(enumArg: NO_FUR)
                   }
                 }
-                """,
+                """
             )
 
         def null_into_nullable_type():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     intArgField(intArg: null)
                   }
                 }
-                """,
+                """
             )
 
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   dog(a: null, b: null, c:{ requiredField: true, intField: null }) {
                     name
                   }
                 }
-                """,
+                """
             )
 
     def describe_invalid_string_values():
         def int_into_string():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -201,8 +193,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def float_into_string():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -214,8 +205,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def boolean_into_string():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -227,8 +217,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def unquoted_string_into_string():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -241,8 +230,7 @@ def describe_validate_values_of_correct_type():
 
     def describe_invalid_int_values():
         def string_into_int():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -254,8 +242,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def big_int_into_int():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -267,8 +254,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def unquoted_string_into_int():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -280,8 +266,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def simple_float_into_int():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -293,8 +278,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def float_into_int():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -307,8 +291,7 @@ def describe_validate_values_of_correct_type():
 
     def describe_invalid_float_values():
         def string_into_float():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -320,8 +303,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def boolean_into_float():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -333,8 +315,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def unquoted_into_float():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -347,8 +328,7 @@ def describe_validate_values_of_correct_type():
 
     def describe_invalid_boolean_value():
         def int_into_boolean():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -360,8 +340,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def float_into_boolean():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -373,8 +352,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def string_into_boolean():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -386,8 +364,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def unquoted_into_boolean():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -400,8 +377,7 @@ def describe_validate_values_of_correct_type():
 
     def describe_invalid_id_value():
         def float_into_id():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -413,8 +389,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def boolean_into_id():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -426,8 +401,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def unquoted_into_id():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -440,8 +414,7 @@ def describe_validate_values_of_correct_type():
 
     def describe_invalid_enum_value():
         def int_into_enum():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog {
@@ -453,8 +426,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def float_into_enum():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog {
@@ -466,8 +438,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def string_into_enum():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog {
@@ -483,8 +454,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def boolean_into_enum():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog {
@@ -496,8 +466,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def unknown_enum_value_into_enum():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog {
@@ -509,8 +478,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def different_case_enum_value_into_enum():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog {
@@ -527,57 +495,52 @@ def describe_validate_values_of_correct_type():
 
     def describe_valid_list_value():
         def good_list_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     stringListArgField(stringListArg: ["one", null, "two"])
                   }
                 }
-                """,
+                """
             )
 
         def empty_list_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     stringListArgField(stringListArg: [])
                   }
                 }
-                """,
+                """
             )
 
         def null_value():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     stringListArgField(stringListArg: null)
                   }
                 }
-                """,
+                """
             )
 
         def single_value_into_list():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     stringListArgField(stringListArg: "one")
                   }
                 }
-                """,
+                """
             )
 
     def describe_invalid_list_value():
         def incorrect_item_type():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -589,8 +552,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def single_value_of_incorrect_type():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -603,129 +565,118 @@ def describe_validate_values_of_correct_type():
 
     def describe_valid_non_nullable_value():
         def arg_on_optional_arg():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   dog {
                     isHousetrained(atOtherHomes: true)
                   }
                 }
-                """,
+                """
             )
 
         def no_arg_on_optional_arg():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   dog {
                     isHousetrained
                   }
                 }
-                """,
+                """
             )
 
         def multiple_args():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleReqs(req1: 1, req2: 2)
                   }
                 }
-                """,
+                """
             )
 
         def multiple_args_reverse_order():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleReqs(req2: 2, req1: 1)
                   }
                 }
-                """,
+                """
             )
 
         def no_args_on_multiple_optional():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleOpts
                   }
                 }
-                """,
+                """
             )
 
         def one_arg_on_multiple_optional():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleOpts(opt1: 1)
                   }
                 }
-                """,
+                """
             )
 
         def second_arg_on_multiple_optional():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleOpts(opt2: 1)
                   }
                 }
-                """,
+                """
             )
 
         def multiple_reqs_on_mixed_list():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleOptAndReq(req1: 3, req2: 4)
                   }
                 }
-                """,
+                """
             )
 
         def multiple_reqs_and_one_opt_on_mixed_list():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
                   }
                 }
-                """,
+                """
             )
 
         def all_reqs_and_and_opts_on_mixed_list():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
                   }
                 }
-                """,
+                """
             )
 
     def describe_invalid_non_nullable_value():
         def incorrect_value_type():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -737,8 +688,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def incorrect_value_and_missing_argument_provided_required_arguments():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -750,8 +700,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def null_value():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -764,56 +713,51 @@ def describe_validate_values_of_correct_type():
 
     def describe_valid_input_object_value():
         def optional_arg_despite_required_field_in_type():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     complexArgField
                   }
                 }
-                """,
+                """
             )
 
         def partial_object_only_required():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     complexArgField(complexArg: { requiredField: true })
                   }
                 }
-                """,
+                """
             )
 
         def partial_object_required_field_can_be_falsey():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     complexArgField(complexArg: { requiredField: false })
                   }
                 }
-                """,
+                """
             )
 
         def partial_object_including_required():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
                     complexArgField(complexArg: { requiredField: true, intField: 4 })
                   }
                 }
-                """,
+                """
             )
 
         def full_object():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
@@ -826,12 +770,11 @@ def describe_validate_values_of_correct_type():
                     })
                   }
                 }
-                """,
+                """
             )
 
         def full_object_with_fields_in_different_order():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   complicatedArgs {
@@ -844,13 +787,12 @@ def describe_validate_values_of_correct_type():
                     })
                   }
                 }
-                """,
+                """
             )
 
     def describe_invalid_input_object_value():
         def partial_object_missing_required():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -862,8 +804,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def partial_object_invalid_field_type():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -878,8 +819,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def partial_object_null_to_non_null_field():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -894,8 +834,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def partial_object_unknown_field_arg():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   complicatedArgs {
@@ -918,8 +857,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def reports_original_error_for_custom_scalar_which_throws():
-            errors = expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            errors = assert_errors(
                 """
                 {
                   invalidArg(arg: 123)
@@ -936,8 +874,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def allows_custom_scalar_to_accept_complex_literals():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   test1: anyArg(arg: 123)
@@ -945,13 +882,12 @@ def describe_validate_values_of_correct_type():
                   test3: anyArg(arg: [123, "abc"])
                   test4: anyArg(arg: {deep: [123, "abc"]})
                 }
-                """,
+                """
             )
 
     def describe_directive_arguments():
         def with_directives_of_valid_types():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 {
                   dog @include(if: true) {
@@ -961,12 +897,11 @@ def describe_validate_values_of_correct_type():
                     name
                   }
                 }
-                """,
+                """
             )
 
         def with_directives_with_incorrect_types():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 {
                   dog @include(if: "yes") {
@@ -982,8 +917,7 @@ def describe_validate_values_of_correct_type():
 
     def describe_variable_default_values():
         def variables_with_valid_default_values():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 query WithDefaultValues(
                   $a: Int = 1,
@@ -993,12 +927,11 @@ def describe_validate_values_of_correct_type():
                 ) {
                   dog { name }
                 }
-                """,
+                """
             )
 
         def variables_with_valid_default_null_values():
-            expect_passes_rule(
-                ValuesOfCorrectTypeRule,
+            assert_valid(
                 """
                 query WithDefaultValues(
                   $a: Int = null,
@@ -1007,12 +940,11 @@ def describe_validate_values_of_correct_type():
                 ) {
                   dog { name }
                 }
-                """,
+                """
             )
 
         def variables_with_invalid_default_null_values():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 query WithDefaultValues(
                   $a: Int! = null,
@@ -1030,8 +962,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def variables_with_invalid_default_values():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 query InvalidDefaultValues(
                   $a: Int = "one",
@@ -1049,8 +980,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def variables_with_complex_invalid_default_values():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 query WithDefaultValues(
                   $a: ComplexInput = { requiredField: 123, intField: "abc" }
@@ -1062,8 +992,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def complex_variables_missing_required_fields():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 query MissingRequiredField($a: ComplexInput = {intField: 3}) {
                   dog { name }
@@ -1073,8 +1002,7 @@ def describe_validate_values_of_correct_type():
             )
 
         def list_variables_with_invalid_item():
-            expect_fails_rule(
-                ValuesOfCorrectTypeRule,
+            assert_errors(
                 """
                 query InvalidItem($a: [String] = ["one", 2]) {
                   dog { name }

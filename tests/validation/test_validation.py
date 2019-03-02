@@ -5,15 +5,9 @@ from graphql.validation import specified_rules, validate
 from .harness import test_schema
 
 
-def expect_valid(schema, query_string):
-    errors = validate(schema, parse(query_string))
-    assert not errors, "Should validate"
-
-
 def describe_validate_supports_full_validation():
     def validates_queries():
-        expect_valid(
-            test_schema,
+        doc = parse(
             """
             query {
               catOrDog {
@@ -25,21 +19,26 @@ def describe_validate_supports_full_validation():
                 }
               }
             }
-            """,
+            """
         )
 
+        errors = validate(test_schema, doc)
+        assert errors == []
+
     def detects_bad_scalar_parse():
-        doc = """
+        doc = parse(
+            """
             query {
               invalidArg(arg: "bad value")
             }
             """
+        )
 
-        errors = validate(test_schema, parse(doc))
+        errors = validate(test_schema, doc)
         assert errors == [
             {
                 "message": 'Expected type Invalid, found "bad value";'
-                " Invalid scalar is always invalid: bad value",
+                ' Invalid scalar is always invalid: "bad value"',
                 "locations": [(3, 31)],
             }
         ]
@@ -49,7 +48,7 @@ def describe_validate_supports_full_validation():
         # This TypeInfo will never return a valid field.
         type_info = TypeInfo(test_schema, lambda *args: None)
 
-        ast = parse(
+        doc = parse(
             """
             query {
               catOrDog {
@@ -64,7 +63,7 @@ def describe_validate_supports_full_validation():
             """
         )
 
-        errors = validate(test_schema, ast, specified_rules, type_info)
+        errors = validate(test_schema, doc, specified_rules, type_info)
 
         assert [error.message for error in errors] == [
             "Cannot query field 'catOrDog' on type 'QueryRoot'."

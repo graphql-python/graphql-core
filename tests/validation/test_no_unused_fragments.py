@@ -1,7 +1,13 @@
+from functools import partial
+
 from graphql.validation import NoUnusedFragmentsRule
 from graphql.validation.rules.no_unused_fragments import unused_fragment_message
 
-from .harness import expect_fails_rule, expect_passes_rule
+from .harness import assert_validation_errors
+
+assert_errors = partial(assert_validation_errors, NoUnusedFragmentsRule)
+
+assert_valid = partial(assert_errors, errors=[])
 
 
 def unused_frag(frag_name, line, column):
@@ -13,8 +19,7 @@ def unused_frag(frag_name, line, column):
 
 def describe_validate_no_unused_fragments():
     def all_fragment_names_are_used():
-        expect_passes_rule(
-            NoUnusedFragmentsRule,
+        assert_valid(
             """
             {
               human(id: 4) {
@@ -34,12 +39,11 @@ def describe_validate_no_unused_fragments():
             fragment HumanFields3 on Human {
               name
             }
-            """,
+            """
         )
 
     def all_fragment_names_are_used_by_multiple_operations():
-        expect_passes_rule(
-            NoUnusedFragmentsRule,
+        assert_valid(
             """
             query Foo {
               human(id: 4) {
@@ -61,12 +65,11 @@ def describe_validate_no_unused_fragments():
             fragment HumanFields3 on Human {
               name
             }
-            """,
+            """
         )
 
     def contains_unknown_fragments():
-        expect_fails_rule(
-            NoUnusedFragmentsRule,
+        assert_errors(
             """
             query Foo {
               human(id: 4) {
@@ -99,8 +102,7 @@ def describe_validate_no_unused_fragments():
         )
 
     def contains_unknown_fragments_with_ref_cycle():
-        expect_fails_rule(
-            NoUnusedFragmentsRule,
+        assert_errors(
             """
             query Foo {
               human(id: 4) {
@@ -135,10 +137,9 @@ def describe_validate_no_unused_fragments():
         )
 
     def contains_unknown_and_undefined_fragments():
-        expect_fails_rule(
-            NoUnusedFragmentsRule,
+        assert_errors(
             """
-           query Foo {
+            query Foo {
               human(id: 4) {
                 ...bar
               }
