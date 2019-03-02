@@ -93,8 +93,6 @@ def build_ast_schema(
         assert_valid_sdl(document_ast)
 
     schema_def: Optional[SchemaDefinitionNode] = None
-    type_defs: List[TypeDefinitionNode] = []
-    append_type_def = type_defs.append
     node_map: TypeDefinitionsMap = {}
     directive_defs: List[DirectiveDefinitionNode] = []
     append_directive_def = directive_defs.append
@@ -103,9 +101,7 @@ def build_ast_schema(
             schema_def = def_
         elif isinstance(def_, TypeDefinitionNode):
             def_ = cast(TypeDefinitionNode, def_)
-            type_name = def_.name.value
-            append_type_def(def_)
-            node_map[type_name] = def_
+            node_map[def_.name.value] = def_
         elif isinstance(def_, DirectiveDefinitionNode):
             append_directive_def(def_)
 
@@ -158,7 +154,7 @@ def build_ast_schema(
         )
         if subscription_type
         else None,
-        types=[definition_builder.build_type(node) for node in type_defs],
+        types=[definition_builder.build_type(node) for node in node_map.values()],
         directives=directives,
         ast_node=schema_def,
         assume_valid=assume_valid,
