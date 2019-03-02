@@ -82,6 +82,7 @@ from .rules.unique_input_field_names import UniqueInputFieldNamesRule
 
 # Schema definition language:
 from .rules.lone_schema_definition import LoneSchemaDefinitionRule
+from .rules.unique_type_names import UniqueTypeNamesRule
 from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
 from .rules.provided_required_arguments import ProvidedRequiredArgumentsOnDirectivesRule
 
@@ -124,6 +125,7 @@ specified_rules: List[RuleType] = [
 
 specified_sdl_rules: List[RuleType] = [
     LoneSchemaDefinitionRule,
+    UniqueTypeNamesRule,
     KnownDirectivesRule,
     UniqueDirectivesPerLocationRule,
     KnownArgumentNamesOnDirectivesRule,

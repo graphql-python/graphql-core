@@ -108,15 +108,7 @@ def extend_schema(
         elif isinstance(def_, SchemaExtensionNode):
             schema_extensions.append(def_)
         elif isinstance(def_, TypeDefinitionNode):
-            # Sanity check that none of the defined types conflict with the schema's
-            # existing types.
             type_name = def_.name.value
-            if schema.get_type(type_name):
-                raise GraphQLError(
-                    f"Type '{type_name}' already exists in the schema."
-                    " It cannot also be defined in this type definition.",
-                    [def_],
-                )
             type_definition_map[type_name] = def_
         elif isinstance(def_, TypeExtensionNode):
             # Sanity check that this type extension exists within the schema's existing

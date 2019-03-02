@@ -104,8 +104,6 @@ def build_ast_schema(
         elif isinstance(def_, TypeDefinitionNode):
             def_ = cast(TypeDefinitionNode, def_)
             type_name = def_.name.value
-            if type_name in node_map:
-                raise TypeError(f"Type '{type_name}' was defined more than once.")
             append_type_def(def_)
             node_map[type_name] = def_
         elif isinstance(def_, DirectiveDefinitionNode):

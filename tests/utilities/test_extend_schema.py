@@ -1075,48 +1075,6 @@ def describe_extend_schema():
             "Directive 'meow' already exists in the schema. It cannot be redefined."
         )
 
-    def does_not_allow_replacing_an_existing_type():
-        def existing_type_error(type_):
-            return (
-                f"Type '{type_}' already exists in the schema."
-                " It cannot also be defined in this type definition."
-            )
-
-        type_sdl = """
-            type Bar
-            """
-        with raises(GraphQLError) as exc_info:
-            assert extend_test_schema(type_sdl)
-        assert str(exc_info.value).startswith(existing_type_error("Bar"))
-
-        scalar_sdl = """
-            scalar SomeScalar
-            """
-        with raises(GraphQLError) as exc_info:
-            assert extend_test_schema(scalar_sdl)
-        assert str(exc_info.value).startswith(existing_type_error("SomeScalar"))
-
-        enum_sdl = """
-            enum SomeEnum
-            """
-        with raises(GraphQLError) as exc_info:
-            assert extend_test_schema(enum_sdl)
-        assert str(exc_info.value).startswith(existing_type_error("SomeEnum"))
-
-        union_sdl = """
-            union SomeUnion
-            """
-        with raises(GraphQLError) as exc_info:
-            assert extend_test_schema(union_sdl)
-        assert str(exc_info.value).startswith(existing_type_error("SomeUnion"))
-
-        input_sdl = """
-            input SomeInput
-            """
-        with raises(GraphQLError) as exc_info:
-            assert extend_test_schema(input_sdl)
-        assert str(exc_info.value).startswith(existing_type_error("SomeInput"))
-
     def does_not_allow_replacing_an_existing_field():
         def existing_field_error(type_, field):
             return (

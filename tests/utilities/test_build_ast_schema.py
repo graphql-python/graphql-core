@@ -965,22 +965,3 @@ def describe_failures():
             build_schema(sdl)
         msg = str(exc_info.value)
         assert msg == "Specified query type 'Foo' not found in document."
-
-    def forbids_duplicate_type_definitions():
-        sdl = """
-            schema {
-              query: Repeated
-            }
-
-            type Repeated {
-              id: Int
-            }
-
-            type Repeated {
-              id: String
-            }
-            """
-        with raises(TypeError) as exc_info:
-            build_schema(sdl)
-        msg = str(exc_info.value)
-        assert msg == "Type 'Repeated' was defined more than once."
