@@ -53,7 +53,7 @@ from ..type import (
 from .value_from_ast import value_from_ast
 
 TypeDefinitionsMap = Dict[str, TypeDefinitionNode]
-TypeResolver = Callable[[NamedTypeNode], GraphQLNamedType]
+TypeResolver = Callable[[str], GraphQLNamedType]
 
 __all__ = [
     "build_ast_schema",
@@ -114,8 +114,8 @@ def build_ast_schema(
             OperationType.SUBSCRIPTION: node_map.get("Subscription"),
         }
 
-    def resolve_type(type_ref: NamedTypeNode):
-        raise TypeError(f"Type {type_ref.name.value!r} not found in document.")
+    def resolve_type(type_name: str):
+        raise TypeError(f"Type '{type_name}' not found in document.")
 
     definition_builder = ASTDefinitionBuilder(
         node_map, assume_valid=assume_valid, resolve_type=resolve_type
@@ -168,9 +168,9 @@ def get_operation_types(
     return op_types
 
 
-def default_type_resolver(type_ref: NamedTypeNode) -> NoReturn:
+def default_type_resolver(type_name: str) -> NoReturn:
     """Type resolver that always throws an error."""
-    raise TypeError(f"Type '{type_ref.name.value}' not found in document.")
+    raise TypeError(f"Type '{type_name}' not found in document.")
 
 
 class ASTDefinitionBuilder:
@@ -200,7 +200,7 @@ class ASTDefinitionBuilder:
                 cache[type_name] = (
                     self._make_schema_def(def_node)
                     if def_node
-                    else self._resolve_type(node)
+                    else self._resolve_type(node.name.value)
                 )
             else:
                 cache[type_name] = self._make_schema_def(node)

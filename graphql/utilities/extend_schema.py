@@ -16,7 +16,6 @@ from ..language import (
     SchemaDefinitionNode,
     TypeDefinitionNode,
     UnionTypeExtensionNode,
-    NamedTypeNode,
     TypeExtensionNode,
 )
 from ..type import (
@@ -466,8 +465,7 @@ def extend_schema(
         return extend_named_type(type_def)  # type: ignore
 
     # noinspection PyShadowingNames
-    def resolve_type(type_ref: NamedTypeNode) -> GraphQLNamedType:
-        type_name = type_ref.name.value
+    def resolve_type(type_name: str) -> GraphQLNamedType:
         existing_type = schema.get_type(type_name)
         if not existing_type:
             raise TypeError(f"Unknown type: '{type_name}'.")
