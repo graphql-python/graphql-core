@@ -84,6 +84,7 @@ from .rules.unique_input_field_names import UniqueInputFieldNamesRule
 from .rules.lone_schema_definition import LoneSchemaDefinitionRule
 from .rules.unique_operation_types import UniqueOperationTypesRule
 from .rules.unique_type_names import UniqueTypeNamesRule
+from .rules.unique_field_definition_names import UniqueFieldDefinitionNamesRule
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
 from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
 from .rules.provided_required_arguments import ProvidedRequiredArgumentsOnDirectivesRule
@@ -129,6 +130,7 @@ specified_sdl_rules: List[RuleType] = [
     LoneSchemaDefinitionRule,
     UniqueOperationTypesRule,
     UniqueTypeNamesRule,
+    UniqueFieldDefinitionNamesRule,
     UniqueDirectiveNamesRule,
     KnownTypeNamesRule,
     KnownDirectivesRule,

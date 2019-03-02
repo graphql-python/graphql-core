@@ -230,15 +230,7 @@ def extend_schema(
         if extensions:
             for extension in extensions:
                 for field in extension.fields:
-                    field_name = field.name.value
-                    if field_name in old_field_map:
-                        raise GraphQLError(
-                            f"Field '{type_.name}.{field_name}' already"
-                            " exists in the schema. It cannot also be defined"
-                            " in this type extension.",
-                            [field],
-                        )
-                    new_field_map[field_name] = ast_builder.build_input_field(field)
+                    new_field_map[field.name.value] = build_input_field(field)
 
         return new_field_map
 
@@ -444,15 +436,7 @@ def extend_schema(
         # If there are any extensions to the fields, apply those here.
         for extension in type_extensions_map[type_.name]:
             for field in extension.fields:
-                field_name = field.name.value
-                if field_name in old_field_map:
-                    raise GraphQLError(
-                        f"Field '{type_.name}.{field_name}'"
-                        " already exists in the schema."
-                        " It cannot also be defined in this type extension.",
-                        [field],
-                    )
-                new_field_map[field_name] = build_field(field)
+                new_field_map[field.name.value] = build_field(field)
 
         return new_field_map
 
@@ -475,6 +459,7 @@ def extend_schema(
         type_definition_map, assume_valid=assume_valid, resolve_type=resolve_type
     )
     build_field = ast_builder.build_field
+    build_input_field = ast_builder.build_input_field
     build_type = ast_builder.build_type
 
     extend_type_cache: Dict[str, GraphQLNamedType] = {}
@@ -492,7 +477,7 @@ def extend_schema(
             # Note: While this could make early assertions to get the correctly typed
             # values, that would throw immediately while type system validation with
             # `validate_schema()` will produce more actionable results.
-            operation_types[operation] = ast_builder.build_type(operation_type.type)
+            operation_types[operation] = build_type(operation_type.type)
 
     # Then, incorporate schema definition and all schema extensions.
     for schema_extension in schema_extensions:
@@ -503,7 +488,7 @@ def extend_schema(
                 # typed values, that would throw immediately while type system
                 # validation with `validate_schema()` will produce more actionable
                 # results.
-                operation_types[operation] = ast_builder.build_type(operation_type.type)
+                operation_types[operation] = build_type(operation_type.type)
 
     schema_extension_ast_nodes = (
         schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())
@@ -513,7 +498,7 @@ def extend_schema(
     # any type not directly referenced by a value will get created.
     types = list(map(extend_named_type, schema.type_map.values()))
     # do the same with new types
-    types.extend(map(ast_builder.build_type, type_definition_map.values()))
+    types.extend(map(build_type, type_definition_map.values()))
 
     # Then produce and return a Schema with these types.
     return GraphQLSchema(  # type: ignore

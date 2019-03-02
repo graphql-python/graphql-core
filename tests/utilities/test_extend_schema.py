@@ -774,7 +774,6 @@ def describe_extend_schema():
             }
 
             extend type Biz {
-              newFieldA: Int
               newFieldB: Float
             }
 
