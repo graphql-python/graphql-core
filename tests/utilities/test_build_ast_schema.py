@@ -776,67 +776,6 @@ def describe_schema_builder():
 
 
 def describe_failures():
-    def allows_only_a_single_query_type():
-        sdl = """
-            schema {
-              query: Hello
-              query: Yellow
-            }
-
-            type Hello {
-              bar: String
-            }
-
-            type Yellow {
-              isColor: Boolean
-            }
-            """
-        with raises(TypeError) as exc_info:
-            build_schema(sdl)
-        msg = str(exc_info.value)
-        assert msg == "Must provide only one query type in schema."
-
-    def allows_only_a_single_mutation_type():
-        sdl = """
-            schema {
-              query: Hello
-              mutation: Hello
-              mutation: Yellow
-            }
-
-            type Hello {
-              bar: String
-            }
-
-            type Yellow {
-              isColor: Boolean
-            }
-            """
-        with raises(TypeError) as exc_info:
-            build_schema(sdl)
-        msg = str(exc_info.value)
-        assert msg == "Must provide only one mutation type in schema."
-
-    def allows_only_a_single_subscription_type():
-        sdl = """
-            schema {
-              query: Hello
-              subscription: Hello
-              subscription: Yellow
-            }
-            type Hello {
-              bar: String
-            }
-
-            type Yellow {
-              isColor: Boolean
-            }
-            """
-        with raises(TypeError) as exc_info:
-            build_schema(sdl)
-        msg = str(exc_info.value)
-        assert msg == "Must provide only one subscription type in schema."
-
     def unknown_type_referenced():
         sdl = """
             schema {

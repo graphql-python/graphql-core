@@ -172,8 +172,6 @@ def get_operation_types(
     for operation_type in schema.operation_types:
         type_name = operation_type.type.name.value
         operation = operation_type.operation
-        if operation in op_types:
-            raise TypeError(f"Must provide only one {operation.value} type in schema.")
         if type_name not in node_map:
             raise TypeError(
                 f"Specified {operation.value} type '{type_name}'"

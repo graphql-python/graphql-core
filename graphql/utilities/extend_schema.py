@@ -496,10 +496,6 @@ def extend_schema(
     if schema_def:
         for operation_type in schema_def.operation_types:
             operation = operation_type.operation
-            if operation_types[operation]:
-                raise TypeError(
-                    f"Must provide only one {operation.value} type in schema."
-                )
             # Note: While this could make early assertions to get the correctly typed
             # values, that would throw immediately while type system validation with
             # `validate_schema()` will produce more actionable results.
@@ -510,10 +506,6 @@ def extend_schema(
         if schema_extension.operation_types:
             for operation_type in schema_extension.operation_types:
                 operation = operation_type.operation
-                if operation_types[operation]:
-                    raise TypeError(
-                        f"Must provide only one {operation.value} type in schema."
-                    )
                 # Note: While this could make early assertions to get the correctly
                 # typed values, that would throw immediately while type system
                 # validation with `validate_schema()` will produce more actionable

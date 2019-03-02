@@ -52,9 +52,6 @@ class UniqueTypeNamesRule(SDLValidationRule):
                 self.known_type_names[type_name] = node.name
             return self.SKIP
 
-    enter_scalar_type_definition = check_type_name
-    enter_object_type_definition = check_type_name
-    enter_interface_type_definition = check_type_name
-    enter_union_type_definition = check_type_name
-    enter_enum_type_definition = check_type_name
-    enter_input_object_type_definition = check_type_name
+    enter_scalar_type_definition = enter_object_type_definition = check_type_name
+    enter_interface_type_definition = enter_union_type_definition = check_type_name
+    enter_enum_type_definition = enter_input_object_type_definition = check_type_name
