@@ -1069,39 +1069,6 @@ def describe_extend_schema():
             " It cannot also be defined in this type extension."
         )
 
-    def does_not_allow_referencing_an_unknown_type():
-        unknown_type_error = (
-            "Unknown type: 'Quix'. Ensure that this type exists either"
-            " in the original schema, or is added in a type definition."
-        )
-
-        type_sdl = """
-            extend type Bar {
-              quix: Quix
-            }
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(type_sdl)
-        assert str(exc_info.value).startswith(unknown_type_error)
-
-        interface_sdl = """
-            extend interface SomeInterface {
-              quix: Quix
-            }
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(interface_sdl)
-        assert str(exc_info.value).startswith(unknown_type_error)
-
-        input_sdl = """
-            extend input SomeInput {
-              quix: Quix
-            }
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(input_sdl)
-        assert str(exc_info.value).startswith(unknown_type_error)
-
     def does_not_allow_extending_an_unknown_type():
         for sdl in [
             "extend scalar UnknownType @foo",

@@ -130,6 +130,7 @@ specified_sdl_rules: List[RuleType] = [
     UniqueOperationTypesRule,
     UniqueTypeNamesRule,
     UniqueDirectiveNamesRule,
+    KnownTypeNamesRule,
     KnownDirectivesRule,
     UniqueDirectivesPerLocationRule,
     KnownArgumentNamesOnDirectivesRule,

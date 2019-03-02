@@ -1,9 +1,17 @@
-from typing import List
+from typing import List, Sequence, Union, cast
 
 from ...error import GraphQLError
-from ...language import NamedTypeNode
-from ...pyutils import suggestion_list
-from . import ValidationRule
+from ...language import (
+    is_type_definition_node,
+    is_type_system_definition_node,
+    is_type_system_extension_node,
+    Node,
+    NamedTypeNode,
+    TypeDefinitionNode,
+)
+from ...type import specified_scalar_types
+from ...pyutils import quoted_or_list, suggestion_list
+from . import ASTValidationRule, ValidationContext, SDLValidationContext
 
 __all__ = ["KnownTypeNamesRule", "unknown_type_message"]
 
@@ -11,38 +19,64 @@ __all__ = ["KnownTypeNamesRule", "unknown_type_message"]
 def unknown_type_message(type_name: str, suggested_types: List[str]) -> str:
     message = f"Unknown type '{type_name}'."
     if suggested_types:
-        message += " Perhaps you meant {quoted_or_list(suggested_types)}?"
+        message += f" Perhaps you meant {quoted_or_list(suggested_types)}?"
     return message
 
 
-class KnownTypeNamesRule(ValidationRule):
+class KnownTypeNamesRule(ASTValidationRule):
     """Known type names
 
     A GraphQL document is only valid if referenced types (specifically variable
     definitions and fragment conditions) are defined by the type schema.
     """
 
-    def enter_object_type_definition(self, *_args):
-        return self.SKIP
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+        super().__init__(context)
+        schema = context.schema
+        self.existing_types_map = schema.type_map if schema else {}
 
-    def enter_interface_type_definition(self, *_args):
-        return self.SKIP
+        defined_types = []
+        for def_ in context.document.definitions:
+            if is_type_definition_node(def_):
+                def_ = cast(TypeDefinitionNode, def_)
+                defined_types.append(def_.name.value)
+        self.defined_types = set(defined_types)
 
-    def enter_union_type_definition(self, *_args):
-        return self.SKIP
+        self.type_names = list(self.existing_types_map) + defined_types
 
-    def enter_input_object_type_definition(self, *_args):
-        return self.SKIP
-
-    def enter_named_type(self, node: NamedTypeNode, *_args):
-        schema = self.context.schema
+    def enter_named_type(
+        self, node: NamedTypeNode, _key, parent: Node, _path, ancestors: List[Node]
+    ):
         type_name = node.name.value
-        if not schema.get_type(type_name):
-            self.report_error(
-                GraphQLError(
-                    unknown_type_message(
-                        type_name, suggestion_list(type_name, list(schema.type_map))
-                    ),
-                    [node],
-                )
+        if (
+            type_name not in self.existing_types_map
+            and type_name not in self.defined_types
+        ):
+            try:
+                definition_node = ancestors[2]
+            except IndexError:
+                definition_node = parent
+            is_sdl = is_sdl_node(definition_node)
+            if is_sdl and type_name in specified_scalar_types:
+                return
+
+            suggested_types = suggestion_list(
+                type_name,
+                list(specified_scalar_types) + self.type_names
+                if is_sdl
+                else self.type_names,
             )
+            self.report_error(
+                GraphQLError(unknown_type_message(type_name, suggested_types), node)
+            )
+
+
+def is_sdl_node(value: Union[Node, Sequence[Node], None]) -> bool:
+    return (
+        value is not None
+        and not isinstance(value, list)
+        and (
+            is_type_system_definition_node(cast(Node, value))
+            or is_type_system_extension_node(cast(Node, value))
+        )
+    )

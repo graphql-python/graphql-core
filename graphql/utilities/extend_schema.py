@@ -469,14 +469,9 @@ def extend_schema(
     def resolve_type(type_ref: NamedTypeNode) -> GraphQLNamedType:
         type_name = type_ref.name.value
         existing_type = schema.get_type(type_name)
-        if existing_type:
-            return extend_named_type(existing_type)
-        raise GraphQLError(
-            f"Unknown type: '{type_name}'."
-            " Ensure that this type exists either in the original schema,"
-            " or is added in a type definition.",
-            [type_ref],
-        )
+        if not existing_type:
+            raise TypeError(f"Unknown type: '{type_name}'.")
+        return extend_named_type(existing_type)
 
     ast_builder = ASTDefinitionBuilder(
         type_definition_map, assume_valid=assume_valid, resolve_type=resolve_type

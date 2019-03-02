@@ -106,9 +106,7 @@ def build_ast_schema(
             append_directive_def(def_)
 
     if schema_def:
-        operation_types: Dict[OperationType, Any] = get_operation_types(
-            schema_def, node_map
-        )
+        operation_types: Dict[OperationType, Any] = get_operation_types(schema_def)
     else:
         operation_types = {
             OperationType.QUERY: node_map.get("Query"),
@@ -162,18 +160,11 @@ def build_ast_schema(
 
 
 def get_operation_types(
-    schema: SchemaDefinitionNode, node_map: TypeDefinitionsMap
+    schema: SchemaDefinitionNode
 ) -> Dict[OperationType, NamedTypeNode]:
     op_types: Dict[OperationType, NamedTypeNode] = {}
     for operation_type in schema.operation_types:
-        type_name = operation_type.type.name.value
-        operation = operation_type.operation
-        if type_name not in node_map:
-            raise TypeError(
-                f"Specified {operation.value} type '{type_name}'"
-                " not found in document."
-            )
-        op_types[operation] = operation_type.type
+        op_types[operation_type.operation] = operation_type.type
     return op_types
 
 
