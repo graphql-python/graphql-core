@@ -1049,68 +1049,11 @@ def describe_extend_schema():
         sdl = """
             directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD
             """
-        with raises(GraphQLError) as exc_info:
+        with raises(TypeError) as exc_info:
             extend_test_schema(sdl)
         assert str(exc_info.value).startswith(
             "Directive 'include' already exists in the schema."
             " It cannot be redefined."
-        )
-
-    def does_not_allow_replacing_a_custom_directive():
-        extended_schema = extend_test_schema(
-            """
-            directive @meow(if: Boolean!) on FIELD | FRAGMENT_SPREAD
-            """
-        )
-
-        replacement_ast = parse(
-            """
-            directive @meow(if: Boolean!) on FIELD | QUERY
-            """
-        )
-
-        with raises(GraphQLError) as exc_info:
-            extend_schema(extended_schema, replacement_ast)
-        assert str(exc_info.value).startswith(
-            "Directive 'meow' already exists in the schema. It cannot be redefined."
-        )
-
-    def does_not_allow_replacing_an_existing_field():
-        def existing_field_error(type_, field):
-            return (
-                f"Field '{type_}.{field}' already exists in the schema."
-                " It cannot also be defined in this type extension."
-            )
-
-        type_sdl = """
-            extend type Bar {
-              foo: Foo
-            }
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(type_sdl)
-        assert str(exc_info.value).startswith(existing_field_error("Bar", "foo"))
-
-        interface_sdl = """
-            extend interface SomeInterface {
-              some: Foo
-            }
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(interface_sdl)
-        assert str(exc_info.value).startswith(
-            existing_field_error("SomeInterface", "some")
-        )
-
-        input_sdl = """
-            extend input SomeInput {
-              fooArg: String
-            }
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(input_sdl)
-        assert str(exc_info.value).startswith(
-            existing_field_error("SomeInput", "fooArg")
         )
 
     def does_not_allow_replacing_an_existing_enum_value():

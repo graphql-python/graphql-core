@@ -124,14 +124,6 @@ def extend_schema(
             check_extension_node(existing_type, def_)
             type_extensions_map[extended_type_name].append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
-            directive_name = def_.name.value
-            existing_directive = schema.get_directive(directive_name)
-            if existing_directive:
-                raise GraphQLError(
-                    f"Directive '{directive_name}' already exists"
-                    " in the schema. It cannot be redefined.",
-                    [def_],
-                )
             directive_definitions.append(def_)
 
     # If this document contains no new types, extensions, or directives then return the

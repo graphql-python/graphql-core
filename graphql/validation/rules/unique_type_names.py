@@ -4,7 +4,11 @@ from ...error import GraphQLError
 from ...language import NameNode, TypeDefinitionNode
 from . import SDLValidationContext, SDLValidationRule
 
-__all__ = ["UniqueTypeNamesRule", "existed_type_name_message"]
+__all__ = [
+    "UniqueTypeNamesRule",
+    "duplicate_type_name_message",
+    "existed_type_name_message",
+]
 
 
 def duplicate_type_name_message(type_name: str) -> str:
