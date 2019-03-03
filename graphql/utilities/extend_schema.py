@@ -228,6 +228,7 @@ def extend_schema(
         # If there are any extensions to the fields, apply those here.
         extensions = type_extensions_map.get(type_.name)
         if extensions:
+            build_input_field = ast_builder.build_input_field
             for extension in extensions:
                 for field in extension.fields:
                     new_field_map[field.name.value] = build_input_field(field)
@@ -254,7 +255,6 @@ def extend_schema(
         )
 
     def extend_value_map(type_: GraphQLEnumType) -> GraphQLEnumValueMap:
-        old_value_map = type_.values
         new_value_map = {
             value_name: GraphQLEnumValue(
                 value.value,
@@ -262,23 +262,16 @@ def extend_schema(
                 deprecation_reason=value.deprecation_reason,
                 ast_node=value.ast_node,
             )
-            for value_name, value in old_value_map.items()
+            for value_name, value in type_.values.items()
         }
 
         # If there are any extensions to the values, apply those here.
         extensions = type_extensions_map.get(type_.name)
         if extensions:
+            build_enum_value = ast_builder.build_enum_value
             for extension in extensions:
                 for value in extension.values:
-                    value_name = value.name.value
-                    if value_name in old_value_map:
-                        raise GraphQLError(
-                            f"Enum value '{type_.name}.{value_name}' already"
-                            " exists in the schema. It cannot also be defined"
-                            " in this type extension.",
-                            [value],
-                        )
-                    new_value_map[value_name] = ast_builder.build_enum_value(value)
+                    new_value_map[value.name.value] = build_enum_value(value)
 
         return new_value_map
 
@@ -389,7 +382,7 @@ def extend_schema(
                     # typed values, that would throw immediately while type system
                     # validation with `validate_schema()` will produce more actionable
                     # results.
-                    possible_types.append(ast_builder.build_type(named_type))
+                    possible_types.append(build_type(named_type))
 
         return cast(List[GraphQLObjectType], possible_types)
 
@@ -434,6 +427,7 @@ def extend_schema(
         }
 
         # If there are any extensions to the fields, apply those here.
+        build_field = ast_builder.build_field
         for extension in type_extensions_map[type_.name]:
             for field in extension.fields:
                 new_field_map[field.name.value] = build_field(field)
@@ -458,8 +452,6 @@ def extend_schema(
     ast_builder = ASTDefinitionBuilder(
         type_definition_map, assume_valid=assume_valid, resolve_type=resolve_type
     )
-    build_field = ast_builder.build_field
-    build_input_field = ast_builder.build_input_field
     build_type = ast_builder.build_type
 
     extend_type_cache: Dict[str, GraphQLNamedType] = {}

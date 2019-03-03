@@ -4,7 +4,6 @@ from typing import Any, Callable, List, Optional, Sequence, Set, Union, cast
 from ..error import GraphQLError
 from ..pyutils import inspect
 from ..language import (
-    EnumValueDefinitionNode,
     FieldDefinitionNode,
     InputValueDefinitionNode,
     NamedTypeNode,
@@ -412,15 +411,6 @@ class SchemaValidationContext:
             )
 
         for value_name, enum_value in enum_values.items():
-            # Ensure no duplicates.
-            all_nodes = get_enum_value_nodes(enum_type, value_name)
-            if all_nodes and len(all_nodes) > 1:
-                self.report_error(
-                    f"Enum type {enum_type.name}"
-                    f" can include value {value_name} only once.",
-                    all_nodes,
-                )
-
             # Ensure valid name.
             self.validate_name(enum_value, value_name)
             if value_name in ("true", "false", "null"):
@@ -604,13 +594,3 @@ def get_union_member_type_nodes(
     return [
         union_node for union_node in union_nodes if union_node.name.value == type_name
     ]
-
-
-def get_enum_value_nodes(
-    enum_type: GraphQLEnumType, value_name: str
-) -> Optional[List[EnumValueDefinitionNode]]:
-    enum_nodes = cast(
-        List[EnumValueDefinitionNode],
-        get_all_sub_nodes(enum_type, attrgetter("values")),
-    )
-    return [enum_node for enum_node in enum_nodes if enum_node.name.value == value_name]

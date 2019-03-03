@@ -725,27 +725,6 @@ def describe_type_system_enum_types_must_be_well_defined():
             }
         ]
 
-    def rejects_an_enum_type_with_duplicate_values():
-        schema = build_schema(
-            """
-            type Query {
-              field: SomeEnum
-            }
-
-            enum SomeEnum {
-              SOME_VALUE
-              SOME_VALUE
-            }
-            """
-        )
-        assert validate_schema(schema) == [
-            {
-                "message": "Enum type SomeEnum can include value SOME_VALUE"
-                " only once.",
-                "locations": [(7, 15), (8, 15)],
-            }
-        ]
-
     def rejects_an_enum_type_with_incorrectly_named_values():
         def schema_with_enum(name):
             return schema_with_field_type(

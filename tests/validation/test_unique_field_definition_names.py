@@ -261,17 +261,17 @@ def describe_validate_unique_field_definition_names():
     def adding_conflicting_fields_to_existing_schema_twice():
         schema = build_schema(
             """
-             type SomeObject {
-               foo: String
-             }
+            type SomeObject {
+              foo: String
+            }
 
-             interface SomeInterface {
-               foo: String
-             }
+            interface SomeInterface {
+              foo: String
+            }
 
-             input SomeInputObject {
-               foo: String
-             }
+            input SomeInputObject {
+              foo: String
+            }
             """
         )
         sdl = """

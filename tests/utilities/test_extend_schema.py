@@ -1061,7 +1061,7 @@ def describe_extend_schema():
               ONE
             }
             """
-        with raises(GraphQLError) as exc_info:
+        with raises(TypeError) as exc_info:
             extend_test_schema(sdl)
         assert str(exc_info.value).startswith(
             "Enum value 'SomeEnum.ONE' already exists in the schema."
