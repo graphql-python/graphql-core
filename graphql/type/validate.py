@@ -239,15 +239,6 @@ class SchemaValidationContext:
             # Ensure they are named correctly.
             self.validate_name(field, field_name)
 
-            # Ensure they were defined at most once.
-            field_nodes = get_all_field_nodes(type_, field_name)
-            if len(field_nodes) > 1:
-                self.report_error(
-                    f"Field {type_.name}.{field_name} can only be defined once.",
-                    field_nodes,
-                )
-                continue
-
             # Ensure the type is an output type
             if not is_output_type(field.type):
                 self.report_error(
@@ -513,19 +504,11 @@ def get_all_implements_interface_nodes(
 def get_field_node(
     type_: Union[GraphQLObjectType, GraphQLInterfaceType], field_name: str
 ) -> Optional[FieldDefinitionNode]:
-    nodes = get_all_field_nodes(type_, field_name)
-    return nodes[0] if nodes else None
-
-
-def get_all_field_nodes(
-    type_: Union[GraphQLObjectType, GraphQLInterfaceType], field_name: str
-) -> List[FieldDefinitionNode]:
-    field_nodes = cast(
-        List[FieldDefinitionNode], get_all_sub_nodes(type_, attrgetter("fields"))
+    all_field_nodes = filter(
+        lambda field_node: field_node.name.value == field_name,
+        cast(List[FieldDefinitionNode], get_all_sub_nodes(type_, attrgetter("fields"))),
     )
-    return [
-        field_node for field_node in field_nodes if field_node.name.value == field_name
-    ]
+    return next(all_field_nodes, None)
 
 
 def get_field_type_node(
