@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict
 
 from ...error import GraphQLError
@@ -33,17 +34,12 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
         super().__init__(context)
         schema = context.schema
         self.existing_type_map = schema.type_map if schema else {}
-        self.known_field_names: Dict[str, Dict[str, NameNode]] = {}
+        self.known_field_names: Dict[str, Dict[str, NameNode]] = defaultdict(dict)
 
     def check_field_uniqueness(self, node: ObjectTypeDefinitionNode, *_args):
-        type_name = node.name.value
-
-        known_field_names = self.known_field_names
-        if type_name not in known_field_names:
-            known_field_names[type_name] = {}
-
         if node.fields:
-            field_names = known_field_names[type_name]
+            type_name = node.name.value
+            field_names = self.known_field_names[type_name]
             existing_type_map = self.existing_type_map
 
             for field_def in node.fields:

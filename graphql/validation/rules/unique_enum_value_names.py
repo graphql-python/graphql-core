@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import cast, Dict
 
 from ...error import GraphQLError
@@ -33,17 +34,12 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
         super().__init__(context)
         schema = context.schema
         self.existing_type_map = schema.type_map if schema else {}
-        self.known_value_names: Dict[str, Dict[str, NameNode]] = {}
+        self.known_value_names: Dict[str, Dict[str, NameNode]] = defaultdict(dict)
 
     def check_value_uniqueness(self, node: EnumTypeDefinitionNode, *_args):
-        type_name = node.name.value
-
-        known_value_names = self.known_value_names
-        if type_name not in known_value_names:
-            known_value_names[type_name] = {}
-
         if node.values:
-            value_names = known_value_names[type_name]
+            type_name = node.name.value
+            value_names = self.known_value_names[type_name]
             existing_type_map = self.existing_type_map
 
             for value_def in node.values:
