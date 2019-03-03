@@ -10,7 +10,6 @@ These functions are not part of the module interface and are subject to change.
 
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
-from .contain_subset import contain_subset
 from .dedent import dedent
 from .event_emitter import EventEmitter, EventEmitterAsyncIterator
 from .inspect import inspect
@@ -27,7 +26,6 @@ __all__ = [
     "camel_to_snake",
     "snake_to_camel",
     "cached_property",
-    "contain_subset",
     "dedent",
     "EventEmitter",
     "EventEmitterAsyncIterator",
