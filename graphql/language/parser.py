@@ -546,7 +546,7 @@ def parse_type_system_definition(lexer: Lexer) -> TypeSystemDefinitionNode:
     """TypeSystemDefinition"""
     # Many definitions begin with a description and require a lookahead.
     keyword_token = lexer.lookahead() if peek_description(lexer) else lexer.token
-    func = _parse_type_system_definition_functions.get(keyword_token.value)
+    func = _parse_type_system_definition_functions.get(cast(str, keyword_token.value))
     if func:
         return func(lexer)
     raise unexpected(lexer, keyword_token)
@@ -556,7 +556,7 @@ def parse_type_system_extension(lexer: Lexer) -> TypeSystemExtensionNode:
     """TypeSystemExtension"""
     keyword_token = lexer.lookahead()
     if keyword_token.kind == TokenKind.NAME:
-        func = _parse_type_extension_functions.get(keyword_token.value)
+        func = _parse_type_extension_functions.get(cast(str, keyword_token.value))
         if func:
             return func(lexer)
     raise unexpected(lexer, keyword_token)

@@ -5,8 +5,14 @@ from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
 from graphql.pyutils import dedent
 
 
-def lex_one(s):
+def lex_one(s: str) -> Token:
     lexer = Lexer(Source(s))
+    return lexer.advance()
+
+
+def lex_second(s: str) -> Token:
+    lexer = Lexer(Source(s))
+    lexer.advance()
     return lexer.advance()
 
 
@@ -199,6 +205,20 @@ def describe_lexer():
             '            lines\n\n        """'
         ) == Token(
             TokenKind.BLOCK_STRING, 0, 68, 1, 1, None, "spans\n  multiple\n    lines"
+        )
+
+    def advance_line_after_lexing_multiline_block_string():
+        assert (
+            lex_second(
+                '''"""
+
+        spans
+          multiple
+            lines
+
+        \n """ second_token'''
+            )
+            == Token(TokenKind.NAME, 71, 83, 8, 6, None, "second_token")
         )
 
     def lex_reports_useful_block_string_errors():
