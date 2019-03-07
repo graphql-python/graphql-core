@@ -13,7 +13,7 @@ a query language for APIs created by Facebook.
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 The current version 1.0.1 of GraphQL-core-next is up-to-date with GraphQL.js version
-14.0.2. All parts of the API are covered by an extensive test suite of currently 1679
+14.0.2. All parts of the API are covered by an extensive test suite of currently 1681
 unit tests.
 
 
@@ -187,9 +187,9 @@ Design goals for the GraphQL-core-next library are:
   library and language versions
 * to be very close to the GraphQL.js reference implementation, while still using a
   Pythonic API and code style
-* making use of Python type hints, similar to how GraphQL.js makes use of Flow
-* using of [black](https://github.com/ambv/black) for automatic code formatting
-* replicate the complete Mocha-based test suite of GraphQL.js using
+* to make extensive use of Python type hints, similar to how GraphQL.js makes use of Flow
+* to use [black](https://github.com/ambv/black) for automatic code formatting
+* to replicate the complete Mocha-based test suite of GraphQL.js using
   [pytest](https://docs.pytest.org/)
 
 Some restrictions (mostly in line with the design goals):

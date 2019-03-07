@@ -1108,8 +1108,14 @@ def default_resolve_type_fn(
     """
 
     # First, look for `__typename`.
-    if isinstance(value, dict) and isinstance(value.get("__typename"), str):
-        return value["__typename"]
+    type_name = (
+        value.get("__typename")
+        if isinstance(value, dict)
+        # need to de-mangle the attribute assumed to be "private" in Python
+        else getattr(value, f"_{value.__class__.__name__}__typename", None)
+    )
+    if isinstance(type_name, str):
+        return type_name
 
     # Otherwise, test each possible type.
     possible_types = info.schema.get_possible_types(abstract_type)

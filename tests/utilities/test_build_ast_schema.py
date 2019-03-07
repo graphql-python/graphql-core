@@ -369,7 +369,8 @@ def describe_schema_builder():
         msg = str(exc_info.value)
         assert msg == "Hello types must be GraphQLObjectType objects."
 
-    def specifying_union_type_using_typename():
+    def describe_specifying_union_type_using_typename():
+
         schema = build_schema(
             """
             type Query {
@@ -401,19 +402,33 @@ def describe_schema_builder():
             }
             """
 
-        root = {
-            "fruits": [
-                {"color": "green", "__typename": "Apple"},
-                {"length": 5, "__typename": "Banana"},
-            ]
-        }
+        expected = ({"fruits": [{"color": "green"}, {"length": 5}]}, None)
 
-        assert graphql_sync(schema, query, root) == (
-            {"fruits": [{"color": "green"}, {"length": 5}]},
-            None,
-        )
+        def using_dicts():
+            root = {
+                "fruits": [
+                    {"color": "green", "__typename": "Apple"},
+                    {"length": 5, "__typename": "Banana"},
+                ]
+            }
 
-    def specifying_interface_type_using_typename():
+            assert graphql_sync(schema, query, root) == expected
+
+        def using_objects():
+            class Apple:
+                __typename = "Apple"
+                color = "green"
+
+            class Banana:
+                __typename = "Banana"
+                length = 5
+
+            class Root:
+                fruits = [Apple(), Banana()]
+
+            assert graphql_sync(schema, query, Root()) == expected
+
+    def describe_specifying_interface_type_using_typename():
         schema = build_schema(
             """
             type Query {
@@ -450,18 +465,7 @@ def describe_schema_builder():
             }
             """
 
-        root = {
-            "characters": [
-                {"name": "Han Solo", "totalCredits": 10, "__typename": "Human"},
-                {
-                    "name": "R2-D2",
-                    "primaryFunction": "Astromech",
-                    "__typename": "Droid",
-                },
-            ]
-        }
-
-        assert graphql_sync(schema, query, root) == (
+        expected = (
             {
                 "characters": [
                     {"name": "Han Solo", "totalCredits": 10},
@@ -470,6 +474,36 @@ def describe_schema_builder():
             },
             None,
         )
+
+        def using_dicts():
+            root = {
+                "characters": [
+                    {"name": "Han Solo", "totalCredits": 10, "__typename": "Human"},
+                    {
+                        "name": "R2-D2",
+                        "primaryFunction": "Astromech",
+                        "__typename": "Droid",
+                    },
+                ]
+            }
+
+            assert graphql_sync(schema, query, root) == expected
+
+        def using_objects():
+            class Human:
+                __typename = "Human"
+                name = "Han Solo"
+                totalCredits = 10
+
+            class Droid:
+                __typename = "Droid"
+                name = "R2-D2"
+                primaryFunction = "Astromech"
+
+            class Root:
+                characters = [Human(), Droid()]
+
+            assert graphql_sync(schema, query, Root()) == expected
 
     def custom_scalar():
         sdl = dedent(
