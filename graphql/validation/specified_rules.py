@@ -87,6 +87,7 @@ from .rules.unique_type_names import UniqueTypeNamesRule
 from .rules.unique_enum_value_names import UniqueEnumValueNamesRule
 from .rules.unique_field_definition_names import UniqueFieldDefinitionNamesRule
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
+from .rules.possible_type_extensions import PossibleTypeExtensionsRule
 from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
 from .rules.provided_required_arguments import ProvidedRequiredArgumentsOnDirectivesRule
 
@@ -137,6 +138,7 @@ specified_sdl_rules: List[RuleType] = [
     KnownTypeNamesRule,
     KnownDirectivesRule,
     UniqueDirectivesPerLocationRule,
+    PossibleTypeExtensionsRule,
     KnownArgumentNamesOnDirectivesRule,
     UniqueArgumentNamesRule,
     UniqueInputFieldNamesRule,

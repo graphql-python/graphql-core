@@ -3,19 +3,13 @@ from functools import partial
 from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple, cast
 
-from ..error import GraphQLError
 from ..language import (
     DirectiveDefinitionNode,
     DocumentNode,
-    EnumTypeExtensionNode,
-    InputObjectTypeExtensionNode,
-    InterfaceTypeExtensionNode,
-    ObjectTypeExtensionNode,
     OperationType,
     SchemaExtensionNode,
     SchemaDefinitionNode,
     TypeDefinitionNode,
-    UnionTypeExtensionNode,
     TypeExtensionNode,
 )
 from ..type import (
@@ -110,17 +104,7 @@ def extend_schema(
             type_name = def_.name.value
             type_definition_map[type_name] = def_
         elif isinstance(def_, TypeExtensionNode):
-            # Sanity check that this type extension exists within the schema's existing
-            # types.
             extended_type_name = def_.name.value
-            existing_type = schema.get_type(extended_type_name)
-            if not existing_type:
-                raise GraphQLError(
-                    f"Cannot extend type '{extended_type_name}'"
-                    " because it does not exist in the existing schema.",
-                    [def_],
-                )
-            check_extension_node(existing_type, def_)
             type_extensions_map[extended_type_name].append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
             directive_definitions.append(def_)
@@ -502,25 +486,3 @@ def extend_schema(
         ast_node=schema.ast_node,
         extension_ast_nodes=schema_extension_ast_nodes,
     )
-
-
-def check_extension_node(type_: GraphQLNamedType, node: TypeExtensionNode):
-    if isinstance(node, ObjectTypeExtensionNode):
-        if not is_object_type(type_):
-            raise GraphQLError(f"Cannot extend non-object type '{type_.name}'.", [node])
-    elif isinstance(node, InterfaceTypeExtensionNode):
-        if not is_interface_type(type_):
-            raise GraphQLError(
-                f"Cannot extend non-interface type '{type_.name}'.", [node]
-            )
-    elif isinstance(node, EnumTypeExtensionNode):
-        if not is_enum_type(type_):
-            raise GraphQLError(f"Cannot extend non-enum type '{type_.name}'.", [node])
-    elif isinstance(node, UnionTypeExtensionNode):
-        if not is_union_type(type_):
-            raise GraphQLError(f"Cannot extend non-union type '{type_.name}'.", [node])
-    elif isinstance(node, InputObjectTypeExtensionNode):
-        if not is_input_object_type(type_):
-            raise GraphQLError(
-                f"Cannot extend non-input object type '{type_.name}'.", [node]
-            )

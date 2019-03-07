@@ -1,7 +1,6 @@
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.error import GraphQLError
 from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode
 from graphql.pyutils import dedent
 from graphql.type import (
@@ -1066,62 +1065,6 @@ def describe_extend_schema():
         assert str(exc_info.value).startswith(
             "Enum value 'SomeEnum.ONE' already exists in the schema."
             " It cannot also be defined in this type extension."
-        )
-
-    def does_not_allow_extending_an_unknown_type():
-        for sdl in [
-            "extend scalar UnknownType @foo",
-            "extend type UnknownType @foo",
-            "extend interface UnknownType @foo",
-            "extend enum UnknownType @foo",
-            "extend union UnknownType @foo",
-            "extend input UnknownType @foo",
-        ]:
-            with raises(GraphQLError) as exc_info:
-                extend_test_schema(sdl)
-            assert str(exc_info.value).startswith(
-                "Cannot extend type 'UnknownType'"
-                " because it does not exist in the existing schema."
-            )
-
-    def it_does_not_allow_extending_a_mismatch_type():
-        type_sdl = """
-            extend type SomeInterface @foo
-            """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(type_sdl)
-        assert str(exc_info.value).startswith(
-            "Cannot extend non-object type 'SomeInterface'."
-        )
-
-        interface_sdl = """
-            extend interface Foo @foo
-        """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(interface_sdl)
-        assert str(exc_info.value).startswith("Cannot extend non-interface type 'Foo'.")
-
-        enum_sdl = """
-            extend enum Foo @foo
-        """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(enum_sdl)
-        assert str(exc_info.value).startswith("Cannot extend non-enum type 'Foo'.")
-
-        union_sdl = """
-            extend union Foo @foo
-        """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(union_sdl)
-        assert str(exc_info.value).startswith("Cannot extend non-union type 'Foo'.")
-
-        input_sdl = """
-            extend input Foo @foo
-        """
-        with raises(GraphQLError) as exc_info:
-            extend_test_schema(input_sdl)
-        assert str(exc_info.value).startswith(
-            "Cannot extend non-input object type 'Foo'."
         )
 
     def describe_can_add_additional_root_operation_types():
