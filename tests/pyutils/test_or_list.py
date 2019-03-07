@@ -5,7 +5,7 @@ from graphql.pyutils import or_list
 
 def describe_or_list():
     def returns_none_for_empty_list():
-        with raises(TypeError):
+        with raises(ValueError):
             or_list([])
 
     def prints_list_with_one_item():

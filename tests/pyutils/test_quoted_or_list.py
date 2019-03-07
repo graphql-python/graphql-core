@@ -5,7 +5,7 @@ from graphql.pyutils import quoted_or_list
 
 def describe_quoted_or_list():
     def does_not_accept_an_empty_list():
-        with raises(TypeError):
+        with raises(ValueError):
             quoted_or_list([])
 
     def returns_single_quoted_item():
