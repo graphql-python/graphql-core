@@ -2,7 +2,7 @@ from pytest import raises
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
-from graphql.pyutils import dedent
+from graphql.pyutils import dedent, inspect
 
 
 def lex_one(s: str) -> Token:
@@ -40,10 +40,12 @@ def describe_lexer():
         token = lex_one("\n \r\n \r  foo\n")
         assert token == Token(TokenKind.NAME, 8, 11, 4, 3, None, "foo")
 
-    def can_be_stringified():
+    def can_be_stringified_or_pyutils_inspected():
         token = lex_one("foo")
-        assert repr(token) == "<Token Name 'foo' at 0-3 (1/1)>"
         assert token.desc == "Name 'foo'"
+        assert str(token) == token.desc
+        assert repr(token) == "<Token Name 'foo' 1/1>"
+        assert inspect(token) == repr(token)
 
     # noinspection PyArgumentEqualDefault
     def skips_whitespace_and_comments():

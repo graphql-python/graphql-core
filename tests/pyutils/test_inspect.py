@@ -167,3 +167,12 @@ def describe_inspect():
                 return "<custom magic method inspect>"
 
         assert inspect(TestClass()) == "<custom magic method inspect>"
+
+    def custom_inspect_that_uses_self():
+        class TestClass:
+            str = "Hello World!"
+
+            def __inspect__(self):
+                return self.str
+
+        assert inspect(TestClass()) == "Hello World!"

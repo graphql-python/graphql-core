@@ -81,6 +81,13 @@ class Location(NamedTuple):
     def __str__(self):
         return f"{self.start}:{self.end}"
 
+    def __repr__(self):
+        """Print a simplified form when appearing in repr() or inspect()."""
+        return "<Location {}:{}>".format(self.start, self.end)
+
+    def __inspect__(self):
+        return repr(self)
+
     def __eq__(self, other):
         if isinstance(other, Location):
             return self.start == other.start and self.end == other.end

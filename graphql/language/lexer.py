@@ -56,10 +56,15 @@ class Token:
         self.next: Optional[Token] = None
         self.value: Optional[str] = value
 
+    def __str__(self):
+        return self.desc
+
     def __repr__(self):
-        return "<Token {} at {}-{} ({}/{})>".format(
-            self.desc, self.start, self.end, self.line, self.column
-        )
+        """Print a simplified form when appearing in repr() or inspect()."""
+        return "<Token {} {}/{}>".format(self.desc, self.line, self.column)
+
+    def __inspect__(self):
+        return repr(self)
 
     def __eq__(self, other):
         if isinstance(other, Token):

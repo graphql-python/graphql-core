@@ -24,6 +24,14 @@ def inspect(value: Any) -> str:
     """
     if isinstance(value, (bool, int, float, str)) or value in (None, INVALID):
         return repr(value)
+    # check if we have a custom inspect method
+    try:
+        inspect_method = value.__inspect__
+        if callable(inspect_method):
+            value = inspect_method()
+            return value if isinstance(value, str) else inspect(value)
+    except AttributeError:
+        pass
     if isinstance(value, list):
         return f"[{', '.join(map(inspect, value))}]"
     if isinstance(value, tuple):
@@ -71,15 +79,6 @@ def inspect(value: Any) -> str:
             value, (GraphQLNamedType, GraphQLScalarType, GraphQLWrappingType)
         ):
             return str(value)
-        # check if we have a custom inspect method
-        try:
-            inspect_method = value.__inspect__
-            if not callable(inspect_method):
-                raise AttributeError
-        except AttributeError:
-            pass
-        else:
-            return inspect_method()
         try:
             name = type(value).__name__
             if not name or "<" in name or ">" in name:

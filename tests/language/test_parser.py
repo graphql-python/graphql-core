@@ -2,7 +2,7 @@ from typing import cast
 
 from pytest import raises
 
-from graphql.pyutils import dedent
+from graphql.pyutils import dedent, inspect
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,
@@ -367,6 +367,8 @@ def describe_parser():
     def contains_location_information_that_only_stringifies_start_end():
         result = parse("{ id }")
         assert str(result.loc) == "0:6"
+        assert repr(result.loc) == "<Location 0:6>"
+        assert inspect(result.loc) == repr(result.loc)
 
     def contains_references_to_source():
         source = Source("{ id }")
