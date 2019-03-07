@@ -322,8 +322,8 @@ def describe_lexer():
 
     # noinspection PyArgumentEqualDefault
     def lex_reports_useful_information_for_dashes_in_names():
-        q = "a-b"
-        lexer = Lexer(Source(q))
+        source = Source("a-b")
+        lexer = Lexer(source)
         first_token = lexer.advance()
         assert first_token == Token(TokenKind.NAME, 0, 1, 1, 1, None, "a")
         with raises(GraphQLSyntaxError) as exc_info:
@@ -335,7 +335,15 @@ def describe_lexer():
         assert error.locations == [(1, 3)]
 
     def produces_double_linked_list_of_tokens_including_comments():
-        lexer = Lexer(Source("{\n      #comment\n      field\n    }"))
+        source = Source(
+            """
+            {
+              #comment
+              field
+            }
+            """
+        )
+        lexer = Lexer(source)
         start_token = lexer.token
         while True:
             end_token = lexer.advance()
@@ -350,11 +358,11 @@ def describe_lexer():
             assert not tokens or tok.prev == tokens[-1]
             tokens.append(tok)
             tok = tok.next
-        assert [tok.kind.value for tok in tokens] == [
-            "<SOF>",
-            "{",
-            "Comment",
-            "Name",
-            "}",
-            "<EOF>",
+        assert [tok.kind for tok in tokens] == [
+            TokenKind.SOF,
+            TokenKind.BRACE_L,
+            TokenKind.COMMENT,
+            TokenKind.NAME,
+            TokenKind.BRACE_R,
+            TokenKind.EOF,
         ]

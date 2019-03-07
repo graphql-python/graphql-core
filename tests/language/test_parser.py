@@ -22,6 +22,7 @@ from graphql.language import (
     StringValueNode,
     ValueNode,
     Token,
+    TokenKind,
     parse,
     parse_type,
     parse_value,
@@ -376,10 +377,10 @@ def describe_parser():
         result = parse("{ id }")
         start_token = result.loc.start_token
         assert isinstance(start_token, Token)
-        assert start_token.desc == "<SOF>"
+        assert start_token.kind == TokenKind.SOF
         end_token = result.loc.end_token
         assert isinstance(end_token, Token)
-        assert end_token.desc == "<EOF>"
+        assert end_token.kind == TokenKind.EOF
 
 
 def describe_parse_value():
