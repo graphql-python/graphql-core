@@ -30,7 +30,7 @@ from graphql.language import (
 )
 
 # noinspection PyUnresolvedReferences
-from . import kitchen_sink  # noqa: F401
+from ..fixtures import kitchen_sink_query  # noqa: F401
 
 
 def assert_syntax_error(text, message, location):
@@ -138,8 +138,8 @@ def describe_parser():
         assert value.value == "Has a \u0A0A multi-byte character."
 
     # noinspection PyShadowingNames
-    def parses_kitchen_sink(kitchen_sink):  # noqa: F811
-        parse(kitchen_sink)
+    def parses_kitchen_sink(kitchen_sink_query):  # noqa: F811
+        parse(kitchen_sink_query)
 
     def allows_non_keywords_anywhere_a_name_is_allowed():
         non_keywords = (

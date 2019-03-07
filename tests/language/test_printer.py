@@ -6,14 +6,14 @@ from graphql.pyutils import dedent
 from graphql.language import FieldNode, NameNode, parse, print_ast
 
 # noinspection PyUnresolvedReferences
-from . import kitchen_sink  # noqa: F401
+from ..fixtures import kitchen_sink_query  # noqa: F401
 
 
 def describe_printer_query_document():
 
     # noinspection PyShadowingNames
-    def does_not_alter_ast(kitchen_sink):  # noqa: F811
-        ast = parse(kitchen_sink)
+    def does_not_alter_ast(kitchen_sink_query):  # noqa: F811
+        ast = parse(kitchen_sink_query)
         ast_before = deepcopy(ast)
         print_ast(ast)
         assert ast == ast_before
@@ -134,8 +134,8 @@ def describe_block_string():
         assert print_ast(fragment_with_variable) == dedent(source)
 
     # noinspection PyShadowingNames
-    def prints_kitchen_sink(kitchen_sink):  # noqa: F811
-        ast = parse(kitchen_sink)
+    def prints_kitchen_sink(kitchen_sink_query):  # noqa: F811
+        ast = parse(kitchen_sink_query)
         printed = print_ast(ast)
         assert printed == dedent(
             r'''

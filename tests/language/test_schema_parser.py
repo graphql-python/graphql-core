@@ -28,6 +28,9 @@ from graphql.language import (
     parse,
 )
 
+# noinspection PyUnresolvedReferences
+from ..fixtures import kitchen_sink_sdl  # noqa: F401
+
 
 def assert_syntax_error(text, message, location):
     with raises(GraphQLSyntaxError) as exc_info:
@@ -613,6 +616,9 @@ def describe_schema_parser():
             "Unexpected Name 'INCORRECT_LOCATION'",
             (2, 27),
         )
+
+    def parses_kitchen_sink_schema(kitchen_sink_sdl):  # noqa: F811
+        assert parse(kitchen_sink_sdl)
 
     def disallow_legacy_sdl_empty_fields_supports_type_with_empty_fields():
         assert_syntax_error(

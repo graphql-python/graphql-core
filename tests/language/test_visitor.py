@@ -23,7 +23,7 @@ from graphql.utilities import TypeInfo
 from ..validation.harness import test_schema
 
 # noinspection PyUnresolvedReferences
-from . import kitchen_sink  # noqa: F401
+from ..fixtures import kitchen_sink_query  # noqa: F401
 
 
 def get_node_by_path(ast, path):
@@ -413,8 +413,8 @@ def describe_visitor():
         ]
 
     # noinspection PyShadowingNames
-    def visits_kitchen_sink(kitchen_sink):  # noqa: F811
-        ast = parse(kitchen_sink)
+    def visits_kitchen_sink(kitchen_sink_query):  # noqa: F811
+        ast = parse(kitchen_sink_query)
         visited = []
 
         # noinspection PyMethodMayBeStatic

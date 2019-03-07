@@ -6,7 +6,7 @@ from graphql.language import ScalarTypeDefinitionNode, NameNode, print_ast, pars
 from graphql.pyutils import dedent
 
 # noinspection PyUnresolvedReferences
-from . import schema_kitchen_sink as kitchen_sink  # noqa: F401
+from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
 
 def describe_printer_sdl_document():
@@ -23,15 +23,15 @@ def describe_printer_sdl_document():
         assert msg == "Not an AST Node: {'random': 'Data'}"
 
     # noinspection PyShadowingNames
-    def does_not_alter_ast(kitchen_sink):  # noqa: F811
-        ast = parse(kitchen_sink)
+    def does_not_alter_ast(kitchen_sink_sdl):  # noqa: F811
+        ast = parse(kitchen_sink_sdl)
         ast_copy = deepcopy(ast)
         print_ast(ast)
         assert ast == ast_copy
 
     # noinspection PyShadowingNames
-    def prints_kitchen_sink(kitchen_sink):  # noqa: F811
-        ast = parse(kitchen_sink)
+    def prints_kitchen_sink(kitchen_sink_sdl):  # noqa: F811
+        ast = parse(kitchen_sink_sdl)
         printed = print_ast(ast)
 
         assert printed == dedent(
