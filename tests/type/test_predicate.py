@@ -204,52 +204,79 @@ def describe_type_predicates():
                 assert_non_null_type(GraphQLList(GraphQLNonNull(ObjectType)))
 
     def describe_is_input_type():
+        def _assert_input_type(type_):
+            assert is_input_type(type_) is True
+            assert_input_type(type_)
+
         def returns_true_for_an_input_type():
-            assert is_input_type(InputObjectType) is True
-            assert_input_type(InputObjectType)
+            _assert_input_type(GraphQLString)
+            _assert_input_type(EnumType)
+            _assert_input_type(InputObjectType)
 
         def returns_true_for_a_wrapped_input_type():
-            assert is_input_type(GraphQLList(InputObjectType)) is True
-            assert_input_type(GraphQLList(InputObjectType))
-            assert is_input_type(GraphQLNonNull(InputObjectType)) is True
-            assert_input_type(GraphQLNonNull(InputObjectType))
+            _assert_input_type(GraphQLList(GraphQLString))
+            _assert_input_type(GraphQLList(EnumType))
+            _assert_input_type(GraphQLList(InputObjectType))
+
+            _assert_input_type(GraphQLNonNull(GraphQLString))
+            _assert_input_type(GraphQLNonNull(EnumType))
+            _assert_input_type(GraphQLNonNull(InputObjectType))
+
+        def _assert_non_input_type(type_):
+            assert is_input_type(type_) is False
+            with raises(TypeError):
+                assert_input_type(type_)
 
         def returns_false_for_an_output_type():
-            assert is_input_type(ObjectType) is False
-            with raises(TypeError):
-                assert_input_type(ObjectType)
+            _assert_non_input_type(ObjectType)
+            _assert_non_input_type(InterfaceType)
+            _assert_non_input_type(UnionType)
 
         def returns_false_for_a_wrapped_output_type():
-            assert is_input_type(GraphQLList(ObjectType)) is False
-            with raises(TypeError):
-                assert_input_type(GraphQLList(ObjectType))
-            assert is_input_type(GraphQLNonNull(ObjectType)) is False
-            with raises(TypeError):
-                assert_input_type(GraphQLNonNull(ObjectType))
+            _assert_non_input_type(GraphQLList(ObjectType))
+            _assert_non_input_type(GraphQLList(InterfaceType))
+            _assert_non_input_type(GraphQLList(UnionType))
+
+            _assert_non_input_type(GraphQLNonNull(ObjectType))
+            _assert_non_input_type(GraphQLNonNull(InterfaceType))
+            _assert_non_input_type(GraphQLNonNull(UnionType))
 
     def describe_is_output_type():
+        def _assert_output_type(type_):
+            assert is_output_type(type_) is True
+            assert_output_type(type_)
+
         def returns_true_for_an_output_type():
-            assert is_output_type(ObjectType) is True
-            assert_output_type(ObjectType)
+            _assert_output_type(GraphQLString)
+            _assert_output_type(ObjectType)
+            _assert_output_type(InterfaceType)
+            _assert_output_type(UnionType)
+            _assert_output_type(EnumType)
 
         def returns_true_for_a_wrapped_output_type():
-            assert is_output_type(GraphQLList(ObjectType)) is True
-            assert_output_type(GraphQLList(ObjectType))
-            assert is_output_type(GraphQLNonNull(ObjectType)) is True
-            assert_output_type(GraphQLNonNull(ObjectType))
+            _assert_output_type(GraphQLList(GraphQLString))
+            _assert_output_type(GraphQLList(ObjectType))
+            _assert_output_type(GraphQLList(InterfaceType))
+            _assert_output_type(GraphQLList(UnionType))
+            _assert_output_type(GraphQLList(EnumType))
+
+            _assert_output_type(GraphQLNonNull(GraphQLString))
+            _assert_output_type(GraphQLNonNull(ObjectType))
+            _assert_output_type(GraphQLNonNull(InterfaceType))
+            _assert_output_type(GraphQLNonNull(UnionType))
+            _assert_output_type(GraphQLNonNull(EnumType))
+
+        def _assert_non_output_type(type_):
+            assert is_output_type(type_) is False
+            with raises(TypeError):
+                assert_output_type(type_)
 
         def returns_false_for_an_input_type():
-            assert is_output_type(InputObjectType) is False
-            with raises(TypeError):
-                assert_output_type(InputObjectType)
+            _assert_non_output_type(InputObjectType)
 
         def returns_false_for_a_wrapped_input_type():
-            assert is_output_type(GraphQLList(InputObjectType)) is False
-            with raises(TypeError):
-                assert_output_type(GraphQLList(InputObjectType))
-            assert is_output_type(GraphQLNonNull(InputObjectType)) is False
-            with raises(TypeError):
-                assert_output_type(GraphQLNonNull(InputObjectType))
+            _assert_non_output_type(GraphQLList(InputObjectType))
+            _assert_non_output_type(GraphQLNonNull(InputObjectType))
 
     def describe_is_leaf_type():
         def returns_true_for_scalar_and_enum_types():

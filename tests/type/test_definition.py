@@ -22,9 +22,7 @@ from graphql.type import (
     GraphQLOutputType,
     GraphQLInputField,
     GraphQLNonNull,
-    is_input_type,
     is_object_type,
-    is_output_type,
 )
 
 
@@ -275,36 +273,6 @@ def describe_type_system_example():
         assert str(GraphQLNonNull(GraphQLList(GraphQLInt))) == "[Int]!"
         assert str(GraphQLList(GraphQLNonNull(GraphQLInt))) == "[Int!]"
         assert str(GraphQLList(GraphQLList(GraphQLInt))) == "[[Int]]"
-
-    def identifies_input_types():
-        expected = (
-            (GraphQLInt, True),
-            (ObjectType, False),
-            (InterfaceType, False),
-            (UnionType, False),
-            (EnumType, True),
-            (InputObjectType, True),
-        )
-
-        for type_, answer in expected:
-            assert is_input_type(type_) is answer
-            assert is_input_type(GraphQLList(type_)) is answer
-            assert is_input_type(GraphQLNonNull(type_)) is answer
-
-    def identifies_output_types():
-        expected = (
-            (GraphQLInt, True),
-            (ObjectType, True),
-            (InterfaceType, True),
-            (UnionType, True),
-            (EnumType, True),
-            (InputObjectType, False),
-        )
-
-        for type_, answer in expected:
-            assert is_output_type(type_) is answer
-            assert is_output_type(GraphQLList(type_)) is answer
-            assert is_output_type(GraphQLNonNull(type_)) is answer
 
     def prohibits_nesting_nonnull_inside_nonnull():
         with raises(TypeError) as exc_info:
