@@ -7,6 +7,7 @@ from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
     GraphQLField,
+    GraphQLFieldResolver,
     GraphQLInt,
     GraphQLString,
     GraphQLObjectType,
@@ -22,6 +23,7 @@ from graphql.type import (
     GraphQLInputField,
     GraphQLNonNull,
     is_input_type,
+    is_object_type,
     is_output_type,
 )
 
@@ -114,24 +116,20 @@ def describe_type_system_example():
         BlogSchema = GraphQLSchema(BlogQuery)
 
         assert BlogSchema.query_type == BlogQuery
+        assert is_object_type(BlogQuery)
 
         article_field = BlogQuery.fields["article"]
         assert article_field.type == BlogArticle
-        assert article_field.type.name == "Article"
 
-        article_field_type = article_field.type
-        assert isinstance(article_field_type, GraphQLObjectType)
-
-        title_field = article_field_type.fields["title"]
+        assert is_object_type(BlogArticle)
+        blog_article_fields = BlogArticle.fields
+        title_field = blog_article_fields["title"]
         assert title_field.type == GraphQLString
-        assert title_field.type.name == "String"
+        author_field = blog_article_fields["author"]
+        assert author_field.type == BlogAuthor
 
-        author_field = article_field_type.fields["author"]
-
-        author_field_type = author_field.type
-        assert isinstance(author_field_type, GraphQLObjectType)
-        recent_article_field = author_field_type.fields["recentArticle"]
-
+        assert is_object_type(BlogAuthor)
+        recent_article_field = BlogAuthor.fields["recentArticle"]
         assert recent_article_field.type == BlogArticle
 
         feed_field = BlogQuery.fields["feed"]
@@ -142,9 +140,9 @@ def describe_type_system_example():
 
         assert BlogSchema.mutation_type == BlogMutation
 
+        assert is_object_type(BlogMutation)
         write_mutation = BlogMutation.fields["writeArticle"]
         assert write_mutation.type == BlogArticle
-        assert write_mutation.type.name == "Article"
 
     def defines_a_subscription_schema():
         BlogSchema = GraphQLSchema(query=BlogQuery, subscription=BlogSubscription)
@@ -325,18 +323,18 @@ def describe_type_system_example():
         assert types[0] is ObjectType
 
     def does_not_mutate_passed_field_definitions():
-        fields = {
+        output_fields = {
             "field1": GraphQLField(GraphQLString),
             "field2": GraphQLField(
                 GraphQLString, args={"id": GraphQLArgument(GraphQLString)}
             ),
         }
 
-        TestObject1 = GraphQLObjectType("Test1", fields)
-        TestObject2 = GraphQLObjectType("Test2", fields)
+        TestObject1 = GraphQLObjectType("Test1", output_fields)
+        TestObject2 = GraphQLObjectType("Test2", output_fields)
 
         assert TestObject1.fields == TestObject2.fields
-        assert fields == {
+        assert output_fields == {
             "field1": GraphQLField(GraphQLString),
             "field2": GraphQLField(
                 GraphQLString, args={"id": GraphQLArgument(GraphQLString)}
@@ -440,7 +438,7 @@ def describe_field_args_must_be_a_dict():
         msg = str(exc_info.value)
         assert msg == "Field args must be a dict with argument names as keys."
 
-    def does_not_accept_is_deprecated_as_argument():
+    def does_not_accept_is_deprecated_instead_of_deprecation_reason_on_field():
         kwargs = dict(is_deprecated=True)
         with raises(TypeError) as exc_info:
             GraphQLObjectType(
@@ -514,7 +512,7 @@ def describe_object_interfaces_must_be_a_sequence():
 
 
 def describe_type_system_object_fields_must_have_valid_resolve_values():
-    def _schema_with_object_with_field_resolver(resolve_value):
+    def _schema_with_object_with_field_resolver(resolve_value: GraphQLFieldResolver):
         BadResolverType = GraphQLObjectType(
             "BadResolver",
             {"bad_field": GraphQLField(GraphQLString, resolve=resolve_value)},
@@ -843,11 +841,11 @@ def describe_type_system_list_must_accept_only_types():
 
     not_types = [{}, dict, str, object, None]
 
-    @mark.parametrize("type_", types)
+    @mark.parametrize("type_", types, ids=lambda type_: type_.__class__.__name__)
     def accepts_a_type_as_item_type_of_list(type_):
         assert GraphQLList(type_)
 
-    @mark.parametrize("type_", not_types)
+    @mark.parametrize("type_", not_types, ids=lambda type_: type_.__class__.__name__)
     def rejects_a_non_type_as_item_type_of_list(type_):
         with raises(TypeError) as exc_info:
             assert GraphQLList(type_)
