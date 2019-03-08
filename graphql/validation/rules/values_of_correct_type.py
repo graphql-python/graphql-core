@@ -87,9 +87,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             self.is_valid_scalar(node)
             return self.SKIP  # Don't traverse further.
         # Ensure every required field exists.
-        input_fields = type_.fields
         field_node_map = {field.name.value: field for field in node.fields}
-        for field_name, field_def in input_fields.items():
+        for field_name, field_def in type_.fields.items():
             field_node = field_node_map.get(field_name)
             if not field_node and is_required_input_field(field_def):
                 field_type = field_def.type

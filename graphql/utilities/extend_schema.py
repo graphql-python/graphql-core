@@ -198,7 +198,6 @@ def extend_schema(
         )
 
     def extend_input_field_map(type_: GraphQLInputObjectType) -> GraphQLInputFieldMap:
-        old_field_map = type_.fields
         new_field_map = {
             field_name: GraphQLInputField(
                 cast(GraphQLInputType, extend_type(field.type)),
@@ -206,7 +205,7 @@ def extend_schema(
                 default_value=field.default_value,
                 ast_node=field.ast_node,
             )
-            for field_name, field in old_field_map.items()
+            for field_name, field in type_.fields.items()
         }
 
         # If there are any extensions to the fields, apply those here.
@@ -397,7 +396,6 @@ def extend_schema(
     def extend_field_map(
         type_: Union[GraphQLObjectType, GraphQLInterfaceType]
     ) -> GraphQLFieldMap:
-        old_field_map = type_.fields
         new_field_map = {
             field_name: GraphQLField(
                 cast(GraphQLObjectType, extend_type(field.type)),
@@ -407,7 +405,7 @@ def extend_schema(
                 ast_node=field.ast_node,
                 resolve=field.resolve,
             )
-            for field_name, field in old_field_map.items()
+            for field_name, field in type_.fields.items()
         }
 
         # If there are any extensions to the fields, apply those here.
