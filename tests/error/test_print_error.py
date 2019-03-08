@@ -76,7 +76,7 @@ def describe_print_error():
         op_b = cast(ObjectTypeDefinitionNode, op_b)
         assert op_b and op_b.kind == "object_type_definition" and op_b.fields
         field_b = op_b.fields[0]
-        assert field_a and field_b
+
         error = GraphQLError(
             "Example error with two nodes", [field_a.type, field_b.type]
         )
