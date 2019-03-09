@@ -598,7 +598,8 @@ def describe_type_system_build_schema_from_introspection():
 
             assert str(exc_info.value).startswith(
                 "Query fields cannot be resolved:"
-                " Introspection must provide input type for arguments."
+                " Introspection must provide input type for arguments,"
+                " but received: SomeUnion."
             )
 
         def throws_when_input_type_is_used_as_a_field_type():
@@ -617,7 +618,8 @@ def describe_type_system_build_schema_from_introspection():
 
             assert str(exc_info.value).startswith(
                 "Query fields cannot be resolved:"
-                " Introspection must provide output type for fields."
+                " Introspection must provide output type for fields,"
+                " but received: SomeInputObject."
             )
 
         def throws_when_missing_possible_types():
