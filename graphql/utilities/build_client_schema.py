@@ -321,12 +321,16 @@ def build_client_schema(
     # Get the root Query, Mutation, and Subscription types.
 
     query_type_ref = schema_introspection.get("queryType")
-    query_type = get_object_type(query_type_ref) if query_type_ref else None
+    query_type = None if query_type_ref is None else get_object_type(query_type_ref)
     mutation_type_ref = schema_introspection.get("mutationType")
-    mutation_type = get_object_type(mutation_type_ref) if mutation_type_ref else None
+    mutation_type = (
+        None if mutation_type_ref is None else get_object_type(mutation_type_ref)
+    )
     subscription_type_ref = schema_introspection.get("subscriptionType")
     subscription_type = (
-        get_object_type(subscription_type_ref) if subscription_type_ref else None
+        None
+        if subscription_type_ref is None
+        else get_object_type(subscription_type_ref)
     )
 
     # Get the directives supported by Introspection, assuming empty-set if directives

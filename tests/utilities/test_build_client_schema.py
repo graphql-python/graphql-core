@@ -445,195 +445,373 @@ def describe_type_system_build_schema_from_introspection():
         result = graphql_sync(
             client_schema,
             "query Limited($v: CustomScalar) { foo(custom1: 123, custom2: $v) }",
-            Data(),
+            root_value=Data(),
             variable_values={"v": "baz"},
         )
 
         assert result.data == {"foo": "bar"}
 
-
-def describe_throws_when_given_incomplete_introspection():
-    dummy_schema = build_schema(
-        """
-        type Query {
-          foo: String
-        }
-
-        directive @Foo on QUERY
-        """
-    )
-
-    def throws_when_given_empty_types():
-        introspection = introspection_from_schema(dummy_schema)
-
-        introspection["__schema"]["types"] = []
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-
-        assert str(exc_info.value) == (
-            "Invalid or incomplete schema, unknown type: Query."
-            " Ensure that a full introspection query is used"
-            " in order to build a client schema."
-        )
-
-    def throws_when_missing_kind():
-        introspection = introspection_from_schema(dummy_schema)
-
-        query_type_introspection = introspection["__schema"]["types"][0]
-        assert query_type_introspection["name"] == "Query"
-        assert query_type_introspection["kind"] == "OBJECT"
-        del query_type_introspection["kind"]
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-
-        assert str(exc_info.value).startswith(
-            "Invalid or incomplete introspection result."
-            " Ensure that a full introspection query is used"
-            " in order to build a client schema: {'name': 'Query'"
-        )
-
-    def throws_when_missing_interfaces():
-        introspection = introspection_from_schema(dummy_schema)
-
-        query_type_introspection = introspection["__schema"]["types"][0]
-        assert query_type_introspection["name"] == "Query"
-        assert query_type_introspection["interfaces"] == []
-        del query_type_introspection["interfaces"]
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-
-        assert str(exc_info.value) == (
-            "Introspection result missing interfaces:"
-            " {'kind': 'OBJECT', 'name': 'Query', 'description': None,"
-            " 'fields': [{'name': 'foo', 'description': None, 'args': [],"
-            " 'type': {'kind': 'SCALAR', 'name': 'String', 'ofType': None},"
-            " 'isDeprecated': False, 'deprecationReason': None}],"
-            " 'inputFields': None, 'enumValues': None, 'possibleTypes': None}"
-        )
-
-    def throws_when_missing_directive_locations():
-        introspection = introspection_from_schema(dummy_schema)
-
-        foo_directive_introspection = introspection["__schema"]["directives"][0]
-        assert foo_directive_introspection["name"] == "Foo"
-        assert foo_directive_introspection["locations"] == ["QUERY"]
-        del foo_directive_introspection["locations"]
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-
-        assert str(exc_info.value) == (
-            "Introspection result missing directive locations:"
-            " {'name': 'Foo', 'description': None, 'args': []}"
-        )
-
-
-def describe_very_deep_decorators_are_not_supported():
-    def fails_on_very_deep_lists_more_than_7_levels():
-        schema = build_schema(
+    def describe_throws_when_given_invalid_introspection():
+        dummy_schema = build_schema(
             """
             type Query {
-              foo: [[[[[[[[String]]]]]]]]
-            }
-            """
-        )
-
-        introspection = introspection_from_schema(schema)
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-
-        assert str(exc_info.value) == (
-            "Query fields cannot be resolved:"
-            " Decorated type deeper than introspection query."
-        )
-
-    def fails_on_a_very_deep_non_null_more_than_7_levels():
-        schema = build_schema(
-            """
-            type Query {
-              foo: [[[[String!]!]!]!]
-            }
-            """
-        )
-
-        introspection = introspection_from_schema(schema)
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-
-        assert str(exc_info.value) == (
-            "Query fields cannot be resolved:"
-            " Decorated type deeper than introspection query."
-        )
-
-    def succeeds_on_deep_types_less_or_equal_7_levels():
-        # e.g., fully non-null 3D matrix
-        sdl = dedent(
-            """
-            type Query {
-              foo: [[[String!]!]!]!
-            }
-            """
-        )
-
-        assert cycle_introspection(sdl) == sdl
-
-
-def describe_prevents_infinite_recursion_on_invalid_introspection():
-    def recursive_interfaces():
-        sdl = """
-            type Query {
-              foo: Foo
+              foo(bar: String): String
             }
 
-            type Foo {
+            union SomeUnion = Query
+
+            enum SomeEnum { FOO }
+
+            input SomeInputObject {
               foo: String
             }
+
+            directive @SomeDirective on QUERY
             """
-        schema = build_schema(sdl, assume_valid=True)
-        introspection = introspection_from_schema(schema)
-
-        foo_type_introspection = introspection["__schema"]["types"][1]
-        assert foo_type_introspection["name"] == "Foo"
-        assert foo_type_introspection["interfaces"] == []
-        # we need to patch here since invalid interfaces cannot be built with Python
-        foo_type_introspection["interfaces"] = [
-            {"kind": "OBJECT", "name": "Foo", "ofType": None}
-        ]
-
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-        assert str(exc_info.value) == (
-            "Foo interfaces cannot be resolved: "
-            "Expected Foo to be a GraphQL Interface type."
         )
 
-    def recursive_union():
-        sdl = """
-            type Query {
-              foo: Foo
-            }
+        def throws_when_referenced_unknown_type():
+            introspection = introspection_from_schema(dummy_schema)
 
-            union Foo
-            """
-        schema = build_schema(sdl, assume_valid=True)
-        introspection = introspection_from_schema(schema)
+            introspection["__schema"]["types"] = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] != "Query"
+            ]
 
-        foo_type_introspection = introspection["__schema"]["types"][1]
-        assert foo_type_introspection["name"] == "Foo"
-        assert foo_type_introspection["kind"] == "UNION"
-        assert foo_type_introspection["possibleTypes"] == []
-        # we need to patch here since invalid unions cannot be built with Python
-        foo_type_introspection["possibleTypes"] = [
-            {"kind": "UNION", "name": "Foo", "ofType": None}
-        ]
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
 
-        with raises(TypeError) as exc_info:
-            build_client_schema(introspection)
-        assert str(exc_info.value) == (
-            "Foo types cannot be resolved: Expected Foo to be a GraphQL Object type."
-        )
+            assert str(exc_info.value) == (
+                "Invalid or incomplete schema, unknown type: Query."
+                " Ensure that a full introspection query is used"
+                " in order to build a client schema."
+            )
+
+        def throws_when_type_reference_is_missing_name():
+            introspection = introspection_from_schema(dummy_schema)
+
+            assert introspection["__schema"]["queryType"]["name"] == "Query"
+            del introspection["__schema"]["queryType"]["name"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value) == "Unknown type reference: {}"
+
+        def throws_when_missing_kind():
+            introspection = introspection_from_schema(dummy_schema)
+
+            query_type_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "Query"
+            ][0]
+            assert query_type_introspection["kind"] == "OBJECT"
+            del query_type_introspection["kind"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Invalid or incomplete introspection result."
+                " Ensure that a full introspection query is used"
+                " in order to build a client schema: {'name': 'Query',"
+            )
+
+        def throws_when_missing_interfaces():
+            introspection = introspection_from_schema(dummy_schema)
+
+            query_type_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "Query"
+            ][0]
+            assert query_type_introspection["interfaces"] == []
+            del query_type_introspection["interfaces"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Introspection result missing interfaces:"
+                " {'kind': 'OBJECT', 'name': 'Query',"
+            )
+
+        def throws_when_missing_fields():
+            introspection = introspection_from_schema(dummy_schema)
+
+            query_type_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "Query"
+            ][0]
+            assert query_type_introspection["fields"]
+            del query_type_introspection["fields"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Query fields cannot be resolved:"
+                " Introspection result missing fields:"
+                " {'kind': 'OBJECT', 'name': 'Query',"
+            )
+
+        def throws_when_missing_field_args():
+            introspection = introspection_from_schema(dummy_schema)
+
+            query_type_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "Query"
+            ][0]
+            assert query_type_introspection["fields"][0]["args"]
+            del query_type_introspection["fields"][0]["args"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Query fields cannot be resolved:"
+                " Introspection result missing field args: {'name': 'foo',"
+            )
+
+        def throws_when_output_type_is_used_as_an_arg_type():
+            introspection = introspection_from_schema(dummy_schema)
+
+            query_type_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "Query"
+            ][0]
+            assert (
+                query_type_introspection["fields"][0]["args"][0]["type"]["name"]
+                == "String"
+            )
+            query_type_introspection["fields"][0]["args"][0]["type"][
+                "name"
+            ] = "SomeUnion"
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Query fields cannot be resolved:"
+                " Introspection must provide input type for arguments."
+            )
+
+        def throws_when_input_type_is_used_as_a_field_type():
+            introspection = introspection_from_schema(dummy_schema)
+
+            query_type_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "Query"
+            ][0]
+            assert query_type_introspection["fields"][0]["type"]["name"] == "String"
+            query_type_introspection["fields"][0]["type"]["name"] = "SomeInputObject"
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Query fields cannot be resolved:"
+                " Introspection must provide output type for fields."
+            )
+
+        def throws_when_missing_possible_types():
+            introspection = introspection_from_schema(dummy_schema)
+
+            some_union_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "SomeUnion"
+            ][0]
+            assert some_union_introspection["possibleTypes"]
+            del some_union_introspection["possibleTypes"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Introspection result missing possibleTypes:"
+                " {'kind': 'UNION', 'name': 'SomeUnion',"
+            )
+
+        def throws_when_missing_enum_values():
+            introspection = introspection_from_schema(dummy_schema)
+
+            some_enum_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "SomeEnum"
+            ][0]
+            assert some_enum_introspection["enumValues"]
+            del some_enum_introspection["enumValues"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Introspection result missing enumValues:"
+                " {'kind': 'ENUM', 'name': 'SomeEnum',"
+            )
+
+        def throws_when_missing_input_fields():
+            introspection = introspection_from_schema(dummy_schema)
+
+            some_input_object_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "SomeInputObject"
+            ][0]
+            assert some_input_object_introspection["inputFields"]
+            del some_input_object_introspection["inputFields"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Introspection result missing inputFields:"
+                " {'kind': 'INPUT_OBJECT', 'name': 'SomeInputObject',"
+            )
+
+        def throws_when_missing_directive_locations():
+            introspection = introspection_from_schema(dummy_schema)
+
+            some_directive_introspection = introspection["__schema"]["directives"][0]
+            assert some_directive_introspection["name"] == "SomeDirective"
+            assert some_directive_introspection["locations"] == ["QUERY"]
+            del some_directive_introspection["locations"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Introspection result missing directive locations:"
+                " {'name': 'SomeDirective',"
+            )
+
+        def throws_when_missing_directive_args():
+            introspection = introspection_from_schema(dummy_schema)
+
+            some_directive_introspection = introspection["__schema"]["directives"][0]
+            assert some_directive_introspection["name"] == "SomeDirective"
+            assert some_directive_introspection["args"] == []
+            del some_directive_introspection["args"]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "Introspection result missing directive args:"
+                " {'name': 'SomeDirective',"
+            )
+
+    def describe_very_deep_decorators_are_not_supported():
+        def fails_on_very_deep_lists_more_than_7_levels():
+            schema = build_schema(
+                """
+                type Query {
+                  foo: [[[[[[[[String]]]]]]]]
+                }
+                """
+            )
+
+            introspection = introspection_from_schema(schema)
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value) == (
+                "Query fields cannot be resolved:"
+                " Decorated type deeper than introspection query."
+            )
+
+        def fails_on_a_very_deep_non_null_more_than_7_levels():
+            schema = build_schema(
+                """
+                type Query {
+                  foo: [[[[String!]!]!]!]
+                }
+                """
+            )
+
+            introspection = introspection_from_schema(schema)
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value) == (
+                "Query fields cannot be resolved:"
+                " Decorated type deeper than introspection query."
+            )
+
+        def succeeds_on_deep_types_less_or_equal_7_levels():
+            # e.g., fully non-null 3D matrix
+            sdl = dedent(
+                """
+                type Query {
+                  foo: [[[String!]!]!]!
+                }
+                """
+            )
+
+            assert cycle_introspection(sdl) == sdl
+
+    def describe_prevents_infinite_recursion_on_invalid_introspection():
+        def recursive_interfaces():
+            sdl = """
+                type Query {
+                  foo: Foo
+                }
+
+                type Foo {
+                  foo: String
+                }
+                """
+            schema = build_schema(sdl, assume_valid=True)
+            introspection = introspection_from_schema(schema)
+
+            foo_type_introspection = introspection["__schema"]["types"][1]
+            assert foo_type_introspection["name"] == "Foo"
+            assert foo_type_introspection["interfaces"] == []
+            # we need to patch here since invalid interfaces cannot be built with Python
+            foo_type_introspection["interfaces"] = [
+                {"kind": "OBJECT", "name": "Foo", "ofType": None}
+            ]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+            assert str(exc_info.value) == (
+                "Foo interfaces cannot be resolved: "
+                "Expected Foo to be a GraphQL Interface type."
+            )
+
+        def recursive_union():
+            sdl = """
+                type Query {
+                  foo: Foo
+                }
+
+                union Foo
+                """
+            schema = build_schema(sdl, assume_valid=True)
+            introspection = introspection_from_schema(schema)
+
+            foo_type_introspection = introspection["__schema"]["types"][1]
+            assert foo_type_introspection["name"] == "Foo"
+            assert foo_type_introspection["kind"] == "UNION"
+            assert foo_type_introspection["possibleTypes"] == []
+            # we need to patch here since invalid unions cannot be built with Python
+            foo_type_introspection["possibleTypes"] = [
+                {"kind": "UNION", "name": "Foo", "ofType": None}
+            ]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+            assert str(exc_info.value) == (
+                "Foo types cannot be resolved:"
+                " Expected Foo to be a GraphQL Object type."
+            )
