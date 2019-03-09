@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
-graphql-core-next = {path = ".", editable = true}
+graphql-core-next = {path = ".",editable = true}
 # black = "*"
 flake8 = "*"
 mypy = "*"
@@ -16,3 +16,7 @@ sphinx = "*"
 sphinx_rtd_theme = "*"
 python-coveralls = "*"
 pytest-cov = ">=2.4,<2.6"
+pyyaml = ">=4.0"
+
+[pipenv]
+allow_prereleases = true
