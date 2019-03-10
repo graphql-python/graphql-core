@@ -12,7 +12,7 @@ a query language for APIs created by Facebook.
 [![Python 3 Status](https://pyup.io/repos/github/graphql-python/graphql-core-next/python-3-shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core-next/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 1.0.1 of GraphQL-core-next is up-to-date with GraphQL.js version
+The current version 1.0.2 of GraphQL-core-next is up-to-date with GraphQL.js version
 14.1.1. All parts of the API are covered by an extensive test suite of currently 1723
 unit tests.
 

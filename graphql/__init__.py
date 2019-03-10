@@ -37,7 +37,7 @@ The sub-packages of GraphQL-core-next are:
   - :mod:`graphql/subscription`: Subscribe to data updates.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __version_js__ = "14.1.1"
 
 # The primary entry point into fulfilling a GraphQL request.
@@ -305,7 +305,7 @@ from .validation import (
 )
 
 # Create, format, and print GraphQL errors.
-from .error import GraphQLError, format_error, print_error
+from .error import GraphQLError, format_error, print_error, INVALID
 
 # Utilities for operating on GraphQL type schema and parsed sources.
 from .utilities import (
@@ -598,6 +598,7 @@ __all__ = [
     "GraphQLError",
     "format_error",
     "print_error",
+    "INVALID",
     "get_introspection_query",
     "get_operation_ast",
     "get_operation_root_type",

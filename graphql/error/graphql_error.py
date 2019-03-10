@@ -128,6 +128,7 @@ class GraphQLError(Exception):
                 self.__context__ = original_error.__context__
             if not extensions:
                 try:
+                    # noinspection PyUnresolvedReferences
                     extensions = original_error.extensions  # type: ignore
                 except AttributeError:
                     pass
