@@ -9,47 +9,89 @@ from inspect import (
     isasyncgenfunction,
     isasyncgen,
 )
-from typing import Any
+from typing import Any, List
 
 from ..error import INVALID
 
+__all__ = ["inspect"]
 
-def inspect(value: Any) -> str:
+
+def inspect(value: Any, max_depth: int = 2, depth: int = 0) -> str:
     """Inspect value and a return string representation for error messages.
 
     Used to print values in error messages. We do not use repr() in order to not
     leak too much of the inner Python representation of unknown objects, and we
     do not use json.dumps() because not all objects can be serialized as JSON and
     we want to output strings with single quotes like Python repr() does it.
+
+    We also restrict the size of the representation by truncating strings and
+    collections and allowing only a maximum recursion depth.
     """
-    if isinstance(value, (bool, int, float, str)) or value in (None, INVALID):
+    if value is None or value is INVALID or isinstance(value, (bool, float, complex)):
         return repr(value)
-    # check if we have a custom inspect method
-    try:
-        inspect_method = value.__inspect__
-        if callable(inspect_method):
-            value = inspect_method()
-            return value if isinstance(value, str) else inspect(value)
-    except AttributeError:
-        pass
-    if isinstance(value, list):
-        return f"[{', '.join(map(inspect, value))}]"
-    if isinstance(value, tuple):
-        if len(value) == 1:
-            return f"({inspect(value[0])},)"
-        return f"({', '.join(map(inspect, value))})"
-    if isinstance(value, dict):
-        return (
-            "{"
-            + ", ".join(
-                map(lambda i: f"{inspect(i[0])}: {inspect(i[1])}", value.items())
-            )
-            + "}"
-        )
-    if isinstance(value, set):
-        if not len(value):
-            return "<empty set>"
-        return "{" + ", ".join(map(inspect, value)) + "}"
+    if isinstance(value, (int, str, bytes, bytearray)):
+        return trunc_str(repr(value))
+    if depth < max_depth:
+        try:
+            # check if we have a custom inspect method
+            inspect_method = value.__inspect__
+            if callable(inspect_method):
+                s = inspect_method()
+                return (
+                    trunc_str(s)
+                    if isinstance(s, str)
+                    else inspect(s, max_depth, depth + 1)
+                )
+        except AttributeError:
+            pass
+        if isinstance(value, (list, tuple, dict, set, frozenset)):
+            if not value:
+                return repr(value)
+            if isinstance(value, list):
+                items = value
+            elif isinstance(value, dict):
+                items = list(value.items())
+            else:
+                items = list(value)
+            items = trunc_list(items)
+            depth += 1
+            if isinstance(value, dict):
+                s = ", ".join(
+                    "..."
+                    if v is ELLIPSIS
+                    else inspect(v[0], max_depth, depth)
+                    + ": "
+                    + inspect(v[1], max_depth, depth)
+                    for v in items
+                )
+            else:
+                s = ", ".join(
+                    "..." if v is ELLIPSIS else inspect(v, max_depth, depth)
+                    for v in items
+                )
+            if isinstance(value, tuple):
+                if len(items) == 1:
+                    return f"({s},)"
+                return f"({s})"
+            if isinstance(value, (dict, set)):
+                return "{" + s + "}"
+            if isinstance(value, frozenset):
+                return f"frozenset({{{s}}})"
+            return f"[{s}]"
+    else:
+        if isinstance(value, (list, tuple, dict, set, frozenset)):
+            if not value:
+                return repr(value)
+            if isinstance(value, list):
+                return "[...]"
+            if isinstance(value, tuple):
+                return "(...)"
+            if isinstance(value, dict):
+                return "{...}"
+            if isinstance(value, set):
+                return "set(...)"
+            if isinstance(value, frozenset):
+                return "frozenset(...)"
     if isinstance(value, Exception):
         type_ = "exception"
         value = type(value)
@@ -95,3 +137,28 @@ def inspect(value: Any) -> str:
         return f"<{type_}>"
     else:
         return f"<{type_} {name}>"
+
+
+def trunc_str(s: str, max_string=240) -> str:
+    """Truncate strings to maximum length."""
+    if len(s) > max_string:
+        i = max(0, (max_string - 3) // 2)
+        j = max(0, max_string - 3 - i)
+        s = s[:i] + "..." + s[-j:]
+    return s
+
+
+def trunc_list(s: List, max_list=10) -> List:
+    """Truncate lists to maximum length."""
+    if len(s) > max_list:
+        i = max_list // 2
+        j = i - 1
+        s = s[:i] + [ELLIPSIS] + s[-j:]
+    return s
+
+
+class InspectEllipsisType:
+    """Singleton class for indicating ellipses in sequences."""
+
+
+ELLIPSIS = InspectEllipsisType()
