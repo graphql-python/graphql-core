@@ -114,9 +114,9 @@ def parse_value(source: SourceType, **options: dict) -> ValueNode:
     if isinstance(source, str):
         source = Source(source)
     lexer = Lexer(source, **options)
-    expect(lexer, TokenKind.SOF)
+    expect_token(lexer, TokenKind.SOF)
     value = parse_value_literal(lexer, False)
-    expect(lexer, TokenKind.EOF)
+    expect_token(lexer, TokenKind.EOF)
     return value
 
 
@@ -133,15 +133,15 @@ def parse_type(source: SourceType, **options: dict) -> TypeNode:
     if isinstance(source, str):
         source = Source(source)
     lexer = Lexer(source, **options)
-    expect(lexer, TokenKind.SOF)
+    expect_token(lexer, TokenKind.SOF)
     type_ = parse_type_reference(lexer)
-    expect(lexer, TokenKind.EOF)
+    expect_token(lexer, TokenKind.EOF)
     return type_
 
 
 def parse_name(lexer: Lexer) -> NameNode:
     """Convert a name lex token into a name parse node."""
-    token = expect(lexer, TokenKind.NAME)
+    token = expect_token(lexer, TokenKind.NAME)
     return NameNode(value=token.value, loc=loc(lexer, token))
 
 
@@ -210,7 +210,7 @@ def parse_operation_definition(lexer: Lexer) -> OperationDefinitionNode:
 
 def parse_operation_type(lexer: Lexer) -> OperationType:
     """OperationType: one of query mutation subscription"""
-    operation_token = expect(lexer, TokenKind.NAME)
+    operation_token = expect_token(lexer, TokenKind.NAME)
     try:
         return OperationType(operation_token.value)
     except ValueError:
@@ -236,9 +236,9 @@ def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
     start = lexer.token
     return VariableDefinitionNode(
         variable=parse_variable(lexer),
-        type=expect(lexer, TokenKind.COLON) and parse_type_reference(lexer),
+        type=expect_token(lexer, TokenKind.COLON) and parse_type_reference(lexer),
         default_value=parse_value_literal(lexer, True)
-        if skip(lexer, TokenKind.EQUALS)
+        if expect_optional_token(lexer, TokenKind.EQUALS)
         else None,
         directives=parse_directives(lexer, True),
         loc=loc(lexer, start),
@@ -248,7 +248,7 @@ def parse_variable_definition(lexer: Lexer) -> VariableDefinitionNode:
 def parse_variable(lexer: Lexer) -> VariableNode:
     """Variable: $Name"""
     start = lexer.token
-    expect(lexer, TokenKind.DOLLAR)
+    expect_token(lexer, TokenKind.DOLLAR)
     return VariableNode(name=parse_name(lexer), loc=loc(lexer, start))
 
 
@@ -272,7 +272,7 @@ def parse_field(lexer: Lexer) -> FieldNode:
     """Field: Alias? Name Arguments? Directives? SelectionSet?"""
     start = lexer.token
     name_or_alias = parse_name(lexer)
-    if skip(lexer, TokenKind.COLON):
+    if expect_optional_token(lexer, TokenKind.COLON):
         alias: Optional[NameNode] = name_or_alias
         name = parse_name(lexer)
     else:
@@ -306,10 +306,11 @@ def parse_arguments(lexer: Lexer, is_const: bool) -> List[ArgumentNode]:
 def parse_argument(lexer: Lexer) -> ArgumentNode:
     """Argument: Name : Value"""
     start = lexer.token
+    name = parse_name(lexer)
+
+    expect_token(lexer, TokenKind.COLON)
     return ArgumentNode(
-        name=parse_name(lexer),
-        value=expect(lexer, TokenKind.COLON) and parse_value_literal(lexer, False),
-        loc=loc(lexer, start),
+        name=name, value=parse_value_literal(lexer, False), loc=loc(lexer, start)
     )
 
 
@@ -318,7 +319,7 @@ def parse_const_argument(lexer: Lexer) -> ArgumentNode:
     start = lexer.token
     return ArgumentNode(
         name=parse_name(lexer),
-        value=expect(lexer, TokenKind.COLON) and parse_const_value(lexer),
+        value=expect_token(lexer, TokenKind.COLON) and parse_const_value(lexer),
         loc=loc(lexer, start),
     )
 
@@ -333,9 +334,9 @@ def parse_fragment(lexer: Lexer) -> Union[FragmentSpreadNode, InlineFragmentNode
     InlineFragment: ... TypeCondition? Directives? SelectionSet
     """
     start = lexer.token
-    expect(lexer, TokenKind.SPREAD)
+    expect_token(lexer, TokenKind.SPREAD)
 
-    has_type_condition = skip_keyword(lexer, "on")
+    has_type_condition = expect_optional_keyword(lexer, "on")
     if not has_type_condition and peek(lexer, TokenKind.NAME):
         return FragmentSpreadNode(
             name=parse_fragment_name(lexer),
@@ -433,20 +434,21 @@ def parse_list(lexer: Lexer, is_const: bool) -> ListValueNode:
 
 def parse_object_field(lexer: Lexer, is_const: bool) -> ObjectFieldNode:
     start = lexer.token
+    name = parse_name(lexer)
+    expect_token(lexer, TokenKind.COLON)
+
     return ObjectFieldNode(
-        name=parse_name(lexer),
-        value=expect(lexer, TokenKind.COLON) and parse_value_literal(lexer, is_const),
-        loc=loc(lexer, start),
+        name=name, value=parse_value_literal(lexer, is_const), loc=loc(lexer, start)
     )
 
 
 def parse_object(lexer: Lexer, is_const: bool) -> ObjectValueNode:
     """ObjectValue[Const]"""
     start = lexer.token
-    expect(lexer, TokenKind.BRACE_L)
+    expect_token(lexer, TokenKind.BRACE_L)
     fields: List[ObjectFieldNode] = []
     append = fields.append
-    while not skip(lexer, TokenKind.BRACE_R):
+    while not expect_optional_token(lexer, TokenKind.BRACE_R):
         append(parse_object_field(lexer, is_const))
     return ObjectValueNode(fields=fields, loc=loc(lexer, start))
 
@@ -508,7 +510,7 @@ def parse_directives(lexer: Lexer, is_const: bool) -> List[DirectiveNode]:
 def parse_directive(lexer: Lexer, is_const: bool) -> DirectiveNode:
     """Directive[Const]: @ Name Arguments[?Const]?"""
     start = lexer.token
-    expect(lexer, TokenKind.AT)
+    expect_token(lexer, TokenKind.AT)
     return DirectiveNode(
         name=parse_name(lexer),
         arguments=parse_arguments(lexer, is_const),
@@ -522,13 +524,13 @@ def parse_directive(lexer: Lexer, is_const: bool) -> DirectiveNode:
 def parse_type_reference(lexer: Lexer) -> TypeNode:
     """Type: NamedType or ListType or NonNullType"""
     start = lexer.token
-    if skip(lexer, TokenKind.BRACKET_L):
+    if expect_optional_token(lexer, TokenKind.BRACKET_L):
         type_ = parse_type_reference(lexer)
-        expect(lexer, TokenKind.BRACKET_R)
+        expect_token(lexer, TokenKind.BRACKET_R)
         type_ = ListTypeNode(type=type_, loc=loc(lexer, start))
     else:
         type_ = parse_named_type(lexer)
-    if skip(lexer, TokenKind.BANG):
+    if expect_optional_token(lexer, TokenKind.BANG):
         return NonNullTypeNode(type=type_, loc=loc(lexer, start))
     return type_
 
@@ -611,7 +613,7 @@ def parse_operation_type_definition(lexer: Lexer) -> OperationTypeDefinitionNode
     """OperationTypeDefinition: OperationType : NamedType"""
     start = lexer.token
     operation = parse_operation_type(lexer)
-    expect(lexer, TokenKind.COLON)
+    expect_token(lexer, TokenKind.COLON)
     type_ = parse_named_type(lexer)
     return OperationTypeDefinitionNode(
         operation=operation, type=type_, loc=loc(lexer, start)
@@ -652,13 +654,13 @@ def parse_object_type_definition(lexer: Lexer) -> ObjectTypeDefinitionNode:
 def parse_implements_interfaces(lexer: Lexer) -> List[NamedTypeNode]:
     """ImplementsInterfaces"""
     types: List[NamedTypeNode] = []
-    if skip_keyword(lexer, "implements"):
+    if expect_optional_keyword(lexer, "implements"):
         # optional leading ampersand
-        skip(lexer, TokenKind.AMP)
+        expect_optional_token(lexer, TokenKind.AMP)
         append = types.append
         while True:
             append(parse_named_type(lexer))
-            if not skip(lexer, TokenKind.AMP):
+            if not expect_optional_token(lexer, TokenKind.AMP):
                 break
     return types
 
@@ -683,7 +685,7 @@ def parse_field_definition(lexer: Lexer) -> FieldDefinitionNode:
     description = parse_description(lexer)
     name = parse_name(lexer)
     args = parse_argument_defs(lexer)
-    expect(lexer, TokenKind.COLON)
+    expect_token(lexer, TokenKind.COLON)
     type_ = parse_type_reference(lexer)
     directives = parse_directives(lexer, True)
     return FieldDefinitionNode(
@@ -715,9 +717,13 @@ def parse_input_value_def(lexer: Lexer) -> InputValueDefinitionNode:
     start = lexer.token
     description = parse_description(lexer)
     name = parse_name(lexer)
-    expect(lexer, TokenKind.COLON)
+    expect_token(lexer, TokenKind.COLON)
     type_ = parse_type_reference(lexer)
-    default_value = parse_const_value(lexer) if skip(lexer, TokenKind.EQUALS) else None
+    default_value = (
+        parse_const_value(lexer)
+        if expect_optional_token(lexer, TokenKind.EQUALS)
+        else None
+    )
     directives = parse_directives(lexer, True)
     return InputValueDefinitionNode(
         description=description,
@@ -766,13 +772,13 @@ def parse_union_type_definition(lexer: Lexer) -> UnionTypeDefinitionNode:
 def parse_union_member_types(lexer: Lexer) -> List[NamedTypeNode]:
     """UnionMemberTypes"""
     types: List[NamedTypeNode] = []
-    if skip(lexer, TokenKind.EQUALS):
+    if expect_optional_token(lexer, TokenKind.EQUALS):
         # optional leading pipe
-        skip(lexer, TokenKind.PIPE)
+        expect_optional_token(lexer, TokenKind.PIPE)
         append = types.append
         while True:
             append(parse_named_type(lexer))
-            if not skip(lexer, TokenKind.PIPE):
+            if not expect_optional_token(lexer, TokenKind.PIPE):
                 break
     return types
 
@@ -982,7 +988,7 @@ def parse_directive_definition(lexer: Lexer) -> DirectiveDefinitionNode:
     start = lexer.token
     description = parse_description(lexer)
     expect_keyword(lexer, "directive")
-    expect(lexer, TokenKind.AT)
+    expect_token(lexer, TokenKind.AT)
     name = parse_name(lexer)
     args = parse_argument_defs(lexer)
     expect_keyword(lexer, "on")
@@ -1011,12 +1017,12 @@ _parse_type_system_definition_functions = {
 def parse_directive_locations(lexer: Lexer) -> List[NameNode]:
     """DirectiveLocations"""
     # optional leading pipe
-    skip(lexer, TokenKind.PIPE)
+    expect_optional_token(lexer, TokenKind.PIPE)
     locations: List[NameNode] = []
     append = locations.append
     while True:
         append(parse_directive_location(lexer))
-        if not skip(lexer, TokenKind.PIPE):
+        if not expect_optional_token(lexer, TokenKind.PIPE):
             break
     return locations
 
@@ -1052,20 +1058,8 @@ def peek(lexer: Lexer, kind: TokenKind):
     return lexer.token.kind == kind
 
 
-def skip(lexer: Lexer, kind: TokenKind) -> bool:
-    """Conditionally skip the next token.
-
-    If the next token is of the given kind, return True after advancing the lexer.
-    Otherwise, do not change the parser state and return False.
-    """
-    if lexer.token.kind == kind:
-        lexer.advance()
-        return True
-    return False
-
-
-def expect(lexer: Lexer, kind: TokenKind) -> Token:
-    """Check kind of the next token.
+def expect_token(lexer: Lexer, kind: TokenKind) -> Token:
+    """Expect the next token to be of the given kind.
 
     If the next token is of the given kind, return that token after advancing the lexer.
     Otherwise, do not change the parser state and throw an error.
@@ -1074,35 +1068,54 @@ def expect(lexer: Lexer, kind: TokenKind) -> Token:
     if token.kind == kind:
         lexer.advance()
         return token
+
     raise GraphQLSyntaxError(
         lexer.source, token.start, f"Expected {kind.value}, found {token.kind.value}"
     )
 
 
-def skip_keyword(lexer: Lexer, value: str) -> bool:
-    """Conditionally skip the next keyword.
+def expect_optional_token(lexer: Lexer, kind: TokenKind) -> Optional[Token]:
+    """Expect the next token optionally to be of the given kind.
 
-    If the next token is a keyword with the given value, return True after advancing
-    the lexer. Otherwise, do not change the parser state and return False.
+    If the next token is of the given kind, return that token after advancing the lexer.
+    Otherwise, do not change the parser state and return None.
+    """
+    token = lexer.token
+    if token.kind == kind:
+        lexer.advance()
+        return token
+
+    return None
+
+
+def expect_keyword(lexer: Lexer, value: str) -> Token:
+    """Expect the next token to be a given keyword.
+
+    If the next token is a given keyword, return that token after advancing the lexer.
+    Otherwise, do not change the parser state and throw an error.
     """
     token = lexer.token
     if token.kind == TokenKind.NAME and token.value == value:
         lexer.advance()
-        return True
-    return False
+        return token
+
+    raise GraphQLSyntaxError(
+        lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
+    )
 
 
-def expect_keyword(lexer: Lexer, value: str) -> None:
-    """Check next token for given keyword.
+def expect_optional_keyword(lexer: Lexer, value: str) -> Optional[Token]:
+    """Expect the next token optionally to be a given keyword.
 
-    If the next token is a keyword with the given value, advance the lexer. Otherwise,
-    do not change the parser state and throw an error.
+    If the next token is a given keyword, return that token after advancing the lexer.
+    Otherwise, do not change the parser state and return None.
     """
-    if not skip_keyword(lexer, value):
-        token = lexer.token
-        raise GraphQLSyntaxError(
-            lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
-        )
+    token = lexer.token
+    if token.kind == TokenKind.NAME and token.value == value:
+        lexer.advance()
+        return token
+
+    return None
 
 
 def unexpected(lexer: Lexer, at_token: Token = None) -> GraphQLError:
@@ -1123,10 +1136,10 @@ def any_nodes(
     This list begins with a lex token of `open_kind` and ends with a lex token of
     `close_kind`. Advances the parser to the next lex token after the closing token.
     """
-    expect(lexer, open_kind)
+    expect_token(lexer, open_kind)
     nodes: List[Node] = []
     append = nodes.append
-    while not skip(lexer, close_kind):
+    while not expect_optional_token(lexer, close_kind):
         append(parse_fn(lexer))
     return nodes
 
@@ -1143,9 +1156,9 @@ def many_nodes(
     This list begins with a lex token of `open_kind` and ends with a lex token of
     `close_kind`. Advances the parser to the next lex token after the closing token.
     """
-    expect(lexer, open_kind)
+    expect_token(lexer, open_kind)
     nodes = [parse_fn(lexer)]
     append = nodes.append
-    while not skip(lexer, close_kind):
+    while not expect_optional_token(lexer, close_kind):
         append(parse_fn(lexer))
     return nodes
