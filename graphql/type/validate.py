@@ -474,10 +474,9 @@ def get_all_sub_nodes(
 ) -> List[Node]:
     result: List[Node] = []
     for ast_node in get_all_nodes(obj):
-        if ast_node:
-            sub_nodes = getter(ast_node)
-            if sub_nodes:
-                result.extend(sub_nodes)
+        sub_nodes = getter(ast_node)
+        if sub_nodes:
+            result.extend(sub_nodes)
     return result
 
 
