@@ -212,6 +212,8 @@ class GraphQLNamedType(GraphQLType):
                 raise TypeError(
                     f"{name} extension AST nodes must be TypeExtensionNode."
                 )
+        else:
+            extension_ast_nodes = None
         self.name = name
         self.description = description
         self.ast_node = ast_node
@@ -222,6 +224,15 @@ class GraphQLNamedType(GraphQLType):
 
     def __repr__(self):
         return f"<{self.__class__.__name__}({self})>"
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            name=self.name,
+            description=self.description,
+            ast_node=self.ast_node,
+            extension_ast_nodes=self.extension_ast_nodes
+            or cast(Tuple[TypeExtensionNode], ()),
+        )
 
 
 def is_named_type(type_: Any) -> bool:
@@ -352,6 +363,14 @@ class GraphQLScalarType(GraphQLNamedType):
     def __repr__(self):
         return f"<{self.__class__.__name__}({self})>"
 
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            **super().to_kwargs(),
+            serialize=self.serialize,
+            parse_value=self.parse_value,
+            parse_literal=self.parse_literal,
+        )
+
 
 def is_scalar_type(type_: Any) -> bool:
     return isinstance(type_, GraphQLScalarType)
@@ -432,6 +451,17 @@ class GraphQLField:
             and self.resolve == other.resolve
             and self.description == other.description
             and self.deprecation_reason == other.deprecation_reason
+        )
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            type_=self.type,
+            args=self.args.copy(),
+            resolve=self.resolve,
+            subscribe=self.subscribe,
+            description=self.description,
+            deprecation_reason=self.deprecation_reason,
+            ast_node=self.ast_node,
         )
 
     @property
@@ -521,6 +551,14 @@ class GraphQLArgument:
             and self.description == other.description
         )
 
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            type_=self.type,
+            default_value=self.default_value,
+            description=self.description,
+            ast_node=self.ast_node,
+        )
+
 
 def is_required_argument(arg: GraphQLArgument) -> bool:
     return is_non_null_type(arg.type) and arg.default_value is INVALID
@@ -597,6 +635,14 @@ class GraphQLObjectType(GraphQLNamedType):
         self._fields = fields
         self._interfaces = interfaces
         self.is_type_of = is_type_of
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            **super().to_kwargs(),
+            fields=self.fields.copy(),
+            interfaces=self.interfaces,
+            is_type_of=self.is_type_of,
+        )
 
     @cached_property
     def fields(self) -> GraphQLFieldMap:
@@ -708,6 +754,13 @@ class GraphQLInterfaceType(GraphQLNamedType):
         self.resolve_type = resolve_type
         self.description = description
 
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            **super().to_kwargs(),
+            fields=self.fields.copy(),
+            resolve_type=self.resolve_type,
+        )
+
     @cached_property
     def fields(self) -> GraphQLFieldMap:
         """Get provided fields, wrapping them as GraphQLFields if needed."""
@@ -804,6 +857,11 @@ class GraphQLUnionType(GraphQLNamedType):
             )
         self._types = types
         self.resolve_type = resolve_type
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            **super().to_kwargs(), types=self.types, resolve_type=self.resolve_type
+        )
 
     @cached_property
     def types(self) -> GraphQLTypeList:
@@ -921,6 +979,9 @@ class GraphQLEnumType(GraphQLNamedType):
                 f"{name} extension AST nodes must be EnumTypeExtensionNode."
             )
         self.values = values
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(**super().to_kwargs(), values=self.values.copy())
 
     @cached_property
     def _value_lookup(self) -> Dict[Any, str]:
@@ -1076,6 +1137,9 @@ class GraphQLInputObjectType(GraphQLNamedType):
             )
         self._fields = fields
 
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(**super().to_kwargs(), fields=self.fields.copy())
+
     @cached_property
     def fields(self) -> GraphQLInputFieldMap:
         """Get provided fields, wrap them as GraphQLInputField if needed."""
@@ -1147,6 +1211,14 @@ class GraphQLInputField:
             isinstance(other, GraphQLInputField)
             and self.type == other.type
             and self.description == other.description
+        )
+
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            type_=self.type,
+            description=self.description,
+            default_value=self.default_value,
+            ast_node=self.ast_node,
         )
 
 

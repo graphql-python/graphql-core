@@ -86,6 +86,15 @@ class GraphQLDirective:
     def __repr__(self):
         return f"<{self.__class__.__name__}({self})>"
 
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            name=self.name,
+            locations=self.locations,
+            args=self.args,
+            description=self.description,
+            ast_node=self.ast_node,
+        )
+
 
 def is_directive(directive: Any) -> bool:
     """Test if the given value is a GraphQL directive."""

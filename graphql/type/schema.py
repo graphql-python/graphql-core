@@ -137,6 +137,19 @@ class GraphQLSchema:
             elif is_abstract_type(type_):
                 setdefault(type_.name, [])
 
+    def to_kwargs(self) -> Dict[str, Any]:
+        return dict(
+            query=self.query,
+            mutation=self.mutation,
+            subscription=self.subscription,
+            types=self.type_map.values(),
+            directives=self.directives[:],
+            ast_node=self.ast_node,
+            extension_ast_nodes=self.extension_ast_nodes
+            or cast(Tuple[ast.SchemaExtensionNode], ()),
+            assume_valid=self._validation_errors is not None,
+        )
+
     def get_type(self, name: str) -> Optional[GraphQLNamedType]:
         return self.type_map.get(name)
 

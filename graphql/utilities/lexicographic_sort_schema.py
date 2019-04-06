@@ -40,38 +40,28 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         return maybe_type and sort_named_type(maybe_type)
 
     def sort_directive(directive):
-        return GraphQLDirective(
-            name=directive.name,
-            description=directive.description,
+        kwargs = directive.to_kwargs()
+        kwargs.update(
             locations=sorted(directive.locations, key=attrgetter("name")),
             args=sort_args(directive.args),
-            ast_node=directive.ast_node,
         )
+        return GraphQLDirective(**kwargs)
 
-    def sort_args(args):
-        return {
-            name: GraphQLArgument(
-                sort_type(arg.type),
-                default_value=arg.default_value,
-                description=arg.description,
-                ast_node=arg.ast_node,
-            )
-            for name, arg in sorted(args.items())
-        }
+    def sort_args(args_map):
+        args = {}
+        for name, arg in sorted(args_map.items()):
+            kwargs = arg.to_kwargs()
+            kwargs.update(type_=sort_type(arg.type))
+            args[name] = GraphQLArgument(**kwargs)
+        return args
 
     def sort_fields(fields_map):
-        return {
-            name: GraphQLField(
-                sort_type(field.type),
-                args=sort_args(field.args),
-                resolve=field.resolve,
-                subscribe=field.subscribe,
-                description=field.description,
-                deprecation_reason=field.deprecation_reason,
-                ast_node=field.ast_node,
-            )
-            for name, field in sorted(fields_map.items())
-        }
+        fields = {}
+        for name, field in sorted(fields_map.items()):
+            kwargs = field.to_kwargs()
+            kwargs.update(type_=sort_type(field.type), args=sort_args(field.args))
+            fields[name] = GraphQLField(**kwargs)
+        return fields
 
     def sort_input_fields(fields_map):
         return {
@@ -109,41 +99,23 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         if is_scalar_type(type_):
             return type_
         elif is_object_type(type_):
-            type1 = cast(GraphQLObjectType, type_)
-            return GraphQLObjectType(
-                type_.name,
-                interfaces=lambda: cast(
-                    List[GraphQLInterfaceType], sort_types(type1.interfaces)
-                ),
-                fields=lambda: sort_fields(type1.fields),
-                is_type_of=type1.is_type_of,
-                description=type_.description,
-                ast_node=type1.ast_node,
-                extension_ast_nodes=type1.extension_ast_nodes,
+            kwargs = type_.to_kwargs()
+            kwargs.update(
+                interfaces=lambda: sort_types(type_.interfaces),
+                fields=lambda: sort_fields(type_.fields),
             )
+            return GraphQLObjectType(**kwargs)
         elif is_interface_type(type_):
-            type2 = cast(GraphQLInterfaceType, type_)
-            return GraphQLInterfaceType(
-                type_.name,
-                fields=lambda: sort_fields(type2.fields),
-                resolve_type=type2.resolve_type,
-                description=type_.description,
-                ast_node=type2.ast_node,
-                extension_ast_nodes=type2.extension_ast_nodes,
-            )
+            kwargs = type_.to_kwargs()
+            kwargs.update(fields=lambda: sort_fields(type_.fields))
+            return GraphQLInterfaceType(**kwargs)
         elif is_union_type(type_):
-            type3 = cast(GraphQLUnionType, type_)
-            return GraphQLUnionType(
-                type_.name,
-                types=lambda: cast(List[GraphQLObjectType], sort_types(type3.types)),
-                resolve_type=type3.resolve_type,
-                description=type_.description,
-                ast_node=type3.ast_node,
-            )
+            kwargs = type_.to_kwargs()
+            kwargs.update(types=lambda: sort_types(type_.types))
+            return GraphQLUnionType(**kwargs)
         elif is_enum_type(type_):
-            type4 = cast(GraphQLEnumType, type_)
-            return GraphQLEnumType(
-                type_.name,
+            kwargs = type_.to_kwargs()
+            kwargs.update(
                 values={
                     name: GraphQLEnumValue(
                         val.value,
@@ -151,19 +123,14 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                         deprecation_reason=val.deprecation_reason,
                         ast_node=val.ast_node,
                     )
-                    for name, val in sorted(type4.values.items())
-                },
-                description=type_.description,
-                ast_node=type4.ast_node,
+                    for name, val in sorted(type_.values.items())
+                }
             )
+            return GraphQLEnumType(**kwargs)
         elif is_input_object_type(type_):
-            type5 = cast(GraphQLInputObjectType, type_)
-            return GraphQLInputObjectType(
-                type_.name,
-                sort_input_fields(type5.fields),
-                description=type_.description,
-                ast_node=type5.ast_node,
-            )
+            kwargs = type_.to_kwargs()
+            kwargs.update(fields=sort_input_fields(type_.fields))
+            return GraphQLInputObjectType(**kwargs)
         raise TypeError(f"Unknown type: '{type_}'")
 
     return GraphQLSchema(
