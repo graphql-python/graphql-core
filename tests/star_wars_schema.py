@@ -110,7 +110,7 @@ character_interface = GraphQLInterfaceType(
             GraphQLString, description="All secrets about their past."
         ),
     },
-    resolve_type=lambda character, _info: {
+    resolve_type=lambda character, _info, _type: {
         "Human": human_type,
         "Droid": droid_type,
     }.get(character.type),

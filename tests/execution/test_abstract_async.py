@@ -45,7 +45,7 @@ def get_is_type_of(type_):
 
 
 def get_type_resolver(types):
-    async def resolve(obj, _info):
+    async def resolve(obj, _info, _type):
         return resolve_thunk(types).get(obj.__class__)
 
     return resolve

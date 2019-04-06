@@ -50,7 +50,7 @@ CatType = GraphQLObjectType(
 )
 
 
-def resolve_pet_type(value, info):
+def resolve_pet_type(value, _info, _type):
     if isinstance(value, Dog):
         return DogType
     if isinstance(value, Cat):
@@ -67,7 +67,7 @@ PersonType = GraphQLObjectType(
         "friends": GraphQLField(GraphQLList(NamedType)),
     },
     interfaces=[NamedType],
-    is_type_of=lambda value, info: isinstance(value, Person),
+    is_type_of=lambda value, _info: isinstance(value, Person),
 )
 
 schema = GraphQLSchema(PersonType, types=[PetType])
@@ -312,7 +312,7 @@ def describe_execute_union_and_intersection_types():
     def gets_execution_info_in_resolver():
         encountered = {}
 
-        def resolve_type(obj, info):
+        def resolve_type(_obj, info, _type):
             encountered["context"] = info.context
             encountered["schema"] = info.schema
             encountered["root_value"] = info.root_value

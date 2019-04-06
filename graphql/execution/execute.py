@@ -860,12 +860,8 @@ class ExecutionContext:
         Complete a value of an abstract type by determining the runtime object type of
         that value, then complete the value for that type.
         """
-        resolve_type = return_type.resolve_type
-        runtime_type = (
-            resolve_type(result, info)
-            if resolve_type
-            else default_resolve_type_fn(result, info, return_type)
-        )
+        resolve_type_fn = return_type.resolve_type or default_resolve_type_fn
+        runtime_type = resolve_type_fn(result, info, return_type)
 
         if isawaitable(runtime_type):
 

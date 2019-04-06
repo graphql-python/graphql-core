@@ -509,7 +509,8 @@ GraphQLFieldResolver = Callable[..., Any]
 # Note: Contrary to the Javascript implementation of GraphQLTypeResolver,
 # the context is passed as part of the GraphQLResolveInfo:
 GraphQLTypeResolver = Callable[
-    [Any, GraphQLResolveInfo], MaybeAwaitable[Union["GraphQLObjectType", str]]
+    [Any, GraphQLResolveInfo, "GraphQLAbstractType"],
+    MaybeAwaitable[Optional[Union["GraphQLObjectType", str]]],
 ]
 
 # Note: Contrary to the Javascript implementation of GraphQLIsTypeOfFn,
