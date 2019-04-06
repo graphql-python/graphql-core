@@ -684,8 +684,6 @@ class ExecutionContext:
         path: ResponsePath,
         return_type: GraphQLOutputType,
     ) -> None:
-        if not isinstance(raw_error, GraphQLError):
-            raw_error = GraphQLError(str(raw_error), original_error=raw_error)
         error = located_error(raw_error, field_nodes, response_path_as_list(path))
 
         # If the field type is non-nullable, then it is resolved without any protection

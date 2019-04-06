@@ -448,18 +448,17 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
-            {
-              pets {
-                name
-                ... on Dog {
-                  woofs
-                }
-                ... on Cat {
-                  meows
-                }
-              }
-            }"""
+        query = """{
+          pets {
+            name
+            ... on Dog {
+              woofs
+            }
+            ... on Cat {
+              meows
+            }
+          }
+        }"""
 
         result = await graphql(schema, query)
         assert result == (
@@ -470,4 +469,70 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
                 ]
             },
             None,
+        )
+
+    @mark.asyncio
+    async def resolve_type_can_be_caught():
+        PetType = GraphQLInterfaceType(
+            "Pet", {"name": GraphQLField(GraphQLString)}, resolve_type=is_type_of_error
+        )
+
+        DogType = GraphQLObjectType(
+            "Dog",
+            {
+                "name": GraphQLField(GraphQLString),
+                "woofs": GraphQLField(GraphQLBoolean),
+            },
+            interfaces=[PetType],
+        )
+
+        CatType = GraphQLObjectType(
+            "Cat",
+            {
+                "name": GraphQLField(GraphQLString),
+                "meows": GraphQLField(GraphQLBoolean),
+            },
+            interfaces=[PetType],
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "pets": GraphQLField(
+                        GraphQLList(PetType),
+                        resolve=lambda *_: [Dog("Odie", True), Cat("Garfield", False)],
+                    )
+                },
+            ),
+            types=[CatType, DogType],
+        )
+
+        query = """{
+          pets {
+            name
+            ... on Dog {
+              woofs
+            }
+            ... on Cat {
+              meows
+            }
+          }
+        }"""
+
+        result = await graphql(schema, query)
+        assert result == (
+            {"pets": [None, None]},
+            [
+                {
+                    "message": "We are testing this error",
+                    "locations": [(2, 11)],
+                    "path": ["pets", 0],
+                },
+                {
+                    "message": "We are testing this error",
+                    "locations": [(2, 11)],
+                    "path": ["pets", 1],
+                },
+            ],
         )
