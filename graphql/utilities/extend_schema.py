@@ -169,20 +169,20 @@ def extend_schema(
 
     def extend_directive(directive: GraphQLDirective) -> GraphQLDirective:
         kwargs = directive.to_kwargs()
-        kwargs['args'] = extend_args(kwargs['args'])
+        kwargs["args"] = extend_args(kwargs["args"])
         return GraphQLDirective(**kwargs)
 
     def extend_input_object_type(
         type_: GraphQLInputObjectType
     ) -> GraphQLInputObjectType:
         kwargs = type_.to_kwargs()
-        extension_nodes = type_extensions_map.get(kwargs['name'], ())
+        extension_nodes = type_extensions_map.get(kwargs["name"], ())
 
         def fields_thunk():
             fields = {}
             for field_name, field in type_.fields.items():
                 field_kwargs = field.to_kwargs()
-                field_kwargs['type_'] = extend_type(field_kwargs['type_'])
+                field_kwargs["type_"] = extend_type(field_kwargs["type_"])
                 fields[field_name] = GraphQLInputField(**field_kwargs)
 
             # If there are any extensions to the fields, apply those here.
@@ -192,33 +192,33 @@ def extend_schema(
 
             return fields
 
-        kwargs['fields'] = fields_thunk
-        kwargs['extension_ast_nodes'] += tuple(extension_nodes)
+        kwargs["fields"] = fields_thunk
+        kwargs["extension_ast_nodes"] += tuple(extension_nodes)
         return GraphQLInputObjectType(**kwargs)
 
     def extend_enum_type(type_: GraphQLEnumType) -> GraphQLEnumType:
         kwargs = type_.to_kwargs()
-        extension_nodes = type_extensions_map.get(kwargs['name'], ())
-        values = kwargs['values']
+        extension_nodes = type_extensions_map.get(kwargs["name"], ())
+        values = kwargs["values"]
 
         # If there are any extensions to the values, apply those here.
         for extension in extension_nodes:
             for value in extension.values:
                 values[value.name.value] = ast_builder.build_enum_value(value)
 
-        kwargs['extension_ast_nodes'] += tuple(extension_nodes)
+        kwargs["extension_ast_nodes"] += tuple(extension_nodes)
         return GraphQLEnumType(**kwargs)
 
     def extend_scalar_type(type_: GraphQLScalarType) -> GraphQLScalarType:
         kwargs = type_.to_kwargs()
-        extension_nodes = type_extensions_map.get(kwargs['name'], ())
+        extension_nodes = type_extensions_map.get(kwargs["name"], ())
 
-        kwargs['extension_ast_nodes'] += tuple(extension_nodes)
+        kwargs["extension_ast_nodes"] += tuple(extension_nodes)
         return GraphQLScalarType(**kwargs)
 
     def extend_object_type(type_: GraphQLObjectType) -> GraphQLObjectType:
         kwargs = type_.to_kwargs()
-        extension_nodes = type_extensions_map.get(kwargs['name'], ())
+        extension_nodes = type_extensions_map.get(kwargs["name"], ())
 
         def interfaces_thunk():
             interfaces: List[GraphQLInterfaceType] = list(
@@ -239,26 +239,27 @@ def extend_schema(
                     # validation with `validate_schema()` will produce more actionable
                     # results.
                     interfaces.append(
-                        cast(GraphQLInterfaceType, build_type(named_type)))
+                        cast(GraphQLInterfaceType, build_type(named_type))
+                    )
 
             return interfaces
 
-        kwargs['interfaces'] = interfaces_thunk
-        kwargs['fields'] = partial(extend_field_map, type_)
-        kwargs['extension_ast_nodes'] += tuple(extension_nodes)
+        kwargs["interfaces"] = interfaces_thunk
+        kwargs["fields"] = partial(extend_field_map, type_)
+        kwargs["extension_ast_nodes"] += tuple(extension_nodes)
         return GraphQLObjectType(**kwargs)
 
     def extend_interface_type(type_: GraphQLInterfaceType) -> GraphQLInterfaceType:
         kwargs = type_.to_kwargs()
-        extension_nodes = type_extensions_map.get(kwargs['name'], ())
+        extension_nodes = type_extensions_map.get(kwargs["name"], ())
 
-        kwargs['fields'] = partial(extend_field_map, type_)
-        kwargs['extension_ast_nodes'] += tuple(extension_nodes)
+        kwargs["fields"] = partial(extend_field_map, type_)
+        kwargs["extension_ast_nodes"] += tuple(extension_nodes)
         return GraphQLInterfaceType(**kwargs)
 
     def extend_union_type(type_: GraphQLUnionType) -> GraphQLUnionType:
         kwargs = type_.to_kwargs()
-        extension_nodes = type_extensions_map.get(kwargs['name'], ())
+        extension_nodes = type_extensions_map.get(kwargs["name"], ())
 
         def types_thunk():
             types = list(map(extend_named_type, type_.types))
@@ -274,15 +275,15 @@ def extend_schema(
 
             return types
 
-        kwargs['types'] = types_thunk
-        kwargs['extension_ast_nodes'] += tuple(extension_nodes)
+        kwargs["types"] = types_thunk
+        kwargs["extension_ast_nodes"] += tuple(extension_nodes)
         return GraphQLUnionType(**kwargs)
 
     def extend_args(old_args: GraphQLArgumentMap) -> GraphQLArgumentMap:
         args = {}
         for arg_name, arg in old_args.items():
             arg_kwargs = arg.to_kwargs()
-            arg_kwargs['type_'] = extend_type(arg_kwargs['type_'])
+            arg_kwargs["type_"] = extend_type(arg_kwargs["type_"])
             args[arg_name] = GraphQLArgument(**arg_kwargs)
         return args
 
@@ -292,8 +293,8 @@ def extend_schema(
         fields = {}
         for field_name, field in type_.fields.items():
             field_kwargs = field.to_kwargs()
-            field_kwargs['type_'] = extend_type(field_kwargs['type_'])
-            field_kwargs['args'] = extend_args(field_kwargs['args'])
+            field_kwargs["type_"] = extend_type(field_kwargs["type_"])
+            field_kwargs["args"] = extend_args(field_kwargs["args"])
             fields[field_name] = GraphQLField(**field_kwargs)
 
         # If there are any extensions to the fields, apply those here.
