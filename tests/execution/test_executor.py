@@ -8,16 +8,17 @@ from graphql.execution import execute
 from graphql.language import parse, OperationDefinitionNode, FieldNode
 from graphql.pyutils import inspect
 from graphql.type import (
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLString,
-    GraphQLField,
     GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLField,
     GraphQLInt,
+    GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
-    GraphQLBoolean,
+    GraphQLObjectType,
     GraphQLResolveInfo,
+    GraphQLSchema,
+    GraphQLString,
     ResponsePath,
 )
 
@@ -854,3 +855,32 @@ def describe_execute_handles_basic_execution_tasks():
 
         result = execute(schema, document, field_resolver=field_resolver)
         assert result == ({"foo": "foo"}, None)
+
+    def uses_a_custom_type_resolver():
+        document = parse("{ foo { bar } }")
+
+        foo_interface = GraphQLInterfaceType(
+            "FooInterface", {"bar": GraphQLField(GraphQLString)}
+        )
+
+        foo_object = GraphQLObjectType(
+            "FooObject", {"bar": GraphQLField(GraphQLString)}, [foo_interface]
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"foo": GraphQLField(foo_interface)}),
+            types=[foo_object],
+        )
+
+        def type_resolver(_source, info, abstract_type):
+            # Resolver should be able to figure out all possible types on its own
+            nonlocal possible_types
+            possible_types = info.schema.get_possible_types(abstract_type)
+            return "FooObject"
+
+        possible_types = None
+        root_value = {"foo": {"bar": "bar"}}
+        result = execute(schema, document, root_value, type_resolver=type_resolver)
+
+        assert result == ({"foo": {"bar": "bar"}}, None)
+        assert possible_types == [foo_object]

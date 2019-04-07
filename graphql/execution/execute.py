@@ -41,6 +41,7 @@ from ..type import (
     GraphQLSchema,
     GraphQLSkipDirective,
     GraphQLFieldResolver,
+    GraphQLTypeResolver,
     GraphQLResolveInfo,
     ResponsePath,
     SchemaMetaFieldDef,
@@ -59,6 +60,7 @@ __all__ = [
     "add_path",
     "assert_valid_execution_arguments",
     "default_field_resolver",
+    "default_type_resolver",
     "execute",
     "get_field_def",
     "response_path_as_list",
@@ -111,6 +113,7 @@ def execute(
     variable_values: Dict[str, Any] = None,
     operation_name: str = None,
     field_resolver: GraphQLFieldResolver = None,
+    type_resolver: GraphQLTypeResolver = None,
     middleware: Middleware = None,
     execution_context_class: Type["ExecutionContext"] = None,
 ) -> MaybeAwaitable[ExecutionResult]:
@@ -140,6 +143,7 @@ def execute(
         variable_values,
         operation_name,
         field_resolver,
+        type_resolver,
         middleware,
     )
 
@@ -173,6 +177,7 @@ class ExecutionContext:
     operation: OperationDefinitionNode
     variable_values: Dict[str, Any]
     field_resolver: GraphQLFieldResolver
+    type_resolver: GraphQLTypeResolver
     middleware_manager: Optional[MiddlewareManager]
     errors: List[GraphQLError]
 
@@ -185,6 +190,7 @@ class ExecutionContext:
         operation: OperationDefinitionNode,
         variable_values: Dict[str, Any],
         field_resolver: GraphQLFieldResolver,
+        type_resolver: GraphQLTypeResolver,
         middleware_manager: Optional[MiddlewareManager],
         errors: List[GraphQLError],
     ) -> None:
@@ -195,6 +201,7 @@ class ExecutionContext:
         self.operation = operation
         self.variable_values = variable_values
         self.field_resolver = field_resolver  # type: ignore
+        self.type_resolver = type_resolver  # type: ignore
         self.middleware_manager = middleware_manager
         self.errors = errors
         self._subfields_cache: Dict[
@@ -211,6 +218,7 @@ class ExecutionContext:
         raw_variable_values: Dict[str, Any] = None,
         operation_name: str = None,
         field_resolver: GraphQLFieldResolver = None,
+        type_resolver: GraphQLTypeResolver = None,
         middleware: Middleware = None,
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
         """Build an execution context
@@ -290,6 +298,7 @@ class ExecutionContext:
             operation,
             variable_values,
             field_resolver or default_field_resolver,
+            type_resolver or default_type_resolver,
             middleware_manager,
             errors,
         )
@@ -390,6 +399,7 @@ class ExecutionContext:
                     )
                     return awaited_results
 
+                # noinspection PyTypeChecker
                 results = await_and_set_result(
                     cast(Awaitable, results), response_name, result
                 )
@@ -399,6 +409,7 @@ class ExecutionContext:
                     results[response_name] = await result
                     return results
 
+                # noinspection PyTypeChecker
                 results = set_result(results, response_name, result)
             else:
                 results[response_name] = result
@@ -860,8 +871,8 @@ class ExecutionContext:
         Complete a value of an abstract type by determining the runtime object type of
         that value, then complete the value for that type.
         """
-        resolve_type_fn = return_type.resolve_type or default_resolve_type_fn
-        runtime_type = resolve_type_fn(result, info, return_type)
+        resolve_type_fn = return_type.resolve_type or self.type_resolver
+        runtime_type = resolve_type_fn(result, info, return_type)  # type: ignore
 
         if isawaitable(runtime_type):
 
@@ -1086,12 +1097,12 @@ def invalid_return_type_error(
     )
 
 
-def default_resolve_type_fn(
+def default_type_resolver(
     value: Any, info: GraphQLResolveInfo, abstract_type: GraphQLAbstractType
 ) -> MaybeAwaitable[Optional[Union[GraphQLObjectType, str]]]:
     """Default type resolver function.
 
-    If a resolveType function is not given, then a default resolve behavior is used
+    If a resolve_type function is not given, then a default resolve behavior is used
     which attempts two strategies:
 
     First, See if the provided value has a `__typename` field defined, if so, use that
@@ -1100,7 +1111,6 @@ def default_resolve_type_fn(
     Otherwise, test each possible type for the abstract type by calling `is_type_of`
     for the object being coerced, returning the first type that matches.
     """
-
     # First, look for `__typename`.
     type_name = (
         value.get("__typename")

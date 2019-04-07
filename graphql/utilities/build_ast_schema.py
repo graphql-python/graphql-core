@@ -173,7 +173,7 @@ def get_operation_types(
     return op_types
 
 
-def default_type_resolver(type_name: str) -> NoReturn:
+def default_type_resolver(type_name: str, *_args) -> NoReturn:
     """Type resolver that always throws an error."""
     raise TypeError(f"Type '{type_name}' not found in document.")
 

@@ -257,6 +257,7 @@ from .language import (
 from .execution import (
     execute,
     default_field_resolver,
+    default_type_resolver,
     response_path_as_list,
     get_directive_values,
     # Types
@@ -558,6 +559,7 @@ __all__ = [
     "InputObjectTypeExtensionNode",
     "execute",
     "default_field_resolver",
+    "default_type_resolver",
     "response_path_as_list",
     "get_directive_values",
     "ExecutionContext",

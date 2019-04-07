@@ -1,12 +1,17 @@
 from asyncio import ensure_future
 from inspect import isawaitable
-from typing import Any, Awaitable, Callable, Dict, Union, Type, cast
+from typing import Any, Awaitable, Dict, Union, Type, cast
 
 from .error import GraphQLError
 from .execution import execute, ExecutionResult, ExecutionContext, Middleware
 from .language import parse, Source
 from .pyutils import MaybeAwaitable
-from .type import GraphQLSchema, validate_schema
+from .type import (
+    GraphQLFieldResolver,
+    GraphQLSchema,
+    GraphQLTypeResolver,
+    validate_schema,
+)
 
 __all__ = ["graphql", "graphql_sync"]
 
@@ -18,7 +23,8 @@ async def graphql(
     context_value: Any = None,
     variable_values: Dict[str, Any] = None,
     operation_name: str = None,
-    field_resolver: Callable = None,
+    field_resolver: GraphQLFieldResolver = None,
+    type_resolver: GraphQLTypeResolver = None,
     middleware: Middleware = None,
     execution_context_class: Type[ExecutionContext] = ExecutionContext,
 ) -> ExecutionResult:
@@ -55,6 +61,10 @@ async def graphql(
       A resolver function to use when one is not provided by the schema.
       If not provided, the default field resolver is used (which looks for a value
       or method on the source value with the field's name).
+    :arg type_resolver:
+      A type resolver function to use when none is provided by the schema.
+      If not provided, the default type resolver is used (which looks for a
+      `__typename` field or alternatively calls the `isTypeOf` method).
     :arg middleware:
       The middleware to wrap the resolvers with
     :arg execution_context_class:
@@ -69,6 +79,7 @@ async def graphql(
         variable_values,
         operation_name,
         field_resolver,
+        type_resolver,
         middleware,
         execution_context_class,
     )
@@ -86,7 +97,8 @@ def graphql_sync(
     context_value: Any = None,
     variable_values: Dict[str, Any] = None,
     operation_name: str = None,
-    field_resolver: Callable = None,
+    field_resolver: GraphQLFieldResolver = None,
+    type_resolver: GraphQLTypeResolver = None,
     middleware: Middleware = None,
     execution_context_class: Type[ExecutionContext] = ExecutionContext,
 ) -> ExecutionResult:
@@ -105,6 +117,7 @@ def graphql_sync(
         variable_values,
         operation_name,
         field_resolver,
+        type_resolver,
         middleware,
         execution_context_class,
     )
@@ -125,6 +138,7 @@ def graphql_impl(
     variable_values,
     operation_name,
     field_resolver,
+    type_resolver,
     middleware,
     execution_context_class,
 ) -> MaybeAwaitable[ExecutionResult]:
@@ -159,6 +173,7 @@ def graphql_impl(
         variable_values,
         operation_name,
         field_resolver,
+        type_resolver,
         middleware,
         execution_context_class,
     )
