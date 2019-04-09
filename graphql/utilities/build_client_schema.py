@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import cast, Callable, Dict, List, Sequence
 
 from ..error import INVALID
@@ -53,19 +54,6 @@ def build_client_schema(
     # Get the schema from the introspection result.
     schema_introspection = introspection["__schema"]
 
-    # Converts the list of types into a dict based on the type names.
-    type_introspection_map: Dict[str, Dict] = {
-        type_["name"]: type_ for type_ in schema_introspection["types"]
-    }
-
-    # A cache to use to store the actual GraphQLType definition objects by name.
-    # Initialize to the GraphQL built in scalars. All functions below are inline so
-    # that this type def cache is within the scope of the closure.
-    type_def_cache: Dict[str, GraphQLNamedType] = {
-        **specified_scalar_types,
-        **introspection_types,
-    }
-
     # Given a type reference in introspection, return the GraphQLType instance,
     # preferring cached instances before building new instances.
     def get_type(type_ref: Dict) -> GraphQLType:
@@ -87,19 +75,14 @@ def build_client_schema(
         return get_named_type(name)
 
     def get_named_type(type_name: str) -> GraphQLNamedType:
-        cached_type = type_def_cache.get(type_name)
-        if cached_type:
-            return cached_type
-        type_introspection = type_introspection_map.get(type_name)
-        if not type_introspection:
+        type_ = type_map.get(type_name)
+        if not type_:
             raise TypeError(
                 f"Invalid or incomplete schema, unknown type: {type_name}."
                 " Ensure that a full introspection query is used in order"
                 " to build a client schema."
             )
-        type_def = build_type(type_introspection)
-        type_def_cache[type_name] = type_def
-        return type_def
+        return type_
 
     def get_input_type(type_ref: Dict) -> GraphQLInputType:
         input_type = get_type(type_ref)
@@ -320,9 +303,17 @@ def build_client_schema(
             args=build_arg_value_def_map(directive_introspection["args"]),
         )
 
-    # Iterate through all types, getting the type definition for each, ensuring that
-    # any type not directly referenced by a field will get created.
-    types = [get_named_type(name) for name in type_introspection_map]
+    # Iterate through all types, getting the type definition for each.
+    type_map: Dict[str, GraphQLNamedType] = {
+        type_introspection["name"]: build_type(type_introspection)
+        for type_introspection in schema_introspection["types"]
+    }
+
+    for std_type_name, std_type in chain(
+        specified_scalar_types.items(), introspection_types.items()
+    ):
+        if std_type_name in type_map:
+            type_map[std_type_name] = std_type
 
     # Get the root Query, Mutation, and Subscription types.
 
@@ -355,7 +346,7 @@ def build_client_schema(
         query=query_type,
         mutation=mutation_type,
         subscription=subscription_type,
-        types=types,
+        types=list(type_map.values()),
         directives=directives,
         assume_valid=assume_valid,
     )
