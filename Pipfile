@@ -14,8 +14,8 @@ pytest-asyncio = "*"
 tox = "*"
 sphinx = "*"
 sphinx_rtd_theme = "*"
-python-coveralls = "*"
-pytest-cov = ">=2.4,<2.6"
+codecov = "*"
+pytest-cov = "*"
 pyyaml = ">=4.0"
 
 [pipenv]

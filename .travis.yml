@@ -22,4 +22,4 @@ script:
     - pytest --cov-report term-missing --cov=graphql
 
 after_success:
-    - coveralls
+    - codecov

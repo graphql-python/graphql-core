@@ -41,7 +41,7 @@ setup(
         "flake8",
         "mypy",
         "tox",
-        "python-coveralls",
+        "codecov",
     ],
     packages=find_packages(include=["graphql"]),
     include_package_data=True,
