@@ -3,7 +3,7 @@ from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast
-from ..pyutils import inspect, is_invalid, is_nullish
+from ..pyutils import inspect
 from ..type import (
     DEFAULT_DEPRECATION_REASON,
     GraphQLArgument,
@@ -248,9 +248,10 @@ def print_args(args: Dict[str, GraphQLArgument], indentation="") -> str:
 
 
 def print_input_value(name: str, arg: GraphQLArgument) -> str:
+    default_ast = ast_from_value(arg.default_value, arg.type)
     arg_decl = f"{name}: {arg.type}"
-    if not is_invalid(arg.default_value):
-        arg_decl += f" = {print_value(arg.default_value, arg.type)}"
+    if default_ast:
+        arg_decl += f" = {print_ast(default_ast)}"
     return arg_decl
 
 
@@ -268,10 +269,10 @@ def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue])
     if not field_or_enum_value.is_deprecated:
         return ""
     reason = field_or_enum_value.deprecation_reason
-    if is_nullish(reason) or reason == "" or reason == DEFAULT_DEPRECATION_REASON:
+    reason_ast = ast_from_value(reason, GraphQLString)
+    if not reason_ast or reason == "" or reason == DEFAULT_DEPRECATION_REASON:
         return " @deprecated"
-    else:
-        return f" @deprecated(reason: {print_value(reason, GraphQLString)})"
+    return f" @deprecated(reason: {print_ast(reason_ast)})"
 
 
 def print_description(

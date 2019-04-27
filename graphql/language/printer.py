@@ -8,7 +8,7 @@ from .visitor import visit, Visitor
 __all__ = ["print_ast"]
 
 
-def print_ast(ast: Node):
+def print_ast(ast: Node) -> str:
     """Convert an AST into a string.
 
     The conversion is done using a set of reasonable formatting rules.

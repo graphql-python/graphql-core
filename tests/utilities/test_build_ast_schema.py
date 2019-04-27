@@ -3,7 +3,7 @@ from collections import namedtuple
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DocumentNode
+from graphql.language import parse, print_ast, DocumentNode, Node
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
@@ -31,6 +31,11 @@ def cycle_sdl(sdl: str) -> str:
     ast = parse(sdl)
     schema = build_ast_schema(ast)
     return print_schema(schema)
+
+
+def print_node(node: Node) -> str:
+    assert node
+    return print_ast(node)
 
 
 def describe_schema_builder():
@@ -704,7 +709,9 @@ def describe_schema_builder():
             directive @test(arg: TestScalar) on FIELD
             """
         )
-        schema = build_schema(sdl)
+        ast = parse(sdl, no_location=True)
+
+        schema = build_ast_schema(ast)
         query = assert_object_type(schema.get_type("Query"))
         test_input = assert_input_object_type(schema.get_type("TestInput"))
         test_enum = assert_enum_type(schema.get_type("TestEnum"))
@@ -725,22 +732,23 @@ def describe_schema_builder():
                 test_type.ast_node,
                 test_scalar.ast_node,
                 test_directive.ast_node,
-            ]
+            ],
+            loc=None,
         )
-        assert print_ast(restored_schema_ast) == sdl
+        assert restored_schema_ast == ast
 
         test_field = query.fields["testField"]
-        assert print_ast(test_field.ast_node) == (
+        assert print_node(test_field.ast_node) == (
             "testField(testArg: TestInput): TestUnion"
         )
-        assert print_ast(test_field.args["testArg"].ast_node) == "testArg: TestInput"
-        assert print_ast(test_input.fields["testInputField"].ast_node) == (
+        assert print_node(test_field.args["testArg"].ast_node) == "testArg: TestInput"
+        assert print_node(test_input.fields["testInputField"].ast_node) == (
             "testInputField: TestEnum"
         )
         test_enum_value = test_enum.values["TEST_VALUE"]
         assert test_enum_value
-        assert print_ast(test_enum_value.ast_node) == "TEST_VALUE"
-        assert print_ast(test_interface.fields["interfaceField"].ast_node) == (
+        assert print_node(test_enum_value.ast_node) == "TEST_VALUE"
+        assert print_node(test_interface.fields["interfaceField"].ast_node) == (
             "interfaceField: String"
         )
         assert print_ast(test_directive.args["arg"].ast_node) == "arg: TestScalar"

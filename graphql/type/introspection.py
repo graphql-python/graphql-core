@@ -6,7 +6,6 @@ from .definition import (
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
-    GraphQLInputType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
@@ -21,9 +20,8 @@ from .definition import (
     is_scalar_type,
     is_union_type,
 )
-from ..pyutils import is_invalid
 from .scalars import GraphQLBoolean, GraphQLString
-from ..language import DirectiveLocation
+from ..language import DirectiveLocation, print_ast
 
 __all__ = [
     "SchemaMetaFieldDef",
@@ -33,13 +31,6 @@ __all__ = [
     "introspection_types",
     "is_introspection_type",
 ]
-
-
-def print_value(value: Any, type_: GraphQLInputType) -> str:
-    # Since print_value needs graphql.type, it can only be imported later
-    from ..utilities.schema_printer import print_value
-
-    return print_value(value, type_)
 
 
 __Schema: GraphQLObjectType = GraphQLObjectType(
@@ -345,6 +336,14 @@ __Field: GraphQLObjectType = GraphQLObjectType(
 )
 
 
+def _resolve_input_value_default_value(item, _info):
+    # Since ast_from_value needs graphql.type, it can only be imported later
+    from ..utilities import ast_from_value
+
+    value_ast = ast_from_value(item[1].default_value, item[1].type)
+    return print_ast(value_ast) if value_ast else None
+
+
 __InputValue: GraphQLObjectType = GraphQLObjectType(
     name="__InputValue",
     description="Arguments provided to Fields or Directives and the input"
@@ -364,9 +363,7 @@ __InputValue: GraphQLObjectType = GraphQLObjectType(
             GraphQLString,
             description="A GraphQL-formatted string representing"
             " the default value for this input value.",
-            resolve=lambda item, _info: None
-            if is_invalid(item[1].default_value)
-            else print_value(item[1].default_value, item[1].type),
+            resolve=_resolve_input_value_default_value,
         ),
     },
 )

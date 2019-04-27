@@ -1,7 +1,7 @@
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode
+from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode, Node
 from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
@@ -138,6 +138,11 @@ def print_test_schema_changes(extended_schema):
         if print_ast(node) not in test_schema_definitions
     ]
     return print_ast(ast)
+
+
+def print_node(node: Node) -> str:
+    assert node
+    return print_ast(node)
 
 
 def describe_extend_schema():
@@ -423,51 +428,53 @@ def describe_extend_schema():
         ) == print_schema(extended_twice_schema)
 
         new_field = query.fields["newField"]
-        assert print_ast(new_field.ast_node) == "newField(testArg: TestInput): TestEnum"
-        assert print_ast(new_field.args["testArg"].ast_node) == "testArg: TestInput"
         assert (
-            print_ast(query.fields["oneMoreNewField"].ast_node)
+            print_node(new_field.ast_node) == "newField(testArg: TestInput): TestEnum"
+        )
+        assert print_node(new_field.args["testArg"].ast_node) == "testArg: TestInput"
+        assert (
+            print_node(query.fields["oneMoreNewField"].ast_node)
             == "oneMoreNewField: TestUnion"
         )
 
         new_value = some_enum.values["NEW_VALUE"]
         assert some_enum
-        assert print_ast(new_value.ast_node) == "NEW_VALUE"
+        assert print_node(new_value.ast_node) == "NEW_VALUE"
 
         one_more_new_value = some_enum.values["ONE_MORE_NEW_VALUE"]
         assert one_more_new_value
-        assert print_ast(one_more_new_value.ast_node) == "ONE_MORE_NEW_VALUE"
-        assert print_ast(some_input.fields["newField"].ast_node) == "newField: String"
+        assert print_node(one_more_new_value.ast_node) == "ONE_MORE_NEW_VALUE"
+        assert print_node(some_input.fields["newField"].ast_node) == "newField: String"
         assert (
-            print_ast(some_input.fields["oneMoreNewField"].ast_node)
+            print_node(some_input.fields["oneMoreNewField"].ast_node)
             == "oneMoreNewField: String"
         )
         assert (
-            print_ast(some_interface.fields["newField"].ast_node) == "newField: String"
+            print_node(some_interface.fields["newField"].ast_node) == "newField: String"
         )
         assert (
-            print_ast(some_interface.fields["oneMoreNewField"].ast_node)
+            print_node(some_interface.fields["oneMoreNewField"].ast_node)
             == "oneMoreNewField: String"
         )
 
         assert (
-            print_ast(test_input.fields["testInputField"].ast_node)
+            print_node(test_input.fields["testInputField"].ast_node)
             == "testInputField: TestEnum"
         )
 
         test_value = test_enum.values["TEST_VALUE"]
         assert test_value
-        assert print_ast(test_value.ast_node) == "TEST_VALUE"
+        assert print_node(test_value.ast_node) == "TEST_VALUE"
 
         assert (
-            print_ast(test_interface.fields["interfaceField"].ast_node)
+            print_node(test_interface.fields["interfaceField"].ast_node)
             == "interfaceField: String"
         )
         assert (
-            print_ast(test_type.fields["interfaceField"].ast_node)
+            print_node(test_type.fields["interfaceField"].ast_node)
             == "interfaceField: String"
         )
-        assert print_ast(test_directive.args["arg"].ast_node) == "arg: Int"
+        assert print_node(test_directive.args["arg"].ast_node) == "arg: Int"
 
     def builds_types_with_deprecated_fields_and_values():
         extended_schema = extend_test_schema(
@@ -1092,7 +1099,7 @@ def describe_extend_schema():
             schema = extend_schema(schema, parse(extension_sdl))
             query_type = schema.query_type
             assert query_type.name == "Foo"
-            assert print_ast(schema.ast_node) == extension_sdl.rstrip()
+            assert print_node(schema.ast_node) == extension_sdl.rstrip()
 
         def adds_new_root_types_via_schema_extension():
             schema = extend_test_schema(

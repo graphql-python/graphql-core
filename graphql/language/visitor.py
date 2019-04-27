@@ -190,7 +190,7 @@ class Stack(NamedTuple):
     prev: Any  # 'Stack' (python/mypy/issues/731)
 
 
-def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Node:
+def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
     """Visit each node in an AST.
 
     `visit()` will walk through an AST using a depth first traversal, calling the
