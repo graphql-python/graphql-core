@@ -199,7 +199,6 @@ class ASTDefinitionBuilder:
             return GraphQLList(self.get_wrapped_type(node.type))
         if isinstance(node, NonNullTypeNode):
             return GraphQLNonNull(
-                # Note: GraphQLNonNull constructor validates this type
                 cast(GraphQLNullableType, self.get_wrapped_type(node.type))
             )
         return self.get_named_type(cast(NamedTypeNode, node))
