@@ -23,9 +23,9 @@ from ..type import (
     GraphQLNonNull,
     is_enum_type,
     is_input_object_type,
+    is_leaf_type,
     is_list_type,
     is_non_null_type,
-    is_scalar_type,
 )
 
 __all__ = ["ast_from_value"]
@@ -96,7 +96,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
                     )
         return ObjectValueNode(fields=field_nodes)
 
-    if is_scalar_type(type_) or is_enum_type(type_):
+    if is_leaf_type(type_):
         # Since value is an internally represented value, it must be serialized to an
         # externally represented value before converting into an AST.
         serialized = type_.serialize(value)  # type: ignore
