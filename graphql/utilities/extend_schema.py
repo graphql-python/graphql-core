@@ -163,7 +163,7 @@ def extend_schema(
             type_ = cast(GraphQLInputObjectType, type_)
             return extend_input_object_type(type_)
         # Not reachable. All possible types have been considered.
-        raise TypeError(f"Type {type_} not supported.")
+        raise TypeError(f"Type {type_} not supported.")  # pragma: no cover
 
     def extend_directive(directive: GraphQLDirective) -> GraphQLDirective:
         kwargs = directive.to_kwargs()

@@ -129,7 +129,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             input_object_type = cast(GraphQLInputObjectType, type_)
             kwargs.update(fields=lambda: sort_input_fields(input_object_type.fields))
             return GraphQLInputObjectType(**kwargs)
-        raise TypeError(f"Unknown type: '{type_}'")
+        # Not reachable. All possible type definition nodes have been considered.
+        raise TypeError(f"Unknown type: '{type_}'")  # pragma: no cover
 
     type_map: Dict[str, GraphQLNamedType] = {
         type_.name: sort_named_type(type_)

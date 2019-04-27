@@ -12,21 +12,21 @@ def describe_lexicographic_sort_schema():
         sorted_sdl = sort_sdl(
             """
             input Bar {
-              barB: String
+              barB: String!
               barA: String
-              barC: String
+              barC: [String]
             }
 
             interface FooInterface {
-              fooB: String
+              fooB: String!
               fooA: String
-              fooC: String
+              fooC: [String]
             }
 
             type FooType implements FooInterface {
-              fooC: String
+              fooC: [String]
               fooA: String
-              fooB: String
+              fooB: String!
             }
 
             type Query {
@@ -39,20 +39,20 @@ def describe_lexicographic_sort_schema():
             """
             input Bar {
               barA: String
-              barB: String
-              barC: String
+              barB: String!
+              barC: [String]
             }
 
             interface FooInterface {
               fooA: String
-              fooB: String
-              fooC: String
+              fooB: String!
+              fooC: [String]
             }
 
             type FooType implements FooInterface {
               fooA: String
-              fooB: String
-              fooC: String
+              fooB: String!
+              fooC: [String]
             }
 
             type Query {
@@ -180,7 +180,7 @@ def describe_lexicographic_sort_schema():
         sorted_sdl = sort_sdl(
             """
             type Query {
-              dummy(argB: Int, argA: String, argC: Float): ID
+              dummy(argB: Int!, argA: String, argC: [Float]): ID
             }
             """
         )
@@ -188,7 +188,7 @@ def describe_lexicographic_sort_schema():
         assert sorted_sdl == dedent(
             """
             type Query {
-              dummy(argA: String, argB: Int, argC: Float): ID
+              dummy(argA: String, argB: Int!, argC: [Float]): ID
             }
             """
         )

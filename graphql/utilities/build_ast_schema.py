@@ -280,7 +280,9 @@ class ASTDefinitionBuilder:
         }.get(ast_node.kind)
         if not method:
             # Not reachable. All possible type definition nodes have been considered.
-            raise TypeError(f"Type kind '{ast_node.kind}' not supported.")
+            raise TypeError(  # pragma: no cover
+                f"Type kind '{ast_node.kind}' not supported."
+            )
         return method(ast_node)  # type: ignore
 
     def _make_type_def(self, ast_node: ObjectTypeDefinitionNode) -> GraphQLObjectType:

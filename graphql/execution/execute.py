@@ -785,7 +785,7 @@ class ExecutionContext:
             )
 
         # Not reachable. All possible output types have been considered.
-        raise TypeError(
+        raise TypeError(  # pragma: no cover
             f"Cannot complete value of unexpected type '{inspect(return_type)}'."
         )
 
