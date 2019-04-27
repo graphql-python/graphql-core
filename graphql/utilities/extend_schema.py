@@ -77,38 +77,38 @@ def extend_schema(
         assert_valid_sdl_extension(document_ast, schema)
 
     # Collect the type definitions and extensions found in the document.
-    type_definition_map: Dict[str, Any] = {}
-    type_extensions_map: Dict[str, Any] = defaultdict(list)
+    type_def_map: Dict[str, Any] = {}
+    type_exts_map: Dict[str, Any] = defaultdict(list)
 
     # New directives and types are separate because a directives and types can have the
     # same name. For example, a type named "skip".
-    directive_definitions: List[DirectiveDefinitionNode] = []
+    directive_defs: List[DirectiveDefinitionNode] = []
 
     schema_def: Optional[SchemaDefinitionNode] = None
     # Schema extensions are collected which may add additional operation types.
-    schema_extensions: List[SchemaExtensionNode] = []
+    schema_exts: List[SchemaExtensionNode] = []
 
     for def_ in document_ast.definitions:
         if isinstance(def_, SchemaDefinitionNode):
             schema_def = def_
         elif isinstance(def_, SchemaExtensionNode):
-            schema_extensions.append(def_)
+            schema_exts.append(def_)
         elif isinstance(def_, TypeDefinitionNode):
             type_name = def_.name.value
-            type_definition_map[type_name] = def_
+            type_def_map[type_name] = def_
         elif isinstance(def_, TypeExtensionNode):
             extended_type_name = def_.name.value
-            type_extensions_map[extended_type_name].append(def_)
+            type_exts_map[extended_type_name].append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
-            directive_definitions.append(def_)
+            directive_defs.append(def_)
 
     # If this document contains no new types, extensions, or directives then return the
     # same unmodified GraphQLSchema instance.
     if (
-        not type_extensions_map
-        and not type_definition_map
-        and not directive_definitions
-        and not schema_extensions
+        not type_exts_map
+        and not type_def_map
+        and not directive_defs
+        and not schema_exts
         and not schema_def
     ):
         return schema
@@ -123,7 +123,7 @@ def extend_schema(
         return list(
             chain(
                 map(extend_directive, schema.directives),
-                map(ast_builder.build_directive, directive_definitions),
+                map(ast_builder.build_directive, directive_defs),
             )
         )
 
@@ -173,7 +173,7 @@ def extend_schema(
         type_: GraphQLInputObjectType
     ) -> GraphQLInputObjectType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map.get(kwargs["name"], [])
+        extensions = type_exts_map.get(kwargs["name"], [])
         field_nodes = chain.from_iterable(node.fields or [] for node in extensions)
 
         return GraphQLInputObjectType(
@@ -198,7 +198,7 @@ def extend_schema(
 
     def extend_enum_type(type_: GraphQLEnumType) -> GraphQLEnumType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map.get(kwargs["name"], [])
+        extensions = type_exts_map.get(kwargs["name"], [])
         value_nodes = chain.from_iterable(node.values or [] for node in extensions)
 
         return GraphQLEnumType(
@@ -218,7 +218,7 @@ def extend_schema(
 
     def extend_scalar_type(type_: GraphQLScalarType) -> GraphQLScalarType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map.get(kwargs["name"], [])
+        extensions = type_exts_map.get(kwargs["name"], [])
 
         return GraphQLScalarType(
             **{
@@ -230,7 +230,7 @@ def extend_schema(
 
     def extend_object_type(type_: GraphQLObjectType) -> GraphQLObjectType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map.get(kwargs["name"], [])
+        extensions = type_exts_map.get(kwargs["name"], [])
         interface_nodes = chain.from_iterable(
             node.interfaces or [] for node in extensions
         )
@@ -263,7 +263,7 @@ def extend_schema(
 
     def extend_interface_type(type_: GraphQLInterfaceType) -> GraphQLInterfaceType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map.get(kwargs["name"], [])
+        extensions = type_exts_map.get(kwargs["name"], [])
         field_nodes = chain.from_iterable(node.fields or [] for node in extensions)
 
         return GraphQLInterfaceType(
@@ -286,7 +286,7 @@ def extend_schema(
 
     def extend_union_type(type_: GraphQLUnionType) -> GraphQLUnionType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map.get(kwargs["name"], [])
+        extensions = type_exts_map.get(kwargs["name"], [])
         type_nodes = chain.from_iterable(node.types or [] for node in extensions)
 
         return GraphQLUnionType(
@@ -334,7 +334,7 @@ def extend_schema(
         return extend_named_type(existing_type)
 
     ast_builder = ASTDefinitionBuilder(
-        type_definition_map, assume_valid=assume_valid, resolve_type=resolve_type
+        type_def_map, assume_valid=assume_valid, resolve_type=resolve_type
     )
     build_type = ast_builder.build_type
 
@@ -356,9 +356,9 @@ def extend_schema(
             operation_types[operation] = build_type(operation_type.type)
 
     # Then, incorporate schema definition and all schema extensions.
-    for schema_extension in schema_extensions:
-        if schema_extension.operation_types:
-            for operation_type in schema_extension.operation_types:
+    for schema_ext in schema_exts:
+        if schema_ext.operation_types:
+            for operation_type in schema_ext.operation_types:
                 operation = operation_type.operation
                 # Note: While this could make early assertions to get the correctly
                 # typed values, that would throw immediately while type system
@@ -370,7 +370,7 @@ def extend_schema(
     # any type not directly referenced by a value will get created.
     schema_types = list(map(extend_named_type, schema.type_map.values()))
     # do the same with new types
-    schema_types.extend(map(build_type, type_definition_map.values()))
+    schema_types.extend(map(build_type, type_def_map.values()))
 
     # Then produce and return a Schema with these types.
     return GraphQLSchema(  # type: ignore
@@ -383,5 +383,5 @@ def extend_schema(
         extension_ast_nodes=(
             schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())
         )
-        + tuple(schema_extensions),
+        + tuple(schema_exts),
     )

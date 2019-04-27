@@ -122,13 +122,12 @@ def build_ast_schema(
     def resolve_type(type_name: str):
         raise TypeError(f"Type '{type_name}' not found in document.")
 
-    definition_builder = ASTDefinitionBuilder(
+    ast_builder = ASTDefinitionBuilder(
         node_map, assume_valid=assume_valid, resolve_type=resolve_type
     )
 
     directives = [
-        definition_builder.build_directive(directive_def)
-        for directive_def in directive_defs
+        ast_builder.build_directive(directive_def) for directive_def in directive_defs
     ]
 
     # If specified directives were not explicitly declared, add them.
@@ -146,18 +145,16 @@ def build_ast_schema(
     mutation_type = operation_types.get(OperationType.MUTATION)
     subscription_type = operation_types.get(OperationType.SUBSCRIPTION)
     return GraphQLSchema(
-        query=cast(GraphQLObjectType, definition_builder.build_type(query_type))
+        query=cast(GraphQLObjectType, ast_builder.build_type(query_type))
         if query_type
         else None,
-        mutation=cast(GraphQLObjectType, definition_builder.build_type(mutation_type))
+        mutation=cast(GraphQLObjectType, ast_builder.build_type(mutation_type))
         if mutation_type
         else None,
-        subscription=cast(
-            GraphQLObjectType, definition_builder.build_type(subscription_type)
-        )
+        subscription=cast(GraphQLObjectType, ast_builder.build_type(subscription_type))
         if subscription_type
         else None,
-        types=[definition_builder.build_type(node) for node in node_map.values()],
+        types=[ast_builder.build_type(node) for node in node_map.values()],
         directives=directives,
         ast_node=schema_def,
         assume_valid=assume_valid,
