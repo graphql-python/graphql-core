@@ -74,6 +74,14 @@ def describe_schema_builder():
             None,
         )
 
+    def empty_type():
+        sdl = dedent(
+            """
+            type EmptyType
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
     def simple_type():
         sdl = dedent(
             """
@@ -266,6 +274,14 @@ def describe_schema_builder():
         )
         assert cycle_sdl(sdl) == sdl
 
+    def empty_interface():
+        sdl = dedent(
+            """
+            interface EmptyInterface
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
     def simple_type_with_interface():
         sdl = dedent(
             """
@@ -276,6 +292,14 @@ def describe_schema_builder():
             interface WorldInterface {
               str: String
             }
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
+    def empty_enum():
+        sdl = dedent(
+            """
+            enum EmptyEnum
             """
         )
         assert cycle_sdl(sdl) == sdl
@@ -319,6 +343,14 @@ def describe_schema_builder():
             type Query {
               hello: Hello
             }
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
+    def empty_union():
+        sdl = dedent(
+            """
+            union EmptyUnion
             """
         )
         assert cycle_sdl(sdl) == sdl
@@ -522,7 +554,15 @@ def describe_schema_builder():
         )
         assert cycle_sdl(sdl) == sdl
 
-    def input_object():
+    def empty_input_object():
+        sdl = dedent(
+            """
+            input EmptyInputObject
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
+    def simple_input_object():
         sdl = dedent(
             """
             input Input {
