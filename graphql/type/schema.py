@@ -37,9 +37,32 @@ class GraphQLSchema:
 
     Example::
 
-        const MyAppSchema = GraphQLSchema(
+        MyAppSchema = GraphQLSchema(
           query=MyAppQueryRootType,
           mutation=MyAppMutationRootType)
+
+    Note: When the schema is constructed, by default only the types that are
+    reachable by traversing the root types are included, other types must be
+    explicitly referenced.
+
+    Example::
+
+        character_interface = GraphQLInterfaceType('Character', ...)
+
+        human_type = GraphQLObjectType(
+            'Human', interfaces=[character_interface], ...)
+
+        droid_type = GraphQLObjectType(
+            'Droid', interfaces: [character_interface], ...)
+
+        schema = GraphQLSchema(
+            query=GraphQLObjectType('Query',
+                fields={'hero': GraphQLField(character_interface, ....)}),
+            ...
+            # Since this schema references only the `Character` interface it's
+            # necessary to explicitly list the types that implement it if
+            # you want them to be included in the final schema.
+            types=[human_type, droid_type])
 
     Note: If a list of `directives` are provided to GraphQLSchema, that will be the
     exact list of directives represented and allowed. If `directives` is not provided,
@@ -47,7 +70,7 @@ class GraphQLSchema:
     used. If you wish to provide *additional* directives to these specified directives,
     you must explicitly declare them. Example::
 
-        const MyAppSchema = GraphQLSchema(
+        MyAppSchema = GraphQLSchema(
           ...
           directives=specifiedDirectives + [myCustomDirective])
     """
