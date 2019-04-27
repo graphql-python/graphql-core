@@ -437,6 +437,32 @@ def describe_type_system_printer():
             """
         )
 
+    def prints_empty_types():
+        schema = GraphQLSchema(
+            types=[
+                GraphQLEnumType("SomeEnum", {}),
+                GraphQLInputObjectType("SomeInputObject", {}),
+                GraphQLInterfaceType("SomeInterface", {}),
+                GraphQLObjectType("SomeObject", {}),
+                GraphQLUnionType("SomeUnion", []),
+            ]
+        )
+
+        output = print_for_test(schema)
+        assert output == dedent(
+            """
+            enum SomeEnum
+
+            input SomeInputObject
+
+            interface SomeInterface
+
+            type SomeObject
+
+            union SomeUnion
+            """
+        )
+
     def prints_custom_directives():
         custom_directive = GraphQLDirective(
             name="customDirective", locations=[DirectiveLocation.FIELD]

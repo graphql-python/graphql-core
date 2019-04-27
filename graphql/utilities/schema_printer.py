@@ -153,74 +153,51 @@ def print_object(type_: GraphQLObjectType) -> str:
     )
     return (
         print_description(type_)
-        + f"type {type_.name}{implemented_interfaces} "
-        + "{\n"
+        + f"type {type_.name}{implemented_interfaces}"
         + print_fields(type_)
-        + "\n}"
     )
 
 
 def print_interface(type_: GraphQLInterfaceType) -> str:
-    return (
-        print_description(type_)
-        + f"interface {type_.name} "
-        + "{\n"
-        + print_fields(type_)
-        + "\n}"
-    )
+    return print_description(type_) + f"interface {type_.name}" + print_fields(type_)
 
 
 def print_union(type_: GraphQLUnionType) -> str:
-    return (
-        print_description(type_)
-        + f"union {type_.name} = "
-        + " | ".join(t.name for t in type_.types)
-    )
+    types = type_.types
+    possible_types = " = " + " | ".join(t.name for t in types) if types else ""
+    return print_description(type_) + f"union {type_.name}" + possible_types
 
 
 def print_enum(type_: GraphQLEnumType) -> str:
-    return (
-        print_description(type_)
-        + f"enum {type_.name} "
-        + "{\n"
-        + print_enum_values(type_.values)
-        + "\n}"
-    )
-
-
-def print_enum_values(values: Dict[str, GraphQLEnumValue]) -> str:
-    return "\n".join(
+    values = [
         print_description(value, "  ", not i) + f"  {name}" + print_deprecated(value)
-        for i, (name, value) in enumerate(values.items())
-    )
+        for i, (name, value) in enumerate(type_.values.items())
+    ]
+    return print_description(type_) + f"enum {type_.name}" + print_block(values)
 
 
 def print_input_object(type_: GraphQLInputObjectType) -> str:
-    fields = type_.fields.items()
-    return (
-        print_description(type_)
-        + f"input {type_.name} "
-        + "{\n"
-        + "\n".join(
-            print_description(field, "  ", not i)
-            + "  "
-            + print_input_value(name, field)
-            for i, (name, field) in enumerate(fields)
-        )
-        + "\n}"
-    )
+    fields = [
+        print_description(field, "  ", not i) + "  " + print_input_value(name, field)
+        for i, (name, field) in enumerate(type_.fields.items())
+    ]
+    return print_description(type_) + f"input {type_.name}" + print_block(fields)
 
 
 def print_fields(type_: Union[GraphQLObjectType, GraphQLInterfaceType]) -> str:
-    fields = type_.fields.items()
-    return "\n".join(
+    fields = [
         print_description(field, "  ", not i)
         + f"  {name}"
         + print_args(field.args, "  ")
         + f": {field.type}"
         + print_deprecated(field)
-        for i, (name, field) in enumerate(fields)
-    )
+        for i, (name, field) in enumerate(type_.fields.items())
+    ]
+    return print_block(fields)
+
+
+def print_block(items: List[str]) -> str:
+    return " {\n" + "\n".join(items) + "\n}" if items else ""
 
 
 def print_args(args: Dict[str, GraphQLArgument], indentation="") -> str:
