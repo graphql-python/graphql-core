@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, NoReturn, Optional, Union, cast
+from typing import Callable, Dict, List, NoReturn, Optional, Union, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -57,7 +57,6 @@ from ..type import (
 )
 from .value_from_ast import value_from_ast
 
-TypeDefinitionsMap = Dict[str, TypeDefinitionNode]
 TypeResolver = Callable[[str], GraphQLNamedType]
 
 __all__ = [
@@ -98,7 +97,7 @@ def build_ast_schema(
         assert_valid_sdl(document_ast)
 
     schema_def: Optional[SchemaDefinitionNode] = None
-    node_map: TypeDefinitionsMap = {}
+    type_defs: List[TypeDefinitionNode] = []
     directive_defs: List[DirectiveDefinitionNode] = []
     append_directive_def = directive_defs.append
     for def_ in document_ast.definitions:
@@ -106,25 +105,30 @@ def build_ast_schema(
             schema_def = def_
         elif isinstance(def_, TypeDefinitionNode):
             def_ = cast(TypeDefinitionNode, def_)
-            node_map[def_.name.value] = def_
+            type_defs.append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
             append_directive_def(def_)
 
-    if schema_def:
-        operation_types: Dict[OperationType, Any] = get_operation_types(schema_def)
-    else:
-        operation_types = {
-            OperationType.QUERY: node_map.get("Query"),
-            OperationType.MUTATION: node_map.get("Mutation"),
-            OperationType.SUBSCRIPTION: node_map.get("Subscription"),
-        }
-
-    def resolve_type(type_name: str):
-        raise TypeError(f"Type '{type_name}' not found in document.")
+    def resolve_type(type_name: str) -> GraphQLNamedType:
+        type_ = type_map.get(type_name)
+        if not type:
+            raise TypeError(f"Type '{type_name}' not found in document.")
+        return type_
 
     ast_builder = ASTDefinitionBuilder(
-        node_map, assume_valid=assume_valid, resolve_type=resolve_type
+        assume_valid=assume_valid, resolve_type=resolve_type
     )
+
+    type_map = {node.name.value: ast_builder.build_type(node) for node in type_defs}
+
+    if schema_def:
+        operation_types = get_operation_types(schema_def)
+    else:
+        operation_types = {
+            OperationType.QUERY: "Query",
+            OperationType.MUTATION: "Mutation",
+            OperationType.SUBSCRIPTION: "Subscription",
+        }
 
     directives = [
         ast_builder.build_directive(directive_def) for directive_def in directive_defs
@@ -138,35 +142,31 @@ def build_ast_schema(
     if not any(directive.name == "deprecated" for directive in directives):
         directives.append(GraphQLDeprecatedDirective)
 
-    # Note: While this could make early assertions to get the correctly typed values
-    # below, that would throw immediately while type system validation with
-    # `validate_schema()` will produce more actionable results.
     query_type = operation_types.get(OperationType.QUERY)
     mutation_type = operation_types.get(OperationType.MUTATION)
     subscription_type = operation_types.get(OperationType.SUBSCRIPTION)
     return GraphQLSchema(
-        query=cast(GraphQLObjectType, ast_builder.build_type(query_type))
-        if query_type
-        else None,
-        mutation=cast(GraphQLObjectType, ast_builder.build_type(mutation_type))
+        # Note: While this could make early assertions to get the correctly
+        # typed values below, that would throw immediately while type system
+        # validation with `validate_schema()` will produce more actionable results.
+        query=cast(GraphQLObjectType, type_map.get(query_type)) if query_type else None,
+        mutation=cast(GraphQLObjectType, type_map.get(mutation_type))
         if mutation_type
         else None,
-        subscription=cast(GraphQLObjectType, ast_builder.build_type(subscription_type))
+        subscription=cast(GraphQLObjectType, type_map.get(subscription_type))
         if subscription_type
         else None,
-        types=[ast_builder.build_type(node) for node in node_map.values()],
+        types=list(type_map.values()),
         directives=directives,
         ast_node=schema_def,
         assume_valid=assume_valid,
     )
 
 
-def get_operation_types(
-    schema: SchemaDefinitionNode
-) -> Dict[OperationType, NamedTypeNode]:
-    op_types: Dict[OperationType, NamedTypeNode] = {}
+def get_operation_types(schema: SchemaDefinitionNode) -> Dict[OperationType, str]:
+    op_types: Dict[OperationType, str] = {}
     for operation_type in schema.operation_types:
-        op_types[operation_type.operation] = operation_type.type
+        op_types[operation_type.operation] = operation_type.type.name.value
     return op_types
 
 
@@ -175,48 +175,34 @@ def default_type_resolver(type_name: str, *_args) -> NoReturn:
     raise TypeError(f"Type '{type_name}' not found in document.")
 
 
+std_type_map: Dict[str, Union[GraphQLNamedType, GraphQLObjectType]] = {
+    **specified_scalar_types,
+    **introspection_types,
+}
+
+
 class ASTDefinitionBuilder:
     def __init__(
         self,
-        type_definitions_map: TypeDefinitionsMap,
         assume_valid: bool = False,
         resolve_type: TypeResolver = default_type_resolver,
     ) -> None:
-        self._type_definitions_map = type_definitions_map
         self._assume_valid = assume_valid
         self._resolve_type = resolve_type
-        # Initialize to the GraphQL built in scalars and introspection types.
-        self._cache: Dict[str, GraphQLNamedType] = {
-            **specified_scalar_types,
-            **introspection_types,
-        }
 
-    def build_type(
-        self, node: Union[NamedTypeNode, TypeDefinitionNode]
-    ) -> GraphQLNamedType:
-        type_name = node.name.value
-        cache = self._cache
-        if type_name not in cache:
-            if isinstance(node, NamedTypeNode):
-                def_node = self._type_definitions_map.get(type_name)
-                cache[type_name] = (
-                    self._make_schema_def(def_node)
-                    if def_node
-                    else self._resolve_type(node.name.value)
-                )
-            else:
-                cache[type_name] = self._make_schema_def(node)
-        return cache[type_name]
+    def get_named_type(self, node: NamedTypeNode) -> GraphQLNamedType:
+        name = node.name.value
+        return std_type_map.get(name) or self._resolve_type(name)
 
-    def _build_wrapped_type(self, type_node: TypeNode) -> GraphQLType:
-        if isinstance(type_node, ListTypeNode):
-            return GraphQLList(self._build_wrapped_type(type_node.type))
-        if isinstance(type_node, NonNullTypeNode):
+    def get_wrapped_type(self, node: TypeNode) -> GraphQLType:
+        if isinstance(node, ListTypeNode):
+            return GraphQLList(self.get_wrapped_type(node.type))
+        if isinstance(node, NonNullTypeNode):
             return GraphQLNonNull(
                 # Note: GraphQLNonNull constructor validates this type
-                cast(GraphQLNullableType, self._build_wrapped_type(type_node.type))
+                cast(GraphQLNullableType, self.get_wrapped_type(node.type))
             )
-        return self.build_type(cast(NamedTypeNode, type_node))
+        return self.get_named_type(cast(NamedTypeNode, node))
 
     def build_directive(self, directive: DirectiveDefinitionNode) -> GraphQLDirective:
         locations = [DirectiveLocation[node.value] for node in directive.locations]
@@ -235,7 +221,7 @@ class ASTDefinitionBuilder:
         # Note: While this could make assertions to get the correctly typed value, that
         # would throw immediately while type system validation with `validate_schema()`
         # will produce more actionable results.
-        type_ = self._build_wrapped_type(field.type)
+        type_ = self.get_wrapped_type(field.type)
         type_ = cast(GraphQLOutputType, type_)
         return GraphQLField(
             type_=type_,
@@ -249,7 +235,7 @@ class ASTDefinitionBuilder:
         # Note: While this could make assertions to get the correctly typed value, that
         # would throw immediately while type system validation with `validate_schema()`
         # will produce more actionable results.
-        type_ = self._build_wrapped_type(value.type)
+        type_ = self.get_wrapped_type(value.type)
         type_ = cast(GraphQLInputType, type_)
         return GraphQLArgument(
             type_=type_,
@@ -262,7 +248,7 @@ class ASTDefinitionBuilder:
         # Note: While this could make assertions to get the correctly typed value, that
         # would throw immediately while type system validation with `validate_schema()`
         # will produce more actionable results.
-        type_ = self._build_wrapped_type(value.type)
+        type_ = self.get_wrapped_type(value.type)
         type_ = cast(GraphQLInputType, type_)
         return GraphQLInputField(
             type_=type_,
@@ -279,7 +265,11 @@ class ASTDefinitionBuilder:
             ast_node=value,
         )
 
-    def _make_schema_def(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
+    def build_type(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
+        name = ast_node.name.value
+        if name in std_type_map:
+            return std_type_map[name]
+
         method = {
             "object_type_definition": self._make_type_def,
             "interface_type_definition": self._make_interface_def,
@@ -289,6 +279,7 @@ class ASTDefinitionBuilder:
             "input_object_type_definition": self._make_input_object_def,
         }.get(ast_node.kind)
         if not method:
+            # Not reachable. All possible type definition nodes have been considered.
             raise TypeError(f"Type kind '{ast_node.kind}' not supported.")
         return method(ast_node)  # type: ignore
 
@@ -302,7 +293,7 @@ class ASTDefinitionBuilder:
         interfaces = cast(
             Thunk[GraphQLInterfaceList],
             (
-                (lambda: [self.build_type(ref) for ref in interface_nodes])
+                (lambda: [self.get_named_type(ref) for ref in interface_nodes])
                 if interface_nodes
                 else []
             ),
@@ -373,7 +364,7 @@ class ASTDefinitionBuilder:
         # `validate_schema()` will get more actionable results.
         types = cast(
             Thunk[GraphQLTypeList],
-            (lambda: [self.build_type(ref) for ref in type_nodes])
+            (lambda: [self.get_named_type(ref) for ref in type_nodes])
             if type_nodes
             else [],
         )

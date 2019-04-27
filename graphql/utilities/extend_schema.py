@@ -77,7 +77,7 @@ def extend_schema(
         assert_valid_sdl_extension(document_ast, schema)
 
     # Collect the type definitions and extensions found in the document.
-    type_def_map: Dict[str, Any] = {}
+    type_defs: List[TypeDefinitionNode] = []
     type_exts_map: Dict[str, Any] = defaultdict(list)
 
     # New directives and types are separate because a directives and types can have the
@@ -94,8 +94,7 @@ def extend_schema(
         elif isinstance(def_, SchemaExtensionNode):
             schema_exts.append(def_)
         elif isinstance(def_, TypeDefinitionNode):
-            type_name = def_.name.value
-            type_def_map[type_name] = def_
+            type_defs.append(def_)
         elif isinstance(def_, TypeExtensionNode):
             extended_type_name = def_.name.value
             type_exts_map[extended_type_name].append(def_)
@@ -106,7 +105,7 @@ def extend_schema(
     # same unmodified GraphQLSchema instance.
     if (
         not type_exts_map
-        and not type_def_map
+        and not type_defs
         and not directive_defs
         and not schema_exts
         and not schema_def
@@ -115,6 +114,20 @@ def extend_schema(
 
     # Below are functions used for producing this schema that have closed over this
     # scope and have access to the schema, cache, and newly defined types.
+
+    # noinspection PyTypeChecker,PyUnresolvedReferences
+    def replace_type(type_: GraphQLType) -> GraphQLType:
+        if is_list_type(type_):
+            return GraphQLList(replace_type(type_.of_type))  # type: ignore
+        if is_non_null_type(type_):
+            return GraphQLNonNull(replace_type(type_.of_type))  # type: ignore
+        return replace_named_type(type_)  # type: ignore
+
+    def replace_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
+        return type_map[type_.name]
+
+    def get_maybe_type_by_name(type_name: Optional[str]) -> Optional[GraphQLNamedType]:
+        return type_map[type_name] if type_name else None
 
     def get_merged_directives() -> List[GraphQLDirective]:
         if not schema.directives:
@@ -127,38 +140,30 @@ def extend_schema(
             )
         )
 
-    def extend_maybe_named_type(
-        type_: Optional[GraphQLNamedType]
-    ) -> Optional[GraphQLNamedType]:
-        return extend_named_type(type_) if type_ else None
-
     def extend_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         if is_introspection_type(type_) or is_specified_scalar_type(type_):
             # Builtin types are not extended.
             return type_
-
-        name = type_.name
-        if name not in extend_type_cache:
-            if is_scalar_type(type_):
-                type_ = cast(GraphQLScalarType, type_)
-                extend_type_cache[name] = extend_scalar_type(type_)
-            elif is_object_type(type_):
-                type_ = cast(GraphQLObjectType, type_)
-                extend_type_cache[name] = extend_object_type(type_)
-            elif is_interface_type(type_):
-                type_ = cast(GraphQLInterfaceType, type_)
-                extend_type_cache[name] = extend_interface_type(type_)
-            elif is_enum_type(type_):
-                type_ = cast(GraphQLEnumType, type_)
-                extend_type_cache[name] = extend_enum_type(type_)
-            elif is_input_object_type(type_):
-                type_ = cast(GraphQLInputObjectType, type_)
-                extend_type_cache[name] = extend_input_object_type(type_)
-            elif is_union_type(type_):
-                type_ = cast(GraphQLUnionType, type_)
-                extend_type_cache[name] = extend_union_type(type_)
-
-        return extend_type_cache[name]
+        if is_scalar_type(type_):
+            type_ = cast(GraphQLScalarType, type_)
+            return extend_scalar_type(type_)
+        if is_object_type(type_):
+            type_ = cast(GraphQLObjectType, type_)
+            return extend_object_type(type_)
+        if is_interface_type(type_):
+            type_ = cast(GraphQLInterfaceType, type_)
+            return extend_interface_type(type_)
+        if is_union_type(type_):
+            type_ = cast(GraphQLUnionType, type_)
+            return extend_union_type(type_)
+        if is_enum_type(type_):
+            type_ = cast(GraphQLEnumType, type_)
+            return extend_enum_type(type_)
+        if is_input_object_type(type_):
+            type_ = cast(GraphQLInputObjectType, type_)
+            return extend_input_object_type(type_)
+        # Not reachable. All possible types have been considered.
+        raise TypeError(f"Type {type_} not supported.")
 
     def extend_directive(directive: GraphQLDirective) -> GraphQLDirective:
         kwargs = directive.to_kwargs()
@@ -182,7 +187,7 @@ def extend_schema(
                 "fields": lambda: {
                     **{
                         name: GraphQLInputField(  # type: ignore
-                            **{**field.to_kwargs(), "type_": extend_type(field.type)}
+                            **{**field.to_kwargs(), "type_": replace_type(field.type)}
                         )
                         for name, field in kwargs["fields"].items()
                     },
@@ -240,12 +245,12 @@ def extend_schema(
             **{
                 **kwargs,
                 "interfaces": lambda: [
-                    extend_named_type(interface) for interface in kwargs["interfaces"]
+                    replace_named_type(interface) for interface in kwargs["interfaces"]
                 ]
                 # Note: While this could make early assertions to get the correctly
                 # typed values, that would throw immediately while type system
                 # validation with validate_schema will produce more actionable results.
-                + [build_type(node) for node in interface_nodes],
+                + [ast_builder.get_named_type(node) for node in interface_nodes],
                 "fields": lambda: {
                     **{
                         name: extend_field(field)
@@ -293,12 +298,12 @@ def extend_schema(
             **{
                 **kwargs,
                 "types": lambda: [
-                    extend_named_type(member_type) for member_type in kwargs["types"]
+                    replace_named_type(member_type) for member_type in kwargs["types"]
                 ]
                 # Note: While this could make early assertions to get the correctly
                 # typed values, that would throw immediately while type system
                 # validation with validate_schema will produce more actionable results.
-                + [build_type(node) for node in type_nodes],
+                + [ast_builder.get_named_type(node) for node in type_nodes],
                 "extension_ast_nodes": kwargs["extension_ast_nodes"]
                 + tuple(extensions),
             }
@@ -308,76 +313,65 @@ def extend_schema(
         return GraphQLField(  # type: ignore
             **{
                 **field.to_kwargs(),
-                "type_": extend_type(field.type),
+                "type_": replace_type(field.type),
                 "args": {name: extend_arg(arg) for name, arg in field.args.items()},
             }
         )
 
     def extend_arg(arg: GraphQLArgument) -> GraphQLArgument:
         return GraphQLArgument(  # type: ignore
-            **{**arg.to_kwargs(), "type_": extend_type(arg.type)}
+            **{**arg.to_kwargs(), "type_": replace_type(arg.type)}
         )
-
-    # noinspection PyTypeChecker,PyUnresolvedReferences
-    def extend_type(type_def: GraphQLType) -> GraphQLType:
-        if is_list_type(type_def):
-            return GraphQLList(extend_type(type_def.of_type))  # type: ignore
-        if is_non_null_type(type_def):
-            return GraphQLNonNull(extend_type(type_def.of_type))  # type: ignore
-        return extend_named_type(type_def)  # type: ignore
 
     # noinspection PyShadowingNames
     def resolve_type(type_name: str) -> GraphQLNamedType:
-        existing_type = schema.get_type(type_name)
-        if not existing_type:
+        type_ = type_map.get(type_name)
+        if not type_:
             raise TypeError(f"Unknown type: '{type_name}'.")
-        return extend_named_type(existing_type)
+        return type_
 
     ast_builder = ASTDefinitionBuilder(
-        type_def_map, assume_valid=assume_valid, resolve_type=resolve_type
+        assume_valid=assume_valid, resolve_type=resolve_type
     )
-    build_type = ast_builder.build_type
 
-    extend_type_cache: Dict[str, GraphQLNamedType] = {}
+    type_map = {node.name.value: ast_builder.build_type(node) for node in type_defs}
+    for existing_type_name, existing_type in schema.type_map.items():
+        type_map[existing_type_name] = extend_named_type(existing_type)
 
     # Get the extended root operation types.
-    operation_types = {
-        OperationType.QUERY: extend_maybe_named_type(schema.query_type),
-        OperationType.MUTATION: extend_maybe_named_type(schema.mutation_type),
-        OperationType.SUBSCRIPTION: extend_maybe_named_type(schema.subscription_type),
+    operation_types: Dict[OperationType, Optional[str]] = {
+        OperationType.QUERY: schema.query_type.name if schema.query_type else None,
+        OperationType.MUTATION: schema.mutation_type.name
+        if schema.mutation_type
+        else None,
+        OperationType.SUBSCRIPTION: schema.subscription_type.name
+        if schema.subscription_type
+        else None,
     }
 
     if schema_def:
         for operation_type in schema_def.operation_types:
             operation = operation_type.operation
-            # Note: While this could make early assertions to get the correctly typed
-            # values, that would throw immediately while type system validation with
-            # `validate_schema()` will produce more actionable results.
-            operation_types[operation] = build_type(operation_type.type)
+            operation_types[operation] = operation_type.type.name.value
 
     # Then, incorporate schema definition and all schema extensions.
     for schema_ext in schema_exts:
         if schema_ext.operation_types:
             for operation_type in schema_ext.operation_types:
                 operation = operation_type.operation
-                # Note: While this could make early assertions to get the correctly
-                # typed values, that would throw immediately while type system
-                # validation with `validate_schema()` will produce more actionable
-                # results.
-                operation_types[operation] = build_type(operation_type.type)
-
-    # Iterate through all types, getting the type definition for each, ensuring that
-    # any type not directly referenced by a value will get created.
-    schema_types = list(map(extend_named_type, schema.type_map.values()))
-    # do the same with new types
-    schema_types.extend(map(build_type, type_def_map.values()))
+                operation_types[operation] = operation_type.type.name.value
 
     # Then produce and return a Schema with these types.
     return GraphQLSchema(  # type: ignore
-        query=operation_types[OperationType.QUERY],
-        mutation=operation_types[OperationType.MUTATION],
-        subscription=operation_types[OperationType.SUBSCRIPTION],
-        types=schema_types,
+        # Note: While this could make early assertions to get the correctly
+        # typed values, that would throw immediately while type system
+        # validation with validateSchema() will produce more actionable results.
+        query=get_maybe_type_by_name(operation_types[OperationType.QUERY]),
+        mutation=get_maybe_type_by_name(operation_types[OperationType.MUTATION]),
+        subscription=get_maybe_type_by_name(
+            operation_types[OperationType.SUBSCRIPTION]
+        ),
+        types=list(type_map.values()),
         directives=get_merged_directives(),
         ast_node=schema.ast_node,
         extension_ast_nodes=(

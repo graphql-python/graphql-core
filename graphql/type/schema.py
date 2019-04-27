@@ -52,9 +52,9 @@ class GraphQLSchema:
           directives=specifiedDirectives + [myCustomDirective])
     """
 
-    query: Optional[GraphQLObjectType]
-    mutation: Optional[GraphQLObjectType]
-    subscription: Optional[GraphQLObjectType]
+    query_type: Optional[GraphQLObjectType]
+    mutation_type: Optional[GraphQLObjectType]
+    subscription_type: Optional[GraphQLObjectType]
     type_map: TypeMap
     directives: List[GraphQLDirective]
     ast_node: Optional[ast.SchemaDefinitionNode]
@@ -139,9 +139,9 @@ class GraphQLSchema:
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
-            query=self.query,
-            mutation=self.mutation,
-            subscription=self.subscription,
+            query=self.query_type,
+            mutation=self.mutation_type,
+            subscription=self.subscription_type,
             types=self.type_map.values(),
             directives=self.directives[:],
             ast_node=self.ast_node,
