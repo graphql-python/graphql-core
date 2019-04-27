@@ -373,7 +373,7 @@ def extend_schema(
         ),
         types=list(type_map.values()),
         directives=get_merged_directives(),
-        ast_node=schema.ast_node,
+        ast_node=schema_def or schema.ast_node,
         extension_ast_nodes=(
             schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())
         )

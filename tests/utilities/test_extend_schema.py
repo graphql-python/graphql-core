@@ -1082,16 +1082,17 @@ def describe_extend_schema():
             schema = GraphQLSchema(directives=[FooDirective], types=[FooType])
             assert schema.query_type is None
 
-            ast = parse(
+            extension_sdl = dedent(
                 """
                 schema @foo {
                   query: Foo
                 }
                 """
             )
-            schema = extend_schema(schema, ast)
+            schema = extend_schema(schema, parse(extension_sdl))
             query_type = schema.query_type
             assert query_type.name == "Foo"
+            assert print_ast(schema.ast_node) == extension_sdl.rstrip()
 
         def adds_new_root_types_via_schema_extension():
             schema = extend_test_schema(
