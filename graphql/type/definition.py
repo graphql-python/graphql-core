@@ -164,6 +164,9 @@ class GraphQLWrappingType(GraphQLType, Generic[GT]):
             )
         self.of_type = type_
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.of_type!r}>"
+
 
 def is_wrapping_type(type_: Any) -> bool:
     return isinstance(type_, GraphQLWrappingType)
@@ -219,11 +222,11 @@ class GraphQLNamedType(GraphQLType):
         self.ast_node = ast_node
         self.extension_ast_nodes = extension_ast_nodes  # type: ignore
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.name!r}>"
+
     def __str__(self):
         return self.name
-
-    def __repr__(self):
-        return f"<{self.__class__.__name__}({self})>"
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
@@ -357,11 +360,11 @@ class GraphQLScalarType(GraphQLNamedType):
         self.parse_value = parse_value or default_value_parser
         self.parse_literal = parse_literal or value_from_ast_untyped
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.name!r}>"
+
     def __str__(self):
         return self.name
-
-    def __repr__(self):
-        return f"<{self.__class__.__name__}({self})>"
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(

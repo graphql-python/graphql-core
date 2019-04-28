@@ -678,9 +678,17 @@ def describe_type_system_non_null_must_only_accept_non_nullable_types():
             assert str(GraphQLList(ListOfScalarsType)) == "[[Scalar]]"
 
         def simple_types_have_repr():
-            assert repr(ScalarType) == "<GraphQLScalarType(Scalar)>"
-            assert repr(ObjectType) == "<GraphQLObjectType(Object)>"
-            assert repr(InterfaceType) == "<GraphQLInterfaceType(Interface)>"
-            assert repr(UnionType) == "<GraphQLUnionType(Union)>"
-            assert repr(EnumType) == "<GraphQLEnumType(Enum)>"
-            assert repr(InputObjectType) == "<GraphQLInputObjectType(InputObject)>"
+            assert repr(ScalarType) == "<GraphQLScalarType 'Scalar'>"
+            assert repr(ObjectType) == "<GraphQLObjectType 'Object'>"
+            assert repr(InterfaceType) == "<GraphQLInterfaceType 'Interface'>"
+            assert repr(UnionType) == "<GraphQLUnionType 'Union'>"
+            assert repr(EnumType) == "<GraphQLEnumType 'Enum'>"
+            assert repr(InputObjectType) == "<GraphQLInputObjectType 'InputObject'>"
+            assert (
+                repr(ListOfNonNullScalarsType)
+                == "<GraphQLList <GraphQLNonNull <GraphQLScalarType 'Scalar'>>>"
+            )
+            assert (
+                repr(GraphQLList(ListOfScalarsType))
+                == "<GraphQLList <GraphQLList <GraphQLScalarType 'Scalar'>>>"
+            )
