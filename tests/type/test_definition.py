@@ -11,7 +11,6 @@ from graphql.type import (
     GraphQLFieldResolver,
     GraphQLInputField,
     GraphQLInputObjectType,
-    GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
@@ -95,21 +94,6 @@ def describe_type_system_example():
         assert deprecated_field.deprecation_reason == "A terrible reason"
         assert deprecated_field.type is GraphQLString
         assert deprecated_field.args == {}
-
-    def stringifies_simple_types():
-        assert str(GraphQLInt) == "Int"
-        assert str(ScalarType) == "Scalar"
-        assert str(ObjectType) == "Object"
-        assert str(InterfaceType) == "Interface"
-        assert str(UnionType) == "Union"
-        assert str(EnumType) == "Enum"
-        assert str(InputObjectType) == "InputObject"
-
-        assert str(NonNullScalarType) == "Scalar!"
-        assert str(ListOfScalarsType) == "[Scalar]"
-        assert str(NonNullListOfScalars) == "[Scalar]!"
-        assert str(ListOfNonNullScalarsType) == "[Scalar!]"
-        assert str(GraphQLList(ListOfScalarsType)) == "[[Scalar]]"
 
     def allows_a_thunk_for_union_member_types():
         union = GraphQLUnionType("ThunkUnion", lambda: [ObjectType])
@@ -677,3 +661,26 @@ def describe_type_system_non_null_must_only_accept_non_nullable_types():
             if isinstance(type_, GraphQLNonNull)
             else f"Can only create a wrapper for a GraphQLType, but got: {type_}."
         )
+
+    def describe_type_system_test_utility_methods():
+        def stringifies_simple_types():
+            assert str(ScalarType) == "Scalar"
+            assert str(ObjectType) == "Object"
+            assert str(InterfaceType) == "Interface"
+            assert str(UnionType) == "Union"
+            assert str(EnumType) == "Enum"
+            assert str(InputObjectType) == "InputObject"
+
+            assert str(NonNullScalarType) == "Scalar!"
+            assert str(ListOfScalarsType) == "[Scalar]"
+            assert str(NonNullListOfScalars) == "[Scalar]!"
+            assert str(ListOfNonNullScalarsType) == "[Scalar!]"
+            assert str(GraphQLList(ListOfScalarsType)) == "[[Scalar]]"
+
+        def simple_types_have_repr():
+            assert repr(ScalarType) == "<GraphQLScalarType(Scalar)>"
+            assert repr(ObjectType) == "<GraphQLObjectType(Object)>"
+            assert repr(InterfaceType) == "<GraphQLInterfaceType(Interface)>"
+            assert repr(UnionType) == "<GraphQLUnionType(Union)>"
+            assert repr(EnumType) == "<GraphQLEnumType(Enum)>"
+            assert repr(InputObjectType) == "<GraphQLInputObjectType(InputObject)>"

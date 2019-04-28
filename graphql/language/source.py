@@ -48,3 +48,6 @@ class Source:
             line = 1
             column = 1
         return SourceLocation(line, column)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} name={self.name!r}>"
