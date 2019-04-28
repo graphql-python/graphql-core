@@ -15,10 +15,10 @@ def describe_printer_sdl_document():
         assert print_ast(node) == "scalar foo"
 
     def produces_helpful_error_messages():
-        bad_ast1 = {"random": "Data"}
+        bad_ast = {"random": "Data"}
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            print_ast(bad_ast1)
+            print_ast(bad_ast)
         msg = str(exc_info.value)
         assert msg == "Not an AST Node: {'random': 'Data'}"
 
