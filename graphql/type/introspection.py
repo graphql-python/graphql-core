@@ -20,8 +20,9 @@ from .definition import (
     is_scalar_type,
     is_union_type,
 )
-from .scalars import GraphQLBoolean, GraphQLString
 from ..language import DirectiveLocation, print_ast
+from ..pyutils import inspect
+from .scalars import GraphQLBoolean, GraphQLString
 
 __all__ = [
     "SchemaMetaFieldDef",
@@ -258,7 +259,9 @@ class TypeFieldResolvers:
             return TypeKind.LIST
         if is_non_null_type(type_):
             return TypeKind.NON_NULL
-        raise TypeError(f"Unknown kind of type: {type_}")
+
+        # Not reachable. All possible types have been considered.
+        raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
 
     @staticmethod
     def name(type_, _info):
@@ -336,14 +339,6 @@ __Field: GraphQLObjectType = GraphQLObjectType(
 )
 
 
-def _resolve_input_value_default_value(item, _info):
-    # Since ast_from_value needs graphql.type, it can only be imported later
-    from ..utilities import ast_from_value
-
-    value_ast = ast_from_value(item[1].default_value, item[1].type)
-    return print_ast(value_ast) if value_ast else None
-
-
 __InputValue: GraphQLObjectType = GraphQLObjectType(
     name="__InputValue",
     description="Arguments provided to Fields or Directives and the input"
@@ -351,22 +346,44 @@ __InputValue: GraphQLObjectType = GraphQLObjectType(
     " which describe their type and optionally a default value.",
     fields=lambda: {
         "name": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=lambda item, _info: item[0]
+            GraphQLNonNull(GraphQLString), resolve=InputValueFieldResolvers.name
         ),
         "description": GraphQLField(
-            GraphQLString, resolve=lambda item, _info: item[1].description
+            GraphQLString, resolve=InputValueFieldResolvers.description
         ),
         "type": GraphQLField(
-            GraphQLNonNull(__Type), resolve=lambda item, _info: item[1].type
+            GraphQLNonNull(__Type), resolve=InputValueFieldResolvers.type
         ),
         "defaultValue": GraphQLField(
             GraphQLString,
             description="A GraphQL-formatted string representing"
             " the default value for this input value.",
-            resolve=_resolve_input_value_default_value,
+            resolve=InputValueFieldResolvers.default_value,
         ),
     },
 )
+
+
+class InputValueFieldResolvers:
+    @staticmethod
+    def name(item, _info):
+        return item[0]
+
+    @staticmethod
+    def description(item, _info):
+        return item[1].description
+
+    @staticmethod
+    def type(item, _info):
+        return item[1].type
+
+    @staticmethod
+    def default_value(item, _info):
+        # Since ast_from_value needs graphql.type, it can only be imported later
+        from ..utilities import ast_from_value
+
+        value_ast = ast_from_value(item[1].default_value, item[1].type)
+        return print_ast(value_ast) if value_ast else None
 
 
 __EnumValue: GraphQLObjectType = GraphQLObjectType(

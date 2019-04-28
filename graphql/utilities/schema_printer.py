@@ -139,7 +139,8 @@ def print_type(type_: GraphQLNamedType) -> str:
     if is_input_object_type(type_):
         type_ = cast(GraphQLInputObjectType, type_)
         return print_input_object(type_)
-    raise TypeError(f"Unknown type: {inspect(type_)}")
+    # Not reachable. All possible types have been considered.
+    raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
 
 
 def print_scalar(type_: GraphQLScalarType) -> str:

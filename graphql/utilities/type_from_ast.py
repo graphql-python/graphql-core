@@ -1,6 +1,7 @@
 from typing import Optional, overload
 
 from ..language import TypeNode, NamedTypeNode, ListTypeNode, NonNullTypeNode
+from ..pyutils import inspect
 from ..type import (
     GraphQLType,
     GraphQLSchema,
@@ -55,4 +56,8 @@ def type_from_ast(schema, type_node):  # noqa: F811
         return GraphQLNonNull(inner_type) if inner_type else None
     if isinstance(type_node, NamedTypeNode):
         return schema.get_type(type_node.name.value)
-    raise TypeError(f"Unexpected type kind: {type_node.kind}")
+
+    # Not reachable. All possible type nodes have been considered.
+    raise TypeError(  # pragma: no cover
+        f"Unexpected type node: '{inspect(type_node)}'."
+    )

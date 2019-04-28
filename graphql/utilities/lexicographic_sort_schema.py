@@ -1,5 +1,6 @@
 from typing import Dict, List, Tuple, cast
 
+from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -129,8 +130,9 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             input_object_type = cast(GraphQLInputObjectType, type_)
             kwargs.update(fields=lambda: sort_input_fields(input_object_type.fields))
             return GraphQLInputObjectType(**kwargs)
-        # Not reachable. All possible type definition nodes have been considered.
-        raise TypeError(f"Unknown type: '{type_}'")  # pragma: no cover
+
+        # Not reachable. All possible types have been considered.
+        raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
 
     type_map: Dict[str, GraphQLNamedType] = {
         type_.name: sort_named_type(type_)

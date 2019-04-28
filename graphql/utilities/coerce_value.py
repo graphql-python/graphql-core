@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import Node
-from ..pyutils import is_invalid, or_list, suggestion_list
+from ..pyutils import inspect, is_invalid, or_list, suggestion_list
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -175,7 +175,8 @@ def coerce_value(
 
         return of_errors(errors) if errors else of_value(coerced_value_dict)
 
-    raise TypeError("Unexpected type: {type_}.")
+    # Not reachable. All possible input types have been considered.
+    raise TypeError(f"Unexpected input type: '{inspect(type_)}'.")  # pragma: no cover
 
 
 def of_value(value: Any) -> CoercedValue:

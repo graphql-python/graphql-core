@@ -26,7 +26,6 @@ from ..language import (
     OperationType,
     SelectionSetNode,
 )
-from .middleware import MiddlewareManager
 from ..pyutils import inspect, is_invalid, is_nullish, MaybeAwaitable
 from ..utilities import get_operation_root_type, type_from_ast
 from ..type import (
@@ -54,6 +53,7 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
+from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 __all__ = [
@@ -786,7 +786,8 @@ class ExecutionContext:
 
         # Not reachable. All possible output types have been considered.
         raise TypeError(  # pragma: no cover
-            f"Cannot complete value of unexpected type '{inspect(return_type)}'."
+            "Cannot complete value of unexpected output type:"
+            f" '{inspect(return_type)}'."
         )
 
     def complete_list_value(

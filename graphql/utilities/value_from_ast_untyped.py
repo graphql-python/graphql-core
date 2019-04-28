@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ..error import INVALID
 from ..language import ValueNode
-from ..pyutils import is_invalid
+from ..pyutils import inspect, is_invalid
 
 __all__ = ["value_from_ast_untyped"]
 
@@ -28,7 +28,11 @@ def value_from_ast_untyped(
     func = _value_from_kind_functions.get(value_node.kind)
     if func:
         return func(value_node, variables)
-    raise TypeError(f"Unexpected value kind: {value_node.kind}")
+
+    # Not reachable. All possible value nodes have been considered.
+    raise TypeError(  # pragma: no cover
+        f"Unexpected value node: '{inspect(value_node)}'."
+    )
 
 
 def value_from_null(_value_node, _variables):

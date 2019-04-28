@@ -9,7 +9,7 @@ from ..language import (
     ValueNode,
     VariableNode,
 )
-from ..pyutils import is_invalid
+from ..pyutils import inspect, is_invalid
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -147,6 +147,9 @@ def value_from_ast(
         if is_invalid(result):
             return INVALID
         return result
+
+    # Not reachable. All possible input types have been considered.
+    raise TypeError(f"Unexpected input type: '{inspect(type_)}'.")  # pragma: no cover
 
 
 def is_missing_variable(

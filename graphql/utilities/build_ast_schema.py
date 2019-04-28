@@ -24,6 +24,7 @@ from ..language import (
     parse,
     Node,
 )
+from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDeprecatedDirective,
@@ -277,12 +278,13 @@ class ASTDefinitionBuilder:
             "scalar_type_definition": self._make_scalar_def,
             "input_object_type_definition": self._make_input_object_def,
         }.get(ast_node.kind)
-        if not method:
-            # Not reachable. All possible type definition nodes have been considered.
-            raise TypeError(  # pragma: no cover
-                f"Type kind '{ast_node.kind}' not supported."
-            )
-        return method(ast_node)  # type: ignore
+        if method:
+            return method(ast_node)  # type: ignore
+
+        # Not reachable. All possible type definition nodes have been considered.
+        raise TypeError(  # pragma: no cover
+            f"Unexpected type definition node: '{inspect(ast_node)}'."
+        )
 
     def _make_type_def(self, ast_node: ObjectTypeDefinitionNode) -> GraphQLObjectType:
         interface_nodes = ast_node.interfaces
