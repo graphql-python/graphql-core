@@ -1,22 +1,174 @@
 from pytest import raises
 
 from graphql.language import DirectiveLocation
+from graphql.pyutils import dedent
 from graphql.type import (
+    GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLDirective,
     GraphQLField,
+    GraphQLInputObjectType,
+    GraphQLInputField,
+    GraphQLInt,
+    GraphQLInterfaceType,
+    GraphQLList,
     GraphQLObjectType,
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
-    GraphQLInputObjectType,
-    GraphQLInputField,
-    GraphQLDirective,
-    GraphQLArgument,
-    GraphQLList,
 )
+from graphql.utilities import print_schema
 
 
 def describe_type_system_schema():
+    def define_sample_schema():
+        BlogImage = GraphQLObjectType(
+            "Image",
+            {
+                "url": GraphQLField(GraphQLString),
+                "width": GraphQLField(GraphQLInt),
+                "height": GraphQLField(GraphQLInt),
+            },
+        )
+
+        BlogAuthor = GraphQLObjectType(
+            "Author",
+            lambda: {
+                "id": GraphQLField(GraphQLString),
+                "name": GraphQLField(GraphQLString),
+                "pic": GraphQLField(
+                    BlogImage,
+                    args={
+                        "width": GraphQLArgument(GraphQLInt),
+                        "height": GraphQLArgument(GraphQLInt),
+                    },
+                ),
+                "recentArticle": GraphQLField(BlogArticle),
+            },
+        )
+
+        BlogArticle = GraphQLObjectType(
+            "Article",
+            lambda: {
+                "id": GraphQLField(GraphQLString),
+                "isPublished": GraphQLField(GraphQLBoolean),
+                "author": GraphQLField(BlogAuthor),
+                "title": GraphQLField(GraphQLString),
+                "body": GraphQLField(GraphQLString),
+            },
+        )
+
+        BlogQuery = GraphQLObjectType(
+            "Query",
+            {
+                "article": GraphQLField(
+                    BlogArticle, args={"id": GraphQLArgument(GraphQLString)}
+                ),
+                "feed": GraphQLField(GraphQLList(BlogArticle)),
+            },
+        )
+
+        BlogMutation = GraphQLObjectType(
+            "Mutation", {"writeArticle": GraphQLField(BlogArticle)}
+        )
+
+        BlogSubscription = GraphQLObjectType(
+            "Subscription",
+            {
+                "articleSubscribe": GraphQLField(
+                    args={"id": GraphQLArgument(GraphQLString)}, type_=BlogArticle
+                )
+            },
+        )
+
+        schema = GraphQLSchema(BlogQuery, BlogMutation, BlogSubscription)
+
+        assert print_schema(schema) == dedent(
+            """
+            type Article {
+              id: String
+              isPublished: Boolean
+              author: Author
+              title: String
+              body: String
+            }
+
+            type Author {
+              id: String
+              name: String
+              pic(width: Int, height: Int): Image
+              recentArticle: Article
+            }
+
+            type Image {
+              url: String
+              width: Int
+              height: Int
+            }
+
+            type Mutation {
+              writeArticle: Article
+            }
+
+            type Query {
+              article(id: String): Article
+              feed: [Article]
+            }
+
+            type Subscription {
+              articleSubscribe(id: String): Article
+            }
+            """
+        )
+
     def describe_type_map():
+        def includes_interface_possible_types_in_the_type_map():
+            SomeInterface = GraphQLInterfaceType("SomeInterface", {})
+            SomeSubtype = GraphQLObjectType(
+                "SomeSubtype", {}, interfaces=[SomeInterface]
+            )
+            schema = GraphQLSchema(
+                query=GraphQLObjectType(
+                    "Query", {"iface": GraphQLField(SomeInterface)}
+                ),
+                types=[SomeSubtype],
+            )
+            assert schema.type_map["SomeInterface"] is SomeInterface
+            assert schema.type_map["SomeSubtype"] is SomeSubtype
+
+        def includes_interfaces_thunk_subtypes_in_the_type_map():
+            SomeInterface = GraphQLInterfaceType("SomeInterface", {})
+            SomeSubtype = GraphQLObjectType(
+                "SomeSubtype", {}, interfaces=lambda: [SomeInterface]
+            )
+            schema = GraphQLSchema(
+                query=GraphQLObjectType(
+                    "Query", {"iface": GraphQLField(SomeInterface)}
+                ),
+                types=[SomeSubtype],
+            )
+            assert schema.type_map["SomeInterface"] is SomeInterface
+            assert schema.type_map["SomeSubtype"] is SomeSubtype
+
+        def includes_nested_input_objects_in_the_map():
+            NestedInputObject = GraphQLInputObjectType("NestedInputObject", {})
+            SomeInputObject = GraphQLInputObjectType(
+                "SomeInputObject", {"nested": GraphQLInputField(NestedInputObject)}
+            )
+
+            schema = GraphQLSchema(
+                GraphQLObjectType(
+                    "Query",
+                    {
+                        "something": GraphQLField(
+                            GraphQLString, {"input": GraphQLArgument(SomeInputObject)}
+                        )
+                    },
+                )
+            )
+            assert schema.type_map["SomeInputObject"] is SomeInputObject
+            assert schema.type_map["NestedInputObject"] is NestedInputObject
+
         def includes_input_types_only_used_in_directives():
             directive = GraphQLDirective(
                 name="dir",

@@ -5,7 +5,6 @@ from pytest import mark, raises
 from graphql.error import INVALID
 from graphql.type import (
     GraphQLArgument,
-    GraphQLBoolean,
     GraphQLField,
     GraphQLFieldResolver,
     GraphQLInt,
@@ -22,72 +21,6 @@ from graphql.type import (
     GraphQLOutputType,
     GraphQLInputField,
     GraphQLNonNull,
-    is_object_type,
-)
-
-
-BlogImage = GraphQLObjectType(
-    "Image",
-    {
-        "url": GraphQLField(GraphQLString),
-        "width": GraphQLField(GraphQLInt),
-        "height": GraphQLField(GraphQLInt),
-    },
-)
-
-
-BlogAuthor = GraphQLObjectType(
-    "Author",
-    lambda: {
-        "id": GraphQLField(GraphQLString),
-        "name": GraphQLField(GraphQLString),
-        "pic": GraphQLField(
-            BlogImage,
-            args={
-                "width": GraphQLArgument(GraphQLInt),
-                "height": GraphQLArgument(GraphQLInt),
-            },
-        ),
-        "recentArticle": GraphQLField(BlogArticle),
-    },
-)
-
-
-BlogArticle = GraphQLObjectType(
-    "Article",
-    lambda: {
-        "id": GraphQLField(GraphQLString),
-        "isPublished": GraphQLField(GraphQLBoolean),
-        "author": GraphQLField(BlogAuthor),
-        "title": GraphQLField(GraphQLString),
-        "body": GraphQLField(GraphQLString),
-    },
-)
-
-
-BlogQuery = GraphQLObjectType(
-    "Query",
-    {
-        "article": GraphQLField(
-            BlogArticle, args={"id": GraphQLArgument(GraphQLString)}
-        ),
-        "feed": GraphQLField(GraphQLList(BlogArticle)),
-    },
-)
-
-
-BlogMutation = GraphQLObjectType(
-    "Mutation", {"writeArticle": GraphQLField(BlogArticle)}
-)
-
-
-BlogSubscription = GraphQLObjectType(
-    "Subscription",
-    {
-        "articleSubscribe": GraphQLField(
-            args={"id": GraphQLArgument(GraphQLString)}, type_=BlogArticle
-        )
-    },
 )
 
 ObjectType = GraphQLObjectType("Object", {})
@@ -105,47 +38,6 @@ def schema_with_field_type(type_: GraphQLOutputType) -> GraphQLSchema:
 
 
 def describe_type_system_example():
-    def defines_a_query_only_schema():
-        BlogSchema = GraphQLSchema(BlogQuery)
-
-        assert BlogSchema.query_type == BlogQuery
-        assert is_object_type(BlogQuery)
-
-        article_field = BlogQuery.fields["article"]
-        assert article_field.type == BlogArticle
-
-        assert is_object_type(BlogArticle)
-        blog_article_fields = BlogArticle.fields
-        title_field = blog_article_fields["title"]
-        assert title_field.type == GraphQLString
-        author_field = blog_article_fields["author"]
-        assert author_field.type == BlogAuthor
-
-        assert is_object_type(BlogAuthor)
-        recent_article_field = BlogAuthor.fields["recentArticle"]
-        assert recent_article_field.type == BlogArticle
-
-        feed_field = BlogQuery.fields["feed"]
-        assert feed_field.type.of_type == BlogArticle
-
-    def defines_a_mutation_schema():
-        BlogSchema = GraphQLSchema(query=BlogQuery, mutation=BlogMutation)
-
-        assert BlogSchema.mutation_type == BlogMutation
-
-        assert is_object_type(BlogMutation)
-        write_mutation = BlogMutation.fields["writeArticle"]
-        assert write_mutation.type == BlogArticle
-
-    def defines_a_subscription_schema():
-        BlogSchema = GraphQLSchema(query=BlogQuery, subscription=BlogSubscription)
-
-        assert BlogSchema.subscription_type == BlogSubscription
-
-        subscription = BlogSubscription.fields["articleSubscribe"]
-        assert subscription.type == BlogArticle
-        assert subscription.type.name == "Article"
-
     def defines_an_enum_type_with_deprecated_value():
         EnumTypeWithDeprecatedValue = GraphQLEnumType(
             name="EnumWithDeprecatedValue",
@@ -200,65 +92,10 @@ def describe_type_system_example():
         assert deprecated_field.type is GraphQLString
         assert deprecated_field.args == {}
 
-    def includes_nested_input_objects_in_the_map():
-        NestedInputObject = GraphQLInputObjectType(
-            "NestedInputObject", {"value": GraphQLInputField(GraphQLString)}
-        )
-        SomeInputObject = GraphQLInputObjectType(
-            "SomeInputObject", {"nested": GraphQLInputField(NestedInputObject)}
-        )
-        SomeMutation = GraphQLObjectType(
-            "SomeMutation",
-            {
-                "mutateSomething": GraphQLField(
-                    BlogArticle, {"input": GraphQLArgument(SomeInputObject)}
-                )
-            },
-        )
-        SomeSubscription = GraphQLObjectType(
-            "SomeSubscription",
-            {
-                "subscribeToSomething": GraphQLField(
-                    BlogArticle, {"input": GraphQLArgument(SomeInputObject)}
-                )
-            },
-        )
-        schema = GraphQLSchema(
-            query=BlogQuery, mutation=SomeMutation, subscription=SomeSubscription
-        )
-        assert schema.type_map["NestedInputObject"] is NestedInputObject
-
-    def includes_interface_possible_types_in_the_type_map():
-        SomeInterface = GraphQLInterfaceType(
-            "SomeInterface", {"f": GraphQLField(GraphQLInt)}
-        )
-        SomeSubtype = GraphQLObjectType(
-            "SomeSubtype", {"f": GraphQLField(GraphQLInt)}, interfaces=[SomeInterface]
-        )
-        schema = GraphQLSchema(
-            query=GraphQLObjectType("Query", {"iface": GraphQLField(SomeInterface)}),
-            types=[SomeSubtype],
-        )
-        assert schema.type_map["SomeSubtype"] is SomeSubtype
-
-    def includes_interfaces_thunk_subtypes_in_the_type_map():
-        SomeInterface = GraphQLInterfaceType(
-            "SomeInterface", {"f": GraphQLField(GraphQLInt)}
-        )
-        SomeSubtype = GraphQLObjectType(
-            "SomeSubtype",
-            {"f": GraphQLField(GraphQLInt)},
-            interfaces=lambda: [SomeInterface],
-        )
-        schema = GraphQLSchema(
-            query=GraphQLObjectType("Query", {"iface": GraphQLField(SomeInterface)}),
-            types=[SomeSubtype],
-        )
-        assert schema.type_map["SomeSubtype"] is SomeSubtype
-
     def stringifies_simple_types():
         assert str(GraphQLInt) == "Int"
-        assert str(BlogArticle) == "Article"
+        assert str(ScalarType) == "Scalar"
+        assert str(ObjectType) == "Object"
         assert str(InterfaceType) == "Interface"
         assert str(UnionType) == "Union"
         assert str(EnumType) == "Enum"
