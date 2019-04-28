@@ -24,7 +24,7 @@ __all__ = [
 def missing_field_arg_message(field_name: str, arg_name: str, type_: str) -> str:
     return (
         f"Field '{field_name}' argument '{arg_name}'"
-        f" of type '{type_}' is required but not provided."
+        f" of type '{type_}' is required, but it was not provided."
     )
 
 
@@ -33,7 +33,7 @@ def missing_directive_arg_message(
 ) -> str:
     return (
         f"Directive '@{directive_name}' argument '{arg_name}'"
-        f" of type '{type_}' is required but not provided."
+        f" of type '{type_}' is required, but it was not provided."
     )
 
 
