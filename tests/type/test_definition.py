@@ -95,12 +95,7 @@ InterfaceType = GraphQLInterfaceType("Interface")
 UnionType = GraphQLUnionType("Union", [ObjectType], resolve_type=lambda: None)
 EnumType = GraphQLEnumType("Enum", {"foo": GraphQLEnumValue()})
 InputObjectType = GraphQLInputObjectType("InputObject", {})
-ScalarType = GraphQLScalarType(
-    "Scalar",
-    serialize=lambda: None,
-    parse_value=lambda: None,
-    parse_literal=lambda: None,
-)
+ScalarType = GraphQLScalarType("Scalar", serialize=lambda: None)
 
 
 def schema_with_field_type(type_: GraphQLOutputType) -> GraphQLSchema:

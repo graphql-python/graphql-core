@@ -29,17 +29,7 @@ from graphql.type import (
 from graphql.utilities import build_schema, extend_schema
 
 
-def _get(value):
-    """Return a fixed value"""
-    return lambda *args: value
-
-
-SomeScalarType = GraphQLScalarType(
-    name="SomeScalar",
-    serialize=_get(None),
-    parse_value=_get(None),
-    parse_literal=_get(None),
-)
+SomeScalarType = GraphQLScalarType(name="SomeScalar", serialize=lambda: None)
 
 SomeInterfaceType = GraphQLInterfaceType(
     name="SomeInterface", fields=lambda: {"f": GraphQLField(SomeObjectType)}
