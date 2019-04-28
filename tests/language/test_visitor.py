@@ -1,7 +1,5 @@
 from copy import copy
 
-from pytest import fail
-
 from graphql.language import (
     Node,
     FieldNode,
@@ -420,22 +418,31 @@ def describe_visitor():
     def visits_kitchen_sink(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query)
         visited = []
+        record = visited.append
+        arg_stack = []
+        push = arg_stack.append
+        pop = arg_stack.pop
 
         # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
             def enter(self, *args):
-                check_visitor_fn_args(ast, *args)
                 node, key, parent = args[:3]
                 parent_kind = parent.kind if isinstance(parent, Node) else None
-                visited.append(["enter", node.kind, key, parent_kind])
+                record(["enter", node.kind, key, parent_kind])
+
+                check_visitor_fn_args(ast, *args)
+                push(args[:])
 
             def leave(self, *args):
-                check_visitor_fn_args(ast, *args)
                 node, key, parent = args[:3]
                 parent_kind = parent.kind if isinstance(parent, Node) else None
-                visited.append(["leave", node.kind, key, parent_kind])
+                record(["leave", node.kind, key, parent_kind])
+
+                assert pop() == args
 
         visit(ast, TestVisitor())
+
+        assert arg_stack == []
         assert visited == [
             ["enter", "document", None, None],
             ["enter", "operation_definition", 0, None],
