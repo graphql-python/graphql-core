@@ -3,7 +3,6 @@ from pytest import raises
 from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLField,
-    GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLScalarType,
     GraphQLSchema,
@@ -15,40 +14,31 @@ from graphql.type import (
     GraphQLList,
 )
 
-InterfaceType = GraphQLInterfaceType(
-    "Interface", {"fieldName": GraphQLField(GraphQLString)}
-)
-
-DirectiveInputType = GraphQLInputObjectType(
-    "DirInput", {"field": GraphQLInputField(GraphQLString)}
-)
-
-WrappedDirectiveInputType = GraphQLInputObjectType(
-    "WrappedDirInput", {"field": GraphQLInputField(GraphQLString)}
-)
-
-Directive = GraphQLDirective(
-    name="dir",
-    locations=[DirectiveLocation.OBJECT],
-    args={
-        "arg": GraphQLArgument(DirectiveInputType),
-        "argList": GraphQLArgument(GraphQLList(WrappedDirectiveInputType)),
-    },
-)
-
-Schema = GraphQLSchema(
-    query=GraphQLObjectType(
-        "Query", {"getObject": GraphQLField(InterfaceType, resolve=lambda: {})}
-    ),
-    directives=[Directive],
-)
-
 
 def describe_type_system_schema():
     def describe_type_map():
         def includes_input_types_only_used_in_directives():
-            assert "DirInput" in Schema.type_map
-            assert "WrappedDirInput" in Schema.type_map
+            directive = GraphQLDirective(
+                name="dir",
+                locations=[DirectiveLocation.OBJECT],
+                args={
+                    "arg": GraphQLArgument(
+                        GraphQLInputObjectType(
+                            "Foo", {"field": GraphQLInputField(GraphQLString)}
+                        )
+                    ),
+                    "argList": GraphQLArgument(
+                        GraphQLList(
+                            GraphQLInputObjectType(
+                                "Bar", {"field": GraphQLInputField(GraphQLString)}
+                            )
+                        )
+                    ),
+                },
+            )
+            schema = GraphQLSchema(directives=[directive])
+            assert "Foo" in schema.type_map
+            assert "Bar" in schema.type_map
 
     def describe_validity():
         def describe_when_not_assumed_valid():
