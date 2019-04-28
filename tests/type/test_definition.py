@@ -41,89 +41,103 @@ def schema_with_field_type(type_: GraphQLOutputType) -> GraphQLSchema:
     )
 
 
+def schema_with_object_with_field_resolver(
+    resolve_value: GraphQLFieldResolver
+) -> GraphQLSchema:
+    BadResolverType = GraphQLObjectType(
+        "BadResolver", {"badField": GraphQLField(GraphQLString, resolve=resolve_value)}
+    )
+
+    return GraphQLSchema(
+        GraphQLObjectType("Query", {"f": GraphQLField(BadResolverType)})
+    )
+
+
+ObjectWithIsTypeOf = GraphQLObjectType(
+    "ObjectWithIsTypeOf", {"f": GraphQLField(GraphQLString)}
+)
+
+
 def describe_type_system_scalars():
-    def describe_type_system_scalar_types_must_be_serializable():
-        def accepts_a_scalar_type_defining_serialize():
-            schema_with_field_type(GraphQLScalarType("SomeScalar", lambda: None))
+    def accepts_a_scalar_type_defining_serialize():
+        schema_with_field_type(GraphQLScalarType("SomeScalar", lambda: None))
 
-        def rejects_a_scalar_type_not_defining_serialize():
-            with raises(
-                TypeError, match="missing 1 required positional argument: 'serialize'"
-            ):
-                # noinspection PyArgumentList
-                schema_with_field_type(GraphQLScalarType("SomeScalar"))
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                schema_with_field_type(GraphQLScalarType("SomeScalar", None))
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeScalar must provide 'serialize' function."
-                " If this custom Scalar is also used as an input type,"
-                " ensure 'parse_value' and 'parse_literal' functions"
-                " are also provided."
+    def accepts_a_scalar_type_defining_parse_value_and_parse_literal():
+        schema_with_field_type(
+            GraphQLScalarType(
+                "SomeScalar",
+                serialize=lambda: None,
+                parse_value=lambda: None,
+                parse_literal=lambda: None,
             )
+        )
 
-        def rejects_a_scalar_type_defining_serialize_with_incorrect_type():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                schema_with_field_type(GraphQLScalarType("SomeScalar", {}))
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeScalar must provide 'serialize' function."
-                " If this custom Scalar is also used as an input type,"
-                " ensure 'parse_value' and 'parse_literal' functions"
-                " are also provided."
+    def rejects_a_scalar_type_not_defining_serialize():
+        with raises(
+            TypeError, match="missing 1 required positional argument: 'serialize'"
+        ):
+            # noinspection PyArgumentList
+            schema_with_field_type(GraphQLScalarType("SomeScalar"))
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            schema_with_field_type(GraphQLScalarType("SomeScalar", None))
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeScalar must provide 'serialize' function."
+            " If this custom Scalar is also used as an input type,"
+            " ensure 'parse_value' and 'parse_literal' functions"
+            " are also provided."
+        )
+
+    def rejects_a_scalar_type_defining_serialize_with_incorrect_type():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            schema_with_field_type(GraphQLScalarType("SomeScalar", {}))
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeScalar must provide 'serialize' function."
+            " If this custom Scalar is also used as an input type,"
+            " ensure 'parse_value' and 'parse_literal' functions"
+            " are also provided."
+        )
+
+    def rejects_a_scalar_type_defining_parse_value_but_not_parse_literal():
+        with raises(TypeError) as exc_info:
+            schema_with_field_type(
+                GraphQLScalarType("SomeScalar", lambda: None, parse_value=lambda: None)
             )
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeScalar must provide both"
+            " 'parse_value' and 'parse_literal' functions."
+        )
 
-        def accepts_a_scalar_type_defining_parse_value_and_parse_literal():
+    def rejects_a_scalar_type_defining_parse_literal_but_not_parse_value():
+        with raises(TypeError) as exc_info:
             schema_with_field_type(
                 GraphQLScalarType(
-                    "SomeScalar",
-                    serialize=lambda: None,
-                    parse_value=lambda: None,
-                    parse_literal=lambda: None,
+                    "SomeScalar", lambda: None, parse_literal=lambda: None
                 )
             )
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeScalar must provide both"
+            " 'parse_value' and 'parse_literal' functions."
+        )
 
-        def rejects_a_scalar_type_defining_parse_value_but_not_parse_literal():
-            with raises(TypeError) as exc_info:
-                schema_with_field_type(
-                    GraphQLScalarType(
-                        "SomeScalar", lambda: None, parse_value=lambda: None
-                    )
+    def rejects_a_scalar_type_incorrectly_defining_parse_literal_and_value():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            schema_with_field_type(
+                GraphQLScalarType(
+                    "SomeScalar", lambda: None, parse_value={}, parse_literal={}
                 )
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeScalar must provide both"
-                " 'parse_value' and 'parse_literal' functions."
             )
-
-        def rejects_a_scalar_type_defining_parse_literal_but_not_parse_value():
-            with raises(TypeError) as exc_info:
-                schema_with_field_type(
-                    GraphQLScalarType(
-                        "SomeScalar", lambda: None, parse_literal=lambda: None
-                    )
-                )
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeScalar must provide both"
-                " 'parse_value' and 'parse_literal' functions."
-            )
-
-        def rejects_a_scalar_type_incorrectly_defining_parse_literal_and_value():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                schema_with_field_type(
-                    GraphQLScalarType(
-                        "SomeScalar", lambda: None, parse_value={}, parse_literal={}
-                    )
-                )
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeScalar must provide both"
-                " 'parse_value' and 'parse_literal' functions."
-            )
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeScalar must provide both"
+            " 'parse_value' and 'parse_literal' functions."
+        )
 
 
 def describe_type_system_objects():
@@ -179,246 +193,242 @@ def describe_type_system_objects():
         assert deprecated_field.type is GraphQLString
         assert deprecated_field.args == {}
 
-    def describe_field_config_must_be_a_dict():
-        def accepts_an_object_type_with_a_field_function():
-            obj_type = GraphQLObjectType(
-                "SomeObject", lambda: {"f": GraphQLField(GraphQLString)}
-            )
-            assert obj_type.fields["f"].type is GraphQLString
+    def accepts_an_object_type_with_output_type_as_field():
+        # this is a shortcut syntax for simple fields
+        obj_type = GraphQLObjectType("SomeObject", {"f": GraphQLString})
+        field = obj_type.fields["f"]
+        assert isinstance(field, GraphQLField)
+        assert field.type is GraphQLString
 
-        def thunk_for_fields_of_object_type_is_resolved_only_once():
-            def fields():
-                nonlocal calls
-                calls += 1
-                return {"f": GraphQLField(GraphQLString)}
+    def accepts_an_object_type_with_a_field_function():
+        obj_type = GraphQLObjectType(
+            "SomeObject", lambda: {"f": GraphQLField(GraphQLString)}
+        )
+        assert obj_type.fields["f"].type is GraphQLString
 
-            calls = 0
-            obj_type = GraphQLObjectType("SomeObject", fields)
-            assert "f" in obj_type.fields
-            assert calls == 1
-            assert "f" in obj_type.fields
-            assert calls == 1
+    def thunk_for_fields_of_object_type_is_resolved_only_once():
+        def fields():
+            nonlocal calls
+            calls += 1
+            return {"f": GraphQLField(GraphQLString)}
 
-        def rejects_an_object_type_field_with_undefined_config():
-            undefined_field = cast(GraphQLField, None)
-            obj_type = GraphQLObjectType("SomeObject", {"f": undefined_field})
-            with raises(TypeError) as exc_info:
-                if obj_type.fields:
-                    pass
-            msg = str(exc_info.value)
-            assert (
-                msg == "SomeObject fields must be GraphQLField or output type objects."
-            )
+        calls = 0
+        obj_type = GraphQLObjectType("SomeObject", fields)
+        assert "f" in obj_type.fields
+        assert calls == 1
+        assert "f" in obj_type.fields
+        assert calls == 1
 
-        def rejects_an_object_type_with_incorrectly_typed_fields():
-            invalid_field = cast(GraphQLField, [GraphQLField(GraphQLString)])
-            obj_type = GraphQLObjectType("SomeObject", {"f": invalid_field})
-            with raises(TypeError) as exc_info:
-                if obj_type.fields:
-                    pass
-            msg = str(exc_info.value)
-            assert (
-                msg == "SomeObject fields must be GraphQLField or output type objects."
-            )
-
-        def accepts_an_object_type_with_output_type_as_field():
-            # this is a shortcut syntax for simple fields
-            obj_type = GraphQLObjectType("SomeObject", {"f": GraphQLString})
-            field = obj_type.fields["f"]
-            assert isinstance(field, GraphQLField)
-            assert field.type is GraphQLString
-
-        def rejects_an_object_type_field_function_that_returns_incorrect_type():
-            obj_type = GraphQLObjectType(
-                "SomeObject", lambda: [GraphQLField(GraphQLString)]
-            )
-            with raises(TypeError) as exc_info:
-                if obj_type.fields:
-                    pass
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeObject fields must be a dict with field names as keys"
-                " or a function which returns such an object."
-            )
-
-    def describe_field_args_must_be_a_dict():
-        def accepts_an_object_type_with_field_args():
-            obj_type = GraphQLObjectType(
-                "SomeObject",
-                {
-                    "goodField": GraphQLField(
-                        GraphQLString, args={"goodArg": GraphQLArgument(GraphQLString)}
-                    )
-                },
-            )
-            assert "goodArg" in obj_type.fields["goodField"].args
-
-        def rejects_an_object_type_with_incorrectly_typed_field_args():
-            invalid_args = [{"bad_args": GraphQLArgument(GraphQLString)}]
-            invalid_args = cast(Dict[str, GraphQLArgument], invalid_args)
-            with raises(TypeError) as exc_info:
-                GraphQLObjectType(
-                    "SomeObject",
-                    {"badField": GraphQLField(GraphQLString, args=invalid_args)},
+    def accepts_an_object_type_with_field_args():
+        obj_type = GraphQLObjectType(
+            "SomeObject",
+            {
+                "goodField": GraphQLField(
+                    GraphQLString, args={"goodArg": GraphQLArgument(GraphQLString)}
                 )
-            msg = str(exc_info.value)
-            assert msg == "Field args must be a dict with argument names as keys."
+            },
+        )
+        assert "goodArg" in obj_type.fields["goodField"].args
 
-        def does_not_accept_is_deprecated_instead_of_deprecation_reason_on_field():
-            kwargs = dict(is_deprecated=True)
-            with raises(
-                TypeError, match="got an unexpected keyword argument 'is_deprecated'"
-            ):
-                GraphQLObjectType(
-                    "OldObject", {"field": GraphQLField(GraphQLString, **kwargs)}
-                )
+    def accepts_an_object_type_with_list_interfaces():
+        obj_type = GraphQLObjectType(
+            "SomeObject",
+            interfaces=[InterfaceType],
+            fields={"f": GraphQLField(GraphQLString)},
+        )
+        assert obj_type.interfaces == [InterfaceType]
 
-    def describe_object_interfaces_must_be_a_sequence():
-        def accepts_an_object_type_with_list_interfaces():
-            obj_type = GraphQLObjectType(
+    def accepts_object_type_with_interfaces_as_a_function_returning_a_list():
+        obj_type = GraphQLObjectType(
+            "SomeObject",
+            interfaces=lambda: [InterfaceType],
+            fields={"f": GraphQLField(GraphQLString)},
+        )
+        assert obj_type.interfaces == [InterfaceType]
+
+    def thunk_for_interfaces_of_object_type_is_resolved_only_once():
+        def interfaces():
+            nonlocal calls
+            calls += 1
+            return [InterfaceType]
+
+        calls = 0
+        obj_type = GraphQLObjectType(
+            "SomeObject",
+            interfaces=interfaces,
+            fields={"f": GraphQLField(GraphQLString)},
+        )
+        assert obj_type.interfaces == [InterfaceType]
+        assert calls == 1
+        assert obj_type.interfaces == [InterfaceType]
+        assert calls == 1
+
+    def accepts_a_lambda_as_an_object_field_resolver():
+        schema_with_object_with_field_resolver(lambda _obj, _info: {})
+
+    def accepts_an_object_type_with_an_is_type_of_function():
+        schema_with_field_type(
+            GraphQLObjectType("AnotherObject", {"f": GraphQLField(GraphQLString)})
+        )
+
+    def rejects_an_object_type_field_with_undefined_config():
+        undefined_field = cast(GraphQLField, None)
+        obj_type = GraphQLObjectType("SomeObject", {"f": undefined_field})
+        with raises(TypeError) as exc_info:
+            if obj_type.fields:
+                pass
+        msg = str(exc_info.value)
+        assert msg == "SomeObject fields must be GraphQLField or output type objects."
+
+    def rejects_an_object_type_with_incorrectly_typed_fields():
+        invalid_field = cast(GraphQLField, [GraphQLField(GraphQLString)])
+        obj_type = GraphQLObjectType("SomeObject", {"f": invalid_field})
+        with raises(TypeError) as exc_info:
+            if obj_type.fields:
+                pass
+        msg = str(exc_info.value)
+        assert msg == "SomeObject fields must be GraphQLField or output type objects."
+
+    def rejects_an_object_type_field_function_that_returns_incorrect_type():
+        obj_type = GraphQLObjectType(
+            "SomeObject", lambda: [GraphQLField(GraphQLString)]
+        )
+        with raises(TypeError) as exc_info:
+            if obj_type.fields:
+                pass
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeObject fields must be a dict with field names as keys"
+            " or a function which returns such an object."
+        )
+
+    def rejects_an_object_type_with_incorrectly_typed_field_args():
+        invalid_args = [{"bad_args": GraphQLArgument(GraphQLString)}]
+        invalid_args = cast(Dict[str, GraphQLArgument], invalid_args)
+        with raises(TypeError) as exc_info:
+            GraphQLObjectType(
                 "SomeObject",
-                interfaces=[InterfaceType],
-                fields={"f": GraphQLField(GraphQLString)},
+                {"badField": GraphQLField(GraphQLString, args=invalid_args)},
             )
-            assert obj_type.interfaces == [InterfaceType]
+        msg = str(exc_info.value)
+        assert msg == "Field args must be a dict with argument names as keys."
 
-        def accepts_object_type_with_interfaces_as_a_function_returning_a_list():
-            obj_type = GraphQLObjectType(
-                "SomeObject",
-                interfaces=lambda: [InterfaceType],
-                fields={"f": GraphQLField(GraphQLString)},
-            )
-            assert obj_type.interfaces == [InterfaceType]
-
-        def thunk_for_interfaces_of_object_type_is_resolved_only_once():
-            def interfaces():
-                nonlocal calls
-                calls += 1
-                return [InterfaceType]
-
-            calls = 0
-            obj_type = GraphQLObjectType(
-                "SomeObject",
-                interfaces=interfaces,
-                fields={"f": GraphQLField(GraphQLString)},
-            )
-            assert obj_type.interfaces == [InterfaceType]
-            assert calls == 1
-            assert obj_type.interfaces == [InterfaceType]
-            assert calls == 1
-
-        def rejects_an_object_type_with_incorrectly_typed_interfaces():
-            obj_type = GraphQLObjectType(
-                "SomeObject", interfaces={}, fields={"f": GraphQLField(GraphQLString)}
-            )
-            with raises(TypeError) as exc_info:
-                if obj_type.interfaces:
-                    pass
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeObject interfaces must be a list/tuple"
-                " or a function which returns a list/tuple."
-            )
-
-        def rejects_object_type_with_incorrectly_typed_interfaces_as_a_function():
-            obj_type = GraphQLObjectType(
-                "SomeObject",
-                interfaces=lambda: {},
-                fields={"f": GraphQLField(GraphQLString)},
-            )
-            with raises(TypeError) as exc_info:
-                if obj_type.interfaces:
-                    pass
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeObject interfaces must be a list/tuple"
-                " or a function which returns a list/tuple."
-            )
-
-    def describe_type_system_object_fields_must_have_valid_resolve_values():
-        def _schema_with_object_with_field_resolver(
-            resolve_value: GraphQLFieldResolver
+    def rejects_an_object_with_is_deprecated_instead_of_deprecation_reason_on_field():
+        kwargs = dict(is_deprecated=True)
+        with raises(
+            TypeError, match="got an unexpected keyword argument 'is_deprecated'"
         ):
-            BadResolverType = GraphQLObjectType(
-                "BadResolver",
-                {"bad_field": GraphQLField(GraphQLString, resolve=resolve_value)},
-            )
-            return GraphQLSchema(
-                GraphQLObjectType("Query", {"f": GraphQLField(BadResolverType)})
+            GraphQLObjectType(
+                "OldObject", {"field": GraphQLField(GraphQLString, **kwargs)}
             )
 
-        def accepts_a_lambda_as_an_object_field_resolver():
-            _schema_with_object_with_field_resolver(lambda _obj, _info: {})
+    def rejects_an_object_type_with_incorrectly_typed_interfaces():
+        obj_type = GraphQLObjectType(
+            "SomeObject", interfaces={}, fields={"f": GraphQLField(GraphQLString)}
+        )
+        with raises(TypeError) as exc_info:
+            if obj_type.interfaces:
+                pass
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeObject interfaces must be a list/tuple"
+            " or a function which returns a list/tuple."
+        )
 
-        def rejects_an_empty_object_field_resolver():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                _schema_with_object_with_field_resolver({})
-            msg = str(exc_info.value)
-            assert msg == "Field resolver must be a function if provided,  but got: {}."
+    def rejects_object_type_with_incorrectly_typed_interfaces_as_a_function():
+        obj_type = GraphQLObjectType(
+            "SomeObject",
+            interfaces=lambda: {},
+            fields={"f": GraphQLField(GraphQLString)},
+        )
+        with raises(TypeError) as exc_info:
+            if obj_type.interfaces:
+                pass
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeObject interfaces must be a list/tuple"
+            " or a function which returns a list/tuple."
+        )
 
-        def rejects_a_constant_scalar_value_resolver():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                _schema_with_object_with_field_resolver(0)
-            msg = str(exc_info.value)
-            assert msg == "Field resolver must be a function if provided,  but got: 0."
+    def rejects_an_empty_object_field_resolver():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            schema_with_object_with_field_resolver({})
+        msg = str(exc_info.value)
+        assert msg == "Field resolver must be a function if provided,  but got: {}."
 
-    def describe_type_system_object_types_must_be_assertable():
-        def accepts_an_object_type_with_an_is_type_of_function():
+    def rejects_a_constant_scalar_value_resolver():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            schema_with_object_with_field_resolver(0)
+        msg = str(exc_info.value)
+        assert msg == "Field resolver must be a function if provided,  but got: 0."
+
+    def rejects_an_object_type_with_an_incorrect_type_for_is_type_of():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             schema_with_field_type(
-                GraphQLObjectType("AnotherObject", {"f": GraphQLField(GraphQLString)})
-            )
-
-        def rejects_an_object_type_with_an_incorrect_type_for_is_type_of():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                schema_with_field_type(
-                    GraphQLObjectType(
-                        "AnotherObject",
-                        {"f": GraphQLField(GraphQLString)},
-                        is_type_of={},
-                    )
+                GraphQLObjectType(
+                    "AnotherObject", {"f": GraphQLField(GraphQLString)}, is_type_of={}
                 )
-            msg = str(exc_info.value)
-            assert msg == (
-                "AnotherObject must provide 'is_type_of' as a function, but got: {}."
             )
+        msg = str(exc_info.value)
+        assert msg == (
+            "AnotherObject must provide 'is_type_of' as a function, but got: {}."
+        )
 
 
 def describe_type_system_interfaces():
-    def describe_type_system_interface_types_must_be_resolvable():
-        def accepts_an_interface_type_defining_resolve_type():
-            AnotherInterfaceType = GraphQLInterfaceType(
-                "AnotherInterface", {"f": GraphQLField(GraphQLString)}
-            )
+    def accepts_an_interface_type_defining_resolve_type():
+        AnotherInterfaceType = GraphQLInterfaceType(
+            "AnotherInterface", {"f": GraphQLField(GraphQLString)}
+        )
 
-            schema = schema_with_field_type(
-                GraphQLObjectType(
-                    "SomeObject",
-                    {"f": GraphQLField(GraphQLString)},
-                    [AnotherInterfaceType],
-                )
+        schema = schema_with_field_type(
+            GraphQLObjectType(
+                "SomeObject", {"f": GraphQLField(GraphQLString)}, [AnotherInterfaceType]
             )
+        )
 
-            assert (
-                schema.query_type.fields["field"].type.interfaces[0]
-                is AnotherInterfaceType
-            )
+        assert (
+            schema.query_type.fields["field"].type.interfaces[0] is AnotherInterfaceType
+        )
 
-        def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                GraphQLInterfaceType(
-                    "AnotherInterface",
-                    {"f": GraphQLField(GraphQLString)},
-                    resolve_type={},
-                )
-            msg = str(exc_info.value)
-            assert msg == (
-                "AnotherInterface must provide 'resolve_type' as a function,"
-                " but got: {}."
+    def accepts_an_interface_with_implementing_type_defining_is_type_of():
+        InterfaceTypeWithoutResolveType = GraphQLInterfaceType(
+            "InterfaceTypeWithoutResolveType", {"f": GraphQLField(GraphQLString)}
+        )
+
+        assert schema_with_field_type(
+            GraphQLObjectType(
+                "SomeObject",
+                {"f": GraphQLField(GraphQLString)},
+                [InterfaceTypeWithoutResolveType],
             )
+        )
+
+    def accepts_interface_type_with_resolve_type_and_is_type_of_in_implementation():
+        AnotherInterfaceType = GraphQLInterfaceType(
+            "AnotherInterfaceType", {"f": GraphQLField(GraphQLString)}
+        )
+
+        assert schema_with_field_type(
+            GraphQLObjectType(
+                "SomeObject", {"f": GraphQLField(GraphQLString)}, [AnotherInterfaceType]
+            )
+        )
+
+    def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInterfaceType(
+                "AnotherInterface", {"f": GraphQLField(GraphQLString)}, resolve_type={}
+            )
+        msg = str(exc_info.value)
+        assert msg == (
+            "AnotherInterface must provide 'resolve_type' as a function,"
+            " but got: {}."
+        )
 
 
 def describe_type_system_unions():
@@ -429,54 +439,46 @@ def describe_type_system_unions():
         assert len(types) == 1
         assert types[0] is ObjectType
 
-    def describe_type_system_union_types_must_be_resolvable():
-        ObjectWithIsTypeOf = GraphQLObjectType(
-            "ObjectWithIsTypeOf", {"f": GraphQLField(GraphQLString)}
+    def accepts_a_union_type_defining_resolve_type():
+        assert schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectType]))
+
+    def accepts_a_union_of_object_types_defining_is_type_of():
+        assert schema_with_field_type(
+            GraphQLUnionType("SomeUnion", [ObjectWithIsTypeOf])
         )
 
-        def accepts_a_union_type_defining_resolve_type():
-            schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectType]))
+    def accepts_a_union_type_with_list_types():
+        assert schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectType]))
 
-        def accepts_a_union_of_object_types_defining_is_type_of():
-            schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectWithIsTypeOf]))
+    def accepts_a_union_type_with_function_returning_a_list_of_types():
+        schema_with_field_type(GraphQLUnionType("SomeUnion", lambda: [ObjectType]))
 
-        def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                schema_with_field_type(
-                    GraphQLUnionType("SomeUnion", [ObjectWithIsTypeOf], resolve_type={})
-                )
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeUnion must provide 'resolve_type' as a function, but got: {}."
+    def accepts_a_union_type_without_types():
+        with raises(TypeError, match="missing 1 required positional argument: 'types'"):
+            # noinspection PyArgumentList
+            schema_with_field_type(GraphQLUnionType("SomeUnion"))
+        assert schema_with_field_type(GraphQLUnionType("SomeUnion", None))
+        assert schema_with_field_type(GraphQLUnionType("SomeUnion", []))
+
+    def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            schema_with_field_type(
+                GraphQLUnionType("SomeUnion", [ObjectWithIsTypeOf], resolve_type={})
             )
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeUnion must provide 'resolve_type' as a function, but got: {}."
+        )
 
-    def describe_union_types_must_be_list():
-        def accepts_a_union_type_with_list_types():
-            schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectType]))
-
-        def accepts_a_union_type_with_function_returning_a_list_of_types():
-            schema_with_field_type(GraphQLUnionType("SomeUnion", lambda: [ObjectType]))
-
-        def accepts_a_union_type_without_types():
-            with raises(
-                TypeError, match="missing 1 required positional argument: 'types'"
-            ):
-                # noinspection PyArgumentList
-                schema_with_field_type(GraphQLUnionType("SomeUnion"))
-            schema_with_field_type(GraphQLUnionType("SomeUnion", None))
-            schema_with_field_type(GraphQLUnionType("SomeUnion", []))
-
-        def rejects_a_union_type_with_incorrectly_typed_types():
-            with raises(TypeError) as exc_info:
-                schema_with_field_type(
-                    GraphQLUnionType("SomeUnion", {"type": ObjectType})
-                )
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeUnion types must be a list/tuple"
-                " or a function which returns a list/tuple."
-            )
+    def rejects_a_union_type_with_incorrectly_typed_types():
+        with raises(TypeError) as exc_info:
+            schema_with_field_type(GraphQLUnionType("SomeUnion", {"type": ObjectType}))
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeUnion types must be a list/tuple"
+            " or a function which returns a list/tuple."
+        )
 
 
 def describe_type_system_enums():
@@ -515,39 +517,36 @@ def describe_type_system_enums():
         assert undefined_value.value is INVALID
         assert undefined_value.ast_node is None
 
-    def describe_type_system_enum_types_must_be_well_defined():
-        def accepts_a_well_defined_enum_type_with_empty_value_definition():
-            enum_type = GraphQLEnumType("SomeEnum", {"FOO": None, "BAR": None})
-            assert enum_type.values["FOO"].value is None
-            assert enum_type.values["BAR"].value is None
+    def accepts_a_well_defined_enum_type_with_empty_value_definition():
+        enum_type = GraphQLEnumType("SomeEnum", {"FOO": None, "BAR": None})
+        assert enum_type.values["FOO"].value is None
+        assert enum_type.values["BAR"].value is None
 
-        def accepts_a_well_defined_enum_type_with_internal_value_definition():
-            enum_type = GraphQLEnumType("SomeEnum", {"FOO": 10, "BAR": 20})
-            assert enum_type.values["FOO"].value == 10
-            assert enum_type.values["BAR"].value == 20
-            enum_type = GraphQLEnumType(
-                "SomeEnum", {"FOO": GraphQLEnumValue(10), "BAR": GraphQLEnumValue(20)}
-            )
-            assert enum_type.values["FOO"].value == 10
-            assert enum_type.values["BAR"].value == 20
+    def accepts_a_well_defined_enum_type_with_internal_value_definition():
+        enum_type = GraphQLEnumType("SomeEnum", {"FOO": 10, "BAR": 20})
+        assert enum_type.values["FOO"].value == 10
+        assert enum_type.values["BAR"].value == 20
+        enum_type = GraphQLEnumType(
+            "SomeEnum", {"FOO": GraphQLEnumValue(10), "BAR": GraphQLEnumValue(20)}
+        )
+        assert enum_type.values["FOO"].value == 10
+        assert enum_type.values["BAR"].value == 20
 
-        def rejects_an_enum_type_with_incorrectly_typed_values():
-            with raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
-                GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
-            msg = str(exc_info.value)
-            assert msg == (
-                "SomeEnum values must be an Enum or a dict with value names as keys."
-            )
+    def rejects_an_enum_type_with_incorrectly_typed_values():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeEnum values must be an Enum or a dict with value names as keys."
+        )
 
-        def does_not_allow_is_deprecated():
-            with raises(
-                TypeError, match="got an unexpected keyword argument 'is_deprecated'"
-            ):
-                # noinspection PyArgumentList
-                GraphQLEnumType(
-                    "SomeEnum", {"FOO": GraphQLEnumValue(is_deprecated=True)}
-                )
+    def does_not_allow_is_deprecated_instead_of_deprecation_reason_on_enum():
+        with raises(
+            TypeError, match="got an unexpected keyword argument 'is_deprecated'"
+        ):
+            # noinspection PyArgumentList
+            GraphQLEnumType("SomeEnum", {"FOO": GraphQLEnumValue(is_deprecated=True)})
 
 
 def describe_type_system_input_objects():
