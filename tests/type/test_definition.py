@@ -5,22 +5,22 @@ from pytest import mark, raises
 from graphql.error import INVALID
 from graphql.type import (
     GraphQLArgument,
+    GraphQLEnumValue,
+    GraphQLEnumType,
     GraphQLField,
     GraphQLFieldResolver,
-    GraphQLInt,
-    GraphQLString,
-    GraphQLObjectType,
-    GraphQLList,
-    GraphQLScalarType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    GraphQLEnumValue,
-    GraphQLInputObjectType,
-    GraphQLSchema,
-    GraphQLOutputType,
     GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLInt,
+    GraphQLInterfaceType,
+    GraphQLList,
     GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLOutputType,
+    GraphQLScalarType,
+    GraphQLSchema,
+    GraphQLString,
+    GraphQLUnionType,
 )
 
 ObjectType = GraphQLObjectType("Object", {})
@@ -29,6 +29,10 @@ UnionType = GraphQLUnionType("Union", [ObjectType], resolve_type=lambda: None)
 EnumType = GraphQLEnumType("Enum", {"foo": GraphQLEnumValue()})
 InputObjectType = GraphQLInputObjectType("InputObject", {})
 ScalarType = GraphQLScalarType("Scalar", serialize=lambda: None)
+NonNullScalarType = GraphQLNonNull(ScalarType)
+ListOfScalarsType = GraphQLList(ScalarType)
+NonNullListOfScalars = GraphQLNonNull(ListOfScalarsType)
+ListOfNonNullScalarsType = GraphQLList(NonNullScalarType)
 
 
 def schema_with_field_type(type_: GraphQLOutputType) -> GraphQLSchema:
@@ -100,19 +104,20 @@ def describe_type_system_example():
         assert str(UnionType) == "Union"
         assert str(EnumType) == "Enum"
         assert str(InputObjectType) == "InputObject"
-        assert str(GraphQLNonNull(GraphQLInt)) == "Int!"
-        assert str(GraphQLList(GraphQLInt)) == "[Int]"
-        assert str(GraphQLNonNull(GraphQLList(GraphQLInt))) == "[Int]!"
-        assert str(GraphQLList(GraphQLNonNull(GraphQLInt))) == "[Int!]"
-        assert str(GraphQLList(GraphQLList(GraphQLInt))) == "[[Int]]"
+
+        assert str(NonNullScalarType) == "Scalar!"
+        assert str(ListOfScalarsType) == "[Scalar]"
+        assert str(NonNullListOfScalars) == "[Scalar]!"
+        assert str(ListOfNonNullScalarsType) == "[Scalar!]"
+        assert str(GraphQLList(ListOfScalarsType)) == "[[Scalar]]"
 
     def prohibits_nesting_nonnull_inside_nonnull():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLNonNull(GraphQLNonNull(GraphQLInt))
+            GraphQLNonNull(GraphQLNonNull(NonNullScalarType))
         msg = str(exc_info.value)
         assert msg == (
-            "Can only create NonNull of a Nullable GraphQLType but got: Int!."
+            "Can only create NonNull of a Nullable GraphQLType but got: Scalar!."
         )
 
     def allows_a_thunk_for_union_member_types():
@@ -622,15 +627,14 @@ def describe_type_system_enum_types_must_be_well_defined():
 def describe_type_system_list_must_accept_only_types():
 
     types = [
-        GraphQLString,
         ScalarType,
         ObjectType,
         UnionType,
         InterfaceType,
         EnumType,
         InputObjectType,
-        GraphQLList(GraphQLString),
-        GraphQLNonNull(GraphQLString),
+        ListOfScalarsType,
+        NonNullScalarType,
     ]
 
     not_types = [{}, dict, str, object, None]
@@ -642,7 +646,7 @@ def describe_type_system_list_must_accept_only_types():
     @mark.parametrize("type_", not_types, ids=lambda type_: type_.__class__.__name__)
     def rejects_a_non_type_as_item_type_of_list(type_):
         with raises(TypeError) as exc_info:
-            assert GraphQLList(type_)
+            GraphQLList(type_)
         msg = str(exc_info.value)
         assert msg == (
             f"Can only create a wrapper for a GraphQLType, but got: {type_}."
@@ -652,18 +656,17 @@ def describe_type_system_list_must_accept_only_types():
 def describe_type_system_non_null_must_only_accept_non_nullable_types():
 
     nullable_types = [
-        GraphQLString,
         ScalarType,
         ObjectType,
         UnionType,
         InterfaceType,
         EnumType,
         InputObjectType,
-        GraphQLList(GraphQLString),
-        GraphQLList(GraphQLNonNull(GraphQLString)),
+        ListOfScalarsType,
+        ListOfNonNullScalarsType,
     ]
 
-    not_nullable_types = [GraphQLNonNull(GraphQLString), {}, dict, str, object, None]
+    not_nullable_types = [NonNullScalarType, {}, dict, str, object, None]
 
     @mark.parametrize("type_", nullable_types)
     def accepts_a_type_as_nullable_type_of_non_null(type_):
@@ -672,7 +675,7 @@ def describe_type_system_non_null_must_only_accept_non_nullable_types():
     @mark.parametrize("type_", not_nullable_types)
     def rejects_a_non_type_as_nullable_type_of_non_null(type_):
         with raises(TypeError) as exc_info:
-            assert GraphQLNonNull(type_)
+            GraphQLNonNull(type_)
         msg = str(exc_info.value)
         assert (
             msg
