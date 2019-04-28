@@ -1,4 +1,5 @@
 from typing import Callable, List, Optional, Union, cast, Dict
+from functools import partial
 
 from .ast import (
     ArgumentNode,
@@ -445,12 +446,11 @@ def parse_object_field(lexer: Lexer, is_const: bool) -> ObjectFieldNode:
 def parse_object(lexer: Lexer, is_const: bool) -> ObjectValueNode:
     """ObjectValue[Const]"""
     start = lexer.token
-    expect_token(lexer, TokenKind.BRACE_L)
-    fields: List[ObjectFieldNode] = []
-    append = fields.append
-    while not expect_optional_token(lexer, TokenKind.BRACE_R):
-        append(parse_object_field(lexer, is_const))
-    return ObjectValueNode(fields=fields, loc=loc(lexer, start))
+    item = cast(Callable[[Lexer], Node], partial(parse_object_field, is_const=is_const))
+    return ObjectValueNode(
+        fields=any_nodes(lexer, TokenKind.BRACE_L, item, TokenKind.BRACE_R),
+        loc=loc(lexer, start),
+    )
 
 
 def parse_int(lexer: Lexer, _is_const=True) -> IntValueNode:
