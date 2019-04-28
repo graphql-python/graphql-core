@@ -53,11 +53,6 @@ def schema_with_object_with_field_resolver(
     )
 
 
-ObjectWithIsTypeOf = GraphQLObjectType(
-    "ObjectWithIsTypeOf", {"f": GraphQLField(GraphQLString)}
-)
-
-
 def describe_type_system_scalars():
     def accepts_a_scalar_type_defining_serialize():
         schema_with_field_type(GraphQLScalarType("SomeScalar", lambda: None))
@@ -266,11 +261,6 @@ def describe_type_system_objects():
     def accepts_a_lambda_as_an_object_field_resolver():
         schema_with_object_with_field_resolver(lambda _obj, _info: {})
 
-    def accepts_an_object_type_with_an_is_type_of_function():
-        schema_with_field_type(
-            GraphQLObjectType("AnotherObject", {"f": GraphQLField(GraphQLString)})
-        )
-
     def rejects_an_object_type_field_with_undefined_config():
         undefined_field = cast(GraphQLField, None)
         obj_type = GraphQLObjectType("SomeObject", {"f": undefined_field})
@@ -394,30 +384,6 @@ def describe_type_system_interfaces():
             schema.query_type.fields["field"].type.interfaces[0] is AnotherInterfaceType
         )
 
-    def accepts_an_interface_with_implementing_type_defining_is_type_of():
-        InterfaceTypeWithoutResolveType = GraphQLInterfaceType(
-            "InterfaceTypeWithoutResolveType", {"f": GraphQLField(GraphQLString)}
-        )
-
-        assert schema_with_field_type(
-            GraphQLObjectType(
-                "SomeObject",
-                {"f": GraphQLField(GraphQLString)},
-                [InterfaceTypeWithoutResolveType],
-            )
-        )
-
-    def accepts_interface_type_with_resolve_type_and_is_type_of_in_implementation():
-        AnotherInterfaceType = GraphQLInterfaceType(
-            "AnotherInterfaceType", {"f": GraphQLField(GraphQLString)}
-        )
-
-        assert schema_with_field_type(
-            GraphQLObjectType(
-                "SomeObject", {"f": GraphQLField(GraphQLString)}, [AnotherInterfaceType]
-            )
-        )
-
     def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -442,11 +408,6 @@ def describe_type_system_unions():
     def accepts_a_union_type_defining_resolve_type():
         assert schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectType]))
 
-    def accepts_a_union_of_object_types_defining_is_type_of():
-        assert schema_with_field_type(
-            GraphQLUnionType("SomeUnion", [ObjectWithIsTypeOf])
-        )
-
     def accepts_a_union_type_with_list_types():
         assert schema_with_field_type(GraphQLUnionType("SomeUnion", [ObjectType]))
 
@@ -463,9 +424,7 @@ def describe_type_system_unions():
     def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            schema_with_field_type(
-                GraphQLUnionType("SomeUnion", [ObjectWithIsTypeOf], resolve_type={})
-            )
+            schema_with_field_type(GraphQLUnionType("SomeUnion", [], resolve_type={}))
         msg = str(exc_info.value)
         assert msg == (
             "SomeUnion must provide 'resolve_type' as a function, but got: {}."
