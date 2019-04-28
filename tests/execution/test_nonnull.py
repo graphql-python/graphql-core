@@ -12,6 +12,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
+from graphql.utilities import build_schema
 
 sync_error = RuntimeError("sync")
 sync_non_null_error = RuntimeError("syncNonNull")
@@ -73,21 +74,24 @@ class NullingData:
         return NullingData()
 
 
-DataType = GraphQLObjectType(
-    "DataType",
-    lambda: {
-        "sync": GraphQLField(GraphQLString),
-        "syncNonNull": GraphQLField(GraphQLNonNull(GraphQLString)),
-        "promise": GraphQLField(GraphQLString),
-        "promiseNonNull": GraphQLField(GraphQLNonNull(GraphQLString)),
-        "syncNest": GraphQLField(DataType),
-        "syncNonNullNest": GraphQLField(GraphQLNonNull(DataType)),
-        "promiseNest": GraphQLField(DataType),
-        "promiseNonNullNest": GraphQLField(GraphQLNonNull(DataType)),
-    },
-)
+schema = build_schema(
+    """
+    type DataType {
+      sync: String
+      syncNonNull: String!
+      promise: String
+      promiseNonNull: String!
+      syncNest: DataType
+      syncNonNullNest: DataType!
+      promiseNest: DataType
+      promiseNonNullNest: DataType!
+    }
 
-schema = GraphQLSchema(DataType)
+    schema {
+      query: DataType
+    }
+    """
+)
 
 
 def execute_query(query, root_value):
