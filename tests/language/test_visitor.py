@@ -26,26 +26,6 @@ from ..validation.harness import test_schema
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
 
-def get_node_by_path(ast, path):
-    result = ast
-    for key in path:
-        if isinstance(key, int):
-            assert isinstance(result, list)
-            try:
-                result = result[key]
-            except IndexError:
-                fail(f"invalid index {key} in node list {result}")
-        elif isinstance(key, str):
-            assert isinstance(result, Node)
-            try:
-                result = getattr(result, key)
-            except AttributeError:
-                fail(f"invalid key {key} in node {result}")
-        else:
-            fail(f"invalid key {key!r} in path {path}")
-    return result
-
-
 def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=False):
     assert isinstance(node, Node)
 
@@ -59,18 +39,42 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
         return
 
     assert isinstance(key, (int, str))
-    assert get_node_by_path(parent, [key]) is not None
+
+    if isinstance(key, int):
+        assert isinstance(parent, list)
+        assert 0 <= key <= len(parent)
+    else:
+        assert isinstance(parent, Node)
+        assert hasattr(parent, key)
+
     assert isinstance(path, list)
     assert path[-1] == key
+
     assert isinstance(ancestors, list)
     assert len(ancestors) == len(path) - 1
 
     if not is_edited:
-        assert get_node_by_path(parent, [key]) is node
-        assert get_node_by_path(ast, path) is node
+        current_node = ast
+
         for i, ancestor in enumerate(ancestors):
-            ancestor_path = path[:i]
-            assert ancestor == get_node_by_path(ast, ancestor_path)
+            assert ancestor is current_node
+            k = path[i]
+            assert isinstance(k, (int, str))
+            if isinstance(k, int):
+                assert isinstance(current_node, list)
+                assert 0 <= k <= len(current_node)
+                current_node = current_node[k]
+            else:
+                assert isinstance(current_node, Node)
+                assert hasattr(current_node, k)
+                current_node = getattr(current_node, k)
+            assert current_node is not None
+
+        assert parent is current_node
+        if isinstance(key, int):
+            assert parent[key] is node
+        else:
+            assert getattr(parent, key) is node
 
 
 def describe_visitor():
