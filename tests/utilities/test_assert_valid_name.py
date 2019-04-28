@@ -22,7 +22,5 @@ def describe_assert_valid_name():
         assert msg == "Expected string"
 
     def throws_for_names_with_invalid_characters():
-        with raises(GraphQLError) as exc_info:
+        with raises(GraphQLError, match="Names must match"):
             assert_valid_name(">--()-->")
-        msg = exc_info.value.message
-        assert "Names must match" in msg

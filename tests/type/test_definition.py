@@ -403,12 +403,12 @@ def describe_field_args_must_be_a_dict():
 
     def does_not_accept_is_deprecated_instead_of_deprecation_reason_on_field():
         kwargs = dict(is_deprecated=True)
-        with raises(TypeError) as exc_info:
+        with raises(
+            TypeError, match="got an unexpected keyword argument 'is_deprecated'"
+        ):
             GraphQLObjectType(
                 "OldObject", {"field": GraphQLField(GraphQLString, **kwargs)}
             )
-        msg = str(exc_info.value)
-        assert "got an unexpected keyword argument 'is_deprecated'" in msg
 
 
 def describe_object_interfaces_must_be_a_sequence():
@@ -558,11 +558,11 @@ def describe_type_system_scalar_types_must_be_serializable():
         schema_with_field_type(GraphQLScalarType("SomeScalar", lambda: None))
 
     def rejects_a_scalar_type_not_defining_serialize():
-        with raises(TypeError) as exc_info:
+        with raises(
+            TypeError, match="missing 1 required positional argument: 'serialize'"
+        ):
             # noinspection PyArgumentList
             schema_with_field_type(GraphQLScalarType("SomeScalar"))
-        msg = str(exc_info.value)
-        assert "missing 1 required positional argument: 'serialize'" in msg
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             schema_with_field_type(GraphQLScalarType("SomeScalar", None))
@@ -663,11 +663,9 @@ def describe_union_types_must_be_list():
         schema_with_field_type(GraphQLUnionType("SomeUnion", lambda: [ObjectType]))
 
     def accepts_a_union_type_without_types():
-        with raises(TypeError) as exc_info:
+        with raises(TypeError, match="missing 1 required positional argument: 'types'"):
             # noinspection PyArgumentList
             schema_with_field_type(GraphQLUnionType("SomeUnion"))
-        msg = str(exc_info.value)
-        assert "missing 1 required positional argument: 'types'" in msg
         schema_with_field_type(GraphQLUnionType("SomeUnion", None))
         schema_with_field_type(GraphQLUnionType("SomeUnion", []))
 
@@ -726,14 +724,12 @@ def describe_type_system_input_objects_must_have_fields():
 
 def describe_type_system_input_objects_fields_must_not_have_resolvers():
     def rejects_an_input_object_type_with_resolvers():
-        with raises(TypeError) as exc_info:
+        with raises(TypeError, match="got an unexpected keyword argument 'resolve'"):
             # noinspection PyArgumentList
             GraphQLInputObjectType(
                 "SomeInputObject",
                 {"f": GraphQLInputField(GraphQLString, resolve=lambda: 0)},
             )
-        msg = str(exc_info.value)
-        assert "got an unexpected keyword argument 'resolve'" in msg
         input_obj_type = GraphQLInputObjectType(
             "SomeInputObject", {"f": GraphQLField(GraphQLString, resolve=lambda: 0)}
         )
@@ -746,13 +742,11 @@ def describe_type_system_input_objects_fields_must_not_have_resolvers():
         )
 
     def rejects_an_input_object_type_with_resolver_constant():
-        with raises(TypeError) as exc_info:
+        with raises(TypeError, match="got an unexpected keyword argument 'resolve'"):
             # noinspection PyArgumentList
             GraphQLInputObjectType(
                 "SomeInputObject", {"f": GraphQLInputField(GraphQLString, resolve={})}
             )
-        msg = str(exc_info.value)
-        assert "got an unexpected keyword argument 'resolve'" in msg
 
 
 def describe_type_system_enum_types_must_be_well_defined():
@@ -781,11 +775,11 @@ def describe_type_system_enum_types_must_be_well_defined():
         )
 
     def does_not_allow_is_deprecated():
-        with raises(TypeError) as exc_info:
+        with raises(
+            TypeError, match="got an unexpected keyword argument 'is_deprecated'"
+        ):
             # noinspection PyArgumentList
             GraphQLEnumType("SomeEnum", {"FOO": GraphQLEnumValue(is_deprecated=True)})
-        msg = str(exc_info.value)
-        assert "got an unexpected keyword argument 'is_deprecated'" in msg
 
 
 def describe_type_system_list_must_accept_only_types():

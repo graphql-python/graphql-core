@@ -306,12 +306,9 @@ def describe_subscription_initialization_phase():
 
         assert str(exc_info.value) == "Expected None to be a GraphQL schema."
 
-        with raises(TypeError) as exc_info:
+        with raises(TypeError, match="missing .* positional argument: 'schema'"):
             # noinspection PyTypeChecker
             await subscribe(document=document)
-
-        msg = str(exc_info.value)
-        assert "missing" in msg and "argument: 'schema'" in msg
 
     # noinspection PyArgumentList
     @mark.asyncio
@@ -322,12 +319,9 @@ def describe_subscription_initialization_phase():
 
         assert str(exc_info.value) == "Must provide document"
 
-        with raises(TypeError) as exc_info:
+        with raises(TypeError, match="missing .* positional argument: 'document'"):
             # noinspection PyTypeChecker
             await subscribe(schema=email_schema)
-
-        msg = str(exc_info.value)
-        assert "missing" in msg and "argument: 'document'" in msg
 
     @mark.asyncio
     async def resolves_to_an_error_for_unknown_subscription_field():
