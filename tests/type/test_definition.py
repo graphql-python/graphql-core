@@ -111,15 +111,6 @@ def describe_type_system_example():
         assert str(ListOfNonNullScalarsType) == "[Scalar!]"
         assert str(GraphQLList(ListOfScalarsType)) == "[[Scalar]]"
 
-    def prohibits_nesting_nonnull_inside_nonnull():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            GraphQLNonNull(GraphQLNonNull(NonNullScalarType))
-        msg = str(exc_info.value)
-        assert msg == (
-            "Can only create NonNull of a Nullable GraphQLType but got: Scalar!."
-        )
-
     def allows_a_thunk_for_union_member_types():
         union = GraphQLUnionType("ThunkUnion", lambda: [ObjectType])
 
