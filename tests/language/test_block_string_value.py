@@ -1,4 +1,4 @@
-from graphql.language.block_string_value import block_string_value
+from graphql.language.block_string_value import dedent_block_string_value
 
 
 def join(*args):
@@ -10,7 +10,7 @@ def describe_block_string_value():
         raw_value = join(
             "", "    Hello,", "      World!", "", "    Yours,", "      GraphQL."
         )
-        assert block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join(
             "Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
@@ -26,7 +26,7 @@ def describe_block_string_value():
             "",
             "",
         )
-        assert block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join(
             "Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
@@ -42,7 +42,7 @@ def describe_block_string_value():
             "        ",
             "  ",
         )
-        assert block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join(
             "Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
@@ -50,7 +50,7 @@ def describe_block_string_value():
         raw_value = join(
             "    Hello,", "      World!", "", "    Yours,", "      GraphQL."
         )
-        assert block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join(
             "    Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
@@ -64,6 +64,6 @@ def describe_block_string_value():
             "      GraphQL. ",
             "               ",
         )
-        assert block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join(
             "Hello,     ", "  World!   ", "           ", "Yours,     ", "  GraphQL. "
         )

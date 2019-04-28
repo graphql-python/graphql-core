@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from ..error import GraphQLSyntaxError
 from .source import Source
-from .block_string_value import block_string_value
+from .block_string_value import dedent_block_string_value
 
 __all__ = ["Lexer", "TokenKind", "Token"]
 
@@ -415,7 +415,7 @@ class Lexer:
                     line,
                     col,
                     prev,
-                    block_string_value(raw_value),
+                    dedent_block_string_value(raw_value),
                 )
             if char < " " and char not in "\t\n\r":
                 raise GraphQLSyntaxError(

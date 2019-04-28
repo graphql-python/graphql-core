@@ -1,7 +1,7 @@
-__all__ = ["block_string_value"]
+__all__ = ["dedent_block_string_value"]
 
 
-def block_string_value(raw_string: str) -> str:
+def dedent_block_string_value(raw_string: str) -> str:
     """Produce the value of a block string from its parsed raw value.
 
     Similar to CoffeeScript's block string, Python's docstring trim or Ruby's
