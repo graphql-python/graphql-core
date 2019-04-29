@@ -63,7 +63,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
                 undefined_field_message(
                     field_name, type_.name, suggested_type_names, suggested_field_names
                 ),
-                [node],
+                node,
             )
         )
 

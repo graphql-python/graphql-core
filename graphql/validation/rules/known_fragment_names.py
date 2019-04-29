@@ -21,5 +21,5 @@ class KnownFragmentNamesRule(ValidationRule):
         fragment = self.context.get_fragment(fragment_name)
         if not fragment:
             self.report_error(
-                GraphQLError(unknown_fragment_message(fragment_name), [node.name])
+                GraphQLError(unknown_fragment_message(fragment_name), node.name)
             )

@@ -95,7 +95,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
                                 if is_type(arg_type)
                                 else print_ast(cast(TypeNode, arg_type)),
                             ),
-                            [directive_node],
+                            directive_node,
                         )
                     )
 
@@ -128,7 +128,7 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
                         missing_field_arg_message(
                             field_node.name.value, arg_name, str(arg_def.type)
                         ),
-                        [field_node],
+                        field_node,
                     )
                 )
 

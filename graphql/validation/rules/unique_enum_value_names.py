@@ -53,7 +53,7 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
                     self.report_error(
                         GraphQLError(
                             existed_enum_value_name_message(type_name, value_name),
-                            [value_def.name],
+                            value_def.name,
                         )
                     )
                 elif value_name in value_names:

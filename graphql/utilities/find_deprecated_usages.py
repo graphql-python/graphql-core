@@ -42,7 +42,7 @@ class FindDeprecatedUsages(Visitor):
                     GraphQLError(
                         f"The field {parent_type.name}.{field_name}"
                         " is deprecated." + (f" {reason}" if reason else ""),
-                        [node],
+                        node,
                     )
                 )
 
@@ -57,6 +57,6 @@ class FindDeprecatedUsages(Visitor):
                     GraphQLError(
                         f"The enum value {type_.name}.{enum_val_name}"
                         " is deprecated." + (f" {reason}" if reason else ""),
-                        [node],
+                        node,
                     )
                 )

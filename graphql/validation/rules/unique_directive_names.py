@@ -38,9 +38,7 @@ class UniqueDirectiveNamesRule(SDLValidationRule):
 
         if self.schema and self.schema.get_directive(directive_name):
             self.report_error(
-                GraphQLError(
-                    existed_directive_name_message(directive_name), [node.name]
-                )
+                GraphQLError(existed_directive_name_message(directive_name), node.name)
             )
         else:
             if directive_name in self.known_directive_names:

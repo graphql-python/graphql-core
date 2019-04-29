@@ -77,7 +77,7 @@ def describe_graphql_error():
         assert e.locations == [(2, 3)]
 
     def converts_node_with_loc_start_zero_to_positions_and_locations():
-        e = GraphQLError("msg", [operation_node])
+        e = GraphQLError("msg", operation_node)
         assert e.nodes == [operation_node]
         assert e.source is source
         assert e.positions == [0]
@@ -96,7 +96,7 @@ def describe_graphql_error():
         assert repr(e) == "GraphQLError('msg')"
 
     def serializes_to_include_message_and_locations():
-        e = GraphQLError("msg", [field_node])
+        e = GraphQLError("msg", field_node)
         assert "msg" in str(e)
         assert "(2:3)" in str(e)
         assert repr(e) == (

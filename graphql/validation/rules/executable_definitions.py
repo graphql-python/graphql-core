@@ -40,7 +40,7 @@ class ExecutableDefinitionsRule(ASTValidationRule):
                                 definition,
                             ).name.value
                         ),
-                        [definition],
+                        definition,
                     )
                 )
         return self.SKIP

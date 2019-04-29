@@ -43,13 +43,12 @@ class ScalarLeafsRule(ValidationRule):
                             no_subselection_allowed_message(
                                 node.name.value, str(type_)
                             ),
-                            [selection_set],
+                            selection_set,
                         )
                     )
             elif not selection_set:
                 self.report_error(
                     GraphQLError(
-                        required_subselection_message(node.name.value, str(type_)),
-                        [node],
+                        required_subselection_message(node.name.value, str(type_)), node
                     )
                 )

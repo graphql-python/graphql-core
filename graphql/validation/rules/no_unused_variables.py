@@ -42,7 +42,7 @@ class NoUnusedVariablesRule(ValidationRule):
             if variable_name not in variable_name_used:
                 self.report_error(
                     GraphQLError(
-                        unused_variable_message(variable_name, op_name), [variable_def]
+                        unused_variable_message(variable_name, op_name), variable_def
                     )
                 )
 

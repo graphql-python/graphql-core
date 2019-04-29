@@ -73,7 +73,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
                         extending_different_type_kind_message(
                             type_name, extension_kind_to_type_name(expected_kind)
                         ),
-                        [node],
+                        node,
                     )
                 )
         else:
@@ -84,7 +84,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
             self.report_error(
                 GraphQLError(
                     extending_unknown_type_message(type_name, suggested_types),
-                    [node.name],
+                    node.name,
                 )
             )
 

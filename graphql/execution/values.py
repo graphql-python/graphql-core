@@ -58,7 +58,7 @@ def get_variable_values(
                     f"Variable '${var_name}' expected value of type"
                     f" '{print_ast(var_def_node.type)}'"
                     " which cannot be used as an input type.",
-                    [var_def_node.type],
+                    var_def_node.type,
                 )
             )
         else:
@@ -79,7 +79,7 @@ def get_variable_values(
                         if has_value
                         else f"Variable '${var_name}' of required type"
                         f" '{var_type}' was not provided.",
-                        [var_def_node],
+                        var_def_node,
                     )
                 )
             elif has_value:
@@ -146,7 +146,7 @@ def get_argument_values(
                 raise GraphQLError(
                     f"Argument '{name}' of non-null type"
                     f" '{arg_type}' must not be null.",
-                    [argument_node.value],
+                    argument_node.value,
                 )
             elif argument_node and isinstance(argument_node.value, VariableNode):
                 raise GraphQLError(
@@ -154,13 +154,13 @@ def get_argument_values(
                     f" '{arg_type}' was provided the variable"
                     f" '${variable_name}'"
                     " which was not provided a runtime value.",
-                    [argument_node.value],
+                    argument_node.value,
                 )
             else:
                 raise GraphQLError(
                     f"Argument '{name}' of required type '{arg_type}'"
                     " was not provided.",
-                    [node],
+                    node,
                 )
         elif has_value:
             if isinstance(argument_node.value, NullValueNode):
@@ -183,7 +183,7 @@ def get_argument_values(
                     raise GraphQLError(
                         f"Argument '{name}'"
                         f" has invalid value {print_ast(value_node)}.",
-                        [argument_node.value],
+                        argument_node.value,
                     )
                 coerced_values[name] = coerced_value
     return coerced_values

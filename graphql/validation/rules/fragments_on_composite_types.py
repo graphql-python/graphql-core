@@ -37,7 +37,7 @@ class FragmentsOnCompositeTypesRule(ValidationRule):
                         inline_fragment_on_non_composite_error_message(
                             print_ast(type_condition)
                         ),
-                        [type_condition],
+                        type_condition,
                     )
                 )
 
@@ -50,6 +50,6 @@ class FragmentsOnCompositeTypesRule(ValidationRule):
                     fragment_on_non_composite_error_message(
                         node.name.value, print_ast(type_condition)
                     ),
-                    [type_condition],
+                    type_condition,
                 )
             )

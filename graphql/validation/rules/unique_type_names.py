@@ -38,7 +38,7 @@ class UniqueTypeNamesRule(SDLValidationRule):
 
         if self.schema and self.schema.get_type(type_name):
             self.report_error(
-                GraphQLError(existed_type_name_message(type_name), [node.name])
+                GraphQLError(existed_type_name_message(type_name), node.name)
             )
         else:
             if type_name in self.known_type_names:

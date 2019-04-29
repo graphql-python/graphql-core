@@ -51,7 +51,7 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
                             existed_field_definition_name_message(
                                 type_name, field_name
                             ),
-                            [field_def.name],
+                            field_def.name,
                         )
                     )
                 elif field_name in field_names:

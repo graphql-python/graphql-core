@@ -93,9 +93,7 @@ class SchemaValidationContext:
         message: str,
         nodes: Union[Optional[Node], Sequence[Optional[Node]]] = None,
     ):
-        if isinstance(nodes, Node):
-            nodes = [nodes]
-        if nodes:
+        if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
         nodes = cast(Optional[Sequence[Node]], nodes)
         self.add_error(GraphQLError(message, nodes))

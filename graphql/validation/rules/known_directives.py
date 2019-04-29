@@ -64,12 +64,12 @@ class KnownDirectivesRule(ASTValidationRule):
                         misplaced_directive_message(
                             node.name.value, candidate_location.value
                         ),
-                        [node],
+                        node,
                     )
                 )
         else:
             self.report_error(
-                GraphQLError(unknown_directive_message(node.name.value), [node])
+                GraphQLError(unknown_directive_message(node.name.value), node)
             )
 
 

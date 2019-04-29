@@ -30,5 +30,5 @@ class LoneAnonymousOperationRule(ASTValidationRule):
     def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
         if not node.name and self.operation_count > 1:
             self.report_error(
-                GraphQLError(anonymous_operation_not_alone_message(), [node])
+                GraphQLError(anonymous_operation_not_alone_message(), node)
             )

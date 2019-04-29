@@ -49,7 +49,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                     type_incompatible_anon_spread_message(
                         str(parent_type), str(frag_type)
                     ),
-                    [node],
+                    node,
                 )
             )
 
@@ -68,7 +68,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                     type_incompatible_spread_message(
                         frag_name, str(parent_type), str(frag_type)
                     ),
-                    [node],
+                    node,
                 )
             )
 

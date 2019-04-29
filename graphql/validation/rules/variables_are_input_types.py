@@ -27,6 +27,6 @@ class VariablesAreInputTypesRule(ValidationRule):
             self.report_error(
                 GraphQLError(
                     non_input_type_on_var_message(variable_name, print_ast(node.type)),
-                    [node.type],
+                    node.type,
                 )
             )

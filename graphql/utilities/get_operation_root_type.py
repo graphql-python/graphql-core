@@ -21,22 +21,20 @@ def get_operation_root_type(
         query_type = schema.query_type
         if not query_type:
             raise GraphQLError(
-                "Schema does not define the required query root type.", [operation]
+                "Schema does not define the required query root type.", operation
             )
         return query_type
     elif operation_type == OperationType.MUTATION:
         mutation_type = schema.mutation_type
         if not mutation_type:
-            raise GraphQLError("Schema is not configured for mutations.", [operation])
+            raise GraphQLError("Schema is not configured for mutations.", operation)
         return mutation_type
     elif operation_type == OperationType.SUBSCRIPTION:
         subscription_type = schema.subscription_type
         if not subscription_type:
-            raise GraphQLError(
-                "Schema is not configured for subscriptions.", [operation]
-            )
+            raise GraphQLError("Schema is not configured for subscriptions.", operation)
         return subscription_type
     else:
         raise GraphQLError(
-            "Can only have query, mutation and subscription operations.", [operation]
+            "Can only have query, mutation and subscription operations.", operation
         )

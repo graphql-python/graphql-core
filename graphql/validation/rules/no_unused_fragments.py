@@ -42,5 +42,5 @@ class NoUnusedFragmentsRule(ASTValidationRule):
             frag_name = fragment_def.name.value
             if frag_name not in fragment_names_used:
                 self.report_error(
-                    GraphQLError(unused_fragment_message(frag_name), [fragment_def])
+                    GraphQLError(unused_fragment_message(frag_name), fragment_def)
                 )
