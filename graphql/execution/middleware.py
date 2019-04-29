@@ -16,7 +16,7 @@ class MiddlewareManager:
     If middleware is provided as an object, it must provide a method `resolve` that is
     used as the middleware function.
 
-    Note that since resolvers return "MaybeAwaitable" values, all middleware functions
+    Note that since resolvers return "AwaitableOrValue"s, all middleware functions
     must be aware of this and check whether values are awaitable before awaiting them.
     """
 

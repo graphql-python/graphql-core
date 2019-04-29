@@ -26,7 +26,7 @@ from ..language import (
     OperationType,
     SelectionSetNode,
 )
-from ..pyutils import inspect, is_invalid, is_nullish, MaybeAwaitable
+from ..pyutils import inspect, is_invalid, is_nullish, AwaitableOrValue
 from ..utilities import get_operation_root_type, type_from_ast
 from ..type import (
     GraphQLAbstractType,
@@ -116,7 +116,7 @@ def execute(
     type_resolver: GraphQLTypeResolver = None,
     middleware: Middleware = None,
     execution_context_class: Type["ExecutionContext"] = None,
-) -> MaybeAwaitable[ExecutionResult]:
+) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
 
     Implements the "Evaluating requests" section of the GraphQL specification.
@@ -304,8 +304,8 @@ class ExecutionContext:
         )
 
     def build_response(
-        self, data: MaybeAwaitable[Optional[Dict[str, Any]]]
-    ) -> MaybeAwaitable[ExecutionResult]:
+        self, data: AwaitableOrValue[Optional[Dict[str, Any]]]
+    ) -> AwaitableOrValue[ExecutionResult]:
         """Build response.
 
         Given a completed execution context and data, build the (data, errors) response
@@ -328,7 +328,7 @@ class ExecutionContext:
 
     def execute_operation(
         self, operation: OperationDefinitionNode, root_value: Any
-    ) -> Optional[MaybeAwaitable[Any]]:
+    ) -> Optional[AwaitableOrValue[Any]]:
         """Execute an operation.
 
         Implements the "Evaluating operations" section of the spec.
@@ -377,7 +377,7 @@ class ExecutionContext:
         source_value: Any,
         path: Optional[ResponsePath],
         fields: Dict[str, List[FieldNode]],
-    ) -> MaybeAwaitable[Dict[str, Any]]:
+    ) -> AwaitableOrValue[Dict[str, Any]]:
         """Execute the given fields serially.
 
         Implements the "Evaluating selection sets" section of the spec for "write" mode.
@@ -427,7 +427,7 @@ class ExecutionContext:
         source_value: Any,
         path: Optional[ResponsePath],
         fields: Dict[str, List[FieldNode]],
-    ) -> MaybeAwaitable[Dict[str, Any]]:
+    ) -> AwaitableOrValue[Dict[str, Any]]:
         """Execute the given fields concurrently.
 
         Implements the "Evaluating selection sets" section of the spec for "read" mode.
@@ -581,7 +581,7 @@ class ExecutionContext:
         source: Any,
         field_nodes: List[FieldNode],
         path: ResponsePath,
-    ) -> MaybeAwaitable[Any]:
+    ) -> AwaitableOrValue[Any]:
         """Resolve the field on the given source object.
 
         In particular, this figures out the value that the field returns by calling its
@@ -652,7 +652,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         path: ResponsePath,
         result: Any,
-    ) -> MaybeAwaitable[Any]:
+    ) -> AwaitableOrValue[Any]:
         """Complete a value while catching an error.
 
         This is a small wrapper around completeValue which detects and logs errors in
@@ -713,7 +713,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         path: ResponsePath,
         result: Any,
-    ) -> MaybeAwaitable[Any]:
+    ) -> AwaitableOrValue[Any]:
         """Complete a value.
 
         Implements the instructions for completeValue as defined in the "Field entries"
@@ -797,7 +797,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         path: ResponsePath,
         result: Iterable[Any],
-    ) -> MaybeAwaitable[Any]:
+    ) -> AwaitableOrValue[Any]:
         """Complete a list value.
 
         Complete a list value by completing each item in the list with the inner type.
@@ -866,7 +866,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         path: ResponsePath,
         result: Any,
-    ) -> MaybeAwaitable[Any]:
+    ) -> AwaitableOrValue[Any]:
         """Complete an abstract value.
 
         Complete a value of an abstract type by determining the runtime object type of
@@ -947,7 +947,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         path: ResponsePath,
         result: Any,
-    ) -> MaybeAwaitable[Dict[str, Any]]:
+    ) -> AwaitableOrValue[Dict[str, Any]]:
         """Complete an Object value by executing all sub-selections."""
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
@@ -981,7 +981,7 @@ class ExecutionContext:
         field_nodes: List[FieldNode],
         path: ResponsePath,
         result: Any,
-    ) -> MaybeAwaitable[Dict[str, Any]]:
+    ) -> AwaitableOrValue[Dict[str, Any]]:
         """Collect sub-fields to execute to complete this value."""
         sub_field_nodes = self.collect_subfields(return_type, field_nodes)
         return self.execute_fields(return_type, result, path, sub_field_nodes)
@@ -1100,7 +1100,7 @@ def invalid_return_type_error(
 
 def default_type_resolver(
     value: Any, info: GraphQLResolveInfo, abstract_type: GraphQLAbstractType
-) -> MaybeAwaitable[Optional[Union[GraphQLObjectType, str]]]:
+) -> AwaitableOrValue[Optional[Union[GraphQLObjectType, str]]]:
     """Default type resolver function.
 
     If a resolve_type function is not given, then a default resolve behavior is used

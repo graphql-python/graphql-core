@@ -5,7 +5,7 @@ from typing import Any, Awaitable, Dict, Union, Type, cast
 from .error import GraphQLError
 from .execution import execute, ExecutionResult, ExecutionContext, Middleware
 from .language import parse, Source
-from .pyutils import MaybeAwaitable
+from .pyutils import AwaitableOrValue
 from .type import (
     GraphQLFieldResolver,
     GraphQLSchema,
@@ -141,7 +141,7 @@ def graphql_impl(
     type_resolver,
     middleware,
     execution_context_class,
-) -> MaybeAwaitable[ExecutionResult]:
+) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
     schema_validation_errors = validate_schema(schema)

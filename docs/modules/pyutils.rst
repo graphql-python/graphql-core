@@ -13,7 +13,7 @@ PyUtils
 .. autofunction:: is_integer
 .. autofunction:: is_invalid
 .. autofunction:: is_nullish
-.. autoclass:: MaybeAwaitable
+.. autoclass:: AwaitableOrValue
 .. autofunction:: or_list
 .. autofunction:: quoted_or_list
 .. autofunction:: suggestion_list

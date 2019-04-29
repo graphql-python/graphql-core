@@ -20,3 +20,6 @@ pyyaml = ">=4.0"
 
 [pipenv]
 allow_prereleases = true
+
+[packages]
+graphql-core-next = {editable = true,path = "."}

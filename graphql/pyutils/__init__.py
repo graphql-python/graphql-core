@@ -17,7 +17,7 @@ from .is_finite import is_finite
 from .is_integer import is_integer
 from .is_invalid import is_invalid
 from .is_nullish import is_nullish
-from .maybe_awaitable import MaybeAwaitable
+from .awaitable_or_value import AwaitableOrValue
 from .or_list import or_list
 from .quoted_or_list import quoted_or_list
 from .suggestion_list import suggestion_list
@@ -34,7 +34,7 @@ __all__ = [
     "is_integer",
     "is_invalid",
     "is_nullish",
-    "MaybeAwaitable",
+    "AwaitableOrValue",
     "or_list",
     "quoted_or_list",
     "suggestion_list",

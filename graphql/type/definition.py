@@ -42,7 +42,7 @@ from ..language import (
     UnionTypeExtensionNode,
     ValueNode,
 )
-from ..pyutils import MaybeAwaitable, cached_property, inspect
+from ..pyutils import AwaitableOrValue, cached_property, inspect
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -513,12 +513,12 @@ GraphQLFieldResolver = Callable[..., Any]
 # the context is passed as part of the GraphQLResolveInfo:
 GraphQLTypeResolver = Callable[
     [Any, GraphQLResolveInfo, "GraphQLAbstractType"],
-    MaybeAwaitable[Optional[Union["GraphQLObjectType", str]]],
+    AwaitableOrValue[Optional[Union["GraphQLObjectType", str]]],
 ]
 
 # Note: Contrary to the Javascript implementation of GraphQLIsTypeOfFn,
 # the context is passed as part of the GraphQLResolveInfo:
-GraphQLIsTypeOfFn = Callable[[Any, GraphQLResolveInfo], MaybeAwaitable[bool]]
+GraphQLIsTypeOfFn = Callable[[Any, GraphQLResolveInfo], AwaitableOrValue[bool]]
 
 
 class GraphQLArgument:
