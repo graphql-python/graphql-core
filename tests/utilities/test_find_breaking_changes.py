@@ -171,7 +171,9 @@ def describe_find_breaking_changes():
             """
         )
 
-        expected_field_changes = [
+        assert find_fields_that_changed_type_on_object_or_interface_types(
+            old_schema, new_schema
+        ) == [
             (BreakingChangeType.FIELD_REMOVED, "Type1.field2 was removed."),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
@@ -222,13 +224,6 @@ def describe_find_breaking_changes():
                 "Type1.field18 changed type from [[Int!]!] to [[Int!]].",
             ),
         ]
-
-        assert (
-            find_fields_that_changed_type_on_object_or_interface_types(
-                old_schema, new_schema
-            )
-            == expected_field_changes
-        )
 
     def should_detect_if_fields_on_input_types_changed_kind_or_were_removed():
         old_schema = build_schema(
@@ -281,7 +276,9 @@ def describe_find_breaking_changes():
             """
         )
 
-        expected_field_changes = [
+        assert find_fields_that_changed_type_on_input_object_types(
+            old_schema, new_schema
+        ).breaking_changes == [
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
                 "InputType1.field1 changed type from String to Int.",
@@ -325,13 +322,6 @@ def describe_find_breaking_changes():
             ),
         ]
 
-        assert (
-            find_fields_that_changed_type_on_input_object_types(
-                old_schema, new_schema
-            ).breaking_changes
-            == expected_field_changes
-        )
-
     def should_detect_if_a_required_field_is_added_to_an_input_type():
         old_schema = build_schema(
             """
@@ -360,19 +350,14 @@ def describe_find_breaking_changes():
             """
         )
 
-        expected_field_changes = [
+        assert find_fields_that_changed_type_on_input_object_types(
+            old_schema, new_schema
+        ).breaking_changes == [
             (
                 BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
                 "A required field requiredField on input type InputType1 was added.",
             )
         ]
-
-        assert (
-            find_fields_that_changed_type_on_input_object_types(
-                old_schema, new_schema
-            ).breaking_changes
-            == expected_field_changes
-        )
 
     def should_detect_if_a_type_was_removed_from_a_union_type():
         old_schema = build_schema(
@@ -846,7 +831,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        expected_breaking_changes = [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.TYPE_REMOVED, "Int was removed."),
             (BreakingChangeType.TYPE_REMOVED, "TypeInUnion2 was removed."),
             (BreakingChangeType.TYPE_REMOVED, "TypeThatGetsRemoved was removed."),
@@ -897,10 +882,6 @@ def describe_find_breaking_changes():
                 "QUERY was removed from DirectiveName",
             ),
         ]
-
-        assert (
-            find_breaking_changes(old_schema, new_schema) == expected_breaking_changes
-        )
 
     def should_detect_if_a_directive_was_explicitly_removed():
         old_schema = build_schema(
@@ -1182,19 +1163,14 @@ def describe_find_dangerous_changes():
             """
         )
 
-        expected_field_changes = [
+        assert find_fields_that_changed_type_on_input_object_types(
+            old_schema, new_schema
+        ).dangerous_changes == [
             (
                 DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
                 "An optional field field2 on input type InputType1 was added.",
             )
         ]
-
-        assert (
-            find_fields_that_changed_type_on_input_object_types(
-                old_schema, new_schema
-            ).dangerous_changes
-            == expected_field_changes
-        )
 
     def should_find_all_dangerous_changes():
         old_schema = build_schema(
@@ -1260,7 +1236,7 @@ def describe_find_dangerous_changes():
             """
         )
 
-        expected_dangerous_changes = [
+        assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
                 "Type1.field1 arg name has changed defaultValue",
@@ -1279,10 +1255,6 @@ def describe_find_dangerous_changes():
                 "TypeInUnion2 was added to union type UnionTypeThatGainsAType.",
             ),
         ]
-
-        assert (
-            find_dangerous_changes(old_schema, new_schema) == expected_dangerous_changes
-        )
 
     def should_detect_if_an_optional_field_argument_was_added():
         old_schema = build_schema(
