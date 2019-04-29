@@ -25,7 +25,7 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
 
     def enter_object_value(self, *_args):
         self.known_names_stack.append(self.known_names)
-        self.known_names.clear()
+        self.known_names = {}
 
     def leave_object_value(self, *_args):
         self.known_names = self.known_names_stack.pop()
@@ -42,4 +42,3 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
             )
         else:
             known_names[field_name] = node.name
-        return False

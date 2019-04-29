@@ -83,3 +83,13 @@ def describe_validate_unique_input_field_names():
             """,
             [duplicate_field("f1", 3, 28, 3, 41), duplicate_field("f1", 3, 28, 3, 54)],
         )
+
+    def nested_duplicate_input_object_fields():
+        assert_errors(
+            """
+            {
+              field(arg: { f1: {f2: "value", f2: "value" }})
+            }
+            """,
+            [duplicate_field("f2", 3, 33, 3, 46)],
+        )
