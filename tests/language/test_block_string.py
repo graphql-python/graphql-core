@@ -1,21 +1,21 @@
 from graphql.language.block_string import dedent_block_string_value, print_block_string
 
 
-def join(*args):
+def join_lines(*args):
     return "\n".join(args)
 
 
 def describe_dedent_block_string_value():
     def removes_uniform_indentation_from_a_string():
-        raw_value = join(
+        raw_value = join_lines(
             "", "    Hello,", "      World!", "", "    Yours,", "      GraphQL."
         )
-        assert dedent_block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join_lines(
             "Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
     def removes_empty_leading_and_trailing_lines():
-        raw_value = join(
+        raw_value = join_lines(
             "",
             "",
             "    Hello,",
@@ -26,12 +26,12 @@ def describe_dedent_block_string_value():
             "",
             "",
         )
-        assert dedent_block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join_lines(
             "Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
     def removes_blank_leading_and_trailing_lines():
-        raw_value = join(
+        raw_value = join_lines(
             "  ",
             "        ",
             "    Hello,",
@@ -42,20 +42,20 @@ def describe_dedent_block_string_value():
             "        ",
             "  ",
         )
-        assert dedent_block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join_lines(
             "Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
     def retains_indentation_from_first_line():
-        raw_value = join(
+        raw_value = join_lines(
             "    Hello,", "      World!", "", "    Yours,", "      GraphQL."
         )
-        assert dedent_block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join_lines(
             "    Hello,", "  World!", "", "Yours,", "  GraphQL."
         )
 
     def does_not_alter_trailing_spaces():
-        raw_value = join(
+        raw_value = join_lines(
             "               ",
             "    Hello,     ",
             "      World!   ",
@@ -64,7 +64,7 @@ def describe_dedent_block_string_value():
             "      GraphQL. ",
             "               ",
         )
-        assert dedent_block_string_value(raw_value) == join(
+        assert dedent_block_string_value(raw_value) == join_lines(
             "Hello,     ", "  World!   ", "           ", "Yours,     ", "  GraphQL. "
         )
 
