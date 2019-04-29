@@ -1,4 +1,6 @@
 from math import nan, inf
+from contextlib import contextmanager
+from importlib import import_module
 
 from pytest import mark
 
@@ -12,6 +14,35 @@ from graphql import (
     GraphQLNonNull,
     GraphQLString,
 )
+
+inspect_module = import_module(inspect.__module__)
+
+
+@contextmanager
+def increased_recursive_depth():
+    inspect_module.max_recursive_depth += 1
+    try:
+        yield inspect
+    finally:
+        inspect_module.max_recursive_depth -= 1
+
+
+@contextmanager
+def increased_str_size():
+    inspect_module.max_str_size *= 2
+    try:
+        yield inspect
+    finally:
+        inspect_module.max_str_size //= 2
+
+
+@contextmanager
+def increased_list_size():
+    inspect_module.max_list_size *= 2
+    try:
+        yield inspect
+    finally:
+        inspect_module.max_list_size //= 2
 
 
 def describe_inspect():
@@ -33,6 +64,8 @@ def describe_inspect():
         s = "foo" * 100
         r = repr(s)
         assert inspect(s) == r[:118] + "..." + r[-119:]
+        with increased_str_size():
+            assert inspect(s) == r
 
     def inspect_bytes():
         for b in b"", b"abc", b"foo\tbar \x7f\xff\0", b"'", b"'":
@@ -62,6 +95,8 @@ def describe_inspect():
         n = int("123" * 100)
         r = repr(n)
         assert inspect(n) == r[:118] + "..." + r[-119:]
+        with increased_str_size():
+            assert inspect(n) == r
 
     def inspect_function():
         assert inspect(lambda: 0) == "<function>"
@@ -132,18 +167,21 @@ def describe_inspect():
     def inspect_overly_large_list():
         s = list(range(20))
         assert inspect(s) == "[0, 1, 2, 3, 4, ..., 16, 17, 18, 19]"
+        with increased_list_size():
+            assert inspect(s) == repr(s)
 
     def inspect_overly_nested_list():
         s = [[[]]]
         assert inspect(s) == "[[[]]]"
         s = [[[1, 2, 3]]]
         assert inspect(s) == "[[[...]]]"
-        assert inspect(s, max_depth=3) == repr(s)
+        with increased_recursive_depth():
+            assert inspect(s) == repr(s)
 
     def inspect_recursive_list():
         s = [1, 2, 3]
         s[1] = s
-        assert inspect(s) == "[1, [1, [...], 3], 3]"
+        assert inspect(s) == "[1, [...], 3]"
 
     def inspect_tuples():
         assert inspect(()) == "()"
@@ -155,13 +193,16 @@ def describe_inspect():
     def inspect_overly_large_tuple():
         s = tuple(range(20))
         assert inspect(s) == "(0, 1, 2, 3, 4, ..., 16, 17, 18, 19)"
+        with increased_list_size():
+            assert inspect(s) == repr(s)
 
     def inspect_overly_nested_tuple():
         s = (((),),)
         assert inspect(s) == "(((),),)"
         s = (((1, 2, 3),),)
         assert inspect(s) == "(((...),),)"
-        assert inspect(s, max_depth=3) == repr(s)
+        with increased_recursive_depth():
+            assert inspect(s) == repr(s)
 
     def inspect_recursive_tuple():
         s = [1, 2, 3]
@@ -193,18 +234,21 @@ def describe_inspect():
             inspect(s) == "{'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4,"
             " ..., 'q': 16, 'r': 17, 's': 18, 't': 19}"
         )
+        with increased_list_size():
+            assert inspect(s) == repr(s)
 
     def inspect_overly_nested_dict():
         s = {"a": {"b": {}}}
         assert inspect(s) == "{'a': {'b': {}}}"
         s = {"a": {"b": {"c": 3}}}
         assert inspect(s) == "{'a': {'b': {...}}}"
-        assert inspect(s, max_depth=3) == repr(s)
+        with increased_recursive_depth():
+            assert inspect(s) == repr(s)
 
     def inspect_recursive_dict():
         s = {}
         s[1] = s
-        assert inspect(s) == "{1: {1: {...}}}"
+        assert inspect(s) == "{1: {...}}"
 
     def inspect_sets():
         assert inspect(set()) == "set()"
@@ -217,13 +261,16 @@ def describe_inspect():
         assert r.startswith("{") and r.endswith("}")
         assert "..., " in r and "5" not in s  # sets are unordered
         assert len(r) == 36
+        with increased_list_size():
+            assert inspect(s) == repr(s)
 
     def inspect_overly_nested_set():
         s = [[set()]]
         assert inspect(s) == "[[set()]]"
         s = [[set([1, 2, 3])]]
         assert inspect(s) == "[[set(...)]]"
-        assert inspect(s, max_depth=3) == repr(s)
+        with increased_recursive_depth():
+            assert inspect(s) == repr(s)
 
     def inspect_frozensets():
         assert inspect(frozenset()) == "frozenset()"
@@ -239,13 +286,16 @@ def describe_inspect():
         assert r.startswith("frozenset({") and r.endswith("})")
         assert "..., " in r and "5" not in s  # frozensets are unordered
         assert len(r) == 47
+        with increased_list_size():
+            assert inspect(s) == repr(s)
 
     def inspect_overly_nested_frozenset():
         s = frozenset([frozenset([frozenset()])])
         assert inspect(s) == "frozenset({frozenset({frozenset()})})"
         s = frozenset([frozenset([frozenset([1, 2, 3])])])
         assert inspect(s) == "frozenset({frozenset({frozenset(...)})})"
-        assert inspect(s, max_depth=3) == repr(s)
+        with increased_recursive_depth():
+            assert inspect(s) == repr(s)
 
     def mixed_recursive_dict_and_list():
         s = {1: []}
@@ -312,7 +362,11 @@ def describe_inspect():
             def __inspect__():
                 return s
 
-        assert inspect(TestClass()) == s[:118] + "..." + s[-119:]
+        value = TestClass()
+
+        assert inspect(value) == s[:118] + "..." + s[-119:]
+        with increased_str_size():
+            assert inspect(value) == s
 
     def custom_inspect_that_is_recursive():
         class TestClass:
