@@ -312,8 +312,7 @@ def build_client_schema(
     for std_type_name, std_type in chain(
         specified_scalar_types.items(), introspection_types.items()
     ):
-        if std_type_name in type_map:
-            type_map[std_type_name] = std_type
+        type_map[std_type_name] = std_type
 
     # Get the root Query, Mutation, and Subscription types.
 

@@ -38,8 +38,23 @@ def cycle_introspection(sdl_string):
     # If the client then runs the introspection query against the client-side schema,
     # it should get a result identical to what was returned by the server
     second_introspection = introspection_from_schema(client_schema)
+
+    hack_to_remove_standard_types(second_introspection)
+    hack_to_remove_standard_types(initial_introspection)
+
+    # If the client then runs the introspection query against the client-side
+    # schema, it should get a result identical to what was returned by the server.
     assert initial_introspection == second_introspection
     return print_schema(client_schema)
+
+
+# Temporary hack to remove always presented standard types - should be removed in 15.0
+def hack_to_remove_standard_types(introspection):
+    introspection["__schema"]["types"] = [
+        type_
+        for type_ in introspection["__schema"]["types"]
+        if type_["name"] not in ("ID", "Float", "Int", "Boolean", "String")
+    ]
 
 
 def describe_type_system_build_schema_from_introspection():
@@ -311,6 +326,9 @@ def describe_type_system_build_schema_from_introspection():
         introspection = introspection_from_schema(schema)
         client_schema = build_client_schema(introspection)
         second_introspection = introspection_from_schema(client_schema)
+
+        hack_to_remove_standard_types(second_introspection)
+        hack_to_remove_standard_types(introspection)
         assert second_introspection == introspection
 
         client_food_enum = client_schema.get_type("Food")
