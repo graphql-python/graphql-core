@@ -1,11 +1,14 @@
-from graphql.language.block_string_value import dedent_block_string_value
+from graphql.language.block_string_value import (
+    dedent_block_string_value,
+    print_block_string,
+)
 
 
 def join(*args):
     return "\n".join(args)
 
 
-def describe_block_string_value():
+def describe_dedent_block_string_value():
     def removes_uniform_indentation_from_a_string():
         raw_value = join(
             "", "    Hello,", "      World!", "", "    Yours,", "      GraphQL."
@@ -67,3 +70,69 @@ def describe_block_string_value():
         assert dedent_block_string_value(raw_value) == join(
             "Hello,     ", "  World!   ", "           ", "Yours,     ", "  GraphQL. "
         )
+
+
+def describe_print_block_string():
+    def describe_single_line():
+        def simple():
+            assert print_block_string("single line") == '"""single line"""'
+
+        def with_leading_whitespace():
+            assert print_block_string("  single line") == '"""  single line"""'
+
+        def with_indentation():
+            assert (
+                print_block_string("single line", indentation=" ")
+                == '"""single line"""'
+            )
+
+        def with_indentation_and_leading_whitespace():
+            assert (
+                print_block_string(" single line", indentation="  ")
+                == '""" single line"""'
+            )
+
+        def with_trailing_quote():
+            assert (
+                print_block_string('single "line"')
+                == '"""\nsingle "line"\n"""'
+            )
+
+        def prefer_multiple_lines():
+            assert (
+                print_block_string("single line", prefer_multiple_lines=True)
+                == '"""\nsingle line\n"""'
+            )
+
+    def describe_multiple_lines():
+        def simple():
+            assert print_block_string("multiple\nlines") == '"""\nmultiple\nlines\n"""'
+
+        def with_leading_whitespace():
+            assert (
+                print_block_string(" multiple\nlines") == '"""\n multiple\nlines\n"""'
+            )
+
+        def with_indentation():
+            assert (
+                print_block_string("multiple\nlines", indentation="  ")
+                == '"""\n  multiple\n  lines\n"""'
+            )
+
+        def with_indentation_and_leading_whitespace():
+            assert (
+                print_block_string(" multiple\nlines", indentation="  ")
+                == '"""\n   multiple\n  lines\n"""'
+            )
+
+        def with_trailing_quote():
+            assert (
+                print_block_string('multiple\n"line"')
+                == '"""\nmultiple\n"line"\n"""'
+            )
+
+        def do_not_prefer_multiple_lines():
+            assert (
+                print_block_string("multiple\nlines", prefer_multiple_lines=False)
+                == '"""\nmultiple\nlines\n"""'
+            )

@@ -4,6 +4,7 @@ from typing import Optional, Sequence
 
 from .ast import Node, OperationType
 from .visitor import visit, Visitor
+from .block_string_value import print_block_string
 
 __all__ = ["print_ast"]
 
@@ -113,7 +114,7 @@ class PrintAstVisitor(Visitor):
 
     def leave_string_value(self, node, key, *_args):
         if node.block:
-            return print_block_string(node.value, key == "description")
+            return print_block_string(node.value, "" if key == "description" else "  ")
         return dumps(node.value)
 
     def leave_boolean_value(self, node, *_args):
@@ -299,24 +300,6 @@ class PrintAstVisitor(Visitor):
             ["extend input", node.name, join(node.directives, " "), block(node.fields)],
             " ",
         )
-
-
-def print_block_string(value: str, is_description: bool = False) -> str:
-    """Print a block string.
-
-    Prints a block string in the indented block form by adding a leading and trailing
-    blank line. However, if a block string starts with whitespace and is a single-line,
-    adding a leading blank line would strip that whitespace.
-    """
-    escaped = value.replace('"""', '\\"""')
-    if is_multiline(value) or not value.startswith((" ", "\t")):
-        if not is_description:
-            escaped = indent(escaped)
-        return f'"""\n{escaped}\n"""'
-    else:
-        if escaped.endswith('"'):
-            escaped += "\n"
-        return f'"""{escaped}"""'
 
 
 def join(strings: Optional[Sequence[str]], separator: str = "") -> str:

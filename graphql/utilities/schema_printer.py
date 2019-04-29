@@ -3,6 +3,7 @@ from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast
+from ..language.block_string_value import print_block_string
 from ..pyutils import inspect
 from ..type import (
     DEFAULT_DEPRECATION_REASON,
@@ -254,34 +255,21 @@ def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue])
 
 
 def print_description(
-    type_: Union[GraphQLArgument, GraphQLDirective, GraphQLEnumValue, GraphQLNamedType],
+    def_: Union[GraphQLArgument, GraphQLDirective, GraphQLEnumValue, GraphQLNamedType],
     indentation="",
     first_in_block=True,
 ) -> str:
-    if not type_.description:
+    if not def_.description:
         return ""
-    lines = description_lines(type_.description, 120 - len(indentation))
 
-    description = []
-    if indentation and not first_in_block:
-        description.append("\n")
-    description.extend([indentation, '"""'])
+    lines = description_lines(def_.description, 120 - len(indentation))
 
-    if len(lines) == 1 and len(lines[0]) < 70 and not lines[0].endswith('"'):
-        # In some circumstances, a single line can be used for the description.
-        description.extend([escape_quote(lines[0]), '"""\n'])
-    else:
-        # Format a multi-line block quote to account for leading space.
-        has_leading_space = lines and lines[0].startswith((" ", "\t"))
-        if not has_leading_space:
-            description.append("\n")
-        for i, line in enumerate(lines):
-            if i or not has_leading_space:
-                description.append(indentation)
-            description.extend([escape_quote(line), "\n"])
-        description.extend([indentation, '"""\n'])
+    text = '\n'.join(lines)
+    prefer_multiple_lines = len(text) > 70
+    block_string = print_block_string(text, '', prefer_multiple_lines)
+    prefix = '\n' + indentation if indentation and not first_in_block else indentation
 
-    return "".join(description)
+    return prefix + block_string.replace('\n', '\n' + indentation) + '\n'
 
 
 def escape_quote(line: str) -> str:
