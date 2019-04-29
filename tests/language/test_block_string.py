@@ -1,7 +1,4 @@
-from graphql.language.block_string_value import (
-    dedent_block_string_value,
-    print_block_string,
-)
+from graphql.language.block_string import dedent_block_string_value, print_block_string
 
 
 def join(*args):
@@ -93,10 +90,7 @@ def describe_print_block_string():
             )
 
         def with_trailing_quote():
-            assert (
-                print_block_string('single "line"')
-                == '"""\nsingle "line"\n"""'
-            )
+            assert print_block_string('single "line"') == '"""\nsingle "line"\n"""'
 
         def prefer_multiple_lines():
             assert (
@@ -127,8 +121,7 @@ def describe_print_block_string():
 
         def with_trailing_quote():
             assert (
-                print_block_string('multiple\n"line"')
-                == '"""\nmultiple\n"line"\n"""'
+                print_block_string('multiple\n"line"') == '"""\nmultiple\n"line"\n"""'
             )
 
         def do_not_prefer_multiple_lines():

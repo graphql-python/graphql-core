@@ -3,7 +3,7 @@ from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast
-from ..language.block_string_value import print_block_string
+from ..language.block_string import print_block_string
 from ..pyutils import inspect
 from ..type import (
     DEFAULT_DEPRECATION_REASON,
@@ -264,12 +264,12 @@ def print_description(
 
     lines = description_lines(def_.description, 120 - len(indentation))
 
-    text = '\n'.join(lines)
+    text = "\n".join(lines)
     prefer_multiple_lines = len(text) > 70
-    block_string = print_block_string(text, '', prefer_multiple_lines)
-    prefix = '\n' + indentation if indentation and not first_in_block else indentation
+    block_string = print_block_string(text, "", prefer_multiple_lines)
+    prefix = "\n" + indentation if indentation and not first_in_block else indentation
 
-    return prefix + block_string.replace('\n', '\n' + indentation) + '\n'
+    return prefix + block_string.replace("\n", "\n" + indentation) + "\n"
 
 
 def escape_quote(line: str) -> str:

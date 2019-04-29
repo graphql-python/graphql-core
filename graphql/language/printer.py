@@ -4,7 +4,7 @@ from typing import Optional, Sequence
 
 from .ast import Node, OperationType
 from .visitor import visit, Visitor
-from .block_string_value import print_block_string
+from .block_string import print_block_string
 
 __all__ = ["print_ast"]
 
