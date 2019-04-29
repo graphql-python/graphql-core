@@ -1,15 +1,7 @@
 from pytest import raises
 
 from graphql.language import DirectiveLocation, DirectiveDefinitionNode, Node
-from graphql.type import (
-    GraphQLArgument,
-    GraphQLDirective,
-    GraphQLInt,
-    GraphQLString,
-    GraphQLSkipDirective,
-    is_directive,
-    is_specified_directive,
-)
+from graphql.type import GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLString
 
 
 def describe_type_system_directive():
@@ -77,19 +69,19 @@ def describe_type_system_directive():
         directive = GraphQLDirective("foo", [])
         assert repr(directive) == "<GraphQLDirective(@foo)>"
 
-    def reject_an_unnamed_directivce():
+    def rejects_an_unnamed_directive():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective(None, locations=[])  # type: ignore
         assert str(exc_info.value) == "Directive must be named."
 
-    def reject_directive_with_incorrectly_typed_name():
+    def rejects_a_directive_with_incorrectly_typed_name():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective({"bad": True}, locations=[])  # type: ignore
         assert str(exc_info.value) == "The directive name must be a string."
 
-    def reject_directive_with_incorrectly_typed_args():
+    def rejects_a_directive_with_incorrectly_typed_args():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=[], args=["arg"])  # type: ignore
@@ -113,13 +105,13 @@ def describe_type_system_directive():
             "Foo args must be GraphQLArgument or input type objects."
         )
 
-    def reject_directive_with_undefined_locations():
+    def rejects_a_directive_with_undefined_locations():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=None)  # type: ignore
         assert str(exc_info.value) == "Foo locations must be a list/tuple."
 
-    def recect_directive_with_incorrectly_typed_locations():
+    def recects_a_directive_with_incorrectly_typed_locations():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations="bad")  # type: ignore
@@ -131,7 +123,7 @@ def describe_type_system_directive():
             "Foo locations must be DirectiveLocation objects."
         )
 
-    def reject_directive_with_incorrectly_typed_description():
+    def rejects_a_directive_with_incorrectly_typed_description():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective(
@@ -139,35 +131,10 @@ def describe_type_system_directive():
             )  # type: ignore
         assert str(exc_info.value) == "Foo description must be a string."
 
-    def reject_directive_with_incorrectly_typed_ast_node():
+    def rejects_a_directive_with_incorrectly_typed_ast_node():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=[], ast_node=Node())  # type: ignore
         assert str(exc_info.value) == (
             "Foo AST node must be a DirectiveDefinitionNode."
         )
-
-
-def describe_directive_predicates():
-    def describe_is_directive():
-        def returns_true_for_directive():
-            directive = GraphQLDirective("Foo", [])
-            assert is_directive(directive) is True
-
-        def returns_false_for_type_class_rather_than_instance():
-            assert is_directive(GraphQLDirective) is False
-
-        def returns_false_for_other_instances():
-            assert is_directive(GraphQLString) is False
-
-        def returns_false_for_random_garbage():
-            assert is_directive(None) is False
-            assert is_directive({"what": "is this"}) is False
-
-    def describe_is_specified_directive():
-        def returns_true_for_specified_directive():
-            assert is_specified_directive(GraphQLSkipDirective) is True
-
-        def returns_false_for_unspecified_directive():
-            directive = GraphQLDirective("Foo", [])
-            assert is_specified_directive(directive) is False

@@ -175,7 +175,7 @@ specified_directives = (
 
 def is_specified_directive(directive: GraphQLDirective):
     """Check whether the given directive is one of the specified directives."""
-    return any(
+    return isinstance(directive, GraphQLDirective) and any(
         specified_directive.name == directive.name
         for specified_directive in specified_directives
     )

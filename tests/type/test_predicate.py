@@ -1,8 +1,12 @@
 from pytest import raises
 
+from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
+    GraphQLDeprecatedDirective,
+    GraphQLDirective,
     GraphQLEnumType,
+    GraphQLIncludeDirective,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
@@ -10,6 +14,7 @@ from graphql.type import (
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLScalarType,
+    GraphQLSkipDirective,
     GraphQLString,
     GraphQLUnionType,
     assert_abstract_type,
@@ -33,6 +38,7 @@ from graphql.type import (
     get_nullable_type,
     is_abstract_type,
     is_composite_type,
+    is_directive,
     is_enum_type,
     is_input_object_type,
     is_input_type,
@@ -47,6 +53,7 @@ from graphql.type import (
     is_object_type,
     is_output_type,
     is_scalar_type,
+    is_specified_directive,
     is_type,
     is_union_type,
     is_wrapping_type,
@@ -453,3 +460,54 @@ def describe_type_predicates():
                 GraphQLNonNull(GraphQLString), default_value="default"
             )
             assert is_required_input_field(opt_field4) is False
+
+    def describe_directive_predicates():
+        def describe_is_directive():
+            def returns_true_for_directives():
+                directive = GraphQLDirective("Foo", [DirectiveLocation.QUERY])
+                assert is_directive(directive) is True
+                assert is_directive(GraphQLSkipDirective) is True
+
+            def returns_false_for_directive_class_rather_than_instance():
+                assert is_directive(GraphQLDirective) is False
+
+            def returns_false_for_object_type():
+                assert is_directive(ObjectType) is False
+
+            def returns_false_for_scalar_type():
+                assert is_directive(GraphQLString) is False
+
+            def returns_false_for_random_garbage():
+                assert is_directive(None) is False
+                assert is_directive({"what": "is this"}) is False
+
+        def describe_is_specified_directive():
+            def returns_true_for_specified_directives():
+                assert is_specified_directive(GraphQLIncludeDirective) is True
+                assert is_specified_directive(GraphQLSkipDirective) is True
+                assert is_specified_directive(GraphQLDeprecatedDirective) is True
+
+            def returns_false_for_custom_directive():
+                directive = GraphQLDirective("Foo", [DirectiveLocation.QUERY])
+                assert is_specified_directive(directive) is False
+
+            def returns_false_for_directive_class_rather_than_instance():
+                assert is_specified_directive(GraphQLDirective) is False
+
+            def returns_false_for_object_type():
+                assert is_specified_directive(ObjectType) is False
+
+            def returns_false_for_spec_defined_scalar_type():
+                assert is_specified_directive(GraphQLString) is False
+
+            def returns_false_for_scalar_type_with_name_of_specified_directive():
+                assert (
+                    is_specified_directive(
+                        GraphQLScalarType("deprecated", lambda: None)
+                    )
+                    is False
+                )
+
+            def returns_false_for_random_garbage():
+                assert is_specified_directive(None) is False
+                assert is_specified_directive({"what": "is this"}) is False
