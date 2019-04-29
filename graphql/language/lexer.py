@@ -234,13 +234,14 @@ class Lexer:
     def read_comment(self, start: int, line: int, col: int, prev: Token) -> Token:
         """Read a comment token from the source file."""
         body = self.source.body
+        body_length = len(body)
+
         position = start
         while True:
             position += 1
-            try:
-                char = body[position]
-            except IndexError:
+            if position > body_length:
                 break
+            char = body[position]
             if char < " " and char != "\t":
                 break
         return Token(
