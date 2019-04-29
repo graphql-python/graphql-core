@@ -30,7 +30,7 @@ from ..type import (
 
 __all__ = ["ast_from_value"]
 
-_re_integer_string = re.compile("^-?(0|[1-9][0-9]*)$")
+_re_integer_string = re.compile("^-?(?:0|[1-9][0-9]*)$")
 
 
 def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
