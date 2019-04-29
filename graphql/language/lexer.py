@@ -103,15 +103,8 @@ class Token:
         return f"{kind} {value!r}" if value else kind
 
 
-def char_at(s, pos):
-    try:
-        return s[pos]
-    except IndexError:
-        return None
-
-
 def print_char(char):
-    return TokenKind.EOF.value if char is None else repr(char)
+    return repr(char) if char else TokenKind.EOF.value
 
 
 _KIND_FOR_PUNCT = {
@@ -191,24 +184,23 @@ class Lexer:
         if pos >= body_length:
             return Token(TokenKind.EOF, body_length, body_length, line, col, prev)
 
-        char = char_at(body, pos)
-        if char is not None:
-            kind = _KIND_FOR_PUNCT.get(char)
-            if kind:
-                return Token(kind, pos, pos + 1, line, col, prev)
-            if char == "#":
-                return self.read_comment(pos, line, col, prev)
-            elif char == ".":
-                if char == char_at(body, pos + 1) == char_at(body, pos + 2):
-                    return Token(TokenKind.SPREAD, pos, pos + 3, line, col, prev)
-            elif "A" <= char <= "Z" or "a" <= char <= "z" or char == "_":
-                return self.read_name(pos, line, col, prev)
-            elif "0" <= char <= "9" or char == "-":
-                return self.read_number(pos, char, line, col, prev)
-            elif char == '"':
-                if char == char_at(body, pos + 1) == char_at(body, pos + 2):
-                    return self.read_block_string(pos, line, col, prev)
-                return self.read_string(pos, line, col, prev)
+        char = body[pos]
+        kind = _KIND_FOR_PUNCT.get(char)
+        if kind:
+            return Token(kind, pos, pos + 1, line, col, prev)
+        if char == "#":
+            return self.read_comment(pos, line, col, prev)
+        elif char == ".":
+            if body[pos + 1 : pos + 3] == "..":
+                return Token(TokenKind.SPREAD, pos, pos + 3, line, col, prev)
+        elif "A" <= char <= "Z" or "a" <= char <= "z" or char == "_":
+            return self.read_name(pos, line, col, prev)
+        elif "0" <= char <= "9" or char == "-":
+            return self.read_number(pos, char, line, col, prev)
+        elif char == '"':
+            if body[pos + 1 : pos + 3] == '""':
+                return self.read_block_string(pos, line, col, prev)
+            return self.read_string(pos, line, col, prev)
 
         raise GraphQLSyntaxError(source, pos, unexpected_character_message(char))
 
@@ -221,15 +213,15 @@ class Lexer:
         body_length = len(body)
         position = start_position
         while position < body_length:
-            char = char_at(body, position)
-            if char is not None and char in " \t,\ufeff":
+            char = body[position]
+            if char in " \t,\ufeff":
                 position += 1
             elif char == "\n":
                 position += 1
                 self.line += 1
                 self.line_start = position
             elif char == "\r":
-                if char_at(body, position + 1) == "\n":
+                if body[position + 1 : position + 2] == "\n":
                     position += 2
                 else:
                     position += 1
@@ -245,8 +237,11 @@ class Lexer:
         position = start
         while True:
             position += 1
-            char = char_at(body, position)
-            if char is None or (char < " " and char != "\t"):
+            try:
+                char = body[position]
+            except IndexError:
+                break
+            if char < " " and char != "\t":
                 break
         return Token(
             TokenKind.COMMENT,
@@ -271,11 +266,11 @@ class Lexer:
         is_float = False
         if char == "-":
             position += 1
-            char = char_at(body, position)
+            char = body[position : position + 1]
         if char == "0":
             position += 1
-            char = char_at(body, position)
-            if char is not None and "0" <= char <= "9":
+            char = body[position : position + 1]
+            if "0" <= char <= "9":
                 raise GraphQLSyntaxError(
                     source,
                     position,
@@ -283,20 +278,20 @@ class Lexer:
                 )
         else:
             position = self.read_digits(position, char)
-            char = char_at(body, position)
+            char = body[position : position + 1]
         if char == ".":
             is_float = True
             position += 1
-            char = char_at(body, position)
+            char = body[position : position + 1]
             position = self.read_digits(position, char)
-            char = char_at(body, position)
-        if char is not None and char in "Ee":
+            char = body[position : position + 1]
+        if char and char in "Ee":
             is_float = True
             position += 1
-            char = char_at(body, position)
-            if char is not None and char in "+-":
+            char = body[position : position + 1]
+            if char and char in "+-":
                 position += 1
-                char = char_at(body, position)
+                char = body[position : position + 1]
             position = self.read_digits(position, char)
         return Token(
             TokenKind.FLOAT if is_float else TokenKind.INT,
@@ -313,9 +308,9 @@ class Lexer:
         source = self.source
         body = source.body
         position = start
-        while char is not None and "0" <= char <= "9":
+        while "0" <= char <= "9":
             position += 1
-            char = char_at(body, position)
+            char = body[position : position + 1]
         if position == start:
             raise GraphQLSyntaxError(
                 source,
@@ -328,14 +323,15 @@ class Lexer:
         """Read a string token from the source file."""
         source = self.source
         body = source.body
+        body_length = len(body)
         position = start + 1
         chunk_start = position
         value: List[str] = []
         append = value.append
 
-        while position < len(body):
-            char = char_at(body, position)
-            if char is None or char in "\n\r":
+        while position < body_length:
+            char = body[position]
+            if char in "\n\r":
                 break
             if char == '"':
                 append(body[chunk_start:position])
@@ -357,17 +353,12 @@ class Lexer:
             position += 1
             if char == "\\":
                 append(body[chunk_start : position - 1])
-                char = char_at(body, position)
+                char = body[position : position + 1]
                 escaped = _ESCAPED_CHARS.get(char)
                 if escaped:
                     value.append(escaped)
-                elif char == "u":
-                    code = uni_char_code(
-                        char_at(body, position + 1),
-                        char_at(body, position + 2),
-                        char_at(body, position + 3),
-                        char_at(body, position + 4),
-                    )
+                elif char == "u" and position + 4 < body_length:
+                    code = uni_char_code(*body[position + 1 : position + 5])
                     if code < 0:
                         escape = repr(body[position : position + 5])
                         escape = escape[:1] + "\\" + escape[1:]
@@ -394,19 +385,14 @@ class Lexer:
     def read_block_string(self, start: int, line: int, col: int, prev: Token) -> Token:
         source = self.source
         body = source.body
+        body_length = len(body)
         position = start + 3
         chunk_start = position
         raw_value = ""
 
-        while position < len(body):
-            char = char_at(body, position)
-            if char is None:
-                break
-            if (
-                char == '"'
-                and char_at(body, position + 1) == '"'
-                and char_at(body, position + 2) == '"'
-            ):
+        while position < body_length:
+            char = body[position]
+            if char == '"' and body[position + 1 : position + 3] == '""':
                 raw_value += body[chunk_start:position]
                 return Token(
                     TokenKind.BLOCK_STRING,
@@ -429,18 +415,13 @@ class Lexer:
                 self.line += 1
                 self.line_start = position
             elif char == "\r":
-                if char_at(body, position + 1) == "\n":
+                if body[position + 1 : position + 2] == "\n":
                     position += 2
                 else:
                     position += 1
                 self.line += 1
                 self.line_start = position
-            elif (
-                char == "\\"
-                and char_at(body, position + 1) == '"'
-                and char_at(body, position + 2) == '"'
-                and char_at(body, position + 3) == '"'
-            ):
+            elif char == "\\" and body[position + 1 : position + 4] == '"""':
                 raw_value += body[chunk_start:position] + '"""'
                 position += 4
                 chunk_start = position
@@ -455,8 +436,8 @@ class Lexer:
         body_length = len(body)
         position = start + 1
         while position < body_length:
-            char = char_at(body, position)
-            if char is None or not (
+            char = body[position]
+            if not (
                 char == "_"
                 or "0" <= char <= "9"
                 or "A" <= char <= "Z"
