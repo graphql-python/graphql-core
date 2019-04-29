@@ -38,7 +38,7 @@ The sub-packages of GraphQL-core-next are:
 """
 
 __version__ = "1.0.2"
-__version_js__ = "14.1.1"
+__version_js__ = "14.2.0"
 
 # The primary entry point into fulfilling a GraphQL request.
 
