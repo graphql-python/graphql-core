@@ -232,7 +232,7 @@ def type_map_reducer(map_: TypeMap, type_: GraphQLNamedType = None) -> TypeMap:
     if name in map_:
         if map_[name] is not type_:
             raise TypeError(
-                "Schema must contain unique named types but contains multiple"
+                "Schema must contain uniquely named types but contains multiple"
                 f" types named {name!r}."
             )
         return map_

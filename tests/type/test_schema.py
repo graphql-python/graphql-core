@@ -223,7 +223,7 @@ def describe_type_system_schema():
                 GraphQLSchema(QueryType)
             msg = str(exc_info.value)
             assert msg == (
-                "Schema must contain unique named types"
+                "Schema must contain uniquely named types"
                 f" but contains multiple types named 'String'."
             )
 
@@ -237,7 +237,7 @@ def describe_type_system_schema():
                 GraphQLSchema(types=types)
             msg = str(exc_info.value)
             assert msg == (
-                "Schema must contain unique named types"
+                "Schema must contain uniquely named types"
                 f" but contains multiple types named 'SameName'."
             )
 
@@ -255,7 +255,7 @@ def describe_type_system_schema():
                 GraphQLSchema(QueryType)
             msg = str(exc_info.value)
             assert msg == (
-                "Schema must contain unique named types"
+                "Schema must contain uniquely named types"
                 f" but contains multiple types named 'SameName'."
             )
 
