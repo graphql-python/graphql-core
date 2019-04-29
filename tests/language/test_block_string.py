@@ -70,62 +70,29 @@ def describe_dedent_block_string_value():
 
 
 def describe_print_block_string():
-    def describe_single_line():
-        def simple():
-            assert print_block_string("single line") == '"""single line"""'
+    def by_default_print_block_strings_as_single_line():
+        s = "one liner"
+        assert print_block_string(s) == '"""one liner"""'
+        assert print_block_string(s, "", True) == '"""\none liner\n"""'
 
-        def with_leading_whitespace():
-            assert print_block_string("  single line") == '"""  single line"""'
+    def correctly_prints_single_line_with_leading_space():
+        s = "    space-led string"
+        assert print_block_string(s) == '"""    space-led string"""'
+        assert print_block_string(s, "", True) == '"""    space-led string\n"""'
 
-        def with_indentation():
-            assert (
-                print_block_string("single line", indentation=" ")
-                == '"""single line"""'
-            )
+    def correctly_prints_single_line_with_leading_space_and_quotation():
+        s = '    space-led value "quoted string"'
 
-        def with_indentation_and_leading_whitespace():
-            assert (
-                print_block_string(" single line", indentation="  ")
-                == '""" single line"""'
-            )
+        assert print_block_string(s) == '"""    space-led value "quoted string"\n"""'
 
-        def with_trailing_quote():
-            assert print_block_string('single "line"') == '"""\nsingle "line"\n"""'
+        assert (
+            print_block_string(s, "", True)
+            == '"""    space-led value "quoted string"\n"""'
+        )
 
-        def prefer_multiple_lines():
-            assert (
-                print_block_string("single line", prefer_multiple_lines=True)
-                == '"""\nsingle line\n"""'
-            )
+    def correctly_prints_string_with_a_first_line_indentation():
+        s = join_lines("    first  ", "  line     ", "indentation", "     string")
 
-    def describe_multiple_lines():
-        def simple():
-            assert print_block_string("multiple\nlines") == '"""\nmultiple\nlines\n"""'
-
-        def with_leading_whitespace():
-            assert (
-                print_block_string(" multiple\nlines") == '"""\n multiple\nlines\n"""'
-            )
-
-        def with_indentation():
-            assert (
-                print_block_string("multiple\nlines", indentation="  ")
-                == '"""\n  multiple\n  lines\n"""'
-            )
-
-        def with_indentation_and_leading_whitespace():
-            assert (
-                print_block_string(" multiple\nlines", indentation="  ")
-                == '"""\n   multiple\n  lines\n"""'
-            )
-
-        def with_trailing_quote():
-            assert (
-                print_block_string('multiple\n"line"') == '"""\nmultiple\n"line"\n"""'
-            )
-
-        def do_not_prefer_multiple_lines():
-            assert (
-                print_block_string("multiple\nlines", prefer_multiple_lines=False)
-                == '"""\nmultiple\nlines\n"""'
-            )
+        assert print_block_string(s) == join_lines(
+            '"""', "    first  ", "  line     ", "indentation", "     string", '"""'
+        )

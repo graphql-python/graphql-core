@@ -494,45 +494,6 @@ def describe_type_system_printer():
         recreated_field = recreated_root.fields["singleField"]
         assert recreated_field.description == description
 
-    def does_not_one_line_print_a_description_that_ends_with_a_quote():
-        description = 'This field is "awesome"'
-        output = print_single_field_schema(
-            GraphQLField(GraphQLString, description=description)
-        )
-        assert output == dedent(
-            '''
-            type Query {
-              """
-              This field is "awesome"
-              """
-              singleField: String
-            }
-            '''
-        )
-        schema = build_schema(output)
-        recreated_root = assert_object_type(schema.type_map["Query"])
-        recreated_field = recreated_root.fields["singleField"]
-        assert recreated_field.description == description
-
-    def preserves_leading_spaces_when_printing_a_description():
-        description = '    This field is "awesome"'
-        output = print_single_field_schema(
-            GraphQLField(GraphQLString, description=description)
-        )
-        assert output == dedent(
-            '''
-            type Query {
-              """    This field is "awesome"
-              """
-              singleField: String
-            }
-            '''
-        )
-        schema = build_schema(output)
-        recreated_root = assert_object_type(schema.type_map["Query"])
-        recreated_field = recreated_root.fields["singleField"]
-        assert recreated_field.description == description
-
     def prints_introspection_schema():
         schema = GraphQLSchema()
         output = print_introspection_schema(schema)

@@ -89,41 +89,6 @@ def describe_printer_query_document():
             """
         )
 
-
-def describe_block_string():
-    def correctly_prints_single_line_block_strings_with_leading_space():
-        ast_with_artifacts = parse('{ field(arg: """    space-led value""") }')
-        assert print_ast(ast_with_artifacts) == dedent(
-            '''
-            {
-              field(arg: """    space-led value""")
-            }
-            '''
-        )
-
-    def correctly_prints_string_with_a_first_line_indentation():
-        source = '''
-            {
-              field(arg: """
-                    first
-                  line
-                indentation
-              """)
-            }
-            '''
-        ast_with_artifacts = parse(source)
-        assert print_ast(ast_with_artifacts) == dedent(source)
-
-    def correctly_prints_single_line_with_leading_space_and_quotation():
-        source = '''
-            {
-              field(arg: """    space-led value "quoted string"
-              """)
-            }
-            '''
-        ast_with_artifacts = parse(source)
-        assert print_ast(ast_with_artifacts) == dedent(source)
-
     def experimental_correctly_prints_fragment_defined_variables():
         source = """
             fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
