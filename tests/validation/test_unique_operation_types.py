@@ -46,7 +46,7 @@ def describe_validate_unique_operation_types():
             """
         )
 
-    def schema_definition_with_single_extensions():
+    def schema_definition_with_single_extension():
         assert_valid(
             """
             type Foo
