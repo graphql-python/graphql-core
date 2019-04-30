@@ -8,8 +8,8 @@ python:
     - 3.7
 
 install:
-    - pip install pipenv black
-    - pipenv install --dev
+    - pip install poetry
+    - poetry install
 
 script:
     - flake8 --version
