@@ -8,7 +8,7 @@ python:
     - 3.7
 
 install:
-    - pip install poetry
+    - pip install "poetry==0.12.11"
     - poetry install
 
 script:
