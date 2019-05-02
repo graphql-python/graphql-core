@@ -9,7 +9,7 @@ from ..language.ast import (
     IntValueNode,
     StringValueNode,
 )
-from .definition import GraphQLScalarType, is_named_type
+from .definition import GraphQLScalarType, is_scalar_type
 
 __all__ = [
     "is_specified_scalar_type",
@@ -248,4 +248,4 @@ specified_scalar_types = {
 
 
 def is_specified_scalar_type(type_: Any) -> bool:
-    return is_named_type(type_) and type_.name in specified_scalar_types
+    return is_scalar_type(type_) and type_.name in specified_scalar_types
