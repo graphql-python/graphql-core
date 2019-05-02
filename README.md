@@ -212,7 +212,7 @@ Some restrictions (mostly in line with the design goals):
   GraphQL-core, and GraphQL-core-next will probably be renamed to Graphql-core 3.
   
 * [Ariadne](https://github.com/mirumee/ariadne) is a Python library for implementing
-  GraphQL servers using schema-first approach created by Rafał Pitoń.
+  GraphQL servers using schema-first approach created by Mirumee Software.
   
   Ariadne is already using GraphQL-core-next as its GraphQL implementation.
   
