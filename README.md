@@ -170,16 +170,13 @@ GraphQL-core-next tries to reproduce the code of the reference implementation Gr
 in Python as closely as possible and to stay up-to-date with the latest development of
 GraphQL.js.
 
-It has been created as an alternative and potential successor to
+It has been created as a modern alternative to
 [GraphQL-core](https://github.com/graphql-python/graphql-core), a prior work
 by Syrus Akbary, based on an older version of GraphQL.js and also targeting
-older Python versions. GraphQL-core also serves as as the foundation for
-[Graphene](http://graphene-python.org/), a more high-level framework for building
-GraphQL APIs in Python. Some parts of GraphQL-core-next have been inspired by
+older Python versions. Some parts of GraphQL-core-next have been inspired by
 GraphQL-core or directly taken over with only slight modifications, but most of the code
 has been re-implemented from scratch, replicating the latest code in GraphQL.js very
-closely and adding type hints for Python. Though GraphQL-core has also been updated and
-modernized to some extend, it might be replaced by GraphQL-core-next in the future.
+closely and adding type hints for Python.
 
 Design goals for the GraphQL-core-next library are:
 
@@ -199,6 +196,29 @@ Some restrictions (mostly in line with the design goals):
 * supports asynchronous operations only via async.io
   (does not support the additional executors in GraphQL-core)
 * the benchmarks have not yet been ported to Python
+
+
+## Integration with other libraries and roadmap
+
+* [Graphene](http://graphene-python.org/) is a more high-level framework for building
+  GraphQL APIs in Python, and there is already a whole ecosystem of libraries, server
+  integrations and tools built on top of Graphene. Most of this Graphene ecosystem has
+  also been created by Syrus Akbary, who meanwhile has handed over the maintenance
+  and future development to members of the GraphQL-Python community.
+
+  The current version 2 of Graphene is using Graphql-core as core library for much of
+  the heavy lifting. Note that it is not compatible with GraphQL-core-next. 
+  The  new version 3 of Graphene however is planned to use GraphQL-core-next instead of
+  GraphQL-core, and GraphQL-core-next will probably be renamed to Graphql-core 3.
+  
+* [Ariadne](https://github.com/mirumee/ariadne) is a Python library for implementing
+  GraphQL servers using schema-first approach created by Rafał Pitoń.
+  
+  Ariadne is already using GraphQL-core-next as its GraphQL implementation.
+  
+* [Strawberry](https://github.com/strawberry-graphql/strawberry), created by Patrick
+  Arminio, is a new GraphQL library for Python 3, inspired by dataclasses,
+  that is also using GraphQL-core-next as underpinning.
 
 
 ## Changelog
