@@ -5,13 +5,16 @@ from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode, 
 from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
+    GraphQLBoolean,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLFloat,
     GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
@@ -30,7 +33,7 @@ from graphql.type import (
     specified_directives,
     validate_schema,
 )
-from graphql.utilities import extend_schema, print_schema
+from graphql.utilities import build_schema, extend_schema, print_schema
 
 # Test schema.
 
@@ -209,6 +212,54 @@ def describe_extend_schema():
         foo_type = assert_object_type(extended_schema.get_type("Foo"))
         query_type = assert_object_type(extended_schema.get_type("Query"))
         assert query_type.fields["foo"].type == foo_type
+
+    def extends_objects_with_standard_type_fields():
+        schema = build_schema(
+            """
+            type Query {
+              str: String
+            }
+            """
+        )
+
+        # Only String and Boolean are used by introspection types
+        assert schema.get_type("Int") is None
+        assert schema.get_type("Float") is None
+        assert schema.get_type("String") is GraphQLString
+        assert schema.get_type("Boolean") is GraphQLBoolean
+        assert schema.get_type("ID") is None
+
+        extend_ast = parse(
+            """
+            extend type Query {
+              bool: Boolean
+            }
+            """
+        )
+        extended_schema = extend_schema(schema, extend_ast)
+
+        assert extended_schema.get_type("Int") is None
+        assert extended_schema.get_type("Float") is None
+        assert extended_schema.get_type("String") is GraphQLString
+        assert extended_schema.get_type("Boolean") is GraphQLBoolean
+        assert extended_schema.get_type("ID") is None
+
+        extend_twice_ast = parse(
+            """
+            extend type Query {
+              int: Int
+              float: Float
+              id: ID
+            }
+            """
+        )
+        extended_twice_schema = extend_schema(schema, extend_twice_ast)
+
+        assert extended_twice_schema.get_type("Int") is GraphQLInt
+        assert extended_twice_schema.get_type("Float") is GraphQLFloat
+        assert extended_twice_schema.get_type("String") is GraphQLString
+        assert extended_twice_schema.get_type("Boolean") is GraphQLBoolean
+        assert extended_twice_schema.get_type("ID") is GraphQLID
 
     def extends_enums_by_adding_new_values():
         extended_schema = extend_test_schema(

@@ -8,6 +8,11 @@ from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    GraphQLID,
+    GraphQLInt,
+    GraphQLFloat,
+    GraphQLString,
+    GraphQLBoolean,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,
@@ -95,6 +100,30 @@ def describe_schema_builder():
             """
         )
         assert cycle_sdl(sdl) == sdl
+
+        schema = build_schema(sdl)
+        # Built-ins are used
+        assert schema.get_type("Int") is GraphQLInt
+        assert schema.get_type("Float") is GraphQLFloat
+        assert schema.get_type("String") is GraphQLString
+        assert schema.get_type("Boolean") is GraphQLBoolean
+        assert schema.get_type("ID") is GraphQLID
+
+    def include_standard_type_only_if_it_is_used():
+        schema = build_schema(
+            """
+            type Query {
+              str: String
+            }
+            """
+        )
+
+        # Only String and Boolean are used by introspection types
+        assert schema.get_type("Int") is None
+        assert schema.get_type("Float") is None
+        assert schema.get_type("String") is GraphQLString
+        assert schema.get_type("Boolean") is GraphQLBoolean
+        assert schema.get_type("ID") is None
 
     def with_directives():
         sdl = dedent(
