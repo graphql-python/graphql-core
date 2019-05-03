@@ -2,6 +2,7 @@ from pytest import raises
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
+from graphql.language.lexer import is_punctuator_token
 from graphql.pyutils import dedent, inspect
 
 
@@ -368,3 +369,29 @@ def describe_lexer():
             TokenKind.BRACE_R,
             TokenKind.EOF,
         ]
+
+
+def describe_is_punctuator_token():
+    def returns_true_for_punctuator_tokens():
+        assert is_punctuator_token(lex_one("!")) is True
+        assert is_punctuator_token(lex_one("$")) is True
+        assert is_punctuator_token(lex_one("&")) is True
+        assert is_punctuator_token(lex_one("(")) is True
+        assert is_punctuator_token(lex_one(")")) is True
+        assert is_punctuator_token(lex_one("...")) is True
+        assert is_punctuator_token(lex_one(":")) is True
+        assert is_punctuator_token(lex_one("=")) is True
+        assert is_punctuator_token(lex_one("@")) is True
+        assert is_punctuator_token(lex_one("[")) is True
+        assert is_punctuator_token(lex_one("]")) is True
+        assert is_punctuator_token(lex_one("{")) is True
+        assert is_punctuator_token(lex_one("|")) is True
+        assert is_punctuator_token(lex_one("}")) is True
+
+    def returns_false_for_non_punctuator_tokens():
+        assert is_punctuator_token(lex_one("")) is False
+        assert is_punctuator_token(lex_one("name")) is False
+        assert is_punctuator_token(lex_one("1")) is False
+        assert is_punctuator_token(lex_one("3.14")) is False
+        assert is_punctuator_token(lex_one('"str"')) is False
+        assert is_punctuator_token(lex_one('"""str"""')) is False

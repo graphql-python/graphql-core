@@ -6,7 +6,7 @@ from ..error import GraphQLSyntaxError
 from .source import Source
 from .block_string import dedent_block_string_value
 
-__all__ = ["Lexer", "TokenKind", "Token"]
+__all__ = ["Lexer", "TokenKind", "Token", "is_punctuator_token"]
 
 
 class TokenKind(Enum):
@@ -101,6 +101,30 @@ class Token:
         """A helper property to describe a token as a string for debugging"""
         kind, value = self.kind.value, self.value
         return f"{kind} {value!r}" if value else kind
+
+
+_punctuator_tokens = frozenset(
+    [
+        TokenKind.BANG,
+        TokenKind.DOLLAR,
+        TokenKind.AMP,
+        TokenKind.PAREN_L,
+        TokenKind.PAREN_R,
+        TokenKind.SPREAD,
+        TokenKind.COLON,
+        TokenKind.EQUALS,
+        TokenKind.AT,
+        TokenKind.BRACKET_L,
+        TokenKind.BRACKET_R,
+        TokenKind.BRACE_L,
+        TokenKind.PIPE,
+        TokenKind.BRACE_R,
+    ]
+)
+
+
+def is_punctuator_token(token: Token) -> bool:
+    return token.kind in _punctuator_tokens
 
 
 def print_char(char):
