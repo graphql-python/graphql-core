@@ -446,6 +446,12 @@ class GraphQLField:
         self.description = description
         self.ast_node = ast_node
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.type!r}>"
+
+    def __str__(self):
+        return f"Field: {self.type}"
+
     def __eq__(self, other):
         return self is other or (
             isinstance(other, GraphQLField)

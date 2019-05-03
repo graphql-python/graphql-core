@@ -10,11 +10,13 @@ from graphql.type import (
     GraphQLField,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLScalarType,
+    GraphQLString,
     GraphQLUnionType,
 )
 
@@ -627,4 +629,18 @@ def describe_type_system_test_utility_methods():
         assert (
             repr(GraphQLList(ListOfScalarsType))
             == "<GraphQLList <GraphQLList <GraphQLScalarType 'Scalar'>>>"
+        )
+
+    def stringifies_fields():
+        assert str(GraphQLField(GraphQLNonNull(GraphQLString))) == "Field: String!"
+        assert str(GraphQLField(GraphQLList(GraphQLInt))) == "Field: [Int]"
+
+    def fields_have_repr():
+        assert (
+            repr(GraphQLField(GraphQLNonNull(GraphQLString)))
+            == "<GraphQLField <GraphQLNonNull <GraphQLScalarType 'String'>>>"
+        )
+        assert (
+            repr(GraphQLField(GraphQLList(GraphQLInt)))
+            == "<GraphQLField <GraphQLList <GraphQLScalarType 'Int'>>>"
         )
