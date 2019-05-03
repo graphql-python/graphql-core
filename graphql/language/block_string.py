@@ -1,4 +1,10 @@
-__all__ = ["dedent_block_string_value", "print_block_string"]
+from typing import List
+
+__all__ = [
+    "dedent_block_string_value",
+    "print_block_string",
+    "get_block_string_indentation",
+]
 
 
 def dedent_block_string_value(raw_string: str) -> str:
@@ -9,26 +15,40 @@ def dedent_block_string_value(raw_string: str) -> str:
 
     This implements the GraphQL spec's BlockStringValue() static algorithm.
     """
+    # Expand a block string's raw value into independent lines.
     lines = raw_string.splitlines()
 
-    common_indent = None
-    for line in lines[1:]:
-        indent = leading_whitespace(line)
-        if indent < len(line) and (common_indent is None or indent < common_indent):
-            common_indent = indent
-        if common_indent == 0:
-            break
+    # Remove common indentation from all lines but first.
+    common_indent = get_block_string_indentation(lines)
 
     if common_indent:
         lines[1:] = [line[common_indent:] for line in lines[1:]]
 
+    # Remove leading and trailing blank lines.
     while lines and not lines[0].strip():
         lines = lines[1:]
 
     while lines and not lines[-1].strip():
         lines = lines[:-1]
 
+    # Return a string of the lines joined with U+000A.
     return "\n".join(lines)
+
+
+def get_block_string_indentation(lines: List[str]) -> int:
+    common_indent = None
+
+    for line in lines[1:]:
+        indent = leading_whitespace(line)
+        if indent == len(line):
+            continue  # skip empty lines
+
+        if common_indent is None or indent < common_indent:
+            common_indent = indent
+            if common_indent == 0:
+                break
+
+    return 0 if common_indent is None else common_indent
 
 
 def leading_whitespace(s):
