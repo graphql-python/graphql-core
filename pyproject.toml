@@ -41,11 +41,12 @@ tox = "^3.9"
 codecov = "^2.0"
 sphinx = "^2.0"
 sphinx_rtd_theme = "^0.4"
+check-manifest = "^0.38"
 bump2version = "^0.5"
 
+[tool.black]
+target-version = ['py36', 'py37', 'py38']
 [build-system]
 requires = ["poetry==0.12.11"]
 build-backend = "poetry.masonry.api"
 
-[tool.black]
-target-version = ['py36', 'py37', 'py38']

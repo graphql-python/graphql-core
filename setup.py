@@ -42,6 +42,8 @@ setup(
         "mypy",
         "tox",
         "codecov",
+        "check-manifest",
+        "bump2version",
     ],
     packages=find_packages(include=["graphql"]),
     include_package_data=True,
