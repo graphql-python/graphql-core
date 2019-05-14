@@ -61,7 +61,7 @@ class Token:
 
     def __repr__(self):
         """Print a simplified form when appearing in repr() or inspect()."""
-        return "<Token {} {}/{}>".format(self.desc, self.line, self.column)
+        return f"<Token {self.desc} {self.line}/{self.column}>"
 
     def __inspect__(self):
         return repr(self)

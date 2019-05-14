@@ -83,7 +83,7 @@ class Location(NamedTuple):
 
     def __repr__(self):
         """Print a simplified form when appearing in repr() or inspect()."""
-        return "<Location {}:{}>".format(self.start, self.end)
+        return f"<Location {self.start}:{self.end}>"
 
     def __inspect__(self):
         return repr(self)
