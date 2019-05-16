@@ -646,7 +646,7 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_handle_error_during_execution_of_source_event():
-        async def subscribe_fn(_event, _info):
+        async def subscribe_fn(_data, _info):
             yield {"email": {"subject": "Hello"}}
             yield {"email": {"subject": "Goodbye"}}
             yield {"email": {"subject": "Bonjour"}}
@@ -696,7 +696,7 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_pass_through_error_thrown_in_source_event_stream():
-        async def subscribe_fn(_event, _info):
+        async def subscribe_fn(_data, _info):
             yield {"email": {"subject": "Hello"}}
             raise RuntimeError("test error")
 
@@ -733,7 +733,7 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_work_with_async_resolve_function():
-        async def subscribe_fn(_event, _info):
+        async def subscribe_fn(_data, _info):
             yield {"email": {"subject": "Hello"}}
 
         async def resolve_fn(event, _info):
