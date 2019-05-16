@@ -117,7 +117,7 @@ test_schema = GraphQLSchema(
         },
     ),
     types=[FooType, BarType],
-    directives=specified_directives + (FooDirective,),
+    directives=specified_directives + [FooDirective],
 )
 
 

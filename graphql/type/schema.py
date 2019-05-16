@@ -72,7 +72,7 @@ class GraphQLSchema:
 
         MyAppSchema = GraphQLSchema(
           ...
-          directives=specifiedDirectives + [myCustomDirective])
+          directives=specified_directives + [my_custom_directive])
     """
 
     query_type: Optional[GraphQLObjectType]
