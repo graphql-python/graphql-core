@@ -24,7 +24,7 @@ def unknown_type(type_name, suggested_types, line, col):
 def different_type(type_name, kind, l1, c1, l2=None, c2=None):
     message = extending_different_type_kind_message(type_name, kind)
     locations = [(l1, c1)]
-    if l2 and c2:
+    if l2 is not None and c2 is not None:
         locations.append((l2, c2))
     return {"message": message, "locations": locations}
 
