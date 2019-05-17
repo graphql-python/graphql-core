@@ -313,11 +313,11 @@ from .utilities import (
     # Produce the GraphQL query recommended for a full schema introspection.
     # Accepts optional IntrospectionOptions.
     get_introspection_query,
-    # Gets the target Operation from a Document
+    # Get the target Operation from a Document.
     get_operation_ast,
-    # Gets the Type for the target Operation AST.
+    # Get the Type for the target Operation AST.
     get_operation_root_type,
-    # Convert a GraphQLSchema to an IntrospectionQuery
+    # Convert a GraphQLSchema to an IntrospectionQuery.
     introspection_from_schema,
     # Build a GraphQLSchema from an introspection result.
     build_client_schema,
@@ -327,7 +327,7 @@ from .utilities import (
     build_schema,
     # @deprecated: Get the description from a schema AST node.
     get_description,
-    # Extends an existing GraphQLSchema from a parsed GraphQL Schema language AST.
+    # Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST.
     extend_schema,
     # Sort a GraphQLSchema.
     lexicographic_sort_schema,
@@ -348,21 +348,24 @@ from .utilities import (
     # A helper to use within recursive-descent visitors which need to be aware of the
     # GraphQL type system.
     TypeInfo,
-    # Coerces a Python value to a GraphQL type, or produces errors.
+    # Coerce a Python value to a GraphQL type, or produce errors.
     coerce_value,
-    # Concatenates multiple AST together.
+    # Concatenates multiple ASTs together.
     concat_ast,
-    # Separates an AST into an AST per Operation.
+    # Separate an AST into an AST per Operation.
     separate_operations,
+    # Strip characters that are not significant to the validity or execution
+    # of a GraphQL document.
+    strip_ignored_characters,
     # Comparators for types
     is_equal_type,
     is_type_sub_type_of,
     do_types_overlap,
-    # Asserts a string is a valid GraphQL name.
+    # Assert a string is a valid GraphQL name.
     assert_valid_name,
     # Determine if a string is a valid GraphQL name.
     is_valid_name_error,
-    # Compares two GraphQLSchemas and detects breaking changes.
+    # Compare two GraphQLSchemas and detect breaking changes.
     find_breaking_changes,
     find_dangerous_changes,
     BreakingChange,
@@ -622,6 +625,7 @@ __all__ = [
     "coerce_value",
     "concat_ast",
     "separate_operations",
+    "strip_ignored_characters",
     "is_equal_type",
     "is_type_sub_type_of",
     "do_types_overlap",

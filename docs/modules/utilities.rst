@@ -7,11 +7,11 @@ The GraphQL query recommended for a full schema introspection:
 
 .. autofunction:: get_introspection_query
 
-Gets the target Operation from a Document:
+Get the target Operation from a Document:
 
 .. autofunction:: get_operation_ast
 
-Gets the Type for the target Operation AST:
+Get the Type for the target Operation AST:
 
 .. autofunction:: get_operation_root_type
 
@@ -29,7 +29,7 @@ Build a GraphQLSchema from GraphQL Schema language:
 .. autofunction:: build_schema
 .. autofunction:: get_description
 
-Extends an existing GraphQLSchema from a parsed GraphQL Schema language AST:
+Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST:
 
 .. autofunction:: extend_schema
 
@@ -64,17 +64,22 @@ type system:
 
 .. autoclass:: TypeInfo
 
-Coerces a Python value to a GraphQL type, or produces errors:
+Coerce a Python value to a GraphQL type, or produce errors:
 
 .. autofunction:: coerce_value
 
-Concatenates multiple AST together:
+Concatenate multiple ASTs together:
 
 .. autofunction:: concat_ast
 
-Separates an AST into an AST per Operation:
+Separate an AST into an AST per Operation:
 
 .. autofunction:: separate_operations
+
+Strip characters that are not significant to the validity or execution
+of a GraphQL document:
+
+.. autofunction:: strip_ignored_characters
 
 Comparators for types:
 
@@ -82,12 +87,12 @@ Comparators for types:
 .. autofunction:: is_type_sub_type_of
 .. autofunction:: do_types_overlap
 
-Asserts that a string is a valid GraphQL name:
+Assert that a string is a valid GraphQL name:
 
 .. autofunction:: assert_valid_name
 .. autofunction:: is_valid_name_error
 
-Compares two GraphQLSchemas and detects breaking changes:
+Compare two GraphQLSchemas and detect breaking changes:
 
 .. autofunction:: find_breaking_changes
 .. autofunction:: find_dangerous_changes
@@ -97,6 +102,6 @@ Compares two GraphQLSchemas and detects breaking changes:
 .. autoclass:: DangerousChange
 .. autoclass:: DangerousChangeType
 
-Report all deprecated usage within a GraphQL document:
+Report all deprecated usages within a GraphQL document:
 
 .. autofunction:: find_deprecated_usages

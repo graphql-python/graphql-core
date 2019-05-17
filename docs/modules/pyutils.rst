@@ -9,6 +9,7 @@ PyUtils
 .. autofunction:: dedent
 .. autoclass:: EventEmitter
 .. autoclass:: EventEmitterAsyncIterator
+.. autofunction:: inspect
 .. autofunction:: is_finite
 .. autofunction:: is_integer
 .. autofunction:: is_invalid
@@ -17,3 +18,5 @@ PyUtils
 .. autofunction:: or_list
 .. autofunction:: quoted_or_list
 .. autofunction:: suggestion_list
+.. autofunction:: ReadOnlyError
+.. autofunction:: ReadOnlyList

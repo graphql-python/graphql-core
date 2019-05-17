@@ -7,13 +7,13 @@ the GraphQL language and type objects.
 # The GraphQL query recommended for a full schema introspection.
 from .introspection_query import get_introspection_query
 
-# Gets the target Operation from a Document
+# Get the target Operation from a Document.
 from .get_operation_ast import get_operation_ast
 
-# Gets the Type for the target Operation AST.
+# Get the Type for the target Operation AST.
 from .get_operation_root_type import get_operation_root_type
 
-# Convert a GraphQLSchema to an IntrospectionQuery
+# Convert a GraphQLSchema to an IntrospectionQuery.
 from .introspection_from_schema import introspection_from_schema
 
 # Build a GraphQLSchema from an introspection result.
@@ -22,7 +22,7 @@ from .build_client_schema import build_client_schema
 # Build a GraphQLSchema from GraphQL Schema language.
 from .build_ast_schema import build_ast_schema, build_schema, get_description
 
-# Extends an existing GraphQLSchema from a parsed GraphQL Schema language AST.
+# Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST.
 from .extend_schema import extend_schema
 
 # Sort a GraphQLSchema.
@@ -52,22 +52,26 @@ from .ast_from_value import ast_from_value
 # the GraphQL type system
 from .type_info import TypeInfo
 
-# Coerces a Python value to a GraphQL type, or produces errors.
+# Coerce a Python value to a GraphQL type, or produce errors.
 from .coerce_value import coerce_value
 
-# Concatenates multiple AST together.
+# Concatenate multiple ASTs together.
 from .concat_ast import concat_ast
 
-# Separates an AST into an AST per Operation.
+# Separate an AST into an AST per Operation.
 from .separate_operations import separate_operations
+
+# Strip characters that are not significant to the validity or execution
+# of a GraphQL document.
+from .strip_ignored_characters import strip_ignored_characters
 
 # Comparators for types
 from .type_comparators import is_equal_type, is_type_sub_type_of, do_types_overlap
 
-# Asserts that a string is a valid GraphQL name
+# Assert that a string is a valid GraphQL name.
 from .assert_valid_name import assert_valid_name, is_valid_name_error
 
-# Compares two GraphQLSchemas and detects breaking changes.
+# Compare two GraphQLSchemas and detect breaking changes.
 from .find_breaking_changes import (
     BreakingChange,
     BreakingChangeType,
@@ -77,7 +81,7 @@ from .find_breaking_changes import (
     find_dangerous_changes,
 )
 
-# Report all deprecated usage within a GraphQL document.
+# Report all deprecated usages within a GraphQL document.
 from .find_deprecated_usages import find_deprecated_usages
 
 __all__ = [
@@ -112,6 +116,7 @@ __all__ = [
     "print_type",
     "print_value",
     "separate_operations",
+    "strip_ignored_characters",
     "type_from_ast",
     "value_from_ast",
     "value_from_ast_untyped",
