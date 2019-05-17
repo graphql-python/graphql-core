@@ -165,6 +165,8 @@ from .type import (
 from .language import (
     Source,
     get_location,
+    # Lex
+    Lexer,
     # Parse
     parse,
     parse_value,
@@ -193,7 +195,6 @@ from .language import (
     is_type_system_extension_node,
     is_type_extension_node,
     # Types
-    Lexer,
     SourceLocation,
     # AST nodes
     Location,
@@ -306,7 +307,14 @@ from .validation import (
 )
 
 # Create, format, and print GraphQL errors.
-from .error import GraphQLError, format_error, print_error, INVALID
+from .error import (
+    GraphQLError,
+    GraphQLSyntaxError,
+    located_error,
+    format_error,
+    print_error,
+    INVALID,
+)
 
 # Utilities for operating on GraphQL type schema and parsed sources.
 from .utilities import (
@@ -480,6 +488,7 @@ __all__ = [
     "GraphQLTypeResolver",
     "Source",
     "get_location",
+    "Lexer",
     "parse",
     "parse_value",
     "parse_type",
@@ -503,7 +512,6 @@ __all__ = [
     "is_type_definition_node",
     "is_type_system_extension_node",
     "is_type_extension_node",
-    "Lexer",
     "SourceLocation",
     "Location",
     "Token",
@@ -601,6 +609,8 @@ __all__ = [
     "VariablesAreInputTypesRule",
     "VariablesInAllowedPositionRule",
     "GraphQLError",
+    "GraphQLSyntaxError",
+    "located_error",
     "format_error",
     "print_error",
     "INVALID",
