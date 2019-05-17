@@ -64,7 +64,7 @@ async def graphql(
     :arg type_resolver:
       A type resolver function to use when none is provided by the schema.
       If not provided, the default type resolver is used (which looks for a
-      `__typename` field or alternatively calls the `isTypeOf` method).
+      `__typename` field or alternatively calls the `is_type_of` method).
     :arg middleware:
       The middleware to wrap the resolvers with
     :arg execution_context_class:
