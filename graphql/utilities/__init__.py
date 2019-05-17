@@ -4,7 +4,7 @@ The :mod:`graphql.utilities` package contains common useful computations to use 
 the GraphQL language and type objects.
 """
 
-# The GraphQL query recommended for a full schema introspection.
+# Produce the GraphQL query recommended for a full schema introspection.
 from .introspection_query import get_introspection_query
 
 # Get the target Operation from a Document.

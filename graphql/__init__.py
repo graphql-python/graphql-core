@@ -46,8 +46,9 @@ from .graphql import graphql, graphql_sync
 
 # Create and operate on GraphQL type definitions and schema.
 from .type import (
-    GraphQLSchema,
     # Definitions
+    GraphQLSchema,
+    GraphQLDirective,
     GraphQLScalarType,
     GraphQLObjectType,
     GraphQLInterfaceType,
@@ -57,10 +58,7 @@ from .type import (
     GraphQLInputObjectType,
     GraphQLList,
     GraphQLNonNull,
-    GraphQLDirective,
-    # "Enum" of Type Kinds
-    TypeKind,
-    # Scalars
+    # Standard GraphQL Scalars
     specified_scalar_types,
     GraphQLInt,
     GraphQLFloat,
@@ -72,14 +70,16 @@ from .type import (
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
     GraphQLDeprecatedDirective,
+    # "Enum" of Type Kinds
+    TypeKind,
     # Constant Deprecation Reason
     DEFAULT_DEPRECATION_REASON,
+    # GraphQL Types for introspection.
+    introspection_types,
     # Meta-field definitions.
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
-    # GraphQL Types for introspection.
-    introspection_types,
     # Predicates
     is_schema,
     is_directive,
@@ -167,6 +167,7 @@ from .language import (
     get_location,
     # Lex
     Lexer,
+    TokenKind,
     # Parse
     parse,
     parse_value,
@@ -178,12 +179,11 @@ from .language import (
     ParallelVisitor,
     TypeInfoVisitor,
     Visitor,
-    TokenKind,
-    DirectiveLocation,
     BREAK,
     SKIP,
     REMOVE,
     IDLE,
+    DirectiveLocation,
     # Predicates
     is_definition_node,
     is_executable_definition_node,
@@ -196,9 +196,11 @@ from .language import (
     is_type_extension_node,
     # Types
     SourceLocation,
-    # AST nodes
     Location,
     Token,
+    # AST nodes
+    Node,
+    # Each kind of AST node
     NameNode,
     DocumentNode,
     DefinitionNode,
@@ -254,7 +256,7 @@ from .language import (
     InputObjectTypeExtensionNode,
 )
 
-# Execute GraphQL queries.
+# Execute GraphQL documents.
 from .execution import (
     execute,
     default_field_resolver,
@@ -341,10 +343,10 @@ from .utilities import (
     lexicographic_sort_schema,
     # Print a GraphQLSchema to GraphQL Schema language.
     print_schema,
-    # Prints the built-in introspection schema in the Schema Language format.
-    print_introspection_schema,
     # Print a GraphQLType to GraphQL Schema language.
     print_type,
+    # Prints the built-in introspection schema in the Schema Language format.
+    print_introspection_schema,
     # Create a GraphQLType from a GraphQL language AST.
     type_from_ast,
     # Create a Python value from a GraphQL language AST with a Type.
@@ -374,18 +376,19 @@ from .utilities import (
     # Determine if a string is a valid GraphQL name.
     is_valid_name_error,
     # Compare two GraphQLSchemas and detect breaking changes.
-    find_breaking_changes,
-    find_dangerous_changes,
     BreakingChange,
     BreakingChangeType,
     DangerousChange,
     DangerousChangeType,
+    find_breaking_changes,
+    find_dangerous_changes,
 )
 
 __all__ = [
     "graphql",
     "graphql_sync",
     "GraphQLSchema",
+    "GraphQLDirective",
     "GraphQLScalarType",
     "GraphQLObjectType",
     "GraphQLInterfaceType",
@@ -395,8 +398,6 @@ __all__ = [
     "GraphQLInputObjectType",
     "GraphQLList",
     "GraphQLNonNull",
-    "GraphQLDirective",
-    "TypeKind",
     "specified_scalar_types",
     "GraphQLInt",
     "GraphQLFloat",
@@ -407,11 +408,12 @@ __all__ = [
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
     "GraphQLDeprecatedDirective",
+    "TypeKind",
     "DEFAULT_DEPRECATION_REASON",
+    "introspection_types",
     "SchemaMetaFieldDef",
     "TypeMetaFieldDef",
     "TypeNameMetaFieldDef",
-    "introspection_types",
     "is_schema",
     "is_directive",
     "is_type",
@@ -489,6 +491,7 @@ __all__ = [
     "Source",
     "get_location",
     "Lexer",
+    "TokenKind",
     "parse",
     "parse_value",
     "parse_type",
@@ -497,12 +500,11 @@ __all__ = [
     "ParallelVisitor",
     "TypeInfoVisitor",
     "Visitor",
-    "TokenKind",
-    "DirectiveLocation",
     "BREAK",
     "SKIP",
     "REMOVE",
     "IDLE",
+    "DirectiveLocation",
     "is_definition_node",
     "is_executable_definition_node",
     "is_selection_node",
@@ -515,6 +517,7 @@ __all__ = [
     "SourceLocation",
     "Location",
     "Token",
+    "Node",
     "NameNode",
     "DocumentNode",
     "DefinitionNode",
@@ -625,8 +628,8 @@ __all__ = [
     "extend_schema",
     "lexicographic_sort_schema",
     "print_schema",
-    "print_introspection_schema",
     "print_type",
+    "print_introspection_schema",
     "type_from_ast",
     "value_from_ast",
     "value_from_ast_untyped",

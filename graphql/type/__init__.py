@@ -115,7 +115,9 @@ from .directives import (
 
 # Common built-in scalar instances.
 from .scalars import (
+    # Predicate
     is_specified_scalar_type,
+    # Standard GraphQL Scalars
     specified_scalar_types,
     GraphQLInt,
     GraphQLFloat,
@@ -125,17 +127,19 @@ from .scalars import (
 )
 
 from .introspection import (
+    # Predicate
+    is_introspection_type,
+    # GraphQL Types for introspection.
+    introspection_types,
     # "Enum" of Type Kinds
     TypeKind,
-    # GraphQL Types for introspection.
-    is_introspection_type,
-    introspection_types,
     # Meta-field definitions.
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
 )
 
+# Validate GraphQL schema.
 from .validate import validate_schema, assert_valid_schema
 
 __all__ = [
@@ -234,9 +238,9 @@ __all__ = [
     "GraphQLString",
     "GraphQLBoolean",
     "GraphQLID",
-    "TypeKind",
     "is_introspection_type",
     "introspection_types",
+    "TypeKind",
     "SchemaMetaFieldDef",
     "TypeMetaFieldDef",
     "TypeNameMetaFieldDef",

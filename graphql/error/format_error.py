@@ -7,7 +7,7 @@ if TYPE_CHECKING:  # pragma: no cover
 __all__ = ["format_error"]
 
 
-def format_error(error: "GraphQLError") -> dict:
+def format_error(error: "GraphQLError") -> Dict[str, Any]:
     """Format a GraphQL error
 
     Given a GraphQLError, format it according to the rules described by the "Response

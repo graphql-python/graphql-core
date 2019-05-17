@@ -10,6 +10,7 @@ from .validation_context import ValidationContext
 
 from .rules import ValidationRule, ASTValidationRule, SDLValidationRule
 
+# All validation rules in the GraphQL Specification.
 from .specified_rules import specified_rules
 
 # Spec Section: "Executable Definitions"

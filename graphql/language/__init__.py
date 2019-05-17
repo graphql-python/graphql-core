@@ -4,11 +4,16 @@ The :mod:`graphql.language` package is responsible for parsing and operating on 
 GraphQL language.
 """
 
-from .location import get_location, SourceLocation
-from .lexer import Lexer, TokenKind, Token
-from .parser import parse, parse_type, parse_value
-from .printer import print_ast
 from .source import Source
+
+from .location import get_location, SourceLocation
+
+from .lexer import Lexer, TokenKind, Token
+
+from .parser import parse, parse_type, parse_value
+
+from .printer import print_ast
+
 from .visitor import (
     visit,
     Visitor,
@@ -19,6 +24,7 @@ from .visitor import (
     REMOVE,
     IDLE,
 )
+
 from .ast import (
     Location,
     Node,
