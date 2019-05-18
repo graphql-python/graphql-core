@@ -1,6 +1,8 @@
 Reference
 =========
 
+.. currentmodule:: graphql
+
 .. automodule:: graphql
 
 .. _top-level-functions:

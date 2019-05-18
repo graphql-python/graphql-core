@@ -52,6 +52,6 @@ In a similar vein, you can also attach resolvers as methods to the resolved obje
 deeper levels than the root of the query. In that case, instead of resolving to
 dictionaries with keys for all the fields, as we did above, you would resolve to objects
 with attributes for all the fields. For instance, you would define a class ``Human``
-with a method :meth:`friends` for resolving the friends of a human. You can also make
+with a method ``friends()`` for resolving the friends of a human. You can also make
 use of inheritance in this case. The ``Human`` class and a ``Droid`` class could inherit
 from a ``Character`` class and use its methods as resolvers for common fields.

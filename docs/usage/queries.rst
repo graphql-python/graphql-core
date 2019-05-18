@@ -1,6 +1,8 @@
 Executing Queries
 -----------------
 
+.. currentmodule:: graphql.execution
+
 Now that we have defined the schema and breathed life into it with our resolver
 functions, we can execute arbitrary query against the schema.
 
@@ -36,8 +38,8 @@ should get the expected result::
         data={'droid': {'name': 'R2-D2', 'primaryFunction': 'Astromech'}},
         errors=None)
 
-The :class:`execution.ExecutionResult` has a :attr:`data` attribute with the actual
-result, and an :attr:`errors` attribute with a list of errors if there were any.
+The :class:`ExecutionResult` has a ``data`` attribute with the actual result, and an
+``errors`` attribute with a list of errors if there were any.
 
 If all your resolvers work synchronously, as in our case, you can also use the
 :func:`graphql.graphql_sync` function to query the result in ordinary synchronous code::
@@ -118,7 +120,7 @@ Finally, let's see what happens when we try to access the secret backstory of ou
 
 While we get the name of the hero, the secret backstory fields remains empty, since its
 resolver function raises an error. However, we get the error that has been raised by the
-resolver in the :attr:`errors` attribute of the result::
+resolver in the ``errors`` attribute of the result::
 
     ExecutionResult(
         data={'hero': {'name': 'Luke Skywalker', 'secretBackstory': None}},

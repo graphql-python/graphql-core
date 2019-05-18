@@ -1,6 +1,8 @@
 Utilities
 =========
 
+.. currentmodule:: graphql.utilities
+
 .. automodule:: graphql.utilities
 
 The GraphQL query recommended for a full schema introspection:

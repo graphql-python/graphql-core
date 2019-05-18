@@ -22,3 +22,9 @@ class InvalidType(ValueError):
 
 # Used to indicate invalid values (like "undefined" in GraphQL.js):
 INVALID = InvalidType()
+
+INVALID.__doc__ = """Symbol for invalid or undefined values
+
+This singleton object is used to describe invalid or undefined values.
+It corresponds to the ``undefined`` value in GraphQL.js.
+"""

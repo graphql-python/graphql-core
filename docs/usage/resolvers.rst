@@ -81,10 +81,10 @@ Note that the resolver functions get the current object as first argument. For a
 on the root Query type this is often not used, but a root object can also be defined
 when executing the query. As the second argument, they get an object containing
 execution information, as defined in the :class:`graphql.type.GraphQLResolveInfo` class.
-This object also has a :attr:`context` attribute that can be used to provide every
-resolver with contextual information like the currently logged in user, or a database
-session. In our simple example we don't authenticate users and use static data instead
-of a database, so we don't make use of it here. In addition to these two arguments,
+This object also has a ``context`` attribute that can be used to provide every resolver
+with contextual information like the currently logged in user, or a database session.
+In our simple example we don't authenticate users and use static data instead of a
+database, so we don't make use of it here. In addition to these two arguments,
 resolver functions optionally get the defined for the field in the schema, using the
 same names (the names are not translated from GraphQL naming conventions to Python
 naming conventions).

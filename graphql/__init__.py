@@ -34,7 +34,7 @@ The sub-packages of GraphQL-core-next are:
   - :mod:`graphql.error`: Creating and formatting GraphQL errors.
   - :mod:`graphql.utilities`:
      Common useful computations upon the GraphQL language and type objects.
-  - :mod:`graphql/subscription`: Subscribe to data updates.
+  - :mod:`graphql.subscription`: Subscribe to data updates.
 """
 
 __version__ = "1.0.4"

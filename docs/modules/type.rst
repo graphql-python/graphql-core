@@ -1,7 +1,10 @@
 Type
 ====
 
+.. currentmodule:: graphql.type
+
 .. automodule:: graphql.type
+
 
 Definition
 ----------
@@ -99,6 +102,7 @@ Resolvers
 .. autoclass:: GraphQLTypeResolver
 .. autoclass:: ResponsePath
 
+
 Directives
 ----------
 
@@ -116,11 +120,13 @@ Definitions
 .. autoclass:: GraphQLSkipDirective
 .. autoclass:: GraphQLDeprecatedDirective
 
-The list of all specified directives is available as
-:data:`specified_directives`.
+.. autodata:: specified_directives
 
-The module also exports the constant :const:`DEFAULT_DEPRECATION_REASON`
-that can be used as the default value for :obj:`deprecation_reason`.
+.. data:: DEFAULT_DEPRECATION_REASON
+   :annotation: = 'No longer supported'
+
+   String constant that can be used as the default value for ``deprecation_reason``.
+
 
 Introspection
 -------------
@@ -130,7 +136,6 @@ Predicates
 
 .. autofunction:: is_introspection_type
 
-
 Definitions
 ^^^^^^^^^^^
 
@@ -139,8 +144,8 @@ Definitions
 .. autoclass:: TypeNameMetaFieldDef
 .. autoclass:: SchemaMetaFieldDef
 
-The list of all introspection types is available as
-:data:`introspection_types`.
+.. autodata:: introspection_types
+
 
 Scalars
 -------
@@ -161,6 +166,7 @@ Definitions
 
 The list of all specified directives is available as
 :data:`specified_directives`.
+
 
 Schema
 ------
@@ -183,7 +189,6 @@ Functions:
 ^^^^^^^^^^
 
 .. autofunction:: validate_schema
-
 
 Assertions
 ^^^^^^^^^^

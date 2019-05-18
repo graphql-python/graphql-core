@@ -241,10 +241,18 @@ GraphQLID = GraphQLScalarType(
 )
 
 
-specified_scalar_types = ReadOnlyDict({
-    type_.name: type_
-    for type_ in (GraphQLString, GraphQLInt, GraphQLFloat, GraphQLBoolean, GraphQLID)
-})
+specified_scalar_types = ReadOnlyDict(
+    {
+        type_.name: type_
+        for type_ in (
+            GraphQLString,
+            GraphQLInt,
+            GraphQLFloat,
+            GraphQLBoolean,
+            GraphQLID,
+        )
+    }
+)
 
 
 def is_specified_scalar_type(type_: Any) -> bool:

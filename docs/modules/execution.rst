@@ -1,6 +1,8 @@
 Execution
 =========
 
+.. currentmodule:: graphql.execution
+
 .. automodule:: graphql.execution
 
 .. autofunction:: execute

@@ -6,7 +6,11 @@ GraphQL result.
 
 from .validate import validate
 
-from .validation_context import ValidationContext
+from .validation_context import (
+    ASTValidationContext,
+    SDLValidationContext,
+    ValidationContext,
+)
 
 from .rules import ValidationRule, ASTValidationRule, SDLValidationRule
 
@@ -93,10 +97,12 @@ from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
 __all__ = [
     "validate",
+    "ASTValidationContext",
+    "ASTValidationRule",
+    "SDLValidationContext",
+    "SDLValidationRule",
     "ValidationContext",
     "ValidationRule",
-    "ASTValidationRule",
-    "SDLValidationRule",
     "specified_rules",
     "ExecutableDefinitionsRule",
     "FieldsOnCorrectTypeRule",

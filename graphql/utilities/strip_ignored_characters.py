@@ -14,12 +14,13 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
 
     Strips characters that are not significant to the validity or execution
     of a GraphQL document:
-      - UnicodeBOM
-      - WhiteSpace
-      - LineTerminator
-      - Comment
-      - Comma
-      - BlockString indentation
+
+        - UnicodeBOM
+        - WhiteSpace
+        - LineTerminator
+        - Comment
+        - Comma
+        - BlockString indentation
 
     Note: It is required to have a delimiter character between neighboring
     non-punctuator tokes and this function always uses single space as delimiter.
@@ -48,7 +49,7 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
 
         query SomeQuery($foo:String!$bar:String){someField(foo:$foo bar:$bar){a b{c d}}}
 
-    SDL example:
+    SDL example::
 
         """
         Type description
@@ -60,7 +61,7 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
           bar: String
         }
 
-     Becomes::
+    Becomes::
 
         """Type description""" type Foo{"""Field description""" bar:String}
     '''

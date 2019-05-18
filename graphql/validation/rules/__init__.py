@@ -14,6 +14,7 @@ __all__ = ["ASTValidationRule", "SDLValidationRule", "ValidationRule", "RuleType
 
 
 class ASTValidationRule(Visitor):
+    """Visitor for validation of an AST."""
 
     context: ASTValidationContext
 
@@ -25,6 +26,7 @@ class ASTValidationRule(Visitor):
 
 
 class SDLValidationRule(ASTValidationRule):
+    """Visitor for validation of an SDL AST."""
 
     context: ValidationContext
 
@@ -33,6 +35,7 @@ class SDLValidationRule(ASTValidationRule):
 
 
 class ValidationRule(ASTValidationRule):
+    """Visitor for validation using a GraphQL schema."""
 
     context: ValidationContext
 

@@ -137,7 +137,7 @@ class ASTValidationContext:
 
 
 class SDLValidationContext(ASTValidationContext):
-    """Utility class providing a context for validation of an SDL ast.
+    """Utility class providing a context for validation of an SDL AST.
 
     An instance of this class is passed as the context attribute to all Validators,
     allowing access to commonly useful contextual information from within a validation

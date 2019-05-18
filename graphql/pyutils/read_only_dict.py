@@ -32,4 +32,3 @@ class ReadOnlyDict(dict):
 
     def update(self, other=None):
         raise ReadOnlyError
-

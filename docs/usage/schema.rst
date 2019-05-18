@@ -1,6 +1,8 @@
 Building a Type Schema
 ----------------------
 
+.. currentmodule:: graphql.type
+
 Using the classes in the :mod:`graphql.type` sub-package as building blocks, you can
 build a complete GraphQL type schema.
 

@@ -133,7 +133,12 @@ class GraphQLSchema:
         )
 
         # Build type map now to detect any errors within this schema.
-        initial_types = [query, mutation, subscription, introspection_types["__Schema"]]
+        initial_types: List[Optional[GraphQLNamedType]] = [
+            query,
+            mutation,
+            subscription,
+            introspection_types["__Schema"],
+        ]
         if types:
             initial_types.extend(types)
 

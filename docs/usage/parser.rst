@@ -1,6 +1,8 @@
 Parsing GraphQL Queries and Schema Notation
 -------------------------------------------
 
+.. currentmodule:: graphql.language
+
 When executing GraphQL queries, the first step that happens under the hood is parsing
 the query. But GraphQL-core-next also exposes the parser for direct usage via the
 :func:`graphql.language.parse` function. When you pass this function a GraphQL source
@@ -58,12 +60,12 @@ This will give the same result as manually creating the AST document::
         ])
 
 
-When parsing with `no_location=False` (the default), the AST nodes will also have a
-:attr:`loc` attribute carrying the information on the source code location corresponding
+When parsing with ``no_location=False`` (the default), the AST nodes will also have a
+``loc`` attribute carrying the information on the source code location corresponding
 to the AST nodes.
 
 When there is a syntax error in the GraphQL source code, then the :func:`parse` function
-will raise a :exc:`GraphQLSyntaxError`.
+will raise a :exc:`graphql.error.GraphQLSyntaxError`.
 
 The parser can not only be used to parse GraphQL queries, but also to parse the GraphQL
 schema definition language. This will result in another way of representing a GraphQL

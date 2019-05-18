@@ -101,48 +101,59 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: List[RuleType] = ReadOnlyList([
-    ExecutableDefinitionsRule,
-    UniqueOperationNamesRule,
-    LoneAnonymousOperationRule,
-    SingleFieldSubscriptionsRule,
-    KnownTypeNamesRule,
-    FragmentsOnCompositeTypesRule,
-    VariablesAreInputTypesRule,
-    ScalarLeafsRule,
-    FieldsOnCorrectTypeRule,
-    UniqueFragmentNamesRule,
-    KnownFragmentNamesRule,
-    NoUnusedFragmentsRule,
-    PossibleFragmentSpreadsRule,
-    NoFragmentCyclesRule,
-    UniqueVariableNamesRule,
-    NoUndefinedVariablesRule,
-    NoUnusedVariablesRule,
-    KnownDirectivesRule,
-    UniqueDirectivesPerLocationRule,
-    KnownArgumentNamesRule,
-    UniqueArgumentNamesRule,
-    ValuesOfCorrectTypeRule,
-    ProvidedRequiredArgumentsRule,
-    VariablesInAllowedPositionRule,
-    OverlappingFieldsCanBeMergedRule,
-    UniqueInputFieldNamesRule,
-])
+specified_rules: List[RuleType] = ReadOnlyList(
+    [
+        ExecutableDefinitionsRule,
+        UniqueOperationNamesRule,
+        LoneAnonymousOperationRule,
+        SingleFieldSubscriptionsRule,
+        KnownTypeNamesRule,
+        FragmentsOnCompositeTypesRule,
+        VariablesAreInputTypesRule,
+        ScalarLeafsRule,
+        FieldsOnCorrectTypeRule,
+        UniqueFragmentNamesRule,
+        KnownFragmentNamesRule,
+        NoUnusedFragmentsRule,
+        PossibleFragmentSpreadsRule,
+        NoFragmentCyclesRule,
+        UniqueVariableNamesRule,
+        NoUndefinedVariablesRule,
+        NoUnusedVariablesRule,
+        KnownDirectivesRule,
+        UniqueDirectivesPerLocationRule,
+        KnownArgumentNamesRule,
+        UniqueArgumentNamesRule,
+        ValuesOfCorrectTypeRule,
+        ProvidedRequiredArgumentsRule,
+        VariablesInAllowedPositionRule,
+        OverlappingFieldsCanBeMergedRule,
+        UniqueInputFieldNamesRule,
+    ]
+)
+specified_rules.__doc__ = """\
+    This list includes all validation rules defined by the GraphQL spec.
 
-specified_sdl_rules: List[RuleType] = ReadOnlyList([
-    LoneSchemaDefinitionRule,
-    UniqueOperationTypesRule,
-    UniqueTypeNamesRule,
-    UniqueEnumValueNamesRule,
-    UniqueFieldDefinitionNamesRule,
-    UniqueDirectiveNamesRule,
-    KnownTypeNamesRule,
-    KnownDirectivesRule,
-    UniqueDirectivesPerLocationRule,
-    PossibleTypeExtensionsRule,
-    KnownArgumentNamesOnDirectivesRule,
-    UniqueArgumentNamesRule,
-    UniqueInputFieldNamesRule,
-    ProvidedRequiredArgumentsOnDirectivesRule,
-])
+    The order of the rules in this list has been adjusted to lead to the
+    most clear output when encountering multiple validation errors.
+    """
+
+specified_sdl_rules: List[RuleType] = ReadOnlyList(
+    [
+        LoneSchemaDefinitionRule,
+        UniqueOperationTypesRule,
+        UniqueTypeNamesRule,
+        UniqueEnumValueNamesRule,
+        UniqueFieldDefinitionNamesRule,
+        UniqueDirectiveNamesRule,
+        KnownTypeNamesRule,
+        KnownDirectivesRule,
+        UniqueDirectivesPerLocationRule,
+        PossibleTypeExtensionsRule,
+        KnownArgumentNamesOnDirectivesRule,
+        UniqueArgumentNamesRule,
+        UniqueInputFieldNamesRule,
+        ProvidedRequiredArgumentsOnDirectivesRule,
+    ]
+)
+specified_sdl_rules.__doc__ = """This list includes all rules for validating SDL."""

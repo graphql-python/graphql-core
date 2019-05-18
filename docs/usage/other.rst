@@ -1,10 +1,12 @@
 Subscriptions
 -------------
 
+.. currentmodule:: graphql.subscription
+
 Sometimes you need to not only query data from a server, but you also want to push data
 from the server to the client. GraphQL-core-next has you also covered here, because it
 implements the "Subscribe" algorithm described in the GraphQL spec. To execute a GraphQL
-subscription, you must use the :func:`graphql.subscribe` method from the
+subscription, you must use the :func:`subscribe` method from the
 :mod:`graphql.subscription` module. Instead of a single ``ExecutionResult``, this
 function returns an asynchronous iterator yielding a stream of those, unless there was
 an immediate error. Of course you will then also need to maintain a persistent channel

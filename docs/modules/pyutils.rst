@@ -1,6 +1,8 @@
 PyUtils
 =======
 
+.. currentmodule:: graphql.pyutils
+
 .. automodule:: graphql.pyutils
 
 .. autofunction:: camel_to_snake
@@ -18,5 +20,6 @@ PyUtils
 .. autofunction:: or_list
 .. autofunction:: quoted_or_list
 .. autofunction:: suggestion_list
-.. autofunction:: ReadOnlyError
-.. autofunction:: ReadOnlyList
+.. autoclass:: ReadOnlyError
+.. autoclass:: ReadOnlyList
+.. autoclass:: ReadOnlyDict

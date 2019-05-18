@@ -1,6 +1,8 @@
 Validating GraphQL Queries
 --------------------------
 
+.. currentmodule:: graphql.validation
+
 When executing GraphQL queries, the second step that happens under the hood after
 parsing the source code is a validation against the given schema using the rules of the
 GraphQL specification. You can also run the validation step manually by calling the
@@ -33,8 +35,9 @@ In this case, we will get::
          " sub selection of subfields. Did you mean 'friends { ... }'?",
          locations=[SourceLocation(line=6, column=9)])]
 
-These rules are implemented in the :mod:`graphql.validation.rules` module. Instead of
-the default rules, you can also use a subset or create custom rules. The rules are based
-on the :class:`graphql.validation.ValidationRule` class which is based on the
+These rules are available in the :data:`specified_rules` list and implemented in the
+``graphql.validation.rules`` subpackage. Instead of the default rules,
+you can also use a subset or create custom rules. The rules are
+based on the :class:`graphql.validation.ValidationRule` class which is based on the
 :class:`graphql.language.Visitor` class which provides a way of walking through an AST
 document using the visitor pattern.

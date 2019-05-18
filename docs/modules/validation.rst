@@ -1,11 +1,24 @@
 Validation
 ==========
 
+.. currentmodule:: graphql.validation
+
 .. automodule:: graphql.validation
 
 .. autofunction:: validate
 
+.. autoclass:: ASTValidationContext
+
+.. autoclass:: ASTValidationRule
+
+.. autoclass:: SDLValidationContext
+
+.. autoclass:: SDLValidationRule
+
 .. autoclass:: ValidationContext
+
+.. autoclass:: ValidationRule
+
 
 Rules
 -----
@@ -15,6 +28,7 @@ rules in this list has been adjusted to lead to the most clear output when encou
 multiple validation errors:
 
 .. autodata:: specified_rules
+   :annotation: = ReadOnlyList([...])
 
 Spec Section: "Executable Definitions"
 
@@ -119,4 +133,3 @@ Spec Section: "Variables are Input Types"
 Spec Section: "All Variable Usages Are Allowed"
 
 .. autoclass:: VariablesInAllowedPositionRule
-

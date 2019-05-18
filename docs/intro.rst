@@ -41,6 +41,8 @@ Now you can start using GraphQL-core-next by importing from the top-level
 :mod:`graphql` package. Nearly everything defined in the sub-packages
 can also be imported directly from the top-level package.
 
+.. currentmodule:: graphql
+
 For instance, using the types defined in the :mod:`graphql.type` package,
 you can define a GraphQL schema, like this simple one::
 

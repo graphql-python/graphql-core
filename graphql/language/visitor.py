@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 
-# Special return values for the visitor function:
+# Special return values for the visitor methods:
 # Note that in GraphQL.js these are defined differently:
 # BREAK = {}, SKIP = false, REMOVE = null, IDLE = undefined
 BREAK, SKIP, REMOVE, IDLE = True, False, Ellipsis, None
@@ -139,8 +139,7 @@ class Visitor:
     :arg path: The key path to get to this node from the root node.
     :arg ancestors: All nodes and Arrays visited before reaching parent
         of this node. These correspond to array indices in `path`.
-
-    Note: ancestors includes arrays which contain the parent of visited node.
+        Note: ancestors includes arrays which contain the parent of visited node.
 
     You can also define node kind specific methods by suffixing them with an underscore
     followed by the kind of the node to be visited. For instance, to visit `field`
@@ -200,7 +199,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
     By returning different values from the enter and leave methods, the behavior of the
     visitor can be altered, including skipping over a sub-tree of the AST (by returning
     False), editing the AST by returning a value or None to remove the value, or to stop
-    the whole traversal by returning BREAK.
+    the whole traversal by returning `BREAK`.
 
     When using `visit()` to edit an AST, the original AST will not be modified, and a
     new version of the AST with the changes applied will be returned from the visit

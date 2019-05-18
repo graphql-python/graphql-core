@@ -2,7 +2,7 @@ language: python
 
 matrix:
   include:
-    - env: TOXENV=black,flake8,mypy
+    - env: TOXENV=black,flake8,mypy,docs
       python: 3.7
       dist: xenial
       sudo: true

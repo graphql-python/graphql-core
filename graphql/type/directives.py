@@ -165,10 +165,10 @@ GraphQLDeprecatedDirective = GraphQLDirective(
 )
 
 
-# The full list of specified directives.
 specified_directives = ReadOnlyList(
     [GraphQLIncludeDirective, GraphQLSkipDirective, GraphQLDeprecatedDirective]
 )
+specified_directives.__doc__ = """The full list of specified directives."""
 
 
 def is_specified_directive(directive: Any) -> bool:
