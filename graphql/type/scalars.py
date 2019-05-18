@@ -2,7 +2,7 @@ from math import isfinite
 from typing import Any
 
 from ..error import INVALID
-from ..pyutils import inspect, is_finite, is_integer
+from ..pyutils import inspect, is_finite, is_integer, ReadOnlyDict
 from ..language.ast import (
     BooleanValueNode,
     FloatValueNode,
@@ -241,10 +241,10 @@ GraphQLID = GraphQLScalarType(
 )
 
 
-specified_scalar_types = {
+specified_scalar_types = ReadOnlyDict({
     type_.name: type_
     for type_ in (GraphQLString, GraphQLInt, GraphQLFloat, GraphQLBoolean, GraphQLID)
-}
+})
 
 
 def is_specified_scalar_type(type_: Any) -> bool:

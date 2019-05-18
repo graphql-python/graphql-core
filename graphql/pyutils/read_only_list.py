@@ -1,8 +1,6 @@
-__all__ = ["ReadOnlyError", "ReadOnlyList"]
+__all__ = ["ReadOnlyList"]
 
-
-class ReadOnlyError(TypeError):
-    """Error when trying to write to a ReadOnlyList."""
+from .read_only_error import ReadOnlyError
 
 
 class ReadOnlyList(list):

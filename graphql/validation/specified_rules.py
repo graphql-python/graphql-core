@@ -1,5 +1,7 @@
 from typing import List
 
+from ..pyutils import ReadOnlyList
+
 from .rules import RuleType
 
 # Spec Section: "Executable Definitions"
@@ -99,7 +101,7 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: List[RuleType] = [
+specified_rules: List[RuleType] = ReadOnlyList([
     ExecutableDefinitionsRule,
     UniqueOperationNamesRule,
     LoneAnonymousOperationRule,
@@ -126,9 +128,9 @@ specified_rules: List[RuleType] = [
     VariablesInAllowedPositionRule,
     OverlappingFieldsCanBeMergedRule,
     UniqueInputFieldNamesRule,
-]
+])
 
-specified_sdl_rules: List[RuleType] = [
+specified_sdl_rules: List[RuleType] = ReadOnlyList([
     LoneSchemaDefinitionRule,
     UniqueOperationTypesRule,
     UniqueTypeNamesRule,
@@ -143,4 +145,4 @@ specified_sdl_rules: List[RuleType] = [
     UniqueArgumentNamesRule,
     UniqueInputFieldNamesRule,
     ProvidedRequiredArgumentsOnDirectivesRule,
-]
+])

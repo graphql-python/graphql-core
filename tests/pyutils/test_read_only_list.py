@@ -66,6 +66,7 @@ def describe_read_only_list():
             rol.sort()
         with raises(ReadOnlyError):
             rol.reverse()
+        assert rol == [1, 2, 3]
 
     def can_add_rol():
         rol1 = ReadOnlyList([1, 2])
@@ -75,6 +76,3 @@ def describe_read_only_list():
     def can_add_tuple():
         rol = ReadOnlyList([1, 2])
         assert rol + (3, 4) == [1, 2, 3, 4]
-
-    def read_only_error_is_type_error():
-        assert issubclass(ReadOnlyError, TypeError)

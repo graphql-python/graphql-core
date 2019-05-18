@@ -21,7 +21,7 @@ from .definition import (
     is_union_type,
 )
 from ..language import DirectiveLocation, print_ast
-from ..pyutils import inspect
+from ..pyutils import inspect, ReadOnlyDict
 from .scalars import GraphQLBoolean, GraphQLString
 
 __all__ = [
@@ -492,7 +492,7 @@ TypeNameMetaFieldDef = GraphQLField(
 
 # Since double underscore names are subject to name mangling in Python,
 # the introspection classes are best imported via this dictionary:
-introspection_types = {
+introspection_types = ReadOnlyDict({
     "__Schema": __Schema,
     "__Directive": __Directive,
     "__DirectiveLocation": __DirectiveLocation,
@@ -501,7 +501,7 @@ introspection_types = {
     "__InputValue": __InputValue,
     "__EnumValue": __EnumValue,
     "__TypeKind": __TypeKind,
-}
+})
 
 
 def is_introspection_type(type_: Any) -> bool:
