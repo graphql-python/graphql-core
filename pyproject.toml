@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graphql-core-next"
-version = "1.0.3"
+version = "1.0.4"
 description = """
 GraphQL-core-next is a Python port of GraphQL.js,
  the JavaScript reference implementation for GraphQL."""
@@ -47,6 +47,6 @@ bump2version = "^0.5"
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
 [build-system]
-requires = ["poetry>=0.12.15"]
+requires = ["poetry>=0.12.16"]
 build-backend = "poetry.masonry.api"
 
