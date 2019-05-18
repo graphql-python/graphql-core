@@ -106,7 +106,7 @@ def describe_type_predicates():
             assert is_scalar_type(ScalarType) is True
             assert_scalar_type(ScalarType)
 
-        def returns_fals_for_scalar_class_rather_than_instance():
+        def returns_false_for_scalar_class_rather_than_instance():
             assert is_scalar_type(GraphQLScalarType) is False
             with raises(TypeError):
                 assert_scalar_type(GraphQLScalarType)
@@ -143,7 +143,7 @@ def describe_type_predicates():
         def returns_false_for_custom_scalar():
             assert is_specified_scalar_type(ScalarType) is False
 
-        def returns_fals_for_scalar_class_rather_than_specified_instance():
+        def returns_false_for_scalar_class_rather_than_specified_instance():
             assert is_specified_scalar_type(GraphQLScalarType) is False
 
         def returns_false_for_wrapped_specified_scalar():
