@@ -1,7 +1,5 @@
-from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLSchema,
-    GraphQLDirective,
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
@@ -12,24 +10,6 @@ from graphql.utilities import (
     build_schema,
     find_breaking_changes,
     find_dangerous_changes,
-)
-from graphql.utilities.find_breaking_changes import (
-    find_removed_types,
-    find_types_that_changed_kind,
-    find_fields_that_changed_type_on_object_or_interface_types,
-    find_fields_that_changed_type_on_input_object_types,
-    find_types_removed_from_unions,
-    find_values_removed_from_enums,
-    find_arg_changes,
-    find_interfaces_removed_from_object_types,
-    find_removed_directives,
-    find_removed_directive_args,
-    find_added_non_null_directive_args,
-    find_removed_locations_for_directive,
-    find_removed_directive_locations,
-    find_values_added_to_enums,
-    find_interfaces_added_to_object_types,
-    find_types_added_to_unions,
 )
 
 
@@ -55,10 +35,10 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_removed_types(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.TYPE_REMOVED, "Type1 was removed.")
         ]
-        assert find_removed_types(old_schema, old_schema) == []
+        assert find_breaking_changes(old_schema, old_schema) == []
 
     def should_detect_if_a_type_changed_its_type():
         old_schema = build_schema(
@@ -79,7 +59,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_types_that_changed_kind(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.TYPE_CHANGED_KIND,
                 "Type1 changed from an Interface type to a Union type.",
@@ -147,9 +127,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_fields_that_changed_type_on_object_or_interface_types(
-            old_schema, new_schema
-        ) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.FIELD_REMOVED, "Type1.field2 was removed."),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
@@ -245,9 +223,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_fields_that_changed_type_on_input_object_types(
-            old_schema, new_schema
-        ).breaking_changes == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
                 "InputType1.field1 changed type from String to Int.",
@@ -311,9 +287,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_fields_that_changed_type_on_input_object_types(
-            old_schema, new_schema
-        ).breaking_changes == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
                 "A required field requiredField on input type InputType1 was added.",
@@ -331,6 +305,10 @@ def describe_find_breaking_changes():
                 field1: String
             }
 
+            type Type3 {
+              field1: String
+            }
+
             union UnionType1 = Type1 | Type2
             """
         )
@@ -338,6 +316,10 @@ def describe_find_breaking_changes():
         new_schema = build_schema(
             """
             type Type1 {
+              field1: String
+            }
+
+            type Type2 {
               field1: String
             }
 
@@ -349,7 +331,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_types_removed_from_unions(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.TYPE_REMOVED_FROM_UNION,
                 "Type2 was removed from union type UnionType1.",
@@ -377,7 +359,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_values_removed_from_enums(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
                 "VALUE1 was removed from enum type EnumType1.",
@@ -387,12 +369,8 @@ def describe_find_breaking_changes():
     def should_detect_if_a_field_argument_was_removed():
         old_schema = build_schema(
             """
-            input InputType1 {
-              field1: String
-            }
-
             interface Interface1 {
-              field1(arg1: Boolean, objectArg: InputType1): String
+              field1(arg1: Boolean, objectArg: String): String
             }
 
             type Type1 {
@@ -413,7 +391,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_arg_changes(old_schema, new_schema).breaking_changes == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.ARG_REMOVED, "Interface1.field1 arg arg1 was removed"),
             (
                 BreakingChangeType.ARG_REMOVED,
@@ -471,7 +449,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_arg_changes(old_schema, new_schema).breaking_changes == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
                 "Type1.field1 arg arg1 has changed type from String to Int",
@@ -544,7 +522,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_arg_changes(old_schema, new_schema).breaking_changes == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_ARG_ADDED,
                 "A required arg newRequiredArg on Type1.field1 was added",
@@ -576,7 +554,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_arg_changes(old_schema, new_schema).breaking_changes == []
+        assert find_breaking_changes(old_schema, new_schema) == []
 
     def should_consider_args_that_move_away_from_non_null_as_non_breaking():
         old_schema = build_schema(
@@ -595,7 +573,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_arg_changes(old_schema, new_schema).breaking_changes == []
+        assert find_breaking_changes(old_schema, new_schema) == []
 
     def should_detect_interfaces_removed_from_types():
         old_schema = build_schema(
@@ -612,13 +590,17 @@ def describe_find_breaking_changes():
 
         new_schema = build_schema(
             """
+            interface Interface1 {
+              field1: String
+            }
+
             type Type1 {
               field1: String
             }
             """
         )
 
-        assert find_interfaces_removed_from_object_types(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
                 "Type1 no longer implements interface Interface1.",
@@ -786,7 +768,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_removed_directives(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.DIRECTIVE_REMOVED, "DirectiveThatIsRemoved was removed")
         ]
 
@@ -797,7 +779,7 @@ def describe_find_breaking_changes():
             directives=[GraphQLSkipDirective, GraphQLIncludeDirective]
         )
 
-        assert find_removed_directives(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
                 f"{GraphQLDeprecatedDirective.name} was removed",
@@ -807,7 +789,7 @@ def describe_find_breaking_changes():
     def should_detect_if_a_directive_argument_was_removed():
         old_schema = build_schema(
             """
-            directive @DirectiveWithArg(arg1: Int) on FIELD_DEFINITION
+            directive @DirectiveWithArg(arg1: String) on FIELD_DEFINITION
             """
         )
 
@@ -817,7 +799,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_removed_directive_args(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_ARG_REMOVED,
                 "arg1 was removed from DirectiveWithArg",
@@ -841,7 +823,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_added_non_null_directive_args(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
                 "A required arg newRequiredArg on directive DirectiveName was added",
@@ -849,18 +831,6 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_locations_removed_from_a_directive():
-        d1 = GraphQLDirective(
-            "Directive Name",
-            locations=[DirectiveLocation.FIELD_DEFINITION, DirectiveLocation.QUERY],
-        )
-
-        d2 = GraphQLDirective(
-            "Directive Name", locations=[DirectiveLocation.FIELD_DEFINITION]
-        )
-
-        assert find_removed_locations_for_directive(d1, d2) == [DirectiveLocation.QUERY]
-
-    def should_detect_locations_removed_directives_within_a_schema():
         old_schema = build_schema(
             """
             directive @DirectiveName on FIELD_DEFINITION | QUERY
@@ -873,7 +843,7 @@ def describe_find_breaking_changes():
             """
         )
 
-        assert find_removed_directive_locations(old_schema, new_schema) == [
+        assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
                 "QUERY was removed from DirectiveName",
@@ -882,30 +852,29 @@ def describe_find_breaking_changes():
 
 
 def describe_find_dangerous_changes():
-    def describe_find_arg_changes():
-        def should_detect_if_an_arguments_default_value_has_changed():
-            old_schema = build_schema(
-                """
-                type Type1 {
-                  field1(name: String = "test"): String
-                }
-                """
-            )
+    def should_detect_if_an_arguments_default_value_has_changed():
+        old_schema = build_schema(
+            """
+            type Type1 {
+              field1(name: String = "test"): String
+            }
+            """
+        )
 
-            new_schema = build_schema(
-                """
-                type Type1 {
-                  field1(name: String = "Test"): String
-                }
-                """
-            )
+        new_schema = build_schema(
+            """
+            type Type1 {
+              field1(name: String = "Test"): String
+            }
+            """
+        )
 
-            assert find_arg_changes(old_schema, new_schema).dangerous_changes == [
-                (
-                    DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                    "Type1.field1 arg name has changed defaultValue",
-                )
-            ]
+        assert find_dangerous_changes(old_schema, new_schema) == [
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "Type1.field1 arg name has changed defaultValue",
+            )
+        ]
 
     def should_detect_if_a_value_was_added_to_an_enum_type():
         old_schema = build_schema(
@@ -927,7 +896,7 @@ def describe_find_dangerous_changes():
             """
         )
 
-        assert find_values_added_to_enums(old_schema, new_schema) == [
+        assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.VALUE_ADDED_TO_ENUM,
                 "VALUE2 was added to enum type EnumType1.",
@@ -955,7 +924,7 @@ def describe_find_dangerous_changes():
             """
         )
 
-        assert find_interfaces_added_to_object_types(old_schema, new_schema) == [
+        assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
                 "Interface1 added to interfaces implemented by Type1.",
@@ -987,7 +956,7 @@ def describe_find_dangerous_changes():
             """
         )
 
-        assert find_types_added_to_unions(old_schema, new_schema) == [
+        assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.TYPE_ADDED_TO_UNION,
                 "Type2 was added to union type UnionType1.",
@@ -1012,9 +981,7 @@ def describe_find_dangerous_changes():
             """
         )
 
-        assert find_fields_that_changed_type_on_input_object_types(
-            old_schema, new_schema
-        ).dangerous_changes == [
+        assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
                 "An optional field field2 on input type InputType1 was added.",
@@ -1114,7 +1081,7 @@ def describe_find_dangerous_changes():
             """
         )
 
-        assert find_arg_changes(old_schema, new_schema).dangerous_changes == [
+        assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.OPTIONAL_ARG_ADDED,
                 "An optional arg arg2 on Type1.field1 was added",
