@@ -36,22 +36,6 @@ __all__ = [
     "DangerousChangeType",
     "find_breaking_changes",
     "find_dangerous_changes",
-    "find_removed_types",
-    "find_types_that_changed_kind",
-    "find_fields_that_changed_type_on_object_or_interface_types",
-    "find_fields_that_changed_type_on_input_object_types",
-    "find_types_removed_from_unions",
-    "find_values_removed_from_enums",
-    "find_arg_changes",
-    "find_interfaces_removed_from_object_types",
-    "find_removed_directives",
-    "find_removed_directive_args",
-    "find_added_non_null_directive_args",
-    "find_removed_locations_for_directive",
-    "find_removed_directive_locations",
-    "find_values_added_to_enums",
-    "find_interfaces_added_to_object_types",
-    "find_types_added_to_unions",
 ]
 
 
