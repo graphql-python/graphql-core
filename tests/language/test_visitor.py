@@ -75,6 +75,10 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
             assert getattr(parent, key) is node
 
 
+def get_value(node):
+    return getattr(node, "value", None)
+
+
 def describe_visitor():
     def validates_path_argument():
         ast = parse("{ a }", no_location=True)
@@ -219,7 +223,7 @@ def describe_visitor():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "field" and node.name.value == "b":
                     return SKIP
@@ -227,7 +231,7 @@ def describe_visitor():
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         visit(ast, TestVisitor())
@@ -258,7 +262,7 @@ def describe_visitor():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "name" and node.value == "x":
                     return BREAK
@@ -266,7 +270,7 @@ def describe_visitor():
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         visit(ast, TestVisitor())
@@ -295,13 +299,13 @@ def describe_visitor():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
                 if kind == "name" and node.value == "x":
                     return BREAK
@@ -333,19 +337,19 @@ def describe_visitor():
             def enter_name(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def enter_selection_set(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def leave_selection_set(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         visit(ast, TestVisitor())
@@ -373,13 +377,13 @@ def describe_visitor():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         visit(ast, TestVisitor())
@@ -800,7 +804,7 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "field" and node.name.value == "b":
                     return SKIP
@@ -808,7 +812,7 @@ def describe_visit_in_parallel():
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         visit(ast, ParallelVisitor([TestVisitor()]))
@@ -841,7 +845,7 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 name = self.name
                 visited.append([f"no-{name}", "enter", kind, value])
                 if kind == "field" and node.name.value == name:
@@ -850,7 +854,7 @@ def describe_visit_in_parallel():
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 name = self.name
                 visited.append([f"no-{name}", "leave", kind, value])
 
@@ -902,7 +906,7 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "name" and node.value == "x":
                     return BREAK
@@ -910,7 +914,7 @@ def describe_visit_in_parallel():
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         visit(ast, ParallelVisitor([TestVisitor()]))
@@ -941,7 +945,7 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 name = self.name
                 visited.append([f"break-{name}", "enter", kind, value])
                 if kind == "name" and node.value == name:
@@ -950,7 +954,7 @@ def describe_visit_in_parallel():
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 name = self.name
                 visited.append([f"break-{name}", "leave", kind, value])
 
@@ -988,13 +992,13 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
                 if kind == "name" and node.value == "x":
                     return BREAK
@@ -1028,14 +1032,14 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 name = self.name
                 visited.append([f"break-{name}", "enter", kind, value])
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 name = self.name
                 visited.append([f"break-{name}", "leave", kind, value])
                 if kind == "field" and node.name.value == name:
@@ -1098,13 +1102,13 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args, is_edited=True)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         edited_ast = visit(ast, ParallelVisitor([TestVisitor1(), TestVisitor2()]))
@@ -1154,13 +1158,13 @@ def describe_visit_in_parallel():
             def enter(self, *args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args, is_edited=True)
                 node = args[0]
-                kind, value = node.kind, getattr(node, "value", None)
+                kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
 
         edited_ast = visit(ast, ParallelVisitor([TestVisitor1(), TestVisitor2()]))
