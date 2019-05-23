@@ -3,6 +3,7 @@ from typing import Dict, List, NamedTuple, Union, cast
 
 from ..error import INVALID
 from ..language import DirectiveLocation
+from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -285,7 +286,9 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
         return "an Enum type"
     if is_input_object_type(type_):
         return "an Input type"
-    raise TypeError(f"Unknown type {type_.__class__.__name__}")
+
+    # Not reachable. All possible output types have been considered.
+    raise TypeError(f"Unexpected type {inspect(type)}")  # pragma: no cover
 
 
 def find_fields_that_changed_type_on_object_or_interface_types(
