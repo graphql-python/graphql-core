@@ -17,21 +17,14 @@ def describe_find_breaking_changes():
     def should_detect_if_a_type_was_removed_or_not():
         old_schema = build_schema(
             """
-            type Type1 {
-              field1: String
-            }
-
-            type Type2 {
-              field1: String
-            }
+            type Type1
+            type Type2
             """
         )
 
         new_schema = build_schema(
             """
-            type Type2 {
-              field1: String
-            }
+            type Type2
             """
         )
 
@@ -43,19 +36,13 @@ def describe_find_breaking_changes():
     def should_detect_if_a_type_changed_its_type():
         old_schema = build_schema(
             """
-            interface Type1 {
-              field1: String
-            }
+            interface Type1
             """
         )
 
         new_schema = build_schema(
             """
-            type ObjectType {
-              field1: String
-            }
-
-            union Type1 = ObjectType
+            union Type1
             """
         )
 
@@ -69,9 +56,8 @@ def describe_find_breaking_changes():
     def should_detect_if_a_field_on_type_was_deleted_or_changed_type():
         old_schema = build_schema(
             """
-            type TypeA {
-              field1: String
-            }
+            type TypeA
+            type TypeB
 
             interface Type1 {
               field1: TypeA
@@ -97,13 +83,8 @@ def describe_find_breaking_changes():
 
         new_schema = build_schema(
             """
-            type TypeA {
-              field1: String
-            }
-
-            type TypeB {
-              field1: String
-            }
+            type TypeA
+            type TypeB
 
             interface Type1 {
               field1: TypeA
@@ -297,17 +278,9 @@ def describe_find_breaking_changes():
     def should_detect_if_a_type_was_removed_from_a_union_type():
         old_schema = build_schema(
             """
-            type Type1 {
-                field1: String
-            }
-
-            type Type2 {
-                field1: String
-            }
-
-            type Type3 {
-              field1: String
-            }
+            type Type1
+            type Type2
+            type Type3
 
             union UnionType1 = Type1 | Type2
             """
@@ -315,17 +288,9 @@ def describe_find_breaking_changes():
 
         new_schema = build_schema(
             """
-            type Type1 {
-              field1: String
-            }
-
-            type Type2 {
-              field1: String
-            }
-
-            type Type3 {
-              field1: String
-            }
+            type Type1
+            type Type2
+            type Type3
 
             union UnionType1 = Type1 | Type3
             """
@@ -578,25 +543,17 @@ def describe_find_breaking_changes():
     def should_detect_interfaces_removed_from_types():
         old_schema = build_schema(
             """
-            interface Interface1 {
-              field1: String
-            }
+            interface Interface1
 
-            type Type1 implements Interface1 {
-              field1: String
-            }
+            type Type1 implements Interface1
             """
         )
 
         new_schema = build_schema(
             """
-            interface Interface1 {
-              field1: String
-            }
+            interface Interface1
 
-            type Type1 {
-              field1: String
-            }
+            type Type1
             """
         )
 
@@ -628,31 +585,16 @@ def describe_find_breaking_changes():
                 VALUE2
             }
 
-            interface Interface1 {
-                field1: String
-            }
+            interface Interface1
+            type TypeThatLoosesInterface1 implements Interface1
 
-            type TypeThatGainsInterface1 implements Interface1 {
-                field1: String
-            }
-
-            type TypeInUnion1 {
-                field1: String
-            }
-
-            type TypeInUnion2 {
-                field1: String
-            }
-
+            type TypeInUnion1
+            type TypeInUnion2
             union UnionTypeThatLosesAType = TypeInUnion1 | TypeInUnion2
 
-            type TypeThatChangesType {
-                field1: String
-            }
+            type TypeThatChangesType
 
-            type TypeThatGetsRemoved {
-                field1: String
-            }
+            type TypeThatGetsRemoved
 
             interface TypeThatHasBreakingFieldChanges {
                 field1: String
@@ -678,23 +620,15 @@ def describe_find_breaking_changes():
               VALUE2
             }
 
-            interface Interface1 {
-              field1: String
-            }
+            interface Interface1
+            type TypeThatLoosesInterface1
 
-            type TypeInUnion1 {
-              field1: String
-            }
+            type TypeInUnion1
+            type TypeInUnion2
 
             union UnionTypeThatLosesAType = TypeInUnion1
 
-            interface TypeThatChangesType {
-              field1: String
-            }
-
-            type TypeThatGainsInterface1 {
-              field1: String
-            }
+            interface TypeThatChangesType
 
             interface TypeThatHasBreakingFieldChanges {
               field2: Boolean
@@ -704,7 +638,6 @@ def describe_find_breaking_changes():
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.TYPE_REMOVED, "Int was removed."),
-            (BreakingChangeType.TYPE_REMOVED, "TypeInUnion2 was removed."),
             (BreakingChangeType.TYPE_REMOVED, "TypeThatGetsRemoved was removed."),
             (
                 BreakingChangeType.TYPE_CHANGED_KIND,
@@ -734,7 +667,7 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
-                "TypeThatGainsInterface1 no longer implements interface Interface1.",
+                "TypeThatLoosesInterface1 no longer implements interface Interface1.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
@@ -906,21 +839,15 @@ def describe_find_dangerous_changes():
     def should_detect_interfaces_added_to_types():
         old_schema = build_schema(
             """
-            type Type1 {
-              field1: String
-            }
+            type Type1
             """
         )
 
         new_schema = build_schema(
             """
-            interface Interface1 {
-              field1: String
-            }
+            interface Interface1
 
-            type Type1 implements Interface1 {
-              field1: String
-            }
+            type Type1 implements Interface1
             """
         )
 
@@ -934,9 +861,8 @@ def describe_find_dangerous_changes():
     def should_detect_if_a_type_was_added_to_a_union_type():
         old_schema = build_schema(
             """
-            type Type1 {
-              field1: String
-            }
+            type Type1
+            type Type2
 
             union UnionType1 = Type1
             """
@@ -944,13 +870,8 @@ def describe_find_dangerous_changes():
 
         new_schema = build_schema(
             """
-            type Type1 {
-              field1: String
-            }
-
-            type Type2 {
-              field1: String
-            }
+            type Type1
+            type Type2
 
             union UnionType1 = Type1 | Type2
             """
@@ -997,17 +918,13 @@ def describe_find_dangerous_changes():
             }
 
             type Type1 {
-              field1(name: String = "test"): String
+              field1(argThatChangesDefaultValue: String = "test"): String
             }
 
-            type TypeThatGainsInterface1 {
-              field1: String
-            }
+            interface Interface1
+            type TypeThatGainsInterface1
 
-            type TypeInUnion1 {
-              field1: String
-            }
-
+            type TypeInUnion1
             union UnionTypeThatGainsAType = TypeInUnion1
             """
         )
@@ -1020,26 +937,15 @@ def describe_find_dangerous_changes():
               VALUE2
             }
 
-            interface Interface1 {
-              field1: String
-            }
-
-            type TypeThatGainsInterface1 implements Interface1 {
-              field1: String
-            }
-
             type Type1 {
-              field1(name: String = "Test"): String
+              field1(argThatChangesDefaultValue: String = "Test"): String
             }
 
-            type TypeInUnion1 {
-              field1: String
-            }
+            interface Interface1
+            type TypeThatGainsInterface1 implements Interface1
 
-            type TypeInUnion2 {
-              field1: String
-            }
-
+            type TypeInUnion1
+            type TypeInUnion2
             union UnionTypeThatGainsAType = TypeInUnion1 | TypeInUnion2
             """
         )
@@ -1047,7 +953,7 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg name has changed defaultValue",
+                "Type1.field1 arg argThatChangesDefaultValue has changed defaultValue",
             ),
             (
                 DangerousChangeType.VALUE_ADDED_TO_ENUM,
