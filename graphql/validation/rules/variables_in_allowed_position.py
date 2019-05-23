@@ -76,8 +76,9 @@ def allowed_variable_usage(
     it is located.
     """
     if is_non_null_type(location_type) and not is_non_null_type(var_type):
-        has_non_null_variable_default_value = var_default_value and not isinstance(
-            var_default_value, NullValueNode
+        has_non_null_variable_default_value = (
+            var_default_value is not None
+            and not isinstance(var_default_value, NullValueNode)
         )
         has_location_default_value = location_default_value is not INVALID
         if not has_non_null_variable_default_value and not has_location_default_value:
