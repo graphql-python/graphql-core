@@ -1,12 +1,10 @@
 from enum import Enum
-from typing import List, NamedTuple, Union, cast
+from typing import Dict, List, NamedTuple, Union, cast
 
 from ..error import INVALID
 from ..pyutils import inspect
 from ..type import (
     GraphQLEnumType,
-    GraphQLInputObjectType,
-    GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
@@ -143,15 +141,12 @@ def find_removed_types(
     """
     schema_changes: List[BreakingChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name in old_type_map:
-        if type_name not in new_type_map:
-            schema_changes.append(
-                BreakingChange(
-                    BreakingChangeType.TYPE_REMOVED, f"{type_name} was removed."
-                )
-            )
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name in types_diff.removed:
+        schema_changes.append(
+            BreakingChange(BreakingChangeType.TYPE_REMOVED, f"{type_name} was removed.")
+        )
     return schema_changes
 
 
@@ -165,13 +160,9 @@ def find_types_that_changed_kind(
     """
     schema_changes: List[BreakingChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name in old_type_map:
-        if type_name not in new_type_map:
-            continue
-        old_type = old_type_map[type_name]
-        new_type = new_type_map[type_name]
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if old_type.__class__ is not new_type.__class__:
             schema_changes.append(
                 BreakingChange(
@@ -194,39 +185,30 @@ def find_arg_changes(
     """
     schema_changes: List[BreakingOrDangerousChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if (
             not (is_object_type(old_type) or is_interface_type(old_type))
             or not (is_object_type(new_type) or is_interface_type(new_type))
             or new_type.__class__ is not old_type.__class__
         ):
             continue
-        old_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], old_type)
-        new_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], new_type)
 
-        old_fields = old_type.fields
-        new_fields = new_type.fields
-        for field_name in old_fields:
-            if field_name not in new_fields:
-                continue
+        fields_diff = dict_diff(old_type.fields, new_type.fields)
 
-            old_args = old_fields[field_name].args
-            new_args = new_fields[field_name].args
-            for arg_name, old_arg in old_args.items():
-                new_arg = new_args.get(arg_name)
-                if not new_arg:
-                    # Arg not present
-                    schema_changes.append(
-                        BreakingChange(
-                            BreakingChangeType.ARG_REMOVED,
-                            f"{old_type.name}.{field_name} arg"
-                            f" {arg_name} was removed.",
-                        )
+        for field_name, (old_field, new_field) in fields_diff.persisted.items():
+            args_diff = dict_diff(old_field.args, new_field.args)
+
+            for arg_name in args_diff.removed:
+                schema_changes.append(
+                    BreakingChange(
+                        BreakingChangeType.ARG_REMOVED,
+                        f"{old_type.name}.{field_name} arg" f" {arg_name} was removed.",
                     )
-                    continue
+                )
+
+            for arg_name, (old_arg, new_arg) in args_diff.persisted.items():
                 is_safe = is_change_safe_for_input_object_field_or_field_arg(
                     old_arg.type, new_arg.type
                 )
@@ -251,25 +233,23 @@ def find_arg_changes(
                         )
                     )
 
-            # Check if arg was added to the field
-            for arg_name in new_args:
-                if arg_name not in old_args:
-                    if is_required_argument(new_args[arg_name]):
-                        schema_changes.append(
-                            BreakingChange(
-                                BreakingChangeType.REQUIRED_ARG_ADDED,
-                                f"A required arg {arg_name} on"
-                                f" {type_name}.{field_name} was added.",
-                            )
+            for arg_name, new_arg in args_diff.added.items():
+                if is_required_argument(new_arg):
+                    schema_changes.append(
+                        BreakingChange(
+                            BreakingChangeType.REQUIRED_ARG_ADDED,
+                            f"A required arg {arg_name} on"
+                            f" {type_name}.{field_name} was added.",
                         )
-                    else:
-                        schema_changes.append(
-                            DangerousChange(
-                                DangerousChangeType.OPTIONAL_ARG_ADDED,
-                                f"An optional arg {arg_name} on"
-                                f" {type_name}.{field_name} was added.",
-                            )
+                    )
+                else:
+                    schema_changes.append(
+                        DangerousChange(
+                            DangerousChangeType.OPTIONAL_ARG_ADDED,
+                            f"An optional arg {arg_name} on"
+                            f" {type_name}.{field_name} was added.",
                         )
+                    )
 
     return schema_changes
 
@@ -297,45 +277,38 @@ def find_fields_that_changed_type_on_object_or_interface_types(
 ) -> List[BreakingChange]:
     schema_changes: List[BreakingChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if (
             not (is_object_type(old_type) or is_interface_type(old_type))
             or not (is_object_type(new_type) or is_interface_type(new_type))
             or new_type.__class__ is not old_type.__class__
         ):
             continue
-        old_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], old_type)
-        new_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], new_type)
 
-        old_fields = old_type.fields
-        new_fields = new_type.fields
-        for field_name in old_fields:
-            # Check if the field is missing on the type in the new schema.
-            if field_name not in new_fields:
+        fields_diff = dict_diff(old_type.fields, new_type.fields)
+
+        for field_name in fields_diff.removed:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.FIELD_REMOVED,
+                    f"{type_name}.{field_name} was removed.",
+                )
+            )
+
+        for field_name, (old_field, new_field) in fields_diff.persisted.items():
+            is_safe = is_change_safe_for_object_or_interface_field(
+                old_field.type, new_field.type
+            )
+            if not is_safe:
                 schema_changes.append(
                     BreakingChange(
-                        BreakingChangeType.FIELD_REMOVED,
-                        f"{type_name}.{field_name} was removed.",
+                        BreakingChangeType.FIELD_CHANGED_KIND,
+                        f"{type_name}.{field_name} changed type"
+                        f" from {old_field.type} to {new_field.type}.",
                     )
                 )
-            else:
-                old_field_type = old_fields[field_name].type
-                new_field_type = new_fields[field_name].type
-                is_safe = is_change_safe_for_object_or_interface_field(
-                    old_field_type, new_field_type
-                )
-                if not is_safe:
-                    schema_changes.append(
-                        BreakingChange(
-                            BreakingChangeType.FIELD_CHANGED_KIND,
-                            f"{type_name}.{field_name} changed type"
-                            f" from {old_field_type}"
-                            f" to {new_field_type}.",
-                        )
-                    )
 
     return schema_changes
 
@@ -345,61 +318,52 @@ def find_fields_that_changed_type_on_input_object_types(
 ) -> List[BreakingOrDangerousChange]:
     schema_changes: List[BreakingOrDangerousChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_input_object_type(old_type) and is_input_object_type(new_type)):
             continue
-        old_type = cast(GraphQLInputObjectType, old_type)
-        new_type = cast(GraphQLInputObjectType, new_type)
 
-        old_fields = old_type.fields
-        new_fields = new_type.fields
-        for field_name in old_fields:
-            # Check if the field is missing on the type in the new schema.
-            if field_name not in new_fields:
+        fields_diff = dict_diff(old_type.fields, new_type.fields)
+
+        for field_name in fields_diff.removed:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.FIELD_REMOVED,
+                    f"{type_name}.{field_name} was removed.",
+                )
+            )
+
+        for field_name, (old_field, new_field) in fields_diff.persisted.items():
+            is_safe = is_change_safe_for_input_object_field_or_field_arg(
+                old_field.type, new_field.type
+            )
+            if not is_safe:
                 schema_changes.append(
                     BreakingChange(
-                        BreakingChangeType.FIELD_REMOVED,
-                        f"{type_name}.{field_name} was removed.",
+                        BreakingChangeType.FIELD_CHANGED_KIND,
+                        f"{type_name}.{field_name} changed type"
+                        f" from {old_field.type} to {new_field.type}.",
+                    )
+                )
+
+        for field_name, new_field in fields_diff.added.items():
+            if is_required_input_field(new_field):
+                schema_changes.append(
+                    BreakingChange(
+                        BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
+                        f"A required field {field_name} on"
+                        f" input type {type_name} was added.",
                     )
                 )
             else:
-                old_field_type = old_fields[field_name].type
-                new_field_type = new_fields[field_name].type
-                is_safe = is_change_safe_for_input_object_field_or_field_arg(
-                    old_field_type, new_field_type
+                schema_changes.append(
+                    DangerousChange(
+                        DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
+                        f"An optional field {field_name} on"
+                        f" input type {type_name} was added.",
+                    )
                 )
-                if not is_safe:
-                    schema_changes.append(
-                        BreakingChange(
-                            BreakingChangeType.FIELD_CHANGED_KIND,
-                            f"{type_name}.{field_name} changed type"
-                            f" from {old_field_type}"
-                            f" to {new_field_type}.",
-                        )
-                    )
-
-        # Check if a field was added to the input object type
-        for field_name in new_fields:
-            if field_name not in old_fields:
-                if is_required_input_field(new_fields[field_name]):
-                    schema_changes.append(
-                        BreakingChange(
-                            BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
-                            f"A required field {field_name} on"
-                            f" input type {type_name} was added.",
-                        )
-                    )
-                else:
-                    schema_changes.append(
-                        DangerousChange(
-                            DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
-                            f"An optional field {field_name} on"
-                            f" input type {type_name} was added.",
-                        )
-                    )
     return schema_changes
 
 
@@ -490,24 +454,22 @@ def find_types_removed_from_unions(
     """
     schema_changes: List[BreakingChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for old_type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(old_type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_union_type(old_type) and is_union_type(new_type)):
             continue
-        old_type = cast(GraphQLUnionType, old_type)
-        new_type = cast(GraphQLUnionType, new_type)
-        new_possible_type_names = (type_.name for type_ in new_type.types)
-        for old_possible_type in old_type.types:
-            if old_possible_type.name not in new_possible_type_names:
-                schema_changes.append(
-                    BreakingChange(
-                        BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-                        f"{old_possible_type.name} was removed"
-                        f" from union type {old_type_name}.",
-                    )
+
+        possible_types_diff = list_diff(old_type.types, new_type.types)
+
+        for possible_type in possible_types_diff.removed:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.TYPE_REMOVED_FROM_UNION,
+                    f"{possible_type.name} was removed"
+                    f" from union type {type_name}.",
                 )
+            )
     return schema_changes
 
 
@@ -521,24 +483,21 @@ def find_types_added_to_unions(
     """
     schema_changes: List[DangerousChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for old_type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(old_type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_union_type(old_type) and is_union_type(new_type)):
             continue
-        old_type = cast(GraphQLUnionType, old_type)
-        new_type = cast(GraphQLUnionType, new_type)
-        old_possible_type_names = {type_.name for type_ in old_type.types}
-        for new_possible_type in new_type.types:
-            if new_possible_type.name not in old_possible_type_names:
-                schema_changes.append(
-                    DangerousChange(
-                        DangerousChangeType.TYPE_ADDED_TO_UNION,
-                        f"{new_possible_type.name} was added"
-                        f" to union type {old_type_name}.",
-                    )
+
+        possible_types_diff = list_diff(old_type.types, new_type.types)
+
+        for possible_type in possible_types_diff.added:
+            schema_changes.append(
+                DangerousChange(
+                    DangerousChangeType.TYPE_ADDED_TO_UNION,
+                    f"{possible_type.name} was added" f" to union type {type_name}.",
                 )
+            )
     return schema_changes
 
 
@@ -552,22 +511,21 @@ def find_values_removed_from_enums(
     """
     schema_changes: List[BreakingChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_enum_type(old_type) and is_enum_type(new_type)):
             continue
-        old_type = cast(GraphQLEnumType, old_type)
-        new_type = cast(GraphQLEnumType, new_type)
-        for value_name in old_type.values:
-            if value_name not in new_type.values:
-                schema_changes.append(
-                    BreakingChange(
-                        BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
-                        f"{value_name} was removed from enum type {type_name}.",
-                    )
+
+        values_diff = dict_diff(old_type.values, new_type.values)
+
+        for value_name in values_diff.removed:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
+                    f"{value_name} was removed from enum type {type_name}.",
                 )
+            )
     return schema_changes
 
 
@@ -581,22 +539,21 @@ def find_values_added_to_enums(
     """
     schema_changes: List[DangerousChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_enum_type(old_type) and is_enum_type(new_type)):
             continue
-        old_type = cast(GraphQLEnumType, old_type)
-        new_type = cast(GraphQLEnumType, new_type)
-        for value_name in new_type.values:
-            if value_name not in old_type.values:
-                schema_changes.append(
-                    DangerousChange(
-                        DangerousChangeType.VALUE_ADDED_TO_ENUM,
-                        f"{value_name} was added to enum type {type_name}.",
-                    )
+
+        values_diff = dict_diff(old_type.values, new_type.values)
+
+        for value_name in values_diff.added:
+            schema_changes.append(
+                DangerousChange(
+                    DangerousChangeType.VALUE_ADDED_TO_ENUM,
+                    f"{value_name} was added to enum type {type_name}.",
                 )
+            )
     return schema_changes
 
 
@@ -605,27 +562,21 @@ def find_interfaces_removed_from_object_types(
 ) -> List[BreakingChange]:
     schema_changes: List[BreakingChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, old_type in old_type_map.items():
-        new_type = new_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_object_type(old_type) and is_object_type(new_type)):
             continue
-        old_type = cast(GraphQLObjectType, old_type)
-        new_type = cast(GraphQLObjectType, new_type)
 
-        old_interfaces = old_type.interfaces
-        new_interfaces = new_type.interfaces
-        new_interface_names = {interface.name for interface in new_interfaces}
-        for old_interface in old_interfaces:
-            if old_interface.name not in new_interface_names:
-                schema_changes.append(
-                    BreakingChange(
-                        BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
-                        f"{type_name} no longer implements interface"
-                        f" {old_interface.name}.",
-                    )
+        interfaces_diff = list_diff(old_type.interfaces, new_type.interfaces)
+
+        for interface in interfaces_diff.removed:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
+                    f"{type_name} no longer implements interface {interface.name}.",
                 )
+            )
     return schema_changes
 
 
@@ -634,27 +585,21 @@ def find_interfaces_added_to_object_types(
 ) -> List[DangerousChange]:
     schema_changes: List[DangerousChange] = []
 
-    old_type_map = old_schema.type_map
-    new_type_map = new_schema.type_map
-    for type_name, new_type in new_type_map.items():
-        old_type = old_type_map.get(type_name)
+    types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
+
+    for type_name, (old_type, new_type) in types_diff.persisted.items():
         if not (is_object_type(old_type) and is_object_type(new_type)):
             continue
-        old_type = cast(GraphQLObjectType, old_type)
-        new_type = cast(GraphQLObjectType, new_type)
 
-        old_interfaces = old_type.interfaces
-        new_interfaces = new_type.interfaces
-        old_interface_names = {interface.name for interface in old_interfaces}
-        for new_interface in new_interfaces:
-            if new_interface.name not in old_interface_names:
-                schema_changes.append(
-                    DangerousChange(
-                        DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
-                        f"{new_interface.name} added to interfaces implemented"
-                        f" by {type_name}.",
-                    )
+        interfaces_diff = list_diff(old_type.interfaces, new_type.interfaces)
+
+        for interface in interfaces_diff.added:
+            schema_changes.append(
+                DangerousChange(
+                    DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
+                    f"{interface.name} added to interfaces implemented by {type_name}.",
                 )
+            )
     return schema_changes
 
 
@@ -663,15 +608,14 @@ def find_removed_directives(
 ) -> List[BreakingChange]:
     schema_changes: List[BreakingChange] = []
 
-    new_directives_names = {directive.name for directive in new_schema.directives}
-    for old_directive in old_schema.directives:
-        if old_directive.name not in new_directives_names:
-            schema_changes.append(
-                BreakingChange(
-                    BreakingChangeType.DIRECTIVE_REMOVED,
-                    f"{old_directive.name} was removed.",
-                )
+    directives_diff = list_diff(old_schema.directives, new_schema.directives)
+
+    for directive in directives_diff.removed:
+        schema_changes.append(
+            BreakingChange(
+                BreakingChangeType.DIRECTIVE_REMOVED, f"{directive.name} was removed."
             )
+        )
 
     return schema_changes
 
@@ -681,20 +625,18 @@ def find_removed_directive_args(
 ) -> List[BreakingChange]:
     schema_changes: List[BreakingChange] = []
 
-    new_directives = {directive.name: directive for directive in new_schema.directives}
-    for old_directive in old_schema.directives:
-        new_directive = new_directives.get(old_directive.name)
-        if not new_directive:
-            continue
+    directives_diff = list_diff(old_schema.directives, new_schema.directives)
 
-        for old_arg_name in old_directive.args:
-            if old_arg_name not in new_directive.args:
-                schema_changes.append(
-                    BreakingChange(
-                        BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                        f"{old_arg_name} was removed from {new_directive.name}.",
-                    )
+    for (old_directive, new_directive) in directives_diff.persisted:
+        args_diff = dict_diff(old_directive.args, new_directive.args)
+
+        for arg_name in args_diff.removed:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.DIRECTIVE_ARG_REMOVED,
+                    f"{arg_name} was removed from {new_directive.name}.",
                 )
+            )
 
     return schema_changes
 
@@ -704,19 +646,17 @@ def find_added_non_null_directive_args(
 ) -> List[BreakingChange]:
     schema_changes: List[BreakingChange] = []
 
-    new_directives = {directive.name: directive for directive in new_schema.directives}
-    for old_directive in old_schema.directives:
-        new_directive = new_directives.get(old_directive.name)
-        if not new_directive:
-            continue
+    directives_diff = list_diff(old_schema.directives, new_schema.directives)
 
-        for new_arg_name, new_arg in new_directive.args.items():
-            old_arg = old_directive.args.get(new_arg_name)
-            if not old_arg and is_required_argument(new_arg):
+    for (old_directive, new_directive) in directives_diff.persisted:
+        args_diff = dict_diff(old_directive.args, new_directive.args)
+
+        for arg_name, new_arg in args_diff.added.items():
+            if is_required_argument(new_arg):
                 schema_changes.append(
                     BreakingChange(
                         BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                        f"A required arg {new_arg_name} on directive"
+                        f"A required arg {arg_name} on directive"
                         f" {new_directive.name} was added.",
                     )
                 )
@@ -729,12 +669,9 @@ def find_removed_directive_locations(
 ) -> List[BreakingChange]:
     schema_changes: List[BreakingChange] = []
 
-    new_directives = {directive.name: directive for directive in new_schema.directives}
-    for old_directive in old_schema.directives:
-        new_directive = new_directives.get(old_directive.name)
-        if not new_directive:
-            continue
+    directives_diff = list_diff(old_schema.directives, new_schema.directives)
 
+    for (old_directive, new_directive) in directives_diff.persisted:
         for location in old_directive.locations:
             if location not in new_directive.locations:
                 schema_changes.append(
@@ -745,3 +682,62 @@ def find_removed_directive_locations(
                 )
 
     return schema_changes
+
+
+class ListDiff(NamedTuple):
+    """Tuple with added, persisted and removed list items."""
+
+    added: List
+    persisted: List
+    removed: List
+
+
+def list_diff(old_list: List, new_list: List) -> ListDiff:
+    """Get differences between two lists of named items."""
+    added = []
+    persisted = []
+    removed = []
+
+    old_set = {item.name for item in old_list}
+    new_map = {item.name: item for item in new_list}
+
+    for old_item in old_list:
+        new_item = new_map.get(old_item.name)
+        if new_item:
+            persisted.append([old_item, new_item])
+        else:
+            removed.append(old_item)
+
+    for new_item in new_list:
+        if new_item.name not in old_set:
+            added.append(new_item)
+
+    return ListDiff(added, persisted, removed)
+
+
+class DictDiff(NamedTuple):
+    """Tuple with added, persisted and removed dict entries."""
+
+    added: Dict
+    persisted: Dict
+    removed: Dict
+
+
+def dict_diff(old_dict: Dict, new_dict: Dict) -> DictDiff:
+    """Get differences between two dicts."""
+    added = {}
+    persisted = {}
+    removed = {}
+
+    for old_name, old_item in old_dict.items():
+        new_item = new_dict.get(old_name)
+        if new_item:
+            persisted[old_name] = [old_item, new_item]
+        else:
+            removed[old_name] = old_item
+
+    for new_name, new_item in new_dict.items():
+        if new_name not in old_dict:
+            added[new_name] = new_item
+
+    return DictDiff(added, persisted, removed)

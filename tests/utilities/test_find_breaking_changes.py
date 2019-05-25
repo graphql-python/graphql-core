@@ -219,11 +219,11 @@ def describe_find_breaking_changes():
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [
+            (BreakingChangeType.FIELD_REMOVED, "InputType1.field2 was removed."),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
                 "InputType1.field1 changed type from String to Int.",
             ),
-            (BreakingChangeType.FIELD_REMOVED, "InputType1.field2 was removed."),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
                 "InputType1.field3 changed type from [String] to String.",
