@@ -4,14 +4,11 @@ from typing import Dict, List, NamedTuple, Union, cast
 from ..error import INVALID
 from ..pyutils import inspect
 from ..type import (
-    GraphQLEnumType,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
-    GraphQLObjectType,
     GraphQLSchema,
     GraphQLType,
-    GraphQLUnionType,
     is_enum_type,
     is_input_object_type,
     is_interface_type,
