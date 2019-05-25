@@ -36,21 +36,35 @@ def describe_find_breaking_changes():
     def should_detect_if_a_type_changed_its_type():
         old_schema = build_schema(
             """
-            interface Type1
+            scalar TypeWasScalarBecomesEnum
+            interface TypeWasInterfaceBecomesUnion
+            type TypeWasObjectBecomesInputObject
             """
         )
 
         new_schema = build_schema(
             """
-            union Type1
+            enum TypeWasScalarBecomesEnum
+            union TypeWasInterfaceBecomesUnion
+           input TypeWasObjectBecomesInputObject
             """
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.TYPE_CHANGED_KIND,
-                "Type1 changed from an Interface type to a Union type.",
-            )
+                "TypeWasScalarBecomesEnum changed from a Scalar type to an Enum type.",
+            ),
+            (
+                BreakingChangeType.TYPE_CHANGED_KIND,
+                "TypeWasInterfaceBecomesUnion changed"
+                " from an Interface type to a Union type.",
+            ),
+            (
+                BreakingChangeType.TYPE_CHANGED_KIND,
+                "TypeWasObjectBecomesInputObject changed"
+                " from an Object type to an Input type.",
+            ),
         ]
 
     def should_detect_if_a_field_on_type_was_deleted_or_changed_type():
@@ -564,6 +578,27 @@ def describe_find_breaking_changes():
             )
         ]
 
+    def should_ignore_changes_in_order_of_interfaces():
+        old_schema = build_schema(
+            """
+            interface FirstInterface
+            interface SecondInterface
+
+            type Type1 implements FirstInterface & SecondInterface
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            interface FirstInterface
+            interface SecondInterface
+
+            type Type1 implements SecondInterface & FirstInterface
+            """
+        )
+
+        assert find_breaking_changes(old_schema, new_schema) == []
+
     def should_detect_all_breaking_changes():
         old_schema = build_schema(
             """
@@ -839,22 +874,26 @@ def describe_find_dangerous_changes():
     def should_detect_interfaces_added_to_types():
         old_schema = build_schema(
             """
-            type Type1
+            interface OldInterface
+            interface NewInterface
+
+            type Type1 implements OldInterface
             """
         )
 
         new_schema = build_schema(
             """
-            interface Interface1
+            interface OldInterface
+            interface NewInterface
 
-            type Type1 implements Interface1
+            type Type1 implements OldInterface & NewInterface
             """
         )
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
-                "Interface1 added to interfaces implemented by Type1.",
+                "NewInterface added to interfaces implemented by Type1.",
             )
         ]
 
