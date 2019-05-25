@@ -221,7 +221,7 @@ def find_arg_changes(
                         BreakingChange(
                             BreakingChangeType.ARG_REMOVED,
                             f"{old_type.name}.{field_name} arg"
-                            f" {arg_name} was removed",
+                            f" {arg_name} was removed.",
                         )
                     )
                     continue
@@ -234,7 +234,7 @@ def find_arg_changes(
                             BreakingChangeType.ARG_CHANGED_KIND,
                             f"{old_type.name}.{field_name} arg"
                             f" {arg_name} has changed type from"
-                            f" {old_arg.type} to {new_arg.type}",
+                            f" {old_arg.type} to {new_arg.type}.",
                         )
                     )
                 elif (
@@ -245,7 +245,7 @@ def find_arg_changes(
                         DangerousChange(
                             DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
                             f"{old_type.name}.{field_name} arg"
-                            f" {arg_name} has changed defaultValue",
+                            f" {arg_name} has changed defaultValue.",
                         )
                     )
 
@@ -258,7 +258,7 @@ def find_arg_changes(
                             BreakingChange(
                                 BreakingChangeType.REQUIRED_ARG_ADDED,
                                 f"A required arg {arg_name} on"
-                                f" {type_name}.{field_name} was added",
+                                f" {type_name}.{field_name} was added.",
                             )
                         )
                     else:
@@ -266,7 +266,7 @@ def find_arg_changes(
                             DangerousChange(
                                 DangerousChangeType.OPTIONAL_ARG_ADDED,
                                 f"An optional arg {arg_name} on"
-                                f" {type_name}.{field_name} was added",
+                                f" {type_name}.{field_name} was added.",
                             )
                         )
 
@@ -677,7 +677,7 @@ def find_removed_directives(
             removed_directives.append(
                 BreakingChange(
                     BreakingChangeType.DIRECTIVE_REMOVED,
-                    f"{directive.name} was removed",
+                    f"{directive.name} was removed.",
                 )
             )
 
@@ -706,7 +706,7 @@ def find_removed_directive_args(
             removed_directive_args.append(
                 BreakingChange(
                     BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                    f"{arg_name} was removed from {new_directive.name}",
+                    f"{arg_name} was removed from {new_directive.name}.",
                 )
             )
 
@@ -743,7 +743,7 @@ def find_added_non_null_directive_args(
                     BreakingChange(
                         BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
                         f"A required arg {arg_name} on directive"
-                        f" {new_directive.name} was added",
+                        f" {new_directive.name} was added.",
                     )
                 )
 
@@ -778,7 +778,7 @@ def find_removed_directive_locations(
             removed_locations.append(
                 BreakingChange(
                     BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
-                    f"{location.name} was removed from {new_directive.name}",
+                    f"{location.name} was removed from {new_directive.name}.",
                 )
             )
 
