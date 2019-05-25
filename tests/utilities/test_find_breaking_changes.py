@@ -994,21 +994,21 @@ def describe_find_dangerous_changes():
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
-                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg argThatChangesDefaultValue has changed defaultValue.",
+                DangerousChangeType.TYPE_ADDED_TO_UNION,
+                "TypeInUnion2 was added to union type UnionTypeThatGainsAType.",
             ),
             (
                 DangerousChangeType.VALUE_ADDED_TO_ENUM,
                 "VALUE2 was added to enum type EnumType1.",
             ),
             (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "Type1.field1 arg argThatChangesDefaultValue has changed defaultValue.",
+            ),
+            (
                 DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
                 "Interface1 added to interfaces implemented"
                 " by TypeThatGainsInterface1.",
-            ),
-            (
-                DangerousChangeType.TYPE_ADDED_TO_UNION,
-                "TypeInUnion2 was added to union type UnionTypeThatGainsAType.",
             ),
         ]
 
