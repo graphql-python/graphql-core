@@ -327,22 +327,12 @@ def find_fields_that_changed_type_on_object_or_interface_types(
                     old_field_type, new_field_type
                 )
                 if not is_safe:
-                    old_field_type_string = (
-                        old_field_type.name
-                        if is_named_type(old_field_type)
-                        else str(old_field_type)
-                    )
-                    new_field_type_string = (
-                        new_field_type.name
-                        if is_named_type(new_field_type)
-                        else str(new_field_type)
-                    )
                     breaking_changes.append(
                         BreakingChange(
                             BreakingChangeType.FIELD_CHANGED_KIND,
                             f"{type_name}.{field_name} changed type"
-                            f" from {old_field_type_string}"
-                            f" to {new_field_type_string}.",
+                            f" from {old_field_type}"
+                            f" to {new_field_type}.",
                         )
                     )
 
@@ -383,22 +373,12 @@ def find_fields_that_changed_type_on_input_object_types(
                     old_field_type, new_field_type
                 )
                 if not is_safe:
-                    old_field_type_string = (
-                        cast(GraphQLNamedType, old_field_type).name
-                        if is_named_type(old_field_type)
-                        else str(old_field_type)
-                    )
-                    new_field_type_string = (
-                        cast(GraphQLNamedType, new_field_type).name
-                        if is_named_type(new_field_type)
-                        else str(new_field_type)
-                    )
                     breaking_changes.append(
                         BreakingChange(
                             BreakingChangeType.FIELD_CHANGED_KIND,
                             f"{type_name}.{field_name} changed type"
-                            f" from {old_field_type_string}"
-                            f" to {new_field_type_string}.",
+                            f" from {old_field_type}"
+                            f" to {new_field_type}.",
                         )
                     )
 
