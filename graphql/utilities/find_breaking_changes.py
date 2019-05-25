@@ -1,11 +1,9 @@
 from enum import Enum
-from typing import Dict, List, NamedTuple, Union, cast
+from typing import List, NamedTuple, Union, cast
 
 from ..error import INVALID
-from ..language import DirectiveLocation
 from ..pyutils import inspect
 from ..type import (
-    GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -205,14 +203,14 @@ def find_arg_changes(
         old_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], old_type)
         new_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], new_type)
 
-        old_type_fields = old_type.fields
-        new_type_fields = new_type.fields
-        for field_name in old_type_fields:
-            if field_name not in new_type_fields:
+        old_fields = old_type.fields
+        new_fields = new_type.fields
+        for field_name in old_fields:
+            if field_name not in new_fields:
                 continue
 
-            old_args = old_type_fields[field_name].args
-            new_args = new_type_fields[field_name].args
+            old_args = old_fields[field_name].args
+            new_args = new_fields[field_name].args
             for arg_name, old_arg in old_args.items():
                 new_arg = new_args.get(arg_name)
                 if not new_arg:
@@ -252,8 +250,7 @@ def find_arg_changes(
             # Check if arg was added to the field
             for arg_name in new_args:
                 if arg_name not in old_args:
-                    new_arg_def = new_args[arg_name]
-                    if is_required_argument(new_arg_def):
+                    if is_required_argument(new_args[arg_name]):
                         breaking_changes.append(
                             BreakingChange(
                                 BreakingChangeType.REQUIRED_ARG_ADDED,
@@ -309,11 +306,11 @@ def find_fields_that_changed_type_on_object_or_interface_types(
         old_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], old_type)
         new_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], new_type)
 
-        old_type_fields_def = old_type.fields
-        new_type_fields_def = new_type.fields
-        for field_name in old_type_fields_def:
+        old_fields = old_type.fields
+        new_fields = new_type.fields
+        for field_name in old_fields:
             # Check if the field is missing on the type in the new schema.
-            if field_name not in new_type_fields_def:
+            if field_name not in new_fields:
                 breaking_changes.append(
                     BreakingChange(
                         BreakingChangeType.FIELD_REMOVED,
@@ -321,8 +318,8 @@ def find_fields_that_changed_type_on_object_or_interface_types(
                     )
                 )
             else:
-                old_field_type = old_type_fields_def[field_name].type
-                new_field_type = new_type_fields_def[field_name].type
+                old_field_type = old_fields[field_name].type
+                new_field_type = new_fields[field_name].type
                 is_safe = is_change_safe_for_object_or_interface_field(
                     old_field_type, new_field_type
                 )
@@ -354,11 +351,11 @@ def find_fields_that_changed_type_on_input_object_types(
         old_type = cast(GraphQLInputObjectType, old_type)
         new_type = cast(GraphQLInputObjectType, new_type)
 
-        old_type_fields_def = old_type.fields
-        new_type_fields_def = new_type.fields
-        for field_name in old_type_fields_def:
+        old_fields = old_type.fields
+        new_fields = new_type.fields
+        for field_name in old_fields:
             # Check if the field is missing on the type in the new schema.
-            if field_name not in new_type_fields_def:
+            if field_name not in new_fields:
                 breaking_changes.append(
                     BreakingChange(
                         BreakingChangeType.FIELD_REMOVED,
@@ -366,9 +363,8 @@ def find_fields_that_changed_type_on_input_object_types(
                     )
                 )
             else:
-                old_field_type = old_type_fields_def[field_name].type
-                new_field_type = new_type_fields_def[field_name].type
-
+                old_field_type = old_fields[field_name].type
+                new_field_type = new_fields[field_name].type
                 is_safe = is_change_safe_for_input_object_field_or_field_arg(
                     old_field_type, new_field_type
                 )
@@ -383,9 +379,9 @@ def find_fields_that_changed_type_on_input_object_types(
                     )
 
         # Check if a field was added to the input object type
-        for field_name in new_type_fields_def:
-            if field_name not in old_type_fields_def:
-                if is_required_input_field(new_type_fields_def[field_name]):
+        for field_name in new_fields:
+            if field_name not in old_fields:
+                if is_required_input_field(new_fields[field_name]):
                     breaking_changes.append(
                         BreakingChange(
                             BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
@@ -500,14 +496,14 @@ def find_types_removed_from_unions(
             continue
         old_type = cast(GraphQLUnionType, old_type)
         new_type = cast(GraphQLUnionType, new_type)
-        type_names_in_new_union = {type_.name for type_ in new_type.types}
-        for type_ in old_type.types:
-            type_name = type_.name
-            if type_name not in type_names_in_new_union:
+        new_possible_type_names = (type_.name for type_ in new_type.types)
+        for old_possible_type in old_type.types:
+            if old_possible_type.name not in new_possible_type_names:
                 types_removed_from_union.append(
                     BreakingChange(
                         BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-                        f"{type_name} was removed from union type {old_type_name}.",
+                        f"{old_possible_type.name} was removed"
+                        f" from union type {old_type_name}.",
                     )
                 )
     return types_removed_from_union
@@ -525,20 +521,20 @@ def find_types_added_to_unions(
     new_type_map = new_schema.type_map
 
     types_added_to_union = []
-    for new_type_name, new_type in new_type_map.items():
-        old_type = old_type_map.get(new_type_name)
+    for old_type_name, old_type in old_type_map.items():
+        new_type = new_type_map.get(old_type_name)
         if not (is_union_type(old_type) and is_union_type(new_type)):
             continue
         old_type = cast(GraphQLUnionType, old_type)
         new_type = cast(GraphQLUnionType, new_type)
-        type_names_in_old_union = {type_.name for type_ in old_type.types}
-        for type_ in new_type.types:
-            type_name = type_.name
-            if type_name not in type_names_in_old_union:
+        old_possible_type_names = {type_.name for type_ in old_type.types}
+        for new_possible_type in new_type.types:
+            if new_possible_type.name not in old_possible_type_names:
                 types_added_to_union.append(
                     DangerousChange(
                         DangerousChangeType.TYPE_ADDED_TO_UNION,
-                        f"{type_name} was added to union type {new_type_name}.",
+                        f"{new_possible_type.name} was added"
+                        f" to union type {old_type_name}.",
                     )
                 )
     return types_added_to_union
@@ -562,9 +558,8 @@ def find_values_removed_from_enums(
             continue
         old_type = cast(GraphQLEnumType, old_type)
         new_type = cast(GraphQLEnumType, new_type)
-        values_in_new_enum = new_type.values
         for value_name in old_type.values:
-            if value_name not in values_in_new_enum:
+            if value_name not in new_type.values:
                 values_removed_from_enums.append(
                     BreakingChange(
                         BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
@@ -592,9 +587,8 @@ def find_values_added_to_enums(
             continue
         old_type = cast(GraphQLEnumType, old_type)
         new_type = cast(GraphQLEnumType, new_type)
-        values_in_old_enum = old_type.values
         for value_name in new_type.values:
-            if value_name not in values_in_old_enum:
+            if value_name not in old_type.values:
                 values_added_to_enums.append(
                     DangerousChange(
                         DangerousChangeType.VALUE_ADDED_TO_ENUM,
@@ -620,10 +614,9 @@ def find_interfaces_removed_from_object_types(
 
         old_interfaces = old_type.interfaces
         new_interfaces = new_type.interfaces
+        new_interface_names = {interface.name for interface in new_interfaces}
         for old_interface in old_interfaces:
-            if not any(
-                interface.name == old_interface.name for interface in new_interfaces
-            ):
+            if old_interface.name not in new_interface_names:
                 breaking_changes.append(
                     BreakingChange(
                         BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
@@ -651,10 +644,9 @@ def find_interfaces_added_to_object_types(
 
         old_interfaces = old_type.interfaces
         new_interfaces = new_type.interfaces
+        old_interface_names = {interface.name for interface in old_interfaces}
         for new_interface in new_interfaces:
-            if not any(
-                interface.name == new_interface.name for interface in old_interfaces
-            ):
+            if new_interface.name not in old_interface_names:
                 interfaces_added_to_object_types.append(
                     DangerousChange(
                         DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
@@ -671,13 +663,13 @@ def find_removed_directives(
 ) -> List[BreakingChange]:
     removed_directives = []
 
-    new_schema_directive_map = get_directive_map_for_schema(new_schema)
-    for directive in old_schema.directives:
-        if directive.name not in new_schema_directive_map:
+    new_directives_names = {directive.name for directive in new_schema.directives}
+    for old_directive in old_schema.directives:
+        if old_directive.name not in new_directives_names:
             removed_directives.append(
                 BreakingChange(
                     BreakingChangeType.DIRECTIVE_REMOVED,
-                    f"{directive.name} was removed.",
+                    f"{old_directive.name} was removed.",
                 )
             )
 
@@ -695,54 +687,43 @@ def find_removed_directive_args(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
 ) -> List[BreakingChange]:
     removed_directive_args = []
-    old_schema_directive_map = get_directive_map_for_schema(old_schema)
+    new_directives = {directive.name: directive for directive in new_schema.directives}
 
-    for new_directive in new_schema.directives:
-        old_directive = old_schema_directive_map.get(new_directive.name)
-        if not old_directive:
+    for old_directive in old_schema.directives:
+        new_directive = new_directives.get(old_directive.name)
+        if not new_directive:
             continue
 
-        for arg_name in find_removed_args_for_directive(old_directive, new_directive):
-            removed_directive_args.append(
-                BreakingChange(
-                    BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                    f"{arg_name} was removed from {new_directive.name}.",
+        for old_arg_name in old_directive.args:
+            if old_arg_name not in new_directive.args:
+                removed_directive_args.append(
+                    BreakingChange(
+                        BreakingChangeType.DIRECTIVE_ARG_REMOVED,
+                        f"{old_arg_name} was removed from {new_directive.name}.",
+                    )
                 )
-            )
 
     return removed_directive_args
-
-
-def find_added_args_for_directive(
-    old_directive: GraphQLDirective, new_directive: GraphQLDirective
-) -> Dict[str, GraphQLArgument]:
-    old_arg_map = old_directive.args
-    return {
-        arg_name: arg
-        for arg_name, arg in new_directive.args.items()
-        if arg_name not in old_arg_map
-    }
 
 
 def find_added_non_null_directive_args(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
 ) -> List[BreakingChange]:
     added_non_nullable_args = []
-    old_schema_directive_map = get_directive_map_for_schema(old_schema)
+    new_directives = {directive.name: directive for directive in new_schema.directives}
 
-    for new_directive in new_schema.directives:
-        old_directive = old_schema_directive_map.get(new_directive.name)
-        if not old_directive:
+    for old_directive in old_schema.directives:
+        new_directive = new_directives.get(old_directive.name)
+        if not new_directive:
             continue
 
-        for arg_name, arg in find_added_args_for_directive(
-            old_directive, new_directive
-        ).items():
-            if is_required_argument(arg):
+        for new_arg_name, new_arg in new_directive.args.items():
+            old_arg = old_directive.args.get(new_arg_name)
+            if not old_arg and is_required_argument(new_arg):
                 added_non_nullable_args.append(
                     BreakingChange(
                         BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                        f"A required arg {arg_name} on directive"
+                        f"A required arg {new_arg_name} on directive"
                         f" {new_directive.name} was added.",
                     )
                 )
@@ -750,40 +731,24 @@ def find_added_non_null_directive_args(
     return added_non_nullable_args
 
 
-def find_removed_locations_for_directive(
-    old_directive: GraphQLDirective, new_directive: GraphQLDirective
-) -> List[DirectiveLocation]:
-    new_location_set = set(new_directive.locations)
-    return [
-        old_location
-        for old_location in old_directive.locations
-        if old_location not in new_location_set
-    ]
-
-
 def find_removed_directive_locations(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
 ) -> List[BreakingChange]:
     removed_locations = []
-    old_schema_directive_map = get_directive_map_for_schema(old_schema)
+    new_directives = {directive.name: directive for directive in new_schema.directives}
 
-    for new_directive in new_schema.directives:
-        old_directive = old_schema_directive_map.get(new_directive.name)
-        if not old_directive:
+    for old_directive in old_schema.directives:
+        new_directive = new_directives.get(old_directive.name)
+        if not new_directive:
             continue
 
-        for location in find_removed_locations_for_directive(
-            old_directive, new_directive
-        ):
-            removed_locations.append(
-                BreakingChange(
-                    BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
-                    f"{location.name} was removed from {new_directive.name}.",
+        for location in old_directive.locations:
+            if location not in new_directive.locations:
+                removed_locations.append(
+                    BreakingChange(
+                        BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
+                        f"{location.name} was removed from {new_directive.name}.",
+                    )
                 )
-            )
 
     return removed_locations
-
-
-def get_directive_map_for_schema(schema: GraphQLSchema) -> Dict[str, GraphQLDirective]:
-    return {directive.name: directive for directive in schema.directives}
