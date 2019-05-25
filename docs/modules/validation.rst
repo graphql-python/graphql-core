@@ -28,7 +28,7 @@ rules in this list has been adjusted to lead to the most clear output when encou
 multiple validation errors:
 
 .. autodata:: specified_rules
-   :annotation: = ReadOnlyList([...])
+   :annotation: = FrozenList([...])
 
 Spec Section: "Executable Definitions"
 

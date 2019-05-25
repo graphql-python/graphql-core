@@ -20,6 +20,6 @@ PyUtils
 .. autofunction:: or_list
 .. autofunction:: quoted_or_list
 .. autofunction:: suggestion_list
-.. autoclass:: ReadOnlyError
-.. autoclass:: ReadOnlyList
-.. autoclass:: ReadOnlyDict
+.. autoclass:: FrozenError
+.. autoclass:: FrozenList
+.. autoclass:: FrozenDict

@@ -1,34 +1,34 @@
-__all__ = ["ReadOnlyDict"]
+__all__ = ["FrozenDict"]
 
-from .read_only_error import ReadOnlyError
+from .frozen_error import FrozenError
 
 
-class ReadOnlyDict(dict):
+class FrozenDict(dict):
     """Dictionary that can only be read, but not changed."""
 
     def __delitem__(self, key):
-        raise ReadOnlyError
+        raise FrozenError
 
     def __setitem__(self, key, value):
-        raise ReadOnlyError
+        raise FrozenError
 
     def __add__(self, value):
         return dict.__add__(self, value)
 
     def __iadd__(self, value):
-        raise ReadOnlyError
+        raise FrozenError
 
     def clear(self):
-        raise ReadOnlyError
+        raise FrozenError
 
     def pop(self, key, default=None):
-        raise ReadOnlyError
+        raise FrozenError
 
     def popitem(self):
-        raise ReadOnlyError
+        raise FrozenError
 
     def setdefault(self, key, default=None):
-        raise ReadOnlyError
+        raise FrozenError
 
     def update(self, other=None):
-        raise ReadOnlyError
+        raise FrozenError

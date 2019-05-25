@@ -21,9 +21,9 @@ from .awaitable_or_value import AwaitableOrValue
 from .or_list import or_list
 from .quoted_or_list import quoted_or_list
 from .suggestion_list import suggestion_list
-from .read_only_error import ReadOnlyError
-from .read_only_list import ReadOnlyList
-from .read_only_dict import ReadOnlyDict
+from .frozen_error import FrozenError
+from .frozen_list import FrozenList
+from .frozen_dict import FrozenDict
 
 __all__ = [
     "camel_to_snake",
@@ -41,7 +41,7 @@ __all__ = [
     "or_list",
     "quoted_or_list",
     "suggestion_list",
-    "ReadOnlyError",
-    "ReadOnlyList",
-    "ReadOnlyDict",
+    "FrozenError",
+    "FrozenList",
+    "FrozenDict",
 ]

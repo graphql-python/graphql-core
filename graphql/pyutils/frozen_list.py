@@ -1,16 +1,16 @@
-__all__ = ["ReadOnlyList"]
+__all__ = ["FrozenList"]
 
-from .read_only_error import ReadOnlyError
+from .frozen_error import FrozenError
 
 
-class ReadOnlyList(list):
+class FrozenList(list):
     """List that can only be read, but not changed."""
 
     def __delitem__(self, key):
-        raise ReadOnlyError
+        raise FrozenError
 
     def __setitem__(self, key, value):
-        raise ReadOnlyError
+        raise FrozenError
 
     def __add__(self, value):
         if isinstance(value, tuple):
@@ -18,34 +18,34 @@ class ReadOnlyList(list):
         return list.__add__(self, value)
 
     def __iadd__(self, value):
-        raise ReadOnlyError
+        raise FrozenError
 
     def __mul__(self, value):
         return list.__mul__(self, value)
 
     def __imul__(self, value):
-        raise ReadOnlyError
+        raise FrozenError
 
     def append(self, x):
-        raise ReadOnlyError
+        raise FrozenError
 
     def extend(self, iterable):
-        raise ReadOnlyError
+        raise FrozenError
 
     def insert(self, i, x):
-        raise ReadOnlyError
+        raise FrozenError
 
     def remove(self, x):
-        raise ReadOnlyError
+        raise FrozenError
 
     def pop(self, i=None):
-        raise ReadOnlyError
+        raise FrozenError
 
     def clear(self):
-        raise ReadOnlyError
+        raise FrozenError
 
     def sort(self, *, key=None, reverse=False):
-        raise ReadOnlyError
+        raise FrozenError
 
     def reverse(self):
-        raise ReadOnlyError
+        raise FrozenError

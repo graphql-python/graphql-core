@@ -1,7 +1,7 @@
 from typing import Any, Dict, Sequence, cast
 
 from ..language import ast, DirectiveLocation
-from ..pyutils import inspect, ReadOnlyList
+from ..pyutils import inspect, FrozenList
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
 from .scalars import GraphQLBoolean, GraphQLString
 
@@ -165,7 +165,7 @@ GraphQLDeprecatedDirective = GraphQLDirective(
 )
 
 
-specified_directives = ReadOnlyList(
+specified_directives = FrozenList(
     [GraphQLIncludeDirective, GraphQLSkipDirective, GraphQLDeprecatedDirective]
 )
 specified_directives.__doc__ = """The full list of specified directives."""

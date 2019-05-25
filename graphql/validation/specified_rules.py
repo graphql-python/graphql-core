@@ -1,6 +1,6 @@
 from typing import List
 
-from ..pyutils import ReadOnlyList
+from ..pyutils import FrozenList
 
 from .rules import RuleType
 
@@ -101,7 +101,7 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: List[RuleType] = ReadOnlyList(
+specified_rules: List[RuleType] = FrozenList(
     [
         ExecutableDefinitionsRule,
         UniqueOperationNamesRule,
@@ -138,7 +138,7 @@ specified_rules.__doc__ = """\
     most clear output when encountering multiple validation errors.
     """
 
-specified_sdl_rules: List[RuleType] = ReadOnlyList(
+specified_sdl_rules: List[RuleType] = FrozenList(
     [
         LoneSchemaDefinitionRule,
         UniqueOperationTypesRule,
