@@ -126,3 +126,11 @@ def describe_graphql_error():
             "path": None,
             "extensions": {"foo": "bar"},
         }
+
+    def is_hashable():
+        try:
+            raise RuntimeError("original")
+        except RuntimeError as e:
+            original = e
+        e = GraphQLError("msg", original_error=original)
+        assert hash(e) == hash(original)
