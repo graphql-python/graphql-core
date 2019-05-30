@@ -165,6 +165,9 @@ class GraphQLError(Exception):
             )
         )
 
+    def __hash__(self):
+        return hash(self.original_error)
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
