@@ -188,8 +188,7 @@ class ValidationContext(ASTValidationContext):
         if usages is None:
             get_variable_usages = self.get_variable_usages
             usages = get_variable_usages(operation)
-            fragments = self.get_recursively_referenced_fragments(operation)
-            for fragment in fragments:
+            for fragment in self.get_recursively_referenced_fragments(operation):
                 usages.extend(get_variable_usages(fragment))
             self._recursive_variable_usages[operation] = usages
         return usages
