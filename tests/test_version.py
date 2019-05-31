@@ -13,7 +13,7 @@ def describe_version():
 
     def test_module_version_info():
         assert graphql.__version_info__ == version_info
-        assert graphql.version_info == version
+        assert graphql.version_info == version_info
 
     def test_module_version_js():
         assert graphql.__version_js__ == version_js
