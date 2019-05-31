@@ -79,6 +79,8 @@ class GraphQLError(Exception):
         "extensions",
     )
 
+    __hash__ = Exception.__hash__
+
     def __init__(
         self,
         message: str,
@@ -89,7 +91,7 @@ class GraphQLError(Exception):
         original_error: Exception = None,
         extensions: Dict[str, Any] = None,
     ) -> None:
-        super(GraphQLError, self).__init__(message)
+        super().__init__(message)
         self.message = message
         if nodes and not isinstance(nodes, list):
             nodes = [nodes]  # type: ignore
@@ -164,9 +166,6 @@ class GraphQLError(Exception):
                 for slot in other
             )
         )
-
-    def __hash__(self):
-        return super(GraphQLError, self).__hash__()
 
     def __ne__(self, other):
         return not self.__eq__(other)
