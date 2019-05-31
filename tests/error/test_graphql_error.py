@@ -126,3 +126,11 @@ def describe_graphql_error():
             "path": None,
             "extensions": {"foo": "bar"},
         }
+
+    def is_hashable():
+        hash(GraphQLError("msg"))
+
+    def hashes_are_unique_per_instance():
+        e1 = GraphQLError("msg")
+        e2 = GraphQLError("msg")
+        assert hash(e1) != hash(e2)
