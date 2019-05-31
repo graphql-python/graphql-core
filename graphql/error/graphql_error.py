@@ -39,14 +39,16 @@ class GraphQLError(Exception):
     """
 
     path: Optional[List[Union[str, int]]]
-    """A list of GraphQL AST Nodes corresponding to this error"""
+    """
+    
+    A list of field names and array indexes describing the JSON-path into the execution
+    response which corresponds to this error.
+    
+    Only included for errors during execution.
+    """
 
     nodes: Optional[List["Node"]]
-    """The source GraphQL document for the first location of this error
-
-    Note that if this Error represents more than one node, the source may not represent
-    nodes after the first node.
-    """
+    """A list of GraphQL AST Nodes corresponding to this error"""
 
     source: Optional["Source"]
     """The source GraphQL document for the first location of this error
