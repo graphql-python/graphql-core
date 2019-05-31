@@ -823,19 +823,53 @@ def describe_find_breaking_changes():
 
 
 def describe_find_dangerous_changes():
-    def should_detect_if_an_arguments_default_value_has_changed():
-        old_schema = build_schema(
-            """
+    def should_detect_if_a_default_value_changed_on_an_argument():
+        old_sdl = """
+            input Input1 {
+              innerInputArray: [Input2]
+            }
+
+            input Input2 {
+              arrayField: [Int]
+            }
+
             type Type1 {
-              field1(name: String = "test"): String
+              field1(
+                withDefaultValue: String = "TO BE DELETED"
+                stringArg: String = "test"
+                emptyArray: [Int!] = []
+                valueArray: [[String]] = [["a", "b"], ["c"]]
+                complexObject: Input1 = {
+                  innerInputArray: [{ arrayField: [1, 2, 3] }]
+                }
+              ): String
             }
             """
-        )
+
+        old_schema = build_schema(old_sdl)
+        copy_of_old_schema = build_schema(old_sdl)
+        assert find_dangerous_changes(old_schema, copy_of_old_schema) == []
 
         new_schema = build_schema(
             """
+            input Input1 {
+              innerInputArray: [Input2]
+            }
+
+            input Input2 {
+              arrayField: [Int]
+            }
+
             type Type1 {
-              field1(name: String = "Test"): String
+              field1(
+                withDefaultValue: String
+                stringArg: String = "Test"
+                emptyArray: [Int!] = [7]
+                valueArray: [[String]] = [["b", "a"], ["d"]]
+                complexObject: Input1 = {
+                  innerInputArray: [{ arrayField: [3, 2, 1] }]
+                }
+              ): String
             }
             """
         )
@@ -843,9 +877,64 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg name has changed defaultValue.",
-            )
+                "Type1.field1 arg withDefaultValue defaultValue was removed.",
+            ),
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "Type1.field1 arg stringArg has changed defaultValue"
+                ' from "test" to "Test".',
+            ),
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "Type1.field1 arg emptyArray has changed defaultValue from [] to [7].",
+            ),
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "Type1.field1 arg valueArray has changed defaultValue"
+                ' from [["a", "b"], ["c"]] to [["b", "a"], ["d"]].',
+            ),
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "Type1.field1 arg complexObject has changed defaultValue"
+                " from {innerInputArray: [{arrayField: [1, 2, 3]}]}"
+                " to {innerInputArray: [{arrayField: [3, 2, 1]}]}.",
+            ),
         ]
+
+    def should_ignore_changes_in_field_order_of_default_value():
+        old_schema = build_schema(
+            """
+            input Input1 {
+              a: String
+              b: String
+              c: String
+            }
+
+            type Type1 {
+              field1(
+                arg1: Input1 = { a: "a", b: "b", c: "c" }
+              ): String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+           input Input1 {
+             a: String
+             b: String
+             c: String
+           }
+
+           type Type1 {
+             field1(
+               arg1: Input1 = { c: "c", b: "b", a: "a" }
+             ): String
+           }
+            """
+        )
+
+        assert find_dangerous_changes(old_schema, new_schema) == []
 
     def should_detect_if_a_value_was_added_to_an_enum_type():
         old_schema = build_schema(
@@ -999,7 +1088,8 @@ def describe_find_dangerous_changes():
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg argThatChangesDefaultValue has changed defaultValue.",
+                "Type1.field1 arg argThatChangesDefaultValue has changed defaultValue"
+                ' from "test" to "Test".',
             ),
             (
                 DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,

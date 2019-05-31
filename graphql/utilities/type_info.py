@@ -41,7 +41,7 @@ from ..type import (
     is_input_object_type,
     is_enum_type,
 )
-from ..utilities import type_from_ast
+from .type_from_ast import type_from_ast
 
 __all__ = ["TypeInfo"]
 

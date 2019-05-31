@@ -1,7 +1,8 @@
 from enum import Enum
-from typing import Dict, List, NamedTuple, Union, cast
+from typing import Any, Dict, List, NamedTuple, Union, cast
 
 from ..error import INVALID
+from ..language import print_ast
 from ..pyutils import inspect
 from ..type import (
     GraphQLEnumType,
@@ -9,6 +10,7 @@ from ..type import (
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
+    GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLSchema,
@@ -26,6 +28,7 @@ from ..type import (
     is_scalar_type,
     is_union_type,
 )
+from .ast_from_value import ast_from_value
 
 __all__ = [
     "BreakingChange",
@@ -386,17 +389,28 @@ def find_arg_changes(
                     f" {old_arg.type} to {new_arg.type}.",
                 )
             )
-        elif (
-            old_arg.default_value is not INVALID
-            and old_arg.default_value != new_arg.default_value
-        ):
-            schema_changes.append(
-                DangerousChange(
-                    DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                    f"{old_type.name}.{field_name} arg"
-                    f" {arg_name} has changed defaultValue.",
+        elif old_arg.default_value is not INVALID:
+            if new_arg.default_value is INVALID:
+                schema_changes.append(
+                    DangerousChange(
+                        DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                        f"{old_type.name}.{field_name} arg"
+                        f" {arg_name} defaultValue was removed.",
+                    )
                 )
-            )
+            else:
+                old_value_str = stringify_value(old_arg.default_value, old_arg.type)
+                new_value_str = stringify_value(new_arg.default_value, new_arg.type)
+
+                if old_value_str != new_value_str:
+                    schema_changes.append(
+                        DangerousChange(
+                            DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                            f"{old_type.name}.{field_name} arg"
+                            f" {arg_name} has changed defaultValue"
+                            f" from {old_value_str} to {new_value_str}.",
+                        )
+                    )
 
     for arg_name, new_arg in args_diff.added.items():
         if is_required_argument(new_arg):
@@ -512,6 +526,13 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
 
     # Not reachable. All possible output types have been considered.
     raise TypeError(f"Unexpected type {inspect(type)}")  # pragma: no cover
+
+
+def stringify_value(value: Any, type_: GraphQLInputType) -> str:
+    ast = ast_from_value(value, type_)
+    if ast is None:
+        raise TypeError(f"Invalid value: {inspect(value)}")
+    return print_ast(ast)
 
 
 class ListDiff(NamedTuple):
