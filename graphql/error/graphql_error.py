@@ -40,10 +40,10 @@ class GraphQLError(Exception):
 
     path: Optional[List[Union[str, int]]]
     """
-    
+
     A list of field names and array indexes describing the JSON-path into the execution
     response which corresponds to this error.
-    
+
     Only included for errors during execution.
     """
 
