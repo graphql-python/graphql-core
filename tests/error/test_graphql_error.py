@@ -128,9 +128,10 @@ def describe_graphql_error():
         }
 
     def is_hashable():
-        try:
-            raise RuntimeError("original")
-        except RuntimeError as e:
-            original = e
-        e = GraphQLError("msg", original_error=original)
-        assert hash(e) == hash(original)
+        e = GraphQLError("msg", extensions={"foo": "bar"})
+        assert hash(e) is not Nonw
+
+    def hashes_are_unique():
+        e1 = GraphQLError("msg", extensions={"foo": "bar"})
+        e2 = GraphQLError("msg", extensions={"foo": "bar"})
+        assert hash(e1) != hash(e2)
