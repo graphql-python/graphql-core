@@ -675,6 +675,22 @@ def describe_find_breaking_changes():
             (BreakingChangeType.TYPE_REMOVED, "Int was removed."),
             (BreakingChangeType.TYPE_REMOVED, "TypeThatGetsRemoved was removed."),
             (
+                BreakingChangeType.ARG_CHANGED_KIND,
+                "ArgThatChanges.field1 arg id has changed type from Int to String.",
+            ),
+            (
+                BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
+                "VALUE0 was removed from enum type EnumTypeThatLosesAValue.",
+            ),
+            (
+                BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
+                "TypeThatLoosesInterface1 no longer implements interface Interface1.",
+            ),
+            (
+                BreakingChangeType.TYPE_REMOVED_FROM_UNION,
+                "TypeInUnion2 was removed from union type UnionTypeThatLosesAType.",
+            ),
+            (
                 BreakingChangeType.TYPE_CHANGED_KIND,
                 "TypeThatChangesType changed from an Object type to an"
                 " Interface type.",
@@ -687,22 +703,6 @@ def describe_find_breaking_changes():
                 BreakingChangeType.FIELD_CHANGED_KIND,
                 "TypeThatHasBreakingFieldChanges.field2 changed type"
                 " from String to Boolean.",
-            ),
-            (
-                BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-                "TypeInUnion2 was removed from union type UnionTypeThatLosesAType.",
-            ),
-            (
-                BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
-                "VALUE0 was removed from enum type EnumTypeThatLosesAValue.",
-            ),
-            (
-                BreakingChangeType.ARG_CHANGED_KIND,
-                "ArgThatChanges.field1 arg id has changed type from Int to String.",
-            ),
-            (
-                BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
-                "TypeThatLoosesInterface1 no longer implements interface Interface1.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
@@ -994,10 +994,6 @@ def describe_find_dangerous_changes():
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
-                DangerousChangeType.TYPE_ADDED_TO_UNION,
-                "TypeInUnion2 was added to union type UnionTypeThatGainsAType.",
-            ),
-            (
                 DangerousChangeType.VALUE_ADDED_TO_ENUM,
                 "VALUE2 was added to enum type EnumType1.",
             ),
@@ -1009,6 +1005,10 @@ def describe_find_dangerous_changes():
                 DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
                 "Interface1 added to interfaces implemented"
                 " by TypeThatGainsInterface1.",
+            ),
+            (
+                DangerousChangeType.TYPE_ADDED_TO_UNION,
+                "TypeInUnion2 was added to union type UnionTypeThatGainsAType.",
             ),
         ]
 

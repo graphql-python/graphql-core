@@ -578,7 +578,9 @@ T = TypeVar("T")
 Thunk = Union[Callable[[], T], T]
 
 GraphQLFieldMap = Dict[str, GraphQLField]
-GraphQLInterfaceList = Sequence["GraphQLInterfaceType"]
+GraphQLInterfaceList = Union[
+    List["GraphQLInterfaceType"], Tuple["GraphQLInterfaceType"]
+]
 
 
 class GraphQLObjectType(GraphQLNamedType):
@@ -686,7 +688,7 @@ class GraphQLObjectType(GraphQLNamedType):
     def interfaces(self) -> GraphQLInterfaceList:
         """Get provided interfaces."""
         try:
-            interfaces = resolve_thunk(self._interfaces)
+            interfaces: GraphQLInterfaceList = resolve_thunk(self._interfaces)
         except GraphQLError:
             raise
         except Exception as error:
@@ -810,7 +812,7 @@ def assert_interface_type(type_: Any) -> GraphQLInterfaceType:
     return cast(GraphQLInterfaceType, type_)
 
 
-GraphQLTypeList = Sequence[GraphQLObjectType]
+GraphQLTypeList = Union[List[GraphQLObjectType], Tuple[GraphQLObjectType]]
 
 
 class GraphQLUnionType(GraphQLNamedType):
@@ -877,7 +879,7 @@ class GraphQLUnionType(GraphQLNamedType):
     def types(self) -> GraphQLTypeList:
         """Get provided types."""
         try:
-            types = resolve_thunk(self._types)
+            types: GraphQLTypeList = resolve_thunk(self._types)
         except GraphQLError:
             raise
         except Exception as error:
