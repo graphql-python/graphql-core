@@ -37,8 +37,9 @@ The sub-packages of GraphQL-core-next are:
   - :mod:`graphql.subscription`: Subscribe to data updates.
 """
 
-__version__ = "1.0.5"
-__version_js__ = "14.3.1"
+# The GraphQL-core-next and GraphQL.js version info.
+
+from .version import version, version_info, version_js, version_info_js
 
 # The primary entry point into fulfilling a GraphQL request.
 
@@ -384,7 +385,20 @@ from .utilities import (
     find_dangerous_changes,
 )
 
+# The GraphQL-core-next version info.
+__version__ = version
+__version_info__ = version_info
+
+# The GraphQL.js version info.
+__version_js__ = version_js
+__version_info_js__ = version_info_js
+
+
 __all__ = [
+    "version",
+    "version_info",
+    "version_js",
+    "version_info_js",
     "graphql",
     "graphql_sync",
     "GraphQLSchema",

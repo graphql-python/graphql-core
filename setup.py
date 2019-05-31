@@ -1,8 +1,8 @@
 from re import search
 from setuptools import setup, find_packages
 
-with open("graphql/__init__.py") as init_file:
-    version = search('__version__ = "(.*)"', init_file.read()).group(1)
+with open("graphql/version.py") as version_file:
+    version = search('version = "(.*)"', version_file.read()).group(1)
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
