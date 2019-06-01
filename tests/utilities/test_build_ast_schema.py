@@ -1,18 +1,24 @@
 from collections import namedtuple
+from typing import Union
 
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DocumentNode, Node
+from graphql.language import parse, print_ast, DocumentNode
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    GraphQLBoolean,
+    GraphQLFloat,
     GraphQLID,
     GraphQLInt,
-    GraphQLFloat,
     GraphQLString,
-    GraphQLBoolean,
+    GraphQLArgument,
+    GraphQLEnumValue,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLNamedType,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,
@@ -38,9 +44,14 @@ def cycle_sdl(sdl: str) -> str:
     return print_schema(schema)
 
 
-def print_node(node: Node) -> str:
-    assert node
-    return print_ast(node)
+TypeWithAstNode = Union[
+    GraphQLArgument, GraphQLEnumValue, GraphQLField, GraphQLInputField, GraphQLNamedType
+]
+
+
+def print_ast_node(obj: TypeWithAstNode) -> str:
+    assert obj is not None and obj.ast_node is not None
+    return print_ast(obj.ast_node)
 
 
 def describe_schema_builder():
@@ -807,20 +818,20 @@ def describe_schema_builder():
         assert restored_schema_ast == ast
 
         test_field = query.fields["testField"]
-        assert print_node(test_field.ast_node) == (
+        assert print_ast_node(test_field) == (
             "testField(testArg: TestInput): TestUnion"
         )
-        assert print_node(test_field.args["testArg"].ast_node) == "testArg: TestInput"
-        assert print_node(test_input.fields["testInputField"].ast_node) == (
+        assert print_ast_node(test_field.args["testArg"]) == "testArg: TestInput"
+        assert print_ast_node(test_input.fields["testInputField"]) == (
             "testInputField: TestEnum"
         )
         test_enum_value = test_enum.values["TEST_VALUE"]
         assert test_enum_value
-        assert print_node(test_enum_value.ast_node) == "TEST_VALUE"
-        assert print_node(test_interface.fields["interfaceField"].ast_node) == (
+        assert print_ast_node(test_enum_value) == "TEST_VALUE"
+        assert print_ast_node(test_interface.fields["interfaceField"]) == (
             "interfaceField: String"
         )
-        assert print_ast(test_directive.args["arg"].ast_node) == "arg: TestScalar"
+        assert print_ast_node(test_directive.args["arg"]) == "arg: TestScalar"
 
     def root_operation_type_with_custom_names():
         schema = build_schema(
