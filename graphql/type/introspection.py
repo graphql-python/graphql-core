@@ -95,7 +95,7 @@ __Directive: GraphQLObjectType = GraphQLObjectType(
         ),
         "args": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            resolve=lambda directive, _info: (directive.args or {}).items(),
+            resolve=lambda directive, _info: directive.args.items(),
         ),
     },
 )
@@ -323,7 +323,7 @@ __Field: GraphQLObjectType = GraphQLObjectType(
         ),
         "args": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            resolve=lambda item, _info: (item[1].args or {}).items(),
+            resolve=lambda item, _info: item[1].args.items(),
         ),
         "type": GraphQLField(
             GraphQLNonNull(__Type), resolve=lambda item, _info: item[1].type

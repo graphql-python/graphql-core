@@ -1,4 +1,4 @@
-from typing import Any, Dict, Sequence, cast
+from typing import Any, Dict, Optional, Sequence, cast
 
 from ..language import ast, DirectiveLocation
 from ..pyutils import inspect, FrozenList
@@ -25,6 +25,12 @@ class GraphQLDirective:
     Directives are used by the GraphQL runtime as a way of modifying execution behavior.
     Type system creators will usually not create these directly.
     """
+
+    name: str
+    locations: Sequence[DirectiveLocation]
+    args: Dict[str, GraphQLArgument]
+    description: Optional[str]
+    ast_node: Optional[ast.DirectiveDefinitionNode]
 
     def __init__(
         self,
