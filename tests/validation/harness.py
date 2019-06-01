@@ -239,12 +239,7 @@ InvalidScalar = GraphQLScalarType(
     ),
 )
 
-AnyScalar = GraphQLScalarType(
-    name="Any",
-    serialize=lambda value: value,
-    parse_literal=lambda node: node,  # Allows any value
-    parse_value=lambda value: value,
-)  # Allows any value
+AnyScalar = GraphQLScalarType(name="Any", serialize=lambda value: value)
 
 QueryRoot = GraphQLObjectType(
     "QueryRoot",
