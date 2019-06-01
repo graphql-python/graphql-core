@@ -13,7 +13,7 @@ a query language for APIs created by Facebook.
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 The current version 1.0.5 of GraphQL-core-next is up-to-date with GraphQL.js version
-14.3.1. All parts of the API are covered by an extensive test suite of currently 1788
+14.3.1. All parts of the API are covered by an extensive test suite of currently 1790
 unit tests.
 
 
@@ -207,15 +207,15 @@ Some restrictions (mostly in line with the design goals):
   and future development to members of the GraphQL-Python community.
 
   The current version 2 of Graphene is using Graphql-core as core library for much of
-  the heavy lifting. Note that it is not compatible with GraphQL-core-next. 
+  the heavy lifting. Note that it is not compatible with GraphQL-core-next.
   The  new version 3 of Graphene however is planned to use GraphQL-core-next instead of
   GraphQL-core, and GraphQL-core-next will probably be renamed to Graphql-core 3.
-  
+
 * [Ariadne](https://github.com/mirumee/ariadne) is a Python library for implementing
   GraphQL servers using schema-first approach created by Mirumee Software.
-  
+
   Ariadne is already using GraphQL-core-next as its GraphQL implementation.
-  
+
 * [Strawberry](https://github.com/strawberry-graphql/strawberry), created by Patrick
   Arminio, is a new GraphQL library for Python 3, inspired by dataclasses,
   that is also using GraphQL-core-next as underpinning.
