@@ -6,6 +6,8 @@ Error
 .. automodule:: graphql.error
 
 .. autoexception:: GraphQLError
+   :members:
+
 .. autoexception:: GraphQLSyntaxError
 
 .. autofunction:: located_error
