@@ -334,6 +334,8 @@ class ExecutionContext:
         Implements the "Evaluating operations" section of the spec.
         """
         type_ = get_operation_root_type(self.schema, operation)
+        if not root_value:
+            root_value = type_
         fields = self.collect_fields(type_, operation.selection_set, {}, set())
 
         path = None
