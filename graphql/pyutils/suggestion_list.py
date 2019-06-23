@@ -1,9 +1,9 @@
-from typing import Collection
+from typing import Collection, List
 
 __all__ = ["suggestion_list"]
 
 
-def suggestion_list(input_: str, options: Collection[str]):
+def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
     """Get list with suggestions for a given input.
 
     Given an invalid input string and list of valid options, returns a filtered list

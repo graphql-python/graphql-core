@@ -146,7 +146,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": 'Expected type Color, found "GREEN";'
+                    "message": 'Expected type Color, found "GREEN".'
                     " Did you mean the enum value GREEN?",
                     "locations": [(1, 23)],
                 }
@@ -160,7 +160,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected type Color, found GREENISH;"
+                    "message": "Expected type Color, found GREENISH."
                     " Did you mean the enum value GREEN?",
                     "locations": [(1, 23)],
                 }
@@ -174,7 +174,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected type Color, found green;"
+                    "message": "Expected type Color, found green."
                     " Did you mean the enum value GREEN?",
                     "locations": [(1, 23)],
                 }

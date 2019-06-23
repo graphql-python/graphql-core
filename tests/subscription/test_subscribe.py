@@ -470,7 +470,7 @@ def describe_subscription_initialization_phase():
             [
                 {
                     "message": "Variable '$priority' got invalid value 'meow'; Expected"
-                    " type Int; Int cannot represent non-integer value: 'meow'",
+                    " type Int. Int cannot represent non-integer value: 'meow'",
                     "locations": [(2, 27)],
                 }
             ],

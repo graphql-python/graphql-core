@@ -11,6 +11,7 @@ These functions are not part of the module interface and are subject to change.
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
 from .dedent import dedent
+from .did_you_mean import did_you_mean
 from .event_emitter import EventEmitter, EventEmitterAsyncIterator
 from .inspect import inspect
 from .is_finite import is_finite
@@ -18,8 +19,6 @@ from .is_integer import is_integer
 from .is_invalid import is_invalid
 from .is_nullish import is_nullish
 from .awaitable_or_value import AwaitableOrValue
-from .or_list import or_list
-from .quoted_or_list import quoted_or_list
 from .suggestion_list import suggestion_list
 from .frozen_error import FrozenError
 from .frozen_list import FrozenList
@@ -30,6 +29,7 @@ __all__ = [
     "snake_to_camel",
     "cached_property",
     "dedent",
+    "did_you_mean",
     "EventEmitter",
     "EventEmitterAsyncIterator",
     "inspect",
@@ -38,8 +38,6 @@ __all__ = [
     "is_invalid",
     "is_nullish",
     "AwaitableOrValue",
-    "or_list",
-    "quoted_or_list",
     "suggestion_list",
     "FrozenError",
     "FrozenList",

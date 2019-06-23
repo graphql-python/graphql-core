@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import List, Sequence, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -14,11 +14,10 @@ from ...language import (
     ValueNode,
     print_ast,
 )
-from ...pyutils import is_invalid, or_list, suggestion_list
+from ...pyutils import did_you_mean, is_invalid, suggestion_list
 from ...type import (
     GraphQLEnumType,
     GraphQLScalarType,
-    GraphQLType,
     get_named_type,
     get_nullable_type,
     is_enum_type,
@@ -44,6 +43,13 @@ def bad_value_message(type_name: str, value_name: str, message: str = None) -> s
     )
 
 
+def bad_enum_value_message(
+    type_name: str, value_name: str, suggested_values: Sequence[str]
+) -> str:
+    hint = did_you_mean(suggested_values, "the enum value")
+    return f"Expected type {type_name}, found {value_name}.{hint}"
+
+
 def required_field_message(
     type_name: str, field_name: str, field_type_name: str
 ) -> str:
@@ -53,10 +59,11 @@ def required_field_message(
     )
 
 
-def unknown_field_message(type_name: str, field_name: str, message: str = None) -> str:
-    return f"Field {field_name} is not defined by type {type_name}" + (
-        f"; {message}" if message else "."
-    )
+def unknown_field_message(
+    type_name: str, field_name: str, suggested_fields: Sequence[str]
+) -> str:
+    hint = did_you_mean(suggested_fields)
+    return f"Field '{field_name}'' is not defined by type {type_name}.{hint}"
 
 
 class ValuesOfCorrectTypeRule(ValidationRule):
@@ -104,13 +111,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         field_type = self.context.get_input_type()
         if not field_type and is_input_object_type(parent_type):
             suggestions = suggestion_list(node.name.value, list(parent_type.fields))
-            did_you_mean = (
-                f"Did you mean {or_list(suggestions)}?" if suggestions else None
-            )
             self.report_error(
                 GraphQLError(
                     unknown_field_message(
-                        parent_type.name, node.name.value, did_you_mean
+                        parent_type.name, node.name.value, suggestions
                     ),
                     node,
                 )
@@ -121,9 +125,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if not is_enum_type(type_):
             self.is_valid_scalar(node)
         elif node.value not in type_.values:
+            type_ = cast(GraphQLEnumType, type_)
             self.report_error(
                 GraphQLError(
-                    bad_value_message(
+                    bad_enum_value_message(
                         type_.name, print_ast(node), enum_type_suggestion(type_, node)
                     ),
                     node,
@@ -156,16 +161,17 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         type_ = get_named_type(location_type)
 
         if not is_scalar_type(type_):
-            self.report_error(
-                GraphQLError(
-                    bad_value_message(
-                        location_type,
-                        print_ast(node),
-                        enum_type_suggestion(type_, node),
-                    ),
-                    node,
+            message = (
+                bad_enum_value_message(
+                    location_type,
+                    print_ast(node),
+                    enum_type_suggestion(cast(GraphQLEnumType, type_), node),
                 )
+                if is_enum_type(type_)
+                else bad_value_message(location_type, print_ast(node))
             )
+
+            self.report_error(GraphQLError(message, node))
             return
 
         # Scalars determine if a literal value is valid via `parse_literal()` which may
@@ -190,10 +196,6 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
 
 
-def enum_type_suggestion(type_: GraphQLType, node: ValueNode) -> Optional[str]:
-    if is_enum_type(type_):
-        type_ = cast(GraphQLEnumType, type_)
-        suggestions = suggestion_list(print_ast(node), list(type_.values))
-        if suggestions:
-            return f"Did you mean the enum value {or_list(suggestions)}?"
-    return None
+def enum_type_suggestion(type_: GraphQLEnumType, node: EnumValueNode) -> List[str]:
+    all_names = list(type_.values)
+    return suggestion_list(print_ast(node), all_names)

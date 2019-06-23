@@ -10,17 +10,15 @@ from ...language import (
     TypeDefinitionNode,
 )
 from ...type import specified_scalar_types
-from ...pyutils import quoted_or_list, suggestion_list
+from ...pyutils import did_you_mean, suggestion_list
 from . import ASTValidationRule, ValidationContext, SDLValidationContext
 
 __all__ = ["KnownTypeNamesRule", "unknown_type_message"]
 
 
 def unknown_type_message(type_name: str, suggested_types: List[str]) -> str:
-    message = f"Unknown type '{type_name}'."
-    if suggested_types:
-        message += f" Perhaps you meant {quoted_or_list(suggested_types)}?"
-    return message
+    hint = did_you_mean([f"'{s}'" for s in suggested_types])
+    return f"Unknown type '{type_name}'.{hint}"
 
 
 class KnownTypeNamesRule(ASTValidationRule):

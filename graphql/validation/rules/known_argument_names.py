@@ -2,7 +2,7 @@ from typing import cast, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import ArgumentNode, DirectiveDefinitionNode, DirectiveNode, SKIP
-from ...pyutils import quoted_or_list, suggestion_list
+from ...pyutils import did_you_mean, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
@@ -17,22 +17,18 @@ __all__ = [
 def unknown_arg_message(
     arg_name: str, field_name: str, type_name: str, suggested_args: List[str]
 ) -> str:
-    message = (
+    hint = did_you_mean([f"'{s}'" for s in suggested_args])
+    return (
         f"Unknown argument '{arg_name}' on field '{field_name}'"
-        f" of type '{type_name}'."
+        f" of type '{type_name}'.{hint}"
     )
-    if suggested_args:
-        message += f" Did you mean {quoted_or_list(suggested_args)}?"
-    return message
 
 
 def unknown_directive_arg_message(
     arg_name: str, directive_name: str, suggested_args: List[str]
 ) -> str:
-    message = f"Unknown argument '{arg_name}' on directive '@{directive_name}'."
-    if suggested_args:
-        message += f" Did you mean {quoted_or_list(suggested_args)}?"
-    return message
+    hint = did_you_mean([f"'{s}'" for s in suggested_args])
+    return f"Unknown argument '{arg_name}' on directive '@{directive_name}'. {hint}"
 
 
 class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):

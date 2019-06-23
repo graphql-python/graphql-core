@@ -9,6 +9,7 @@ PyUtils
 .. autofunction:: snake_to_camel
 .. autofunction:: cached_property
 .. autofunction:: dedent
+.. autofunction:: did_you_mean
 .. autoclass:: EventEmitter
 .. autoclass:: EventEmitterAsyncIterator
 .. autofunction:: inspect
@@ -17,8 +18,6 @@ PyUtils
 .. autofunction:: is_invalid
 .. autofunction:: is_nullish
 .. autoclass:: AwaitableOrValue
-.. autofunction:: or_list
-.. autofunction:: quoted_or_list
 .. autofunction:: suggestion_list
 .. autoclass:: FrozenError
 .. autoclass:: FrozenList

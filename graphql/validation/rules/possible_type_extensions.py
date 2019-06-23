@@ -4,7 +4,7 @@ from typing import Any, List
 
 from ...error import GraphQLError
 from ...language import TypeDefinitionNode, TypeExtensionNode
-from ...pyutils import quoted_or_list, suggestion_list
+from ...pyutils import did_you_mean, suggestion_list
 from ...type import (
     is_enum_type,
     is_input_object_type,
@@ -23,10 +23,8 @@ __all__ = [
 
 
 def extending_unknown_type_message(type_name: str, suggested_types: List[str]) -> str:
-    message = f"Cannot extend type '{type_name}' because it is not defined."
-    if suggested_types:
-        message += f" Did you mean {quoted_or_list(suggested_types)}?"
-    return message
+    hint = did_you_mean([f"'{s}'" for s in suggested_types])
+    return f"Cannot extend type '{type_name}' because it is not defined.{hint}"
 
 
 def extending_different_type_kind_message(type_name: str, kind: str) -> str:

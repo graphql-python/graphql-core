@@ -622,7 +622,7 @@ def describe_execute_handles_inputs():
                 [
                     {
                         "message": "Variable '$value' got invalid value [1, 2, 3];"
-                        " Expected type String; String cannot represent"
+                        " Expected type String. String cannot represent"
                         " a non string value: [1, 2, 3]",
                         "locations": [(2, 24)],
                         "path": None,

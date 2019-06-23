@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import Node
-from ..pyutils import inspect, is_invalid, or_list, suggestion_list
+from ..pyutils import did_you_mean, inspect, is_invalid, suggestion_list
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -75,7 +75,7 @@ def coerce_value(
                         f"Expected type {type_.name}",
                         blame_node,
                         path,
-                        str(error),
+                        f" {error}",
                         error,
                     )
                 ]
@@ -89,11 +89,13 @@ def coerce_value(
             if enum_value:
                 return of_value(value if enum_value.value is None else enum_value.value)
         suggestions = suggestion_list(str(value), values)
-        did_you_mean = f"did you mean {or_list(suggestions)}?" if suggestions else None
         return of_errors(
             [
                 coercion_error(
-                    f"Expected type {type_.name}", blame_node, path, did_you_mean
+                    f"Expected type {type_.name}",
+                    blame_node,
+                    path,
+                    did_you_mean(suggestions),
                 )
             ]
         )
@@ -160,16 +162,13 @@ def coerce_value(
         for field_name in value:
             if field_name not in fields:
                 suggestions = suggestion_list(field_name, fields)
-                did_you_mean = (
-                    f"did you mean {or_list(suggestions)}?" if suggestions else None
-                )
                 errors = add(
                     errors,
                     coercion_error(
                         f"Field '{field_name}' is not defined by type {type_.name}",
                         blame_node,
                         path,
-                        did_you_mean,
+                        did_you_mean(suggestions),
                     ),
                 )
 
@@ -205,15 +204,17 @@ def coercion_error(
     original_error: Exception = None,
 ) -> GraphQLError:
     """Return a GraphQLError instance"""
-    if path:
-        path_str = print_path(path)
+    path_str = print_path(path)
+    if path_str:
         message += f" at {path_str}"
-    message += f"; {sub_message}" if sub_message else "."
+    message += "."
+    if sub_message:
+        message += sub_message
     # noinspection PyArgumentEqualDefault
     return GraphQLError(message, blame_node, None, None, None, original_error)
 
 
-def print_path(path: Path) -> str:
+def print_path(path: Optional[Path]) -> str:
     """Build string describing the path into the value where error was found"""
     path_str = ""
     current_path: Optional[Path] = path

@@ -3,6 +3,7 @@ from functools import partial
 from graphql.validation import ValuesOfCorrectTypeRule
 from graphql.validation.rules.values_of_correct_type import (
     bad_value_message,
+    bad_enum_value_message,
     required_field_message,
     unknown_field_message,
 )
@@ -21,6 +22,13 @@ def bad_value(type_name, value, line, column, message=None):
     }
 
 
+def bad_enum_value(type_name, value, line, column, message=None):
+    return {
+        "message": bad_enum_value_message(type_name, value, message),
+        "locations": [(line, column)],
+    }
+
+
 def required_field(type_name, field_name, field_type_name, line, column):
     return {
         "message": required_field_message(type_name, field_name, field_type_name),
@@ -28,9 +36,9 @@ def required_field(type_name, field_name, field_type_name, line, column):
     }
 
 
-def unknown_field(type_name, field_name, line, column, message=None):
+def unknown_field(type_name, field_name, line, column, suggested_fields):
     return {
-        "message": unknown_field_message(type_name, field_name, message),
+        "message": unknown_field_message(type_name, field_name, suggested_fields),
         "locations": [(line, column)],
     }
 
@@ -446,11 +454,7 @@ def describe_validate_values_of_correct_type():
                   }
                 }
                 """,
-                [
-                    bad_value(
-                        "DogCommand", '"SIT"', 4, 49, "Did you mean the enum value SIT?"
-                    )
-                ],
+                [bad_enum_value("DogCommand", '"SIT"', 4, 49, ["SIT"])],
             )
 
         def boolean_into_enum():
@@ -486,11 +490,7 @@ def describe_validate_values_of_correct_type():
                   }
                 }
                 """,
-                [
-                    bad_value(
-                        "DogCommand", "sit", 4, 49, "Did you mean the enum value SIT?"
-                    )
-                ],
+                [bad_enum_value("DogCommand", "sit", 4, 49, ["SIT"])],
             )
 
     def describe_valid_list_value():
@@ -851,7 +851,7 @@ def describe_validate_values_of_correct_type():
                         "unknownField",
                         6,
                         23,
-                        "Did you mean nonNullField, intField or booleanField?",
+                        ["nonNullField", "intField", "booleanField"],
                     )
                 ],
             )
