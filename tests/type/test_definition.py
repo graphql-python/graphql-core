@@ -3,6 +3,7 @@ from typing import cast, Dict
 from pytest import mark, raises
 
 from graphql.error import INVALID
+from graphql.pyutils import identity_func
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumValue,
@@ -19,6 +20,7 @@ from graphql.type import (
     GraphQLString,
     GraphQLUnionType,
 )
+from graphql.utilities import value_from_ast_untyped
 
 ScalarType = GraphQLScalarType("Scalar", serialize=lambda: None)
 ObjectType = GraphQLObjectType("Object", {})
@@ -44,6 +46,12 @@ def describe_type_system_scalars():
             parse_value=lambda: None,
             parse_literal=lambda: None,
         )
+
+    def provides_default_methods_if_omitted():
+        scalar = GraphQLScalarType("Foo", lambda: None)
+
+        assert scalar.parse_value is identity_func
+        assert scalar.parse_literal is value_from_ast_untyped
 
     def rejects_a_scalar_type_not_defining_serialize():
         with raises(

@@ -12,6 +12,7 @@ PyUtils
 .. autofunction:: did_you_mean
 .. autoclass:: EventEmitter
 .. autoclass:: EventEmitterAsyncIterator
+.. autofunction:: identity_func
 .. autofunction:: inspect
 .. autofunction:: is_finite
 .. autofunction:: is_integer

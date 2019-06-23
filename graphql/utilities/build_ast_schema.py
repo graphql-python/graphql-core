@@ -24,7 +24,7 @@ from ..language import (
     parse,
     Node,
 )
-from ..pyutils import inspect
+from ..pyutils import identity_func, inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDeprecatedDirective,
@@ -385,7 +385,7 @@ class ASTDefinitionBuilder:
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
             ast_node=ast_node,
-            serialize=lambda value: value,
+            serialize=identity_func,
         )
 
     def _make_input_object_def(

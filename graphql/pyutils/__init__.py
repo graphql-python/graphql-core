@@ -13,6 +13,7 @@ from .cached_property import cached_property
 from .dedent import dedent
 from .did_you_mean import did_you_mean
 from .event_emitter import EventEmitter, EventEmitterAsyncIterator
+from .identity_func import identity_func
 from .inspect import inspect
 from .is_finite import is_finite
 from .is_integer import is_integer
@@ -32,6 +33,7 @@ __all__ = [
     "did_you_mean",
     "EventEmitter",
     "EventEmitterAsyncIterator",
+    "identity_func",
     "inspect",
     "is_finite",
     "is_integer",

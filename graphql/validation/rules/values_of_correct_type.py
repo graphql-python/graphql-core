@@ -125,11 +125,14 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if not is_enum_type(type_):
             self.is_valid_scalar(node)
         elif node.value not in type_.values:
-            type_ = cast(GraphQLEnumType, type_)
             self.report_error(
                 GraphQLError(
                     bad_enum_value_message(
-                        type_.name, print_ast(node), enum_type_suggestion(type_, node)
+                        type_.name,
+                        print_ast(node),
+                        enum_type_suggestion(
+                            cast(GraphQLEnumType, type_), cast(EnumValueNode, node)
+                        ),
                     ),
                     node,
                 )
@@ -165,7 +168,9 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                 bad_enum_value_message(
                     location_type,
                     print_ast(node),
-                    enum_type_suggestion(cast(GraphQLEnumType, type_), node),
+                    enum_type_suggestion(
+                        cast(GraphQLEnumType, type_), cast(EnumValueNode, node)
+                    ),
                 )
                 if is_enum_type(type_)
                 else bad_value_message(location_type, print_ast(node))
@@ -197,5 +202,4 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
 
 def enum_type_suggestion(type_: GraphQLEnumType, node: EnumValueNode) -> List[str]:
-    all_names = list(type_.values)
-    return suggestion_list(print_ast(node), all_names)
+    return suggestion_list(print_ast(node), list(type_.values))

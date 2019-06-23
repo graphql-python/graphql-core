@@ -3,7 +3,7 @@ from typing import cast, Callable, Dict, List, Sequence
 
 from ..error import INVALID
 from ..language import DirectiveLocation, parse_value
-from ..pyutils import inspect
+from ..pyutils import identity_func, inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -126,7 +126,7 @@ def build_client_schema(
         return GraphQLScalarType(
             name=scalar_introspection["name"],
             description=scalar_introspection.get("description"),
-            serialize=lambda value: value,
+            serialize=identity_func,
         )
 
     def build_object_def(object_introspection: Dict) -> GraphQLObjectType:

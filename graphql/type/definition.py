@@ -42,7 +42,7 @@ from ..language import (
     UnionTypeExtensionNode,
     ValueNode,
 )
-from ..pyutils import AwaitableOrValue, cached_property, inspect
+from ..pyutils import AwaitableOrValue, cached_property, identity_func, inspect
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -278,10 +278,6 @@ def resolve_thunk(thunk: Any) -> Any:
     return thunk() if callable(thunk) else thunk
 
 
-def default_value_parser(value: Any) -> Any:
-    return value
-
-
 # Unfortunately these types cannot be specified any better in Python:
 GraphQLScalarSerializer = Callable
 GraphQLScalarValueParser = Callable
@@ -357,7 +353,7 @@ class GraphQLScalarType(GraphQLNamedType):
                 f"{name} extension AST nodes must be ScalarTypeExtensionNode."
             )
         self.serialize = serialize  # type: ignore
-        self.parse_value = parse_value or default_value_parser
+        self.parse_value = parse_value or identity_func
         self.parse_literal = parse_literal or value_from_ast_untyped
 
     def __repr__(self):
