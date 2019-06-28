@@ -40,7 +40,7 @@ from graphql.utilities import build_schema, extend_schema, print_schema
 
 # Test schema.
 
-SomeScalarType = GraphQLScalarType(name="SomeScalar", serialize=lambda x: x)
+SomeScalarType = GraphQLScalarType(name="SomeScalar")
 
 SomeInterfaceType = GraphQLInterfaceType(
     name="SomeInterface",

@@ -307,10 +307,10 @@ class GraphQLScalarType(GraphQLNamedType):
     # Serializes an internal value to include in a response.
     serialize: GraphQLScalarSerializer
     #  Parses an externally provided value to use as an input.
-    parseValue: GraphQLScalarValueParser
+    parse_value: GraphQLScalarValueParser
     # Parses an externally provided literal value to use as an input.
     # Takes a dictionary of variables as an optional second argument.
-    parseLiteral: GraphQLScalarLiteralParser
+    parse_literal: GraphQLScalarLiteralParser
 
     ast_node: Optional[ScalarTypeDefinitionNode]
     extension_ast_nodes: Optional[Tuple[ScalarTypeExtensionNode]]
@@ -318,7 +318,7 @@ class GraphQLScalarType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        serialize: GraphQLScalarSerializer,
+        serialize: GraphQLScalarSerializer = None,
         description: str = None,
         parse_value: GraphQLScalarValueParser = None,
         parse_literal: GraphQLScalarLiteralParser = None,
@@ -331,7 +331,7 @@ class GraphQLScalarType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
-        if not callable(serialize):
+        if serialize is not None and not callable(serialize):
             raise TypeError(
                 f"{name} must provide 'serialize' function."
                 " If this custom Scalar is also used as an input type,"
@@ -352,9 +352,9 @@ class GraphQLScalarType(GraphQLNamedType):
             raise TypeError(
                 f"{name} extension AST nodes must be ScalarTypeExtensionNode."
             )
-        self.serialize = serialize  # type: ignore
-        self.parse_value = parse_value or identity_func
-        self.parse_literal = parse_literal or value_from_ast_untyped
+        self.serialize = serialize or identity_func  # type: ignore
+        self.parse_value = parse_value or identity_func  # type: ignore
+        self.parse_literal = parse_literal or value_from_ast_untyped  # type: ignore
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.name!r}>"

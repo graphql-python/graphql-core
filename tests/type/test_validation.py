@@ -29,7 +29,7 @@ from graphql.type import (
 from graphql.utilities import build_schema, extend_schema
 
 
-SomeScalarType = GraphQLScalarType(name="SomeScalar", serialize=lambda: None)
+SomeScalarType = GraphQLScalarType(name="SomeScalar")
 
 SomeInterfaceType = GraphQLInterfaceType(
     name="SomeInterface", fields=lambda: {"f": GraphQLField(SomeObjectType)}

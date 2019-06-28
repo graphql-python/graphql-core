@@ -71,7 +71,7 @@ InterfaceType = GraphQLInterfaceType("Interface", {})
 UnionType = GraphQLUnionType("Union", types=[ObjectType])
 EnumType = GraphQLEnumType("Enum", values={"foo": {}})
 InputObjectType = GraphQLInputObjectType("InputObject", {})
-ScalarType = GraphQLScalarType("Scalar", lambda: None)
+ScalarType = GraphQLScalarType("Scalar")
 Directive = GraphQLDirective("Directive", [DirectiveLocation.QUERY])
 
 
@@ -573,7 +573,7 @@ def describe_type_predicates():
                 assert is_specified_directive(GraphQLString) is False
 
             def returns_false_for_scalar_type_named_like_specified_directive():
-                ScalarNamedLikeDirective = GraphQLScalarType("deprecated", lambda: None)
+                ScalarNamedLikeDirective = GraphQLScalarType("deprecated")
                 assert is_specified_directive(ScalarNamedLikeDirective) is False
 
             def returns_false_for_random_garbage():

@@ -410,7 +410,7 @@ def describe_type_system_printer():
         )
 
     def prints_custom_scalar():
-        odd_type = GraphQLScalarType(name="Odd", serialize=lambda: None)
+        odd_type = GraphQLScalarType(name="Odd")
 
         schema = GraphQLSchema(types=[odd_type])
         output = print_for_test(schema)

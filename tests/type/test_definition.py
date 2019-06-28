@@ -22,7 +22,7 @@ from graphql.type import (
 )
 from graphql.utilities import value_from_ast_untyped
 
-ScalarType = GraphQLScalarType("Scalar", serialize=lambda: None)
+ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})
 InterfaceType = GraphQLInterfaceType("Interface")
 UnionType = GraphQLUnionType("Union", [ObjectType], resolve_type=lambda: None)
@@ -37,38 +37,19 @@ NonNullListOfScalarsType = GraphQLNonNull(ListOfScalarsType)
 
 def describe_type_system_scalars():
     def accepts_a_scalar_type_defining_serialize():
-        assert GraphQLScalarType("SomeScalar", lambda: None)
+        assert GraphQLScalarType("SomeScalar")
 
     def accepts_a_scalar_type_defining_parse_value_and_parse_literal():
         assert GraphQLScalarType(
-            "SomeScalar",
-            serialize=lambda: None,
-            parse_value=lambda: None,
-            parse_literal=lambda: None,
+            "SomeScalar", parse_value=lambda: None, parse_literal=lambda: None
         )
 
     def provides_default_methods_if_omitted():
-        scalar = GraphQLScalarType("Foo", lambda: None)
+        scalar = GraphQLScalarType("Foo")
 
+        assert scalar.serialize is identity_func
         assert scalar.parse_value is identity_func
         assert scalar.parse_literal is value_from_ast_untyped
-
-    def rejects_a_scalar_type_not_defining_serialize():
-        with raises(
-            TypeError, match="missing 1 required positional argument: 'serialize'"
-        ):
-            # noinspection PyArgumentList
-            GraphQLScalarType("SomeScalar")
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            GraphQLScalarType("SomeScalar", None)
-        msg = str(exc_info.value)
-        assert msg == (
-            "SomeScalar must provide 'serialize' function."
-            " If this custom Scalar is also used as an input type,"
-            " ensure 'parse_value' and 'parse_literal' functions"
-            " are also provided."
-        )
 
     def rejects_a_scalar_type_defining_serialize_with_incorrect_type():
         with raises(TypeError) as exc_info:
@@ -84,7 +65,7 @@ def describe_type_system_scalars():
 
     def rejects_a_scalar_type_defining_parse_value_but_not_parse_literal():
         with raises(TypeError) as exc_info:
-            GraphQLScalarType("SomeScalar", lambda: None, parse_value=lambda: None)
+            GraphQLScalarType("SomeScalar", parse_value=lambda: None)
         msg = str(exc_info.value)
         assert msg == (
             "SomeScalar must provide both"
@@ -93,7 +74,7 @@ def describe_type_system_scalars():
 
     def rejects_a_scalar_type_defining_parse_literal_but_not_parse_value():
         with raises(TypeError) as exc_info:
-            GraphQLScalarType("SomeScalar", lambda: None, parse_literal=lambda: None)
+            GraphQLScalarType("SomeScalar", parse_literal=lambda: None)
         msg = str(exc_info.value)
         assert msg == (
             "SomeScalar must provide both"
@@ -103,9 +84,7 @@ def describe_type_system_scalars():
     def rejects_a_scalar_type_incorrectly_defining_parse_literal_and_value():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLScalarType(
-                "SomeScalar", lambda: None, parse_value={}, parse_literal={}
-            )
+            GraphQLScalarType("SomeScalar", parse_value={}, parse_literal={})
         msg = str(exc_info.value)
         assert msg == (
             "SomeScalar must provide both"

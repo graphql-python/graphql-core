@@ -230,7 +230,6 @@ def raise_type_error(message):
 
 InvalidScalar = GraphQLScalarType(
     name="Invalid",
-    serialize=lambda value: value,
     parse_literal=lambda value_node: raise_type_error(
         f"Invalid scalar is always invalid: {print_ast(value_node)}"
     ),
@@ -239,7 +238,7 @@ InvalidScalar = GraphQLScalarType(
     ),
 )
 
-AnyScalar = GraphQLScalarType(name="Any", serialize=lambda value: value)
+AnyScalar = GraphQLScalarType(name="Any")
 
 QueryRoot = GraphQLObjectType(
     "QueryRoot",

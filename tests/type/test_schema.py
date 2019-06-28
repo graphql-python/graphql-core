@@ -209,7 +209,7 @@ def describe_type_system_schema():
 
     def describe_a_schema_must_contain_uniquely_named_types():
         def rejects_a_schema_which_redefines_a_built_in_type():
-            FakeString = GraphQLScalarType("String", serialize=lambda: None)
+            FakeString = GraphQLScalarType("String")
 
             QueryType = GraphQLObjectType(
                 "Query",
