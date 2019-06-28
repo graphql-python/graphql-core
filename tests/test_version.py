@@ -37,7 +37,7 @@ def describe_version():
         if groups[3] is None:
             assert groups[4] is None
         else:
-            assert version_info.releaselevel == groups[3]
+            assert version_info.releaselevel[:1] == groups[3]
             assert version_info.serial == int(groups[4])
 
     def test_version_js():
@@ -54,5 +54,5 @@ def describe_version():
         if groups[3] is None:
             assert groups[4] is None
         else:
-            assert version_info_js.releaselevel == groups[3]
+            assert version_info_js.releaselevel[:1] == groups[3]
             assert version_info_js.serial == int(groups[4])

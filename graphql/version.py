@@ -14,11 +14,7 @@ class VersionInfo(NamedTuple):
         v = f"{self.major}.{self.minor}.{self.micro}"
         level = self.releaselevel
         if level and level != "final":
-            {"alpha": "a", "beta": "b", "candidate": "c"}.get(level, level)
-            v += level
-            serial = self.serial
-            if serial:
-                v = f"{v}{serial}"
+            v = f"{v}{level[:1]}{self.serial}"
         return v
 
 
