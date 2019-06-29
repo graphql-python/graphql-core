@@ -18,9 +18,9 @@ class VersionInfo(NamedTuple):
         return v
 
 
-version = "1.0.5"
+version = "3.0.0"
 
-version_info = VersionInfo(1, 0, 5, "final", 0)
+version_info = VersionInfo(3, 0, 0, "final", 0)
 
 version_js = "14.3.1"
 

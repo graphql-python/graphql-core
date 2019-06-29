@@ -27,3 +27,12 @@ script:
 
 after_success:
    - codecov
+
+deploy:
+  provider: pypi
+  user: syrusakbary
+  on:
+      tags: true
+  password:
+      secure: q7kMxnJQ5LWr8fxVbQPm3pAXKRfYa1d2defM1UXKTQ+Gi6ZQ+QEOAOSbX1SKzYH62+hNRY2JGTeLkTQBeEYn05GJRh+WOkFzIFV1EnsgFbimSb6B83EmM57099GjJnO2nRUU4jyuNGU1joTeaD/g08ede072Es1I7DTuholNbYIq+brL/LQMJycuqZMoWUW4+pP8dE9SmjThMNYHlqNhzdXSE3BlZU0xcw7F2Ea384DNcekIIcapZuPjL167VouuSH/oMQMxBJo+ExEHdbqn5zsA9xcoF931XCgz4ag8U3jHhE48ZXM/xwdQt+S8JnOZcuv3MoAAioMbh+bYXUt2lmENWXCKK1kMDz2bJymwEUeZLA6lFxJQwvlVShowdi7xeyDYLIbeF7yG90Hd+5BqCZn5imzlcQxpjanaQq6xLwAzo6AHssWtd5bBOjDydknPxd1t3QGDoDvtfRdqrfOhlVX5813Hmd/vAopBAba7msKPMLxhsqDZKkwsVrLJLJDjGdpHNl/bbVaMsYcPrsFxa2W8PuddQFviHbL4HDNqHn5SpRwJcQ18YL1X5StQnUz1J+4E0W4mLrU3YW1k8RGlKTes/GeTH4sU+Sh3I9vrDv7849A8U9sSFyB2PT4Jyy8O2R5UyjoqnZDrkYYbLdn/caVo3ThrubTpwdPBmNwcDLA=
+  distributions: "sdist bdist_wheel"
