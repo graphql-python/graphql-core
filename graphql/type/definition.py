@@ -824,14 +824,14 @@ class GraphQLUnionType(GraphQLNamedType):
             name = 'Pet'
             types = [DogType, CatType]
 
-            def resolve_type(self, value):
+            def resolve_type(self, value, _type):
                 if isinstance(value, Dog):
                     return DogType()
                 if isinstance(value, Cat):
                     return CatType()
     """
 
-    resolve_type: Optional[GraphQLFieldResolver]
+    resolve_type: Optional[GraphQLTypeResolver]
     ast_node: Optional[UnionTypeDefinitionNode]
     extension_ast_nodes: Optional[Tuple[UnionTypeExtensionNode]]
 
@@ -839,7 +839,7 @@ class GraphQLUnionType(GraphQLNamedType):
         self,
         name,
         types: Thunk[GraphQLTypeList],
-        resolve_type: GraphQLFieldResolver = None,
+        resolve_type: GraphQLTypeResolver = None,
         description: str = None,
         ast_node: UnionTypeDefinitionNode = None,
         extension_ast_nodes: Sequence[UnionTypeExtensionNode] = None,
