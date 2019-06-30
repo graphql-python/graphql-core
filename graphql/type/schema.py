@@ -1,5 +1,5 @@
-from functools import partial, reduce
-from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, cast
+from functools import reduce
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
 
 from ..error import GraphQLError
 from ..language import ast
@@ -145,9 +145,9 @@ class GraphQLSchema:
         # Keep track of all types referenced within the schema.
         type_map: TypeMap = {}
         # First by deeply visiting all initial types.
-        type_map = type_map_reduce(initial_types, type_map)
+        type_map = reduce(self.type_map_reducer, initial_types, type_map)
         # Then by deeply visiting all directive types.
-        type_map = type_map_directive_reduce(self.directives, type_map)
+        type_map = reduce(self.type_map_directive_reducer, self.directives, type_map)
         # Storing the resulting map for reference by the schema
         self.type_map = type_map
 
@@ -213,6 +213,64 @@ class GraphQLSchema:
     def validation_errors(self):
         return self._validation_errors
 
+    def type_map_reducer(
+        self, map_: TypeMap, type_: GraphQLNamedType = None
+    ) -> TypeMap:
+        """Reducer function for creating the type map from given types."""
+        if not type_:
+            return map_
+        if is_wrapping_type(type_):
+            return self.type_map_reducer(
+                map_, cast(GraphQLWrappingType[GraphQLNamedType], type_).of_type
+            )
+        name = type_.name
+        if name in map_:
+            if map_[name] is not type_:
+                raise TypeError(
+                    "Schema must contain uniquely named types but contains multiple"
+                    f" types named {name!r}."
+                )
+            return map_
+        map_[name] = type_
+
+        if is_union_type(type_):
+            type_ = cast(GraphQLUnionType, type_)
+            map_ = reduce(self.type_map_reducer, type_.types, map_)
+
+        if is_object_type(type_):
+            type_ = cast(GraphQLObjectType, type_)
+            map_ = reduce(self.type_map_reducer, type_.interfaces, map_)
+
+        if is_object_type(type_) or is_interface_type(type_):
+            for field in cast(GraphQLInterfaceType, type_).fields.values():
+                args = field.args
+                if args:
+                    types = [arg.type for arg in args.values()]
+                    map_ = reduce(self.type_map_reducer, types, map_)
+                map_ = self.type_map_reducer(map_, field.type)
+
+        if is_input_object_type(type_):
+            for field in cast(GraphQLInputObjectType, type_).fields.values():
+                map_ = self.type_map_reducer(map_, field.type)
+
+        return map_
+
+    def type_map_directive_reducer(
+        self, map_: TypeMap, directive: GraphQLDirective = None
+    ) -> TypeMap:
+        """Reducer function for creating the type map from given directives."""
+        # Directives are not validated until validate_schema() is called.
+        if not is_directive(directive):
+            return map_
+        directive = cast(GraphQLDirective, directive)
+        return reduce(
+            lambda prev_map, arg: self.type_map_reducer(
+                prev_map, cast(GraphQLNamedType, arg.type)
+            ),
+            directive.args.values(),
+            map_,
+        )
+
 
 def is_schema(schema: Any) -> bool:
     """Test if the given value is a GraphQL schema."""
@@ -223,68 +281,3 @@ def assert_schema(schema: Any) -> GraphQLSchema:
     if not is_schema(schema):
         raise TypeError(f"Expected {inspect(schema)} to be a GraphQL schema.")
     return cast(GraphQLSchema, schema)
-
-
-def type_map_reducer(map_: TypeMap, type_: GraphQLNamedType = None) -> TypeMap:
-    """Reducer function for creating the type map from given types."""
-    if not type_:
-        return map_
-    if is_wrapping_type(type_):
-        return type_map_reducer(
-            map_, cast(GraphQLWrappingType[GraphQLNamedType], type_).of_type
-        )
-    name = type_.name
-    if name in map_:
-        if map_[name] is not type_:
-            raise TypeError(
-                "Schema must contain uniquely named types but contains multiple"
-                f" types named {name!r}."
-            )
-        return map_
-    map_[name] = type_
-
-    if is_union_type(type_):
-        type_ = cast(GraphQLUnionType, type_)
-        map_ = type_map_reduce(type_.types, map_)
-
-    if is_object_type(type_):
-        type_ = cast(GraphQLObjectType, type_)
-        map_ = type_map_reduce(type_.interfaces, map_)
-
-    if is_object_type(type_) or is_interface_type(type_):
-        for field in cast(GraphQLInterfaceType, type_).fields.values():
-            args = field.args
-            if args:
-                types = [arg.type for arg in args.values()]
-                map_ = type_map_reduce(types, map_)
-            map_ = type_map_reducer(map_, field.type)
-
-    if is_input_object_type(type_):
-        for field in cast(GraphQLInputObjectType, type_).fields.values():
-            map_ = type_map_reducer(map_, field.type)
-
-    return map_
-
-
-def type_map_directive_reducer(
-    map_: TypeMap, directive: GraphQLDirective = None
-) -> TypeMap:
-    """Reducer function for creating the type map from given directives."""
-    # Directives are not validated until validate_schema() is called.
-    if not is_directive(directive):
-        return map_
-    directive = cast(GraphQLDirective, directive)
-    return reduce(
-        lambda prev_map, arg: type_map_reducer(prev_map, arg.type),  # type: ignore
-        directive.args.values(),
-        map_,
-    )
-
-
-# Reduce functions for type maps:
-type_map_reduce: Callable[  # type: ignore
-    [Sequence[Optional[GraphQLNamedType]], TypeMap], TypeMap
-] = partial(reduce, type_map_reducer)
-type_map_directive_reduce: Callable[  # type: ignore
-    [Sequence[Optional[GraphQLDirective]], TypeMap], TypeMap
-] = partial(reduce, type_map_directive_reducer)
