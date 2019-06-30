@@ -172,7 +172,11 @@ def coerce_value(
                     ),
                 )
 
-        return of_errors(errors) if errors else of_value(coerced_value_dict)
+        return (
+            of_errors(errors)
+            if errors
+            else of_value(type_.out_type(coerced_value_dict))  # type: ignore
+        )
 
     # Not reachable. All possible input types have been considered.
     raise TypeError(f"Unexpected input type: '{inspect(type_)}'.")  # pragma: no cover

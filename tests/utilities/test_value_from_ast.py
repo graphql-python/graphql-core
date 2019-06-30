@@ -174,3 +174,15 @@ def describe_value_from_ast():
             "{ requiredBool: $foo }",
             {"int": 42, "requiredBool": True},
         )
+
+    def transforms_values_with_out_type():
+        # This is an extension of GraphQL.js.
+        complex_input_obj = GraphQLInputObjectType(
+            "Complex",
+            {
+                "real": GraphQLInputField(GraphQLFloat),
+                "imag": GraphQLInputField(GraphQLFloat),
+            },
+            out_type=lambda value: complex(value["real"], value["imag"]),
+        )
+        _test_case(complex_input_obj, "{ real: 1, imag: 2 }", 1 + 2j)

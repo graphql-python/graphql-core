@@ -1091,6 +1091,7 @@ class GraphQLEnumValue:
 
 
 GraphQLInputFieldMap = Dict[str, "GraphQLInputField"]
+GraphQLInputFieldOutType = Callable[[Dict[str, Any]], Any]
 
 
 class GraphQLInputObjectType(GraphQLNamedType):
@@ -1113,8 +1114,13 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 'alt': GraphQLInputField(
                           GraphQLFloat(), default_value=0)
             }
+
+    The outbound values will be Python dictionaries by default, but you can have them
+    converted to other types by specifying an `out_type` function or class.
     """
 
+    # Transforms values to different type (this is an extension of GraphQL.js).
+    out_type: GraphQLInputFieldOutType
     ast_node: Optional[InputObjectTypeDefinitionNode]
     extension_ast_nodes: Optional[Tuple[InputObjectTypeExtensionNode]]
 
@@ -1123,6 +1129,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         name: str,
         fields: Thunk[GraphQLInputFieldMap],
         description: str = None,
+        out_type: GraphQLInputFieldOutType = None,
         ast_node: InputObjectTypeDefinitionNode = None,
         extension_ast_nodes: Sequence[InputObjectTypeExtensionNode] = None,
     ) -> None:
@@ -1132,6 +1139,8 @@ class GraphQLInputObjectType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
+        if out_type is not None and not callable(out_type):
+            raise TypeError(f"The out type for {name} must be a function or a class.")
         if ast_node and not isinstance(ast_node, InputObjectTypeDefinitionNode):
             raise TypeError(
                 f"{name} AST node must be an InputObjectTypeDefinitionNode."
@@ -1144,6 +1153,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 f"{name} extension AST nodes must be InputObjectTypeExtensionNode."
             )
         self._fields = fields
+        self.out_type = out_type or identity_func  # type: ignore
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(**super().to_kwargs(), fields=self.fields.copy())

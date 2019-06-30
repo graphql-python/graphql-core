@@ -241,6 +241,19 @@ def describe_coerce_value():
                 " Did you mean bar?"
             ]
 
+        def transforms_values_with_out_type():
+            # This is an extension of GraphQL.js.
+            ComplexInputObject = GraphQLInputObjectType(
+                "Complex",
+                {
+                    "real": GraphQLInputField(GraphQLFloat),
+                    "imag": GraphQLInputField(GraphQLFloat),
+                },
+                out_type=lambda value: complex(value["real"], value["imag"]),
+            )
+            result = coerce_value({"real": 1, "imag": 2}, ComplexInputObject)
+            assert expect_value(result) == 1 + 2j
+
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)
 

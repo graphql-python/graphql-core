@@ -471,6 +471,18 @@ def describe_type_system_input_objects():
             assert isinstance(input_field, GraphQLInputField)
             assert input_field.type is ScalarType
 
+        def accepts_an_input_object_type_with_an_out_type_function():
+            # This is an extension of GraphQL.js.
+            input_obj_type = GraphQLInputObjectType(
+                "SomeInputObject", {}, out_type=dict
+            )
+            assert input_obj_type.out_type is dict
+
+        def provides_default_out_type_if_omitted():
+            # This is an extension of GraphQL.js.
+            input_obj_type = GraphQLInputObjectType("SomeInputObject", {})
+            assert input_obj_type.out_type is identity_func
+
         def rejects_an_input_object_type_with_incorrect_fields():
             input_obj_type = GraphQLInputObjectType("SomeInputObject", [])
             with raises(TypeError) as exc_info:
@@ -491,6 +503,17 @@ def describe_type_system_input_objects():
             assert msg == (
                 "SomeInputObject fields must be a dict with field names as keys"
                 " or a function which returns such an object."
+            )
+
+        def rejects_an_input_object_type_with_incorrect_out_type_function():
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                GraphQLInputObjectType(
+                    "SomeInputObject", {}, out_type=[]
+                )  # type: ignore
+            msg = str(exc_info.value)
+            assert msg == (
+                "The out type for SomeInputObject must be a function or a class."
             )
 
     def describe_type_system_input_objects_fields_must_not_have_resolvers():

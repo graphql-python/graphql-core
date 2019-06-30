@@ -8,6 +8,7 @@ from graphql.type import (
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLFloat,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLList,
@@ -38,6 +39,12 @@ TestInputObject = GraphQLInputObjectType(
         "c": GraphQLInputField(GraphQLNonNull(GraphQLString)),
         "d": GraphQLInputField(TestComplexScalar),
     },
+)
+
+TestCustomInputObject = GraphQLInputObjectType(
+    "TestCustomInputObject",
+    {"x": GraphQLInputField(GraphQLFloat), "y": GraphQLInputField(GraphQLFloat)},
+    out_type=lambda value: f"(x|y) = ({value['x']}|{value['y']})",
 )
 
 
@@ -81,6 +88,9 @@ TestType = GraphQLObjectType(
             GraphQLArgument(GraphQLNonNull(TestEnum))
         ),
         "fieldWithObjectInput": field_with_input_arg(GraphQLArgument(TestInputObject)),
+        "fieldWithCustomObjectInput": field_with_input_arg(
+            GraphQLArgument(TestCustomInputObject)
+        ),
         "fieldWithNullableStringInput": field_with_input_arg(
             GraphQLArgument(GraphQLString)
         ),
@@ -132,6 +142,22 @@ def describe_execute_handles_inputs():
 
                 assert result == (
                     {"fieldWithObjectInput": "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"},
+                    None,
+                )
+
+            def executes_with_custom_input():
+                # This is an extension of GraphQL.js.
+                result = execute_query(
+                    """
+                    {
+                      fieldWithCustomObjectInput(
+                        input: {x: -3.0, y: 4.5})
+                    }
+                    """
+                )
+
+                assert result == (
+                    {"fieldWithCustomObjectInput": "'(x|y) = (-3.0|4.5)'"},
                     None,
                 )
 
