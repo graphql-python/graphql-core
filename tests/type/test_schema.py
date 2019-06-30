@@ -192,6 +192,33 @@ def describe_type_system_schema():
             assert "Foo" in schema.type_map
             assert "Bar" in schema.type_map
 
+    def describe_type_map_reducer():
+        def allows_overriding_the_type_map_reducers():
+            foo_type = GraphQLObjectType("Foo", {"bar": GraphQLField(GraphQLString)})
+            query_type = GraphQLObjectType("Query", {"foo": GraphQLField(foo_type)})
+            baz_directive = GraphQLDirective("Baz", [])
+
+            log_types = []
+            log_directives = []
+
+            class CustomGraphQLSchema(GraphQLSchema):
+                def type_map_reducer(self, map_, type_):
+                    log_types.append(type_)
+                    return super().type_map_reducer(map_, type_)
+
+                def type_map_directive_reducer(self, map_, directive):
+                    log_directives.append(directive)
+                    return super().type_map_directive_reducer(map_, directive)
+
+            schema = CustomGraphQLSchema(query_type, directives=[baz_directive])
+            assert schema.type_map["Query"] == query_type
+            assert schema.type_map["Foo"] == foo_type
+            assert schema.directives == [baz_directive]
+            assert query_type in log_types
+            assert foo_type in log_types
+            assert GraphQLString in log_types
+            assert log_directives == [baz_directive]
+
     def describe_validity():
         def describe_when_not_assumed_valid():
             def configures_the_schema_to_still_needing_validation():
