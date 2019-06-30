@@ -3,6 +3,7 @@ from typing import cast, Dict
 from pytest import mark, raises
 
 from graphql.error import INVALID
+from graphql.language import Node, InputValueDefinitionNode
 from graphql.pyutils import identity_func
 from graphql.type import (
     GraphQLArgument,
@@ -50,6 +51,11 @@ def describe_type_system_scalars():
         assert scalar.serialize is identity_func
         assert scalar.parse_value is identity_func
         assert scalar.parse_literal is value_from_ast_untyped
+
+        kwargs = scalar.to_kwargs()
+        assert kwargs["serialize"] is None
+        assert kwargs["parse_value"] is None
+        assert kwargs["parse_literal"] is None
 
     def rejects_a_scalar_type_defining_serialize_with_incorrect_type():
         with raises(TypeError) as exc_info:
@@ -477,11 +483,13 @@ def describe_type_system_input_objects():
                 "SomeInputObject", {}, out_type=dict
             )
             assert input_obj_type.out_type is dict
+            assert input_obj_type.to_kwargs()["out_type"] is dict
 
         def provides_default_out_type_if_omitted():
             # This is an extension of GraphQL.js.
             input_obj_type = GraphQLInputObjectType("SomeInputObject", {})
             assert input_obj_type.out_type is identity_func
+            assert input_obj_type.to_kwargs()["out_type"] is None
 
         def rejects_an_input_object_type_with_incorrect_fields():
             input_obj_type = GraphQLInputObjectType("SomeInputObject", [])
@@ -546,6 +554,128 @@ def describe_type_system_input_objects():
                 GraphQLInputObjectType(
                     "SomeInputObject", {"f": GraphQLInputField(ScalarType, resolve={})}
                 )
+
+
+def describe_type_system_arguments():
+    def accepts_an_argument_with_a_description():
+        description = "nice argument"
+        argument = GraphQLArgument(GraphQLString, description=description)
+        assert argument.description is description
+        assert argument.to_kwargs()["description"] is description
+
+    def accepts_an_argument_with_an_out_name():
+        # This is an extension of GraphQL.js.
+        out_name = "python_rocks"
+        argument = GraphQLArgument(GraphQLString, out_name=out_name)
+        assert argument.out_name is out_name
+        assert argument.to_kwargs()["out_name"] is out_name
+
+    def provides_no_out_name_if_omitted():
+        # This is an extension of GraphQL.js.
+        argument = GraphQLArgument(GraphQLString)
+        assert argument.out_name is None
+        assert argument.to_kwargs()["out_name"] is None
+
+    def accepts_an_argument_with_an_ast_node():
+        ast_node = InputValueDefinitionNode()
+        argument = GraphQLArgument(GraphQLString, ast_node=ast_node)
+        assert argument.ast_node is ast_node
+        assert argument.to_kwargs()["ast_node"] is ast_node
+
+    def rejects_an_argument_without_type():
+        with raises(TypeError, match="missing 1 required positional argument"):
+            # noinspection PyArgumentList
+            GraphQLArgument()  # type: ignore
+
+    def rejects_an_argument_with_an_incorrect_type():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLArgument(GraphQLObjectType)  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Argument type must be a GraphQL input type."
+
+    def rejects_an_argument_with_an_incorrect_description():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLArgument(GraphQLString, description=[])  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Argument description must be a string."
+
+    def rejects_an_argument_with_an_incorrect_out_name():
+        # This is an extension of GraphQL.js.
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLArgument(GraphQLString, out_name=[])  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Argument out name must be a string."
+
+    def rejects_an_argument_with_an_incorrect_ast_node():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLArgument(GraphQLString, ast_node=Node())  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Argument AST node must be an InputValueDefinitionNode."
+
+
+def describe_type_system_input_fields():
+    def accepts_an_input_field_with_a_description():
+        description = "good input"
+        input_field = GraphQLInputField(GraphQLString, description=description)
+        assert input_field.description is description
+        assert input_field.to_kwargs()["description"] is description
+
+    def accepts_an_input_field_with_an_out_name():
+        # This is an extension of GraphQL.js.
+        out_name = "python_rocks"
+        input_field = GraphQLInputField(GraphQLString, out_name=out_name)
+        assert input_field.out_name is out_name
+        assert input_field.to_kwargs()["out_name"] is out_name
+
+    def provides_no_out_name_if_omitted():
+        # This is an extension of GraphQL.js.
+        input_field = GraphQLInputField(GraphQLString)
+        assert input_field.out_name is None
+        assert input_field.to_kwargs()["out_name"] is None
+
+    def accepts_an_input_field_with_an_ast_node():
+        ast_node = InputValueDefinitionNode()
+        input_field = GraphQLArgument(GraphQLString, ast_node=ast_node)
+        assert input_field.ast_node is ast_node
+        assert input_field.to_kwargs()["ast_node"] is ast_node
+
+    def rejects_an_input_field_without_type():
+        with raises(TypeError, match="missing 1 required positional argument"):
+            # noinspection PyArgumentList
+            GraphQLInputField()  # type: ignore
+
+    def rejects_an_input_field_with_an_incorrect_type():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInputField(GraphQLObjectType)  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Input field type must be a GraphQL input type."
+
+    def rejects_an_input_field_with_an_incorrect_description():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInputField(GraphQLString, description=[])  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Input field description must be a string."
+
+    def rejects_an_input_field_with_an_incorrect_out_name():
+        # This is an extension of GraphQL.js.
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInputField(GraphQLString, out_name=[])  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Input field out name must be a string."
+
+    def rejects_an_input_field_with_an_incorrect_ast_node():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInputField(GraphQLString, ast_node=Node())  # type: ignore
+        msg = str(exc_info.value)
+        assert msg == "Input field AST node must be an InputValueDefinitionNode."
 
 
 def describe_type_system_list():

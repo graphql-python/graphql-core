@@ -114,14 +114,15 @@ def value_from_ast(
             field_node = field_nodes.get(field_name)
             if not field_node or is_missing_variable(field_node.value, variables):
                 if field.default_value is not INVALID:
-                    coerced_obj[field_name] = field.default_value
+                    # Use out name as name if it exists (extension of GraphQL.js).
+                    coerced_obj[field.out_name or field_name] = field.default_value
                 elif is_non_null_type(field.type):
                     return INVALID
                 continue
             field_value = value_from_ast(field_node.value, field.type, variables)
             if is_invalid(field_value):
                 return INVALID
-            coerced_obj[field_name] = field_value
+            coerced_obj[field.out_name or field_name] = field_value
 
         return type_.out_type(coerced_obj)  # type: ignore
 

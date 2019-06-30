@@ -365,9 +365,11 @@ class GraphQLScalarType(GraphQLNamedType):
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
             **super().to_kwargs(),
-            serialize=self.serialize,
-            parse_value=self.parse_value,
-            parse_literal=self.parse_literal,
+            serialize=None if self.serialize is identity_func else self.serialize,
+            parse_value=None if self.parse_value is identity_func else self.parse_value,
+            parse_literal=None
+            if self.parse_literal is value_from_ast_untyped
+            else self.parse_literal,
         )
 
 
@@ -529,6 +531,7 @@ class GraphQLArgument:
     type: "GraphQLInputType"
     default_value: Any
     description: Optional[str]
+    out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
     ast_node: Optional[InputValueDefinitionNode]
 
     def __init__(
@@ -536,17 +539,21 @@ class GraphQLArgument:
         type_: "GraphQLInputType",
         default_value: Any = INVALID,
         description: str = None,
+        out_name: str = None,
         ast_node: InputValueDefinitionNode = None,
     ) -> None:
         if not is_input_type(type_):
             raise TypeError(f"Argument type must be a GraphQL input type.")
         if description is not None and not isinstance(description, str):
-            raise TypeError("The description must be a string.")
+            raise TypeError("Argument description must be a string.")
+        if out_name is not None and not isinstance(out_name, str):
+            raise TypeError("Argument out name must be a string.")
         if ast_node and not isinstance(ast_node, InputValueDefinitionNode):
             raise TypeError("Argument AST node must be an InputValueDefinitionNode.")
         self.type = type_
         self.default_value = default_value
         self.description = description
+        self.out_name = out_name
         self.ast_node = ast_node
 
     def __eq__(self, other):
@@ -555,6 +562,7 @@ class GraphQLArgument:
             and self.type == other.type
             and self.default_value == other.default_value
             and self.description == other.description
+            and self.out_name == other.out_name
         )
 
     def to_kwargs(self) -> Dict[str, Any]:
@@ -562,6 +570,7 @@ class GraphQLArgument:
             type_=self.type,
             default_value=self.default_value,
             description=self.description,
+            out_name=self.out_name,
             ast_node=self.ast_node,
         )
 
@@ -1119,8 +1128,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     converted to other types by specifying an `out_type` function or class.
     """
 
-    # Transforms values to different type (this is an extension of GraphQL.js).
-    out_type: GraphQLInputFieldOutType
+    out_type: GraphQLInputFieldOutType  # transforms values (extension of GraphQL.js)
     ast_node: Optional[InputObjectTypeDefinitionNode]
     extension_ast_nodes: Optional[Tuple[InputObjectTypeExtensionNode]]
 
@@ -1156,7 +1164,13 @@ class GraphQLInputObjectType(GraphQLNamedType):
         self.out_type = out_type or identity_func  # type: ignore
 
     def to_kwargs(self) -> Dict[str, Any]:
-        return dict(**super().to_kwargs(), fields=self.fields.copy())
+        return dict(
+            **super().to_kwargs(),
+            fields=self.fields.copy(),
+            out_type=None
+            if self.out_type is identity_func  # type: ignore
+            else self.out_type,  # type: ignore
+        )
 
     @cached_property
     def fields(self) -> GraphQLInputFieldMap:
@@ -1204,31 +1218,40 @@ class GraphQLInputField:
     """Definition of a GraphQL input field"""
 
     type: "GraphQLInputType"
-    description: Optional[str]
     default_value: Any
+    description: Optional[str]
+    out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
     ast_node: Optional[InputValueDefinitionNode]
 
     def __init__(
         self,
         type_: "GraphQLInputType",
-        description: str = None,
         default_value: Any = INVALID,
+        description: str = None,
+        out_name: str = None,
         ast_node: InputValueDefinitionNode = None,
     ) -> None:
         if not is_input_type(type_):
             raise TypeError(f"Input field type must be a GraphQL input type.")
+        if description is not None and not isinstance(description, str):
+            raise TypeError("Input field description must be a string.")
+        if out_name is not None and not isinstance(out_name, str):
+            raise TypeError("Input field out name must be a string.")
         if ast_node and not isinstance(ast_node, InputValueDefinitionNode):
             raise TypeError("Input field AST node must be an InputValueDefinitionNode.")
         self.type = type_
         self.default_value = default_value
         self.description = description
+        self.out_name = out_name
         self.ast_node = ast_node
 
     def __eq__(self, other):
         return self is other or (
             isinstance(other, GraphQLInputField)
             and self.type == other.type
+            and self.default_value == other.default_value
             and self.description == other.description
+            and self.out_name == other.out_name
         )
 
     def to_kwargs(self) -> Dict[str, Any]:
@@ -1236,6 +1259,7 @@ class GraphQLInputField:
             type_=self.type,
             description=self.description,
             default_value=self.default_value,
+            out_name=self.out_name,
             ast_node=self.ast_node,
         )
 

@@ -138,7 +138,8 @@ def get_argument_values(
         if not has_value and arg_def.default_value is not INVALID:
             # If no argument was provided where the definition has a default value,
             # use the default value.
-            coerced_values[name] = arg_def.default_value
+            # If an out name exists, we use that as the name (extension of GraphQL.js).
+            coerced_values[arg_def.out_name or name] = arg_def.default_value
         elif (not has_value or is_null) and is_non_null_type(arg_type):
             # If no argument or a null value was provided to an argument with a non-null
             # type (required), produce a field error.
@@ -166,13 +167,15 @@ def get_argument_values(
             if isinstance(argument_node.value, NullValueNode):
                 # If the explicit value `None` was provided, an entry in the coerced
                 # values must exist as the value `None`.
-                coerced_values[name] = None
+                coerced_values[arg_def.out_name or name] = None
             elif isinstance(argument_node.value, VariableNode):
                 variable_name = argument_node.value.name.value
                 # Note: This Does no further checking that this variable is correct.
                 # This assumes that this query has been validated and the variable
                 # usage here is of the correct type.
-                coerced_values[name] = variable_values[variable_name]
+                coerced_values[arg_def.out_name or name] = variable_values[
+                    variable_name
+                ]
             else:
                 value_node = argument_node.value
                 coerced_value = value_from_ast(value_node, arg_type, variable_values)
@@ -185,7 +188,7 @@ def get_argument_values(
                         f" has invalid value {print_ast(value_node)}.",
                         argument_node.value,
                     )
-                coerced_values[name] = coerced_value
+                coerced_values[arg_def.out_name or name] = coerced_value
     return coerced_values
 
 

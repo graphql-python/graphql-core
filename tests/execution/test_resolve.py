@@ -1,9 +1,9 @@
-from json import dumps
-
 from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
     GraphQLInt,
     GraphQLObjectType,
     GraphQLSchema,
@@ -79,22 +79,89 @@ def describe_execute_resolve_function():
                     "aStr": GraphQLArgument(GraphQLString),
                     "aInt": GraphQLArgument(GraphQLInt),
                 },
-                resolve=lambda source, info, **args: dumps([source, args]),
+                resolve=lambda source, info, **args: repr([source, args]),
             )
         )
 
-        assert graphql_sync(schema, "{ test }") == ({"test": "[null, {}]"}, None)
+        assert graphql_sync(schema, "{ test }") == ({"test": "[None, {}]"}, None)
 
         assert graphql_sync(schema, "{ test }", "Source!") == (
-            {"test": '["Source!", {}]'},
+            {"test": "['Source!', {}]"},
             None,
         )
 
         assert graphql_sync(schema, '{ test(aStr: "String!") }', "Source!") == (
-            {"test": '["Source!", {"aStr": "String!"}]'},
+            {"test": "['Source!', {'aStr': 'String!'}]"},
             None,
         )
 
         assert graphql_sync(
             schema, '{ test(aInt: -123, aStr: "String!") }', "Source!"
-        ) == ({"test": '["Source!", {"aStr": "String!", "aInt": -123}]'}, None)
+        ) == ({"test": "['Source!', {'aStr': 'String!', 'aInt': -123}]"}, None)
+
+    def transforms_arguments_using_out_names():
+        # This is an extension of GraphQL.js.
+        schema = _test_schema(
+            GraphQLField(
+                GraphQLString,
+                args={
+                    "aStr": GraphQLArgument(GraphQLString, out_name="a_str"),
+                    "aInt": GraphQLArgument(GraphQLInt, out_name="a_int"),
+                },
+                resolve=lambda source, info, **args: repr([source, args]),
+            )
+        )
+
+        assert graphql_sync(schema, "{ test }") == ({"test": "[None, {}]"}, None)
+
+        assert graphql_sync(schema, "{ test }", "Source!") == (
+            {"test": "['Source!', {}]"},
+            None,
+        )
+
+        assert graphql_sync(schema, '{ test(aStr: "String!") }', "Source!") == (
+            {"test": "['Source!', {'a_str': 'String!'}]"},
+            None,
+        )
+
+        assert graphql_sync(
+            schema, '{ test(aInt: -123, aStr: "String!") }', "Source!"
+        ) == ({"test": "['Source!', {'a_str': 'String!', 'a_int': -123}]"}, None)
+
+    def transforms_arguments_with_inputs_using_out_names():
+        # This is an extension of GraphQL.js.
+        TestInputObject = GraphQLInputObjectType(
+            "TestInputObjectType",
+            lambda: {
+                "inputOne": GraphQLInputField(GraphQLString, out_name="input_one"),
+                "inputRecursive": GraphQLInputField(
+                    TestInputObject, out_name="input_recursive"
+                ),
+            },
+        )
+
+        schema = _test_schema(
+            GraphQLField(
+                GraphQLString,
+                args={"aInput": GraphQLArgument(TestInputObject, out_name="a_input")},
+                resolve=lambda source, info, **args: repr([source, args]),
+            )
+        )
+
+        assert graphql_sync(schema, "{ test }") == ({"test": "[None, {}]"}, None)
+
+        assert graphql_sync(
+            schema, '{ test(aInput: {inputOne: "String!"}) }', "Source!"
+        ) == ({"test": "['Source!', {'a_input': {'input_one': 'String!'}}]"}, None)
+
+        assert graphql_sync(
+            schema,
+            '{ test(aInput: {inputRecursive: {inputOne: "SourceRecursive!"}}) }',
+            "Source!",
+        ) == (
+            {
+                "test": "['Source!',"
+                " {'a_input': {'input_recursive': {'input_one': 'SourceRecursive!'}}}]"
+            },
+            None,
+        )

@@ -241,6 +241,20 @@ def describe_coerce_value():
                 " Did you mean bar?"
             ]
 
+        def transforms_names_using_out_name():
+            # This is an extension of GraphQL.js.
+            ComplexInputObject = GraphQLInputObjectType(
+                "Complex",
+                {
+                    "realPart": GraphQLInputField(GraphQLFloat, out_name="real_part"),
+                    "imagPart": GraphQLInputField(
+                        GraphQLFloat, default_value=0, out_name="imag_part"
+                    ),
+                },
+            )
+            result = coerce_value({"realPart": 1}, ComplexInputObject)
+            assert expect_value(result) == {"real_part": 1, "imag_part": 0}
+
         def transforms_values_with_out_type():
             # This is an extension of GraphQL.js.
             ComplexInputObject = GraphQLInputObjectType(

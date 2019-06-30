@@ -139,7 +139,10 @@ def coerce_value(
             field_value = value.get(field_name, INVALID)
             if is_invalid(field_value):
                 if not is_invalid(field.default_value):
-                    coerced_value_dict[field_name] = field.default_value
+                    # Use out name as name if it exists (extension of GraphQL.js).
+                    coerced_value_dict[
+                        field.out_name or field_name
+                    ] = field.default_value
                 elif is_non_null_type(field.type):
                     errors = add(
                         errors,
@@ -156,7 +159,9 @@ def coerce_value(
                 if coerced_field.errors:
                     errors = add(errors, *coerced_field.errors)
                 else:
-                    coerced_value_dict[field_name] = coerced_field.value
+                    coerced_value_dict[
+                        field.out_name or field_name
+                    ] = coerced_field.value
 
         # Ensure every provided field is defined.
         for field_name in value:
