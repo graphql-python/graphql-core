@@ -1088,34 +1088,33 @@ def expect_optional_token(lexer: Lexer, kind: TokenKind) -> Optional[Token]:
     return None
 
 
-def expect_keyword(lexer: Lexer, value: str) -> Token:
+def expect_keyword(lexer: Lexer, value: str) -> None:
     """Expect the next token to be a given keyword.
 
-    If the next token is a given keyword, return that token after advancing the lexer.
+    If the next token is a given keyword, advance the lexer.
     Otherwise, do not change the parser state and throw an error.
     """
     token = lexer.token
     if token.kind == TokenKind.NAME and token.value == value:
         lexer.advance()
-        return token
+    else:
+        raise GraphQLSyntaxError(
+            lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
+        )
 
-    raise GraphQLSyntaxError(
-        lexer.source, token.start, f"Expected {value!r}, found {token.desc}"
-    )
 
-
-def expect_optional_keyword(lexer: Lexer, value: str) -> Optional[Token]:
+def expect_optional_keyword(lexer: Lexer, value: str) -> bool:
     """Expect the next token optionally to be a given keyword.
 
-    If the next token is a given keyword, return that token after advancing the lexer.
-    Otherwise, do not change the parser state and return None.
+    If the next token is a given keyword, return True after advancing the lexer.
+    Otherwise, do not change the parser state and return False.
     """
     token = lexer.token
     if token.kind == TokenKind.NAME and token.value == value:
         lexer.advance()
-        return token
+        return True
 
-    return None
+    return False
 
 
 def unexpected(lexer: Lexer, at_token: Token = None) -> GraphQLError:
