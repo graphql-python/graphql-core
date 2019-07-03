@@ -1,5 +1,17 @@
-from operator import attrgetter
-from typing import Any, Callable, List, Optional, Sequence, Set, Union, cast
+from operator import attrgetter, itemgetter
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
+
 
 from ..error import GraphQLError
 from ..pyutils import inspect
@@ -14,6 +26,7 @@ from ..language import (
 )
 from .definition import (
     GraphQLEnumType,
+    GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLObjectType,
@@ -23,6 +36,7 @@ from .definition import (
     is_input_type,
     is_interface_type,
     is_named_type,
+    is_non_null_type,
     is_object_type,
     is_output_type,
     is_union_type,
@@ -184,6 +198,7 @@ class SchemaValidationContext:
                 self.add_error(error)
 
     def validate_types(self):
+        validate_input_object_circular_refs = InputObjectCircularRefsValidator(self)
         for type_ in self.schema.type_map.values():
 
             # Ensure all provided types are in fact GraphQL type.
@@ -221,6 +236,9 @@ class SchemaValidationContext:
                 type_ = cast(GraphQLInputObjectType, type_)
                 # Ensure Input Object fields are valid.
                 self.validate_input_fields(type_)
+
+                # Ensure Input Objects do not contain non-nullable circular references
+                validate_input_object_circular_refs(type_)
 
     def validate_fields(self, type_: Union[GraphQLObjectType, GraphQLInterfaceType]):
         fields = type_.fields
@@ -445,6 +463,58 @@ def get_operation_type_node(
         if node.operation == operation:
             return node.type
     return type_.ast_node
+
+
+class InputObjectCircularRefsValidator:
+    """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
+
+    def __init__(self, context: SchemaValidationContext):
+        self.context = context
+        # Tracks already visited types to maintain O(N) and to ensure that cycles
+        # are not redundantly reported.
+        self.visited_types: Set[str] = set()
+        # Array of input fields used to produce meaningful errors
+        self.field_path: List[Tuple[str, GraphQLInputField]] = []
+        # Position in the type path
+        self.field_path_index_by_type_name: Dict[str, int] = {}
+
+    def __call__(self, input_obj: GraphQLInputObjectType):
+        """Detect cycles recursively."""
+        # This does a straight-forward DFS to find cycles.
+        # It does not terminate when a cycle was found but continues to explore
+        # the graph to find all possible cycles.
+        name = input_obj.name
+        if name in self.visited_types:
+            return
+
+        self.visited_types.add(name)
+        self.field_path_index_by_type_name[name] = len(self.field_path)
+
+        for field_name, field in input_obj.fields.items():
+            if is_non_null_type(field.type) and is_input_object_type(
+                field.type.of_type
+            ):
+                field_type = cast(GraphQLInputObjectType, field.type.of_type)
+                cycle_index = self.field_path_index_by_type_name.get(field_type.name)
+
+                self.field_path.append((field_name, field))
+                if cycle_index is None:
+                    self(field_type)
+                else:
+                    cycle_path = self.field_path[cycle_index:]
+                    field_names = map(itemgetter(0), cycle_path)
+                    self.context.report_error(
+                        f"Cannot reference Input Object '{field_type.name}'"
+                        " within itself through a series of non-null fields:"
+                        f" '{'.'.join(field_names)}'.",
+                        cast(
+                            Sequence[Node],
+                            map(attrgetter("ast_node"), map(itemgetter(1), cycle_path)),
+                        ),
+                    )
+                self.field_path.pop()
+
+        del self.field_path_index_by_type_name[name]
 
 
 SDLDefinedObject = Union[

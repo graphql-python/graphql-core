@@ -670,6 +670,100 @@ def describe_type_system_input_objects_must_have_fields():
             }
         ]
 
+    def accepts_an_input_object_with_breakable_circular_reference():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              self: SomeInputObject
+              arrayOfSelf: [SomeInputObject]
+              nonNullArrayOfSelf: [SomeInputObject]!
+              nonNullArrayOfNonNullSelf: [SomeInputObject!]!
+              intermediateSelf: AnotherInputObject
+            }
+
+            input AnotherInputObject {
+              parent: SomeInputObject
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_an_input_object_with_non_breakable_circular_reference():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              startLoop: AnotherInputObject!
+            }
+
+            input AnotherInputObject {
+              nextInLoop: YetAnotherInputObject!
+            }
+
+            input YetAnotherInputObject {
+              closeLoop: SomeInputObject!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Cannot reference Input Object 'SomeInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'startLoop.nextInLoop.closeLoop'.",
+                "locations": [(7, 15), (11, 15), (15, 15)],
+            }
+        ]
+
+    def rejects_an_input_object_with_multiple_non_breakable_circular_reference():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              startLoop: AnotherInputObject!
+            }
+
+            input AnotherInputObject {
+              closeLoop: SomeInputObject!
+              startSecondLoop: YetAnotherInputObject!
+            }
+
+            input YetAnotherInputObject {
+              closeSecondLoop: AnotherInputObject!
+              nonNullSelf: YetAnotherInputObject!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Cannot reference Input Object 'SomeInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'startLoop.closeLoop'.",
+                "locations": [(7, 15), (11, 15)],
+            },
+            {
+                "message": "Cannot reference Input Object 'AnotherInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'startSecondLoop.closeSecondLoop'.",
+                "locations": [(12, 15), (16, 15)],
+            },
+            {
+                "message": "Cannot reference Input Object 'YetAnotherInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'nonNullSelf'.",
+                "locations": [(17, 15)],
+            },
+        ]
+
     def rejects_an_input_object_type_with_incorrectly_typed_fields():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
