@@ -5,6 +5,8 @@ from pytest import raises
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     BooleanValueNode,
+    DirectiveDefinitionNode,
+    DirectiveNode,
     DocumentNode,
     EnumTypeDefinitionNode,
     EnumValueDefinitionNode,
@@ -22,7 +24,6 @@ from graphql.language import (
     OperationTypeDefinitionNode,
     ScalarTypeDefinitionNode,
     SchemaExtensionNode,
-    DirectiveNode,
     StringValueNode,
     UnionTypeDefinitionNode,
     parse,
@@ -609,6 +610,32 @@ def describe_schema_parser():
             "Expected :, found (",
             (3, 8),
         )
+
+    def directive_definition():
+        body = "directive @foo on OBJECT | INTERFACE"
+        definition = assert_definitions(body, (0, 36))
+        assert isinstance(definition, DirectiveDefinitionNode)
+        assert definition.name == name_node("foo", (11, 14))
+        assert definition.description is None
+        assert definition.arguments == []
+        assert definition.repeatable is False
+        assert definition.locations == [
+            name_node("OBJECT", (18, 24)),
+            name_node("INTERFACE", (27, 36)),
+        ]
+
+    def repeatable_directive_definition():
+        body = "directive @foo repeatable on OBJECT | INTERFACE"
+        definition = assert_definitions(body, (0, 47))
+        assert isinstance(definition, DirectiveDefinitionNode)
+        assert definition.name == name_node("foo", (11, 14))
+        assert definition.description is None
+        assert definition.arguments == []
+        assert definition.repeatable is True
+        assert definition.locations == [
+            name_node("OBJECT", (29, 35)),
+            name_node("INTERFACE", (38, 47)),
+        ]
 
     def directive_with_incorrect_locations():
         assert_syntax_error(

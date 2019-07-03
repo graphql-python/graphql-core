@@ -14,11 +14,13 @@ def describe_type_system_directive():
             locations=[DirectiveLocation.SCHEMA, DirectiveLocation.OBJECT],
             args={"arg": arg},
             description="test description",
+            is_repeatable=True,
             ast_node=node,
         )
         assert directive.name == "test"
         assert directive.locations == locations
         assert directive.args == {"arg": arg}
+        assert directive.is_repeatable is True
         assert directive.description == "test description"
         assert directive.ast_node is node
 
@@ -28,6 +30,7 @@ def describe_type_system_directive():
 
         assert directive.name == "Foo"
         assert directive.args == {}
+        assert directive.is_repeatable is False
         assert directive.locations == locations
 
     def defines_a_directive_with_multiple_args():
@@ -40,6 +43,16 @@ def describe_type_system_directive():
 
         assert directive.name == "Foo"
         assert directive.args == args
+        assert directive.is_repeatable is False
+        assert directive.locations == locations
+
+    def defines_a_repeatable_directive():
+        locations = [DirectiveLocation.QUERY]
+        directive = GraphQLDirective("Foo", is_repeatable=True, locations=locations)
+
+        assert directive.name == "Foo"
+        assert directive.args == {}
+        assert directive.is_repeatable is True
         assert directive.locations == locations
 
     def directive_accepts_input_types_as_arguments():
@@ -104,6 +117,12 @@ def describe_type_system_directive():
         assert str(exc_info.value) == (
             "Foo args must be GraphQLArgument or input type objects."
         )
+
+    def rejects_a_directive_with_incorrectly_typed_repeatable_flag():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLDirective("Foo", locations=[], is_repeatable=None)  # type: ignore
+        assert str(exc_info.value) == "Foo is_repeatable flag must be True or False."
 
     def rejects_a_directive_with_undefined_locations():
         with raises(TypeError) as exc_info:

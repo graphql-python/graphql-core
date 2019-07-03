@@ -453,11 +453,12 @@ class InputObjectTypeDefinitionNode(TypeDefinitionNode):
 
 
 class DirectiveDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "description", "name", "arguments", "locations"
+    __slots__ = "description", "name", "arguments", "repeatable", "locations"
 
     description: Optional[StringValueNode]
     name: NameNode
     arguments: Optional[List[InputValueDefinitionNode]]
+    repeatable: bool
     locations: List[NameNode]
 
 

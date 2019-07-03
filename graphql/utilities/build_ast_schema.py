@@ -211,6 +211,7 @@ class ASTDefinitionBuilder:
             name=directive.name.value,
             description=directive.description.value if directive.description else None,
             locations=locations,
+            is_repeatable=directive.repeatable,
             args={
                 arg.name.value: self.build_arg(arg) for arg in directive.arguments or []
             },

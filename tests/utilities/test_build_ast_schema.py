@@ -134,6 +134,8 @@ def describe_schema_builder():
         sdl = dedent(
             """
             directive @foo(arg: Int) on FIELD
+
+            directive @repeatableFoo(arg: Int) repeatable on FIELD
             """
         )
         assert cycle_sdl(sdl) == sdl

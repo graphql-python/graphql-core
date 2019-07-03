@@ -243,8 +243,9 @@ class PrintAstVisitor(Visitor):
             if has_multiline_items(args)
             else wrap("(", join(args, ", "), ")")
         )
+        repeatable = " repeatable" if node.repeatable else ""
         locations = join(node.locations, " | ")
-        return f"directive @{node.name}{args} on {locations}"
+        return f"directive @{node.name}{args}{repeatable} on {locations}"
 
     def leave_schema_extension(self, node, *_args):
         return join(

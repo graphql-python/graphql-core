@@ -87,6 +87,7 @@ SomeInputType = GraphQLInputObjectType(
 FooDirective = GraphQLDirective(
     name="foo",
     args={"input": GraphQLArgument(SomeInputType)},
+    is_repeatable=True,
     locations=[
         DirectiveLocation.SCHEMA,
         DirectiveLocation.SCALAR,
@@ -416,7 +417,7 @@ def describe_extend_schema():
               interfaceField: String
             }
 
-            directive @test(arg: Int) on FIELD | SCALAR
+            directive @test(arg: Int) repeatable on FIELD | SCALAR
             """
         )
         extended_twice_schema = extend_schema(extended_schema, ast)
@@ -1068,7 +1069,7 @@ def describe_extend_schema():
     def may_extend_directives_with_new_complex_directive():
         extended_schema = extend_test_schema(
             """
-            directive @profile(enable: Boolean! tag: String) on QUERY | FIELD
+            directive @profile(enable: Boolean! tag: String) repeatable on QUERY | FIELD
             """
         )
 

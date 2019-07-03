@@ -28,6 +28,7 @@ class GraphQLDirective:
 
     name: str
     locations: Sequence[DirectiveLocation]
+    is_repeatable: bool
     args: Dict[str, GraphQLArgument]
     description: Optional[str]
     ast_node: Optional[ast.DirectiveDefinitionNode]
@@ -37,6 +38,7 @@ class GraphQLDirective:
         name: str,
         locations: Sequence[DirectiveLocation],
         args: Dict[str, GraphQLArgument] = None,
+        is_repeatable: bool = False,
         description: str = None,
         ast_node: ast.DirectiveDefinitionNode = None,
     ) -> None:
@@ -46,6 +48,8 @@ class GraphQLDirective:
             raise TypeError("The directive name must be a string.")
         if not isinstance(locations, (list, tuple)):
             raise TypeError(f"{name} locations must be a list/tuple.")
+        if not isinstance(is_repeatable, bool):
+            raise TypeError(f"{name} is_repeatable flag must be True or False.")
         if not all(isinstance(value, DirectiveLocation) for value in locations):
             try:
                 locations = [
@@ -83,6 +87,7 @@ class GraphQLDirective:
         self.name = name
         self.locations = locations
         self.args = args
+        self.is_repeatable = is_repeatable
         self.description = description
         self.ast_node = ast_node
 
@@ -97,6 +102,7 @@ class GraphQLDirective:
             name=self.name,
             locations=self.locations,
             args=self.args,
+            is_repeatable=self.is_repeatable,
             description=self.description,
             ast_node=self.ast_node,
         )

@@ -464,16 +464,29 @@ def describe_type_system_printer():
         )
 
     def prints_custom_directives():
-        custom_directive = GraphQLDirective(
-            name="customDirective", locations=[DirectiveLocation.FIELD]
+        simple_directive = GraphQLDirective(
+            "simpleDirective", [DirectiveLocation.FIELD]
+        )
+        complex_directive = GraphQLDirective(
+            "complexDirective",
+            [DirectiveLocation.FIELD, DirectiveLocation.QUERY],
+            description="Complex Directive",
+            args={
+                "stringArg": GraphQLArgument(GraphQLString),
+                "intArg": GraphQLArgument(GraphQLInt, default_value=-1),
+            },
+            is_repeatable=True,
         )
 
-        schema = GraphQLSchema(directives=[custom_directive])
+        schema = GraphQLSchema(directives=[simple_directive, complex_directive])
         output = print_for_test(schema)
         assert output == dedent(
-            """
-            directive @customDirective on FIELD
-            """
+            '''
+            directive @simpleDirective on FIELD
+
+            """Complex Directive"""
+            directive @complexDirective(stringArg: String, intArg: Int = -1) repeatable on FIELD | QUERY
+            '''  # noqa: E501
         )
 
     def one_line_prints_a_short_description():

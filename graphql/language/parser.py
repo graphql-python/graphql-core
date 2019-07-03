@@ -984,19 +984,21 @@ _parse_type_extension_functions: Dict[
 
 
 def parse_directive_definition(lexer: Lexer) -> DirectiveDefinitionNode:
-    """InputObjectTypeExtension"""
+    """DirectiveDefinition"""
     start = lexer.token
     description = parse_description(lexer)
     expect_keyword(lexer, "directive")
     expect_token(lexer, TokenKind.AT)
     name = parse_name(lexer)
     args = parse_argument_defs(lexer)
+    repeatable = expect_optional_keyword(lexer, "repeatable")
     expect_keyword(lexer, "on")
     locations = parse_directive_locations(lexer)
     return DirectiveDefinitionNode(
         description=description,
         name=name,
         arguments=args,
+        repeatable=repeatable,
         locations=locations,
         loc=loc(lexer, start),
     )
