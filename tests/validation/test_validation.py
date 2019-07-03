@@ -38,7 +38,7 @@ def describe_validate_supports_full_validation():
         assert errors == [
             {
                 "message": 'Expected type Invalid, found "bad value";'
-                ' Invalid scalar is always invalid: "bad value"',
+                " Invalid scalar is always invalid: 'bad value'",
                 "locations": [(3, 31)],
             }
         ]

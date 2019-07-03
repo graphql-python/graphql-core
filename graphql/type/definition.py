@@ -304,14 +304,6 @@ class GraphQLScalarType(GraphQLNamedType):
 
     """
 
-    # Serializes an internal value to include in a response.
-    serialize: GraphQLScalarSerializer
-    #  Parses an externally provided value to use as an input.
-    parse_value: GraphQLScalarValueParser
-    # Parses an externally provided literal value to use as an input.
-    # Takes a dictionary of variables as an optional second argument.
-    parse_literal: GraphQLScalarLiteralParser
-
     ast_node: Optional[ScalarTypeDefinitionNode]
     extension_ast_nodes: Optional[Tuple[ScalarTypeExtensionNode]]
 
@@ -333,17 +325,19 @@ class GraphQLScalarType(GraphQLNamedType):
         )
         if serialize is not None and not callable(serialize):
             raise TypeError(
-                f"{name} must provide 'serialize' function."
+                f"{name} must provide 'serialize' as a function."
                 " If this custom Scalar is also used as an input type,"
                 " ensure 'parse_value' and 'parse_literal' functions"
                 " are also provided."
             )
-        if parse_value is not None or parse_literal is not None:
-            if not callable(parse_value) or not callable(parse_literal):
-                raise TypeError(
-                    f"{name} must provide"
-                    " both 'parse_value' and 'parse_literal' functions."
-                )
+        if parse_literal is not None and (
+            not callable(parse_literal)
+            or (parse_value is None or not callable(parse_value))
+        ):
+            raise TypeError(
+                f"{name} must provide"
+                " both 'parse_value' and 'parse_literal' as functions."
+            )
         if ast_node and not isinstance(ast_node, ScalarTypeDefinitionNode):
             raise TypeError(f"{name} AST node must be a ScalarTypeDefinitionNode.")
         if extension_ast_nodes and not all(
@@ -352,9 +346,12 @@ class GraphQLScalarType(GraphQLNamedType):
             raise TypeError(
                 f"{name} extension AST nodes must be ScalarTypeExtensionNode."
             )
-        self.serialize = serialize or identity_func  # type: ignore
-        self.parse_value = parse_value or identity_func  # type: ignore
-        self.parse_literal = parse_literal or value_from_ast_untyped  # type: ignore
+        if serialize is not None:
+            self.serialize = serialize
+        if parse_value is not None:
+            self.parse_value = parse_value
+        if parse_literal is not None:
+            self.parse_literal = parse_literal
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.name!r}>"
@@ -362,13 +359,46 @@ class GraphQLScalarType(GraphQLNamedType):
     def __str__(self):
         return self.name
 
+    @staticmethod
+    def serialize(value: Any):
+        """Serializes an internal value to include in a response.
+
+        This default method just passes the value through and should be replaced
+        with a more specific version when creating a scalar type.
+        """
+        return value
+
+    @staticmethod
+    def parse_value(value: Any):
+        """Parses an externally provided value to use as an input.
+
+        This default method just passes the value through and should be replaced
+        with a more specific version when creating a scalar type.
+        """
+        return value
+
+    def parse_literal(  # type: ignore
+        self, node: ValueNode, _variables: Dict[str, Any] = None
+    ):
+        """Parses an externally provided literal value to use as an input.
+
+        This default method uses the parse_value method and should be replaced
+        with a more specific version when creating a scalar type.
+        """
+        return self.parse_value(value_from_ast_untyped(node))
+
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
             **super().to_kwargs(),
-            serialize=None if self.serialize is identity_func else self.serialize,
-            parse_value=None if self.parse_value is identity_func else self.parse_value,
+            serialize=None
+            if self.serialize is GraphQLScalarType.serialize
+            else self.serialize,
+            parse_value=None
+            if self.parse_value is GraphQLScalarType.parse_value
+            else self.parse_value,
             parse_literal=None
-            if self.parse_literal is value_from_ast_untyped
+            if getattr(self.parse_literal, "__func__")
+            is GraphQLScalarType.parse_literal
             else self.parse_literal,
         )
 
