@@ -14,7 +14,7 @@ from graphql.type import (
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
-    is_enum_type,
+    assert_enum_type,
 )
 from graphql.utilities import (
     build_schema,
@@ -332,10 +332,8 @@ def describe_type_system_build_schema_from_introspection():
         second_introspection = introspection_from_schema(client_schema)
         assert second_introspection == introspection
 
-        client_food_enum = client_schema.get_type("Food")
-
         # It's also an Enum type on the client.
-        assert is_enum_type(client_food_enum)
+        client_food_enum = assert_enum_type(client_schema.get_type("Food"))
 
         values = client_food_enum.values
         descriptions = {name: value.description for name, value in values.items()}
