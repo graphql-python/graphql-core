@@ -176,21 +176,21 @@ def describe_schema_builder():
         assert cycle_sdl(sdl) == sdl
 
     def maintains_skip_and_include_directives():
-        sdl = dedent(
+        schema = build_schema(
             """
             type Query {
                 str: String
             }
             """
         )
-        schema = build_schema(sdl)
+
         assert len(schema.directives) == 3
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
 
     def overriding_directives_excludes_specified():
-        sdl = dedent(
+        schema = build_schema(
             """
             directive @skip on FIELD
             directive @include on FIELD
@@ -201,7 +201,7 @@ def describe_schema_builder():
             }
             """
         )
-        schema = build_schema(sdl)
+
         assert len(schema.directives) == 3
         get_directive = schema.get_directive
         assert get_directive("skip") is not GraphQLSkipDirective
@@ -211,25 +211,8 @@ def describe_schema_builder():
         assert get_directive("deprecated") is not GraphQLDeprecatedDirective
         assert get_directive("deprecated") is not None
 
-    def overriding_skip_directive_excludes_built_in_one():
-        sdl = dedent(
-            """
-            directive @skip on FIELD
-
-            type Query {
-                str: String
-            }
-            """
-        )
-        schema = build_schema(sdl)
-        assert len(schema.directives) == 3
-        assert schema.get_directive("skip") is not GraphQLSkipDirective
-        assert schema.get_directive("skip") is not None
-        assert schema.get_directive("include") is GraphQLIncludeDirective
-        assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
-
     def adding_directives_maintains_skip_and_include_directives():
-        sdl = dedent(
+        schema = build_schema(
             """
             directive @foo(arg: Int) on FIELD
 
@@ -238,7 +221,7 @@ def describe_schema_builder():
             }
             """
         )
-        schema = build_schema(sdl)
+
         assert len(schema.directives) == 4
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
