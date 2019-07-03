@@ -98,7 +98,7 @@ def describe_graphql_error():
     def serializes_to_include_message_and_locations():
         e = GraphQLError("msg", field_node)
         assert "msg" in str(e)
-        assert "(2:3)" in str(e)
+        assert ":2:3" in str(e)
         assert repr(e) == (
             "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)])"
         )

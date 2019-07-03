@@ -19,7 +19,7 @@ def describe_print_error():
             """
             Single digit line number with no padding
 
-            Test (9:1)
+            Test:9:1
             9: *
                ^
             """
@@ -36,7 +36,7 @@ def describe_print_error():
             """
             Left padded first line number
 
-            Test (9:1)
+            Test:9:1
              9: *
                 ^
             10:\x20
@@ -86,13 +86,13 @@ def describe_print_error():
             """
             Example error with two nodes
 
-            SourceA (2:10)
+            SourceA:2:10
             1: type Foo {
             2:   field: String
                         ^
             3: }
 
-            SourceB (2:10)
+            SourceB:2:10
             1: type Foo {
             2:   field: Int
                         ^

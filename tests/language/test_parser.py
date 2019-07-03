@@ -71,7 +71,7 @@ def describe_parser():
             """
             Syntax Error: Expected Name, found <EOF>
 
-            GraphQL request (1:2)
+            GraphQL request:1:2
             1: {
                 ^
             """
@@ -93,7 +93,7 @@ def describe_parser():
         error = exc_info.value
         assert str(error) == (
             "Syntax Error: Expected {, found <EOF>\n\n"
-            "MyQuery.graphql (1:6)\n1: query\n        ^\n"
+            "MyQuery.graphql:1:6\n1: query\n        ^\n"
         )
 
     def parses_variable_inline_values():

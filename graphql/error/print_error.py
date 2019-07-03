@@ -60,7 +60,7 @@ def highlight_source_at_location(source: "Source", location: "SourceLocation") -
     def get_line(index: int) -> Optional[str]:
         return lines[index] if 0 <= index < len_lines else None
 
-    return f"{source.name} ({line_num}:{column_num})\n" + print_prefixed_lines(
+    return f"{source.name}:{line_num}:{column_num}\n" + print_prefixed_lines(
         [
             (f"{line_num - 1}: ", get_line(line_index - 1)),
             (f"{line_num}: ", get_line(line_index)),
