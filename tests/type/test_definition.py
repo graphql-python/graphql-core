@@ -4,7 +4,6 @@ from pytest import mark, raises
 
 from graphql.error import INVALID
 from graphql.language import parse_value, Node, InputValueDefinitionNode
-from graphql.pyutils import identity_func
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumValue,
@@ -489,7 +488,7 @@ def describe_type_system_input_objects():
         def provides_default_out_type_if_omitted():
             # This is an extension of GraphQL.js.
             input_obj_type = GraphQLInputObjectType("SomeInputObject", {})
-            assert input_obj_type.out_type is identity_func
+            assert input_obj_type.out_type is GraphQLInputObjectType.out_type
             assert input_obj_type.to_kwargs()["out_type"] is None
 
         def rejects_an_input_object_type_with_incorrect_fields():

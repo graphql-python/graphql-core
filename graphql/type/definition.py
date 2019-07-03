@@ -42,7 +42,7 @@ from ..language import (
     UnionTypeExtensionNode,
     ValueNode,
 )
-from ..pyutils import AwaitableOrValue, cached_property, identity_func, inspect
+from ..pyutils import AwaitableOrValue, cached_property, inspect
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -360,7 +360,7 @@ class GraphQLScalarType(GraphQLNamedType):
         return self.name
 
     @staticmethod
-    def serialize(value: Any):
+    def serialize(value: Any) -> Any:
         """Serializes an internal value to include in a response.
 
         This default method just passes the value through and should be replaced
@@ -369,7 +369,7 @@ class GraphQLScalarType(GraphQLNamedType):
         return value
 
     @staticmethod
-    def parse_value(value: Any):
+    def parse_value(value: Any) -> Any:
         """Parses an externally provided value to use as an input.
 
         This default method just passes the value through and should be replaced
@@ -379,7 +379,7 @@ class GraphQLScalarType(GraphQLNamedType):
 
     def parse_literal(  # type: ignore
         self, node: ValueNode, _variables: Dict[str, Any] = None
-    ):
+    ) -> Any:
         """Parses an externally provided literal value to use as an input.
 
         This default method uses the parse_value method and should be replaced
@@ -1158,7 +1158,6 @@ class GraphQLInputObjectType(GraphQLNamedType):
     converted to other types by specifying an `out_type` function or class.
     """
 
-    out_type: GraphQLInputFieldOutType  # transforms values (extension of GraphQL.js)
     ast_node: Optional[InputObjectTypeDefinitionNode]
     extension_ast_nodes: Optional[Tuple[InputObjectTypeExtensionNode]]
 
@@ -1191,15 +1190,24 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 f"{name} extension AST nodes must be InputObjectTypeExtensionNode."
             )
         self._fields = fields
-        self.out_type = out_type or identity_func  # type: ignore
+        if out_type is not None:
+            self.out_type = out_type
+
+    @staticmethod
+    def out_type(value: Dict[str, Any]) -> Any:
+        """Transform outbound values (this is an extension of GraphQL.js).
+
+        This default implementation passes values unaltered as dictionaries.
+        """
+        return value
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
             **super().to_kwargs(),
             fields=self.fields.copy(),
             out_type=None
-            if self.out_type is identity_func  # type: ignore
-            else self.out_type,  # type: ignore
+            if self.out_type is GraphQLInputObjectType.out_type
+            else self.out_type,
         )
 
     @cached_property
