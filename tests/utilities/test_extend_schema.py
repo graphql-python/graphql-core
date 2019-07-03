@@ -222,13 +222,7 @@ def describe_extend_schema():
         assert query_type.fields["foo"].type == foo_type
 
     def extends_objects_with_standard_type_fields():
-        schema = build_schema(
-            """
-            type Query {
-              str: String
-            }
-            """
-        )
+        schema = build_schema("type Query")
 
         # Only String and Boolean are used by introspection types
         assert schema.get_type("Int") is None
@@ -1131,13 +1125,7 @@ def describe_extend_schema():
 
     def describe_can_add_additional_root_operation_types():
         def does_not_automatically_include_common_root_type_names():
-            schema = extend_test_schema(
-                """
-                type Mutation {
-                  doSomething: String
-                }
-                """
-            )
+            schema = extend_test_schema("type Mutation")
             assert schema.mutation_type is None
 
         def adds_schema_definition_missing_in_the_original_schema():
@@ -1163,9 +1151,7 @@ def describe_extend_schema():
                   mutation: Mutation
                 }
 
-                type Mutation {
-                  doSomething: String
-                }
+                type Mutation
                 """
             )
             mutation_type = schema.mutation_type
@@ -1179,13 +1165,8 @@ def describe_extend_schema():
                   subscription: Subscription
                 }
 
-                type Mutation {
-                  doSomething: String
-                }
-
-                type Subscription {
-                  hearSomething: String
-                }
+                type Mutation
+                type Subscription
                 """
             )
             mutation_type = schema.mutation_type
@@ -1199,18 +1180,12 @@ def describe_extend_schema():
                 extend schema {
                   mutation: Mutation
                 }
+                type Mutation
 
                 extend schema {
                   subscription: Subscription
                 }
-
-                type Mutation {
-                  doSomething: String
-                }
-
-                type Subscription {
-                  hearSomething: String
-                }
+                type Subscription
                 """
             )
             mutation_type = schema.mutation_type
@@ -1224,18 +1199,12 @@ def describe_extend_schema():
                 extend schema {
                   mutation: Mutation
                 }
+                type Mutation
 
                 extend schema {
                   subscription: Subscription
                 }
-
-                type Mutation {
-                  doSomething: String
-                }
-
-                type Subscription {
-                  hearSomething: String
-                }
+                type Subscription
                 """
             )
 

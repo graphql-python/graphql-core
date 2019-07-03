@@ -121,13 +121,7 @@ def describe_schema_builder():
         assert schema.get_type("ID") is GraphQLID
 
     def include_standard_type_only_if_it_is_used():
-        schema = build_schema(
-            """
-            type Query {
-              str: String
-            }
-            """
-        )
+        schema = build_schema("type Query")
 
         # Only String and Boolean are used by introspection types
         assert schema.get_type("Int") is None
@@ -140,10 +134,6 @@ def describe_schema_builder():
         sdl = dedent(
             """
             directive @foo(arg: Int) on FIELD
-
-            type Query {
-              str: String
-            }
             """
         )
         assert cycle_sdl(sdl) == sdl
@@ -176,13 +166,7 @@ def describe_schema_builder():
         assert cycle_sdl(sdl) == sdl
 
     def maintains_skip_and_include_directives():
-        schema = build_schema(
-            """
-            type Query {
-                str: String
-            }
-            """
-        )
+        schema = build_schema("type Query")
 
         assert len(schema.directives) == 3
         assert schema.get_directive("skip") is GraphQLSkipDirective
@@ -195,10 +179,6 @@ def describe_schema_builder():
             directive @skip on FIELD
             directive @include on FIELD
             directive @deprecated on FIELD_DEFINITION
-
-            type Query {
-                str: String
-            }
             """
         )
 
@@ -215,10 +195,6 @@ def describe_schema_builder():
         schema = build_schema(
             """
             directive @foo(arg: Int) on FIELD
-
-            type Query {
-                str: String
-            }
             """
         )
 
@@ -256,10 +232,6 @@ def describe_schema_builder():
     def two_types_circular():
         sdl = dedent(
             """
-            schema {
-              query: TypeOne
-            }
-
             type TypeOne {
               str: String
               typeTwo: TypeTwo
@@ -816,7 +788,7 @@ def describe_schema_builder():
         )
         assert print_ast_node(test_directive.args["arg"]) == "arg: TestScalar"
 
-    def root_operation_type_with_custom_names():
+    def root_operation_types_with_custom_names():
         schema = build_schema(
             """
             schema {
@@ -824,9 +796,9 @@ def describe_schema_builder():
               mutation: SomeMutation
               subscription: SomeSubscription
             }
-            type SomeQuery { str: String }
-            type SomeMutation { str: String }
-            type SomeSubscription { str: String }
+            type SomeQuery
+            type SomeMutation
+            type SomeSubscription
             """
         )
 
@@ -837,9 +809,9 @@ def describe_schema_builder():
     def default_root_operation_type_names():
         schema = build_schema(
             """
-            type Query { str: String }
-            type Mutation { str: String }
-            type Subscription { str: String }
+            type Query
+            type Mutation
+            type Subscription
             """
         )
 
@@ -848,14 +820,8 @@ def describe_schema_builder():
         assert schema.subscription_type.name == "Subscription"
 
     def can_build_invalid_schema():
-        schema = build_schema(
-            """
-            # Invalid schema, because it is missing query root type
-            type Mutation {
-              str: String
-            }
-            """
-        )
+        # Invalid schema, because it is missing query root type
+        schema = build_schema("type Mutation")
         errors = validate_schema(schema)
         assert errors
 
