@@ -1,106 +1,12 @@
-from copy import copy
-from enum import Enum
-from typing import List, Optional
+from typing import List
 
 from ..error import GraphQLSyntaxError
-from .source import Source
+from .ast import Token
 from .block_string import dedent_block_string_value
+from .source import Source
+from .token_kind import TokenKind
 
-__all__ = ["Lexer", "TokenKind", "Token", "is_punctuator_token"]
-
-
-class TokenKind(Enum):
-    """Each kind of token"""
-
-    SOF = "<SOF>"
-    EOF = "<EOF>"
-    BANG = "!"
-    DOLLAR = "$"
-    AMP = "&"
-    PAREN_L = "("
-    PAREN_R = ")"
-    SPREAD = "..."
-    COLON = ":"
-    EQUALS = "="
-    AT = "@"
-    BRACKET_L = "["
-    BRACKET_R = "]"
-    BRACE_L = "{"
-    PIPE = "|"
-    BRACE_R = "}"
-    NAME = "Name"
-    INT = "Int"
-    FLOAT = "Float"
-    STRING = "String"
-    BLOCK_STRING = "BlockString"
-    COMMENT = "Comment"
-
-
-class Token:
-    __slots__ = ("kind", "start", "end", "line", "column", "prev", "next", "value")
-
-    def __init__(
-        self,
-        kind: TokenKind,
-        start: int,
-        end: int,
-        line: int,
-        column: int,
-        prev: "Token" = None,
-        value: str = None,
-    ) -> None:
-        self.kind = kind
-        self.start, self.end = start, end
-        self.line, self.column = line, column
-        self.prev: Optional[Token] = prev
-        self.next: Optional[Token] = None
-        self.value: Optional[str] = value
-
-    def __str__(self):
-        return self.desc
-
-    def __repr__(self):
-        """Print a simplified form when appearing in repr() or inspect()."""
-        return f"<Token {self.desc} {self.line}/{self.column}>"
-
-    def __inspect__(self):
-        return repr(self)
-
-    def __eq__(self, other):
-        if isinstance(other, Token):
-            return (
-                self.kind == other.kind
-                and self.start == other.start
-                and self.end == other.end
-                and self.line == other.line
-                and self.column == other.column
-                and self.value == other.value
-            )
-        elif isinstance(other, str):
-            return other == self.desc
-        return False
-
-    def __copy__(self):
-        """Create a shallow copy of the token"""
-        return self.__class__(
-            self.kind,
-            self.start,
-            self.end,
-            self.line,
-            self.column,
-            self.prev,
-            self.value,
-        )
-
-    def __deepcopy__(self, memo):
-        """Allow only shallow copies to avoid recursion."""
-        return copy(self)
-
-    @property
-    def desc(self) -> str:
-        """A helper property to describe a token as a string for debugging"""
-        kind, value = self.kind.value, self.value
-        return f"{kind} {value!r}" if value else kind
+__all__ = ["Lexer", "is_punctuator_token"]
 
 
 _punctuator_tokens = frozenset(

@@ -8,7 +8,9 @@ from .source import Source
 
 from .location import get_location, SourceLocation
 
-from .lexer import Lexer, TokenKind, Token
+from .token_kind import TokenKind
+
+from .lexer import Lexer
 
 from .parser import parse, parse_type, parse_value
 
@@ -27,6 +29,7 @@ from .visitor import (
 
 from .ast import (
     Location,
+    Token,
     Node,
     # Each kind of AST node
     NameNode,
@@ -99,9 +102,8 @@ from .directive_locations import DirectiveLocation
 __all__ = [
     "get_location",
     "SourceLocation",
-    "Lexer",
     "TokenKind",
-    "Token",
+    "Lexer",
     "parse",
     "parse_value",
     "parse_type",
@@ -116,6 +118,7 @@ __all__ = [
     "REMOVE",
     "IDLE",
     "Location",
+    "Token",
     "DirectiveLocation",
     "Node",
     "NameNode",

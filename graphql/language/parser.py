@@ -57,8 +57,10 @@ from .ast import (
     VariableNode,
 )
 from .directive_locations import DirectiveLocation
-from .lexer import Lexer, Token, TokenKind
+from .ast import Token
+from .lexer import Lexer
 from .source import Source
+from .token_kind import TokenKind
 from ..error import GraphQLError, GraphQLSyntaxError
 from ..pyutils import inspect
 
