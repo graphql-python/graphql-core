@@ -63,6 +63,23 @@ def describe_type_system_build_schema_from_introspection():
 
         assert cycle_introspection(sdl) == sdl
 
+    def builds_a_schema_without_the_query_type():
+        sdl = dedent(
+            """
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        schema = build_schema(sdl)
+        introspection = introspection_from_schema(schema)
+        del introspection["__schema"]["queryType"]
+
+        client_schema = build_client_schema(introspection)
+        assert client_schema.query_type is None
+        assert print_schema(client_schema) == sdl
+
     def builds_a_simple_schema_with_all_operation_types():
         sdl = dedent(
             '''
@@ -410,6 +427,25 @@ def describe_type_system_build_schema_from_introspection():
         )
 
         assert cycle_introspection(sdl) == sdl
+
+    def builds_a_schema_without_directives():
+        sdl = dedent(
+            """
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        schema = build_schema(sdl)
+        introspection = introspection_from_schema(schema)
+        del introspection["__schema"]["directives"]
+
+        client_schema = build_client_schema(introspection)
+
+        assert schema.directives
+        assert client_schema.directives == []
+        assert print_schema(client_schema) == sdl
 
     def builds_a_schema_aware_of_deprecation():
         sdl = dedent(

@@ -124,7 +124,10 @@ class GraphQLSchema:
         self.mutation_type = mutation
         self.subscription_type = subscription
         # Provide specified directives (e.g. @include and @skip) by default
-        self.directives = list(directives or specified_directives)
+        self.directives = cast(
+            List[GraphQLDirective],
+            specified_directives if directives is None else directives,
+        )
         self.ast_node = ast_node
         self.extension_ast_nodes = (
             cast(Tuple[ast.SchemaExtensionNode], tuple(extension_ast_nodes))
