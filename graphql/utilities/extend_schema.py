@@ -1,6 +1,6 @@
 from collections import defaultdict
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -11,7 +11,7 @@ from ..language import (
     TypeDefinitionNode,
     TypeExtensionNode,
 )
-from ..pyutils import inspect
+from ..pyutils import inspect, FrozenList
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -198,8 +198,7 @@ def extend_schema(
                         for field in field_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"]
-                + tuple(extensions),
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -218,8 +217,7 @@ def extend_schema(
                         for value in value_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"]
-                + tuple(extensions),
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -230,8 +228,7 @@ def extend_schema(
         return GraphQLScalarType(
             **{
                 **kwargs,
-                "extension_ast_nodes": kwargs["extension_ast_nodes"]
-                + tuple(extensions),
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -263,8 +260,7 @@ def extend_schema(
                         for node in field_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"]
-                + tuple(extensions),
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -286,8 +282,7 @@ def extend_schema(
                         for node in field_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"]
-                + tuple(extensions),
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -306,8 +301,7 @@ def extend_schema(
                 # typed values, that would throw immediately while type system
                 # validation with validate_schema will produce more actionable results.
                 + [ast_builder.get_named_type(node) for node in type_nodes],
-                "extension_ast_nodes": kwargs["extension_ast_nodes"]
-                + tuple(extensions),
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -377,7 +371,11 @@ def extend_schema(
         directives=get_merged_directives(),
         ast_node=schema_def or schema.ast_node,
         extension_ast_nodes=(
-            schema.extension_ast_nodes or cast(Tuple[SchemaExtensionNode], ())
+            (
+                schema.extension_ast_nodes
+                or cast(FrozenList[SchemaExtensionNode], FrozenList())
+            )
+            + schema_exts
         )
-        + tuple(schema_exts),
+        or None,
     )

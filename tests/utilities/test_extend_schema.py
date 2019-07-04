@@ -312,8 +312,10 @@ def describe_extend_schema():
                 extend union SomeUnion = SomeUnion
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == "SomeUnion types must be GraphQLObjectType objects."
+        assert str(exc_info.value) == (
+            "SomeUnion types must be specified"
+            " as a sequence of GraphQLObjectType instances."
+        )
 
     def extends_inputs_by_adding_new_fields():
         extended_schema = extend_test_schema(

@@ -1,9 +1,10 @@
+from collections.abc import Sequence as AbstractSequence
 from functools import reduce
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Set, cast
 
 from ..error import GraphQLError
 from ..language import ast
-from ..pyutils import inspect
+from ..pyutils import inspect, FrozenList
 from .definition import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
@@ -15,6 +16,7 @@ from .definition import (
     is_abstract_type,
     is_input_object_type,
     is_interface_type,
+    is_named_type,
     is_object_type,
     is_union_type,
     is_wrapping_type,
@@ -79,9 +81,9 @@ class GraphQLSchema:
     mutation_type: Optional[GraphQLObjectType]
     subscription_type: Optional[GraphQLObjectType]
     type_map: TypeMap
-    directives: List[GraphQLDirective]
+    directives: FrozenList[GraphQLDirective]
     ast_node: Optional[ast.SchemaDefinitionNode]
-    extension_ast_nodes: Optional[Tuple[ast.SchemaExtensionNode]]
+    extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
 
     def __init__(
         self,
@@ -110,27 +112,52 @@ class GraphQLSchema:
             # and early error messages.
             if types is None:
                 types = []
-            elif isinstance(types, tuple):
-                types = list(types)
-            if not isinstance(types, list):
-                raise TypeError("Schema types must be a list/tuple.")
-            if isinstance(directives, tuple):
-                directives = list(directives)
-            if directives is not None and not isinstance(directives, list):
-                raise TypeError("Schema directives must be a list/tuple.")
+            else:
+                if not isinstance(types, AbstractSequence) or not all(
+                    is_named_type(type_) for type_ in types
+                ):
+                    raise TypeError(
+                        "Schema types must be specified as a sequence"
+                        " of GraphQLNamedType instances."
+                    )
+            if directives is not None:
+                if not isinstance(directives, AbstractSequence) or not all(
+                    is_directive(directive) for directive in directives
+                ):
+                    raise TypeError(
+                        "Schema directives must be specified as a sequence"
+                        " of GraphQLDirective instances."
+                    )
+                if not isinstance(directives, FrozenList):
+                    directives = FrozenList(directives)
+            if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):
+                raise TypeError("Schema AST node must be a SchemaDefinitionNode.")
+            if extension_ast_nodes:
+                if not isinstance(extension_ast_nodes, AbstractSequence) or not all(
+                    isinstance(node, ast.SchemaExtensionNode)
+                    for node in extension_ast_nodes
+                ):
+                    raise TypeError(
+                        "Schema extension AST nodes must be specified"
+                        " as a sequence of SchemaExtensionNode instances."
+                    )
+                if not isinstance(extension_ast_nodes, FrozenList):
+                    extension_ast_nodes = FrozenList(extension_ast_nodes)
+
             self._validation_errors = None
 
         self.query_type = query
         self.mutation_type = mutation
         self.subscription_type = subscription
         # Provide specified directives (e.g. @include and @skip) by default
-        self.directives = cast(
-            List[GraphQLDirective],
-            specified_directives if directives is None else directives,
+        self.directives = (
+            specified_directives
+            if directives is None
+            else cast(FrozenList[GraphQLDirective], directives)
         )
         self.ast_node = ast_node
         self.extension_ast_nodes = (
-            cast(Tuple[ast.SchemaExtensionNode], tuple(extension_ast_nodes))
+            cast(FrozenList[ast.SchemaExtensionNode], extension_ast_nodes)
             if extension_ast_nodes
             else None
         )
@@ -173,11 +200,12 @@ class GraphQLSchema:
             query=self.query_type,
             mutation=self.mutation_type,
             subscription=self.subscription_type,
-            types=self.type_map.values(),
-            directives=self.directives[:],
+            types=FrozenList(self.type_map.values()) or None,
+            directives=None
+            if self.directives is specified_directives
+            else self.directives,
             ast_node=self.ast_node,
-            extension_ast_nodes=self.extension_ast_nodes
-            or cast(Tuple[ast.SchemaExtensionNode], ()),
+            extension_ast_nodes=self.extension_ast_nodes or None,
             assume_valid=self._validation_errors is not None,
         )
 

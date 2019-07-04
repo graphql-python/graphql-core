@@ -10,6 +10,9 @@ class InvalidType(ValueError):
     def __str__(self):
         return "INVALID"
 
+    def __hash__(self):
+        return hash(InvalidType)
+
     def __bool__(self):
         return False
 

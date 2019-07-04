@@ -1,9 +1,14 @@
-__all__ = ["FrozenList"]
+from typing import List, TypeVar
 
 from .frozen_error import FrozenError
 
+__all__ = ["FrozenList"]
 
-class FrozenList(list):
+
+T = TypeVar("T", covariant=True)
+
+
+class FrozenList(List[T]):
     """List that can only be read, but not changed."""
 
     def __delitem__(self, key):

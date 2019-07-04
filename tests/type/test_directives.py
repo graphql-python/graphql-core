@@ -128,18 +128,25 @@ def describe_type_system_directive():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=None)  # type: ignore
-        assert str(exc_info.value) == "Foo locations must be a list/tuple."
+        assert str(exc_info.value) == (
+            "Foo locations must be specified"
+            " as a sequence of DirectiveLocation enum values."
+        )
 
     def recects_a_directive_with_incorrectly_typed_locations():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations="bad")  # type: ignore
-        assert str(exc_info.value) == "Foo locations must be a list/tuple."
+        assert (
+            str(exc_info.value) == "Foo locations must be specified"
+            " as a sequence of DirectiveLocation enum values."
+        )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=["bad"])  # type: ignore
         assert str(exc_info.value) == (
-            "Foo locations must be DirectiveLocation objects."
+            "Foo locations must be specified"
+            " as a sequence of DirectiveLocation enum values."
         )
 
     def rejects_a_directive_with_incorrectly_typed_description():

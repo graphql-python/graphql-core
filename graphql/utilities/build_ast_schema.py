@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, NoReturn, Optional, Union, cast
+from typing import Callable, Dict, List, NoReturn, Optional, Union, Sequence, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -38,7 +38,6 @@ from ..type import (
     GraphQLInputField,
     GraphQLInputFieldMap,
     GraphQLInputObjectType,
-    GraphQLInterfaceList,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
@@ -50,7 +49,6 @@ from ..type import (
     GraphQLSchema,
     GraphQLSkipDirective,
     GraphQLType,
-    GraphQLTypeList,
     GraphQLUnionType,
     Thunk,
     introspection_types,
@@ -295,7 +293,7 @@ class ASTDefinitionBuilder:
         # values, that would throw immediately while type system validation with
         # `validate_schema()` will produce more actionable results.
         interfaces = cast(
-            Thunk[GraphQLInterfaceList],
+            Thunk[Sequence[GraphQLInterfaceType]],
             (
                 (lambda: [self.get_named_type(ref) for ref in interface_nodes])
                 if interface_nodes
@@ -367,7 +365,7 @@ class ASTDefinitionBuilder:
         # below, that would throw immediately while type system validation with
         # `validate_schema()` will get more actionable results.
         types = cast(
-            Thunk[GraphQLTypeList],
+            Thunk[Sequence[GraphQLObjectType]],
             (lambda: [self.get_named_type(ref) for ref in type_nodes])
             if type_nodes
             else [],

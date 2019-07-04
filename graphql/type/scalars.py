@@ -1,5 +1,5 @@
 from math import isfinite
-from typing import Any, Dict
+from typing import Any
 
 from ..error import INVALID
 from ..pyutils import inspect, is_finite, is_integer, FrozenDict
@@ -241,7 +241,7 @@ GraphQLID = GraphQLScalarType(
 )
 
 
-specified_scalar_types: Dict[str, GraphQLScalarType] = FrozenDict(
+specified_scalar_types: FrozenDict[str, GraphQLScalarType] = FrozenDict(
     {
         type_.name: type_
         for type_ in (

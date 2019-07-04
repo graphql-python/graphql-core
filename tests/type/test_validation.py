@@ -4,6 +4,7 @@ from typing import cast, List, Union
 from pytest import mark, raises
 
 from graphql.language import parse
+from graphql.pyutils import FrozenList
 from graphql.type import (
     GraphQLEnumType,
     GraphQLEnumValue,
@@ -392,9 +393,20 @@ def describe_type_system_a_schema_must_have_object_root_types():
         ]
 
     def rejects_a_schema_whose_directives_are_incorrectly_typed():
-        schema = GraphQLSchema(
-            SomeObjectType, directives=[cast(GraphQLDirective, "somedirective")]
+        # invalid schema cannot be built with Python
+        with raises(TypeError) as exc_info:
+            GraphQLSchema(
+                SomeObjectType, directives=[cast(GraphQLDirective, "somedirective")]
+            )
+        msg = str(exc_info.value)
+        assert msg == (
+            "Schema directives must be specified"
+            " as a sequence of GraphQLDirective instances."
         )
+
+        schema = GraphQLSchema(SomeObjectType)
+        schema.directives = FrozenList([cast(GraphQLDirective, "somedirective")])
+
         msg = validate_schema(schema)[0].message
         assert msg == "Expected directive but got: 'somedirective'."
 
@@ -605,8 +617,10 @@ def describe_type_system_union_types_must_be_valid():
                 """
             )
 
-        msg = str(exc_info.value)
-        assert msg == "BadUnion types must be GraphQLObjectType objects."
+        assert str(exc_info.value) == (
+            "BadUnion types must be specified"
+            " as a sequence of GraphQLObjectType instances."
+        )
 
         bad_union_member_types = [
             GraphQLString,
@@ -623,8 +637,10 @@ def describe_type_system_union_types_must_be_valid():
                 schema_with_field_type(
                     GraphQLUnionType("BadUnion", types=[member_type])
                 )
-            msg = str(exc_info.value)
-            assert msg == "BadUnion types must be GraphQLObjectType objects."
+            assert str(exc_info.value) == (
+                "BadUnion types must be specified"
+                " as a sequence of GraphQLObjectType instances."
+            )
 
 
 def describe_type_system_input_objects_must_have_fields():
@@ -952,8 +968,10 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == "BadObject interfaces must be GraphQLInterface objects."
+        assert str(exc_info.value) == (
+            "BadObject interfaces must be specified"
+            " as a sequence of GraphQLInterfaceType instances."
+        )
 
     def rejects_an_object_implementing_the_same_interface_twice():
         schema = build_schema(

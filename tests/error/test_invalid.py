@@ -8,6 +8,12 @@ def describe_invalid():
     def has_str():
         assert str(INVALID) == "INVALID"
 
+    def is_hashable():
+        assert hash(INVALID) == hash(INVALID)
+        assert hash(INVALID) != hash(None)
+        assert hash(INVALID) != hash(False)
+        assert hash(INVALID) != hash(True)
+
     def as_bool_is_false():
         assert bool(INVALID) is False
 

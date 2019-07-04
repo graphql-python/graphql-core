@@ -1,9 +1,14 @@
-__all__ = ["FrozenDict"]
+from typing import Dict, TypeVar
 
 from .frozen_error import FrozenError
 
+__all__ = ["FrozenDict"]
 
-class FrozenDict(dict):
+K = TypeVar("K")
+T = TypeVar("T", covariant=True)
+
+
+class FrozenDict(Dict[K, T]):
     """Dictionary that can only be read, but not changed."""
 
     def __delitem__(self, key):

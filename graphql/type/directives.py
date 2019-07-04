@@ -27,7 +27,7 @@ class GraphQLDirective:
     """
 
     name: str
-    locations: Sequence[DirectiveLocation]
+    locations: List[DirectiveLocation]
     is_repeatable: bool
     args: Dict[str, GraphQLArgument]
     description: Optional[str]
@@ -46,20 +46,20 @@ class GraphQLDirective:
             raise TypeError("Directive must be named.")
         elif not isinstance(name, str):
             raise TypeError("The directive name must be a string.")
-        if not isinstance(locations, (list, tuple)):
-            raise TypeError(f"{name} locations must be a list/tuple.")
         if not isinstance(is_repeatable, bool):
             raise TypeError(f"{name} is_repeatable flag must be True or False.")
-        if not all(isinstance(value, DirectiveLocation) for value in locations):
-            try:
-                locations = [
-                    value
-                    if isinstance(value, DirectiveLocation)
-                    else DirectiveLocation[value]
-                    for value in locations
-                ]
-            except (KeyError, TypeError):
-                raise TypeError(f"{name} locations must be DirectiveLocation objects.")
+        try:
+            locations = [
+                value
+                if isinstance(value, DirectiveLocation)
+                else DirectiveLocation[cast(str, value)]
+                for value in locations
+            ]
+        except (KeyError, TypeError):
+            raise TypeError(
+                f"{name} locations must be specified"
+                " as a sequence of DirectiveLocation enum values."
+            )
         if args is None:
             args = {}
         elif not isinstance(args, dict) or not all(
@@ -177,7 +177,7 @@ GraphQLDeprecatedDirective = GraphQLDirective(
 )
 
 
-specified_directives: List[GraphQLDirective] = FrozenList(
+specified_directives: FrozenList[GraphQLDirective] = FrozenList(
     [GraphQLIncludeDirective, GraphQLSkipDirective, GraphQLDeprecatedDirective]
 )
 specified_directives.__doc__ = """The full list of specified directives."""
