@@ -51,6 +51,15 @@ def build_client_schema(
     This function expects a complete introspection result. Don't forget to check the
     "errors" field of a server response before calling this function.
     """
+    if not isinstance(introspection, dict) or not isinstance(
+        introspection.get("__schema"), dict
+    ):
+        raise TypeError(
+            "Invalid or incomplete introspection result. Ensure that you"
+            " are passing the 'data' attribute of an introspection response"
+            " and no 'errors' were returned alongside: " + inspect(introspection)
+        )
+
     # Get the schema from the introspection result.
     schema_introspection = introspection["__schema"]
 

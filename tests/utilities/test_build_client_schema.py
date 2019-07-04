@@ -487,6 +487,27 @@ def describe_type_system_build_schema_from_introspection():
             """
         )
 
+        def throws_when_introspection_is_missing_schema_property():
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                build_client_schema(None)  # type: ignore
+
+            assert str(exc_info.value) == (
+                "Invalid or incomplete introspection result. Ensure that you"
+                " are passing the 'data' attribute of an introspection response"
+                " and no 'errors' were returned alongside: None"
+            )
+
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                build_client_schema({})  # type: ignore
+
+            assert str(exc_info.value) == (
+                "Invalid or incomplete introspection result. Ensure that you"
+                " are passing the 'data' attribute of an introspection response"
+                " and no 'errors' were returned alongside: {}"
+            )
+
         def throws_when_referenced_unknown_type():
             introspection = introspection_from_schema(dummy_schema)
 
