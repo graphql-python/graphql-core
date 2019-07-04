@@ -6,6 +6,16 @@ from graphql.pyutils import dedent
 
 
 def describe_print_error():
+    def prints_an_error_without_location():
+        error = GraphQLError("Error without location")
+        assert print_error(error) == "Error without location"
+
+    def prints_an_error_using_node_without_location():
+        error = GraphQLError(
+            "Error attached to node without location",
+            parse("{ foo }", no_location=True),
+        )
+        assert print_error(error) == "Error attached to node without location"
 
     # noinspection PyArgumentEqualDefault
     def prints_line_numbers_with_correct_padding():
