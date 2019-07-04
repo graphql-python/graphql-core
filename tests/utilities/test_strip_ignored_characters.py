@@ -66,11 +66,6 @@ class ExpectStripped:
     def to_stay_the_same(self):
         self.to_equal(self.doc_string)
 
-    def to_raise(self, expected_stringify_error):
-        with raises(GraphQLSyntaxError) as exc_info:
-            strip_ignored_characters(self.doc_string)
-        assert str(exc_info.value) == expected_stringify_error
-
 
 def describe_strip_ignored_characters():
     def asserts_that_a_source_was_provided():
@@ -128,17 +123,18 @@ def describe_strip_ignored_characters():
         )
 
     def report_document_with_invalid_token():
-        ExpectStripped('{ foo(arg: "\n"').to_raise(
-            dedent(
-                """
-                Syntax Error: Unterminated string.
+        with raises(GraphQLSyntaxError) as exc_info:
+            strip_ignored_characters('{ foo(arg: "\n"')
 
-                GraphQL request:1:13
-                1: { foo(arg: "
-                               ^
-                2: "
-                """
-            )
+        assert str(exc_info.value) + "\n" == dedent(
+            """
+            Syntax Error: Unterminated string.
+
+            GraphQL request:1:13
+            1: { foo(arg: "
+                           ^
+            2: "
+            """
         )
 
     def strips_non_parsable_document():

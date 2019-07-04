@@ -31,7 +31,7 @@ def print_error(error: "GraphQLError") -> str:
         for location in error.locations:
             print_location(highlight_source_at_location(source, location))
     if printed_locations:
-        return "\n\n".join([error.message] + printed_locations) + "\n"
+        return "\n\n".join([error.message] + printed_locations)
     return error.message
 
 

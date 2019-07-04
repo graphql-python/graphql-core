@@ -25,7 +25,7 @@ def describe_print_error():
             Source("*", "Test", SourceLocation(9, 1)),
             [0],
         )
-        assert print_error(single_digit) == dedent(
+        assert print_error(single_digit) + "\n" == dedent(
             """
             Single digit line number with no padding
 
@@ -42,7 +42,7 @@ def describe_print_error():
             [0],
         )
 
-        assert print_error(double_digit) == dedent(
+        assert print_error(double_digit) + "\n" == dedent(
             """
             Left padded first line number
 
@@ -92,7 +92,7 @@ def describe_print_error():
         )
 
         printed_error = print_error(error)
-        assert printed_error == dedent(
+        assert printed_error + "\n" == dedent(
             """
             Example error with two nodes
 

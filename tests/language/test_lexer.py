@@ -61,7 +61,7 @@ def describe_lexer():
         with raises(GraphQLSyntaxError) as exc_info:
             lex_one("\n\n    ?\n\n\n")
 
-        assert str(exc_info.value) == dedent(
+        assert str(exc_info.value) + "\n" == dedent(
             """
             Syntax Error: Cannot parse the unexpected character '?'.
 
@@ -78,7 +78,7 @@ def describe_lexer():
         source = Source(s, "foo.js", SourceLocation(11, 12))
         with raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
-        assert str(exc_info.value) == dedent(
+        assert str(exc_info.value) + "\n" == dedent(
             """
             Syntax Error: Cannot parse the unexpected character '?'.
 
@@ -94,7 +94,7 @@ def describe_lexer():
         source = Source("?", "foo.js", SourceLocation(1, 5))
         with raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
-        assert str(exc_info.value) == dedent(
+        assert str(exc_info.value) + "\n" == dedent(
             """
             Syntax Error: Cannot parse the unexpected character '?'.
 
