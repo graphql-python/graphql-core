@@ -227,16 +227,24 @@ Changes are tracked as
 [GitHub releases](https://github.com/graphql-python/graphql-core-next/releases).
 
 
-## Credits
+## Credits and history
 
 The GraphQL-core-next library
 * has been created and is maintained by Christoph Zwerschke
 * uses ideas and code from GraphQL-core, a prior work by Syrus Akbary
-* is a Python port of GraphQL.js which has been created and is maintained
-  by Facebook, Inc.
+* is a Python port of GraphQL.js which has been developed by Lee Byron and others
+  at Facebook, Inc. and is now maintained
+  by the [GraphQL foundation](https://gql.foundation/join/)
+
+Please watch the recording of Lee Byron's short keynote on the
+[history of GraphQL](https://www.youtube.com/watch?v=VjHWkBr3tjI) 
+at the open source leadership summit 2019 to better understand
+how and why GraphQL was created at Facebook and then became open sourced
+and ported to many different programming languages. 
 
 
 ## License
 
 GraphQL-core-next is
-[MIT-licensed](https://github.com/graphql-python/graphql-core-next/blob/master/LICENSE).
+[MIT-licensed](https://github.com/graphql-python/graphql-core-next/blob/master/LICENSE),
+just like GraphQL.js.
