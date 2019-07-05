@@ -131,9 +131,9 @@ def describe_strip_ignored_characters():
             Syntax Error: Unterminated string.
 
             GraphQL request:1:13
-            1: { foo(arg: "
-                           ^
-            2: "
+            1 | { foo(arg: "
+              |             ^
+            2 | "
             """
         )
 

@@ -11,8 +11,8 @@ def describe_print_location():
         assert result + "\n" == dedent(
             """
             Test:9:1
-            9: *
-               ^
+            9 | *
+              | ^
             """
         )
 
@@ -24,8 +24,8 @@ def describe_print_location():
         assert result + "\n" == dedent(
             """
             Test:9:1
-             9: *
-                ^
-            10:\x20
+             9 | *
+               | ^
+            10 |\x20
             """
         )

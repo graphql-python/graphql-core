@@ -1,6 +1,5 @@
 import re
-from functools import reduce
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, cast
 
 from .ast import Location
 from .location import SourceLocation, get_location
@@ -40,20 +39,20 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
 
     return f"{source.name}:{line_num}:{column_num}\n" + print_prefixed_lines(
         [
-            (f"{line_num - 1}: ", get_line(line_index - 1)),
-            (f"{line_num}: ", get_line(line_index)),
+            (f"{line_num - 1}", get_line(line_index - 1)),
+            (f"{line_num}", get_line(line_index)),
             ("", " " * (column_num - 1) + "^"),
-            (f"{line_num + 1}: ", get_line(line_index + 1)),
+            (f"{line_num + 1}", get_line(line_index + 1)),
         ]
     )
 
 
 def print_prefixed_lines(lines: List[Tuple[str, Optional[str]]]) -> str:
-    """Print lines specified like this: ["prefix", "string"]"""
-    existing_lines = [line for line in lines if line[1] is not None]
-    pad_len = reduce(lambda pad, line: max(pad, len(line[0])), existing_lines, 0)
+    """Print lines specified like this: ("prefix", "string")"""
+    existing_lines = [
+        cast(Tuple[str, str], line) for line in lines if line[1] is not None
+    ]
+    pad_len = max(len(line[0]) for line in existing_lines)
     return "\n".join(
-        map(
-            lambda line: line[0].rjust(pad_len) + line[1], existing_lines  # type:ignore
-        )
+        map(lambda line: line[0].rjust(pad_len) + " | " + line[1], existing_lines)
     )

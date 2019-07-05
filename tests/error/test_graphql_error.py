@@ -197,16 +197,16 @@ def describe_print_error():
             Example error with two nodes
 
             SourceA:2:10
-            1: type Foo {
-            2:   field: String
-                        ^
-            3: }
+            1 | type Foo {
+            2 |   field: String
+              |          ^
+            3 | }
 
             SourceB:2:10
-            1: type Foo {
-            2:   field: Int
-                        ^
-            3: }
+            1 | type Foo {
+            2 |   field: Int
+              |          ^
+            3 | }
             """
         )
         assert str(error) == printed_error

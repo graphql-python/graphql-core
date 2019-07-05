@@ -72,8 +72,8 @@ def describe_parser():
             Syntax Error: Expected Name, found <EOF>
 
             GraphQL request:1:2
-            1: {
-                ^
+            1 | {
+              |  ^
             """
         )
         assert_syntax_error(
@@ -91,9 +91,14 @@ def describe_parser():
         with raises(GraphQLSyntaxError) as exc_info:
             parse(Source("query", "MyQuery.graphql"))
         error = exc_info.value
-        assert str(error) + "\n" == (
-            "Syntax Error: Expected {, found <EOF>\n\n"
-            "MyQuery.graphql:1:6\n1: query\n        ^\n"
+        assert str(error) + "\n" == dedent(
+            """
+            Syntax Error: Expected {, found <EOF>
+            
+            MyQuery.graphql:1:6
+            1 | query
+              |      ^
+            """
         )
 
     def parses_variable_inline_values():

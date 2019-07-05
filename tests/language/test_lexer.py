@@ -66,10 +66,10 @@ def describe_lexer():
             Syntax Error: Cannot parse the unexpected character '?'.
 
             GraphQL request:3:5
-            2:\x20
-            3:     ?
-                   ^
-            4:\x20
+            2 |\x20
+            3 |     ?
+              |     ^
+            4 |\x20
             """
         )
 
@@ -83,10 +83,10 @@ def describe_lexer():
             Syntax Error: Cannot parse the unexpected character '?'.
 
             foo.js:13:6
-            12:\x20
-            13:      ?
-                     ^
-            14:\x20
+            12 |\x20
+            13 |      ?
+               |      ^
+            14 |\x20
             """
         )
 
@@ -99,8 +99,8 @@ def describe_lexer():
             Syntax Error: Cannot parse the unexpected character '?'.
 
             foo.js:1:5
-            1:     ?
-                   ^
+            1 |     ?
+              |     ^
             """
         )
 
