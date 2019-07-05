@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Tuple, cast
+from typing import Optional, Tuple, cast
 
 from .ast import Location
 from .location import SourceLocation, get_location
@@ -30,24 +30,40 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
 
     column_offset = first_line_column_offset if source_location.line == 1 else 0
     column_num = source_location.column + column_offset
+    location_str = f"{source.name}:{line_num}:{column_num}\n"
 
     lines = _re_newline.split(body)  # works a bit different from splitlines()
-    len_lines = len(lines)
+    location_line = lines[line_index]
 
-    def get_line(index: int) -> Optional[str]:
-        return lines[index] if 0 <= index < len_lines else None
+    # Special case for minified documents
+    if len(location_line) > 120:
+        subline_index, subline_column_num = divmod(column_num, 80)
+        sublines = [location_line[i : i + 80] for i in range(0, len(location_line), 80)]
 
-    return f"{source.name}:{line_num}:{column_num}\n" + print_prefixed_lines(
-        [
-            (f"{line_num - 1}", get_line(line_index - 1)),
-            (f"{line_num}", get_line(line_index)),
-            ("", " " * (column_num - 1) + "^"),
-            (f"{line_num + 1}", get_line(line_index + 1)),
-        ]
+        return location_str + print_prefixed_lines(
+            (str(line_num), sublines[0]),
+            *[("", subline) for subline in sublines[1 : subline_index + 1]],
+            (" ", " " * (subline_column_num - 1) + "^"),
+            (
+                "",
+                sublines[subline_index + 1]
+                if subline_index < len(sublines) - 1
+                else None,
+            ),
+        )
+
+    return location_str + print_prefixed_lines(
+        (f"{line_num - 1}", lines[line_index - 1] if line_index > 0 else None),
+        (f"{line_num}", location_line),
+        ("", " " * (column_num - 1) + "^"),
+        (
+            f"{line_num + 1}",
+            lines[line_index + 1] if line_index < len(lines) - 1 else None,
+        ),
     )
 
 
-def print_prefixed_lines(lines: List[Tuple[str, Optional[str]]]) -> str:
+def print_prefixed_lines(*lines: Tuple[str, Optional[str]]) -> str:
     """Print lines specified like this: ("prefix", "string")"""
     existing_lines = [
         cast(Tuple[str, str], line) for line in lines if line[1] is not None

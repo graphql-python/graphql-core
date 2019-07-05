@@ -94,7 +94,7 @@ def describe_parser():
         assert str(error) + "\n" == dedent(
             """
             Syntax Error: Expected {, found <EOF>
-            
+
             MyQuery.graphql:1:6
             1 | query
               |      ^
