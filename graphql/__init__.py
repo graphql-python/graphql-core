@@ -164,6 +164,9 @@ from .type import (
 from .language import (
     Source,
     get_location,
+    # Print source location
+    print_location,
+    print_source_location,
     # Lex
     Lexer,
     TokenKind,
@@ -500,6 +503,8 @@ __all__ = [
     "GraphQLTypeResolver",
     "Source",
     "get_location",
+    "print_location",
+    "print_source_location",
     "Lexer",
     "TokenKind",
     "parse",

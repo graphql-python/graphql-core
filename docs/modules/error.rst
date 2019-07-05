@@ -10,8 +10,8 @@ Error
 
 .. autoexception:: GraphQLSyntaxError
 
+.. autofunction:: format_error
 .. autofunction:: located_error
 .. autofunction:: print_error
-.. autofunction:: format_error
 
 .. autodata:: INVALID

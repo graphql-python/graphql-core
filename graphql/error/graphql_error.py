@@ -2,14 +2,13 @@ from sys import exc_info
 from typing import Any, Dict, List, Optional, Sequence, Union, TYPE_CHECKING
 
 from .format_error import format_error
-from .print_error import print_error
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..language.ast import Node  # noqa: F401
     from ..language.location import SourceLocation  # noqa: F401
     from ..language.source import Source  # noqa: F401
 
-__all__ = ["GraphQLError"]
+__all__ = ["GraphQLError", "print_error"]
 
 
 class GraphQLError(Exception):
@@ -176,3 +175,25 @@ class GraphQLError(Exception):
     def formatted(self):
         """Get error formatted according to the specification."""
         return format_error(self)
+
+
+def print_error(error: GraphQLError) -> str:
+    """Print a GraphQLError to a string.
+
+    Represents useful location information about the error's position in the source.
+    """
+    # Lazy import to avoid a cyclic dependency between error and language
+    from ..language.print_location import print_location, print_source_location
+
+    output = [error.message]
+
+    if error.nodes:
+        for node in error.nodes:
+            if node.loc:
+                output.append(print_location(node.loc))
+    elif error.source and error.locations:
+        source = error.source
+        for location in error.locations:
+            output.append(print_source_location(source, location))
+
+    return "\n\n".join(output)

@@ -8,6 +8,8 @@ from .source import Source
 
 from .location import get_location, SourceLocation
 
+from .print_location import print_location, print_source_location
+
 from .token_kind import TokenKind
 
 from .lexer import Lexer
@@ -102,6 +104,8 @@ from .directive_locations import DirectiveLocation
 __all__ = [
     "get_location",
     "SourceLocation",
+    "print_location",
+    "print_source_location",
     "TokenKind",
     "Lexer",
     "parse",
