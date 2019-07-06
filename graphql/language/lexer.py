@@ -169,7 +169,7 @@ class Lexer:
         position = start
         while True:
             position += 1
-            if position > body_length:
+            if position >= body_length:
                 break
             char = body[position]
             if char < " " and char != "\t":

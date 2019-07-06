@@ -389,6 +389,25 @@ def describe_parser():
         assert isinstance(end_token, Token)
         assert end_token.kind == TokenKind.EOF
 
+    def allows_comments_everywhere_in_the_source():
+        # make sure first and last line can be comment
+        result = parse(
+            """# top comment
+            {
+              field # field comment
+            }
+            # bottom comment"""
+        )
+        top_comment = result.loc.start_token.next
+        assert top_comment.kind is TokenKind.COMMENT
+        assert top_comment.value == " top comment"
+        field_comment = top_comment.next.next.next
+        assert field_comment.kind is TokenKind.COMMENT
+        assert field_comment.value == " field comment"
+        bottom_comment = field_comment.next.next
+        assert bottom_comment.kind is TokenKind.COMMENT
+        assert bottom_comment.value == " bottom comment"
+
 
 def describe_parse_value():
     def parses_null_value():
