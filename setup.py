@@ -19,12 +19,10 @@ setup(
     author="Christoph Zwerschke",
     author_email="cito@online.de",
     license="MIT license",
-    # PEP-561: https://www.python.org/dev/peps/pep-0561/
-    package_data={"graphql": ["py.typed"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        'Topic :: Software Development :: Libraries',
+        "Topic :: Software Development :: Libraries",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
@@ -32,21 +30,9 @@ setup(
     ],
     install_requires=[],
     python_requires=">=3.6",
-    test_suite="tests",
-    tests_require=[
-        "pytest",
-        "pytest-asyncio",
-        "pytest-cov",
-        "pytest-describe",
-        "black",
-        "flake8",
-        "mypy",
-        "tox",
-        "codecov",
-        "check-manifest",
-        "bump2version",
-    ],
     packages=find_packages(include=["graphql"]),
+    # PEP-561: https://www.python.org/dev/peps/pep-0561/
+    package_data={"graphql": ["py.typed"]},
     include_package_data=True,
     zip_safe=False,
 )
