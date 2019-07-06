@@ -1,7 +1,7 @@
 from re import search
 from setuptools import setup, find_packages
 
-with open("graphql/version.py") as version_file:
+with open("src/graphql/version.py") as version_file:
     version = search('version = "(.*)"', version_file.read()).group(1)
 
 with open("README.md") as readme_file:
@@ -29,8 +29,9 @@ setup(
         "Programming Language :: Python :: 3.7",
     ],
     install_requires=[],
-    python_requires=">=3.6",
-    packages=find_packages(include=["graphql"]),
+    python_requires=">=3.6,<4",
+    packages=find_packages("src"),
+    package_dir={"": "src"},
     # PEP-561: https://www.python.org/dev/peps/pep-0561/
     package_data={"graphql": ["py.typed"]},
     include_package_data=True,

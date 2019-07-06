@@ -16,7 +16,7 @@ include tox.ini
 include poetry.lock
 include pyproject.toml
 
-graft graphql
+graft src/graphql
 graft tests
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
 prune docs/_build

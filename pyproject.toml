@@ -22,7 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.7"
 ]
 packages = [
-    { include = "graphql" },
+    { include = "graphql", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -42,6 +42,7 @@ sphinx = "^2.1"
 sphinx_rtd_theme = ">=0.4"
 check-manifest = ">=0.39"
 bump2version = ">=0.5"
+tox = "^3.13"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
