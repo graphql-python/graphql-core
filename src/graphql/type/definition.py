@@ -417,7 +417,7 @@ class GraphQLField:
     """Definition of a GraphQL field"""
 
     type: "GraphQLOutputType"
-    args: Dict[str, "GraphQLArgument"]
+    args: GraphQLArgumentMap
     resolve: Optional["GraphQLFieldResolver"]
     subscribe: Optional["GraphQLFieldResolver"]
     description: Optional[str]

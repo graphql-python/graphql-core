@@ -113,16 +113,21 @@ class GraphQLSchema:
             if types is None:
                 types = []
             else:
-                if not isinstance(types, AbstractSequence) or not all(
-                    is_named_type(type_) for type_ in types
+                if not isinstance(types, AbstractSequence) or (
+                    # if reducer has been overridden, don't check types
+                    self.type_map_reducer.__self__.__class__ is GraphQLSchema
+                    and not all(is_named_type(type_) for type_ in types)
                 ):
                     raise TypeError(
                         "Schema types must be specified as a sequence"
                         " of GraphQLNamedType instances."
                     )
             if directives is not None:
-                if not isinstance(directives, AbstractSequence) or not all(
-                    is_directive(directive) for directive in directives
+                # noinspection PyUnresolvedReferences
+                if not isinstance(directives, AbstractSequence) or (
+                    # if reducer has been overridden, don't check directive types
+                    self.type_map_directive_reducer.__self__.__class__ is GraphQLSchema
+                    and not all(is_directive(directive) for directive in directives)
                 ):
                     raise TypeError(
                         "Schema directives must be specified as a sequence"
