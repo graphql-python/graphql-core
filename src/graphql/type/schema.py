@@ -115,7 +115,8 @@ class GraphQLSchema:
             else:
                 if not isinstance(types, AbstractSequence) or (
                     # if reducer has been overridden, don't check types
-                    self.type_map_reducer.__self__.__class__ is GraphQLSchema
+                    getattr(self.type_map_reducer, "__func__", None)
+                    is GraphQLSchema.type_map_reducer
                     and not all(is_named_type(type_) for type_ in types)
                 ):
                     raise TypeError(
@@ -126,7 +127,8 @@ class GraphQLSchema:
                 # noinspection PyUnresolvedReferences
                 if not isinstance(directives, AbstractSequence) or (
                     # if reducer has been overridden, don't check directive types
-                    self.type_map_directive_reducer.__self__.__class__ is GraphQLSchema
+                    getattr(self.type_map_directive_reducer, "__func__", None)
+                    is GraphQLSchema.type_map_directive_reducer
                     and not all(is_directive(directive) for directive in directives)
                 ):
                     raise TypeError(
