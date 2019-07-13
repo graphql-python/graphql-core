@@ -12,9 +12,19 @@ a query language for APIs created by Facebook.
 [![Python 3 Status](https://pyup.io/repos/github/graphql-python/graphql-core-next/python-3-shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core-next/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 1.1.0b0 of GraphQL-core-next is up-to-date with GraphQL.js version
+The current version 1.1.0 of GraphQL-core-next is up-to-date with GraphQL.js version
 14.4.0. All parts of the API are covered by an extensive test suite of currently 1882
 unit tests.
+
+Development will be continued with the new distribution name GraphQL-core from now on.
+
+
+## GraphQL-core-next is now GraphQL-core 3
+
+GraphQL-core-next has been discontinued as a separate Python distribution.
+Instead, it is now released as GraphQL-core version 3 and newer, replacing
+the existing GraphQL-core distribution. The old versions of GraphQL-core,
+which also support older Python versions, are still available.
 
 
 ## Documentation
@@ -207,9 +217,9 @@ Some restrictions (mostly in line with the design goals):
   and future development to members of the GraphQL-Python community.
 
   The current version 2 of Graphene is using Graphql-core as core library for much of
-  the heavy lifting. Note that it is not compatible with GraphQL-core-next.
+  the heavy lifting. Note that Graphene 2 is not compatible with GraphQL-core-next.
   The  new version 3 of Graphene however is planned to use GraphQL-core-next instead of
-  GraphQL-core, and GraphQL-core-next will probably be renamed to Graphql-core 3.
+  GraphQL-core, and GraphQL-core-next will be renamed to Graphql-core 3.
 
 * [Ariadne](https://github.com/mirumee/ariadne) is a Python library for implementing
   GraphQL servers using schema-first approach created by Mirumee Software.

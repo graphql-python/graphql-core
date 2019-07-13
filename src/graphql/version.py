@@ -1,4 +1,5 @@
 from typing import NamedTuple
+from warnings import warn
 
 __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
@@ -18,10 +19,16 @@ class VersionInfo(NamedTuple):
         return v
 
 
-version = "1.1.0b0"
+version = "1.1.0"
 
-version_info = VersionInfo(1, 1, 0, "beta", 0)
+version_info = VersionInfo(1, 1, 0, "final", 0)
 
 version_js = "14.4.0"
 
 version_info_js = VersionInfo(14, 4, 0, "final", 0)
+
+warn(
+    "Note: GraphQL-core-next has been deprecated.\n"
+    " It is now available as GraphQL-core version 3 and newer.\n",
+    DeprecationWarning,
+)
