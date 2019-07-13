@@ -27,3 +27,12 @@ script:
 
 after_success:
    - codecov
+
+deploy:
+  provider: pypi
+  user: mvanlonden
+  on:
+      tags: true
+  password:
+      secure: xWXF8kHWqM2/KIxM3rSRM2zKU0ZSRzexxos2BrJK/favSNXthsAfbNrkvWgJRpleyo/WrP5A0yRoGZRFzDkg7JX4oqUNOMkVG591V6eLNdXLwvrpxTujzEY2dKcwWzJ+EreOesIZFsK2TpkAyE0ntzBDbyhHPJl5uLCVD0d7F//psIUOM2EHwR49efV+eDBFgSdEPZ+P/e8OUlPV+U9lxoqvc1qFz5o2aV5tOEadZy1jzKEKslu2U3/F8vdOHrDAJGND3d3xpjRndZuaPPMUp9Fzbf7KdHiKGhbtjIPbR6E0jGkI9y2hesdjOgktLjRmUxES+KfthwDpP0uEXdS4FhLA+eXb5j2oKrC2uI/5s3efq8L55v4lYVpqiKFhYPXkqYbRpITZnHsCDBqgDx9BcrziJ15Y2NEZl1vKvmT6rKSkzhxjXO0slPV/fC4Po9dPvujvAzM2QEfl6aCv0wkP66SaSwWyK3K3B2a0FT2jURQ9qHCQ9hMGjwwA3xQh8UyuMXonzOjmtt8R0F9NrZnvLetrKAJjR1oGhTgEwqFhmq2uK/Q8QILuUMBKGHkFv2Ve1p3CLEJcX+KHrpKtGJvnWYVIISTfDivdKNIjoN+hM90vH1tC1DrvFY/PXGMDO+MHwYgyOezcrNdj+sav02cLm5XG+7449S5vgIa4DpAE+24=
+  distributions: "sdist bdist_wheel"
