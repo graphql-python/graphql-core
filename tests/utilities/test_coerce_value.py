@@ -24,7 +24,7 @@ def expect_value(result: CoercedValue) -> Any:
 
 def expect_error(result: CoercedValue) -> List[str]:
     errors = result.errors
-    messages = errors and [error.message for error in errors]
+    messages = [error.message for error in errors] if errors else []
     assert result.value is INVALID
     return messages
 
@@ -240,6 +240,33 @@ def describe_coerce_value():
                 "Field 'bart' is not defined by type TestInputObject."
                 " Did you mean bar?"
             ]
+
+        def transforms_names_using_out_name():
+            # This is an extension of GraphQL.js.
+            ComplexInputObject = GraphQLInputObjectType(
+                "Complex",
+                {
+                    "realPart": GraphQLInputField(GraphQLFloat, out_name="real_part"),
+                    "imagPart": GraphQLInputField(
+                        GraphQLFloat, default_value=0, out_name="imag_part"
+                    ),
+                },
+            )
+            result = coerce_value({"realPart": 1}, ComplexInputObject)
+            assert expect_value(result) == {"real_part": 1, "imag_part": 0}
+
+        def transforms_values_with_out_type():
+            # This is an extension of GraphQL.js.
+            ComplexInputObject = GraphQLInputObjectType(
+                "Complex",
+                {
+                    "real": GraphQLInputField(GraphQLFloat),
+                    "imag": GraphQLInputField(GraphQLFloat),
+                },
+                out_type=lambda value: complex(value["real"], value["imag"]),
+            )
+            result = coerce_value({"real": 1, "imag": 2}, ComplexInputObject)
+            assert expect_value(result) == 1 + 2j
 
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)

@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.language import ScalarTypeDefinitionNode, NameNode, print_ast, parse
 from graphql.pyutils import dedent
@@ -153,6 +153,8 @@ def describe_printer_sdl_document():
             directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
             directive @include2(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+            directive @myRepeatableDir(name: String!) repeatable on OBJECT | INTERFACE
 
             extend schema @onSchema
 

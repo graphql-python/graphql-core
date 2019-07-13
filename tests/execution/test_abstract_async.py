@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from pytest import mark
+from pytest import mark  # type: ignore
 
 from graphql import graphql
 from graphql.error import format_error
@@ -257,6 +257,10 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
 
     @mark.asyncio
     async def resolve_type_on_interface_yields_useful_error():
+        CatType: GraphQLObjectType
+        DogType: GraphQLObjectType
+        HumanType: GraphQLObjectType
+
         PetType = GraphQLInterfaceType(
             "Pet",
             {"name": GraphQLField(GraphQLString)},

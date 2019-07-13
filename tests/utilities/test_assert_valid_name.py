@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLError
 from graphql.utilities import assert_valid_name

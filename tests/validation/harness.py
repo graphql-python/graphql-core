@@ -1,7 +1,7 @@
 from typing import List, Optional, Type
 
 from graphql.error import GraphQLError
-from graphql.language import parse, print_ast
+from graphql.language import parse
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -79,6 +79,8 @@ Dog = GraphQLObjectType(
     interfaces=[Being, Pet, Canine],
     is_type_of=lambda *_args: True,
 )
+
+FurColor: GraphQLEnumType
 
 Cat = GraphQLObjectType(
     "Cat",
@@ -230,9 +232,6 @@ def raise_type_error(message):
 
 InvalidScalar = GraphQLScalarType(
     name="Invalid",
-    parse_literal=lambda value_node: raise_type_error(
-        f"Invalid scalar is always invalid: {print_ast(value_node)}"
-    ),
     parse_value=lambda value: raise_type_error(
         f"Invalid scalar is always invalid: {value!r}"
     ),

@@ -5,6 +5,9 @@ Introduction
 the JavaScript reference implementation for GraphQL_,
 a query language for APIs created by Facebook.
 
+.. attention:: GraphQL-core-next has been deprecated.
+   It is now released as GraphQL-core v3 and newer.
+
 `GraphQL`_ consists of three parts:
 
 * A type system that you define

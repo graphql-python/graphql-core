@@ -23,7 +23,7 @@ install:
   - poetry install
 
 script:
-   - tox -e $TOXENV -- --cov-report term-missing --cov=graphql
+   - tox -e $TOXENV -- --cov-report term-missing --cov=src
 
 after_success:
    - codecov

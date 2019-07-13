@@ -1,9 +1,10 @@
 from functools import partial
-from typing import cast, List, Union
+from typing import cast, List
 
-from pytest import mark, raises
+from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse
+from graphql.pyutils import FrozenList
 from graphql.type import (
     GraphQLEnumType,
     GraphQLEnumValue,
@@ -13,7 +14,6 @@ from graphql.type import (
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLList,
-    GraphQLNamedType,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLOutputType,
@@ -21,7 +21,6 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
-    GraphQLWrappingType,
     validate_schema,
     GraphQLArgument,
     GraphQLDirective,
@@ -30,6 +29,8 @@ from graphql.utilities import build_schema, extend_schema
 
 
 SomeScalarType = GraphQLScalarType(name="SomeScalar")
+
+SomeObjectType: GraphQLObjectType
 
 SomeInterfaceType = GraphQLInterfaceType(
     name="SomeInterface", fields=lambda: {"f": GraphQLField(SomeObjectType)}
@@ -51,10 +52,8 @@ SomeInputObjectType = GraphQLInputObjectType(
 )
 
 
-def with_modifiers(
-    types: List[GraphQLNamedType]
-) -> List[Union[GraphQLNamedType, GraphQLWrappingType]]:
-    types = cast(List[Union[GraphQLNamedType, GraphQLWrappingType]], types)
+def with_modifiers(types: List) -> List:
+    # noinspection PyTypeChecker
     return (
         types
         + [GraphQLList(t) for t in types]
@@ -392,9 +391,20 @@ def describe_type_system_a_schema_must_have_object_root_types():
         ]
 
     def rejects_a_schema_whose_directives_are_incorrectly_typed():
-        schema = GraphQLSchema(
-            SomeObjectType, directives=[cast(GraphQLDirective, "somedirective")]
+        # invalid schema cannot be built with Python
+        with raises(TypeError) as exc_info:
+            GraphQLSchema(
+                SomeObjectType, directives=[cast(GraphQLDirective, "somedirective")]
+            )
+        msg = str(exc_info.value)
+        assert msg == (
+            "Schema directives must be specified"
+            " as a sequence of GraphQLDirective instances."
         )
+
+        schema = GraphQLSchema(SomeObjectType)
+        schema.directives = FrozenList([cast(GraphQLDirective, "somedirective")])
+
         msg = validate_schema(schema)[0].message
         assert msg == "Expected directive but got: 'somedirective'."
 
@@ -605,8 +615,10 @@ def describe_type_system_union_types_must_be_valid():
                 """
             )
 
-        msg = str(exc_info.value)
-        assert msg == "BadUnion types must be GraphQLObjectType objects."
+        assert str(exc_info.value) == (
+            "BadUnion types must be specified"
+            " as a sequence of GraphQLObjectType instances."
+        )
 
         bad_union_member_types = [
             GraphQLString,
@@ -623,8 +635,10 @@ def describe_type_system_union_types_must_be_valid():
                 schema_with_field_type(
                     GraphQLUnionType("BadUnion", types=[member_type])
                 )
-            msg = str(exc_info.value)
-            assert msg == "BadUnion types must be GraphQLObjectType objects."
+            assert str(exc_info.value) == (
+                "BadUnion types must be specified"
+                " as a sequence of GraphQLObjectType instances."
+            )
 
 
 def describe_type_system_input_objects_must_have_fields():
@@ -668,6 +682,100 @@ def describe_type_system_input_objects_must_have_fields():
                 " must define one or more fields.",
                 "locations": [(6, 13), (4, 17)],
             }
+        ]
+
+    def accepts_an_input_object_with_breakable_circular_reference():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              self: SomeInputObject
+              arrayOfSelf: [SomeInputObject]
+              nonNullArrayOfSelf: [SomeInputObject]!
+              nonNullArrayOfNonNullSelf: [SomeInputObject!]!
+              intermediateSelf: AnotherInputObject
+            }
+
+            input AnotherInputObject {
+              parent: SomeInputObject
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_an_input_object_with_non_breakable_circular_reference():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              startLoop: AnotherInputObject!
+            }
+
+            input AnotherInputObject {
+              nextInLoop: YetAnotherInputObject!
+            }
+
+            input YetAnotherInputObject {
+              closeLoop: SomeInputObject!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Cannot reference Input Object 'SomeInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'startLoop.nextInLoop.closeLoop'.",
+                "locations": [(7, 15), (11, 15), (15, 15)],
+            }
+        ]
+
+    def rejects_an_input_object_with_multiple_non_breakable_circular_reference():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              startLoop: AnotherInputObject!
+            }
+
+            input AnotherInputObject {
+              closeLoop: SomeInputObject!
+              startSecondLoop: YetAnotherInputObject!
+            }
+
+            input YetAnotherInputObject {
+              closeSecondLoop: AnotherInputObject!
+              nonNullSelf: YetAnotherInputObject!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Cannot reference Input Object 'SomeInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'startLoop.closeLoop'.",
+                "locations": [(7, 15), (11, 15)],
+            },
+            {
+                "message": "Cannot reference Input Object 'AnotherInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'startSecondLoop.closeSecondLoop'.",
+                "locations": [(12, 15), (16, 15)],
+            },
+            {
+                "message": "Cannot reference Input Object 'YetAnotherInputObject'"
+                " within itself through a series of non-null fields:"
+                " 'nonNullSelf'.",
+                "locations": [(17, 15)],
+            },
         ]
 
     def rejects_an_input_object_type_with_incorrectly_typed_fields():
@@ -858,8 +966,10 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == "BadObject interfaces must be GraphQLInterface objects."
+        assert str(exc_info.value) == (
+            "BadObject interfaces must be specified"
+            " as a sequence of GraphQLInterfaceType instances."
+        )
 
     def rejects_an_object_implementing_the_same_interface_twice():
         schema = build_schema(

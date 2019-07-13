@@ -2,11 +2,11 @@ from math import nan, inf
 from contextlib import contextmanager
 from importlib import import_module
 
-from pytest import mark
+from pytest import mark  # type: ignore
 
 from graphql.error import INVALID
 from graphql.pyutils import inspect
-from graphql import (
+from graphql.type import (
     GraphQLField,
     GraphQLInt,
     GraphQLList,

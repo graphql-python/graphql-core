@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graphql-core-next"
-version = "3.0.0-alpha"
+version = "3.0.0a0"
 description = """
 GraphQL-core-next is a Python port of GraphQL.js,
  the JavaScript reference implementation for GraphQL."""
@@ -22,27 +22,27 @@ classifiers = [
     "Programming Language :: Python :: 3.7"
 ]
 packages = [
-    { include = "graphql" },
+    { include = "graphql", from = "src" },
 ]
 
 [tool.poetry.dependencies]
 python = "^3.6"
 
 [tool.poetry.dev-dependencies]
-pytest = "^4.6"
-pytest-asyncio = "^0.10"
+pytest = "^5"
+pytest-asyncio = ">=0.10"
 pytest-cov = "^2.7"
-pytest-describe = "^0.12"
+pytest-describe = ">=0.12"
 pyyaml = "^5.1"
-black = "^19.3b0"
+black = ">=19.3b0"
 flake8 = "^3.7"
-mypy = "^0.701"
-tox = "^3.12"
-codecov = "^2.0"
-sphinx = "^2.0"
-sphinx_rtd_theme = "^0.4"
-check-manifest = "^0.38"
-bump2version = "^0.5"
+mypy = ">=0.720"
+codecov = "^2"
+sphinx = "^2.1"
+sphinx_rtd_theme = ">=0.4"
+check-manifest = ">=0.39"
+bump2version = ">=0.5"
+tox = "^3.13"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']

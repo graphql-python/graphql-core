@@ -8,7 +8,7 @@ from asyncio import sleep, wait
 from enum import Enum
 from typing import Dict, NamedTuple, Optional
 
-from pytest import fixture, mark
+from pytest import fixture, mark  # type: ignore
 
 from graphql import (
     graphql,
@@ -57,7 +57,7 @@ class UserRegistry:
         self._registry: Dict[str, User] = users
         self._emitter = EventEmitter()
 
-    async def get(self, id_: str) -> User:
+    async def get(self, id_: str) -> Optional[User]:
         """Get a user object from the registry"""
         await sleep(0)
         return self._registry.get(id_)
@@ -173,7 +173,11 @@ async def resolve_subscription_user(event, info, id):
 schema = GraphQLSchema(
     query=GraphQLObjectType(
         "RootQueryType",
-        {"User": GraphQLField(user_type, args={"id": GraphQLID}, resolve=resolve_user)},
+        {
+            "User": GraphQLField(
+                user_type, args={"id": GraphQLArgument(GraphQLID)}, resolve=resolve_user
+            )
+        },
     ),
     mutation=GraphQLObjectType(
         "RootMutationType",

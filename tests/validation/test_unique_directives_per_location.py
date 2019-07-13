@@ -1,13 +1,27 @@
 from functools import partial
 
+from graphql.language import parse
+from graphql.utilities import extend_schema
 from graphql.validation import UniqueDirectivesPerLocationRule
 from graphql.validation.rules.unique_directives_per_location import (
     duplicate_directive_message,
 )
 
-from .harness import assert_validation_errors, assert_sdl_validation_errors
+from .harness import assert_validation_errors, assert_sdl_validation_errors, test_schema
 
-assert_errors = partial(assert_validation_errors, UniqueDirectivesPerLocationRule)
+extension_sdl = """
+  directive @directive on FIELD | FRAGMENT_DEFINITION
+  directive @directiveA on FIELD | FRAGMENT_DEFINITION
+  directive @directiveB on FIELD | FRAGMENT_DEFINITION
+  directive @repeatable repeatable on FIELD | FRAGMENT_DEFINITION
+"""
+schema_with_directives = extend_schema(test_schema, parse(extension_sdl))
+
+assert_errors = partial(
+    assert_validation_errors,
+    UniqueDirectivesPerLocationRule,
+    schema=schema_with_directives,
+)
 
 assert_valid = partial(assert_errors, errors=[])
 
@@ -70,6 +84,28 @@ def describe_validate_directives_are_unique_per_location():
             """
         )
 
+    def repeatable_directives_in_same_location():
+        assert_valid(
+            """
+            fragment Test on Type @repeatable @repeatable {
+              field @repeatable @repeatable
+            }
+            """
+        )
+
+    def unknown_directives_must_be_ignored():
+        assert_valid(
+            """
+            type Test @unknown @unknown {
+              field: String! @unknown @unknown
+            }
+
+            extend type Test @unknown {
+              anotherField: String!
+            }
+            """
+        )
+
     def duplicate_directives_in_one_location():
         assert_errors(
             """
@@ -112,36 +148,39 @@ def describe_validate_directives_are_unique_per_location():
     def duplicate_directives_on_sdl_definitions():
         assert_sdl_errors(
             """
-            schema @directive @directive { query: Dummy }
-            extend schema @directive @directive
+            directive @nonRepeatable on
+              SCHEMA | SCALAR | OBJECT | INTERFACE | UNION | INPUT_OBJECT
 
-            scalar TestScalar @directive @directive
-            extend scalar TestScalar @directive @directive
+            schema @nonRepeatable @nonRepeatable { query: Dummy }
+            extend schema @nonRepeatable @nonRepeatable
 
-            type TestObject @directive @directive
-            extend type TestObject @directive @directive
+            scalar TestScalar @nonRepeatable @nonRepeatable
+            extend scalar TestScalar @nonRepeatable @nonRepeatable
 
-            interface TestInterface @directive @directive
-            extend interface TestInterface @directive @directive
+            type TestObject @nonRepeatable @nonRepeatable
+            extend type TestObject @nonRepeatable @nonRepeatable
 
-            union TestUnion @directive @directive
-            extend union TestUnion @directive @directive
+            interface TestInterface @nonRepeatable @nonRepeatable
+            extend interface TestInterface @nonRepeatable @nonRepeatable
 
-            input TestInput @directive @directive
-            extend input TestInput @directive @directive
+            union TestUnion @nonRepeatable @nonRepeatable
+            extend union TestUnion @nonRepeatable @nonRepeatable
+
+            input TestInput @nonRepeatable @nonRepeatable
+            extend input TestInput @nonRepeatable @nonRepeatable
             """,
             [
-                duplicate_directive("directive", 2, 20, 2, 31),
-                duplicate_directive("directive", 3, 27, 3, 38),
-                duplicate_directive("directive", 5, 31, 5, 42),
-                duplicate_directive("directive", 6, 38, 6, 49),
-                duplicate_directive("directive", 8, 29, 8, 40),
-                duplicate_directive("directive", 9, 36, 9, 47),
-                duplicate_directive("directive", 11, 37, 11, 48),
-                duplicate_directive("directive", 12, 44, 12, 55),
-                duplicate_directive("directive", 14, 29, 14, 40),
-                duplicate_directive("directive", 15, 36, 15, 47),
-                duplicate_directive("directive", 17, 29, 17, 40),
-                duplicate_directive("directive", 18, 36, 18, 47),
+                duplicate_directive("nonRepeatable", 5, 20, 5, 35),
+                duplicate_directive("nonRepeatable", 6, 27, 6, 42),
+                duplicate_directive("nonRepeatable", 8, 31, 8, 46),
+                duplicate_directive("nonRepeatable", 9, 38, 9, 53),
+                duplicate_directive("nonRepeatable", 11, 29, 11, 44),
+                duplicate_directive("nonRepeatable", 12, 36, 12, 51),
+                duplicate_directive("nonRepeatable", 14, 37, 14, 52),
+                duplicate_directive("nonRepeatable", 15, 44, 15, 59),
+                duplicate_directive("nonRepeatable", 17, 29, 17, 44),
+                duplicate_directive("nonRepeatable", 18, 36, 18, 51),
+                duplicate_directive("nonRepeatable", 20, 29, 20, 44),
+                duplicate_directive("nonRepeatable", 21, 36, 21, 51),
             ],
         )

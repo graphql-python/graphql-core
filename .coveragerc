@@ -1,6 +1,6 @@
 [run]
 branch = True
-source = graphql
+source = src
 
 [report]
 exclude_lines =

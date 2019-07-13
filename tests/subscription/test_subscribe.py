@@ -1,4 +1,4 @@
-from pytest import mark, raises
+from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse
 from graphql.pyutils import EventEmitter, EventEmitterAsyncIterator

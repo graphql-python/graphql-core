@@ -174,3 +174,30 @@ def describe_value_from_ast():
             "{ requiredBool: $foo }",
             {"int": 42, "requiredBool": True},
         )
+
+    def transforms_names_using_out_name():
+        # This is an extension of GraphQL.js.
+        complex_input_obj = GraphQLInputObjectType(
+            "Complex",
+            {
+                "realPart": GraphQLInputField(GraphQLFloat, out_name="real_part"),
+                "imagPart": GraphQLInputField(
+                    GraphQLFloat, default_value=0, out_name="imag_part"
+                ),
+            },
+        )
+        _test_case(
+            complex_input_obj, "{ realPart: 1 }", {"real_part": 1, "imag_part": 0}
+        )
+
+    def transforms_values_with_out_type():
+        # This is an extension of GraphQL.js.
+        complex_input_obj = GraphQLInputObjectType(
+            "Complex",
+            {
+                "real": GraphQLInputField(GraphQLFloat),
+                "imag": GraphQLInputField(GraphQLFloat),
+            },
+            out_type=lambda value: complex(value["real"], value["imag"]),
+        )
+        _test_case(complex_input_obj, "{ real: 1, imag: 2 }", 1 + 2j)

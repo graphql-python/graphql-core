@@ -177,6 +177,10 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         )
 
     def resolve_type_on_interface_yields_useful_error():
+        CatType: GraphQLObjectType
+        DogType: GraphQLObjectType
+        HumanType: GraphQLObjectType
+
         PetType = GraphQLInterfaceType(
             "Pet",
             {"name": GraphQLField(GraphQLString)},

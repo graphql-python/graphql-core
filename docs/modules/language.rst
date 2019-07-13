@@ -77,7 +77,7 @@ Location
 
 .. autofunction:: get_location
 .. autoclass:: SourceLocation
-
+.. autofunction:: print_location
 
 Parser
 ------
@@ -90,6 +90,7 @@ Source
 ------
 
 .. autoclass:: Source
+.. autofunction:: print_source_location
 
 Visitor
 -------

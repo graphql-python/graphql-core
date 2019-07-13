@@ -1,7 +1,7 @@
 from collections import namedtuple
 from typing import Union
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
 from graphql.language import parse, print_ast, DocumentNode
@@ -121,13 +121,7 @@ def describe_schema_builder():
         assert schema.get_type("ID") is GraphQLID
 
     def include_standard_type_only_if_it_is_used():
-        schema = build_schema(
-            """
-            type Query {
-              str: String
-            }
-            """
-        )
+        schema = build_schema("type Query")
 
         # Only String and Boolean are used by introspection types
         assert schema.get_type("Int") is None
@@ -141,9 +135,7 @@ def describe_schema_builder():
             """
             directive @foo(arg: Int) on FIELD
 
-            type Query {
-              str: String
-            }
+            directive @repeatableFoo(arg: Int) repeatable on FIELD
             """
         )
         assert cycle_sdl(sdl) == sdl
@@ -176,32 +168,22 @@ def describe_schema_builder():
         assert cycle_sdl(sdl) == sdl
 
     def maintains_skip_and_include_directives():
-        sdl = dedent(
-            """
-            type Query {
-                str: String
-            }
-            """
-        )
-        schema = build_schema(sdl)
+        schema = build_schema("type Query")
+
         assert len(schema.directives) == 3
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
 
     def overriding_directives_excludes_specified():
-        sdl = dedent(
+        schema = build_schema(
             """
             directive @skip on FIELD
             directive @include on FIELD
             directive @deprecated on FIELD_DEFINITION
-
-            type Query {
-                str: String
-            }
             """
         )
-        schema = build_schema(sdl)
+
         assert len(schema.directives) == 3
         get_directive = schema.get_directive
         assert get_directive("skip") is not GraphQLSkipDirective
@@ -211,34 +193,13 @@ def describe_schema_builder():
         assert get_directive("deprecated") is not GraphQLDeprecatedDirective
         assert get_directive("deprecated") is not None
 
-    def overriding_skip_directive_excludes_built_in_one():
-        sdl = dedent(
-            """
-            directive @skip on FIELD
-
-            type Query {
-                str: String
-            }
-            """
-        )
-        schema = build_schema(sdl)
-        assert len(schema.directives) == 3
-        assert schema.get_directive("skip") is not GraphQLSkipDirective
-        assert schema.get_directive("skip") is not None
-        assert schema.get_directive("include") is GraphQLIncludeDirective
-        assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
-
     def adding_directives_maintains_skip_and_include_directives():
-        sdl = dedent(
+        schema = build_schema(
             """
             directive @foo(arg: Int) on FIELD
-
-            type Query {
-                str: String
-            }
             """
         )
-        schema = build_schema(sdl)
+
         assert len(schema.directives) == 4
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
@@ -273,10 +234,6 @@ def describe_schema_builder():
     def two_types_circular():
         sdl = dedent(
             """
-            schema {
-              query: TypeOne
-            }
-
             type TypeOne {
               str: String
               typeTwo: TypeTwo
@@ -444,7 +401,10 @@ def describe_schema_builder():
                 """
             )
         msg = str(exc_info.value)
-        assert msg == "Hello types must be GraphQLObjectType objects."
+        assert (
+            msg == "Hello types must be specified"
+            " as a sequence of GraphQLObjectType instances."
+        )
 
     def describe_specifying_union_type_using_typename():
 
@@ -833,7 +793,7 @@ def describe_schema_builder():
         )
         assert print_ast_node(test_directive.args["arg"]) == "arg: TestScalar"
 
-    def root_operation_type_with_custom_names():
+    def root_operation_types_with_custom_names():
         schema = build_schema(
             """
             schema {
@@ -841,9 +801,9 @@ def describe_schema_builder():
               mutation: SomeMutation
               subscription: SomeSubscription
             }
-            type SomeQuery { str: String }
-            type SomeMutation { str: String }
-            type SomeSubscription { str: String }
+            type SomeQuery
+            type SomeMutation
+            type SomeSubscription
             """
         )
 
@@ -854,9 +814,9 @@ def describe_schema_builder():
     def default_root_operation_type_names():
         schema = build_schema(
             """
-            type Query { str: String }
-            type Mutation { str: String }
-            type Subscription { str: String }
+            type Query
+            type Mutation
+            type Subscription
             """
         )
 
@@ -865,14 +825,8 @@ def describe_schema_builder():
         assert schema.subscription_type.name == "Subscription"
 
     def can_build_invalid_schema():
-        schema = build_schema(
-            """
-            # Invalid schema, because it is missing query root type
-            type Mutation {
-              str: String
-            }
-            """
-        )
+        # Invalid schema, because it is missing query root type
+        schema = build_schema("type Mutation")
         errors = validate_schema(schema)
         assert errors
 

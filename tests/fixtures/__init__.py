@@ -2,7 +2,7 @@
 
 from os.path import dirname, join
 
-from pytest import fixture
+from pytest import fixture  # type: ignore
 
 __all__ = ["kitchen_sink_query", "kitchen_sink_sdl"]
 

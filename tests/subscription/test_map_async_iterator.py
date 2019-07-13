@@ -1,7 +1,7 @@
-from asyncio import Event, ensure_future, sleep
 import sys
+from asyncio import Event, ensure_future, sleep
 
-from pytest import mark, raises
+from pytest import mark, raises  # type: ignore
 
 from graphql.subscription.map_async_iterator import MapAsyncIterator
 

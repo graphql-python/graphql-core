@@ -1,7 +1,12 @@
 from typing import cast
 
-from graphql.error import GraphQLError, format_error
-from graphql.language import parse, OperationDefinitionNode, Source
+from graphql.error import GraphQLError, format_error, print_error
+from graphql.language import (
+    parse,
+    OperationDefinitionNode,
+    ObjectTypeDefinitionNode,
+    Source,
+)
 from graphql.pyutils import dedent
 
 
@@ -38,8 +43,8 @@ def describe_graphql_error():
     def uses_the_stack_of_an_original_error():
         try:
             raise RuntimeError("original")
-        except RuntimeError as e:
-            original = e
+        except RuntimeError as runtime_error:
+            original = runtime_error
         e = GraphQLError("msg", original_error=original)
         assert e.__class__.__name__ == "GraphQLError"
         assert e.__traceback__ is original.__traceback__
@@ -98,7 +103,7 @@ def describe_graphql_error():
     def serializes_to_include_message_and_locations():
         e = GraphQLError("msg", field_node)
         assert "msg" in str(e)
-        assert "(2:3)" in str(e)
+        assert ":2:3" in str(e)
         assert repr(e) == (
             "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)])"
         )
@@ -134,3 +139,74 @@ def describe_graphql_error():
         e1 = GraphQLError("msg")
         e2 = GraphQLError("msg")
         assert hash(e1) != hash(e2)
+
+
+def describe_print_error():
+    def prints_an_error_without_location():
+        error = GraphQLError("Error without location")
+        assert print_error(error) == "Error without location"
+
+    def prints_an_error_using_node_without_location():
+        error = GraphQLError(
+            "Error attached to node without location",
+            parse("{ foo }", no_location=True),
+        )
+        assert print_error(error) == "Error attached to node without location"
+
+    def prints_an_error_with_nodes_from_different_sources():
+        doc_a = parse(
+            Source(
+                dedent(
+                    """
+                    type Foo {
+                      field: String
+                    }
+                    """
+                ),
+                "SourceA",
+            )
+        )
+        op_a = doc_a.definitions[0]
+        op_a = cast(ObjectTypeDefinitionNode, op_a)
+        assert op_a and op_a.kind == "object_type_definition" and op_a.fields
+        field_a = op_a.fields[0]
+        doc_b = parse(
+            Source(
+                dedent(
+                    """
+                    type Foo {
+                      field: Int
+                    }
+                    """
+                ),
+                "SourceB",
+            )
+        )
+        op_b = doc_b.definitions[0]
+        op_b = cast(ObjectTypeDefinitionNode, op_b)
+        assert op_b and op_b.kind == "object_type_definition" and op_b.fields
+        field_b = op_b.fields[0]
+
+        error = GraphQLError(
+            "Example error with two nodes", [field_a.type, field_b.type]
+        )
+
+        printed_error = print_error(error)
+        assert printed_error + "\n" == dedent(
+            """
+            Example error with two nodes
+
+            SourceA:2:10
+            1 | type Foo {
+            2 |   field: String
+              |          ^
+            3 | }
+
+            SourceB:2:10
+            1 | type Foo {
+            2 |   field: Int
+              |          ^
+            3 | }
+            """
+        )
+        assert str(error) == printed_error

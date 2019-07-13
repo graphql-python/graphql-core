@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
 from graphql.pyutils import dedent
@@ -14,7 +14,7 @@ from graphql.type import (
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
-    is_enum_type,
+    assert_enum_type,
 )
 from graphql.utilities import (
     build_schema,
@@ -62,6 +62,23 @@ def describe_type_system_build_schema_from_introspection():
         )
 
         assert cycle_introspection(sdl) == sdl
+
+    def builds_a_schema_without_the_query_type():
+        sdl = dedent(
+            """
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        schema = build_schema(sdl)
+        introspection = introspection_from_schema(schema)
+        del introspection["__schema"]["queryType"]
+
+        client_schema = build_client_schema(introspection)
+        assert client_schema.query_type is None
+        assert print_schema(client_schema) == sdl
 
     def builds_a_simple_schema_with_all_operation_types():
         sdl = dedent(
@@ -332,10 +349,8 @@ def describe_type_system_build_schema_from_introspection():
         second_introspection = introspection_from_schema(client_schema)
         assert second_introspection == introspection
 
-        client_food_enum = client_schema.get_type("Food")
-
         # It's also an Enum type on the client.
-        assert is_enum_type(client_food_enum)
+        client_food_enum = assert_enum_type(client_schema.get_type("Food"))
 
         values = client_food_enum.values
         descriptions = {name: value.description for name, value in values.items()}
@@ -413,6 +428,25 @@ def describe_type_system_build_schema_from_introspection():
 
         assert cycle_introspection(sdl) == sdl
 
+    def builds_a_schema_without_directives():
+        sdl = dedent(
+            """
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        schema = build_schema(sdl)
+        introspection = introspection_from_schema(schema)
+        del introspection["__schema"]["directives"]
+
+        client_schema = build_client_schema(introspection)
+
+        assert schema.directives
+        assert client_schema.directives == []
+        assert print_schema(client_schema) == sdl
+
     def builds_a_schema_aware_of_deprecation():
         sdl = dedent(
             '''
@@ -488,6 +522,27 @@ def describe_type_system_build_schema_from_introspection():
             directive @SomeDirective on QUERY
             """
         )
+
+        def throws_when_introspection_is_missing_schema_property():
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                build_client_schema(None)
+
+            assert str(exc_info.value) == (
+                "Invalid or incomplete introspection result. Ensure that you"
+                " are passing the 'data' attribute of an introspection response"
+                " and no 'errors' were returned alongside: None"
+            )
+
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                build_client_schema({})
+
+            assert str(exc_info.value) == (
+                "Invalid or incomplete introspection result. Ensure that you"
+                " are passing the 'data' attribute of an introspection response"
+                " and no 'errors' were returned alongside: {}"
+            )
 
         def throws_when_referenced_unknown_type():
             introspection = introspection_from_schema(dummy_schema)

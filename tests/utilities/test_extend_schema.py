@@ -1,6 +1,6 @@
 from typing import Union
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
 from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode
@@ -42,7 +42,7 @@ from graphql.utilities import build_schema, extend_schema, print_schema
 
 SomeScalarType = GraphQLScalarType(name="SomeScalar")
 
-SomeInterfaceType = GraphQLInterfaceType(
+SomeInterfaceType: GraphQLInterfaceType = GraphQLInterfaceType(
     name="SomeInterface",
     fields=lambda: {
         "name": GraphQLField(GraphQLString),
@@ -50,7 +50,7 @@ SomeInterfaceType = GraphQLInterfaceType(
     },
 )
 
-FooType = GraphQLObjectType(
+FooType: GraphQLObjectType = GraphQLObjectType(
     name="Foo",
     interfaces=[SomeInterfaceType],
     fields=lambda: {
@@ -87,6 +87,7 @@ SomeInputType = GraphQLInputObjectType(
 FooDirective = GraphQLDirective(
     name="foo",
     args={"input": GraphQLArgument(SomeInputType)},
+    is_repeatable=True,
     locations=[
         DirectiveLocation.SCHEMA,
         DirectiveLocation.SCALAR,
@@ -222,13 +223,7 @@ def describe_extend_schema():
         assert query_type.fields["foo"].type == foo_type
 
     def extends_objects_with_standard_type_fields():
-        schema = build_schema(
-            """
-            type Query {
-              str: String
-            }
-            """
-        )
+        schema = build_schema("type Query")
 
         # Only String and Boolean are used by introspection types
         assert schema.get_type("Int") is None
@@ -317,8 +312,10 @@ def describe_extend_schema():
                 extend union SomeUnion = SomeUnion
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == "SomeUnion types must be GraphQLObjectType objects."
+        assert str(exc_info.value) == (
+            "SomeUnion types must be specified"
+            " as a sequence of GraphQLObjectType instances."
+        )
 
     def extends_inputs_by_adding_new_fields():
         extended_schema = extend_test_schema(
@@ -422,7 +419,7 @@ def describe_extend_schema():
               interfaceField: String
             }
 
-            directive @test(arg: Int) on FIELD | SCALAR
+            directive @test(arg: Int) repeatable on FIELD | SCALAR
             """
         )
         extended_twice_schema = extend_schema(extended_schema, ast)
@@ -1074,7 +1071,7 @@ def describe_extend_schema():
     def may_extend_directives_with_new_complex_directive():
         extended_schema = extend_test_schema(
             """
-            directive @profile(enable: Boolean! tag: String) on QUERY | FIELD
+            directive @profile(enable: Boolean! tag: String) repeatable on QUERY | FIELD
             """
         )
 
@@ -1131,13 +1128,7 @@ def describe_extend_schema():
 
     def describe_can_add_additional_root_operation_types():
         def does_not_automatically_include_common_root_type_names():
-            schema = extend_test_schema(
-                """
-                type Mutation {
-                  doSomething: String
-                }
-                """
-            )
+            schema = extend_test_schema("type Mutation")
             assert schema.mutation_type is None
 
         def adds_schema_definition_missing_in_the_original_schema():
@@ -1163,9 +1154,7 @@ def describe_extend_schema():
                   mutation: Mutation
                 }
 
-                type Mutation {
-                  doSomething: String
-                }
+                type Mutation
                 """
             )
             mutation_type = schema.mutation_type
@@ -1179,13 +1168,8 @@ def describe_extend_schema():
                   subscription: Subscription
                 }
 
-                type Mutation {
-                  doSomething: String
-                }
-
-                type Subscription {
-                  hearSomething: String
-                }
+                type Mutation
+                type Subscription
                 """
             )
             mutation_type = schema.mutation_type
@@ -1199,18 +1183,12 @@ def describe_extend_schema():
                 extend schema {
                   mutation: Mutation
                 }
+                type Mutation
 
                 extend schema {
                   subscription: Subscription
                 }
-
-                type Mutation {
-                  doSomething: String
-                }
-
-                type Subscription {
-                  hearSomething: String
-                }
+                type Subscription
                 """
             )
             mutation_type = schema.mutation_type
@@ -1224,18 +1202,12 @@ def describe_extend_schema():
                 extend schema {
                   mutation: Mutation
                 }
+                type Mutation
 
                 extend schema {
                   subscription: Subscription
                 }
-
-                type Mutation {
-                  doSomething: String
-                }
-
-                type Subscription {
-                  hearSomething: String
-                }
+                type Subscription
                 """
             )
 

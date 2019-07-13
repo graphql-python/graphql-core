@@ -1,6 +1,6 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
-from graphql.language import DirectiveLocation
+from graphql.language import DirectiveLocation, TypeDefinitionNode, TypeExtensionNode
 from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
@@ -30,6 +30,8 @@ def describe_type_system_schema():
                 "height": GraphQLField(GraphQLInt),
             },
         )
+
+        BlogArticle: GraphQLObjectType
 
         BlogAuthor = GraphQLObjectType(
             "Author",
@@ -82,6 +84,19 @@ def describe_type_system_schema():
         )
 
         schema = GraphQLSchema(BlogQuery, BlogMutation, BlogSubscription)
+
+        kwargs = schema.to_kwargs()
+        types = kwargs.pop("types")
+        assert types == list(schema.type_map.values())
+        assert kwargs == {
+            "query": BlogQuery,
+            "mutation": BlogMutation,
+            "subscription": BlogSubscription,
+            "directives": None,
+            "ast_node": None,
+            "extension_ast_nodes": None,
+            "assume_valid": False,
+        }
 
         assert print_schema(schema) == dedent(
             """
@@ -192,11 +207,38 @@ def describe_type_system_schema():
             assert "Foo" in schema.type_map
             assert "Bar" in schema.type_map
 
+    def describe_type_map_reducer():
+        def allows_overriding_the_type_map_reducers():
+            foo_type = GraphQLObjectType("Foo", {"bar": GraphQLField(GraphQLString)})
+            query_type = GraphQLObjectType("Query", {"foo": GraphQLField(foo_type)})
+            baz_directive = GraphQLDirective("Baz", [])
+
+            log_types = []
+            log_directives = []
+
+            class CustomGraphQLSchema(GraphQLSchema):
+                def type_map_reducer(self, map_, type_):
+                    log_types.append(type_)
+                    return super().type_map_reducer(map_, type_)
+
+                def type_map_directive_reducer(self, map_, directive):
+                    log_directives.append(directive)
+                    return super().type_map_directive_reducer(map_, directive)
+
+            schema = CustomGraphQLSchema(query_type, directives=[baz_directive])
+            assert schema.type_map["Query"] == query_type
+            assert schema.type_map["Foo"] == foo_type
+            assert schema.directives == [baz_directive]
+            assert query_type in log_types
+            assert foo_type in log_types
+            assert GraphQLString in log_types
+            assert log_directives == [baz_directive]
+
     def describe_validity():
         def describe_when_not_assumed_valid():
             def configures_the_schema_to_still_needing_validation():
                 # noinspection PyProtectedMember
-                assert GraphQLSchema(assume_valid=False)._validation_errors is None
+                assert GraphQLSchema(assume_valid=False).validation_errors is None
 
             def checks_the_configuration_for_mistakes():
                 with raises(Exception):
@@ -262,4 +304,26 @@ def describe_type_system_schema():
         def describe_when_assumed_valid():
             def configures_the_schema_to_have_no_errors():
                 # noinspection PyProtectedMember
-                assert GraphQLSchema(assume_valid=True)._validation_errors == []
+                assert GraphQLSchema(assume_valid=True).validation_errors == []
+
+    def describe_ast_nodes():
+        def rejects_a_schema_with_an_incorrect_ast_node():
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                GraphQLSchema(
+                    GraphQLObjectType("Query", {}), ast_node=TypeDefinitionNode()
+                )
+            msg = str(exc_info.value)
+            assert msg == "Schema AST node must be a SchemaDefinitionNode."
+
+        def rejects_a_scalar_type_with_incorrect_extension_ast_nodes():
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                GraphQLSchema(
+                    GraphQLObjectType("Query", {}),
+                    extension_ast_nodes=[TypeExtensionNode()],
+                )
+            assert str(exc_info.value) == (
+                "Schema extension AST nodes must be specified"
+                " as a sequence of SchemaExtensionNode instances."
+            )

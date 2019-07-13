@@ -1,6 +1,6 @@
 from typing import cast
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.pyutils import dedent, inspect
 from graphql.error import GraphQLSyntaxError
@@ -67,13 +67,13 @@ def describe_parser():
         assert error.message == "Syntax Error: Expected Name, found <EOF>"
         assert error.positions == [1]
         assert error.locations == [(1, 2)]
-        assert str(error) == dedent(
+        assert str(error) + "\n" == dedent(
             """
             Syntax Error: Expected Name, found <EOF>
 
-            GraphQL request (1:2)
-            1: {
-                ^
+            GraphQL request:1:2
+            1 | {
+              |  ^
             """
         )
         assert_syntax_error(
@@ -91,9 +91,14 @@ def describe_parser():
         with raises(GraphQLSyntaxError) as exc_info:
             parse(Source("query", "MyQuery.graphql"))
         error = exc_info.value
-        assert str(error) == (
-            "Syntax Error: Expected {, found <EOF>\n\n"
-            "MyQuery.graphql (1:6)\n1: query\n        ^\n"
+        assert str(error) + "\n" == dedent(
+            """
+            Syntax Error: Expected {, found <EOF>
+
+            MyQuery.graphql:1:6
+            1 | query
+              |      ^
+            """
         )
 
     def parses_variable_inline_values():
@@ -383,6 +388,25 @@ def describe_parser():
         end_token = result.loc.end_token
         assert isinstance(end_token, Token)
         assert end_token.kind == TokenKind.EOF
+
+    def allows_comments_everywhere_in_the_source():
+        # make sure first and last line can be comment
+        result = parse(
+            """# top comment
+            {
+              field # field comment
+            }
+            # bottom comment"""
+        )
+        top_comment = result.loc.start_token.next
+        assert top_comment.kind is TokenKind.COMMENT
+        assert top_comment.value == " top comment"
+        field_comment = top_comment.next.next.next
+        assert field_comment.kind is TokenKind.COMMENT
+        assert field_comment.value == " field comment"
+        bottom_comment = field_comment.next.next
+        assert bottom_comment.kind is TokenKind.COMMENT
+        assert bottom_comment.value == " bottom comment"
 
 
 def describe_parse_value():
