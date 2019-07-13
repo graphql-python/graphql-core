@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.language import ScalarTypeDefinitionNode, NameNode, print_ast, parse
 from graphql.pyutils import dedent

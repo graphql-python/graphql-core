@@ -1,6 +1,6 @@
 from typing import Union
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
 from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode
@@ -42,7 +42,7 @@ from graphql.utilities import build_schema, extend_schema, print_schema
 
 SomeScalarType = GraphQLScalarType(name="SomeScalar")
 
-SomeInterfaceType = GraphQLInterfaceType(
+SomeInterfaceType: GraphQLInterfaceType = GraphQLInterfaceType(
     name="SomeInterface",
     fields=lambda: {
         "name": GraphQLField(GraphQLString),
@@ -50,7 +50,7 @@ SomeInterfaceType = GraphQLInterfaceType(
     },
 )
 
-FooType = GraphQLObjectType(
+FooType: GraphQLObjectType = GraphQLObjectType(
     name="Foo",
     interfaces=[SomeInterfaceType],
     fields=lambda: {

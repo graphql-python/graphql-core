@@ -91,7 +91,10 @@ episode_enum = GraphQLEnumType(
 #     appearsIn: [Episode]
 #     secretBackstory: String
 
-character_interface = GraphQLInterfaceType(
+human_type: GraphQLObjectType
+droid_type: GraphQLObjectType
+
+character_interface: GraphQLInterfaceType = GraphQLInterfaceType(
     "Character",
     lambda: {
         "id": GraphQLField(

@@ -449,7 +449,7 @@ class GraphQLField:
             )
         else:
             args = {
-                name: cast(GraphQLArgument, value)
+                name: value
                 if isinstance(value, GraphQLArgument)
                 else GraphQLArgument(cast(GraphQLInputType, value))
                 for name, value in args.items()

@@ -1,6 +1,6 @@
 from inspect import isawaitable
 
-from pytest import mark, raises
+from pytest import mark, raises  # type: ignore
 
 from graphql import graphql_sync
 from graphql.execution import execute

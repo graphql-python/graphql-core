@@ -62,7 +62,6 @@ async def subscribe(
         return ExecutionResult(data=None, errors=[error])
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
-    result_or_stream = cast(AsyncIterable, result_or_stream)
 
     async def map_source_to_response(payload):
         """Map source to response.
@@ -153,7 +152,6 @@ async def create_source_event_stream(
     # Call the `subscribe()` resolver or the default resolver to produce an
     # AsyncIterable yielding raw payloads.
     resolve_fn = field_def.subscribe or context.field_resolver
-    resolve_fn = cast(GraphQLFieldResolver, resolve_fn)  # help mypy
 
     path = add_path(None, response_name)
 
@@ -172,7 +170,7 @@ async def create_source_event_stream(
 
     # Assert field returned an event stream, otherwise yield an error.
     if isinstance(event_stream, AsyncIterable):
-        return cast(AsyncIterable, event_stream)
+        return event_stream
     raise TypeError(
         f"Subscription field must return AsyncIterable. Received: {event_stream!r}"
     )

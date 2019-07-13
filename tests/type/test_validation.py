@@ -1,7 +1,7 @@
 from functools import partial
-from typing import cast, List, Union
+from typing import cast, List
 
-from pytest import mark, raises
+from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse
 from graphql.pyutils import FrozenList
@@ -14,7 +14,6 @@ from graphql.type import (
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLList,
-    GraphQLNamedType,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLOutputType,
@@ -22,7 +21,6 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
-    GraphQLWrappingType,
     validate_schema,
     GraphQLArgument,
     GraphQLDirective,
@@ -31,6 +29,8 @@ from graphql.utilities import build_schema, extend_schema
 
 
 SomeScalarType = GraphQLScalarType(name="SomeScalar")
+
+SomeObjectType: GraphQLObjectType
 
 SomeInterfaceType = GraphQLInterfaceType(
     name="SomeInterface", fields=lambda: {"f": GraphQLField(SomeObjectType)}
@@ -52,10 +52,8 @@ SomeInputObjectType = GraphQLInputObjectType(
 )
 
 
-def with_modifiers(
-    types: List[GraphQLNamedType]
-) -> List[Union[GraphQLNamedType, GraphQLWrappingType]]:
-    types = cast(List[Union[GraphQLNamedType, GraphQLWrappingType]], types)
+def with_modifiers(types: List) -> List:
+    # noinspection PyTypeChecker
     return (
         types
         + [GraphQLList(t) for t in types]

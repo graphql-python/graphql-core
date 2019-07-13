@@ -80,6 +80,8 @@ Dog = GraphQLObjectType(
     is_type_of=lambda *_args: True,
 )
 
+FurColor: GraphQLEnumType
+
 Cat = GraphQLObjectType(
     "Cat",
     lambda: {

@@ -130,9 +130,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                     bad_enum_value_message(
                         type_.name,
                         print_ast(node),
-                        enum_type_suggestion(
-                            cast(GraphQLEnumType, type_), cast(EnumValueNode, node)
-                        ),
+                        enum_type_suggestion(cast(GraphQLEnumType, type_), node),
                     ),
                     node,
                 )

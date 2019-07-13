@@ -1,7 +1,7 @@
 import asyncio
 from typing import cast
 
-from pytest import raises, mark
+from pytest import raises, mark  # type: ignore
 
 from graphql.error import GraphQLError
 from graphql.execution import execute
@@ -106,6 +106,8 @@ def describe_execute_handles_basic_execution_tasks():
         async def promise_data():
             await asyncio.sleep(0)
             return Data()
+
+        DeepDataType: GraphQLObjectType
 
         DataType = GraphQLObjectType(
             "DataType",

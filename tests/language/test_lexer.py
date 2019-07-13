@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind

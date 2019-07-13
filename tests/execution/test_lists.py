@@ -1,7 +1,7 @@
 from collections import namedtuple
 from gc import collect
 
-from pytest import mark
+from pytest import mark  # type: ignore
 
 from graphql.language import parse
 from graphql.type import (

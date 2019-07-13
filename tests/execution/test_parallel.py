@@ -1,6 +1,6 @@
 import asyncio
 
-from pytest import mark
+from pytest import mark  # type: ignore
 
 from graphql.execution import execute
 from graphql.language import parse

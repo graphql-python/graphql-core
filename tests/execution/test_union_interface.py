@@ -26,7 +26,7 @@ class Cat(NamedTuple):
     meows: bool
 
 
-class Person(NamedTuple):
+class Person(NamedTuple):  # type: ignore
 
     name: str
     pets: List[Union[Dog, Cat]]

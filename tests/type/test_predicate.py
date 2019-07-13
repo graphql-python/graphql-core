@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.language import DirectiveLocation
 from graphql.type import (

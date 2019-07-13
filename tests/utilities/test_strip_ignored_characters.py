@@ -1,6 +1,7 @@
 from json import dumps
+from typing import Optional
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind, parse
@@ -38,7 +39,7 @@ non_punctuator_tokens = [
 ]
 
 
-def lex_value(s: str) -> str:
+def lex_value(s: str) -> Optional[str]:
     lexer = Lexer(Source(s))
     value = lexer.advance().value
     assert lexer.advance().kind == TokenKind.EOF

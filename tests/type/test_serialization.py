@@ -1,6 +1,6 @@
 from math import inf, nan
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.type import (
     GraphQLBoolean,

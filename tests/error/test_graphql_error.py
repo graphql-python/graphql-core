@@ -43,8 +43,8 @@ def describe_graphql_error():
     def uses_the_stack_of_an_original_error():
         try:
             raise RuntimeError("original")
-        except RuntimeError as e:
-            original = e
+        except RuntimeError as runtime_error:
+            original = runtime_error
         e = GraphQLError("msg", original_error=original)
         assert e.__class__.__name__ == "GraphQLError"
         assert e.__traceback__ is original.__traceback__

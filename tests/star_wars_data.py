@@ -104,7 +104,7 @@ droid_data = {"2000": threepio, "2001": artoo}
 # noinspection PyShadowingBuiltins
 def get_character(id: str) -> Character:
     """Helper function to get a character by ID."""
-    return human_data.get(id) or droid_data.get(id)
+    return human_data.get(id) or droid_data.get(id)  # type: ignore
 
 
 def get_friends(character: Character) -> Iterator[Character]:
@@ -124,13 +124,13 @@ def get_hero(episode: int) -> Character:
 # noinspection PyShadowingBuiltins
 def get_human(id: str) -> Human:
     """Allows us to query for the human with the given id."""
-    return human_data.get(id)
+    return human_data.get(id)  # type: ignore
 
 
 # noinspection PyShadowingBuiltins
 def get_droid(id: str) -> Droid:
     """Allows us to query for the droid with the given id."""
-    return droid_data.get(id)
+    return droid_data.get(id)  # type: ignore
 
 
 # noinspection PyUnusedLocal

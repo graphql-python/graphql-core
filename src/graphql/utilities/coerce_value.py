@@ -180,7 +180,7 @@ def coerce_value(
         return (
             of_errors(errors)
             if errors
-            else of_value(type_.out_type(coerced_value_dict))  # type: ignore
+            else of_value(type_.out_type(coerced_value_dict))
         )
 
     # Not reachable. All possible input types have been considered.

@@ -103,14 +103,13 @@ def build_ast_schema(
         if isinstance(def_, SchemaDefinitionNode):
             schema_def = def_
         elif isinstance(def_, TypeDefinitionNode):
-            def_ = cast(TypeDefinitionNode, def_)
             type_defs.append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
             append_directive_def(def_)
 
     def resolve_type(type_name: str) -> GraphQLNamedType:
         type_ = type_map.get(type_name)
-        if not type:
+        if not type_:
             raise TypeError(f"Type '{type_name}' not found in document.")
         return type_
 

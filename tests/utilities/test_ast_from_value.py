@@ -1,6 +1,6 @@
 from math import nan
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.error import INVALID
 from graphql.language import (

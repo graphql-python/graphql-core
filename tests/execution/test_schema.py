@@ -16,6 +16,18 @@ from graphql.type import (
 
 def describe_execute_handles_execution_with_a_complex_schema():
     def executes_using_a_schema():
+        class Article:
+
+            # noinspection PyShadowingBuiltins
+            def __init__(self, id):
+                self.id = id
+                self.isPublished = True
+                self.author = JohnSmith()
+                self.title = f"My Article {id}"
+                self.body = "This is a post"
+                self.hidden = "This data is not exposed in the schema"
+                self.keywords = ["foo", "bar", 1, True, None]
+
         BlogImage = GraphQLObjectType(
             "Image",
             {
@@ -24,6 +36,8 @@ def describe_execute_handles_execution_with_a_complex_schema():
                 "height": GraphQLField(GraphQLInt),
             },
         )
+
+        BlogArticle: GraphQLObjectType
 
         BlogAuthor = GraphQLObjectType(
             "Author",
@@ -73,18 +87,6 @@ def describe_execute_handles_execution_with_a_complex_schema():
         )
 
         BlogSchema = GraphQLSchema(BlogQuery)
-
-        class Article:
-
-            # noinspection PyShadowingBuiltins
-            def __init__(self, id):
-                self.id = id
-                self.isPublished = True
-                self.author = JohnSmith()
-                self.title = f"My Article {id}"
-                self.body = "This is a post"
-                self.hidden = "This data is not exposed in the schema"
-                self.keywords = ["foo", "bar", 1, True, None]
 
         # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Author:

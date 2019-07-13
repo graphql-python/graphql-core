@@ -93,9 +93,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         elif is_object_type(type_):
             kwargs = type_.to_kwargs()
             object_type = cast(GraphQLObjectType, type_)
-            # noinspection PyTypeChecker
             kwargs.update(
-                interfaces=lambda: sort_types(object_type.interfaces),  # type: ignore
+                interfaces=lambda: sort_types(object_type.interfaces),
                 fields=lambda: sort_fields(object_type.fields),
             )
             return GraphQLObjectType(**kwargs)
@@ -107,8 +106,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         elif is_union_type(type_):
             kwargs = type_.to_kwargs()
             union_type = cast(GraphQLUnionType, type_)
-            # noinspection PyTypeChecker
-            kwargs.update(types=lambda: sort_types(union_type.types))  # type: ignore
+            kwargs.update(types=lambda: sort_types(union_type.types))
             return GraphQLUnionType(**kwargs)
         elif is_enum_type(type_):
             kwargs = type_.to_kwargs()

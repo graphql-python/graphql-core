@@ -1,6 +1,6 @@
 from typing import cast
 
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.pyutils import dedent, inspect
 from graphql.error import GraphQLSyntaxError

@@ -24,7 +24,7 @@ def expect_value(result: CoercedValue) -> Any:
 
 def expect_error(result: CoercedValue) -> List[str]:
     errors = result.errors
-    messages = errors and [error.message for error in errors]
+    messages = [error.message for error in errors] if errors else []
     assert result.value is INVALID
     return messages
 

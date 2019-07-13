@@ -1,4 +1,4 @@
-from pytest import mark, raises
+from pytest import mark, raises  # type: ignore
 
 from graphql.execution import MiddlewareManager, execute
 from graphql.language.parser import parse

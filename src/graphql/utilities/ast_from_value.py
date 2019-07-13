@@ -71,11 +71,9 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
         if isinstance(value, Iterable) and not isinstance(value, str):
-            value_nodes = [
-                ast_from_value(item, item_type) for item in value  # type: ignore
-            ]
+            value_nodes = [ast_from_value(item, item_type) for item in value]
             return ListValueNode(values=value_nodes)
-        return ast_from_value(value, item_type)  # type: ignore
+        return ast_from_value(value, item_type)
 
     # Populate the fields of the input object by creating ASTs from each value in the
     # Python dict according to the fields in the input type.

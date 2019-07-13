@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
 from graphql.pyutils import dedent
@@ -526,7 +526,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_introspection_is_missing_schema_property():
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                build_client_schema(None)  # type: ignore
+                build_client_schema(None)
 
             assert str(exc_info.value) == (
                 "Invalid or incomplete introspection result. Ensure that you"
@@ -536,7 +536,7 @@ def describe_type_system_build_schema_from_introspection():
 
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                build_client_schema({})  # type: ignore
+                build_client_schema({})
 
             assert str(exc_info.value) == (
                 "Invalid or incomplete introspection result. Ensure that you"

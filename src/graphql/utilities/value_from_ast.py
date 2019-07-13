@@ -124,7 +124,7 @@ def value_from_ast(
                 return INVALID
             coerced_obj[field.out_name or field_name] = field_value
 
-        return type_.out_type(coerced_obj)  # type: ignore
+        return type_.out_type(coerced_obj)
 
     if is_enum_type(type_):
         if not isinstance(value_node, EnumValueNode):

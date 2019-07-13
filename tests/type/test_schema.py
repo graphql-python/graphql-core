@@ -1,4 +1,4 @@
-from pytest import raises
+from pytest import raises  # type: ignore
 
 from graphql.language import DirectiveLocation, TypeDefinitionNode, TypeExtensionNode
 from graphql.pyutils import dedent
@@ -30,6 +30,8 @@ def describe_type_system_schema():
                 "height": GraphQLField(GraphQLInt),
             },
         )
+
+        BlogArticle: GraphQLObjectType
 
         BlogAuthor = GraphQLObjectType(
             "Author",
@@ -310,7 +312,7 @@ def describe_type_system_schema():
                 # noinspection PyTypeChecker
                 GraphQLSchema(
                     GraphQLObjectType("Query", {}), ast_node=TypeDefinitionNode()
-                )  # type: ignore
+                )
             msg = str(exc_info.value)
             assert msg == "Schema AST node must be a SchemaDefinitionNode."
 
@@ -320,7 +322,7 @@ def describe_type_system_schema():
                 GraphQLSchema(
                     GraphQLObjectType("Query", {}),
                     extension_ast_nodes=[TypeExtensionNode()],
-                )  # type: ignore
+                )
             assert str(exc_info.value) == (
                 "Schema extension AST nodes must be specified"
                 " as a sequence of SchemaExtensionNode instances."
