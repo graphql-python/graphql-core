@@ -28,7 +28,7 @@ version_js = "14.4.0"
 version_info_js = VersionInfo(14, 4, 0, "final", 0)
 
 warn(
-    "Note: GraphQL-core-next has been deprecated.\n"
-    " It is now available as GraphQL-core version 3 and newer.\n",
+    "GraphQL-core-next has been discontinued."
+    " It is now released as GraphQL-core v3 and newer.",
     DeprecationWarning,
 )
