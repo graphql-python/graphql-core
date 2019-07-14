@@ -4,7 +4,7 @@ GraphQL-core 3 is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
-[![PyPI version](https://badge.fury.io/py/GraphQL-core-next.svg)](https://badge.fury.io/py/GraphQL-core-next)
+[![PyPI version](https://badge.fury.io/py/graphql-core.svg)](https://badge.fury.io/py/graphql-core)
 [![Documentation Status](https://readthedocs.org/projects/graphql-core-next/badge/)](https://graphql-core-next.readthedocs.io)
 [![Build Status](https://travis-ci.com/graphql-python/graphql-core-next.svg?branch=master)](https://travis-ci.com/graphql-python/graphql-core-next)
 [![Coverage Status](https://codecov.io/gh/graphql-python/graphql-core-next/branch/master/graph/badge.svg)](https://codecov.io/gh/graphql-python/graphql-core-next)
