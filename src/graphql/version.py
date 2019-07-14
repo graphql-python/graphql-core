@@ -1,5 +1,4 @@
 from typing import NamedTuple
-from warnings import warn
 
 __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
@@ -26,9 +25,3 @@ version_info = VersionInfo(3, 0, 0, "alpha", 0)
 version_js = "14.4.0"
 
 version_info_js = VersionInfo(14, 4, 0, "final", 0)
-
-warn(
-    "GraphQL-core-next has been discontinued."
-    " It is now released as GraphQL-core v3 and newer.",
-    DeprecationWarning,
-)

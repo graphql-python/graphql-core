@@ -1,12 +1,9 @@
 Introduction
 ============
 
-`GraphQL-core-next`_ is a Python port of `GraphQL.js`_,
+`GraphQL-core-3`_ is a Python port of `GraphQL.js`_,
 the JavaScript reference implementation for GraphQL_,
 a query language for APIs created by Facebook.
-
-.. attention:: GraphQL-core-next has been deprecated.
-   It is now released as GraphQL-core v3 and newer.
 
 `GraphQL`_ consists of three parts:
 
@@ -25,22 +22,22 @@ which consists of the following sections:
 * Response_
 
 This division into subsections is reflected in the :ref:`sub-packages` of
-GraphQL-core-next. Each of these sub-packages implements the aspects specified in
+GraphQL-core 3. Each of these sub-packages implements the aspects specified in
 one of the sections of the specification.
 
 
 Getting started
 ---------------
 
-You can install GraphQL-core-next using pip_::
+You can install GraphQL-core 3 using pip_::
 
-    pip install graphql-core-next
+    pip install "graphql-core>=3"
 
-You can also install GraphQL-core-next with pipenv_, if you prefer that::
+You can also install GraphQL-core 3 with pipenv_, if you prefer that::
 
-    pipenv install graphql-core-next
+    pipenv install "graphql-core>=3"
 
-Now you can start using GraphQL-core-next by importing from the top-level
+Now you can start using GraphQL-core 3 by importing from the top-level
 :mod:`graphql` package. Nearly everything defined in the sub-packages
 can also be imported directly from the top-level package.
 
@@ -82,13 +79,13 @@ This will yield the following output::
 Reporting Issues and Contributing
 ---------------------------------
 
-Please visit the `GitHub repository of GraphQL-core-next`_ if you're interested
+Please visit the `GitHub repository of GraphQL-core 3`_ if you're interested
 in the current development or want to report issues or send pull requests.
 
 .. _GraphQL: https://graphql.org/
 .. _GraphQl.js: https://github.com/graphql/graphql-js
-.. _GraphQl-core-next: https://github.com/graphql-python/graphql-core-next
-.. _GitHub repository of GraphQL-core-next: https://github.com/graphql-python/graphql-core-next
+.. _GraphQl-core-3: https://github.com/graphql-python/graphql-core-next
+.. _GitHub repository of GraphQL-core 3: https://github.com/graphql-python/graphql-core-next
 .. _Specification for GraphQL: https://facebook.github.io/graphql/
 .. _Language: https://facebook.github.io/graphql/draft/#sec-Language
 .. _Type System: https://facebook.github.io/graphql/draft/#sec-Type-System

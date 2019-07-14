@@ -1,5 +1,5 @@
-Welcome to GraphQL-core-next
-============================
+Welcome to GraphQL-core 3
+=========================
 
 Contents
 --------

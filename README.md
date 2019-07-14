@@ -1,6 +1,6 @@
-# GraphQL-core-next
+# GraphQL-core 3
 
-GraphQL-core-next is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
+GraphQL-core 3 is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
@@ -12,30 +12,21 @@ a query language for APIs created by Facebook.
 [![Python 3 Status](https://pyup.io/repos/github/graphql-python/graphql-core-next/python-3-shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core-next/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 3.0.0a0 of GraphQL-core-next is up-to-date with GraphQL.js version
-14.4.0. All parts of the API are covered by an extensive test suite of currently 1882
-unit tests.
+The current version 3.0.0a0 of GraphQL-core is up-to-date
+with GraphQL.js version 14.4.0.
 
-Development will be continued with the new distribution name GraphQL-core from now on.
-
-
-## GraphQL-core-next is now GraphQL-core 3
-
-GraphQL-core-next has been discontinued as a separate Python distribution.
-Instead, it is now released as GraphQL-core version 3 and newer, replacing
-the existing GraphQL-core distribution. The old versions of GraphQL-core,
-which also support older Python versions, are still available.
+All parts of the API are covered by an extensive test suite
+of currently 1882 unit tests.
 
 
 ## Documentation
 
-A more detailed documentation for GraphQL-core-next can be found at
+A more detailed documentation for GraphQL-core 3 can be found at
 [graphql-core-next.readthedocs.io](https://graphql-core-next.readthedocs.io/).
 
 The documentation for GraphQL.js can be found at [graphql.org/graphql-js/](https://graphql.org/graphql-js/).
 
 The documentation for GraphQL itself can be found at [graphql.org](https://graphql.org/).
-
 
 There will be also [blog articles](https://cito.github.io/tags/graphql/) with more usage
 examples.
@@ -53,19 +44,19 @@ README and the corresponding tests in parallel.
 
 ## Installation
 
-GraphQL-core-next can be installed from PyPI using the built-in pip command:
+GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
-    python -m pip install graphql-core-next
+    python -m pip install "graphql-core>=3"
 
 Alternatively, you can also use [pipenv](https://docs.pipenv.org/) for installation in a
 virtual environment:
 
-    pipenv install graphql-core-next
+    pipenv install "graphql-core>=3"
 
 
 ## Usage
 
-GraphQL-core-next provides two important capabilities: building a type schema, and
+GraphQL-core provides two important capabilities: building a type schema, and
 serving queries against that type schema.
 
 First, build a GraphQL type schema which maps to your code base:
@@ -176,25 +167,25 @@ finally:
 
 ## Goals and restrictions
 
-GraphQL-core-next tries to reproduce the code of the reference implementation GraphQL.js
+GraphQL-core tries to reproduce the code of the reference implementation GraphQL.js
 in Python as closely as possible and to stay up-to-date with the latest development of
 GraphQL.js.
 
-It has been created as a modern alternative to
-[GraphQL-core](https://github.com/graphql-python/graphql-core), a prior work
-by Syrus Akbary, based on an older version of GraphQL.js and also targeting
-older Python versions. Some parts of GraphQL-core-next have been inspired by
-GraphQL-core or directly taken over with only slight modifications, but most of the code
-has been re-implemented from scratch, replicating the latest code in GraphQL.js very
-closely and adding type hints for Python.
+GraphQL-core 3 (formerly known as GraphQL-core-next) has been created as a modern
+alternative to [GraphQL-core 2](https://github.com/graphql-python/graphql-core),
+a prior work by Syrus Akbary, based on an older version of GraphQL.js and also
+targeting older Python versions. Some parts of GraphQL-core 3 have been inspired by
+GraphQL-core 2 or directly taken over with only slight modifications, but most of the
+code has been re-implemented from scratch, replicating the latest code in GraphQL.js
+very closely and adding type hints for Python.
 
-Design goals for the GraphQL-core-next library are:
+Design goals for the GraphQL-core 3 library are:
 
 * to be a simple, cruft-free, state-of-the-art implementation of GraphQL using current
   library and language versions
 * to be very close to the GraphQL.js reference implementation, while still using a
   Pythonic API and code style
-* to make extensive use of Python type hints, similar to how GraphQL.js makes use of Flow
+* to make extensive use of Python type hints, similar to how GraphQL.js makes uses Flow
 * to use [black](https://github.com/ambv/black) for automatic code formatting
 * to replicate the complete Mocha-based test suite of GraphQL.js using
   [pytest](https://docs.pytest.org/)
@@ -216,10 +207,9 @@ Some restrictions (mostly in line with the design goals):
   also been created by Syrus Akbary, who meanwhile has handed over the maintenance
   and future development to members of the GraphQL-Python community.
 
-  The current version 2 of Graphene is using Graphql-core as core library for much of
-  the heavy lifting. Note that Graphene 2 is not compatible with GraphQL-core-next.
-  The  new version 3 of Graphene however is planned to use GraphQL-core-next instead of
-  GraphQL-core, and GraphQL-core-next will be renamed to Graphql-core 3.
+  The current version 2 of Graphene is using Graphql-core 2 as core library for much of
+  the heavy lifting. Note that Graphene 2 is not compatible with GraphQL-core 3.
+  The  new version 3 of Graphene will use GraphQL-core 3 instead of GraphQL-core 2.
 
 * [Ariadne](https://github.com/mirumee/ariadne) is a Python library for implementing
   GraphQL servers using schema-first approach created by Mirumee Software.
@@ -239,9 +229,9 @@ Changes are tracked as
 
 ## Credits and history
 
-The GraphQL-core-next library
+The GraphQL-core 3 library
 * has been created and is maintained by Christoph Zwerschke
-* uses ideas and code from GraphQL-core, a prior work by Syrus Akbary
+* uses ideas and code from GraphQL-core 2, a prior work by Syrus Akbary
 * is a Python port of GraphQL.js which has been developed by Lee Byron and others
   at Facebook, Inc. and is now maintained
   by the [GraphQL foundation](https://gql.foundation/join/)
@@ -255,6 +245,6 @@ and ported to many different programming languages.
 
 ## License
 
-GraphQL-core-next is
+GraphQL-core 3 is
 [MIT-licensed](https://github.com/graphql-python/graphql-core-next/blob/master/LICENSE),
 just like GraphQL.js.

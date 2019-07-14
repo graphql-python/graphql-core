@@ -43,7 +43,7 @@ def build_client_schema(
     """Build a GraphQLSchema for use by client tools.
 
     Given the result of a client running the introspection query, creates and returns
-    a GraphQLSchema instance which can be then used with all GraphQL-core-next tools,
+    a GraphQLSchema instance which can be then used with all GraphQL-core 3 tools,
     but cannot be used to execute a query, as introspection does not represent the
     "resolver", "parse" or "serialize" functions or any other server-internal
     mechanisms.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# GraphQL-core-next documentation build configuration file, created by
+# GraphQL-core 3 documentation build configuration file, created by
 # sphinx-quickstart on Thu Jun 21 16:28:30 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -50,7 +50,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'GraphQL-core-next'
+project = u'GraphQL-core 3'
 copyright = u'2019, Christoph Zwerschke'
 author = u'Christoph Zwerschke'
 
@@ -134,7 +134,7 @@ html_theme = 'sphinx_rtd_theme'
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #
-# html_title = u'GraphQL-core-next v1.0.0'
+# html_title = u'GraphQL-core v3.0.0'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #
@@ -234,7 +234,7 @@ html_show_sourcelink = False
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'GraphQL-core-next-doc'
+htmlhelp_basename = 'GraphQL-core-3-doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -260,7 +260,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'GraphQL-core-next.tex', u'GraphQL-core-next Documentation',
+    (master_doc, 'GraphQL-core-3.tex', u'GraphQL-core 3 Documentation',
      u'Christoph Zwerschke', 'manual'),
 ]
 
@@ -296,7 +296,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'graphql-core-next', u'GraphQL-core-next Documentation',
+    (master_doc, 'graphql-core', u'GraphQL-core 3 Documentation',
      [author], 1)
 ]
 
@@ -311,8 +311,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'GraphQL-core-next', u'GraphQL-core-next Documentation',
-     author, 'GraphQL-core-next', 'One line description of project.',
+    (master_doc, 'GraphQL-core', u'GraphQL-core 3 Documentation',
+     author, 'GraphQL-core 3', 'One line description of project.',
      'Miscellaneous'),
 ]
 

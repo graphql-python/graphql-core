@@ -1,9 +1,9 @@
-"""GraphQL-core-next
+"""GraphQL-core
 
 The primary :mod:`graphql` package includes everything you need to define a GraphQL
 schema and fulfill GraphQL requests.
 
-GraphQL-core-next provides a reference implementation for the GraphQL specification
+GraphQL-core provides a reference implementation for the GraphQL specification
 but is also a useful utility for operating on GraphQL files and building sophisticated
 tools.
 
@@ -25,7 +25,7 @@ import statements are equivalent::
     from graphql import parse
     from graphql.language import parse
 
-The sub-packages of GraphQL-core-next are:
+The sub-packages of GraphQL-core 3 are:
 
   - :mod:`graphql.language`: Parse and operate on the GraphQL language.
   - :mod:`graphql.type`: Define GraphQL types and schema.
@@ -37,7 +37,7 @@ The sub-packages of GraphQL-core-next are:
   - :mod:`graphql.subscription`: Subscribe to data updates.
 """
 
-# The GraphQL-core-next and GraphQL.js version info.
+# The GraphQL-core 3 and GraphQL.js version info.
 
 from .version import version, version_info, version_js, version_info_js
 
@@ -386,7 +386,7 @@ from .utilities import (
     find_dangerous_changes,
 )
 
-# The GraphQL-core-next version info.
+# The GraphQL-core version info.
 __version__ = version
 __version_info__ = version_info
 
