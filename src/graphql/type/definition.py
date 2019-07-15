@@ -394,7 +394,7 @@ class GraphQLScalarType(GraphQLNamedType):
             if self.parse_value is GraphQLScalarType.parse_value
             else self.parse_value,
             parse_literal=None
-            if getattr(self.parse_literal, "__func__")
+            if getattr(self.parse_literal, "__func__", None)
             is GraphQLScalarType.parse_literal
             else self.parse_literal,
         )
