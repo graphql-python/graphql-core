@@ -65,6 +65,7 @@ def describe_type_system_scalars():
 
         scalar = GraphQLScalarType("SomeScalar", serialize)
         assert scalar.serialize is serialize
+        assert scalar.to_kwargs()["serialize"] is serialize
 
     def defines_a_scalar_type_with_a_description():
         description = "nice scalar"
@@ -73,9 +74,21 @@ def describe_type_system_scalars():
         assert scalar.to_kwargs()["description"] is description
 
     def accepts_a_scalar_type_defining_parse_value_and_parse_literal():
-        assert GraphQLScalarType(
-            "SomeScalar", parse_value=lambda: None, parse_literal=lambda: None
+        def parse_value(_value):
+            return None
+
+        def parse_literal(_value_node, _variables):
+            return None
+
+        scalar = GraphQLScalarType(
+            "SomeScalar", parse_value=parse_value, parse_literal=parse_literal
         )
+        assert scalar.parse_value is parse_value
+        assert scalar.parse_literal is parse_literal
+
+        kwargs = scalar.to_kwargs()
+        assert kwargs["parse_value"] is parse_value
+        assert kwargs["parse_literal"] is parse_literal
 
     def provides_default_methods_if_omitted():
         scalar = GraphQLScalarType("Foo")
