@@ -1,38 +1,32 @@
 language: python
-
 matrix:
   include:
-    - env: TOXENV=black,flake8,mypy,docs
-      python: 3.7
-      dist: xenial
-      sudo: true
-    - env: TOXENV=py37
-      python: 3.7
-      dist: xenial
-      sudo: true
-    - env: TOXENV=py36
-      python: 3.6
-
+  - env: TOXENV=black,flake8,mypy,docs
+    python: 3.7
+    dist: xenial
+    sudo: true
+  - env: TOXENV=py37
+    python: 3.7
+    dist: xenial
+    sudo: true
+  - env: TOXENV=py36
+    python: 3.6
 cache:
   directories:
-    - $HOME/.cache/pip
-    - $TRAVIS_BUILD_DIR/.tox
-
+  - "$HOME/.cache/pip"
+  - "$TRAVIS_BUILD_DIR/.tox"
 install:
-  - pip install "poetry>=0.12.16"
-  - poetry install
-
+- pip install "poetry>=0.12.16"
+- poetry install
 script:
-   - tox -e $TOXENV -- --cov-report term-missing --cov=src
-
+- tox -e $TOXENV -- --cov-report term-missing --cov=src
 after_success:
-   - codecov
-
+- codecov
 deploy:
   provider: pypi
   user: mvanlonden
   on:
-      tags: true
+    tags: true
   password:
-      secure: xWXF8kHWqM2/KIxM3rSRM2zKU0ZSRzexxos2BrJK/favSNXthsAfbNrkvWgJRpleyo/WrP5A0yRoGZRFzDkg7JX4oqUNOMkVG591V6eLNdXLwvrpxTujzEY2dKcwWzJ+EreOesIZFsK2TpkAyE0ntzBDbyhHPJl5uLCVD0d7F//psIUOM2EHwR49efV+eDBFgSdEPZ+P/e8OUlPV+U9lxoqvc1qFz5o2aV5tOEadZy1jzKEKslu2U3/F8vdOHrDAJGND3d3xpjRndZuaPPMUp9Fzbf7KdHiKGhbtjIPbR6E0jGkI9y2hesdjOgktLjRmUxES+KfthwDpP0uEXdS4FhLA+eXb5j2oKrC2uI/5s3efq8L55v4lYVpqiKFhYPXkqYbRpITZnHsCDBqgDx9BcrziJ15Y2NEZl1vKvmT6rKSkzhxjXO0slPV/fC4Po9dPvujvAzM2QEfl6aCv0wkP66SaSwWyK3K3B2a0FT2jURQ9qHCQ9hMGjwwA3xQh8UyuMXonzOjmtt8R0F9NrZnvLetrKAJjR1oGhTgEwqFhmq2uK/Q8QILuUMBKGHkFv2Ve1p3CLEJcX+KHrpKtGJvnWYVIISTfDivdKNIjoN+hM90vH1tC1DrvFY/PXGMDO+MHwYgyOezcrNdj+sav02cLm5XG+7449S5vgIa4DpAE+24=
-  distributions: "sdist bdist_wheel"
+    secure: Wh18Cpv51DxBOnN3yTgmDpv+j+Gd/1DicpwmKxacdwn/2lay2DLMEzfc81A7nNhKQD5XA0VwAIXhVK5cZFPOT0MTUcvm6UoTo7urbH7/B1zW1YcfgRvJuMH3BVDvb+cUO0w3LuN1yEmiGSfPhvE72KUkic4IlnubZI42zK5tHba1AUDIz9gEuEQpkFMsuLlguEWA7wIodjzQMEmecSLD3AQB0inoBQ4f2vPjAFYfuY7EDT0l+cPNABHj0fC9Gloo/5Ha8f+rZNN8Ige84sX6RnOJ9a9xmbyv1T3U/hQuZsz1723Zyc1QmCWxvkuzLEvkKHBamDMXTrgBSQ6j00F0NxSxvMBv5MFBGqfERANEZ6noBa8Xy0qgPBMhLiXmzcPPmn9Q8NdNtvbvIkFDUOVKoSiBQcaZr+0nzZOgoSLCuwQfRigKofEtwc+AuY+26N05ctXC6lbL89q0JL/1WqNMIv/EnkosN7DR/8zXpC22PYBUT5x63F05h4QsrqiLbsSbumrZ6k68mxhq3Qw7u2hIVM9uw+E8cWjpIs/3iAByCXOa1K42mKSA72iL2Z9xQL1UAT6uHNTy1jEVbzFOn0Mr+MiHP7TL/yfaGU31kIBevQ9dLZpfwPe4texIwNtZQ/cG6waAKOWNwK1B6YsYGhoIbYTcJhyidBP7F2N9vbhu9DI=
+  distributions: sdist bdist_wheel
