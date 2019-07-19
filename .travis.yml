@@ -1,15 +1,18 @@
 language: python
 matrix:
   include:
-  - env: TOXENV=black,flake8,mypy,docs
+  - name: "Code quality tests"
+    env: TOXENV=black,flake8,mypy,docs
     python: 3.7
     dist: xenial
     sudo: true
-  - env: TOXENV=py37
+  - name: "Unit tests with Python 3.7"
+    env: TOXENV=py37
     python: 3.7
     dist: xenial
     sudo: true
-  - env: TOXENV=py36
+  - name: "Unit tests with Python 3.6"
+    env: TOXENV=py36
     python: 3.6
 cache:
   directories:
@@ -24,9 +27,12 @@ after_success:
 - codecov
 deploy:
   provider: pypi
-  user: mvanlonden
+  distributions: sdist bdist_wheel
   on:
+    branch: master
     tags: true
+    python: 3.7
+  skip_existing: true
+  user: mvanlonden
   password:
     secure: Wh18Cpv51DxBOnN3yTgmDpv+j+Gd/1DicpwmKxacdwn/2lay2DLMEzfc81A7nNhKQD5XA0VwAIXhVK5cZFPOT0MTUcvm6UoTo7urbH7/B1zW1YcfgRvJuMH3BVDvb+cUO0w3LuN1yEmiGSfPhvE72KUkic4IlnubZI42zK5tHba1AUDIz9gEuEQpkFMsuLlguEWA7wIodjzQMEmecSLD3AQB0inoBQ4f2vPjAFYfuY7EDT0l+cPNABHj0fC9Gloo/5Ha8f+rZNN8Ige84sX6RnOJ9a9xmbyv1T3U/hQuZsz1723Zyc1QmCWxvkuzLEvkKHBamDMXTrgBSQ6j00F0NxSxvMBv5MFBGqfERANEZ6noBa8Xy0qgPBMhLiXmzcPPmn9Q8NdNtvbvIkFDUOVKoSiBQcaZr+0nzZOgoSLCuwQfRigKofEtwc+AuY+26N05ctXC6lbL89q0JL/1WqNMIv/EnkosN7DR/8zXpC22PYBUT5x63F05h4QsrqiLbsSbumrZ6k68mxhq3Qw7u2hIVM9uw+E8cWjpIs/3iAByCXOa1K42mKSA72iL2Z9xQL1UAT6uHNTy1jEVbzFOn0Mr+MiHP7TL/yfaGU31kIBevQ9dLZpfwPe4texIwNtZQ/cG6waAKOWNwK1B6YsYGhoIbYTcJhyidBP7F2N9vbhu9DI=
-  distributions: sdist bdist_wheel
