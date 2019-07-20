@@ -1,17 +1,17 @@
 language: python
 matrix:
   include:
-  - name: "Code quality tests"
+  - name: Code quality tests
     env: TOXENV=black,flake8,mypy,docs
     python: 3.7
     dist: xenial
     sudo: true
-  - name: "Unit tests with Python 3.7"
+  - name: Unit tests with Python 3.7
     env: TOXENV=py37
     python: 3.7
     dist: xenial
     sudo: true
-  - name: "Unit tests with Python 3.6"
+  - name: Unit tests with Python 3.6
     env: TOXENV=py36
     python: 3.6
 cache:
@@ -35,4 +35,4 @@ deploy:
   skip_existing: true
   user: mvanlonden
   password:
-    secure: Wh18Cpv51DxBOnN3yTgmDpv+j+Gd/1DicpwmKxacdwn/2lay2DLMEzfc81A7nNhKQD5XA0VwAIXhVK5cZFPOT0MTUcvm6UoTo7urbH7/B1zW1YcfgRvJuMH3BVDvb+cUO0w3LuN1yEmiGSfPhvE72KUkic4IlnubZI42zK5tHba1AUDIz9gEuEQpkFMsuLlguEWA7wIodjzQMEmecSLD3AQB0inoBQ4f2vPjAFYfuY7EDT0l+cPNABHj0fC9Gloo/5Ha8f+rZNN8Ige84sX6RnOJ9a9xmbyv1T3U/hQuZsz1723Zyc1QmCWxvkuzLEvkKHBamDMXTrgBSQ6j00F0NxSxvMBv5MFBGqfERANEZ6noBa8Xy0qgPBMhLiXmzcPPmn9Q8NdNtvbvIkFDUOVKoSiBQcaZr+0nzZOgoSLCuwQfRigKofEtwc+AuY+26N05ctXC6lbL89q0JL/1WqNMIv/EnkosN7DR/8zXpC22PYBUT5x63F05h4QsrqiLbsSbumrZ6k68mxhq3Qw7u2hIVM9uw+E8cWjpIs/3iAByCXOa1K42mKSA72iL2Z9xQL1UAT6uHNTy1jEVbzFOn0Mr+MiHP7TL/yfaGU31kIBevQ9dLZpfwPe4texIwNtZQ/cG6waAKOWNwK1B6YsYGhoIbYTcJhyidBP7F2N9vbhu9DI=
+    secure: Pn76qa8IKoAtWtmc8N6mNyHNibSuMC8W+2pwlrwMIr1BhJaav+IZjs8oTZrFHDpLPS4+vKs21S3uNNfwabdV85L+qbOwxlVkgZ1IN0gGM1HA9SMmPQAt+Gsy5EUwaYwEGdej3+Vz1P10rtDIXpNBAB8DrwHzMSjGWBrJgnGqpAUaocVLfKqlB8Vt/4N+7B0B8LTP1LCuk7QOGbsor5yXzzUTlonl7BKn7JTZKMunqEv901/0KKr/za9xc4X+O+VBL6a7UXjXaxPyt6otrxeOcLEVuf/t/ZLGzQ5H5h7sccaWRFxogJIhR4h4LZOXF4gK+1tI+OJREEv4+ch3HOworJl7xqe1DtaobnP96/RUkQynomx5qYawzT/1MOt41kp47A0G72dV124cEzTNpqYvYntbm07ouIFMUvFazzEeclOeAA+BNaCKgACFZJIGgr16ldv7d/TK1Udmh9n0Pz/q503EwoVRyxSZ+eo+yoC+JkOZfrm2yQ2cERHc6lk8KT6SiuP3zkf/0lYCneXvx1B5807JxaGGklVUx3yM6Ccao/QG9slroKch6gs1h+ZPS3HQxrGJQf2t8NFUjhrdTD5hO0wdA+NzbN/feKaqAPiMLRFCiqMZBffo0oamRTG4ceoIMnMG/EDkg3LTbRKwKGWU0VR1+gPhp9Gbqvlsh4Dycx0=
