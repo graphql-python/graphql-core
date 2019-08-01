@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, TypeVar
 
 from .frozen_error import FrozenError
@@ -30,6 +31,15 @@ class FrozenList(List[T]):
 
     def __imul__(self, value):
         raise FrozenError
+
+    def __hash__(self):
+        return hash(tuple(self))
+
+    def __copy__(self):
+        return FrozenList(self)
+
+    def __deepcopy__(self, memo):
+        return FrozenList(deepcopy(value, memo) for value in self)
 
     def append(self, x):
         raise FrozenError

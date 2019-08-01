@@ -10,6 +10,7 @@ from ...language import (
     TypeNode,
     print_ast,
 )
+from ...pyutils import FrozenList
 from ...type import GraphQLArgument, is_required_argument, is_type, specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
@@ -81,7 +82,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
         required_args = self.required_args_map.get(directive_name)
         if required_args:
 
-            arg_nodes = directive_node.arguments or []
+            arg_nodes = directive_node.arguments or FrozenList()
             arg_node_set = {arg.name.value for arg in arg_nodes}
             for arg_name in required_args:
                 if arg_name not in arg_node_set:
@@ -117,7 +118,7 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
         field_def = self.context.get_field_def()
         if not field_def:
             return self.SKIP
-        arg_nodes = field_node.arguments or []
+        arg_nodes = field_node.arguments or FrozenList()
 
         arg_node_map = {arg.name.value: arg for arg in arg_nodes}
         for arg_name, arg_def in field_def.args.items():

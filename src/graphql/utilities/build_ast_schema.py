@@ -24,7 +24,7 @@ from ..language import (
     parse,
     Node,
 )
-from ..pyutils import inspect
+from ..pyutils import inspect, FrozenList
 from ..type import (
     GraphQLArgument,
     GraphQLDeprecatedDirective,
@@ -346,7 +346,7 @@ class ASTDefinitionBuilder:
         )
 
     def _make_enum_def(self, ast_node: EnumTypeDefinitionNode) -> GraphQLEnumType:
-        value_nodes = ast_node.values or []
+        value_nodes = ast_node.values or FrozenList()
 
         return GraphQLEnumType(
             name=ast_node.name.value,

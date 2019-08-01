@@ -15,7 +15,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
-from ..pyutils import inspect
+from ..pyutils import inspect, FrozenList
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -36,7 +36,7 @@ class CoercedVariableValues(NamedTuple):
 
 def get_variable_values(
     schema: GraphQLSchema,
-    var_def_nodes: List[VariableDefinitionNode],
+    var_def_nodes: FrozenList[VariableDefinitionNode],
     inputs: Dict[str, Any],
 ) -> CoercedVariableValues:
     """Get coerced variable values based on provided definitions.

@@ -26,7 +26,7 @@ from ..language import (
     OperationType,
     SelectionSetNode,
 )
-from ..pyutils import inspect, is_invalid, is_nullish, AwaitableOrValue
+from ..pyutils import inspect, is_invalid, is_nullish, AwaitableOrValue, FrozenList
 from ..utilities import get_operation_root_type, type_from_ast
 from ..type import (
     GraphQLAbstractType,
@@ -274,7 +274,9 @@ class ExecutionContext:
         variable_values = None
         if operation:
             coerced_variable_values = get_variable_values(
-                schema, operation.variable_definitions or [], raw_variable_values or {}
+                schema,
+                operation.variable_definitions or FrozenList(),
+                raw_variable_values or {},
             )
 
             if coerced_variable_values.errors:
