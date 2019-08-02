@@ -4,15 +4,15 @@ version = "3.0.0a2"
 description = """
 GraphQL-core is a Python port of GraphQL.js,
  the JavaScript reference implementation for GraphQL."""
-licese="MIT"
+license = "MIT"
 authors = [
     "Christoph Zwerschke <cito@online.de>"
 ]
-readme="README.md"
-homepage="https://github.com/graphql-python/graphql-core-next"
-repository="https://github.com/graphql-python/graphql-core-next"
-documentation="https://graphql-core-next.readthedocs.io/"
-keywords="graphql"
+readme = "README.md"
+homepage = "https://github.com/graphql-python/graphql-core-next"
+repository = "https://github.com/graphql-python/graphql-core-next"
+documentation = "https://graphql-core-next.readthedocs.io/"
+keywords = ["graphql"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -49,6 +49,6 @@ tox = "^3.13"
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
 [build-system]
-requires = ["poetry>=0.12.16"]
+requires = ["poetry>=1.0.0a5"]
 build-backend = "poetry.masonry.api"
 
