@@ -562,6 +562,30 @@ def describe_type_system_build_schema_from_introspection():
                 " in order to build a client schema."
             )
 
+        def throws_when_missing_definition_for_one_of_the_standard_scalars():
+            schema = build_schema(
+                """
+                type Query {
+                  foo: Float
+                }
+                """
+            )
+            introspection = introspection_from_schema(schema)
+            introspection["__schema"]["types"] = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] != "Float"
+            ]
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).endswith(
+                "Invalid or incomplete schema, unknown type: Float."
+                " Ensure that a full introspection query is used"
+                " in order to build a client schema."
+            )
+
         def throws_when_type_reference_is_missing_name():
             introspection = introspection_from_schema(dummy_schema)
 
