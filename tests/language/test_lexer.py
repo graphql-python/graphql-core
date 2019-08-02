@@ -45,7 +45,7 @@ def describe_lexer():
         token = lex_one("foo")
         assert token.desc == "Name 'foo'"
         assert str(token) == token.desc
-        assert repr(token) == "<Token Name 'foo' 1/1>"
+        assert repr(token) == "<Token Name 'foo' 1:1>"
         assert inspect(token) == repr(token)
 
     # noinspection PyArgumentEqualDefault

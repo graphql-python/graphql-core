@@ -91,7 +91,7 @@ class Token:
 
     def __repr__(self):
         """Print a simplified form when appearing in repr() or inspect()."""
-        return f"<Token {self.desc} {self.line}/{self.column}>"
+        return f"<Token {self.desc} {self.line}:{self.column}>"
 
     def __inspect__(self):
         return repr(self)
@@ -167,6 +167,9 @@ class Location(NamedTuple):
         elif isinstance(other, (list, tuple)) and len(other) == 2:
             return self.start == other[0] and self.end == other[1]
         return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __hash__(self):
         return hash((self.start, self.end))
