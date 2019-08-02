@@ -23,6 +23,8 @@ classifiers = [
 ]
 packages = [
     { include = "graphql", from = "src" },
+    { include = "tests", format = "sdist" },
+    { include = "docs", format = "sdist" },
 ]
 
 [tool.poetry.dependencies]
