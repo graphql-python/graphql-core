@@ -1,5 +1,5 @@
 from functools import partial
-from typing import cast, List
+from typing import cast, List, Union
 
 from pytest import mark, raises  # type: ignore
 
@@ -14,7 +14,9 @@ from graphql.type import (
     GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLList,
+    GraphQLNamedType,
     GraphQLNonNull,
+    GraphQLNullableType,
     GraphQLObjectType,
     GraphQLOutputType,
     GraphQLScalarType,
@@ -52,17 +54,18 @@ SomeInputObjectType = GraphQLInputObjectType(
 )
 
 
-def with_modifiers(types: List) -> List:
-    # noinspection PyTypeChecker
+def with_modifiers(
+    types: List[GraphQLNamedType]
+) -> List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]]:
     return (
-        types
+        cast(List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]], types)
         + [GraphQLList(t) for t in types]
-        + [GraphQLNonNull(t) for t in types]
+        + [GraphQLNonNull(cast(GraphQLNullableType, t)) for t in types]
         + [GraphQLNonNull(GraphQLList(t)) for t in types]
     )
 
 
-output_types: List[GraphQLOutputType] = with_modifiers(
+output_types = with_modifiers(
     [
         GraphQLString,
         SomeScalarType,
@@ -73,15 +76,13 @@ output_types: List[GraphQLOutputType] = with_modifiers(
     ]
 )
 
-not_output_types: List[GraphQLInputType] = with_modifiers([SomeInputObjectType])
+not_output_types = with_modifiers([SomeInputObjectType])
 
-input_types: List[GraphQLInputType] = with_modifiers(
+input_types = with_modifiers(
     [GraphQLString, SomeScalarType, SomeEnumType, SomeInputObjectType]
 )
 
-not_input_types: List[GraphQLOutputType] = with_modifiers(
-    [SomeObjectType, SomeUnionType, SomeInterfaceType]
-)
+not_input_types = with_modifiers([SomeObjectType, SomeUnionType, SomeInterfaceType])
 
 parametrize_type = partial(
     mark.parametrize("type_", ids=lambda type_: type_.__class__.__name__)
@@ -892,6 +893,7 @@ def describe_type_system_object_fields_must_have_output_types():
     def rejects_an_empty_object_field_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             _schema_with_object_field_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
@@ -1178,6 +1180,7 @@ def describe_type_system_interface_fields_must_have_output_types():
     def rejects_an_empty_interface_field_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             _schema_with_interface_field_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
@@ -1263,6 +1266,7 @@ def describe_type_system_field_arguments_must_have_input_types():
     def rejects_an_empty_field_arg_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             _schema_with_arg_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
@@ -1329,6 +1333,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
     def rejects_an_empty_input_field_type():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             _schema_with_input_field_of_type(None)
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
