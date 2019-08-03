@@ -8,10 +8,10 @@ def describe_is_finite():
     def null_is_not_finite():
         assert is_finite(None) is False
 
-    def booleans_are_finite():
-        # since they are considered as integers 0 and 1
-        assert is_finite(False) is True
-        assert is_finite(True) is True
+    def booleans_are_not_finite():
+        # they should not be considered as integers 0 and 1
+        assert is_finite(False) is False
+        assert is_finite(True) is False
 
     def strings_are_not_finite():
         assert is_finite("string") is False
