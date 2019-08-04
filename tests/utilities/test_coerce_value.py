@@ -1,3 +1,4 @@
+from math import nan
 from typing import Any, List
 
 from graphql.error import INVALID
@@ -65,6 +66,10 @@ def describe_coerce_value():
             result = coerce_value({"value": None}, TestScalar)
             assert expect_value(result) is None
 
+        def returns_no_error_for_nan_result():
+            result = coerce_value({"value": nan}, TestScalar)
+            assert expect_value(result) is nan
+
         def returns_an_error_for_undefined_result():
             error = ValueError("Some error message")
             result = coerce_value({"error": error}, TestScalar)
@@ -117,10 +122,10 @@ def describe_coerce_value():
             ]
 
         def returns_an_error_for_an_invalid_field():
-            result = coerce_value({"foo": "abc"}, TestInputObject)
+            result = coerce_value({"foo": nan}, TestInputObject)
             assert expect_errors(result) == [
                 "Expected type Int at value.foo."
-                " Int cannot represent non-integer value: 'abc'"
+                " Int cannot represent non-integer value: nan"
             ]
 
         def returns_multiple_errors_for_multiple_invalid_fields():
@@ -182,7 +187,11 @@ def describe_coerce_value():
         def _get_test_input_object(default_value):
             return GraphQLInputObjectType(
                 "TestInputObject",
-                {"foo": GraphQLInputField(GraphQLInt, default_value=default_value)},
+                {
+                    "foo": GraphQLInputField(
+                        GraphQLScalarType("TestScalar"), default_value=default_value
+                    )
+                },
             )
 
         def returns_no_errors_for_valid_input_value():
@@ -196,6 +205,12 @@ def describe_coerce_value():
         def returns_null_as_value():
             result = coerce_value({}, _get_test_input_object(None))
             assert expect_value(result) == {"foo": None}
+
+        def returns_nan_as_value():
+            result = coerce_value({}, _get_test_input_object(nan))
+            result_value = expect_value(result)
+            assert "foo" in result_value
+            assert result_value["foo"] is nan
 
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)

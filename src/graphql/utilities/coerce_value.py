@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import Node
-from ..pyutils import did_you_mean, inspect, is_invalid, suggestion_list
+from ..pyutils import did_you_mean, inspect, suggestion_list
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -63,7 +63,7 @@ def coerce_value(
         type_ = cast(GraphQLScalarType, type_)
         try:
             parse_result = type_.parse_value(value)
-            if is_invalid(parse_result):
+            if parse_result is INVALID:
                 return of_errors(
                     [coercion_error(f"Expected type {type_.name}", blame_node, path)]
                 )
@@ -137,8 +137,8 @@ def coerce_value(
         # Ensure every defined field is valid.
         for field_name, field in fields.items():
             field_value = value.get(field_name, INVALID)
-            if is_invalid(field_value):
-                if not is_invalid(field.default_value):
+            if field_value is INVALID:
+                if field.default_value is not INVALID:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_value_dict[
                         field.out_name or field_name
