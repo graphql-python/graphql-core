@@ -83,24 +83,19 @@ def get_variable_values(
                     )
                 )
             elif has_value:
-                if value is None:
-                    # If the explicit value `None` was provided, an entry in the
-                    # coerced values must exist as the value `None`.
-                    coerced_values[var_name] = None
+                # Otherwise, a non-null value was provided, coerce it to the expected
+                # type or report an error if coercion fails.
+                coerced = coerce_value(value, var_type, var_def_node)
+                coercion_errors = coerced.errors
+                if coercion_errors:
+                    for error in coercion_errors:
+                        error.message = (
+                            f"Variable '${var_name}' got invalid"
+                            f" value {inspect(value)}; {error.message}"
+                        )
+                    errors.extend(coercion_errors)
                 else:
-                    # Otherwise, a non-null value was provided, coerce it to the
-                    # expected type or report an error if coercion fails.
-                    coerced = coerce_value(value, var_type, var_def_node)
-                    coercion_errors = coerced.errors
-                    if coercion_errors:
-                        for error in coercion_errors:
-                            error.message = (
-                                f"Variable '${var_name}' got invalid"
-                                f" value {inspect(value)}; {error.message}"
-                            )
-                        errors.extend(coercion_errors)
-                    else:
-                        coerced_values[var_name] = coerced.value
+                    coerced_values[var_name] = coerced.value
     return (
         CoercedVariableValues(errors, None)
         if errors
@@ -164,31 +159,17 @@ def get_argument_values(
                     node,
                 )
         elif has_value:
-            if isinstance(argument_node.value, NullValueNode):
-                # If the explicit value `None` was provided, an entry in the coerced
-                # values must exist as the value `None`.
-                coerced_values[arg_def.out_name or name] = None
-            elif isinstance(argument_node.value, VariableNode):
-                variable_name = argument_node.value.name.value
-                # Note: This Does no further checking that this variable is correct.
-                # This assumes that this query has been validated and the variable
-                # usage here is of the correct type.
-                coerced_values[arg_def.out_name or name] = variable_values[
-                    variable_name
-                ]
-            else:
-                value_node = argument_node.value
-                coerced_value = value_from_ast(value_node, arg_type, variable_values)
-                if coerced_value is INVALID:
-                    # Note: `values_of_correct_type` validation should catch this before
-                    # execution. This is a runtime check to ensure execution does not
-                    # continue with an invalid argument value.
-                    raise GraphQLError(
-                        f"Argument '{name}'"
-                        f" has invalid value {print_ast(value_node)}.",
-                        argument_node.value,
-                    )
-                coerced_values[arg_def.out_name or name] = coerced_value
+            value_node = argument_node.value
+            coerced_value = value_from_ast(value_node, arg_type, variable_values)
+            if coerced_value is INVALID:
+                # Note: `values_of_correct_type` validation should catch this before
+                # execution. This is a runtime check to ensure execution does not
+                # continue with an invalid argument value.
+                raise GraphQLError(
+                    f"Argument '{name}'" f" has invalid value {print_ast(value_node)}.",
+                    argument_node.value,
+                )
+            coerced_values[arg_def.out_name or name] = coerced_value
     return coerced_values
 
 
