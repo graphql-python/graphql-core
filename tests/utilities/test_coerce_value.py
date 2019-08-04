@@ -1,17 +1,15 @@
-from math import inf, nan
 from typing import Any, List
 
 from graphql.error import INVALID
 from graphql.type import (
     GraphQLEnumType,
     GraphQLFloat,
-    GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
-    GraphQLString,
+    GraphQLScalarType,
 )
 from graphql.utilities import coerce_value
 from graphql.utilities.coerce_value import CoercedValue
@@ -22,7 +20,7 @@ def expect_value(result: CoercedValue) -> Any:
     return result.value
 
 
-def expect_error(result: CoercedValue) -> List[str]:
+def expect_errors(result: CoercedValue) -> List[str]:
     errors = result.errors
     messages = [error.message for error in errors] if errors else []
     assert result.value is INVALID
@@ -30,138 +28,48 @@ def expect_error(result: CoercedValue) -> List[str]:
 
 
 def describe_coerce_value():
-    def describe_for_graphql_string():
-        def returns_error_for_array_input_as_string():
-            result = coerce_value([1, 2, 3], GraphQLString)
-            assert expect_error(result) == [
-                f"Expected type String."
-                " String cannot represent a non string value: [1, 2, 3]"
-            ]
+    def describe_for_graphql_non_null():
+        TestNonNull = GraphQLNonNull(GraphQLInt)
 
-    def describe_for_graphql_id():
-        def returns_error_for_array_input_as_string():
-            result = coerce_value([1, 2, 3], GraphQLID)
-            assert expect_error(result) == [
-                f"Expected type ID. ID cannot represent value: [1, 2, 3]"
-            ]
-
-    def describe_for_graphql_int():
-        def returns_value_for_integer():
-            result = coerce_value(1, GraphQLInt)
+        def returns_non_error_for_non_null_value():
+            result = coerce_value(1, TestNonNull)
             assert expect_value(result) == 1
 
-        def returns_no_error_for_numeric_looking_string():
-            result = coerce_value("1", GraphQLInt)
-            assert expect_error(result) == [
-                f"Expected type Int. Int cannot represent non-integer value: '1'"
+        def returns_an_error_for_undefined_value():
+            result = coerce_value(INVALID, TestNonNull)
+            assert expect_errors(result) == [
+                "Expected non-nullable type Int! not to be null."
             ]
 
-        def returns_value_for_negative_int_input():
-            result = coerce_value(-1, GraphQLInt)
-            assert expect_value(result) == -1
-
-        def returns_value_for_exponent_input():
-            result = coerce_value(1e3, GraphQLInt)
-            assert expect_value(result) == 1000
-
-        def returns_null_for_null_value():
-            result = coerce_value(None, GraphQLInt)
-            assert expect_value(result) is None
-
-        def returns_a_single_error_for_empty_string_as_value():
-            result = coerce_value("", GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent non-integer value: ''"
+        def returns_an_error_for_null_value():
+            result = coerce_value(None, TestNonNull)
+            assert expect_errors(result) == [
+                "Expected non-nullable type Int! not to be null."
             ]
 
-        def returns_a_single_error_for_2_32_input_as_int():
-            result = coerce_value(1 << 32, GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent"
-                " non 32-bit signed integer value: 4294967296"
-            ]
+    def describe_for_graphql_scalar():
+        def _parse_value(input_dict):
+            assert isinstance(input_dict, dict)
+            error = input_dict.get("error")
+            if error:
+                raise error
+            return input_dict.get("value")
 
-        def returns_a_single_error_for_float_input_as_int():
-            result = coerce_value(1.5, GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent non-integer value: 1.5"
-            ]
+        TestScalar = GraphQLScalarType("TestScalar", parse_value=_parse_value)
 
-        def returns_a_single_error_for_nan_input_as_int():
-            result = coerce_value(nan, GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent non-integer value: nan"
-            ]
-
-        def returns_a_single_error_for_infinity_input_as_int():
-            result = coerce_value(inf, GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent non-integer value: inf"
-            ]
-
-        def returns_a_single_error_for_char_input():
-            result = coerce_value("a", GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent non-integer value: 'a'"
-            ]
-
-        def returns_a_single_error_for_string_input():
-            result = coerce_value("meow", GraphQLInt)
-            assert expect_error(result) == [
-                "Expected type Int. Int cannot represent non-integer value: 'meow'"
-            ]
-
-    def describe_for_graphql_float():
-        def returns_value_for_integer():
-            result = coerce_value(1, GraphQLFloat)
+        def returns_no_error_for_valid_input():
+            result = coerce_value({"value": 1}, TestScalar)
             assert expect_value(result) == 1
 
-        def returns_value_for_decimal():
-            result = coerce_value(1.1, GraphQLFloat)
-            assert expect_value(result) == 1.1
-
-        def returns_no_error_for_exponent_input():
-            result = coerce_value(1e3, GraphQLFloat)
-            assert expect_value(result) == 1000
-
-        def returns_error_for_numeric_looking_string():
-            result = coerce_value("1", GraphQLFloat)
-            assert expect_error(result) == [
-                "Expected type Float. Float cannot represent non numeric value: '1'"
-            ]
-
-        def returns_null_for_null_value():
-            result = coerce_value(None, GraphQLFloat)
+        def returns_no_error_for_null_result():
+            result = coerce_value({"value": None}, TestScalar)
             assert expect_value(result) is None
 
-        def returns_a_single_error_for_empty_string_input():
-            result = coerce_value("", GraphQLFloat)
-            assert expect_error(result) == [
-                "Expected type Float. Float cannot represent non numeric value: ''"
-            ]
-
-        def returns_a_single_error_for_nan_input():
-            result = coerce_value(nan, GraphQLFloat)
-            assert expect_error(result) == [
-                "Expected type Float. Float cannot represent non numeric value: nan"
-            ]
-
-        def returns_a_single_error_for_infinity_input():
-            result = coerce_value(inf, GraphQLFloat)
-            assert expect_error(result) == [
-                "Expected type Float. Float cannot represent non numeric value: inf"
-            ]
-
-        def returns_a_single_error_for_char_input():
-            result = coerce_value("a", GraphQLFloat)
-            assert expect_error(result) == [
-                "Expected type Float. Float cannot represent non numeric value: 'a'"
-            ]
-
-        def returns_a_single_error_for_string_input():
-            result = coerce_value("meow", GraphQLFloat)
-            assert expect_error(result) == [
-                "Expected type Float. Float cannot represent non numeric value: 'meow'"
+        def returns_an_error_for_undefined_result():
+            error = ValueError("Some error message")
+            result = coerce_value({"error": error}, TestScalar)
+            assert expect_errors(result) == [
+                "Expected type TestScalar. Some error message"
             ]
 
     def describe_for_graphql_enum():
@@ -176,16 +84,18 @@ def describe_coerce_value():
             bar_result = coerce_value("BAR", TestEnum)
             assert expect_value(bar_result) == 123_456_789
 
-        def results_error_for_misspelled_enum_value():
+        def returns_an_error_for_misspelled_enum_value():
             result = coerce_value("foo", TestEnum)
-            assert expect_error(result) == ["Expected type TestEnum. Did you mean FOO?"]
+            assert expect_errors(result) == [
+                "Expected type TestEnum. Did you mean FOO?"
+            ]
 
-        def results_error_for_incorrect_value_type():
+        def returns_an_error_for_incorrect_value_type():
             result1 = coerce_value(123, TestEnum)
-            assert expect_error(result1) == ["Expected type TestEnum."]
+            assert expect_errors(result1) == ["Expected type TestEnum."]
 
             result2 = coerce_value({"field": "value"}, TestEnum)
-            assert expect_error(result2) == ["Expected type TestEnum."]
+            assert expect_errors(result2) == ["Expected type TestEnum."]
 
     def describe_for_graphql_input_object():
         TestInputObject = GraphQLInputObjectType(
@@ -202,20 +112,20 @@ def describe_coerce_value():
 
         def returns_an_error_for_a_non_dict_value():
             result = coerce_value(123, TestInputObject)
-            assert expect_error(result) == [
+            assert expect_errors(result) == [
                 "Expected type TestInputObject to be a dict."
             ]
 
         def returns_an_error_for_an_invalid_field():
             result = coerce_value({"foo": "abc"}, TestInputObject)
-            assert expect_error(result) == [
+            assert expect_errors(result) == [
                 "Expected type Int at value.foo."
                 " Int cannot represent non-integer value: 'abc'"
             ]
 
         def returns_multiple_errors_for_multiple_invalid_fields():
             result = coerce_value({"foo": "abc", "bar": "def"}, TestInputObject)
-            assert expect_error(result) == [
+            assert expect_errors(result) == [
                 "Expected type Int at value.foo."
                 " Int cannot represent non-integer value: 'abc'",
                 "Expected type Int at value.bar."
@@ -224,19 +134,19 @@ def describe_coerce_value():
 
         def returns_error_for_a_missing_required_field():
             result = coerce_value({"bar": 123}, TestInputObject)
-            assert expect_error(result) == [
+            assert expect_errors(result) == [
                 "Field value.foo of required type Int! was not provided."
             ]
 
         def returns_error_for_an_unknown_field():
             result = coerce_value({"foo": 123, "unknownField": 123}, TestInputObject)
-            assert expect_error(result) == [
+            assert expect_errors(result) == [
                 "Field 'unknownField' is not defined by type TestInputObject."
             ]
 
         def returns_error_for_a_misspelled_field():
             result = coerce_value({"foo": 123, "bart": 123}, TestInputObject)
-            assert expect_error(result) == [
+            assert expect_errors(result) == [
                 "Field 'bart' is not defined by type TestInputObject."
                 " Did you mean bar?"
             ]
@@ -268,6 +178,25 @@ def describe_coerce_value():
             result = coerce_value({"real": 1, "imag": 2}, ComplexInputObject)
             assert expect_value(result) == 1 + 2j
 
+    def describe_for_graphql_input_object_with_default_value():
+        def _get_test_input_object(default_value):
+            return GraphQLInputObjectType(
+                "TestInputObject",
+                {"foo": GraphQLInputField(GraphQLInt, default_value=default_value)},
+            )
+
+        def returns_no_errors_for_valid_input_value():
+            result = coerce_value({"foo": 5}, _get_test_input_object(7))
+            assert expect_value(result) == {"foo": 5}
+
+        def returns_object_with_default_value():
+            result = coerce_value({}, _get_test_input_object(7))
+            assert expect_value(result) == {"foo": 7}
+
+        def returns_null_as_value():
+            result = coerce_value({}, _get_test_input_object(None))
+            assert expect_value(result) == {"foo": None}
+
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)
 
@@ -276,8 +205,8 @@ def describe_coerce_value():
             assert expect_value(result) == [1, 2, 3]
 
         def returns_an_error_for_an_invalid_input():
-            result = coerce_value([1, "b", True], TestList)
-            assert expect_error(result) == [
+            result = coerce_value([1, "b", True, 4], TestList)
+            assert expect_errors(result) == [
                 "Expected type Int at value[1]."
                 " Int cannot represent non-integer value: 'b'",
                 "Expected type Int at value[2]."
@@ -287,6 +216,12 @@ def describe_coerce_value():
         def returns_a_list_for_a_non_list_value():
             result = coerce_value(42, TestList)
             assert expect_value(result) == [42]
+
+        def returns_a_list_for_a_non_list_invalid_value():
+            result = coerce_value("INVALID", TestList)
+            assert expect_errors(result) == [
+                "Expected type Int. Int cannot represent non-integer value: 'INVALID'"
+            ]
 
         def returns_null_for_a_null_value():
             result = coerce_value(None, TestList)
