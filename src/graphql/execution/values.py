@@ -119,10 +119,10 @@ def get_argument_values(
     of argument AST nodes.
     """
     coerced_values: Dict[str, Any] = {}
-    arg_defs = type_def.args
     arg_nodes = node.arguments
-    if not arg_defs or arg_nodes is None:
+    if arg_nodes is None:
         return coerced_values
+    arg_defs = type_def.args
     arg_node_map = {arg.name.value: arg for arg in arg_nodes}
     for name, arg_def in arg_defs.items():
         arg_type = arg_def.type

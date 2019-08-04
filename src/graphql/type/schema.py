@@ -281,10 +281,8 @@ class GraphQLSchema:
 
         if is_object_type(type_) or is_interface_type(type_):
             for field in cast(GraphQLInterfaceType, type_).fields.values():
-                args = field.args
-                if args:
-                    types = [arg.type for arg in args.values()]
-                    map_ = reduce(self.type_map_reducer, types, map_)
+                types = [arg.type for arg in field.args.values()]
+                map_ = reduce(self.type_map_reducer, types, map_)
                 map_ = self.type_map_reducer(map_, field.type)
 
         if is_input_object_type(type_):
