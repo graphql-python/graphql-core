@@ -59,7 +59,7 @@ different from the names used for the episode.
 
 So we would also need to manually define these values, like so::
 
-    for name, value in schema.get_type('Episode').values.items:
+    for name, value in schema.get_type('Episode').values.items():
         value.value = EpisodeEnum[name].value
 
 This would allow us to query the schema built from SDL just like the manually assembled
