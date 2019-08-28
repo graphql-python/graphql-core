@@ -31,7 +31,7 @@ Getting started
 
 You can install GraphQL-core 3 using pip_::
 
-    pip install "graphql-core>=3"
+    pip install "graphql-core>=3a"
 
 You can also install GraphQL-core 3 with pipenv_, if you prefer that::
 
