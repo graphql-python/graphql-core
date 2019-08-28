@@ -51,7 +51,7 @@ GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 Alternatively, you can also use [pipenv](https://docs.pipenv.org/) for installation in a
 virtual environment:
 
-    pipenv install "graphql-core>=3"
+    pipenv install --pre "graphql-core>=3a"
 
 
 ## Usage
@@ -237,10 +237,10 @@ The GraphQL-core 3 library
   by the [GraphQL foundation](https://gql.foundation/join/)
 
 Please watch the recording of Lee Byron's short keynote on the
-[history of GraphQL](https://www.youtube.com/watch?v=VjHWkBr3tjI) 
+[history of GraphQL](https://www.youtube.com/watch?v=VjHWkBr3tjI)
 at the open source leadership summit 2019 to better understand
 how and why GraphQL was created at Facebook and then became open sourced
-and ported to many different programming languages. 
+and ported to many different programming languages.
 
 
 ## License
