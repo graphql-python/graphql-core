@@ -33,6 +33,7 @@ python = "^3.6"
 [tool.poetry.dev-dependencies]
 pytest = "^5"
 pytest-asyncio = ">=0.10"
+pytest-benchmark = "^3.2"
 pytest-cov = "^2.7"
 pytest-describe = ">=0.12"
 pyyaml = "^5.1"

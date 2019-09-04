@@ -4,7 +4,7 @@ from os.path import dirname, join
 
 from pytest import fixture  # type: ignore
 
-__all__ = ["kitchen_sink_query", "kitchen_sink_sdl"]
+__all__ = ["kitchen_sink_query", "kitchen_sink_sdl", "big_schema_sdl"]
 
 
 def read_graphql(name):
@@ -20,3 +20,8 @@ def kitchen_sink_query():
 @fixture(scope="module")
 def kitchen_sink_sdl():
     return read_graphql("schema_kitchen_sink")
+
+
+@fixture(scope="module")
+def big_schema_sdl():
+    return read_graphql("github_schema")
