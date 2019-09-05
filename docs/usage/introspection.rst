@@ -17,6 +17,8 @@ create a query that omits the descriptions with::
 In practice you would run this query against a remote server, but we can also run it
 against the schema we have just built above::
 
+    from graphql import graphql_sync
+
     introspection_query_result = graphql_sync(schema, query)
 
 The ``data`` attribute of the introspection query result now gives us a dictionary,

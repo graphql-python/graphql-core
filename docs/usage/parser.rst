@@ -34,6 +34,8 @@ the AST document::
 
 This will give the same result as manually creating the AST document::
 
+    from graphql.language.ast import *
+
     document = DocumentNode(definitions=[
         ObjectTypeDefinitionNode(
             name=NameNode(value='Query'),

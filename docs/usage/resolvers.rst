@@ -41,7 +41,7 @@ them later)::
         '2000': threepio, '2001': artoo}
 
 
-    def get_character_type(character, info):
+    def get_character_type(character, _info, _type):
             return 'Droid' if character['id'] in droid_data else 'Human'
 
 
@@ -50,29 +50,29 @@ them later)::
         return human_data.get(id) or droid_data.get(id)
 
 
-    def get_friends(character, info):
+    def get_friends(character, _info):
         """Allows us to query for a character's friends."""
         return map(get_character, character.friends)
 
 
-    def get_hero(root, info, episode):
+    def get_hero(root, _info, episode):
         """Allows us to fetch the undisputed hero of the trilogy, R2-D2."""
         if episode == 5:
             return luke  # Luke is the hero of Episode V
         return artoo  # Artoo is the hero otherwise
 
 
-    def get_human(root, info, id):
+    def get_human(root, _info, id):
         """Allows us to query for the human with the given id."""
         return human_data.get(id)
 
 
-    def get_droid(root, info, id):
+    def get_droid(root, _info, id):
         """Allows us to query for the droid with the given id."""
         return droid_data.get(id)
 
 
-    def get_secret_backstory(character, info):
+    def get_secret_backstory(_character, _info):
         """Raise an error when attempting to get the secret backstory."""
         raise RuntimeError('secretBackstory is secret.')
 

@@ -28,7 +28,7 @@ Here is one way to use it::
         """)
         print(result)
 
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(query_artoo())
 
 In our query, we asked for the droid with the id 2001, which is R2-D2, and its primary
 function, Astromech. When everything has been implemented correctly as shown above, you
@@ -79,9 +79,8 @@ Let's see what happens when we make a mistake in the query, by querying a non-ex
 You will get the following result as output::
 
     ExecutionResult(data=None, errors=[GraphQLError(
-        "Cannot query field 'homeTown' on type 'Human'."
-        " Did you mean 'homePlanet'?",
-        locations=[SourceLocation(line=5, column=7)])])
+        "Cannot query field 'homeTown' on type 'Human'. Did you mean 'homePlanet'?",
+        locations=[SourceLocation(line=5, column=9)])])
 
 This is very helpful. Not only do we get the exact location of the mistake in the query,
 but also a suggestion for correcting the bad field name.

@@ -65,6 +65,8 @@ So we would also need to manually define these values, like so::
 This would allow us to query the schema built from SDL just like the manually assembled
 schema::
 
+    from graphql import graphql_sync
+
     result = graphql_sync(schema, """
         {
           hero(episode: EMPIRE) {

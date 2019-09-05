@@ -9,7 +9,7 @@ executing a query.
 In our case, we could create a ``Root`` class with three methods as root resolvers, like
 so::
 
-    class Root():
+    class Root:
         """The root resolvers"""
 
         def hero(self, info, episode):
@@ -22,7 +22,7 @@ so::
             return droid_data.get(id)
 
 
-Since we haven't defined synchronous methods only, we will use the
+Since we have defined synchronous methods only, we will use the
 :func:`graphql.graphql_sync` function to execute a query, passing a ``Root()`` object as
 the ``root_value``::
 

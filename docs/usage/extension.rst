@@ -29,6 +29,8 @@ We also need to attach a resolver function to the new field::
 
 Now we can query only the last name of a human::
 
+    from graphql import graphql_sync
+
     result = graphql_sync(schema, """
         {
           human(id: "1000") {
