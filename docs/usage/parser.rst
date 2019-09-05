@@ -4,7 +4,7 @@ Parsing GraphQL Queries and Schema Notation
 .. currentmodule:: graphql.language
 
 When executing GraphQL queries, the first step that happens under the hood is parsing
-the query. But GraphQL-core-next also exposes the parser for direct usage via the
+the query. But GraphQL-core 3 also exposes the parser for direct usage via the
 :func:`graphql.language.parse` function. When you pass this function a GraphQL source
 code, it will be parsed and returned as a Document, i.e. an abstract syntax tree (AST)
 of :class:`graphql.language.Node` objects. The root node will be a

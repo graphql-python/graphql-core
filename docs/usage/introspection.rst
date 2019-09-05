@@ -3,7 +3,7 @@ Using an Introspection Query
 
 A third way of building a schema is using an introspection query on an existing server.
 This is what GraphiQL uses to get information about the schema on the remote server. You
-can create an introspection query using GraphQL-core-next with::
+can create an introspection query using GraphQL-core 3 with::
 
     from graphql import get_introspection_query
 
@@ -41,15 +41,15 @@ This result contains all the information that is available in the SDL descriptio
 schema, i.e. it does not contain the resolve functions and information on the
 server-side values of the enum types.
 
-You can convert the introspection result into ``GraphQLSchema`` with GraphQL-core-next
-by using the :func:`graphql.utilities.build_client_schema` function::
+You can convert the introspection result into ``GraphQLSchema`` with GraphQL-core 3 by
+using the :func:`graphql.utilities.build_client_schema` function::
 
     from graphql import build_client_schema
 
     client_schema = build_client_schema(introspection_query_result.data)
 
 
-It is also possible to convert the result to SDL with GraphQL-core-next by using the
+It is also possible to convert the result to SDL with GraphQL-core 3 by using the
 :func:`graphql.utilities.print_schema` function::
 
     from graphql import print_schema
@@ -60,4 +60,4 @@ It is also possible to convert the result to SDL with GraphQL-core-next by using
 This prints the SDL representation of the schema that we started with.
 
 As you see, it is easy to convert between the three forms of representing a GraphQL
-schema in GraphQL-core-next.
+schema in GraphQL-core 3.

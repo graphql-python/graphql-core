@@ -4,7 +4,7 @@ Using the Schema Definition Language
 Above we defined the GraphQL schema as Python code, using the ``GraphQLSchema`` class
 and other classes representing the various GraphQL types.
 
-GraphQL-core-next also provides a language-agnostic way of defining a GraphQL schema
+GraphQL-core 3 also provides a language-agnostic way of defining a GraphQL schema
 using the GraphQL schema definition language (SDL) which is also part of the GraphQL
 specification. To do this, we simply feed the SDL as a string to the
 :func:`graphql.utilities.build_schema` function::
