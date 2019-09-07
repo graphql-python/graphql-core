@@ -40,15 +40,15 @@ black = ">=19.3b0"
 flake8 = "^3.7"
 mypy = ">=0.720"
 codecov = "^2"
-sphinx = "^2.1"
+sphinx = "^2.2"
 sphinx_rtd_theme = ">=0.4"
 check-manifest = ">=0.39"
 bump2version = ">=0.5"
-tox = "^3.13"
+tox = "^3.14"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
 [build-system]
-requires = ["poetry>=1.0.0a5"]
+requires = ["poetry>=1.0.0b1"]
 build-backend = "poetry.masonry.api"
 
