@@ -108,8 +108,9 @@ def coerce_value(
             coerced_value_list: List[Any] = []
             append_item = coerced_value_list.append
             for index, item_value in enumerate(value):
+                item_path = Path(path, index)
                 coerced_item = coerce_value(
-                    item_value, item_type, blame_node, at_path(path, index)
+                    item_value, item_type, blame_node, item_path
                 )
                 if coerced_item.errors:
                     errors = add(errors, *coerced_item.errors)
@@ -136,6 +137,7 @@ def coerce_value(
 
         # Ensure every defined field is valid.
         for field_name, field in fields.items():
+            field_path = Path(path, field_name)
             field_value = value.get(field_name, INVALID)
             if field_value is INVALID:
                 if field.default_value is not INVALID:
@@ -147,14 +149,15 @@ def coerce_value(
                     errors = add(
                         errors,
                         coercion_error(
-                            f"Field {print_path(at_path(path, field_name))}"
-                            f" of required type {field.type} was not provided",
+                            f"Field of required type {inspect(field.type)}"
+                            " was not provided",
                             blame_node,
+                            field_path,
                         ),
                     )
             else:
                 coerced_field = coerce_value(
-                    field_value, field.type, blame_node, at_path(path, field_name)
+                    field_value, field.type, blame_node, field_path
                 )
                 if coerced_field.errors:
                     errors = add(errors, *coerced_field.errors)
@@ -201,10 +204,6 @@ def add(
     return (errors or []) + list(more_errors)
 
 
-def at_path(prev: Optional[Path], key: Union[str, int]) -> Path:
-    return Path(prev, key)
-
-
 def coercion_error(
     message: str,
     blame_node: Node = None,
@@ -212,26 +211,19 @@ def coercion_error(
     sub_message: str = None,
     original_error: Exception = None,
 ) -> GraphQLError:
-    """Return a GraphQLError instance"""
-    path_str = print_path(path)
-    if path_str:
-        message += f" at {path_str}"
-    message += "."
-    if sub_message:
-        message += sub_message
-    # noinspection PyArgumentEqualDefault
-    return GraphQLError(message, blame_node, None, None, None, original_error)
+    """Return a coercion error with the given message describing the given path"""
+    full_message = message
+    # Build a string describing the path into the value where the error was found
+    if path:
+        segment_strings: List[str] = []
+        current_path: Optional[Path] = path
+        while current_path:
+            key = current_path.key
+            segment_strings.insert(0, f".{key}" if isinstance(key, str) else f"[{key}]")
+            current_path = current_path.prev
+        full_message += " at value" + "".join(segment_strings)
 
+    full_message += "." + sub_message if sub_message else "."
 
-def print_path(path: Optional[Path]) -> str:
-    """Build string describing the path into the value where error was found"""
-    path_str = ""
-    current_path: Optional[Path] = path
-    while current_path:
-        path_str = (
-            f".{current_path.key}"
-            if isinstance(current_path.key, str)
-            else f"[{current_path.key}]"
-        ) + path_str
-        current_path = current_path.prev
-    return f"value{path_str}" if path_str else ""
+    # Return a GraphQLError instance
+    return GraphQLError(full_message, blame_node, None, None, None, original_error)

@@ -140,7 +140,7 @@ def describe_coerce_value():
         def returns_error_for_a_missing_required_field():
             result = coerce_value({"bar": 123}, TestInputObject)
             assert expect_errors(result) == [
-                "Field value.foo of required type Int! was not provided."
+                "Field of required type Int! was not provided at value.foo."
             ]
 
         def returns_error_for_an_unknown_field():
