@@ -42,7 +42,7 @@ non_punctuator_tokens = [
 def lex_value(s: str) -> Optional[str]:
     lexer = Lexer(Source(s))
     value = lexer.advance().value
-    assert lexer.advance().kind == TokenKind.EOF
+    assert lexer.advance().kind == TokenKind.EOF, "Expected EOF"
     return value
 
 
@@ -53,15 +53,23 @@ class ExpectStripped:
     def to_equal(self, expected: str):
         doc_string = self.doc_string
         stripped = strip_ignored_characters(doc_string)
-        assert stripped == expected, (
-            f"Expected strip_ignored_characters({doc_string!r})\n"
-            f"\tto equal {expected!r}\n\tbut got {stripped!r}"
+
+        assert stripped == expected, dedent(
+            f"""
+            Expected strip_ignored_characters({doc_string!r})
+              to equal {expected!r}
+              but got {stripped!r}
+            """
         )
 
         stripped_twice = strip_ignored_characters(stripped)
-        assert stripped == stripped_twice, (
-            f"Expected strip_ignored_characters({stripped!r})\n"
-            f"\tto equal {stripped!r}\n\tbut got {stripped_twice!r}"
+
+        assert stripped == stripped_twice, dedent(
+            f""""
+            Expected strip_ignored_characters({stripped!r})"
+              to equal {stripped!r}
+              but got {stripped_twice!r}
+            """
         )
 
     def to_stay_the_same(self):
@@ -338,7 +346,13 @@ def describe_strip_ignored_characters():
             stripped_str = strip_ignored_characters(block_str)
             stripped_value = lex_value(stripped_str)
 
-            assert original_value == stripped_value
+            assert original_value == stripped_value, dedent(
+                f"""
+                Expected lexOne(stripIgnoredCharacters({block_str!r})
+                  to equal {original_value!r}
+                  but got {stripped_value!r}
+                """
+            )
             return ExpectStripped(block_str)
 
         expect_stripped_string('""""""').to_stay_the_same()
@@ -389,7 +403,13 @@ def describe_strip_ignored_characters():
                 stripped_str = strip_ignored_characters(test_str)
                 stripped_value = lex_value(stripped_str)
 
-                assert test_value == stripped_value
+                assert test_value == stripped_value, dedent(
+                    f"""
+                    Expected lexOne(stripIgnoredCharacters({test_str!r})
+                      to equal {test_value!r}
+                      but got {stripped_value!r}
+                    """
+                )
 
     # noinspection PyShadowingNames
     def strips_kitchen_sink_query_but_maintains_the_exact_same_ast(
