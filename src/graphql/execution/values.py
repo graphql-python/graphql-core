@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, NamedTuple, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import (
@@ -28,9 +28,7 @@ from ..utilities import coerce_value, type_from_ast, value_from_ast
 __all__ = ["get_variable_values", "get_argument_values", "get_directive_values"]
 
 
-class CoercedVariableValues(NamedTuple):
-    errors: Optional[List[GraphQLError]]
-    coerced: Optional[Dict[str, Any]]
+CoercedVariableValues = Union[List[GraphQLError], Dict[str, Any]]
 
 
 def get_variable_values(
@@ -105,11 +103,7 @@ def get_variable_values(
 
         coerced_values[var_name] = coerced.value
 
-    return (
-        CoercedVariableValues(errors, None)
-        if errors
-        else CoercedVariableValues(None, coerced_values)
-    )
+    return errors or coerced_values
 
 
 def get_argument_values(

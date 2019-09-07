@@ -278,12 +278,8 @@ class ExecutionContext:
             raw_variable_values or {},
         )
 
-        if coerced_variable_values.errors:
-            return coerced_variable_values.errors
-
-        variable_values = coerced_variable_values.coerced
-        if variable_values is None:
-            raise TypeError("Has variables if no errors.")
+        if isinstance(coerced_variable_values, list):
+            return coerced_variable_values  # errors
 
         return cls(
             schema,
@@ -291,7 +287,7 @@ class ExecutionContext:
             root_value,
             context_value,
             operation,
-            variable_values,
+            coerced_variable_values,  # coerced values
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
             [],
