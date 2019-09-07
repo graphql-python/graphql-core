@@ -24,6 +24,7 @@ from .suggestion_list import suggestion_list
 from .frozen_error import FrozenError
 from .frozen_list import FrozenList
 from .frozen_dict import FrozenDict
+from .path import Path
 
 __all__ = [
     "camel_to_snake",
@@ -44,4 +45,5 @@ __all__ = [
     "FrozenError",
     "FrozenList",
     "FrozenDict",
+    "Path",
 ]

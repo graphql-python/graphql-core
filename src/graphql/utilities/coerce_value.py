@@ -1,8 +1,8 @@
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union, cast
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import Node
-from ..pyutils import did_you_mean, inspect, suggestion_list
+from ..pyutils import Path, did_you_mean, inspect, suggestion_list
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -23,11 +23,6 @@ __all__ = ["coerce_value", "CoercedValue"]
 class CoercedValue(NamedTuple):
     errors: Optional[List[GraphQLError]]
     value: Any
-
-
-class Path(NamedTuple):
-    prev: Any  # Optional['Path'] (python/mypy/issues/731)
-    key: Union[str, int]
 
 
 def coerce_value(
@@ -212,18 +207,18 @@ def coercion_error(
     original_error: Exception = None,
 ) -> GraphQLError:
     """Return a coercion error with the given message describing the given path"""
-    full_message = message
+    full_message = [message]
+    append = full_message.append
     # Build a string describing the path into the value where the error was found
     if path:
-        segment_strings: List[str] = []
-        current_path: Optional[Path] = path
-        while current_path:
-            key = current_path.key
-            segment_strings.insert(0, f".{key}" if isinstance(key, str) else f"[{key}]")
-            current_path = current_path.prev
-        full_message += " at value" + "".join(segment_strings)
+        append(" at value")
+        for key in path.as_list():
+            append(f".{key}" if isinstance(key, str) else f"[{key}]")
 
-    full_message += "." + sub_message if sub_message else "."
+    append(".")
+    if sub_message:
+        append(sub_message)
+    message = "".join(full_message)
 
     # Return a GraphQLError instance
-    return GraphQLError(full_message, blame_node, None, None, None, original_error)
+    return GraphQLError(message, blame_node, None, None, None, original_error)

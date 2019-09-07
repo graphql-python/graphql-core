@@ -263,7 +263,6 @@ from .execution import (
     execute,
     default_field_resolver,
     default_type_resolver,
-    response_path_as_list,
     get_directive_values,
     # Types
     ExecutionContext,
@@ -589,7 +588,6 @@ __all__ = [
     "execute",
     "default_field_resolver",
     "default_type_resolver",
-    "response_path_as_list",
     "get_directive_values",
     "ExecutionContext",
     "ExecutionResult",

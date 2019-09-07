@@ -26,7 +26,14 @@ from ..language import (
     OperationType,
     SelectionSetNode,
 )
-from ..pyutils import inspect, is_invalid, is_nullish, AwaitableOrValue, FrozenList
+from ..pyutils import (
+    inspect,
+    is_invalid,
+    is_nullish,
+    AwaitableOrValue,
+    FrozenList,
+    Path,
+)
 from ..utilities import get_operation_root_type, type_from_ast
 from ..type import (
     GraphQLAbstractType,
@@ -42,7 +49,6 @@ from ..type import (
     GraphQLFieldResolver,
     GraphQLTypeResolver,
     GraphQLResolveInfo,
-    ResponsePath,
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
@@ -57,13 +63,11 @@ from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 __all__ = [
-    "add_path",
     "assert_valid_execution_arguments",
     "default_field_resolver",
     "default_type_resolver",
     "execute",
     "get_field_def",
-    "response_path_as_list",
     "ExecutionResult",
     "ExecutionContext",
     "Middleware",
@@ -100,6 +104,7 @@ class ExecutionResult(NamedTuple):
     errors: Optional[List[GraphQLError]]
 
 
+# noinspection PyTypeHints
 ExecutionResult.__new__.__defaults__ = (None, None)  # type: ignore
 
 Middleware = Optional[Union[Tuple, List, MiddlewareManager]]
@@ -377,7 +382,7 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        path: Optional[ResponsePath],
+        path: Optional[Path],
         fields: Dict[str, List[FieldNode]],
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Execute the given fields serially.
@@ -386,7 +391,7 @@ class ExecutionContext:
         """
         results: Dict[str, Any] = {}
         for response_name, field_nodes in fields.items():
-            field_path = add_path(path, response_name)
+            field_path = Path(path, response_name)
             result = self.resolve_field(
                 parent_type, source_value, field_nodes, field_path
             )
@@ -427,7 +432,7 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        path: Optional[ResponsePath],
+        path: Optional[Path],
         fields: Dict[str, List[FieldNode]],
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Execute the given fields concurrently.
@@ -438,7 +443,7 @@ class ExecutionContext:
         awaitable_fields: List[str] = []
         append_awaitable = awaitable_fields.append
         for response_name, field_nodes in fields.items():
-            field_path = add_path(path, response_name)
+            field_path = Path(path, response_name)
             result = self.resolve_field(
                 parent_type, source_value, field_nodes, field_path
             )
@@ -559,7 +564,7 @@ class ExecutionContext:
         field_def: GraphQLField,
         field_nodes: List[FieldNode],
         parent_type: GraphQLObjectType,
-        path: ResponsePath,
+        path: Path,
     ) -> GraphQLResolveInfo:
         # The resolve function's first argument is a collection of information about
         # the current execution state.
@@ -582,7 +587,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source: Any,
         field_nodes: List[FieldNode],
-        path: ResponsePath,
+        path: Path,
     ) -> AwaitableOrValue[Any]:
         """Resolve the field on the given source object.
 
@@ -652,7 +657,7 @@ class ExecutionContext:
         return_type: GraphQLOutputType,
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
-        path: ResponsePath,
+        path: Path,
         result: Any,
     ) -> AwaitableOrValue[Any]:
         """Complete a value while catching an error.
@@ -694,10 +699,10 @@ class ExecutionContext:
         self,
         raw_error: Exception,
         field_nodes: List[FieldNode],
-        path: ResponsePath,
+        path: Path,
         return_type: GraphQLOutputType,
     ) -> None:
-        error = located_error(raw_error, field_nodes, response_path_as_list(path))
+        error = located_error(raw_error, field_nodes, path.as_list())
 
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
@@ -713,7 +718,7 @@ class ExecutionContext:
         return_type: GraphQLOutputType,
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
-        path: ResponsePath,
+        path: Path,
         result: Any,
     ) -> AwaitableOrValue[Any]:
         """Complete a value.
@@ -797,7 +802,7 @@ class ExecutionContext:
         return_type: GraphQLList[GraphQLOutputType],
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
-        path: ResponsePath,
+        path: Path,
         result: Iterable[Any],
     ) -> AwaitableOrValue[Any]:
         """Complete a list value.
@@ -821,7 +826,7 @@ class ExecutionContext:
         for index, item in enumerate(result):
             # No need to modify the info object containing the path, since from here on
             # it is not ever accessed by resolver functions.
-            field_path = add_path(path, index)
+            field_path = path.add_key(index)
             completed_item = self.complete_value_catching_error(
                 item_type, field_nodes, info, field_path, item
             )
@@ -866,7 +871,7 @@ class ExecutionContext:
         return_type: GraphQLAbstractType,
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
-        path: ResponsePath,
+        path: Path,
         result: Any,
     ) -> AwaitableOrValue[Any]:
         """Complete an abstract value.
@@ -947,7 +952,7 @@ class ExecutionContext:
         return_type: GraphQLObjectType,
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
-        path: ResponsePath,
+        path: Path,
         result: Any,
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Complete an Object value by executing all sub-selections."""
@@ -981,7 +986,7 @@ class ExecutionContext:
         self,
         return_type: GraphQLObjectType,
         field_nodes: List[FieldNode],
-        path: ResponsePath,
+        path: Path,
         result: Any,
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Collect sub-fields to execute to complete this value."""
@@ -1039,29 +1044,6 @@ def assert_valid_execution_arguments(
             " variable value. Perhaps look to see if an unparsed JSON string was"
             " provided."
         )
-
-
-def response_path_as_list(path: ResponsePath) -> List[Union[str, int]]:
-    """Get response path as a list.
-
-    Given a ResponsePath (found in the `path` entry in the information provided as the
-    last argument to a field resolver), return a list of the path keys.
-    """
-    flattened: List[Union[str, int]] = []
-    append = flattened.append
-    curr: Optional[ResponsePath] = path
-    while curr:
-        append(curr.key)
-        curr = curr.prev
-    return flattened[::-1]
-
-
-def add_path(prev: Optional[ResponsePath], key: Union[str, int]) -> ResponsePath:
-    """Add a key to a response path.
-
-    Given a ResponsePath and a key, return a new ResponsePath containing the new key.
-    """
-    return ResponsePath(prev, key)
 
 
 def get_field_def(
