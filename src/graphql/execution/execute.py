@@ -183,8 +183,8 @@ class ExecutionContext:
     variable_values: Dict[str, Any]
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
-    middleware_manager: Optional[MiddlewareManager]
     errors: List[GraphQLError]
+    middleware_manager: Optional[MiddlewareManager]
 
     def __init__(
         self,
@@ -196,8 +196,8 @@ class ExecutionContext:
         variable_values: Dict[str, Any],
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
-        middleware_manager: Optional[MiddlewareManager],
         errors: List[GraphQLError],
+        middleware_manager: Optional[MiddlewareManager],
     ) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -207,8 +207,8 @@ class ExecutionContext:
         self.variable_values = variable_values
         self.field_resolver = field_resolver  # type: ignore
         self.type_resolver = type_resolver  # type: ignore
-        self.middleware_manager = middleware_manager
         self.errors = errors
+        self.middleware_manager = middleware_manager
         self._subfields_cache: Dict[
             Tuple[GraphQLObjectType, Tuple[FieldNode, ...]], Dict[str, List[FieldNode]]
         ] = {}
@@ -233,7 +233,6 @@ class ExecutionContext:
 
         Throws a GraphQLError if a valid execution context cannot be created.
         """
-        errors: List[GraphQLError] = []
         operation: Optional[OperationDefinitionNode] = None
         has_multiple_assumed_operations = False
         fragments: Dict[str, FragmentDefinitionNode] = {}
@@ -263,37 +262,26 @@ class ExecutionContext:
 
         if not operation:
             if operation_name:
-                errors.append(
-                    GraphQLError(f"Unknown operation named '{operation_name}'.")
-                )
-            else:
-                errors.append(GraphQLError("Must provide an operation."))
-        elif has_multiple_assumed_operations:
-            errors.append(
+                return [GraphQLError(f"Unknown operation named '{operation_name}'.")]
+            return [GraphQLError("Must provide an operation.")]
+
+        if has_multiple_assumed_operations:
+            return [
                 GraphQLError(
-                    "Must provide operation name"
-                    " if query contains multiple operations."
+                    "Must provide operation name if query contains multiple operations."
                 )
-            )
+            ]
 
-        variable_values = None
-        if operation:
-            coerced_variable_values = get_variable_values(
-                schema,
-                operation.variable_definitions or FrozenList(),
-                raw_variable_values or {},
-            )
+        coerced_variable_values = get_variable_values(
+            schema,
+            operation.variable_definitions or FrozenList(),
+            raw_variable_values or {},
+        )
 
-            if coerced_variable_values.errors:
-                errors.extend(coerced_variable_values.errors)
-            else:
-                variable_values = coerced_variable_values.coerced
+        if coerced_variable_values.errors:
+            return coerced_variable_values.errors
 
-        if errors:
-            return errors
-
-        if operation is None:
-            raise TypeError("Has operation if no errors.")
+        variable_values = coerced_variable_values.coerced
         if variable_values is None:
             raise TypeError("Has variables if no errors.")
 
@@ -306,8 +294,8 @@ class ExecutionContext:
             variable_values,
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
+            [],
             middleware_manager,
-            errors,
         )
 
     def build_response(
