@@ -210,7 +210,7 @@ class ExecutionContext:
         self.errors = errors
         self.middleware_manager = middleware_manager
         self._subfields_cache: Dict[
-            Tuple[GraphQLObjectType, Tuple[FieldNode, ...]], Dict[str, List[FieldNode]]
+            Tuple[GraphQLObjectType, int], Dict[str, List[FieldNode]]
         ] = {}
 
     @classmethod
@@ -987,7 +987,7 @@ class ExecutionContext:
         subfields are not repeatedly calculated, which saves overhead when resolving
         lists of values.
         """
-        cache_key = return_type, tuple(field_nodes)
+        cache_key = return_type, id(field_nodes)
         sub_field_nodes = self._subfields_cache.get(cache_key)
         if sub_field_nodes is None:
             sub_field_nodes = {}
