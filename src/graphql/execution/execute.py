@@ -794,7 +794,7 @@ class ExecutionContext:
         Complete a list value by completing each item in the list with the inner type.
         """
         if not isinstance(result, Iterable) or isinstance(result, str):
-            raise TypeError(
+            raise GraphQLError(
                 "Expected Iterable, but did not find one for field"
                 f" {info.parent_type.name}.{info.field_name}."
             )
