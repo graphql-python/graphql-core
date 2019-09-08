@@ -12,7 +12,6 @@ from .ast import (
     EnumTypeExtensionNode,
     EnumValueDefinitionNode,
     EnumValueNode,
-    ExecutableDefinitionNode,
     FieldDefinitionNode,
     FieldNode,
     FloatValueNode,
@@ -183,9 +182,8 @@ class Parser:
         )
 
     _parse_definition_method_names: Dict[str, str] = {
-        **dict.fromkeys(
-            ("query", "mutation", "subscription", "fragment"), "executable_definition"
-        ),
+        **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
+        "fragment": "fragment_definition",
         **dict.fromkeys(
             (
                 "schema",
@@ -203,7 +201,10 @@ class Parser:
     }
 
     def parse_definition(self) -> DefinitionNode:
-        """Definition: ExecutableDefinition or TypeSystemDefinition/Extension"""
+        """Definition: ExecutableDefinition or TypeSystemDefinition/Extension
+
+        ExecutableDefinition: OperationDefinition or FragmentDefinition
+        """
         if self.peek(TokenKind.NAME):
             method_name = self._parse_definition_method_names.get(
                 cast(str, self._lexer.token.value)
@@ -211,7 +212,7 @@ class Parser:
             if method_name:
                 return getattr(self, f"parse_{method_name}")()
         elif self.peek(TokenKind.BRACE_L):
-            return self.parse_executable_definition()
+            return self.parse_operation_definition()
         elif self.peek_description():
             return self.parse_type_system_definition()
         raise self.unexpected()
@@ -220,18 +221,6 @@ class Parser:
         **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
         **dict.fromkeys(("fragment",), "fragment_definition"),
     }
-
-    def parse_executable_definition(self) -> ExecutableDefinitionNode:
-        """ExecutableDefinition: OperationDefinition or FragmentDefinition"""
-        if self.peek(TokenKind.NAME):
-            method_name = self._parse_executable_definition_method_names.get(
-                cast(str, self._lexer.token.value)
-            )
-            if method_name:
-                return getattr(self, f"parse_{method_name}")()
-        elif self.peek(TokenKind.BRACE_L):
-            return self.parse_operation_definition()
-        raise self.unexpected()
 
     # Implement the parsing rules in the Operations section.
 
