@@ -987,6 +987,8 @@ class ExecutionContext:
         subfields are not repeatedly calculated, which saves overhead when resolving
         lists of values.
         """
+        # Use id(field_nodes) as key, since a list cannot be hashed and
+        # (after conversion to a tuple) hashing nodes would be too slow:
         cache_key = return_type, id(field_nodes)
         sub_field_nodes = self._subfields_cache.get(cache_key)
         if sub_field_nodes is None:
