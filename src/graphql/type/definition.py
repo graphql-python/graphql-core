@@ -42,7 +42,7 @@ from ..language import (
     UnionTypeExtensionNode,
     ValueNode,
 )
-from ..pyutils import AwaitableOrValue, FrozenList, cached_property, inspect
+from ..pyutils import AwaitableOrValue, FrozenList, Path, cached_property, inspect
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -119,7 +119,6 @@ __all__ = [
     "GraphQLTypeResolver",
     "GraphQLUnionType",
     "GraphQLWrappingType",
-    "ResponsePath",
     "Thunk",
 ]
 
@@ -505,12 +504,6 @@ class GraphQLField:
         return bool(self.deprecation_reason)
 
 
-class ResponsePath(NamedTuple):
-
-    prev: Any  # Optional['ResponsePath'] (python/mypy/issues/731))
-    key: Union[str, int]
-
-
 class GraphQLResolveInfo(NamedTuple):
     """Collection of information passed to the resolvers.
 
@@ -525,7 +518,7 @@ class GraphQLResolveInfo(NamedTuple):
     field_nodes: List[FieldNode]
     return_type: "GraphQLOutputType"
     parent_type: "GraphQLObjectType"
-    path: ResponsePath
+    path: Path
     schema: "GraphQLSchema"
     fragments: Dict[str, FragmentDefinitionNode]
     root_value: Any

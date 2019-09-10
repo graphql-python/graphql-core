@@ -3,15 +3,14 @@ from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Dict, Union, ca
 
 from ..error import GraphQLError, located_error
 from ..execution.execute import (
-    add_path,
     assert_valid_execution_arguments,
     execute,
     get_field_def,
-    response_path_as_list,
     ExecutionContext,
     ExecutionResult,
 )
 from ..language import DocumentNode
+from ..pyutils import Path
 from ..type import GraphQLFieldResolver, GraphQLSchema
 from ..utilities import get_operation_root_type
 from .map_async_iterator import MapAsyncIterator
@@ -153,7 +152,7 @@ async def create_source_event_stream(
     # AsyncIterable yielding raw payloads.
     resolve_fn = field_def.subscribe or context.field_resolver
 
-    path = add_path(None, response_name)
+    path = Path(None, response_name)
 
     info = context.build_resolve_info(field_def, field_nodes, type_, path)
 
@@ -166,7 +165,7 @@ async def create_source_event_stream(
     event_stream = await cast(Awaitable, result) if isawaitable(result) else result
     # If `event_stream` is an Error, rethrow a located error.
     if isinstance(event_stream, Exception):
-        raise located_error(event_stream, field_nodes, response_path_as_list(path))
+        raise located_error(event_stream, field_nodes, path.as_list())
 
     # Assert field returned an event stream, otherwise yield an error.
     if isinstance(event_stream, AsyncIterable):

@@ -95,21 +95,21 @@ def build_client_schema(
 
     def get_input_type(type_ref: Dict) -> GraphQLInputType:
         input_type = get_type(type_ref)
-        if not is_input_type(input_type):
-            raise TypeError(
-                "Introspection must provide input type for arguments,"
-                f" but received: {inspect(input_type)}."
-            )
-        return cast(GraphQLInputType, input_type)
+        if is_input_type(input_type):
+            return cast(GraphQLInputType, input_type)
+        raise TypeError(
+            "Introspection must provide input type for arguments,"
+            f" but received: {inspect(input_type)}."
+        )
 
     def get_output_type(type_ref: Dict) -> GraphQLOutputType:
         output_type = get_type(type_ref)
-        if not is_output_type(output_type):
-            raise TypeError(
-                "Introspection must provide output type for fields,"
-                f" but received: {inspect(output_type)}."
-            )
-        return cast(GraphQLOutputType, output_type)
+        if is_output_type(output_type):
+            return cast(GraphQLOutputType, output_type)
+        raise TypeError(
+            "Introspection must provide output type for fields,"
+            f" but received: {inspect(output_type)}."
+        )
 
     def get_object_type(type_ref: Dict) -> GraphQLObjectType:
         object_type = get_type(type_ref)

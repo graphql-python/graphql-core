@@ -395,8 +395,8 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'a': 'foo', 'b': 'bar'}; Field value.c"
-                            " of required type String! was not provided.",
+                            " {'a': 'foo', 'b': 'bar'}; Field of required type String!"
+                            " was not provided at value.c.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -415,14 +415,14 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'na': {'a': 'foo'}}; Field value.na.c"
-                            " of required type String! was not provided.",
+                            " {'na': {'a': 'foo'}}; Field of required type String!"
+                            " was not provided at value.na.c.",
                             "locations": [(2, 28)],
                         },
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'na': {'a': 'foo'}}; Field value.nb"
-                            " of required type String! was not provided.",
+                            " {'na': {'a': 'foo'}}; Field of required type String!"
+                            " was not provided at value.nb.",
                             "locations": [(2, 28)],
                         },
                     ],

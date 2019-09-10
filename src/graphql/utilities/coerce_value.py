@@ -1,8 +1,8 @@
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union, cast
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import Node
-from ..pyutils import did_you_mean, inspect, suggestion_list
+from ..pyutils import Path, did_you_mean, inspect, suggestion_list
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -23,11 +23,6 @@ __all__ = ["coerce_value", "CoercedValue"]
 class CoercedValue(NamedTuple):
     errors: Optional[List[GraphQLError]]
     value: Any
-
-
-class Path(NamedTuple):
-    prev: Any  # Optional['Path'] (python/mypy/issues/731)
-    key: Union[str, int]
 
 
 def coerce_value(
@@ -108,8 +103,9 @@ def coerce_value(
             coerced_value_list: List[Any] = []
             append_item = coerced_value_list.append
             for index, item_value in enumerate(value):
+                item_path = Path(path, index)
                 coerced_item = coerce_value(
-                    item_value, item_type, blame_node, at_path(path, index)
+                    item_value, item_type, blame_node, item_path
                 )
                 if coerced_item.errors:
                     errors = add(errors, *coerced_item.errors)
@@ -136,6 +132,7 @@ def coerce_value(
 
         # Ensure every defined field is valid.
         for field_name, field in fields.items():
+            field_path = Path(path, field_name)
             field_value = value.get(field_name, INVALID)
             if field_value is INVALID:
                 if field.default_value is not INVALID:
@@ -147,14 +144,15 @@ def coerce_value(
                     errors = add(
                         errors,
                         coercion_error(
-                            f"Field {print_path(at_path(path, field_name))}"
-                            f" of required type {field.type} was not provided",
+                            f"Field of required type {inspect(field.type)}"
+                            " was not provided",
                             blame_node,
+                            field_path,
                         ),
                     )
             else:
                 coerced_field = coerce_value(
-                    field_value, field.type, blame_node, at_path(path, field_name)
+                    field_value, field.type, blame_node, field_path
                 )
                 if coerced_field.errors:
                     errors = add(errors, *coerced_field.errors)
@@ -201,10 +199,6 @@ def add(
     return (errors or []) + list(more_errors)
 
 
-def at_path(prev: Optional[Path], key: Union[str, int]) -> Path:
-    return Path(prev, key)
-
-
 def coercion_error(
     message: str,
     blame_node: Node = None,
@@ -212,26 +206,19 @@ def coercion_error(
     sub_message: str = None,
     original_error: Exception = None,
 ) -> GraphQLError:
-    """Return a GraphQLError instance"""
-    path_str = print_path(path)
-    if path_str:
-        message += f" at {path_str}"
-    message += "."
+    """Return a coercion error with the given message describing the given path"""
+    full_message = [message]
+    append = full_message.append
+    # Build a string describing the path into the value where the error was found
+    if path:
+        append(" at value")
+        for key in path.as_list():
+            append(f".{key}" if isinstance(key, str) else f"[{key}]")
+
+    append(".")
     if sub_message:
-        message += sub_message
-    # noinspection PyArgumentEqualDefault
+        append(sub_message)
+    message = "".join(full_message)
+
+    # Return a GraphQLError instance
     return GraphQLError(message, blame_node, None, None, None, original_error)
-
-
-def print_path(path: Optional[Path]) -> str:
-    """Build string describing the path into the value where error was found"""
-    path_str = ""
-    current_path: Optional[Path] = path
-    while current_path:
-        path_str = (
-            f".{current_path.key}"
-            if isinstance(current_path.key, str)
-            else f"[{current_path.key}]"
-        ) + path_str
-        current_path = current_path.prev
-    return f"value{path_str}" if path_str else ""

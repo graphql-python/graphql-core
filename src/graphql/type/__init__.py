@@ -3,6 +3,8 @@
 The :mod:`graphql.type` package is responsible for defining GraphQL types and schema.
 """
 
+from ..pyutils import Path as ResponsePath
+
 from .schema import (
     # Predicate
     is_schema,
@@ -91,7 +93,6 @@ from .definition import (
     GraphQLTypeResolver,
     GraphQLIsTypeOfFn,
     GraphQLResolveInfo,
-    ResponsePath,
 )
 
 from .directives import (

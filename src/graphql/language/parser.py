@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Union, cast
+from typing import Callable, Dict, List, Optional, Union, TypeVar, cast
 from functools import partial
 
 from .ast import (
@@ -30,7 +30,6 @@ from .ast import (
     Location,
     NameNode,
     NamedTypeNode,
-    Node,
     NonNullTypeNode,
     NullValueNode,
     ObjectFieldNode,
@@ -65,6 +64,8 @@ from ..error import GraphQLError, GraphQLSyntaxError
 from ..pyutils import inspect
 
 __all__ = ["parse", "parse_type", "parse_value"]
+
+T = TypeVar("T")
 
 SourceType = Union[Source, str]
 
@@ -267,15 +268,8 @@ class Parser:
 
     def parse_variable_definitions(self) -> List[VariableDefinitionNode]:
         """VariableDefinitions: (VariableDefinition+)"""
-        return (
-            cast(
-                List[VariableDefinitionNode],
-                self.many(
-                    TokenKind.PAREN_L, self.parse_variable_definition, TokenKind.PAREN_R
-                ),
-            )
-            if self.peek(TokenKind.PAREN_L)
-            else []
+        return self.optional_many(
+            TokenKind.PAREN_L, self.parse_variable_definition, TokenKind.PAREN_R
         )
 
     def parse_variable_definition(self) -> VariableDefinitionNode:
@@ -337,14 +331,7 @@ class Parser:
     def parse_arguments(self, is_const: bool) -> List[ArgumentNode]:
         """Arguments[Const]: (Argument[?Const]+)"""
         item = self.parse_const_argument if is_const else self.parse_argument
-        return (
-            cast(
-                List[ArgumentNode],
-                self.many(TokenKind.PAREN_L, item, TokenKind.PAREN_R),
-            )
-            if self.peek(TokenKind.PAREN_L)
-            else []
-        )
+        return self.optional_many(TokenKind.PAREN_L, item, TokenKind.PAREN_R)
 
     def parse_argument(self) -> ArgumentNode:
         """Argument: Name : Value"""
@@ -671,15 +658,8 @@ class Parser:
 
     def parse_fields_definition(self) -> List[FieldDefinitionNode]:
         """FieldsDefinition: {FieldDefinition+}"""
-        return (
-            cast(
-                List[FieldDefinitionNode],
-                self.many(
-                    TokenKind.BRACE_L, self.parse_field_definition, TokenKind.BRACE_R
-                ),
-            )
-            if self.peek(TokenKind.BRACE_L)
-            else []
+        return self.optional_many(
+            TokenKind.BRACE_L, self.parse_field_definition, TokenKind.BRACE_R
         )
 
     def parse_field_definition(self) -> FieldDefinitionNode:
@@ -702,15 +682,8 @@ class Parser:
 
     def parse_argument_defs(self) -> List[InputValueDefinitionNode]:
         """ArgumentsDefinition: (InputValueDefinition+)"""
-        return (
-            cast(
-                List[InputValueDefinitionNode],
-                self.many(
-                    TokenKind.PAREN_L, self.parse_input_value_def, TokenKind.PAREN_R
-                ),
-            )
-            if self.peek(TokenKind.PAREN_L)
-            else []
+        return self.optional_many(
+            TokenKind.PAREN_L, self.parse_input_value_def, TokenKind.PAREN_R
         )
 
     def parse_input_value_def(self) -> InputValueDefinitionNode:
@@ -798,17 +771,8 @@ class Parser:
 
     def parse_enum_values_definition(self) -> List[EnumValueDefinitionNode]:
         """EnumValuesDefinition: {EnumValueDefinition+}"""
-        return (
-            cast(
-                List[EnumValueDefinitionNode],
-                self.many(
-                    TokenKind.BRACE_L,
-                    self.parse_enum_value_definition,
-                    TokenKind.BRACE_R,
-                ),
-            )
-            if self.peek(TokenKind.BRACE_L)
-            else []
+        return self.optional_many(
+            TokenKind.BRACE_L, self.parse_enum_value_definition, TokenKind.BRACE_R
         )
 
     def parse_enum_value_definition(self) -> EnumValueDefinitionNode:
@@ -842,15 +806,8 @@ class Parser:
 
     def parse_input_fields_definition(self) -> List[InputValueDefinitionNode]:
         """InputFieldsDefinition: {InputValueDefinition+}"""
-        return (
-            cast(
-                List[InputValueDefinitionNode],
-                self.many(
-                    TokenKind.BRACE_L, self.parse_input_value_def, TokenKind.BRACE_R
-                ),
-            )
-            if self.peek(TokenKind.BRACE_L)
-            else []
+        return self.optional_many(
+            TokenKind.BRACE_L, self.parse_input_value_def, TokenKind.BRACE_R
         )
 
     def parse_schema_extension(self) -> SchemaExtensionNode:
@@ -859,14 +816,8 @@ class Parser:
         self.expect_keyword("extend")
         self.expect_keyword("schema")
         directives = self.parse_directives(True)
-        operation_types = (
-            self.many(
-                TokenKind.BRACE_L,
-                self.parse_operation_type_definition,
-                TokenKind.BRACE_R,
-            )
-            if self.peek(TokenKind.BRACE_L)
-            else []
+        operation_types = self.optional_many(
+            TokenKind.BRACE_L, self.parse_operation_type_definition, TokenKind.BRACE_R
         )
         if not directives and not operation_types:
             raise self.unexpected()
@@ -1088,8 +1039,8 @@ class Parser:
         )
 
     def any(
-        self, open_kind: TokenKind, parse_fn: Callable[[], Node], close_kind: TokenKind
-    ) -> List[Node]:
+        self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
+    ) -> List[T]:
         """Fetch any matching nodes, possibly none.
 
         Returns a possibly empty list of parse nodes, determined by the `parse_fn`.
@@ -1097,15 +1048,33 @@ class Parser:
         `close_kind`. Advances the parser to the next lex token after the closing token.
         """
         self.expect_token(open_kind)
-        nodes: List[Node] = []
+        nodes: List[T] = []
         append = nodes.append
         while not self.expect_optional_token(close_kind):
             append(parse_fn())
         return nodes
 
+    def optional_many(
+        self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
+    ) -> List[T]:
+        """Fetch matching nodes, maybe none.
+
+        Returns a list of parse nodes, determined by the `parse_fn`. It can be empty
+        only if the open token is missing, otherwise it will always return a non-empty
+        list that begins with a lex token of `open_kind` and ends with a lex token of
+        `close_kind`. Advances the parser to the next lex token after the closing token.
+        """
+        if self.expect_optional_token(open_kind):
+            nodes = [parse_fn()]
+            append = nodes.append
+            while not self.expect_optional_token(close_kind):
+                append(parse_fn())
+            return nodes
+        return []
+
     def many(
-        self, open_kind: TokenKind, parse_fn: Callable[[], Node], close_kind: TokenKind
-    ) -> List[Node]:
+        self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
+    ) -> List[T]:
         """Fetch matching nodes, at least one.
 
         Returns a non-empty list of parse nodes, determined by the `parse_fn`.

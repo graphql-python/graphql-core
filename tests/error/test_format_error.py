@@ -6,7 +6,7 @@ from graphql.language import Node, Source
 
 def describe_format_error():
     def throw_if_not_an_error():
-        with raises(ValueError):
+        with raises(TypeError):
             # noinspection PyTypeChecker
             format_error(None)
 

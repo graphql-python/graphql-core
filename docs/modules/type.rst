@@ -100,7 +100,6 @@ Resolvers
 .. autoclass:: GraphQLIsTypeOfFn
 .. autoclass:: GraphQLResolveInfo
 .. autoclass:: GraphQLTypeResolver
-.. autoclass:: ResponsePath
 
 
 Directives

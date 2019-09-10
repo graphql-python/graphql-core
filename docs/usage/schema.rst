@@ -42,7 +42,7 @@ heroes from the Star Wars trilogy::
 
 We have been using the so called GraphQL schema definition language (SDL) here to
 describe the schema. While it is also possible to build a schema directly from this
-notation using GraphQL-core-next, let's first create that schema manually by assembling
+notation using GraphQL-core 3, let's first create that schema manually by assembling
 the types defined here using Python classes, adding resolver functions written in Python
 for querying the data.
 
@@ -109,8 +109,8 @@ Our schema also contains a ``Character`` interface. Here is how we build it::
 Note that we did not pass the dictionary of fields to the ``GraphQLInterfaceType``
 directly, but using a lambda function (a so-called "thunk"). This is necessary because
 the fields are referring back to the character interface that we are just defining.
-Whenever you have such recursive definitions in GraphQL-core-next, you need to use
-thunks. Otherwise, you can pass everything directly.
+Whenever you have such recursive definitions in GraphQL-core, you need to use thunks.
+Otherwise, you can pass everything directly.
 
 Characters in the Star Wars trilogy are either humans or droids. So we define a
 ``Human`` and a ``Droid`` type, which both implement the ``Character`` interface::

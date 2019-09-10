@@ -14,7 +14,7 @@ def format_error(error: "GraphQLError") -> Dict[str, Any]:
     Format, Errors" section of the GraphQL Specification.
     """
     if not error:
-        raise ValueError("Received null or undefined error.")
+        raise TypeError("Received no error object.")
     formatted: Dict[str, Any] = dict(  # noqa: E701 (pycqa/flake8#394)
         message=error.message or "An unknown error occurred.",
         locations=error.locations,
