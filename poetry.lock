@@ -30,6 +30,11 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "19.1.0"
 
+[package.extras]
+dev = ["coverage", "hypothesis", "pympler", "pytest", "six", "zope.interface", "sphinx", "pre-commit"]
+docs = ["sphinx", "zope.interface"]
+tests = ["coverage", "hypothesis", "pympler", "pytest", "six", "zope.interface"]
+
 [[package]]
 category = "dev"
 description = "Internationalization utilities"
@@ -54,6 +59,9 @@ appdirs = "*"
 attrs = ">=18.1.0"
 click = ">=6.5"
 toml = ">=0.9.4"
+
+[package.extras]
+d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
 
 [[package]]
 category = "dev"
@@ -89,6 +97,9 @@ version = "0.39"
 
 [package.dependencies]
 toml = "*"
+
+[package.extras]
+test = ["mock"]
 
 [[package]]
 category = "dev"
@@ -184,13 +195,18 @@ version = "1.1.0"
 [[package]]
 category = "dev"
 description = "Read metadata from Python packages"
+marker = "python_version < \"3.8\""
 name = "importlib-metadata"
 optional = false
 python-versions = ">=2.7,!=3.0,!=3.1,!=3.2,!=3.3"
-version = "0.20"
+version = "0.21"
 
 [package.dependencies]
 zipp = ">=0.5"
+
+[package.extras]
+docs = ["sphinx", "rst.linker"]
+testing = ["packaging", "importlib-resources"]
 
 [[package]]
 category = "dev"
@@ -202,6 +218,9 @@ version = "2.10.1"
 
 [package.dependencies]
 MarkupSafe = ">=0.23"
+
+[package.extras]
+i18n = ["Babel (>=0.8)"]
 
 [[package]]
 category = "dev"
@@ -240,6 +259,9 @@ mypy-extensions = ">=0.4.0,<0.5.0"
 typed-ast = ">=1.4.0,<1.5.0"
 typing-extensions = ">=3.7.4"
 
+[package.extras]
+dmypy = ["psutil (>=4.0)"]
+
 [[package]]
 category = "dev"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
@@ -267,10 +289,15 @@ description = "plugin and hook calling mechanisms for python"
 name = "pluggy"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.12.0"
+version = "0.13.0"
 
 [package.dependencies]
-importlib-metadata = ">=0.12"
+[package.dependencies.importlib-metadata]
+python = "<3.8"
+version = ">=0.12"
+
+[package.extras]
+dev = ["pre-commit", "tox"]
 
 [[package]]
 category = "dev"
@@ -356,6 +383,9 @@ version = "0.10.0"
 [package.dependencies]
 pytest = ">=3.0.6"
 
+[package.extras]
+testing = ["async-generator (>=1.3)", "coverage", "hypothesis (>=3.64)"]
+
 [[package]]
 category = "dev"
 description = "A ``py.test`` fixture for benchmarking code. It will group the tests into rounds that are calibrated to the chosen timer. See calibration_ and FAQ_."
@@ -368,6 +398,11 @@ version = "3.2.2"
 py-cpuinfo = "*"
 pytest = ">=3.8"
 
+[package.extras]
+aspect = ["aspectlib"]
+elasticsearch = ["elasticsearch"]
+histogram = ["pygal", "pygaljs"]
+
 [[package]]
 category = "dev"
 description = "Pytest plugin for measuring coverage."
@@ -379,6 +414,9 @@ version = "2.7.1"
 [package.dependencies]
 coverage = ">=4.4"
 pytest = ">=3.6"
+
+[package.extras]
+testing = ["fields", "hunter", "process-tests (2.0.2)", "six", "virtualenv"]
 
 [[package]]
 category = "dev"
@@ -420,6 +458,10 @@ certifi = ">=2017.4.17"
 chardet = ">=3.0.2,<3.1.0"
 idna = ">=2.5,<2.9"
 urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
+
+[package.extras]
+security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
 
 [[package]]
 category = "dev"
@@ -487,6 +529,9 @@ optional = false
 python-versions = "*"
 version = "1.0.1"
 
+[package.extras]
+test = ["pytest", "flake8", "mypy"]
+
 [[package]]
 category = "dev"
 description = ""
@@ -494,6 +539,9 @@ name = "sphinxcontrib-devhelp"
 optional = false
 python-versions = "*"
 version = "1.0.1"
+
+[package.extras]
+test = ["pytest", "flake8", "mypy"]
 
 [[package]]
 category = "dev"
@@ -503,6 +551,9 @@ optional = false
 python-versions = "*"
 version = "1.0.2"
 
+[package.extras]
+test = ["pytest", "flake8", "mypy", "html5lib"]
+
 [[package]]
 category = "dev"
 description = "A sphinx extension which renders display math in HTML via JavaScript"
@@ -510,6 +561,9 @@ name = "sphinxcontrib-jsmath"
 optional = false
 python-versions = ">=3.5"
 version = "1.0.1"
+
+[package.extras]
+test = ["pytest", "flake8", "mypy"]
 
 [[package]]
 category = "dev"
@@ -519,6 +573,9 @@ optional = false
 python-versions = "*"
 version = "1.0.2"
 
+[package.extras]
+test = ["pytest", "flake8", "mypy"]
+
 [[package]]
 category = "dev"
 description = ""
@@ -526,6 +583,9 @@ name = "sphinxcontrib-serializinghtml"
 optional = false
 python-versions = "*"
 version = "1.1.3"
+
+[package.extras]
+test = ["pytest", "flake8", "mypy"]
 
 [[package]]
 category = "dev"
@@ -595,6 +655,11 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
 version = "1.25.3"
 
+[package.extras]
+brotli = ["brotlipy (>=0.6.0)"]
+secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
+
 [[package]]
 category = "dev"
 description = "Virtual Python Environment builder"
@@ -602,6 +667,10 @@ name = "virtualenv"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 version = "16.7.5"
+
+[package.extras]
+docs = ["sphinx (>=1.8.0,<2)", "towncrier (>=18.5.0)", "sphinx-rtd-theme (>=0.4.2,<1)"]
+testing = ["pytest (>=4.0.0,<5)", "coverage (>=4.5.0,<5)", "pytest-timeout (>=1.3.0,<2)", "six (>=1.10.0,<2)", "pytest-xdist", "pytest-localserver", "pypiserver", "mock", "xonsh"]
 
 [[package]]
 category = "dev"
@@ -614,6 +683,7 @@ version = "0.1.7"
 [[package]]
 category = "dev"
 description = "Backport of pathlib-compatible object wrapper for zip files"
+marker = "python_version < \"3.8\""
 name = "zipp"
 optional = false
 python-versions = ">=2.7"
@@ -622,8 +692,12 @@ version = "0.6.0"
 [package.dependencies]
 more-itertools = "*"
 
+[package.extras]
+docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
+testing = ["pathlib2", "contextlib2", "unittest2"]
+
 [metadata]
-content-hash = "089caa7fb1be512194bd387afc4d1b392fa113e0c15556f831e36b343184b5fa"
+content-hash = "53c9f7def8e001f1ae1aa52edfe62d2ac71c94f97362bf0ff105eb6341895048"
 python-versions = "^3.6"
 
 [metadata.hashes]
@@ -647,7 +721,7 @@ filelock = ["18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59", 
 flake8 = ["19241c1cbc971b9962473e4438a2ca19749a7dd002dd1a946eaba171b4114548", "8e9dfa3cecb2400b3738a42c54c3043e821682b9c840b0448c0503f781130696"]
 idna = ["c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407", "ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"]
 imagesize = ["3f349de3eb99145973fefb7dbe38554414e5c30abd0c8e4b970a7c9d09f3a1d8", "f3832918bc3c66617f92e35f5d70729187676313caa60c187eb0f28b8fe5e3b5"]
-importlib-metadata = ["9ff1b1c5a354142de080b8a4e9803e5d0d59283c93aed808617c787d16768375", "b7143592e374e50584564794fcb8aaf00a23025f9db866627f89a21491847a8d"]
+importlib-metadata = ["0c505102757e7fa28b9f0958d8bc81301159dea16e2649858c92edc158b78a83", "9a9f75ce32e78170905888acbf2376a81d3f21ecb3bb4867050413411d3ca7a9"]
 jinja2 = ["065c4f02ebe7f7cf559e49ee5a95fb800a9e4528727aec6f24402a5374c65013", "14dd6caf1527abb21f08f86c784eac40853ba93edb79552aa1e4b8aef1b61c7b"]
 markupsafe = ["00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473", "09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161", "09c4b7f37d6c648cb13f9230d847adf22f8171b1ccc4d5682398e77f40309235", "1027c282dad077d0bae18be6794e6b6b8c91d58ed8a8d89a89d59693b9131db5", "24982cc2533820871eba85ba648cd53d8623687ff11cbb805be4ff7b4c971aff", "29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b", "43a55c2930bbc139570ac2452adf3d70cdbb3cfe5912c71cdce1c2c6bbd9c5d1", "46c99d2de99945ec5cb54f23c8cd5689f6d7177305ebff350a58ce5f8de1669e", "500d4957e52ddc3351cabf489e79c91c17f6e0899158447047588650b5e69183", "535f6fc4d397c1563d08b88e485c3496cf5784e927af890fb3c3aac7f933ec66", "62fe6c95e3ec8a7fad637b7f3d372c15ec1caa01ab47926cfdf7a75b40e0eac1", "6dd73240d2af64df90aa7c4e7481e23825ea70af4b4922f8ede5b9e35f78a3b1", "717ba8fe3ae9cc0006d7c451f0bb265ee07739daf76355d06366154ee68d221e", "79855e1c5b8da654cf486b830bd42c06e8780cea587384cf6545b7d9ac013a0b", "7c1699dfe0cf8ff607dbdcc1e9b9af1755371f92a68f706051cc8c37d447c905", "88e5fcfb52ee7b911e8bb6d6aa2fd21fbecc674eadd44118a9cc3863f938e735", "8defac2f2ccd6805ebf65f5eeb132adcf2ab57aa11fdf4c0dd5169a004710e7d", "98c7086708b163d425c67c7a91bad6e466bb99d797aa64f965e9d25c12111a5e", "9add70b36c5666a2ed02b43b335fe19002ee5235efd4b8a89bfcf9005bebac0d", "9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c", "ade5e387d2ad0d7ebf59146cc00c8044acbd863725f887353a10df825fc8ae21", "b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2", "b1282f8c00509d99fef04d8ba936b156d419be841854fe901d8ae224c59f0be5", "b2051432115498d3562c084a49bba65d97cf251f5a331c64a12ee7e04dacc51b", "ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6", "c8716a48d94b06bb3b2524c2b77e055fb313aeb4ea620c8dd03a105574ba704f", "cd5df75523866410809ca100dc9681e301e3c27567cf498077e8551b6d20e42f", "e249096428b3ae81b08327a63a485ad0878de3fb939049038579ac0ef61e17e7"]
 mccabe = ["ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42", "dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"]
@@ -655,7 +729,7 @@ more-itertools = ["409cd48d4db7052af495b09dec721011634af3753ae1ef92d2b32f73a745f
 mypy = ["0107bff4f46a289f0e4081d59b77cef1c48ea43da5a0dbf0005d54748b26df2a", "07957f5471b3bb768c61f08690c96d8a09be0912185a27a68700f3ede99184e4", "10af62f87b6921eac50271e667cc234162a194e742d8e02fc4ddc121e129a5b0", "11fd60d2f69f0cefbe53ce551acf5b1cec1a89e7ce2d47b4e95a84eefb2899ae", "15e43d3b1546813669bd1a6ec7e6a11d2888db938e0607f7b5eef6b976671339", "352c24ba054a89bb9a35dd064ee95ab9b12903b56c72a8d3863d882e2632dc76", "437020a39417e85e22ea8edcb709612903a9924209e10b3ec6d8c9f05b79f498", "49925f9da7cee47eebf3420d7c0e00ec662ec6abb2780eb0a16260a7ba25f9c4", "6724fcd5777aa6cebfa7e644c526888c9d639bd22edd26b2a8038c674a7c34bd", "7a17613f7ea374ab64f39f03257f22b5755335b73251d0d253687a69029701ba", "cdc1151ced496ca1496272da7fc356580e95f2682be1d32377c22ddebdf73c91"]
 mypy-extensions = ["37e0e956f41369209a3d5f34580150bcacfabaa57b33a15c0b25f4b5725e0812", "b16cabe759f55e3409a7d231ebd2841378fb0c27a5d1994719e340e4f429ac3e"]
 packaging = ["a7ac867b97fdc07ee80a8058fe4435ccd274ecc3b0ed61d852d7d53055528cf9", "c491ca87294da7cc01902edbe30a5bc6c4c28172b5138ab4e4aa1b9d7bfaeafe"]
-pluggy = ["0825a152ac059776623854c1543d65a4ad408eb3d33ee114dff91e57ec6ae6fc", "b9817417e95936bf75d85d3f8767f7df6cdde751fc40aed3bb3074cbcb77757c"]
+pluggy = ["0db4b7601aae1d35b4a033282da476845aa19185c1e6964b25cf324b5e4ec3e6", "fa5fa1622fa6dd5c030e9cad086fa19ef6a0cf6d7a2d12318e10cb49d6d68f34"]
 py = ["64f65755aee5b381cea27766a3a147c3f15b9b6b9ac88676de66ba2ae36793fa", "dc639b046a6e2cff5bbe40194ad65936d6ba360b52b3c3fe1d08a82dd50b5e53"]
 py-cpuinfo = ["2cf6426f776625b21d1db8397d3297ef7acfa59018f02a8779123f3190f18500"]
 pycodestyle = ["95a2219d12372f05704562a14ec30bc76b05a5b297b21a5dfe3f6fac3491ae56", "e40a936c9a450ad81df37f549d676d127b1b66000a6c500caa2b085bc0ca976c"]
