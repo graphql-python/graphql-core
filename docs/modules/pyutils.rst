@@ -28,3 +28,4 @@ PyUtils
 .. autoclass:: FrozenDict
 .. autoclass:: Path
    :members:
+.. autofunction:: print_path_list

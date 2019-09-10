@@ -360,6 +360,8 @@ from .utilities import (
     # GraphQL type system.
     TypeInfo,
     # Coerce a Python value to a GraphQL type, or produce errors.
+    coerce_input_value,
+    # Deprecated: use coerce_input_value
     coerce_value,
     # Concatenates multiple ASTs together.
     concat_ast,
@@ -648,6 +650,7 @@ __all__ = [
     "value_from_ast_untyped",
     "ast_from_value",
     "TypeInfo",
+    "coerce_input_value",
     "coerce_value",
     "concat_ast",
     "separate_operations",

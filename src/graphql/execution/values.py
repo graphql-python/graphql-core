@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..error import GraphQLError, INVALID
 from ..language import (
@@ -14,7 +14,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
-from ..pyutils import inspect, FrozenList
+from ..pyutils import inspect, print_path_list, FrozenList
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -23,7 +23,7 @@ from ..type import (
     is_input_type,
     is_non_null_type,
 )
-from ..utilities import coerce_value, type_from_ast, value_from_ast
+from ..utilities import coerce_input_value, type_from_ast, value_from_ast
 
 __all__ = ["get_variable_values", "get_argument_values", "get_directive_values"]
 
@@ -35,6 +35,7 @@ def get_variable_values(
     schema: GraphQLSchema,
     var_def_nodes: FrozenList[VariableDefinitionNode],
     inputs: Dict[str, Any],
+    max_errors: int = None,
 ) -> CoercedVariableValues:
     """Get coerced variable values based on provided definitions.
 
@@ -43,6 +44,31 @@ def get_variable_values(
     the variable definitions, a GraphQLError will be thrown.
     """
     errors: List[GraphQLError] = []
+
+    def on_error(error: GraphQLError):
+        if max_errors is not None and len(errors) >= max_errors:
+            raise GraphQLError(
+                "Too many errors processing variables,"
+                " error limit reached. Execution aborted."
+            )
+        errors.append(error)
+
+    try:
+        coerced = coerce_variable_values(schema, var_def_nodes, inputs, on_error)
+        if not errors:
+            return coerced
+    except GraphQLError as e:
+        errors.append(e)
+
+    return errors
+
+
+def coerce_variable_values(
+    schema: GraphQLSchema,
+    var_def_nodes: FrozenList[VariableDefinitionNode],
+    inputs: Dict[str, Any],
+    on_error: Callable[[GraphQLError], None],
+):
     coerced_values: Dict[str, Any] = {}
     for var_def_node in var_def_nodes:
         var_name = var_def_node.variable.name.value
@@ -51,7 +77,7 @@ def get_variable_values(
             # Must use input types for variables. This should be caught during
             # validation, however is checked again here for safety.
             var_type_str = print_ast(var_def_node.type)
-            errors.append(
+            on_error(
                 GraphQLError(
                     f"Variable '${var_name}' expected value of type '{var_type_str}'"
                     " which cannot be used as an input type.",
@@ -69,7 +95,7 @@ def get_variable_values(
 
             if is_non_null_type(var_type):
                 var_type_str = inspect(var_type)
-                errors.append(
+                on_error(
                     GraphQLError(
                         f"Variable '${var_name}' of required type '{var_type_str}'"
                         " was not provided.",
@@ -81,7 +107,7 @@ def get_variable_values(
         value = inputs[var_name]
         if value is None and is_non_null_type(var_type):
             var_type_str = inspect(var_type)
-            errors.append(
+            on_error(
                 GraphQLError(
                     f"Variable '${var_name}' of non-null type '{var_type_str}'"
                     " must not be null.",
@@ -90,20 +116,26 @@ def get_variable_values(
             )
             continue
 
-        coerced = coerce_value(value, var_type, var_def_node)
-        coercion_errors = coerced.errors
-        if coercion_errors:
-            for error in coercion_errors:
-                error.message = (
-                    f"Variable '${var_name}' got invalid"
-                    f" value {inspect(value)}; {error.message}"
+        def on_input_value_error(
+            path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
+        ):
+            invalid_str = inspect(invalid_value)
+            prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
+            if path:
+                prefix += f" at '{var_name}{print_path_list(path)}'"
+            on_error(
+                GraphQLError(
+                    prefix + "; " + error.message,
+                    var_def_node,
+                    original_error=error.original_error,
                 )
-            errors.extend(coercion_errors)
-            continue
+            )
 
-        coerced_values[var_name] = coerced.value
+        coerced_values[var_name] = coerce_input_value(
+            value, var_type, on_input_value_error
+        )
 
-    return errors or coerced_values
+    return coerced_values
 
 
 def get_argument_values(

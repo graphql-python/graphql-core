@@ -2,7 +2,8 @@ from math import nan
 
 from graphql.error import INVALID
 from graphql.execution import execute
-from graphql.language import parse
+from graphql.execution.values import get_variable_values
+from graphql.language import parse, OperationDefinitionNode
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumType,
@@ -363,11 +364,9 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'a': 'foo', 'b': 'bar', 'c': None};"
-                            " Expected non-nullable type String!"
-                            " not to be null at value.c.",
+                            " None at 'input.c';"
+                            " Expected non-nullable type String! not to be None.",
                             "locations": [(2, 24)],
-                            "path": None,
                         }
                     ],
                 )
@@ -395,8 +394,8 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'a': 'foo', 'b': 'bar'}; Field of required type String!"
-                            " was not provided at value.c.",
+                            " {'a': 'foo', 'b': 'bar'};"
+                            " Field c of required type String! was not provided.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -415,14 +414,14 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'na': {'a': 'foo'}}; Field of required type String!"
-                            " was not provided at value.na.c.",
+                            " {'a': 'foo'} at 'input.na';"
+                            " Field c of required type String! was not provided.",
                             "locations": [(2, 28)],
                         },
                         {
                             "message": "Variable '$input' got invalid value"
-                            " {'na': {'a': 'foo'}}; Field of required type String!"
-                            " was not provided at value.nb.",
+                            " {'na': {'a': 'foo'}};"
+                            " Field nb of required type String! was not provided.",
                             "locations": [(2, 28)],
                         },
                     ],
@@ -795,9 +794,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$input' got invalid value"
-                        " ['A', None, 'B']; Expected non-nullable type"
-                        " String! not to be null at value[1].",
+                        "message": "Variable '$input' got invalid value None"
+                        " at 'input[1]';"
+                        " Expected non-nullable type String! not to be None.",
                         "locations": [(2, 24)],
                     }
                 ],
@@ -844,9 +843,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$input' got invalid value"
-                        " ['A', None, 'B']; Expected non-nullable type"
-                        " String! not to be null at value[1].",
+                        "message": "Variable '$input' got invalid value None"
+                        " at 'input[1]';"
+                        " Expected non-nullable type String! not to be None.",
                         "locations": [(2, 24)],
                         "path": None,
                     }
@@ -943,3 +942,41 @@ def describe_execute_handles_inputs():
                 {"fieldWithNonNullableStringInputAndDefaultArgValue": "'Hello World'"},
                 None,
             )
+
+    def describe_get_variable_values_limit_maximum_number_of_coercion_errors():
+        def when_values_are_invalid():
+            doc = parse(
+                """
+                query ($input: [String!]) {
+                  listNN(input: $input)
+                }
+                """
+            )
+            operation = doc.definitions[0]
+            assert isinstance(operation, OperationDefinitionNode)
+
+            result = get_variable_values(
+                schema,
+                operation.variable_definitions or [],
+                {"input": [0, 1, 2]},
+                max_errors=2,
+            )
+
+            assert result == [
+                {
+                    "message": "Variable '$input' got invalid value 0"
+                    " at 'input[0]'; Expected type String."
+                    " String cannot represent a non string value: 0",
+                    "locations": [(2, 24)],
+                },
+                {
+                    "message": "Variable '$input' got invalid value 1"
+                    " at 'input[1]'; Expected type String."
+                    " String cannot represent a non string value: 1",
+                    "locations": [(2, 24)],
+                },
+                {
+                    "message": "Too many errors processing variables,"
+                    " error limit reached. Execution aborted."
+                },
+            ]

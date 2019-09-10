@@ -276,6 +276,7 @@ class ExecutionContext:
             schema,
             operation.variable_definitions or FrozenList(),
             raw_variable_values or {},
+            max_errors=50,
         )
 
         if isinstance(coerced_variable_values, list):
