@@ -8,24 +8,16 @@ from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
-    GraphQLDirective,
-    GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLID,
     GraphQLInputField,
-    GraphQLInputObjectType,
     GraphQLInt,
-    GraphQLInterfaceType,
-    GraphQLList,
     GraphQLNamedType,
-    GraphQLNonNull,
     GraphQLObjectType,
-    GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
-    GraphQLUnionType,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,
@@ -33,95 +25,61 @@ from graphql.type import (
     assert_object_type,
     assert_scalar_type,
     assert_union_type,
-    specified_directives,
     validate_schema,
 )
 from graphql.utilities import build_schema, extend_schema, print_schema
 
 # Test schema.
 
-SomeScalarType = GraphQLScalarType(name="SomeScalar")
+test_schema = build_schema(
+    """
+    scalar SomeScalar
 
-SomeInterfaceType: GraphQLInterfaceType = GraphQLInterfaceType(
-    name="SomeInterface",
-    fields=lambda: {
-        "name": GraphQLField(GraphQLString),
-        "some": GraphQLField(SomeInterfaceType),
-    },
-)
+    interface SomeInterface {
+      name: String
+      some: SomeInterface
+    }
 
-FooType: GraphQLObjectType = GraphQLObjectType(
-    name="Foo",
-    interfaces=[SomeInterfaceType],
-    fields=lambda: {
-        "name": GraphQLField(GraphQLString),
-        "some": GraphQLField(SomeInterfaceType),
-        "tree": GraphQLField(GraphQLNonNull(GraphQLList(FooType))),
-    },
-)
+    type Foo implements SomeInterface {
+      name: String
+      some: SomeInterface
+      tree: [Foo]!
+    }
 
-BarType = GraphQLObjectType(
-    name="Bar",
-    interfaces=[SomeInterfaceType],
-    fields=lambda: {
-        "name": GraphQLField(GraphQLString),
-        "some": GraphQLField(SomeInterfaceType),
-        "foo": GraphQLField(FooType),
-    },
-)
+    type Bar implements SomeInterface {
+      name: String
+      some: SomeInterface
+      foo: Foo
+    }
 
-BizType = GraphQLObjectType(
-    name="Biz", fields=lambda: {"fizz": GraphQLField(GraphQLString)}
-)
+    type Biz {
+      fizz: String
+    }
 
-SomeUnionType = GraphQLUnionType(name="SomeUnion", types=[FooType, BizType])
+    union SomeUnion = Foo | Biz
 
-SomeEnumType = GraphQLEnumType(
-    name="SomeEnum", values={"ONE": GraphQLEnumValue(1), "TWO": GraphQLEnumValue(2)}
-)
+    enum SomeEnum {
+      ONE
+      TWO
+    }
 
-SomeInputType = GraphQLInputObjectType(
-    "SomeInput", lambda: {"fooArg": GraphQLInputField(GraphQLString)}
-)
+    input SomeInput {
+      fooArg: String
+    }
 
-FooDirective = GraphQLDirective(
-    name="foo",
-    args={"input": GraphQLArgument(SomeInputType)},
-    is_repeatable=True,
-    locations=[
-        DirectiveLocation.SCHEMA,
-        DirectiveLocation.SCALAR,
-        DirectiveLocation.OBJECT,
-        DirectiveLocation.FIELD_DEFINITION,
-        DirectiveLocation.ARGUMENT_DEFINITION,
-        DirectiveLocation.INTERFACE,
-        DirectiveLocation.UNION,
-        DirectiveLocation.ENUM,
-        DirectiveLocation.ENUM_VALUE,
-        DirectiveLocation.INPUT_OBJECT,
-        DirectiveLocation.INPUT_FIELD_DEFINITION,
-    ],
-)
+    directive @foo(input: SomeInput) repeatable on SCHEMA | SCALAR | OBJECT |
+      FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE |
+      INPUT_OBJECT | INPUT_FIELD_DEFINITION
 
-test_schema = GraphQLSchema(
-    query=GraphQLObjectType(
-        name="Query",
-        fields=lambda: {
-            "foo": GraphQLField(FooType),
-            "someScalar": GraphQLField(SomeScalarType),
-            "someUnion": GraphQLField(SomeUnionType),
-            "someEnum": GraphQLField(SomeEnumType),
-            "someInterface": GraphQLField(
-                SomeInterfaceType,
-                args={"id": GraphQLArgument(GraphQLNonNull(GraphQLID))},
-            ),
-            "someInput": GraphQLField(
-                GraphQLString, args={"input": GraphQLArgument(SomeInputType)}
-            ),
-        },
-    ),
-    types=[FooType, BarType],
-    directives=specified_directives + [FooDirective],
+    type Query {
+      foo: Foo
+      someScalar: SomeScalar
+      someUnion: SomeUnion
+      someEnum: SomeEnum
+      someInterface(id: ID!): SomeInterface
+      someInput(input: SomeInput): String
+    }
+    """
 )
 
 
@@ -1132,7 +1090,12 @@ def describe_extend_schema():
             assert schema.mutation_type is None
 
         def adds_schema_definition_missing_in_the_original_schema():
-            schema = GraphQLSchema(directives=[FooDirective], types=[FooType])
+            schema = build_schema(
+                """
+                directive @foo on SCHEMA
+                type Foo
+                """
+            )
             assert schema.query_type is None
 
             extension_sdl = dedent(
