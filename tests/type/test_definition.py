@@ -323,14 +323,14 @@ def describe_type_system_objects():
         assert deprecated_field == GraphQLField(
             ScalarType, deprecation_reason="A terrible reason"
         )
-        assert deprecated_field.is_deprecated is True
-        assert deprecated_field.deprecation_reason == "A terrible reason"
+        assert deprecated_field.description is None
         assert deprecated_field.type is ScalarType
         assert deprecated_field.args == {}
-        assert deprecated_field.ast_node is None
         assert deprecated_field.resolve is None
         assert deprecated_field.subscribe is None
-        assert deprecated_field.description is None
+        assert deprecated_field.is_deprecated is True
+        assert deprecated_field.deprecation_reason == "A terrible reason"
+        assert deprecated_field.ast_node is None
 
     def accepts_an_object_type_with_output_type_as_field():
         # this is a shortcut syntax for simple fields
@@ -349,14 +349,14 @@ def describe_type_system_objects():
         assert list(obj_type.fields) == ["f"]
         field = obj_type.fields["f"]
         assert isinstance(field, GraphQLField)
+        assert field.description is None
         assert field.type is ScalarType
         assert field.args == {}
+        assert field.resolve is None
+        assert field.subscribe is None
         assert field.is_deprecated is False
         assert field.deprecation_reason is None
         assert field.ast_node is None
-        assert field.resolve is None
-        assert field.subscribe is None
-        assert field.description is None
 
     def thunk_for_fields_of_object_type_is_resolved_only_once():
         def fields():
@@ -378,20 +378,21 @@ def describe_type_system_objects():
         )
         field = obj_type.fields["f"]
         assert isinstance(field, GraphQLField)
+        assert field.description is None
         assert field.type is ScalarType
+        assert isinstance(field.args, dict)
         assert list(field.args) == ["arg"]
         arg = field.args["arg"]
         assert isinstance(arg, GraphQLArgument)
-        assert arg.type is ScalarType
         assert arg.description is None
+        assert arg.type is ScalarType
         assert arg.default_value is INVALID
         assert arg.ast_node is None
+        assert field.resolve is None
+        assert field.subscribe is None
         assert field.is_deprecated is False
         assert field.deprecation_reason is None
         assert field.ast_node is None
-        assert field.resolve is None
-        assert field.subscribe is None
-        assert field.description is None
 
     def accepts_an_object_type_with_list_interfaces():
         obj_type = GraphQLObjectType("SomeObject", {}, [InterfaceType])
@@ -759,15 +760,15 @@ def describe_type_system_enums():
         }
         null_value = EnumTypeWithNullishValue.values["NULL"]
         assert null_value.description is None
+        assert null_value.value is None
         assert null_value.is_deprecated is False
         assert null_value.deprecation_reason is None
-        assert null_value.value is None
         assert null_value.ast_node is None
         undefined_value = EnumTypeWithNullishValue.values["UNDEFINED"]
         assert undefined_value.description is None
+        assert undefined_value.value is INVALID
         assert undefined_value.is_deprecated is False
         assert undefined_value.deprecation_reason is None
-        assert undefined_value.value is INVALID
         assert undefined_value.ast_node is None
 
     def accepts_a_well_defined_enum_type_with_empty_value_definition():
