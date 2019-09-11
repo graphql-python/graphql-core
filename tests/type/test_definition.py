@@ -327,6 +327,10 @@ def describe_type_system_objects():
         assert deprecated_field.deprecation_reason == "A terrible reason"
         assert deprecated_field.type is ScalarType
         assert deprecated_field.args == {}
+        assert deprecated_field.ast_node is None
+        assert deprecated_field.resolve is None
+        assert deprecated_field.subscribe is None
+        assert deprecated_field.description is None
 
     def accepts_an_object_type_with_output_type_as_field():
         # this is a shortcut syntax for simple fields
@@ -348,6 +352,11 @@ def describe_type_system_objects():
         assert field.type is ScalarType
         assert field.args == {}
         assert field.is_deprecated is False
+        assert field.deprecation_reason is None
+        assert field.ast_node is None
+        assert field.resolve is None
+        assert field.subscribe is None
+        assert field.description is None
 
     def thunk_for_fields_of_object_type_is_resolved_only_once():
         def fields():
@@ -378,6 +387,11 @@ def describe_type_system_objects():
         assert arg.default_value is INVALID
         assert arg.ast_node is None
         assert field.is_deprecated is False
+        assert field.deprecation_reason is None
+        assert field.ast_node is None
+        assert field.resolve is None
+        assert field.subscribe is None
+        assert field.description is None
 
     def accepts_an_object_type_with_list_interfaces():
         obj_type = GraphQLObjectType("SomeObject", {}, [InterfaceType])
@@ -1024,7 +1038,11 @@ def describe_type_system_input_objects():
             assert list(input_obj_type.fields) == ["f"]
             input_field = input_obj_type.fields["f"]
             assert isinstance(input_field, GraphQLInputField)
+            assert input_field.description is None
             assert input_field.type is ScalarType
+            assert input_field.default_value is INVALID
+            assert input_field.ast_node is None
+            assert input_field.out_name is None
 
         def accepts_an_input_object_type_with_input_type_as_field():
             # this is a shortcut syntax for simple input fields
@@ -1042,7 +1060,11 @@ def describe_type_system_input_objects():
             assert list(input_obj_type.fields) == ["f"]
             input_field = input_obj_type.fields["f"]
             assert isinstance(input_field, GraphQLInputField)
+            assert input_field.description is None
             assert input_field.type is ScalarType
+            assert input_field.default_value is INVALID
+            assert input_field.ast_node is None
+            assert input_field.out_name is None
 
         def rejects_an_input_object_type_with_incorrect_fields():
             input_obj_type = GraphQLInputObjectType("SomeInputObject", [])
