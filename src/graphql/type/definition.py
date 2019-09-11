@@ -415,11 +415,11 @@ GraphQLArgumentMap = Dict[str, "GraphQLArgument"]
 class GraphQLField:
     """Definition of a GraphQL field"""
 
+    description: Optional[str]
     type: "GraphQLOutputType"
     args: GraphQLArgumentMap
     resolve: Optional["GraphQLFieldResolver"]
     subscribe: Optional["GraphQLFieldResolver"]
-    description: Optional[str]
     deprecation_reason: Optional[str]
     ast_node: Optional[FieldDefinitionNode]
 
@@ -490,11 +490,11 @@ class GraphQLField:
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
+            description=self.description,
             type_=self.type,
             args=self.args.copy() if self.args else None,
             resolve=self.resolve,
             subscribe=self.subscribe,
-            description=self.description,
             deprecation_reason=self.deprecation_reason,
             ast_node=self.ast_node,
         )
@@ -550,9 +550,9 @@ GraphQLIsTypeOfFn = Callable[[Any, GraphQLResolveInfo], AwaitableOrValue[bool]]
 class GraphQLArgument:
     """Definition of a GraphQL argument"""
 
+    description: Optional[str]
     type: "GraphQLInputType"
     default_value: Any
-    description: Optional[str]
     out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
     ast_node: Optional[InputValueDefinitionNode]
 
@@ -589,9 +589,9 @@ class GraphQLArgument:
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
+            description=self.description,
             type_=self.type,
             default_value=self.default_value,
-            description=self.description,
             out_name=self.out_name,
             ast_node=self.ast_node,
         )

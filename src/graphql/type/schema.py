@@ -151,6 +151,13 @@ class GraphQLSchema:
 
             self._validation_errors = None
 
+        self.ast_node = ast_node
+        self.extension_ast_nodes = (
+            cast(FrozenList[ast.SchemaExtensionNode], extension_ast_nodes)
+            if extension_ast_nodes
+            else None
+        )
+
         self.query_type = query
         self.mutation_type = mutation
         self.subscription_type = subscription
@@ -159,12 +166,6 @@ class GraphQLSchema:
             specified_directives
             if directives is None
             else cast(FrozenList[GraphQLDirective], directives)
-        )
-        self.ast_node = ast_node
-        self.extension_ast_nodes = (
-            cast(FrozenList[ast.SchemaExtensionNode], extension_ast_nodes)
-            if extension_ast_nodes
-            else None
         )
 
         # Build type map now to detect any errors within this schema.
