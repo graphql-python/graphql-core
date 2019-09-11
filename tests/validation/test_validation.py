@@ -1,6 +1,6 @@
 from graphql.language import parse
 from graphql.utilities import TypeInfo
-from graphql.validation import specified_rules, validate
+from graphql.validation import validate
 
 from .harness import test_schema
 
@@ -63,7 +63,7 @@ def describe_validate_supports_full_validation():
             """
         )
 
-        errors = validate(test_schema, doc, specified_rules, type_info)
+        errors = validate(test_schema, doc, None, type_info)
 
         assert [error.message for error in errors] == [
             "Cannot query field 'catOrDog' on type 'QueryRoot'."
