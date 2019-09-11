@@ -13,7 +13,6 @@ from .definition import (
     GraphQLUnionType,
     GraphQLInputObjectType,
     get_named_type,
-    is_abstract_type,
     is_input_object_type,
     is_interface_type,
     is_named_type,
@@ -198,8 +197,6 @@ class GraphQLSchema:
                 for interface in type_.interfaces:
                     if is_interface_type(interface):
                         setdefault(interface.name, []).append(type_)
-            elif is_abstract_type(type_):
-                setdefault(type_.name, [])
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
@@ -225,20 +222,16 @@ class GraphQLSchema:
         if is_union_type(abstract_type):
             abstract_type = cast(GraphQLUnionType, abstract_type)
             return abstract_type.types
-        return self._implementations[abstract_type.name]
+        return self._implementations[abstract_type.name] or []
 
     def is_possible_type(
         self, abstract_type: GraphQLAbstractType, possible_type: GraphQLObjectType
     ) -> bool:
         """Check whether a concrete type is possible for an abstract type."""
-        possible_type_map = self._possible_type_map
-        try:
-            possible_type_names = possible_type_map[abstract_type.name]
-        except KeyError:
-            possible_types = self.get_possible_types(abstract_type)
-            possible_type_names = {type_.name for type_ in possible_types}
-            possible_type_map[abstract_type.name] = possible_type_names
-        return possible_type.name in possible_type_names
+        return possible_type.name in self._possible_type_map.setdefault(
+            abstract_type.name,
+            {type_.name for type_ in self.get_possible_types(abstract_type)},
+        )
 
     def get_directive(self, name: str) -> Optional[GraphQLDirective]:
         for directive in self.directives:
