@@ -3,11 +3,18 @@ from graphql import graphql_sync
 from .star_wars_schema import star_wars_schema
 
 
+def query_star_wars(source):
+    result = graphql_sync(star_wars_schema, source)
+    assert result.errors is None
+    return result.data
+
+
 def describe_star_wars_introspection_tests():
     def describe_basic_introspection():
         def allows_querying_the_schema_for_types():
-            query = """
-                query IntrospectionTypeQuery {
+            data = query_star_wars(
+                """
+                {
                   __schema {
                     types {
                       name
@@ -15,7 +22,11 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
+            )
+            # Include all types used by StarWars schema, introspection types and
+            # standard directives. For example, `Boolean` is used in `@skip`,
+            # `@include` and also inside introspection types.
+            assert data == {
                 "__schema": {
                     "types": [
                         {"name": "Query"},
@@ -37,12 +48,10 @@ def describe_star_wars_introspection_tests():
                 }
             }
 
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
-
         def allows_querying_the_schema_for_query_type():
-            query = """
-                query IntrospectionQueryTypeQuery {
+            data = query_star_wars(
+                """
+                {
                   __schema {
                     queryType {
                       name
@@ -50,51 +59,52 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {"__schema": {"queryType": {"name": "Query"}}}
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
+            )
+
+            assert data == {"__schema": {"queryType": {"name": "Query"}}}
 
         def allows_querying_the_schema_for_a_specific_type():
-            query = """
-                query IntrospectionDroidTypeQuery {
+            data = query_star_wars(
+                """
+                {
                   __type(name: "Droid") {
                     name
                   }
                 }
                 """
-            expected = {"__type": {"name": "Droid"}}
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
+            )
+            assert data == {"__type": {"name": "Droid"}}
 
         def allows_querying_the_schema_for_an_object_kind():
-            query = """
-                query IntrospectionDroidKindQuery {
+            data = query_star_wars(
+                """
+                {
                   __type(name: "Droid") {
                     name
                     kind
                   }
                 }
                 """
-            expected = {"__type": {"name": "Droid", "kind": "OBJECT"}}
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
+            )
+            assert data == {"__type": {"name": "Droid", "kind": "OBJECT"}}
 
         def allows_querying_the_schema_for_an_interface_kind():
-            query = """
-                query IntrospectionCharacterKindQuery {
+            data = query_star_wars(
+                """
+                {
                   __type(name: "Character") {
                     name
                     kind
                   }
                 }
                 """
-            expected = {"__type": {"name": "Character", "kind": "INTERFACE"}}
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
+            )
+            assert data == {"__type": {"name": "Character", "kind": "INTERFACE"}}
 
         def allows_querying_the_schema_for_object_fields():
-            query = """
-                query IntrospectionDroidFieldsQuery {
+            data = query_star_wars(
+                """
+                {
                   __type(name: "Droid") {
                     name
                     fields {
@@ -107,7 +117,8 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
+            )
+            assert data == {
                 "__type": {
                     "name": "Droid",
                     "fields": [
@@ -126,12 +137,11 @@ def describe_star_wars_introspection_tests():
                     ],
                 }
             }
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
 
         def allows_querying_the_schema_for_nested_object_fields():
-            query = """
-                query IntrospectionDroidNestedFieldsQuery {
+            data = query_star_wars(
+                """
+                {
                   __type(name: "Droid") {
                     name
                     fields {
@@ -148,7 +158,8 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
+            )
+            assert data == {
                 "__type": {
                     "name": "Droid",
                     "fields": [
@@ -203,12 +214,11 @@ def describe_star_wars_introspection_tests():
                     ],
                 }
             }
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
 
         def allows_querying_the_schema_for_field_args():
-            query = """
-                query IntrospectionQueryTypeQuery {
+            data = query_star_wars(
+                """
+                {
                   __schema {
                     queryType {
                       fields {
@@ -231,7 +241,9 @@ def describe_star_wars_introspection_tests():
                   }
                 }
                 """
-            expected = {
+            )
+
+            assert data == {
                 "__schema": {
                     "queryType": {
                         "fields": [
@@ -292,23 +304,22 @@ def describe_star_wars_introspection_tests():
                     }
                 }
             }
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
 
         def allows_querying_the_schema_for_documentation():
-            query = """
-                query IntrospectionDroidDescriptionQuery {
+            data = query_star_wars(
+                """
+                {
                   __type(name: "Droid") {
                     name
                     description
                   }
                 }
                 """
-            expected = {
+            )
+
+            assert data == {
                 "__type": {
                     "name": "Droid",
                     "description": "A mechanical creature in the Star Wars universe.",
                 }
             }
-            result = graphql_sync(star_wars_schema, query)
-            assert result == (expected, None)
