@@ -944,37 +944,49 @@ def describe_execute_handles_inputs():
             )
 
     def describe_get_variable_values_limit_maximum_number_of_coercion_errors():
-        def when_values_are_invalid():
-            doc = parse(
-                """
-                query ($input: [String!]) {
-                  listNN(input: $input)
-                }
-                """
-            )
-            operation = doc.definitions[0]
-            assert isinstance(operation, OperationDefinitionNode)
+        doc = parse(
+            """
+            query ($input: [String!]) {
+              listNN(input: $input)
+            }
+            """
+        )
 
+        operation = doc.definitions[0]
+        assert isinstance(operation, OperationDefinitionNode)
+        variable_definitions = operation.variable_definitions
+        assert variable_definitions is not None
+
+        input_value = {"input": [0, 1, 2]}
+
+        def _invalid_value_error(value, index):
+            return {
+                "message": "Variable '$input' got invalid value"
+                f" {value} at 'input[{index}]';"
+                " Expected type String."
+                f" String cannot represent a non string value: {value}",
+                "locations": [(2, 20)],
+            }
+
+        def when_max_errors_is_equal_to_number_of_errors():
             result = get_variable_values(
-                schema,
-                operation.variable_definitions or [],
-                {"input": [0, 1, 2]},
-                max_errors=2,
+                schema, variable_definitions, input_value, max_errors=3
             )
 
             assert result == [
-                {
-                    "message": "Variable '$input' got invalid value 0"
-                    " at 'input[0]'; Expected type String."
-                    " String cannot represent a non string value: 0",
-                    "locations": [(2, 24)],
-                },
-                {
-                    "message": "Variable '$input' got invalid value 1"
-                    " at 'input[1]'; Expected type String."
-                    " String cannot represent a non string value: 1",
-                    "locations": [(2, 24)],
-                },
+                _invalid_value_error(0, 0),
+                _invalid_value_error(1, 1),
+                _invalid_value_error(2, 2),
+            ]
+
+        def when_max_errors_is_less_than_number_of_errors():
+            result = get_variable_values(
+                schema, variable_definitions, input_value, max_errors=2
+            )
+
+            assert result == [
+                _invalid_value_error(0, 0),
+                _invalid_value_error(1, 1),
                 {
                     "message": "Too many errors processing variables,"
                     " error limit reached. Execution aborted."
