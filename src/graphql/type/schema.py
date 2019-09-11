@@ -12,14 +12,13 @@ from .definition import (
     GraphQLObjectType,
     GraphQLUnionType,
     GraphQLInputObjectType,
-    GraphQLWrappingType,
+    get_named_type,
     is_abstract_type,
     is_input_object_type,
     is_interface_type,
     is_named_type,
     is_object_type,
     is_union_type,
-    is_wrapping_type,
 )
 from .directives import GraphQLDirective, specified_directives, is_directive
 from .introspection import introspection_types
@@ -257,36 +256,35 @@ class GraphQLSchema:
         """Reducer function for creating the type map from given types."""
         if not type_:
             return map_
-        if is_wrapping_type(type_):
-            return self.type_map_reducer(
-                map_, cast(GraphQLWrappingType[GraphQLNamedType], type_).of_type
-            )
-        name = type_.name
+
+        named_type = get_named_type(type_)
+        name = named_type.name
+
         if name in map_:
-            if map_[name] is not type_:
+            if map_[name] is not named_type:
                 raise TypeError(
                     "Schema must contain uniquely named types but contains multiple"
                     f" types named {name!r}."
                 )
             return map_
-        map_[name] = type_
+        map_[name] = named_type
 
-        if is_union_type(type_):
-            type_ = cast(GraphQLUnionType, type_)
-            map_ = reduce(self.type_map_reducer, type_.types, map_)
+        if is_union_type(named_type):
+            named_type = cast(GraphQLUnionType, named_type)
+            map_ = reduce(self.type_map_reducer, named_type.types, map_)
 
-        if is_object_type(type_):
-            type_ = cast(GraphQLObjectType, type_)
-            map_ = reduce(self.type_map_reducer, type_.interfaces, map_)
+        if is_object_type(named_type):
+            named_type = cast(GraphQLObjectType, named_type)
+            map_ = reduce(self.type_map_reducer, named_type.interfaces, map_)
 
-        if is_object_type(type_) or is_interface_type(type_):
-            for field in cast(GraphQLInterfaceType, type_).fields.values():
+        if is_object_type(named_type) or is_interface_type(named_type):
+            for field in cast(GraphQLInterfaceType, named_type).fields.values():
                 types = [arg.type for arg in field.args.values()]
                 map_ = reduce(self.type_map_reducer, types, map_)
                 map_ = self.type_map_reducer(map_, field.type)
 
-        if is_input_object_type(type_):
-            for field in cast(GraphQLInputObjectType, type_).fields.values():
+        if is_input_object_type(named_type):
+            for field in cast(GraphQLInputObjectType, named_type).fields.values():
                 map_ = self.type_map_reducer(map_, field.type)
 
         return map_
