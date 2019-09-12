@@ -31,6 +31,7 @@ class GraphQLDirective:
     is_repeatable: bool
     args: Dict[str, GraphQLArgument]
     description: Optional[str]
+    extensions: Optional[Dict[str, Any]]
     ast_node: Optional[ast.DirectiveDefinitionNode]
 
     def __init__(
@@ -40,14 +41,13 @@ class GraphQLDirective:
         args: Dict[str, GraphQLArgument] = None,
         is_repeatable: bool = False,
         description: str = None,
+        extensions: Dict[str, Any] = None,
         ast_node: ast.DirectiveDefinitionNode = None,
     ) -> None:
         if not name:
             raise TypeError("Directive must be named.")
         elif not isinstance(name, str):
             raise TypeError("The directive name must be a string.")
-        if not isinstance(is_repeatable, bool):
-            raise TypeError(f"{name} is_repeatable flag must be True or False.")
         try:
             locations = [
                 value
@@ -80,15 +80,23 @@ class GraphQLDirective:
                 else GraphQLArgument(cast(GraphQLInputType, value))
                 for name, value in args.items()
             }
-        if description is not None and not isinstance(description, str):
-            raise TypeError(f"{name} description must be a string.")
+        if not isinstance(is_repeatable, bool):
+            raise TypeError(f"{name} is_repeatable flag must be True or False.")
         if ast_node and not isinstance(ast_node, ast.DirectiveDefinitionNode):
             raise TypeError(f"{name} AST node must be a DirectiveDefinitionNode.")
+        if description is not None and not isinstance(description, str):
+            raise TypeError(f"{name} description must be a string.")
+        if extensions is not None and (
+            not isinstance(extensions, dict)
+            or not all(isinstance(key, str) for key in extensions)
+        ):
+            raise TypeError(f"{name} extensions must be a dictionary with string keys.")
         self.name = name
         self.locations = locations
         self.args = args
         self.is_repeatable = is_repeatable
         self.description = description
+        self.extensions = extensions
         self.ast_node = ast_node
 
     def __str__(self):
@@ -97,6 +105,17 @@ class GraphQLDirective:
     def __repr__(self):
         return f"<{self.__class__.__name__}({self})>"
 
+    def __eq__(self, other):
+        return self is other or (
+            isinstance(other, GraphQLDirective)
+            and self.type == other.type
+            and self.locations == other.locations
+            and self.args == other.args
+            and self.is_repeatable == other.is_repeatable
+            and self.description == other.description
+            and self.extensions == other.extensions
+        )
+
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
             name=self.name,
@@ -104,6 +123,7 @@ class GraphQLDirective:
             args=self.args,
             is_repeatable=self.is_repeatable,
             description=self.description,
+            extensions=self.extensions,
             ast_node=self.ast_node,
         )
 

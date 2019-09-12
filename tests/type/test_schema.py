@@ -94,6 +94,7 @@ def describe_type_system_schema():
             "subscription": BlogSubscription,
             "directives": None,
             "ast_node": None,
+            "extensions": None,
             "extension_ast_nodes": None,
             "assume_valid": False,
         }

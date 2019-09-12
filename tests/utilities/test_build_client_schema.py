@@ -365,6 +365,7 @@ def describe_type_system_build_schema_from_introspection():
         assert all(value.value is None for value in values)
         assert all(value.is_deprecated is False for value in values)
         assert all(value.deprecation_reason is None for value in values)
+        assert all(value.extensions is None for value in values)
         assert all(value.ast_node is None for value in values)
 
     def builds_a_schema_with_an_input_object():

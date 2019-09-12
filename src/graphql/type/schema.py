@@ -80,6 +80,7 @@ class GraphQLSchema:
     subscription_type: Optional[GraphQLObjectType]
     type_map: TypeMap
     directives: FrozenList[GraphQLDirective]
+    extensions: Optional[Dict[str, Any]]
     ast_node: Optional[ast.SchemaDefinitionNode]
     extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
 
@@ -90,6 +91,7 @@ class GraphQLSchema:
         subscription: GraphQLObjectType = None,
         types: Sequence[GraphQLNamedType] = None,
         directives: Sequence[GraphQLDirective] = None,
+        extensions: Dict[str, Any] = None,
         ast_node: ast.SchemaDefinitionNode = None,
         extension_ast_nodes: Sequence[ast.SchemaExtensionNode] = None,
         assume_valid: bool = False,
@@ -135,6 +137,13 @@ class GraphQLSchema:
                     )
                 if not isinstance(directives, FrozenList):
                     directives = FrozenList(directives)
+            if extensions is not None and (
+                not isinstance(extensions, dict)
+                or not all(isinstance(key, str) for key in extensions)
+            ):
+                raise TypeError(
+                    "Schema extensions must be a dictionary with string keys."
+                )
             if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):
                 raise TypeError("Schema AST node must be a SchemaDefinitionNode.")
             if extension_ast_nodes:
@@ -151,6 +160,7 @@ class GraphQLSchema:
 
             self._validation_errors = None
 
+        self.extensions = extensions
         self.ast_node = ast_node
         self.extension_ast_nodes = (
             cast(FrozenList[ast.SchemaExtensionNode], extension_ast_nodes)
@@ -208,6 +218,7 @@ class GraphQLSchema:
             directives=None
             if self.directives is specified_directives
             else self.directives,
+            extensions=self.extensions,
             ast_node=self.ast_node,
             extension_ast_nodes=self.extension_ast_nodes or None,
             assume_valid=self._validation_errors is not None,

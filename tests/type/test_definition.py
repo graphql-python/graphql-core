@@ -55,6 +55,7 @@ def describe_type_system_scalars():
             "serialize": None,
             "parse_value": None,
             "parse_literal": None,
+            "extensions": None,
             "ast_node": None,
             "extension_ast_nodes": [],
         }
@@ -206,6 +207,7 @@ def describe_type_system_fields():
             "subscribe": None,
             "description": None,
             "deprecation_reason": None,
+            "extensions": None,
             "ast_node": None,
         }
 
@@ -330,6 +332,7 @@ def describe_type_system_objects():
         assert deprecated_field.subscribe is None
         assert deprecated_field.is_deprecated is True
         assert deprecated_field.deprecation_reason == "A terrible reason"
+        assert deprecated_field.extensions is None
         assert deprecated_field.ast_node is None
 
     def accepts_an_object_type_with_output_type_as_field():
@@ -356,6 +359,7 @@ def describe_type_system_objects():
         assert field.subscribe is None
         assert field.is_deprecated is False
         assert field.deprecation_reason is None
+        assert field.extensions is None
         assert field.ast_node is None
 
     def thunk_for_fields_of_object_type_is_resolved_only_once():
@@ -387,11 +391,13 @@ def describe_type_system_objects():
         assert arg.description is None
         assert arg.type is ScalarType
         assert arg.default_value is INVALID
+        assert arg.extensions is None
         assert arg.ast_node is None
         assert field.resolve is None
         assert field.subscribe is None
         assert field.is_deprecated is False
         assert field.deprecation_reason is None
+        assert field.extensions is None
         assert field.ast_node is None
 
     def accepts_an_object_type_with_list_interfaces():
@@ -557,12 +563,14 @@ def describe_type_system_interfaces():
         assert interface.fields == fields
         assert interface.fields is not fields
         assert interface.resolve_type is None
+        assert interface.extensions is None
         kwargs = interface.to_kwargs()
         assert kwargs == {
             "name": "AnotherInterface",
             "description": None,
             "fields": fields,
             "resolve_type": None,
+            "extensions": None,
             "ast_node": None,
             "extension_ast_nodes": [],
         }
@@ -747,6 +755,7 @@ def describe_type_system_enums():
         assert deprecated_value.is_deprecated is True
         assert deprecated_value.deprecation_reason == "Just because"
         assert deprecated_value.value is None
+        assert deprecated_value.extensions is None
         assert deprecated_value.ast_node is None
 
     def defines_an_enum_type_with_a_value_of_none_and_invalid():
@@ -763,12 +772,14 @@ def describe_type_system_enums():
         assert null_value.value is None
         assert null_value.is_deprecated is False
         assert null_value.deprecation_reason is None
+        assert null_value.extensions is None
         assert null_value.ast_node is None
         undefined_value = EnumTypeWithNullishValue.values["UNDEFINED"]
         assert undefined_value.description is None
         assert undefined_value.value is INVALID
         assert undefined_value.is_deprecated is False
         assert undefined_value.deprecation_reason is None
+        assert undefined_value.extensions is None
         assert undefined_value.ast_node is None
 
     def accepts_a_well_defined_enum_type_with_empty_value_definition():
@@ -992,7 +1003,7 @@ def describe_type_system_input_objects():
             "The out type for SomeInputObject must be a function or a class."
         )
 
-    def rejects_an_input_object_type_with_incorrectyl_typed_description():
+    def rejects_an_input_object_type_with_incorrectly_typed_description():
         # noinspection PyTypeChecker
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -1042,6 +1053,7 @@ def describe_type_system_input_objects():
             assert input_field.description is None
             assert input_field.type is ScalarType
             assert input_field.default_value is INVALID
+            assert input_field.extensions is None
             assert input_field.ast_node is None
             assert input_field.out_name is None
 
@@ -1064,6 +1076,7 @@ def describe_type_system_input_objects():
             assert input_field.description is None
             assert input_field.type is ScalarType
             assert input_field.default_value is INVALID
+            assert input_field.extensions is None
             assert input_field.ast_node is None
             assert input_field.out_name is None
 

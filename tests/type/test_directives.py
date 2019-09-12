@@ -22,6 +22,7 @@ def describe_type_system_directive():
         assert directive.args == {"arg": arg}
         assert directive.is_repeatable is True
         assert directive.description == "test description"
+        assert directive.extensions is None
         assert directive.ast_node is node
 
     def defines_a_directive_with_no_args():
@@ -31,6 +32,7 @@ def describe_type_system_directive():
         assert directive.name == "Foo"
         assert directive.args == {}
         assert directive.is_repeatable is False
+        assert directive.extensions is None
         assert directive.locations == locations
 
     def defines_a_directive_with_multiple_args():
