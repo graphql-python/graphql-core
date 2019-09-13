@@ -44,7 +44,22 @@ def describe_is_nullish():
         assert is_nullish(INVALID) is True
 
     def nan_is_nullish():
-        assert is_nullish(nan)
+        assert is_nullish(nan) is True
 
-    def numpy_arrays_are_not_nullish():
-        assert is_nullish(FakeNumpyArray()) is False
+    def irreflexive_objects_are_not_nullish():
+        # Numpy arrays operate element-wise and the comparison operator returns arrays.
+        # Similar to math.nan, they are therefore not equal to themselves. However, we
+        # only want math.nan to be considered nullish, not values like numpy arrays.
+
+        class IrreflexiveValue:
+            def __eq__(self, other):
+                return False
+
+            def __bool__(self):
+                return False
+
+        value = IrreflexiveValue()
+        assert value != value
+        assert not value
+
+        assert is_nullish(value) is False

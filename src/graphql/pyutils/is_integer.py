@@ -1,5 +1,5 @@
-from typing import Any
 from math import isfinite
+from typing import Any
 
 __all__ = ["is_integer"]
 
