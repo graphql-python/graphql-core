@@ -1,3 +1,5 @@
+from typing import Any, Dict, cast
+
 from pytest import mark, param, raises  # type: ignore
 
 from graphql.type import (
@@ -221,10 +223,12 @@ def describe_type_system_extensions():
         def with_bad_extensions(extensions):
             with raises(TypeError, match=bad_extensions_msg("SomeEnum")):
                 # noinspection PyTypeChecker
-                GraphQLEnumType("SomeEnum", {}, extensions=extensions)
+                GraphQLEnumType(
+                    "SomeEnum", cast(Dict[str, Any], {}), extensions=extensions
+                )
             with raises(TypeError, match=bad_extensions_msg("Enum value")):
                 # noinspection PyTypeChecker
-                GraphQLEnumValue(extensions=[])
+                GraphQLEnumValue(extensions=extensions)
 
     def describe_graphql_input_object_type():
         def without_extensions():

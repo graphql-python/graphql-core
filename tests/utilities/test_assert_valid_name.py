@@ -17,7 +17,7 @@ def describe_assert_valid_name():
     def throws_for_non_strings():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            assert_valid_name({})
+            assert_valid_name({})  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Expected string"
 

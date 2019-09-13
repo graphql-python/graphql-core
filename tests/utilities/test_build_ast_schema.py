@@ -66,7 +66,7 @@ def describe_schema_builder():
             )
         )
 
-        data = namedtuple("Data", "str")(123)
+        data = namedtuple("Data", "str")(123)  # type: ignore
 
         result = graphql_sync(schema, "{ str }", data)
         assert result == ({"str": "123"}, None)
@@ -807,8 +807,11 @@ def describe_schema_builder():
             """
         )
 
+        assert schema.query_type
         assert schema.query_type.name == "SomeQuery"
+        assert schema.mutation_type
         assert schema.mutation_type.name == "SomeMutation"
+        assert schema.subscription_type
         assert schema.subscription_type.name == "SomeSubscription"
 
     def default_root_operation_type_names():
@@ -820,8 +823,11 @@ def describe_schema_builder():
             """
         )
 
+        assert schema.query_type
         assert schema.query_type.name == "Query"
+        assert schema.mutation_type
         assert schema.mutation_type.name == "Mutation"
+        assert schema.subscription_type
         assert schema.subscription_type.name == "Subscription"
 
     def can_build_invalid_schema():

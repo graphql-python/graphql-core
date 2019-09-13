@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLSyntaxError
@@ -355,8 +357,8 @@ def describe_lexer():
             assert end_token.kind != TokenKind.COMMENT
         assert start_token.prev is None
         assert end_token.next is None
-        tokens = []
-        tok = start_token
+        tokens: List[Token] = []
+        tok: Optional[Token] = start_token
         while tok:
             assert not tokens or tok.prev == tokens[-1]
             tokens.append(tok)

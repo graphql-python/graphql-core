@@ -60,7 +60,7 @@ def describe_type_system_directive():
     def directive_accepts_input_types_as_arguments():
         # noinspection PyTypeChecker
         directive = GraphQLDirective(
-            name="Foo", locations=[], args={"arg": GraphQLString}
+            name="Foo", locations=[], args={"arg": GraphQLString}  # type: ignore
         )
         arg = directive.args["arg"]
         assert isinstance(arg, GraphQLArgument)
@@ -68,7 +68,9 @@ def describe_type_system_directive():
 
     def directive_accepts_strings_as_locations():
         # noinspection PyTypeChecker
-        directive = GraphQLDirective(name="Foo", locations=["SCHEMA", "OBJECT"])
+        directive = GraphQLDirective(
+            name="Foo", locations=["SCHEMA", "OBJECT"]  # type: ignore
+        )
         assert directive.locations == [
             DirectiveLocation.SCHEMA,
             DirectiveLocation.OBJECT,
@@ -85,26 +87,28 @@ def describe_type_system_directive():
     def rejects_an_unnamed_directive():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective(None, locations=[])
+            GraphQLDirective(None, locations=[])  # type: ignore
         assert str(exc_info.value) == "Directive must be named."
 
     def rejects_a_directive_with_incorrectly_typed_name():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective({"bad": True}, locations=[])
+            GraphQLDirective({"bad": True}, locations=[])  # type: ignore
         assert str(exc_info.value) == "The directive name must be a string."
 
     def rejects_a_directive_with_incorrectly_typed_args():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations=[], args=["arg"])
+            GraphQLDirective("Foo", locations=[], args=["arg"])  # type: ignore
         assert str(exc_info.value) == (
             "Foo args must be a dict with argument names as keys."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective(
-                "Foo", locations=[], args={1: GraphQLArgument(GraphQLString)}
+                "Foo",
+                locations=[],
+                args={1: GraphQLArgument(GraphQLString)},  # type: ignore
             )
         assert str(exc_info.value) == (
             "Foo args must be a dict with argument names as keys."
@@ -112,7 +116,9 @@ def describe_type_system_directive():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective(
-                "Foo", locations=[], args={"arg": GraphQLDirective("Bar", [])}
+                "Foo",
+                locations=[],
+                args={"arg": GraphQLDirective("Bar", [])},  # type: ignore
             )
         assert str(exc_info.value) == (
             "Foo args must be GraphQLArgument or input type objects."
@@ -121,29 +127,29 @@ def describe_type_system_directive():
     def rejects_a_directive_with_incorrectly_typed_repeatable_flag():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations=[], is_repeatable=None)
+            GraphQLDirective("Foo", locations=[], is_repeatable=None)  # type: ignore
         assert str(exc_info.value) == "Foo is_repeatable flag must be True or False."
 
     def rejects_a_directive_with_undefined_locations():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations=None)
+            GraphQLDirective("Foo", locations=None)  # type: ignore
         assert str(exc_info.value) == (
             "Foo locations must be specified"
             " as a sequence of DirectiveLocation enum values."
         )
 
-    def recects_a_directive_with_incorrectly_typed_locations():
+    def rejects_a_directive_with_incorrectly_typed_locations():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations="bad")
+            GraphQLDirective("Foo", locations="bad")  # type: ignore
         assert (
             str(exc_info.value) == "Foo locations must be specified"
             " as a sequence of DirectiveLocation enum values."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations=["bad"])
+            GraphQLDirective("Foo", locations=["bad"])  # type: ignore
         assert str(exc_info.value) == (
             "Foo locations must be specified"
             " as a sequence of DirectiveLocation enum values."
@@ -152,13 +158,15 @@ def describe_type_system_directive():
     def rejects_a_directive_with_incorrectly_typed_description():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations=[], description={"bad": True})
+            GraphQLDirective(  # type: ignore
+                "Foo", locations=[], description={"bad": True}
+            )
         assert str(exc_info.value) == "Foo description must be a string."
 
     def rejects_a_directive_with_incorrectly_typed_ast_node():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective("Foo", locations=[], ast_node=Node())
+            GraphQLDirective("Foo", locations=[], ast_node=Node())  # type: ignore
         assert str(exc_info.value) == (
             "Foo AST node must be a DirectiveDefinitionNode."
         )

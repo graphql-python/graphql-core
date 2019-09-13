@@ -24,7 +24,7 @@ def describe_middleware():
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
-            assert result.data["field"] == "resolved"
+            assert result.data["field"] == "resolved"  # type: ignore
 
         def single_function():
             doc = parse("{ first second }")
@@ -53,7 +53,7 @@ def describe_middleware():
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
-            assert result.data == {"first": "eno", "second": "owt"}
+            assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
 
         def two_functions_and_field_resolvers():
             doc = parse("{ first second }")
@@ -86,7 +86,7 @@ def describe_middleware():
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
-            assert result.data == {"first": "Eno", "second": "Owt"}
+            assert result.data == {"first": "Eno", "second": "Owt"}  # type: ignore
 
         @mark.asyncio
         async def single_async_function():
@@ -148,7 +148,7 @@ def describe_middleware():
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
-            assert result.data == {"first": "eno", "second": "owt"}
+            assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
 
         def with_function_and_object():
             doc = parse("{ field }")
@@ -175,13 +175,13 @@ def describe_middleware():
             result = execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
-            assert result.data == {"field": "Devloser"}
+            assert result.data == {"field": "Devloser"}  # type: ignore
 
             middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
             result = execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
-            assert result.data == {"field": "devloseR"}
+            assert result.data == {"field": "devloseR"}  # type: ignore
 
         @mark.asyncio
         async def with_async_function_and_object():
@@ -232,7 +232,7 @@ def describe_middleware():
 
             result = execute(GraphQLSchema(test_type), doc, Data(), middleware=None)
 
-            assert result.data["field"] == "resolved"
+            assert result.data["field"] == "resolved"  # type: ignore
 
         def empty_middleware_list():
             doc = parse("{ field }")
@@ -248,7 +248,7 @@ def describe_middleware():
 
             result = execute(GraphQLSchema(test_type), doc, Data(), middleware=[])
 
-            assert result.data["field"] == "resolved"
+            assert result.data["field"] == "resolved"  # type: ignore
 
         def bad_middleware_object():
             doc = parse("{ field }")
@@ -259,7 +259,7 @@ def describe_middleware():
 
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                execute(
+                execute(  # type: ignore
                     GraphQLSchema(test_type), doc, None, middleware={"bad": "value"}
                 )
 
@@ -299,7 +299,7 @@ def describe_middleware():
             result = execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
-            assert result.data == {"field": "resolved"}
+            assert result.data == {"field": "resolved"}  # type: ignore
 
             assert log == [
                 "enter C",

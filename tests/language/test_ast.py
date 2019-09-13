@@ -7,6 +7,9 @@ from graphql.pyutils import inspect
 class SampleTestNode(Node):
     __slots__ = "alpha", "beta"
 
+    alpha: int
+    beta: int
+
 
 def describe_token_class():
     def initializes():
@@ -149,8 +152,8 @@ def describe_node_class():
         assert not node2 != node
         node2 = SampleTestNode(alpha=1, beta=1)
         assert node2 != node
-        node2 = Node(alpha=1, beta=2)
-        assert node2 != node
+        node3 = Node(alpha=1, beta=2)
+        assert node3 != node
 
     def can_hash():
         node = SampleTestNode(alpha=1, beta=2)

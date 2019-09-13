@@ -1,4 +1,6 @@
 from copy import copy
+from functools import partial
+from typing import List
 
 from graphql.language import (
     Node,
@@ -15,6 +17,7 @@ from graphql.language import (
     TypeInfoVisitor,
     Visitor,
 )
+from graphql.pyutils import FrozenList
 from graphql.type import get_named_type, is_composite_type
 from graphql.utilities import TypeInfo
 
@@ -73,6 +76,9 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
             assert parent[key] is node
         else:
             assert getattr(parent, key) is node
+
+
+check_visitor_fn_args_edited = partial(check_visitor_fn_args, is_edited=True)
 
 
 def get_value(node):
@@ -149,7 +155,7 @@ def describe_visitor():
                 return node
 
             def leave_operation_definition(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 node = copy(args[0])
                 assert not node.selection_set.selections
                 node.selection_set = self.selection_set
@@ -181,7 +187,7 @@ def describe_visitor():
         # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
             def leave(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
                     return REMOVE
@@ -198,14 +204,14 @@ def describe_visitor():
             did_visit_added_field = False
 
             def enter(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "a":
                     node = copy(node)
-                    # noinspection PyTypeChecker
-                    node.selection_set.selections = [
-                        added_field
-                    ] + node.selection_set.selections
+                    assert node.selection_set
+                    node.selection_set.selections = (
+                        FrozenList([added_field]) + node.selection_set.selections
+                    )
                     return node
                 if node == added_field:
                     self.did_visit_added_field = True
@@ -421,9 +427,9 @@ def describe_visitor():
     # noinspection PyShadowingNames
     def visits_kitchen_sink(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query)
-        visited = []
+        visited: List = []
         record = visited.append
-        arg_stack = []
+        arg_stack: List = []
         push = arg_stack.append
         pop = arg_stack.pop
 
@@ -1106,7 +1112,7 @@ def describe_visit_in_parallel():
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
@@ -1148,7 +1154,7 @@ def describe_visit_in_parallel():
         # noinspection PyMethodMayBeStatic
         class TestVisitor1(Visitor):
             def leave(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
                     return REMOVE
@@ -1162,7 +1168,7 @@ def describe_visit_in_parallel():
                 visited.append(["enter", kind, value])
 
             def leave(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
@@ -1302,7 +1308,7 @@ def describe_visit_with_type_info():
         # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
             def enter(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 input_type = type_info.get_input_type()
@@ -1335,7 +1341,7 @@ def describe_visit_with_type_info():
                     )
 
             def leave(self, *args):
-                check_visitor_fn_args(ast, *args, is_edited=True)
+                check_visitor_fn_args_edited(ast, *args)
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 input_type = type_info.get_input_type()

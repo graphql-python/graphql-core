@@ -26,7 +26,7 @@ def describe_printer_query_document():
         bad_ast = {"random": "Data"}
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            print_ast(bad_ast)
+            print_ast(bad_ast)  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Not an AST Node: {'random': 'Data'}"
 

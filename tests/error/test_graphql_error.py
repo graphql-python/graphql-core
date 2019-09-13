@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, List, Union
 
 from graphql.error import GraphQLError, format_error, print_error
 from graphql.language import (
@@ -109,13 +109,13 @@ def describe_graphql_error():
         )
 
     def serializes_to_include_path():
-        path = ["path", 3, "to", "field"]
+        path: List[Union[int, str]] = ["path", 3, "to", "field"]
         e = GraphQLError("msg", path=path)
         assert e.path is path
         assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
 
     def default_error_formatter_includes_path():
-        path = ["path", 3, "to", "field"]
+        path: List[Union[int, str]] = ["path", 3, "to", "field"]
         e = GraphQLError("msg", path=path)
         formatted = format_error(e)
         assert formatted == e.formatted

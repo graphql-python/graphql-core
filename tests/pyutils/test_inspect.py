@@ -1,6 +1,7 @@
 from math import nan, inf
 from contextlib import contextmanager
 from importlib import import_module
+from typing import Any, Dict, FrozenSet, List, Set, Tuple
 
 from pytest import mark  # type: ignore
 
@@ -20,29 +21,29 @@ inspect_module = import_module(inspect.__module__)
 
 @contextmanager
 def increased_recursive_depth():
-    inspect_module.max_recursive_depth += 1
+    inspect_module.max_recursive_depth += 1  # type: ignore
     try:
         yield inspect
     finally:
-        inspect_module.max_recursive_depth -= 1
+        inspect_module.max_recursive_depth -= 1  # type: ignore
 
 
 @contextmanager
 def increased_str_size():
-    inspect_module.max_str_size *= 2
+    inspect_module.max_str_size *= 2  # type: ignore
     try:
         yield inspect
     finally:
-        inspect_module.max_str_size //= 2
+        inspect_module.max_str_size //= 2  # type: ignore
 
 
 @contextmanager
 def increased_list_size():
-    inspect_module.max_list_size *= 2
+    inspect_module.max_list_size *= 2  # type: ignore
     try:
         yield inspect
     finally:
-        inspect_module.max_list_size //= 2
+        inspect_module.max_list_size //= 2  # type: ignore
 
 
 def describe_inspect():
@@ -122,7 +123,7 @@ def describe_inspect():
 
     def inspect_unknown_object():
         class MetaClass(type):
-            __name__ = None
+            __name__ = ""
 
         class TestClass(metaclass=MetaClass):
             pass
@@ -165,13 +166,13 @@ def describe_inspect():
         assert inspect([["a", "b"], "c"]) == "[['a', 'b'], 'c']"
 
     def inspect_overly_large_list():
-        s = list(range(20))
+        s: List[int] = list(range(20))
         assert inspect(s) == "[0, 1, 2, 3, 4, ..., 16, 17, 18, 19]"
         with increased_list_size():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_list():
-        s = [[[]]]
+        s: List[List[List]] = [[[]]]
         assert inspect(s) == "[[[]]]"
         s = [[[1, 2, 3]]]
         assert inspect(s) == "[[[...]]]"
@@ -179,7 +180,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_recursive_list():
-        s = [1, 2, 3]
+        s: List[Any] = [1, 2, 3]
         s[1] = s
         assert inspect(s) == "[1, [...], 3]"
 
@@ -197,7 +198,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_tuple():
-        s = (((),),)
+        s: Tuple[Tuple[Tuple]] = (((),),)
         assert inspect(s) == "(((),),)"
         s = (((1, 2, 3),),)
         assert inspect(s) == "(((...),),)"
@@ -205,7 +206,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_recursive_tuple():
-        s = [1, 2, 3]
+        s: List[Any] = [1, 2, 3]
         s[1] = s
         t = tuple(s)
         assert inspect(t) == "(1, [1, [...], 3], 3)"
@@ -238,7 +239,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_dict():
-        s = {"a": {"b": {}}}
+        s: Dict[str, Dict[str, Dict]] = {"a": {"b": {}}}
         assert inspect(s) == "{'a': {'b': {}}}"
         s = {"a": {"b": {"c": 3}}}
         assert inspect(s) == "{'a': {'b': {...}}}"
@@ -246,7 +247,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_recursive_dict():
-        s = {}
+        s: Dict[int, Any] = {}
         s[1] = s
         assert inspect(s) == "{1: {...}}"
 
@@ -265,7 +266,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_set():
-        s = [[set()]]
+        s: List[List[Set]] = [[set()]]
         assert inspect(s) == "[[set()]]"
         s = [[set([1, 2, 3])]]
         assert inspect(s) == "[[set(...)]]"
@@ -290,7 +291,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_frozenset():
-        s = frozenset([frozenset([frozenset()])])
+        s: FrozenSet[FrozenSet[FrozenSet]] = frozenset([frozenset([frozenset()])])
         assert inspect(s) == "frozenset({frozenset({frozenset()})})"
         s = frozenset([frozenset([frozenset([1, 2, 3])])])
         assert inspect(s) == "frozenset({frozenset({frozenset(...)})})"
@@ -298,7 +299,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def mixed_recursive_dict_and_list():
-        s = {1: []}
+        s: Any = {1: []}
         s[1].append(s)
         assert inspect(s) == "{1: [{...}]}"
         s = [1, 2, 3]

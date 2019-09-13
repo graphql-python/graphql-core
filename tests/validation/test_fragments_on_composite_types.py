@@ -1,6 +1,5 @@
 from functools import partial
 
-from graphql.type import GraphQLString
 from graphql.validation import FragmentsOnCompositeTypesRule
 from graphql.validation.rules.fragments_on_composite_types import (
     fragment_on_non_composite_error_message,
@@ -112,9 +111,7 @@ def describe_validate_fragments_on_composite_types():
             """,
             [
                 {
-                    "message": inline_fragment_on_non_composite_error_message(
-                        GraphQLString
-                    ),
+                    "message": inline_fragment_on_non_composite_error_message("String"),
                     "locations": [(3, 22)],
                 }
             ],

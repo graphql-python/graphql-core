@@ -179,7 +179,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
         # Note: we get two errors, because first all types are resolved
         # and only then they are checked sequentially
         assert result.data == {"pets": [None, None]}
-        assert list(map(format_error, result.errors)) == [
+        assert list(map(format_error, result.errors)) == [  # type: ignore
             {
                 "message": "We are testing this error",
                 "locations": [(3, 15)],
@@ -329,6 +329,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             ]
         }
 
+        assert result.errors
         assert len(result.errors) == 1
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
@@ -405,6 +406,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             ]
         }
 
+        assert result.errors
         assert len(result.errors) == 1
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"

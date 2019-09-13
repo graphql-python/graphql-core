@@ -18,9 +18,6 @@ class FrozenDict(Dict[K, T]):
     def __setitem__(self, key, value):
         raise FrozenError
 
-    def __add__(self, value):
-        return dict.__add__(self, value)
-
     def __iadd__(self, value):
         raise FrozenError
 

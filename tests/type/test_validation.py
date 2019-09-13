@@ -894,7 +894,7 @@ def describe_type_system_object_fields_must_have_output_types():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            _schema_with_object_field_of_type(None)
+            _schema_with_object_field_of_type(None)  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -941,7 +941,7 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
                 "BadObject", {"f": GraphQLField(GraphQLString)}, interfaces=[]
             )
         )
-        schema.query_type.interfaces.append(None)
+        schema.query_type.interfaces.append(None)  # type: ignore
 
         assert validate_schema(schema) == [
             {
@@ -1181,7 +1181,7 @@ def describe_type_system_interface_fields_must_have_output_types():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            _schema_with_interface_field_of_type(None)
+            _schema_with_interface_field_of_type(None)  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
@@ -1267,7 +1267,7 @@ def describe_type_system_field_arguments_must_have_input_types():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            _schema_with_arg_of_type(None)
+            _schema_with_arg_of_type(None)  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
 
@@ -1334,7 +1334,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            _schema_with_input_field_of_type(None)
+            _schema_with_input_field_of_type(None)  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
 

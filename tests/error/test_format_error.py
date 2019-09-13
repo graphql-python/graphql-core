@@ -1,3 +1,5 @@
+from typing import List, Union
+
 from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLError, format_error
@@ -8,7 +10,7 @@ def describe_format_error():
     def throw_if_not_an_error():
         with raises(TypeError):
             # noinspection PyTypeChecker
-            format_error(None)
+            format_error(None)  # type: ignore
 
     def format_graphql_error():
         source = Source(
@@ -17,7 +19,7 @@ def describe_format_error():
               something
             }"""
         )
-        path = ["one", 2]
+        path: List[Union[int, str]] = ["one", 2]
         extensions = {"ext": None}
         error = GraphQLError(
             "test message",
@@ -37,5 +39,5 @@ def describe_format_error():
 
     def add_default_message():
         # noinspection PyTypeChecker
-        error = format_error(GraphQLError(None))
+        error = format_error(GraphQLError(None))  # type: ignore
         assert error["message"] == "An unknown error occurred."

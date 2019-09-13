@@ -7,6 +7,7 @@ from graphql.type import (
     GraphQLBoolean,
     GraphQLDirective,
     GraphQLField,
+    GraphQLFieldMap,
     GraphQLInputObjectType,
     GraphQLInputField,
     GraphQLInt,
@@ -244,11 +245,11 @@ def describe_type_system_schema():
             def checks_the_configuration_for_mistakes():
                 with raises(Exception):
                     # noinspection PyTypeChecker
-                    GraphQLSchema(lambda: None)
+                    GraphQLSchema(lambda: None)  # type: ignore
                 with raises(Exception):
-                    GraphQLSchema(types={})
+                    GraphQLSchema(types={})  # type: ignore
                 with raises(Exception):
-                    GraphQLSchema(directives={})
+                    GraphQLSchema(directives={})  # type: ignore
 
     def describe_a_schema_must_contain_uniquely_named_types():
         def rejects_a_schema_which_redefines_a_built_in_type():
@@ -285,7 +286,7 @@ def describe_type_system_schema():
             )
 
         def rejects_a_schema_which_defines_fields_with_conflicting_types():
-            fields = {}
+            fields: GraphQLFieldMap = {}
             QueryType = GraphQLObjectType(
                 "Query",
                 {
@@ -311,7 +312,7 @@ def describe_type_system_schema():
         def rejects_a_schema_with_an_incorrect_ast_node():
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                GraphQLSchema(
+                GraphQLSchema(  # type: ignore
                     GraphQLObjectType("Query", {}), ast_node=TypeDefinitionNode()
                 )
             msg = str(exc_info.value)
@@ -322,7 +323,7 @@ def describe_type_system_schema():
                 # noinspection PyTypeChecker
                 GraphQLSchema(
                     GraphQLObjectType("Query", {}),
-                    extension_ast_nodes=[TypeExtensionNode()],
+                    extension_ast_nodes=[TypeExtensionNode()],  # type: ignore
                 )
             assert str(exc_info.value) == (
                 "Schema extension AST nodes must be specified"

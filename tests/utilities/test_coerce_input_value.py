@@ -39,7 +39,7 @@ def expect_errors(result: CoercedValue) -> List[CoercedValueError]:
 
 def describe_coerce_input_value():
     def _coerce_value(input_value, type_):
-        errors = []
+        errors: List[CoercedValueError] = []
         append = errors.append
 
         def on_error(path, invalid_value, error):

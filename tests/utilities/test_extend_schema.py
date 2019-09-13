@@ -1,10 +1,16 @@
-from typing import Union
+from typing import List, Optional, Union
 
 from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DirectiveLocation, DocumentNode
-from graphql.pyutils import dedent
+from graphql.language import (
+    parse,
+    print_ast,
+    DirectiveLocation,
+    DocumentNode,
+    TypeSystemDefinitionNode,
+)
+from graphql.pyutils import dedent, FrozenList
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -97,16 +103,21 @@ test_schema_definitions = [print_ast(node) for node in test_schema_ast.definitio
 
 def print_test_schema_changes(extended_schema):
     ast = parse(print_schema(extended_schema))
-    ast.definitions = [
+    ast.definitions = FrozenList(
         node
         for node in ast.definitions
         if print_ast(node) not in test_schema_definitions
-    ]
+    )
     return print_ast(ast)
 
 
 TypeWithAstNode = Union[
-    GraphQLArgument, GraphQLEnumValue, GraphQLField, GraphQLInputField, GraphQLNamedType
+    GraphQLArgument,
+    GraphQLEnumValue,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLNamedType,
+    GraphQLSchema,
 ]
 
 
@@ -410,14 +421,20 @@ def describe_extend_schema():
         assert test_input.extension_ast_nodes is None
         assert test_interface.extension_ast_nodes is None
 
+        assert query.extension_ast_nodes
         assert len(query.extension_ast_nodes) == 2
+        assert some_scalar.extension_ast_nodes
         assert len(some_scalar.extension_ast_nodes) == 2
+        assert some_enum.extension_ast_nodes
         assert len(some_enum.extension_ast_nodes) == 2
+        assert some_union.extension_ast_nodes
         assert len(some_union.extension_ast_nodes) == 2
+        assert some_input.extension_ast_nodes
         assert len(some_input.extension_ast_nodes) == 2
+        assert some_interface.extension_ast_nodes
         assert len(some_interface.extension_ast_nodes) == 2
 
-        definitions = [
+        definitions: List[Optional[TypeSystemDefinitionNode]] = [
             test_input.ast_node,
             test_enum.ast_node,
             test_union.ast_node,
@@ -425,14 +442,15 @@ def describe_extend_schema():
             test_type.ast_node,
             test_directive.ast_node,
         ]
-        for extension_ast_nodes in [
+        extensions: List[Optional[FrozenList[TypeSystemDefinitionNode]]] = [
             query.extension_ast_nodes,
             some_scalar.extension_ast_nodes,
             some_enum.extension_ast_nodes,
             some_union.extension_ast_nodes,
             some_input.extension_ast_nodes,
             some_interface.extension_ast_nodes,
-        ]:
+        ]
+        for extension_ast_nodes in extensions:
             if extension_ast_nodes:
                 definitions.extend(extension_ast_nodes)
         restored_extension_ast = DocumentNode(definitions=definitions)
@@ -1010,6 +1028,7 @@ def describe_extend_schema():
         )
 
         new_directive = extended_schema.get_directive("neat")
+        assert new_directive
         assert new_directive.name == "neat"
         assert DirectiveLocation.QUERY in new_directive.locations
 
@@ -1024,6 +1043,7 @@ def describe_extend_schema():
         )
 
         new_directive = extended_schema.get_directive("new")
+        assert new_directive
         assert new_directive.description == "new directive"
 
     def may_extend_directives_with_new_complex_directive():
@@ -1107,6 +1127,7 @@ def describe_extend_schema():
             )
             schema = extend_schema(schema, parse(extension_sdl))
             query_type = schema.query_type
+            assert query_type
             assert query_type.name == "Foo"
             assert print_ast_node(schema) == extension_sdl.rstrip()
 
@@ -1121,6 +1142,7 @@ def describe_extend_schema():
                 """
             )
             mutation_type = schema.mutation_type
+            assert mutation_type
             assert mutation_type.name == "Mutation"
 
         def adds_multiple_new_root_types_via_schema_extension():
@@ -1136,8 +1158,10 @@ def describe_extend_schema():
                 """
             )
             mutation_type = schema.mutation_type
-            subscription_type = schema.subscription_type
+            assert mutation_type
             assert mutation_type.name == "Mutation"
+            subscription_type = schema.subscription_type
+            assert subscription_type
             assert subscription_type.name == "Subscription"
 
         def applies_multiple_schema_extensions():
@@ -1155,8 +1179,10 @@ def describe_extend_schema():
                 """
             )
             mutation_type = schema.mutation_type
-            subscription_type = schema.subscription_type
+            assert mutation_type
             assert mutation_type.name == "Mutation"
+            subscription_type = schema.subscription_type
+            assert subscription_type
             assert subscription_type.name == "Subscription"
 
         def schema_extension_ast_are_available_from_schema_object():
@@ -1181,7 +1207,7 @@ def describe_extend_schema():
             )
             schema = extend_schema(schema, ast)
 
-            nodes = schema.extension_ast_nodes or []
+            nodes = schema.extension_ast_nodes or FrozenList()
             assert "".join(print_ast(node) + "\n" for node in nodes) == dedent(
                 """
                 extend schema {

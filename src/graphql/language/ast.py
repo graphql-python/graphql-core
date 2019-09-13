@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from enum import Enum
-from typing import NamedTuple, Optional, Union
+from typing import List, NamedTuple, Optional, Union
 
 from .source import Source
 from .token_kind import TokenKind
@@ -230,13 +230,13 @@ class Node:
             **{key: deepcopy(getattr(self, key), memo) for key in self.keys}
         )
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
+    def __init_subclass__(cls):
+        super().__init_subclass__()
         name = cls.__name__
         if name.endswith("Node"):
             name = name[:-4]
         cls.kind = camel_to_snake(name)
-        keys = []
+        keys: List[str] = []
         for base in cls.__bases__:
             # noinspection PyUnresolvedReferences
             keys.extend(base.keys)

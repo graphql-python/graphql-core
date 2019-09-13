@@ -151,9 +151,9 @@ class Visitor:
     # Provide special return values as attributes
     BREAK, SKIP, REMOVE, IDLE = BREAK, SKIP, REMOVE, IDLE
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls):
         """Verify that all defined handlers are valid."""
-        super().__init_subclass__(**kwargs)
+        super().__init_subclass__()
         for attr, val in cls.__dict__.items():
             if attr.startswith("_"):
                 continue

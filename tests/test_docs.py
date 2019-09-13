@@ -1,8 +1,11 @@
 """Test all code snippets in the documentation"""
 
 from pathlib import Path
+from typing import Any, Dict, List
 
 from graphql.pyutils import dedent
+
+Scope = Dict[str, Any]
 
 
 def get_snippets(source, indent=4):
@@ -11,8 +14,8 @@ def get_snippets(source, indent=4):
         source += ".rst"
     source_path = Path(__file__).parents[1] / "docs" / source
     lines = open(source_path).readlines()
-    snippets = []
-    snippet = []
+    snippets: List[str] = []
+    snippet: List[str] = []
     snippet_start = " " * indent
     for line in lines:
         if not line.rstrip() and snippet:
@@ -51,7 +54,7 @@ def describe_introduction():
         assert "pipenv install" in pipenv_install and "graphql-core" in pipenv_install
         create_schema = intro.pop(0)
         assert "schema = GraphQLSchema(" in create_schema
-        scope = {}
+        scope: Scope = {}
         exec(create_schema, scope)
         schema = scope.get("schema")
         schema_class = scope.get("GraphQLSchema")
@@ -77,7 +80,7 @@ def describe_usage():
         import_blocks = schema.pop(0)
         assert "from graphql import" in import_blocks
         assert "GraphQLObjectType" in import_blocks
-        scope = {}
+        scope: Scope = {}
         exec(import_blocks, scope)
         assert "GraphQLObjectType" in scope
         build_enum = schema.pop(0)
@@ -116,14 +119,14 @@ def describe_usage():
     def implementing_resolvers():
         assert "luke = dict(" in resolvers
         assert "def get_human(" in resolvers
-        scope = {}
+        scope: Scope = {}
         exec(resolvers, scope)
         get_human = scope["get_human"]
         human = get_human(None, None, "1000")
         assert human["name"] == "Luke Skywalker"
 
     def executing_queries(capsys):
-        scope = {}
+        scope: Scope = {}
         exec(resolvers, scope)
         schema = "\n".join(get_snippets("usage/schema")[1:])
         exec(schema, scope)
@@ -177,7 +180,7 @@ def describe_usage():
         )
         assert build_schema_sdl == sdl
 
-        scope = {}
+        scope: Scope = {}
         exec(build_schema, scope)
         schema = scope["schema"]
         assert list(schema.query_type.fields) == ["hero", "human", "droid"]
@@ -203,7 +206,7 @@ def describe_usage():
         assert out == expected_result(use_sdl)
 
     def using_resolver_methods(capsys):
-        scope = {}
+        scope: Scope = {}
         exec(resolvers, scope)
         build_schema = get_snippets("usage/sdl")[0]
         exec(build_schema, scope)
@@ -228,7 +231,7 @@ def describe_usage():
         get_query = introspect.pop(0)
         assert "import get_introspection_query" in get_query
         assert "descriptions=True" in get_query
-        scope = {}
+        scope: Scope = {}
         exec(get_query, scope)
         query = scope["query"]
         assert query.lstrip().startswith("query IntrospectionQuery")
@@ -242,8 +245,8 @@ def describe_usage():
         assert "description" not in query
 
         exec(resolvers, scope)
-        schema = "\n".join(get_snippets("usage/schema")[1:])
-        exec(schema, scope)
+        create_schema = "\n".join(get_snippets("usage/schema")[1:])
+        exec(create_schema, scope)
         get_result = introspect.pop(0)
         assert "result = graphql_sync(" in get_result
         exec(get_result, scope)
@@ -282,7 +285,7 @@ def describe_usage():
 
         parse_document = parser.pop(0)
         assert "document = parse(" in parse_document
-        scope = {}
+        scope: Scope = {}
         exec(parse_document, scope)
         document = scope["document"]
         name = document.definitions[0].fields[0].name
@@ -309,10 +312,10 @@ def describe_usage():
         assert scope["document"] == document
 
     def extending_a_schema(capsys):
-        scope = {}
+        scope: Scope = {}
         exec(resolvers, scope)
-        schema = "\n".join(get_snippets("usage/schema")[1:])
-        exec(schema, scope)
+        create_schema = "\n".join(get_snippets("usage/schema")[1:])
+        exec(create_schema, scope)
 
         extension = get_snippets("usage/extension")
         extend_schema = extension.pop(0)
@@ -334,10 +337,10 @@ def describe_usage():
         assert out == expected_result(extension)
 
     def validating_queries():
-        scope = {}
+        scope: Scope = {}
         exec(resolvers, scope)
-        schema = "\n".join(get_snippets("usage/schema")[1:])
-        exec(schema, scope)
+        create_schema = "\n".join(get_snippets("usage/schema")[1:])
+        exec(create_schema, scope)
 
         validator = get_snippets("usage/validator")
         validate = validator.pop(0)

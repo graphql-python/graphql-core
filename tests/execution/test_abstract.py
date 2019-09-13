@@ -249,6 +249,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             ]
         }
 
+        assert result.errors
         assert len(result.errors) == 1
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
@@ -324,6 +325,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             ]
         }
 
+        assert result.errors
         assert len(result.errors) == 1
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
@@ -333,20 +335,22 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         }
 
     def returning_invalid_value_from_resolve_type_yields_useful_error():
-        fooInterface = GraphQLInterfaceType(
+        foo_interface = GraphQLInterfaceType(  # type: ignore
             "FooInterface",
             {"bar": GraphQLField(GraphQLString)},
             resolve_type=lambda *_args: [],
         )
 
         foo_object = GraphQLObjectType(
-            "FooObject", {"bar": GraphQLField(GraphQLString)}, interfaces=[fooInterface]
+            "FooObject",
+            {"bar": GraphQLField(GraphQLString)},
+            interfaces=[foo_interface],
         )
 
         schema = GraphQLSchema(
             GraphQLObjectType(
                 "Query",
-                {"foo": GraphQLField(fooInterface, resolve=lambda *_args: "dummy")},
+                {"foo": GraphQLField(foo_interface, resolve=lambda *_args: "dummy")},
             ),
             types=[foo_object],
         )

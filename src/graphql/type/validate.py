@@ -152,7 +152,7 @@ class SchemaValidationContext:
             self.validate_name(directive)
 
             # Ensure the arguments are valid.
-            arg_names = set()
+            arg_names: Set[str] = set()
             for arg_name, arg in directive.args.items():
                 # Ensure they are named correctly.
                 self.validate_name(arg_name, arg)

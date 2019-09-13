@@ -45,18 +45,18 @@ def describe_parser():
     def asserts_that_a_source_to_parse_was_provided():
         with raises(TypeError) as exc_info:
             # noinspection PyArgumentList
-            assert parse()
+            assert parse()  # type: ignore
         msg = str(exc_info.value)
         assert "missing" in msg
         assert "source" in msg
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            assert parse(None)
+            assert parse(None)  # type: ignore
         msg = str(exc_info.value)
         assert "Must provide Source. Received: None" in msg
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            assert parse({})
+            assert parse({})  # type: ignore
         msg = str(exc_info.value)
         assert "Must provide Source. Received: {}" in msg
 
@@ -262,7 +262,7 @@ def describe_parser():
         assert value.value == "4"
         assert argument.loc == (9, 14)
         assert field.directives == []
-        selection_set = field.selection_set
+        selection_set = field.selection_set  # type: ignore
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, list)
@@ -341,7 +341,7 @@ def describe_parser():
         assert name.value == "node"
         assert field.arguments == []
         assert field.directives == []
-        selection_set = field.selection_set
+        selection_set = field.selection_set  # type: ignore
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (15, 27)
         selections = selection_set.selections
@@ -378,14 +378,14 @@ def describe_parser():
     def contains_references_to_source():
         source = Source("{ id }")
         result = parse(source)
-        assert result.loc.source is source
+        assert result.loc and result.loc.source is source
 
     def contains_references_to_start_and_end_tokens():
         result = parse("{ id }")
-        start_token = result.loc.start_token
+        start_token = result.loc and result.loc.start_token
         assert isinstance(start_token, Token)
         assert start_token.kind == TokenKind.SOF
-        end_token = result.loc.end_token
+        end_token = result.loc and result.loc.end_token
         assert isinstance(end_token, Token)
         assert end_token.kind == TokenKind.EOF
 
@@ -398,14 +398,14 @@ def describe_parser():
             }
             # bottom comment"""
         )
-        top_comment = result.loc.start_token.next
-        assert top_comment.kind is TokenKind.COMMENT
+        top_comment = result.loc and result.loc.start_token.next
+        assert top_comment and top_comment.kind is TokenKind.COMMENT
         assert top_comment.value == " top comment"
-        field_comment = top_comment.next.next.next
-        assert field_comment.kind is TokenKind.COMMENT
+        field_comment = top_comment.next.next.next  # type: ignore
+        assert field_comment and field_comment.kind is TokenKind.COMMENT
         assert field_comment.value == " field comment"
-        bottom_comment = field_comment.next.next
-        assert bottom_comment.kind is TokenKind.COMMENT
+        bottom_comment = field_comment.next.next  # type: ignore
+        assert bottom_comment and bottom_comment.kind is TokenKind.COMMENT
         assert bottom_comment.value == " bottom comment"
 
 

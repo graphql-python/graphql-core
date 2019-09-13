@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse
@@ -75,7 +77,7 @@ email_schema = email_schema_with_resolvers()
 async def create_subscription(
     pubsub, schema: GraphQLSchema = email_schema, ast=None, variables=None
 ):
-    data = {
+    data: Dict[str, Any] = {
         "inbox": {
             "emails": [
                 {
@@ -136,7 +138,7 @@ def describe_subscription_initialization_phase():
         )
 
         async def empty_async_iterator(_info):
-            for value in ():
+            for value in ():  # type: ignore
                 yield value
 
         await subscribe(
@@ -284,7 +286,7 @@ def describe_subscription_initialization_phase():
 
         # Close subscription
         # noinspection PyUnresolvedReferences
-        await subscription.aclose()
+        await subscription.aclose()  # type: ignore
 
         with raises(StopAsyncIteration):
             await ignored
@@ -302,26 +304,26 @@ def describe_subscription_initialization_phase():
 
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            await subscribe(None, document)
+            await subscribe(None, document)  # type: ignore
 
         assert str(exc_info.value) == "Expected None to be a GraphQL schema."
 
         with raises(TypeError, match="missing .* positional argument: 'schema'"):
             # noinspection PyTypeChecker
-            await subscribe(document=document)
+            await subscribe(document=document)  # type: ignore
 
     # noinspection PyArgumentList
     @mark.asyncio
     async def throws_an_error_if_document_is_missing():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            await subscribe(email_schema, None)
+            await subscribe(email_schema, None)  # type: ignore
 
         assert str(exc_info.value) == "Must provide document"
 
         with raises(TypeError, match="missing .* positional argument: 'document'"):
             # noinspection PyTypeChecker
-            await subscribe(schema=email_schema)
+            await subscribe(schema=email_schema)  # type: ignore
 
     @mark.asyncio
     async def resolves_to_an_error_for_unknown_subscription_field():
@@ -476,7 +478,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-        assert result.errors[0].original_error is not None
+        assert result.errors[0].original_error is not None  # type: ignore
 
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.

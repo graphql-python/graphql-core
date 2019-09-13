@@ -70,7 +70,7 @@ def describe_version():
         def version_info_has_correct_fields():
             assert isinstance(version_info, tuple)
             assert str(version_info) == version
-            groups = _re_version.match(version).groups()
+            groups = _re_version.match(version).groups()  # type: ignore
             assert version_info.major == int(groups[0])
             assert version_info.minor == int(groups[1])
             assert version_info.micro == int(groups[2])
@@ -96,7 +96,7 @@ def describe_version():
         def version_info_js_has_correct_fields():
             assert isinstance(version_info_js, tuple)
             assert str(version_info_js) == version_js
-            groups = _re_version.match(version_js).groups()
+            groups = _re_version.match(version_js).groups()  # type: ignore
             assert version_info_js.major == int(groups[0])
             assert version_info_js.minor == int(groups[1])
             assert version_info_js.micro == int(groups[2])

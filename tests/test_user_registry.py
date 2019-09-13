@@ -6,7 +6,7 @@ operations on a simulated user registry database backend.
 
 from asyncio import sleep, wait
 from enum import Enum
-from typing import Dict, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from pytest import fixture, mark  # type: ignore
 
@@ -283,7 +283,7 @@ def describe_mutation():
         )
 
         user = await context["registry"].get("0")
-        assert user == User(id="0", **user_data)
+        assert user == User(id="0", **user_data)  # type: ignore
 
         assert result.errors is None
         assert result.data == {
@@ -339,7 +339,7 @@ def describe_mutation():
         )
 
         user = await context["registry"].get("0")
-        assert user == User(id="0", **user_data)
+        assert user == User(id="0", **user_data)  # type: ignore
 
         assert result.errors is None
         assert result.data == {
@@ -495,13 +495,13 @@ def describe_subscription():
             )
 
         async def receive_one():
-            async for result in subscription_one:
+            async for result in subscription_one:  # type: ignore
                 received_one.append(result)
                 if len(received_one) == 3:
                     break
 
         async def receive_all():
-            async for result in subscription_all:
+            async for result in subscription_all:  # type: ignore
                 received_all.append(result)
                 if len(received_all) == 6:
                     break
@@ -511,7 +511,7 @@ def describe_subscription():
         )
         assert not pending
 
-        expected_data = [
+        expected_data: List[Dict[str, Any]] = [
             {
                 "mutation": "CREATED",
                 "user": {

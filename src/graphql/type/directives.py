@@ -108,7 +108,7 @@ class GraphQLDirective:
     def __eq__(self, other):
         return self is other or (
             isinstance(other, GraphQLDirective)
-            and self.type == other.type
+            and self.name == other.name
             and self.locations == other.locations
             and self.args == other.args
             and self.is_repeatable == other.is_repeatable

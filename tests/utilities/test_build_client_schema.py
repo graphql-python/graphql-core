@@ -352,8 +352,8 @@ def describe_type_system_build_schema_from_introspection():
         # It's also an Enum type on the client.
         client_food_enum = assert_enum_type(client_schema.get_type("Food"))
 
-        values = client_food_enum.values
-        descriptions = {name: value.description for name, value in values.items()}
+        values_dict = client_food_enum.values
+        descriptions = {name: value.description for name, value in values_dict.items()}
         assert descriptions == {
             "VEGETABLES": "Foods that are vegetables.",
             "FRUITS": "Foods that are fruits.",
@@ -361,7 +361,7 @@ def describe_type_system_build_schema_from_introspection():
             "DAIRY": "Foods that are dairy.",
             "MEAT": "Foods that are meat.",
         }
-        values = values.values()
+        values = values_dict.values()
         assert all(value.value is None for value in values)
         assert all(value.is_deprecated is False for value in values)
         assert all(value.deprecation_reason is None for value in values)
@@ -527,7 +527,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_introspection_is_missing_schema_property():
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                build_client_schema(None)
+                build_client_schema(None)  # type: ignore
 
             assert str(exc_info.value) == (
                 "Invalid or incomplete introspection result. Ensure that you"

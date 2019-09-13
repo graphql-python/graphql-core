@@ -1,3 +1,5 @@
+from typing import cast, Any, Dict
+
 from graphql.language import DirectiveLocation
 from graphql.pyutils import dedent
 from graphql.type import (
@@ -440,7 +442,7 @@ def describe_type_system_printer():
     def prints_empty_types():
         schema = GraphQLSchema(
             types=[
-                GraphQLEnumType("SomeEnum", {}),
+                GraphQLEnumType("SomeEnum", cast(Dict[str, Any], {})),
                 GraphQLInputObjectType("SomeInputObject", {}),
                 GraphQLInterfaceType("SomeInterface", {}),
                 GraphQLObjectType("SomeObject", {}),

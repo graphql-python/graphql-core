@@ -306,7 +306,7 @@ class ExecutionContext:
         if isawaitable(data):
 
             async def build_response_async():
-                return self.build_response(await data)
+                return self.build_response(await data)  # type: ignore
 
             return build_response_async()
         data = cast(Optional[Dict[str, Any]], data)
@@ -353,7 +353,7 @@ class ExecutionContext:
                 # noinspection PyShadowingNames
                 async def await_result():
                     try:
-                        return await result
+                        return await result  # type: ignore
                     except GraphQLError as error:
                         self.errors.append(error)
                     except Exception as error:
@@ -872,7 +872,11 @@ class ExecutionContext:
             async def await_complete_object_value():
                 value = self.complete_object_value(
                     self.ensure_valid_runtime_type(
-                        await runtime_type, return_type, field_nodes, info, result
+                        await runtime_type,  # type: ignore
+                        return_type,
+                        field_nodes,
+                        info,
+                        result,
                     ),
                     field_nodes,
                     info,
@@ -880,7 +884,7 @@ class ExecutionContext:
                     result,
                 )
                 if isawaitable(value):
-                    return await value
+                    return await value  # type: ignore
                 return value
 
             return await_complete_object_value()
@@ -950,7 +954,7 @@ class ExecutionContext:
             if isawaitable(is_type_of):
 
                 async def collect_and_execute_subfields_async():
-                    if not await is_type_of:
+                    if not await is_type_of:  # type: ignore
                         raise invalid_return_type_error(
                             return_type, result, field_nodes
                         )

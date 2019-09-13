@@ -106,7 +106,7 @@ def describe_get_operation_root_type():
         test_schema = GraphQLSchema()
         doc = parse("{ field }")
         operation_node = get_operation_node(doc)
-        operation_node.operation = "non_existent_operation"
+        operation_node.operation = "non_existent_operation"  # type: ignore
         with raises(GraphQLError) as exc_info:
             get_operation_root_type(test_schema, operation_node)
         assert exc_info.value.message == (

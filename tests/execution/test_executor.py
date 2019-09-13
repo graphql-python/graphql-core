@@ -32,7 +32,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         with raises(TypeError) as exc_info:
-            assert execute(schema=schema, document=None)
+            assert execute(schema=schema, document=None)  # type: ignore
 
         assert str(exc_info.value) == "Must provide document"
 
@@ -41,7 +41,7 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("{ field }")
 
         with raises(TypeError) as exc_info:
-            assert execute(schema=None, document=document)
+            assert execute(schema=None, document=document)  # type: ignore
 
         assert str(exc_info.value) == "Expected None to be a GraphQL schema."
 
@@ -84,10 +84,10 @@ def describe_execute_handles_basic_execution_tasks():
                 return f"Pic of size: {size}"
 
             def deep(self, _info):
-                return DeepData()
+                return DeepData()  # type: ignore
 
             def promise(self, _info):
-                return promise_data()
+                return promise_data()  # type: ignore
 
         # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class DeepData:
@@ -266,7 +266,7 @@ def describe_execute_handles_basic_execution_tasks():
             field_name="test",
             field_nodes=[field],
             return_type=GraphQLString,
-            parent_type=schema.query_type,
+            parent_type=cast(GraphQLObjectType, schema.query_type),
             path=ResponsePath(None, "result"),
             schema=schema,
             fragments={},
