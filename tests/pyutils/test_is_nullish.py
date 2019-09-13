@@ -48,4 +48,3 @@ def describe_is_nullish():
 
     def numpy_arrays_are_not_nullish():
         assert is_nullish(FakeNumpyArray()) is False
-
