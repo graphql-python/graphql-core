@@ -4,6 +4,22 @@ from graphql.error import INVALID
 from graphql.pyutils import is_nullish
 
 
+class FakeNumpyArray:
+    def __eq__(self, other):
+        # Numpy arrays return an array when compared with another numpy array
+        # containing the pointwise equality of the two
+        if isinstance(other, FakeNumpyArray):
+            return FakeNumpyArray()
+        else:
+            return False
+
+    def __bool__(self):
+        raise TypeError(
+            "The truth value of an array with more than one element is "
+            "ambiguous. Use a.any() or a.all()"
+        )
+
+
 def describe_is_nullish():
     def null_is_nullish():
         assert is_nullish(None) is True
@@ -29,3 +45,7 @@ def describe_is_nullish():
 
     def nan_is_nullish():
         assert is_nullish(nan)
+
+    def numpy_arrays_are_not_nullish():
+        assert is_nullish(FakeNumpyArray()) is False
+
