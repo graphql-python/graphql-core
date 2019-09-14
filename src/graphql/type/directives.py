@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Sequence, cast
 
 from ..language import ast, DirectiveLocation
-from ..pyutils import inspect, FrozenList
+from ..pyutils import inspect, is_description, FrozenList
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
 from .scalars import GraphQLBoolean, GraphQLString
 
@@ -84,7 +84,7 @@ class GraphQLDirective:
             raise TypeError(f"{name} is_repeatable flag must be True or False.")
         if ast_node and not isinstance(ast_node, ast.DirectiveDefinitionNode):
             raise TypeError(f"{name} AST node must be a DirectiveDefinitionNode.")
-        if description is not None and not isinstance(description, str):
+        if description is not None and not is_description(description):
             raise TypeError(f"{name} description must be a string.")
         if extensions is not None and (
             not isinstance(extensions, dict)

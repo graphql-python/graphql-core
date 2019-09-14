@@ -42,7 +42,14 @@ from ..language import (
     UnionTypeExtensionNode,
     ValueNode,
 )
-from ..pyutils import AwaitableOrValue, FrozenList, Path, cached_property, inspect
+from ..pyutils import (
+    AwaitableOrValue,
+    FrozenList,
+    Path,
+    cached_property,
+    inspect,
+    is_description,
+)
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -199,7 +206,7 @@ class GraphQLNamedType(GraphQLType):
             raise TypeError("Must provide name.")
         if not isinstance(name, str):
             raise TypeError("The name must be a string.")
-        if description is not None and not isinstance(description, str):
+        if description is not None and not is_description(description):
             raise TypeError("The description must be a string.")
         if extensions is not None and (
             not isinstance(extensions, dict)
@@ -471,9 +478,9 @@ class GraphQLField:
                 "Field resolver must be a function if provided, "
                 f" but got: {inspect(resolve)}."
             )
-        if description is not None and not isinstance(description, str):
+        if description is not None and not is_description(description):
             raise TypeError("The description must be a string.")
-        if deprecation_reason is not None and not isinstance(deprecation_reason, str):
+        if deprecation_reason is not None and not is_description(deprecation_reason):
             raise TypeError("The deprecation reason must be a string.")
         if extensions is not None and (
             not isinstance(extensions, dict)
@@ -589,7 +596,7 @@ class GraphQLArgument:
     ) -> None:
         if not is_input_type(type_):
             raise TypeError(f"Argument type must be a GraphQL input type.")
-        if description is not None and not isinstance(description, str):
+        if description is not None and not is_description(description):
             raise TypeError("Argument description must be a string.")
         if out_name is not None and not isinstance(out_name, str):
             raise TypeError("Argument out name must be a string.")
@@ -1131,9 +1138,9 @@ class GraphQLEnumValue:
         extensions: Dict[str, Any] = None,
         ast_node: EnumValueDefinitionNode = None,
     ) -> None:
-        if description is not None and not isinstance(description, str):
+        if description is not None and not is_description(description):
             raise TypeError("The description of the enum value must be a string.")
-        if deprecation_reason is not None and not isinstance(deprecation_reason, str):
+        if deprecation_reason is not None and not is_description(deprecation_reason):
             raise TypeError(
                 "The deprecation reason for the enum value must be a string."
             )
@@ -1320,7 +1327,7 @@ class GraphQLInputField:
     ) -> None:
         if not is_input_type(type_):
             raise TypeError(f"Input field type must be a GraphQL input type.")
-        if description is not None and not isinstance(description, str):
+        if description is not None and not is_description(description):
             raise TypeError("Input field description must be a string.")
         if out_name is not None and not isinstance(out_name, str):
             raise TypeError("Input field out name must be a string.")

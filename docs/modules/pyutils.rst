@@ -10,6 +10,8 @@ PyUtils
 .. autofunction:: cached_property
 .. autofunction:: dedent
 .. autofunction:: did_you_mean
+.. autofunction:: register_description
+.. autofunction:: unregister_description
 .. autoclass:: EventEmitter
    :members:
 .. autoclass:: EventEmitterAsyncIterator

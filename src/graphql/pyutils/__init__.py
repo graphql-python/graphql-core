@@ -11,6 +11,12 @@ These functions are not part of the module interface and are subject to change.
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
 from .dedent import dedent
+from .description import (
+    Description,
+    is_description,
+    register_description,
+    unregister_description,
+)
 from .did_you_mean import did_you_mean
 from .event_emitter import EventEmitter, EventEmitterAsyncIterator
 from .identity_func import identity_func
@@ -33,6 +39,10 @@ __all__ = [
     "cached_property",
     "dedent",
     "did_you_mean",
+    "Description",
+    "is_description",
+    "register_description",
+    "unregister_description",
     "EventEmitter",
     "EventEmitterAsyncIterator",
     "identity_func",
