@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Union, cast
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
 
 from ..error import GraphQLError
 from ..language import (
@@ -62,10 +62,14 @@ class ASTValidationContext:
     """
 
     document: DocumentNode
+    on_error: Optional[Callable[[GraphQLError], None]]
     errors: List[GraphQLError]
 
-    def __init__(self, ast: DocumentNode) -> None:
+    def __init__(
+        self, ast: DocumentNode, on_error: Callable[[GraphQLError], None] = None
+    ) -> None:
         self.document = ast
+        self.on_error = on_error
         self.errors = []
         self._fragments: Optional[Dict[str, FragmentDefinitionNode]] = None
         self._fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]] = {}
@@ -75,6 +79,8 @@ class ASTValidationContext:
 
     def report_error(self, error: GraphQLError):
         self.errors.append(error)
+        if self.on_error:
+            self.on_error(error)
 
     def get_fragment(self, name: str) -> Optional[FragmentDefinitionNode]:
         fragments = self._fragments
@@ -146,8 +152,13 @@ class SDLValidationContext(ASTValidationContext):
 
     schema: Optional[GraphQLSchema]
 
-    def __init__(self, ast: DocumentNode, schema: GraphQLSchema = None) -> None:
-        super().__init__(ast)
+    def __init__(
+        self,
+        ast: DocumentNode,
+        schema: GraphQLSchema = None,
+        on_error: Callable[[GraphQLError], None] = None,
+    ) -> None:
+        super().__init__(ast, on_error)
         self.schema = schema
 
 
@@ -162,9 +173,13 @@ class ValidationContext(ASTValidationContext):
     schema: GraphQLSchema
 
     def __init__(
-        self, schema: GraphQLSchema, ast: DocumentNode, type_info: TypeInfo
+        self,
+        schema: GraphQLSchema,
+        ast: DocumentNode,
+        type_info: TypeInfo,
+        on_error: Callable[[GraphQLError], None] = None,
     ) -> None:
-        super().__init__(ast)
+        super().__init__(ast, on_error)
         self.schema = schema
         self._type_info = type_info
         self._variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]] = {}

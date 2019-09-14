@@ -12,11 +12,16 @@ from .validation_context import SDLValidationContext, ValidationContext
 __all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
 
 
+class ValidationAbortedError(RuntimeError):
+    """Error when a validation has been aborted (error limit reached)."""
+
+
 def validate(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
     rules: Sequence[RuleType] = None,
     type_info: TypeInfo = None,
+    max_errors: int = None,
 ) -> List[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -45,13 +50,34 @@ def validate(
         rules = specified_rules
     elif not isinstance(rules, (list, tuple)):
         raise TypeError("Rules must be passed as a list/tuple.")
-    context = ValidationContext(schema, document_ast, type_info)
+    if max_errors is not None and not isinstance(max_errors, int):
+        raise TypeError("The maximum number of errors must be passed as an int.")
+
+    errors: List[GraphQLError] = []
+
+    def on_error(error: GraphQLError) -> None:
+        if max_errors is not None and len(errors) >= max_errors:
+            errors.append(
+                GraphQLError(
+                    "Too many validation errors, error limit reached."
+                    " Validation aborted."
+                )
+            )
+            raise ValidationAbortedError
+        errors.append(error)
+
+    context = ValidationContext(schema, document_ast, type_info, on_error)
+
     # This uses a specialized visitor which runs multiple visitors in parallel,
     # while maintaining the visitor skip and break API.
     visitors = [rule(context) for rule in rules]
+
     # Visit the whole document with each instance of all provided rules.
-    visit(document_ast, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
-    return context.errors
+    try:
+        visit(document_ast, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
+    except ValidationAbortedError:
+        pass
+    return errors
 
 
 def validate_sdl(

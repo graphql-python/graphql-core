@@ -72,3 +72,42 @@ def describe_validate_supports_full_validation():
             "Cannot query field 'isHousetrained' on type 'Dog'."
             " Did you mean 'isHousetrained'?",
         ]
+
+
+def describe_validate_limit_maximum_number_of_validation_errors():
+    query = """
+        {
+          firstUnknownField
+          secondUnknownField
+          thirdUnknownField
+        }
+        """
+    doc = parse(query, no_location=True)
+
+    def _validate_document(max_errors=None):
+        return validate(test_schema, doc, max_errors=max_errors)
+
+    def _invalid_field_error(field_name: str):
+        return {
+            "message": f"Cannot query field '{field_name}' on type 'QueryRoot'.",
+            "locations": [],
+        }
+
+    def when_max_errors_is_equal_to_number_of_errors():
+        errors = _validate_document(max_errors=3)
+        assert errors == [
+            _invalid_field_error("firstUnknownField"),
+            _invalid_field_error("secondUnknownField"),
+            _invalid_field_error("thirdUnknownField"),
+        ]
+
+    def when_max_errors_is_less_than_number_of_errors():
+        errors = _validate_document(max_errors=2)
+        assert errors == [
+            _invalid_field_error("firstUnknownField"),
+            _invalid_field_error("secondUnknownField"),
+            {
+                "message": "Too many validation errors, error limit reached."
+                " Validation aborted."
+            },
+        ]
