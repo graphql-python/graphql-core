@@ -182,12 +182,12 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
         assert list(map(format_error, result.errors)) == [  # type: ignore
             {
                 "message": "We are testing this error",
-                "locations": [(3, 15)],
+                "locations": [{"line": 3, "column": 15}],
                 "path": ["pets", 0],
             },
             {
                 "message": "We are testing this error",
-                "locations": [(3, 15)],
+                "locations": [{"line": 3, "column": 15}],
                 "path": ["pets", 1],
             },
         ]
@@ -334,7 +334,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
             " is not a possible type for 'Pet'.",
-            "locations": [(3, 15)],
+            "locations": [{"line": 3, "column": 15}],
             "path": ["pets", 2],
         }
 
@@ -411,7 +411,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
             " is not a possible type for 'Pet'.",
-            "locations": [(3, 15)],
+            "locations": [{"line": 3, "column": 15}],
             "path": ["pets", 2],
         }
 

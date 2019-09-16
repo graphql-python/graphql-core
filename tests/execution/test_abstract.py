@@ -254,7 +254,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
             " is not a possible type for 'Pet'.",
-            "locations": [(3, 15)],
+            "locations": [{"line": 3, "column": 15}],
             "path": ["pets", 2],
         }
 
@@ -330,7 +330,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         assert format_error(result.errors[0]) == {
             "message": "Runtime Object type 'Human'"
             " is not a possible type for 'Pet'.",
-            "locations": [(3, 15)],
+            "locations": [{"line": 3, "column": 15}],
             "path": ["pets", 2],
         }
 
