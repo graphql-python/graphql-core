@@ -12,6 +12,10 @@ class SourceLocation(NamedTuple):
     line: int
     column: int
 
+    @property
+    def formatted(self):
+        return dict(line=self.line, column=self.column)
+
 
 def get_location(source: "Source", position: int) -> SourceLocation:
     """Get the line and column for a character position in the source.

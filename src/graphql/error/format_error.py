@@ -18,7 +18,7 @@ def format_error(error: "GraphQLError") -> Dict[str, Any]:
     formatted: Dict[str, Any] = dict(  # noqa: E701 (pycqa/flake8#394)
         message=error.message or "An unknown error occurred.",
         locations=(
-            [{"line": l.line, "column": l.column} for l in error.locations]
+            [location.formatted for location in error.locations]
             if error.locations is not None
             else None
         ),
