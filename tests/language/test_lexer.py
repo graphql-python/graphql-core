@@ -33,12 +33,19 @@ def describe_lexer():
             "\x07", "Cannot contain the invalid character '\\x07'.", (1, 1)
         )
 
-    # noinspection PyArgumentEqualDefault
     def accepts_bom_header():
         token = lex_one("\uFEFF foo")
         assert token == Token(TokenKind.NAME, 2, 5, 1, 3, None, "foo")
 
-    # noinspection PyArgumentEqualDefault
+    def tracks_line_breaks():
+        assert lex_one("foo") == Token(TokenKind.NAME, 0, 3, 1, 1, None, "foo")
+        assert lex_one("\nfoo") == Token(TokenKind.NAME, 1, 4, 2, 1, None, "foo")
+        assert lex_one("\rfoo") == Token(TokenKind.NAME, 1, 4, 2, 1, None, "foo")
+        assert lex_one("\r\nfoo") == Token(TokenKind.NAME, 2, 5, 2, 1, None, "foo")
+        assert lex_one("\n\rfoo") == Token(TokenKind.NAME, 2, 5, 3, 1, None, "foo")
+        assert lex_one("\r\r\n\nfoo") == Token(TokenKind.NAME, 4, 7, 4, 1, None, "foo")
+        assert lex_one("\n\n\r\rfoo") == Token(TokenKind.NAME, 4, 7, 5, 1, None, "foo")
+
     def records_line_and_column():
         token = lex_one("\n \r\n \r  foo\n")
         assert token == Token(TokenKind.NAME, 8, 11, 4, 3, None, "foo")
@@ -50,7 +57,6 @@ def describe_lexer():
         assert repr(token) == "<Token Name 'foo' 1:1>"
         assert inspect(token) == repr(token)
 
-    # noinspection PyArgumentEqualDefault
     def skips_whitespace_and_comments():
         token = lex_one("\n\n    foo\n\n\n")
         assert token == Token(TokenKind.NAME, 6, 9, 3, 5, None, "foo")
@@ -114,6 +120,7 @@ def describe_lexer():
 
     # noinspection PyArgumentEqualDefault
     def lexes_strings():
+        assert lex_one('""') == Token(TokenKind.STRING, 0, 2, 1, 1, None, "")
         assert lex_one('"simple"') == Token(
             TokenKind.STRING, 0, 8, 1, 1, None, "simple"
         )
@@ -135,6 +142,8 @@ def describe_lexer():
 
     def lex_reports_useful_string_errors():
         assert_syntax_error('"', "Unterminated string.", (1, 2))
+        assert_syntax_error('"""', "Unterminated string.", (1, 4))
+        assert_syntax_error('""""', "Unterminated string.", (1, 5))
         assert_syntax_error('"no end quote', "Unterminated string.", (1, 14))
         assert_syntax_error(
             "'single quotes'",
@@ -175,6 +184,7 @@ def describe_lexer():
 
     # noinspection PyArgumentEqualDefault
     def lexes_block_strings():
+        assert lex_one('""""""') == Token(TokenKind.BLOCK_STRING, 0, 6, 1, 1, None, "")
         assert lex_one('"""simple"""') == Token(
             TokenKind.BLOCK_STRING, 0, 12, 1, 1, None, "simple"
         )
@@ -276,9 +286,21 @@ def describe_lexer():
         assert_syntax_error(
             "00", "Invalid number, unexpected digit after 0: '0'.", (1, 2)
         )
+        assert_syntax_error(
+            "01", "Invalid number, unexpected digit after 0: '1'.", (1, 2)
+        )
+        assert_syntax_error(
+            "01.23", "Invalid number, unexpected digit after 0: '1'.", (1, 2)
+        )
         assert_syntax_error("+1", "Cannot parse the unexpected character '+'.", (1, 1))
         assert_syntax_error(
             "1.", "Invalid number, expected digit but got: <EOF>.", (1, 3)
+        )
+        assert_syntax_error(
+            "1e", "Invalid number, expected digit but got: <EOF>.", (1, 3)
+        )
+        assert_syntax_error(
+            "1E", "Invalid number, expected digit but got: <EOF>.", (1, 3)
         )
         assert_syntax_error(
             "1.e1", "Invalid number, expected digit but got: 'e'.", (1, 3)
@@ -297,6 +319,15 @@ def describe_lexer():
         )
         assert_syntax_error(
             "1.0eA", "Invalid number, expected digit but got: 'A'.", (1, 5)
+        )
+        assert_syntax_error(
+            "1.2e3e", "Invalid number, expected digit but got: 'e'.", (1, 6)
+        )
+        assert_syntax_error(
+            "1.2e3.4", "Invalid number, expected digit but got: '.'.", (1, 6)
+        )
+        assert_syntax_error(
+            "1.23.4", "Invalid number, expected digit but got: '.'.", (1, 5)
         )
 
     # noinspection PyArgumentEqualDefault

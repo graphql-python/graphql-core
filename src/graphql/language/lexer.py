@@ -213,6 +213,16 @@ class Lexer:
                 position += 1
                 char = body[position : position + 1]
             position = self.read_digits(position, char)
+            char = body[position : position + 1]
+
+        # Numbers cannot be followed by . or e
+        if char and char in ".eE":
+            raise GraphQLSyntaxError(
+                source,
+                position,
+                f"Invalid number, expected digit but got: {print_char(char)}.",
+            )
+
         return Token(
             TokenKind.FLOAT if is_float else TokenKind.INT,
             start,
