@@ -1,8 +1,9 @@
 from enum import Enum
+from operator import attrgetter
 from typing import Any, Dict, List, NamedTuple, Union, cast
 
 from ..error import INVALID
-from ..language import print_ast
+from ..language import print_ast, visit, Visitor
 from ..pyutils import inspect
 from ..type import (
     GraphQLEnumType,
@@ -399,6 +400,9 @@ def find_arg_changes(
                     )
                 )
             else:
+                # Since we are looking only for client's observable changes we should
+                # compare default values in the same representation as they are
+                # represented inside introspection.
                 old_value_str = stringify_value(old_arg.default_value, old_arg.type)
                 new_value_str = stringify_value(new_arg.default_value, new_arg.type)
 
@@ -532,7 +536,18 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
     ast = ast_from_value(value, type_)
     if ast is None:
         raise TypeError(f"Invalid value: {inspect(value)}")
-    return print_ast(ast)
+
+    # noinspection PyMethodMayBeStatic
+    class SortVisitor(Visitor):
+        def enter_object_value(self, object_node, *_args):
+            object_node.fields = sorted(
+                object_node.fields, key=attrgetter("name.value")
+            )
+            return object_node
+
+    sorted_ast = visit(ast, SortVisitor())
+
+    return print_ast(sorted_ast)
 
 
 class ListDiff(NamedTuple):

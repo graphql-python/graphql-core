@@ -211,7 +211,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
     if not isinstance(root, Node):
         raise TypeError(f"Not an AST Node: {inspect(root)}")
     if not isinstance(visitor, Visitor):
-        raise TypeError(f"Not an AST Visitor class: {inspect(visitor)}")
+        raise TypeError(f"Not an AST Visitor: {inspect(visitor)}")
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None

@@ -936,6 +936,41 @@ def describe_find_dangerous_changes():
 
         assert find_dangerous_changes(old_schema, new_schema) == []
 
+    def should_ignore_changes_in_field_definitions_order():
+        old_schema = build_schema(
+            """
+            input Input1 {
+              a: String
+              b: String
+              c: String
+            }
+
+            type Type1 {
+              field1(
+                arg1: Input1 = { a: "a", b: "b", c: "c" }
+              ): String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            input Input1 {
+              c: String
+              b: String
+              a: String
+            }
+
+            type Type1 {
+              field1(
+                arg1: Input1 = { a: "a", b: "b", c: "c" }
+              ): String
+            }
+            """
+        )
+
+        assert find_dangerous_changes(old_schema, new_schema) == []
+
     def should_detect_if_a_value_was_added_to_an_enum_type():
         old_schema = build_schema(
             """
