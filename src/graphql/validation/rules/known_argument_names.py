@@ -60,7 +60,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
     def enter_directive(self, directive_node: DirectiveNode, *_args):
         directive_name = directive_node.name.value
         known_args = self.directive_args.get(directive_name)
-        if directive_node.arguments and known_args:
+        if directive_node.arguments and known_args is not None:
             for arg_node in directive_node.arguments:
                 arg_name = arg_node.name.value
                 if arg_name not in known_args:

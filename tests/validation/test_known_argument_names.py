@@ -120,6 +120,25 @@ def describe_validate_known_argument_names():
             [unknown_directive_arg("unless", "skip", [], 3, 25)],
         )
 
+    def directive_without_args_is_valid():
+        assert_valid(
+            """
+            {
+                dog @onField
+            }
+            """
+        )
+
+    def arg_passed_to_directive_without_args_is_reported():
+        assert_errors(
+            """
+            {
+                dog @onField(if: true)
+            }
+            """,
+            [unknown_directive_arg("if", "onField", [], 3, 30)],
+        )
+
     def misspelled_directive_args_are_reported():
         assert_errors(
             """
