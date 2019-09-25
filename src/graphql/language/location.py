@@ -18,8 +18,8 @@ class SourceLocation(NamedTuple):
 
     def __eq__(self, other):
         if isinstance(other, dict):
-            return other == self.formatted
-        return super().__eq__(other)
+            return self.formatted == other
+        return tuple(self) == other
 
     def __ne__(self, other):
         return not self == other
