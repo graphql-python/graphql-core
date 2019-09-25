@@ -17,7 +17,11 @@ def format_error(error: "GraphQLError") -> Dict[str, Any]:
         raise TypeError("Received no error object.")
     formatted: Dict[str, Any] = dict(  # noqa: E701 (pycqa/flake8#394)
         message=error.message or "An unknown error occurred.",
-        locations=error.locations,
+        locations=(
+            [location.formatted for location in error.locations]
+            if error.locations is not None
+            else None
+        ),
         path=error.path,
     )
     if error.extensions:

@@ -30,9 +30,10 @@ def describe_format_error():
             ValueError("original"),
             extensions=extensions,
         )
-        assert error == {
+        formatted = format_error(error)
+        assert formatted == {
             "message": "test message",
-            "locations": [(2, 14), (3, 20)],
+            "locations": [{"line": 2, "column": 14}, {"line": 3, "column": 20}],
             "path": path,
             "extensions": extensions,
         }
