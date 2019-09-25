@@ -70,5 +70,9 @@ def print_prefixed_lines(*lines: Tuple[str, Optional[str]]) -> str:
     ]
     pad_len = max(len(line[0]) for line in existing_lines)
     return "\n".join(
-        map(lambda line: line[0].rjust(pad_len) + " | " + line[1], existing_lines)
+        map(
+            lambda line: line[0].rjust(pad_len)
+            + (" | " + line[1] if line[1] else " |"),
+            existing_lines,
+        )
     )

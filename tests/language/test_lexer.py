@@ -61,17 +61,17 @@ def describe_lexer():
 
     def errors_respect_whitespace():
         with raises(GraphQLSyntaxError) as exc_info:
-            lex_one("\n\n    ?\n\n\n")
+            lex_one("\n\n    ?\n")
 
         assert str(exc_info.value) + "\n" == dedent(
             """
             Syntax Error: Cannot parse the unexpected character '?'.
 
             GraphQL request:3:5
-            2 |\x20
+            2 |
             3 |     ?
               |     ^
-            4 |\x20
+            4 |
             """
         )
 
@@ -85,10 +85,10 @@ def describe_lexer():
             Syntax Error: Cannot parse the unexpected character '?'.
 
             foo.js:13:6
-            12 |\x20
+            12 |
             13 |      ?
                |      ^
-            14 |\x20
+            14 |
             """
         )
 

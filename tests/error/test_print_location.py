@@ -75,6 +75,6 @@ def describe_print_location():
             Test:9:1
              9 | *
                | ^
-            10 |\x20
+            10 |
             """
         )
