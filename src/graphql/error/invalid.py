@@ -20,7 +20,7 @@ class InvalidType(ValueError):
         return other is INVALID
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self == other
 
 
 # Used to indicate invalid values (like "undefined" in GraphQL.js):
