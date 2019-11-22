@@ -176,6 +176,22 @@ def describe_execute_handles_inputs():
                     None,
                 )
 
+            def properly_coerces_input_varaibles():
+                result = execute_query(
+                    """
+                    query FieldQuery($input: TestInputObject){
+                      fieldWithObjectInput(input: $input)
+                    }
+                    """,
+                    variable_values={"input": {'a': "foo", 'b': "bar", 'c': "baz"}}
+                )
+                assert result == (
+                    {
+                        'fieldWithObjectInput': "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"
+                    },
+                    None
+                )
+
             def properly_parses_null_value_to_null():
                 result = execute_query(
                     """
