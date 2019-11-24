@@ -55,7 +55,7 @@ SomeInputObjectType = GraphQLInputObjectType(
 
 
 def with_modifiers(
-    types: List[GraphQLNamedType]
+    types: List[GraphQLNamedType],
 ) -> List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]]:
     return (
         cast(List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]], types)

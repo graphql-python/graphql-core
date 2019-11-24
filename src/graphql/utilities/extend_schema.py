@@ -177,7 +177,7 @@ def extend_schema(
         )
 
     def extend_input_object_type(
-        type_: GraphQLInputObjectType
+        type_: GraphQLInputObjectType,
     ) -> GraphQLInputObjectType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])

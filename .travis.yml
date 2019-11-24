@@ -6,6 +6,11 @@ matrix:
       python: 3.7
       dist: xenial
       sudo: true
+    - name: Unit tests with Python 3.8
+      env: TOXENV=py38
+      python: 3.8
+      dist: xenial
+      sudo: true
     - name: Unit tests with Python 3.7
       env: TOXENV=py37
       python: 3.7
@@ -19,7 +24,7 @@ cache:
     - "$HOME/.cache/pip"
     - "$TRAVIS_BUILD_DIR/.tox"
 install:
-  - pip install "poetry>=1.0.0b1"
+  - pip install "poetry>=1.0.0b7"
   - poetry install
 script:
   - tox -e $TOXENV -- --cov-report term-missing --cov=graphql

@@ -195,7 +195,7 @@ def build_client_schema(
         )
 
     def build_input_object_def(
-        input_object_introspection: Dict
+        input_object_introspection: Dict,
     ) -> GraphQLInputObjectType:
         if input_object_introspection.get("inputFields") is None:
             raise TypeError(
@@ -279,7 +279,7 @@ def build_client_schema(
         )
 
     def build_input_value_def_map(
-        input_value_introspections: Dict
+        input_value_introspections: Dict,
     ) -> Dict[str, GraphQLInputField]:
         return {
             input_value_introspection["name"]: build_input_value(

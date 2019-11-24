@@ -413,7 +413,7 @@ def describe_strip_ignored_characters():
 
     # noinspection PyShadowingNames
     def strips_kitchen_sink_query_but_maintains_the_exact_same_ast(
-        kitchen_sink_query  # noqa: F811
+        kitchen_sink_query,  # noqa: F811
     ):
         stripped_query = strip_ignored_characters(kitchen_sink_query)
         assert strip_ignored_characters(stripped_query) == stripped_query
@@ -424,7 +424,7 @@ def describe_strip_ignored_characters():
 
     # noinspection PyShadowingNames
     def strips_kitchen_sink_sdl_but_maintains_the_exact_same_ast(
-        kitchen_sink_sdl  # noqa: F811
+        kitchen_sink_sdl,  # noqa: F811
     ):
         stripped_sdl = strip_ignored_characters(kitchen_sink_sdl)
         assert strip_ignored_characters(stripped_sdl) == stripped_sdl
