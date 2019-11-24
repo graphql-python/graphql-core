@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ..error import GraphQLError
 from ..language import parse
 from ..type import GraphQLSchema
-from .introspection_query import get_introspection_query
+from .get_introspection_query import get_introspection_query
 
 __all__ = ["introspection_from_schema"]
 

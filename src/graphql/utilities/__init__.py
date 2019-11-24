@@ -5,7 +5,7 @@ the GraphQL language and type objects.
 """
 
 # Produce the GraphQL query recommended for a full schema introspection.
-from .introspection_query import get_introspection_query
+from .get_introspection_query import get_introspection_query
 
 # Get the target Operation from a Document.
 from .get_operation_ast import get_operation_ast
