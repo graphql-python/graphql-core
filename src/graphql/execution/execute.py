@@ -315,7 +315,7 @@ class ExecutionContext:
             return ExecutionResult(data, None)
         # Sort the error list in order to make it deterministic, since we might have
         # been using parallel execution.
-        errors.sort(key=lambda error: (error.locations, error.path, error.message))
+        errors.sort(key=lambda error: (error.locations or [], error.path or [], error.message))
         return ExecutionResult(data, errors)
 
     def execute_operation(
