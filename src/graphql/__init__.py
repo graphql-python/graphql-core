@@ -267,6 +267,9 @@ from .execution import (
     # Types
     ExecutionContext,
     ExecutionResult,
+    # Middleware
+    Middleware,
+    MiddlewareManager,
 )
 
 from .subscription import subscribe, create_source_event_stream
@@ -593,6 +596,8 @@ __all__ = [
     "get_directive_values",
     "ExecutionContext",
     "ExecutionResult",
+    "Middleware",
+    "MiddlewareManager",
     "subscribe",
     "create_source_event_stream",
     "validate",

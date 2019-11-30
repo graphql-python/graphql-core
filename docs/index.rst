@@ -8,9 +8,8 @@ Contents
    :maxdepth: 2
 
    intro
-
    usage/index
-
+   diffs
    modules/graphql
 
 

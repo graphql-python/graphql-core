@@ -64,7 +64,7 @@ class GraphQLSchema:
             # you want them to be included in the final schema.
             types=[human_type, droid_type])
 
-    Note: If a list of `directives` are provided to GraphQLSchema, that will be the
+    Note: If a list of `directives` is provided to GraphQLSchema, that will be the
     exact list of directives represented and allowed. If `directives` is not provided,
     then a default set of the specified directives (e.g. @include and @skip) will be
     used. If you wish to provide *additional* directives to these specified directives,

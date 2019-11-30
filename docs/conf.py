@@ -84,6 +84,18 @@ language = None
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
+# AutoDoc configuration
+#autoclass_content = "both"
+autodoc_default_options = {
+    'members': True,
+    'inherited-members': True,
+    'private-members': False,
+    'special-members': '__init__',
+    'undoc-members': True,
+    'show-inheritance': True
+}
+autosummary_generate = True
+
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
 #
