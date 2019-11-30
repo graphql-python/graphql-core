@@ -94,8 +94,7 @@ def coerce_variable_values(
                 coerced_values[var_name] = value_from_ast(
                     var_def_node.default_value, var_type
                 )
-
-            if is_non_null_type(var_type):
+            elif is_non_null_type(var_type):
                 var_type_str = inspect(var_type)
                 on_error(
                     GraphQLError(

@@ -546,6 +546,17 @@ def describe_execute_handles_inputs():
             assert result == ({"fieldWithNullableStringInput": "'a'"}, None)
 
     def describe_handles_non_nullable_scalars():
+        def allows_non_nullable_variable_to_be_omitted_given_a_default():
+            result = execute_query(
+                """
+                query ($value: String! = "default") {
+                  fieldWithNullableStringInput(input: $value)
+                }
+                """
+            )
+
+            assert result == ({"fieldWithNullableStringInput": "'default'"}, None)
+
         def allows_non_nullable_inputs_to_be_omitted_given_a_default():
             result = execute_query(
                 """
