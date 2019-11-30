@@ -32,26 +32,26 @@ packages = [
 python = "^3.6"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5"
-pytest-asyncio = ">=0.10"
+pytest = "^5.3"
+pytest-asyncio = ">=0.10,<1"
 pytest-benchmark = "^3.2"
 pytest-cov = "^2.8"
-pytest-describe = ">=0.12"
+pytest-describe = ">=0.12,<1"
 pyyaml = "^5.1"
-black = ">=19.10b0"
+black = "19.10b0"
 flake8 = "^3.7"
 mypy = ">=0.750,<0.760"
 codecov = "^2"
 sphinx = "^2.2"
-sphinx_rtd_theme = ">=0.4"
-check-manifest = ">=0.40"
-bump2version = ">=0.5"
+sphinx_rtd_theme = ">=0.4,<1"
+check-manifest = ">=0.40,<1"
+bump2version = ">=0.5,<1"
 tox = "^3.14"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
 
 [build-system]
-requires = ["poetry>=1.0.0b7"]
+requires = ["poetry>=1.0.0b8"]
 build-backend = "poetry.masonry.api"
 

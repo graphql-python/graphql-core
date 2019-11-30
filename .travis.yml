@@ -24,7 +24,7 @@ cache:
     - "$HOME/.cache/pip"
     - "$TRAVIS_BUILD_DIR/.tox"
 install:
-  - pip install "poetry>=1.0.0b7"
+  - pip install "poetry>=1.0.0b8"
   - poetry install
 script:
   - tox -e $TOXENV -- --cov-report term-missing --cov=graphql
