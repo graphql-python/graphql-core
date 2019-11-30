@@ -13,7 +13,7 @@ a query language for APIs created by Facebook.
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 The current version 3.0.0b1 of GraphQL-core is up-to-date
-with GraphQL.js version 14.5.6.
+with GraphQL.js version 14.5.8.
 
 All parts of the API are covered by an extensive test suite
 of currently 1990 unit tests.
