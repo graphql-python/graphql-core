@@ -63,7 +63,7 @@ You can also pass a custom ``out_type`` argument to :class:`GraphQLInputObjectTy
 Custom Middleware
 -----------------
 
-The :func:`execution.execute` function takes an additional ``middleware`` argument which must be a sequence of middleware functions or a :class:`MiddleWareManager` object. This feature is used by Graphene to affect the evaluation of fields using custom middleware.
+The :func:`execution.execute` function takes an additional ``middleware`` argument which must be a sequence of middleware functions or a :class:`MiddlewareManager` object. This feature is used by Graphene to affect the evaluation of fields using custom middleware.
 
 
 Custom execution contexts

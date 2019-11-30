@@ -31,11 +31,11 @@ Getting started
 
 You can install GraphQL-core 3 using pip_::
 
-    pip install "graphql-core>=3a"
+    pip install "graphql-core>=3"
 
 You can also install GraphQL-core 3 with pipenv_, if you prefer that::
 
-    pipenv install --pre "graphql-core>=3a"
+    pipenv install "graphql-core>=3"
 
 Now you can start using GraphQL-core 3 by importing from the top-level
 :mod:`graphql` package. Nearly everything defined in the sub-packages
@@ -83,8 +83,8 @@ Please visit the `GitHub repository of GraphQL-core 3`_ if you're interested
 in the current development or want to report issues or send pull requests.
 
 .. _GraphQL: https://graphql.org/
-.. _GraphQl.js: https://github.com/graphql/graphql-js
-.. _GraphQl-core-3: https://github.com/graphql-python/graphql-core-next
+.. _GraphQL.js: https://github.com/graphql/graphql-js
+.. _GraphQL-core-3: https://github.com/graphql-python/graphql-core-next
 .. _GitHub repository of GraphQL-core 3: https://github.com/graphql-python/graphql-core-next
 .. _Specification for GraphQL: https://facebook.github.io/graphql/
 .. _Language: https://facebook.github.io/graphql/draft/#sec-Language
