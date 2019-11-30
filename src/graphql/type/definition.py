@@ -361,11 +361,11 @@ class GraphQLScalarType(GraphQLNamedType):
                 " as a sequence of ScalarTypeExtensionNode instances."
             )
         if serialize is not None:
-            self.serialize = serialize
+            self.serialize = serialize  # type: ignore
         if parse_value is not None:
-            self.parse_value = parse_value
+            self.parse_value = parse_value  # type: ignore
         if parse_literal is not None:
-            self.parse_literal = parse_literal
+            self.parse_literal = parse_literal  # type: ignore
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.name!r}>"
@@ -391,9 +391,7 @@ class GraphQLScalarType(GraphQLNamedType):
         """
         return value
 
-    def parse_literal(  # type: ignore
-        self, node: ValueNode, _variables: Dict[str, Any] = None
-    ) -> Any:
+    def parse_literal(self, node: ValueNode, _variables: Dict[str, Any] = None) -> Any:
         """Parses an externally provided literal value to use as an input.
 
         This default method uses the parse_value method and should be replaced
@@ -1247,7 +1245,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
             )
         self._fields = fields
         if out_type is not None:
-            self.out_type = out_type
+            self.out_type = out_type  # type: ignore
 
     @staticmethod
     def out_type(value: Dict[str, Any]) -> Any:

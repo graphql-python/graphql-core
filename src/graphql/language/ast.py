@@ -239,7 +239,7 @@ class Node:
         keys: List[str] = []
         for base in cls.__bases__:
             # noinspection PyUnresolvedReferences
-            keys.extend(base.keys)
+            keys.extend(base.keys)  # type: ignore
         keys.extend(cls.__slots__)
         cls.keys = keys
 

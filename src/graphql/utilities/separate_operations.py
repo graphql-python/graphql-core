@@ -52,6 +52,7 @@ def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
     return separated_document_asts
 
 
+# noinspection PyAttributeOutsideInit
 class SeparateOperations(Visitor):
     def __init__(self):
         super().__init__()
@@ -59,7 +60,7 @@ class SeparateOperations(Visitor):
         self.fragments: Dict[str, FragmentDefinitionNode] = {}
         self.positions: Dict[ExecutableDefinitionNode, int] = {}
         self.dep_graph: DepGraph = defaultdict(set)
-        self.from_name: str = None
+        self.from_name: str
         self.idx = 0
 
     def enter_operation_definition(self, node, *_args):

@@ -22,7 +22,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
             def __init__(self, id):
                 self.id = id
                 self.isPublished = True
-                self.author = JohnSmith()  # type: ignore
+                self.author = JohnSmith()
                 self.title = f"My Article {id}"
                 self.body = "This is a post"
                 self.hidden = "This data is not exposed in the schema"
@@ -91,7 +91,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
         # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Author:
             def pic(self, info_, width, height):
-                return Pic(123, width, height)  # type: ignore
+                return Pic(123, width, height)
 
             @property
             def recentArticle(self):

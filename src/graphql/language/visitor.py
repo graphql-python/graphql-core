@@ -5,6 +5,7 @@ from typing import (
     Callable,
     List,
     NamedTuple,
+    Optional,
     Sequence,
     Tuple,
     Union,
@@ -157,8 +158,11 @@ class Visitor:
         for attr, val in cls.__dict__.items():
             if attr.startswith("_"):
                 continue
-            attr = attr.split("_", 1)
-            attr, kind = attr if len(attr) > 1 else (attr[0], None)
+            attr_kind = attr.split("_", 1)
+            if len(attr_kind) < 2:
+                kind: Optional[str] = None
+            else:
+                attr, kind = attr_kind
             if attr in ("enter", "leave"):
                 if kind:
                     name = snake_to_camel(kind) + "Node"

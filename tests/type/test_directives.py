@@ -158,8 +158,8 @@ def describe_type_system_directive():
     def rejects_a_directive_with_incorrectly_typed_description():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective(  # type: ignore
-                "Foo", locations=[], description={"bad": True}
+            GraphQLDirective(
+                "Foo", locations=[], description={"bad": True}  # type: ignore
             )
         assert str(exc_info.value) == "Foo description must be a string."
 

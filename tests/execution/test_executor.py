@@ -1,5 +1,5 @@
 import asyncio
-from typing import cast
+from typing import cast, Awaitable
 
 from pytest import raises, mark  # type: ignore
 
@@ -84,10 +84,10 @@ def describe_execute_handles_basic_execution_tasks():
                 return f"Pic of size: {size}"
 
             def deep(self, _info):
-                return DeepData()  # type: ignore
+                return DeepData()
 
             def promise(self, _info):
-                return promise_data()  # type: ignore
+                return promise_data()
 
         # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class DeepData:
@@ -134,7 +134,7 @@ def describe_execute_handles_basic_execution_tasks():
                 "a": GraphQLField(GraphQLString),
                 "b": GraphQLField(GraphQLString),
                 "c": GraphQLField(GraphQLList(GraphQLString)),
-                "deeper": GraphQLList(DataType),
+                "deeper": GraphQLField(GraphQLList(DataType)),
             },
         )
 
@@ -170,9 +170,11 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        result = await execute(
+        awaitable_result = execute(
             GraphQLSchema(DataType), document, Data(), variable_values={"size": 100}
         )
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
 
         assert result == (
             {
@@ -411,7 +413,9 @@ def describe_execute_handles_basic_execution_tasks():
                     extensions={"foo": "bar"},
                 )
 
-        result = await execute(schema, document, Data())
+        awaitable_result = execute(schema, document, Data())
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
 
         assert result == (
             {
@@ -719,7 +723,9 @@ def describe_execute_handles_basic_execution_tasks():
             def e(self, _info):
                 return "e"
 
-        result = await execute(schema, document, Data())
+        awaitable_result = execute(schema, document, Data())
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
 
         assert result == ({"a": "a", "b": "b", "c": "c", "d": "d", "e": "e"}, None)
 
@@ -874,13 +880,14 @@ def describe_execute_handles_basic_execution_tasks():
             types=[foo_object],
         )
 
+        possible_types = None
+
         def type_resolver(_source, info, abstract_type):
             # Resolver should be able to figure out all possible types on its own
             nonlocal possible_types
             possible_types = info.schema.get_possible_types(abstract_type)
             return "FooObject"
 
-        possible_types = None
         root_value = {"foo": {"bar": "bar"}}
         result = execute(schema, document, root_value, type_resolver=type_resolver)
 

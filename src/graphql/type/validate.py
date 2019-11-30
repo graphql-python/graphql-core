@@ -155,7 +155,7 @@ class SchemaValidationContext:
             arg_names: Set[str] = set()
             for arg_name, arg in directive.args.items():
                 # Ensure they are named correctly.
-                self.validate_name(arg_name, arg)
+                self.validate_name(arg, arg_name)
 
                 # Ensure they are unique per directive.
                 if arg_name in arg_names:

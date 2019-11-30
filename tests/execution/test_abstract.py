@@ -335,10 +335,10 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         }
 
     def returning_invalid_value_from_resolve_type_yields_useful_error():
-        foo_interface = GraphQLInterfaceType(  # type: ignore
+        foo_interface = GraphQLInterfaceType(
             "FooInterface",
             {"bar": GraphQLField(GraphQLString)},
-            resolve_type=lambda *_args: [],
+            resolve_type=lambda *_args: [],  # type: ignore
         )
 
         foo_object = GraphQLObjectType(

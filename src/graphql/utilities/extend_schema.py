@@ -169,8 +169,8 @@ def extend_schema(
 
     def extend_directive(directive: GraphQLDirective) -> GraphQLDirective:
         kwargs = directive.to_kwargs()
-        return GraphQLDirective(  # type: ignore
-            **{
+        return GraphQLDirective(
+            **{  # type: ignore
                 **kwargs,
                 "args": {name: extend_arg(arg) for name, arg in kwargs["args"].items()},
             }
@@ -188,8 +188,11 @@ def extend_schema(
                 **kwargs,
                 "fields": lambda: {
                     **{
-                        name: GraphQLInputField(  # type: ignore
-                            **{**field.to_kwargs(), "type_": replace_type(field.type)}
+                        name: GraphQLInputField(
+                            **{  # type: ignore
+                                **field.to_kwargs(),
+                                "type_": replace_type(field.type),
+                            }
                         )
                         for name, field in kwargs["fields"].items()
                     },
@@ -306,8 +309,8 @@ def extend_schema(
         )
 
     def extend_field(field: GraphQLField) -> GraphQLField:
-        return GraphQLField(  # type: ignore
-            **{
+        return GraphQLField(
+            **{  # type: ignore
                 **field.to_kwargs(),
                 "type_": replace_type(field.type),
                 "args": {name: extend_arg(arg) for name, arg in field.args.items()},
@@ -315,8 +318,11 @@ def extend_schema(
         )
 
     def extend_arg(arg: GraphQLArgument) -> GraphQLArgument:
-        return GraphQLArgument(  # type: ignore
-            **{**arg.to_kwargs(), "type_": replace_type(arg.type)}
+        return GraphQLArgument(
+            **{  # type: ignore
+                **arg.to_kwargs(),
+                "type_": replace_type(arg.type),
+            }
         )
 
     # noinspection PyShadowingNames
@@ -358,13 +364,17 @@ def extend_schema(
                 operation_types[operation] = operation_type.type.name.value
 
     # Then produce and return a Schema with these types.
-    return GraphQLSchema(  # type: ignore
+    return GraphQLSchema(
         # Note: While this could make early assertions to get the correctly
         # typed values, that would throw immediately while type system
         # validation with validateSchema() will produce more actionable results.
-        query=get_maybe_type_by_name(operation_types[OperationType.QUERY]),
-        mutation=get_maybe_type_by_name(operation_types[OperationType.MUTATION]),
-        subscription=get_maybe_type_by_name(
+        query=get_maybe_type_by_name(  # type: ignore
+            operation_types[OperationType.QUERY]
+        ),
+        mutation=get_maybe_type_by_name(  # type: ignore
+            operation_types[OperationType.MUTATION]
+        ),
+        subscription=get_maybe_type_by_name(  # type: ignore
             operation_types[OperationType.SUBSCRIPTION]
         ),
         types=list(type_map.values()),

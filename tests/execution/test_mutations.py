@@ -1,4 +1,5 @@
 import asyncio
+from typing import Awaitable
 
 from pytest import mark  # type: ignore
 
@@ -112,7 +113,9 @@ def describe_execute_handles_mutation_execution_ordering():
             }
             """
 
-        mutation_result = await execute(schema, parse(doc), Root(6))
+        awaitable_result = execute(schema, parse(doc), Root(6))
+        assert isinstance(awaitable_result, Awaitable)
+        mutation_result = await awaitable_result
 
         assert mutation_result == (
             {
@@ -150,7 +153,9 @@ def describe_execute_handles_mutation_execution_ordering():
             }
             """
 
-        result = await execute(schema, parse(doc), Root(6))
+        awaitable_result = execute(schema, parse(doc), Root(6))
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
 
         assert result == (
             {

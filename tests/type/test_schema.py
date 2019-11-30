@@ -312,8 +312,9 @@ def describe_type_system_schema():
         def rejects_a_schema_with_an_incorrect_ast_node():
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                GraphQLSchema(  # type: ignore
-                    GraphQLObjectType("Query", {}), ast_node=TypeDefinitionNode()
+                GraphQLSchema(
+                    GraphQLObjectType("Query", {}),
+                    ast_node=TypeDefinitionNode(),  # type: ignore
                 )
             msg = str(exc_info.value)
             assert msg == "Schema AST node must be a SchemaDefinitionNode."

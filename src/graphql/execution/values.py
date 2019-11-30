@@ -23,7 +23,9 @@ from ..type import (
     is_input_type,
     is_non_null_type,
 )
-from ..utilities import coerce_input_value, type_from_ast, value_from_ast
+from ..utilities.coerce_input_value import coerce_input_value
+from ..utilities.type_from_ast import type_from_ast
+from ..utilities.value_from_ast import value_from_ast
 
 __all__ = ["get_variable_values", "get_argument_values", "get_directive_values"]
 

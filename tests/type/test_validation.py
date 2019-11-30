@@ -634,7 +634,7 @@ def describe_type_system_union_types_must_be_valid():
             # invalid schema cannot be built with Python
             with raises(TypeError) as exc_info:
                 schema_with_field_type(
-                    GraphQLUnionType("BadUnion", types=[member_type])
+                    GraphQLUnionType("BadUnion", types=[member_type])  # type: ignore
                 )
             assert str(exc_info.value) == (
                 "BadUnion types must be specified"

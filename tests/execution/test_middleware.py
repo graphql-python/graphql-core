@@ -1,3 +1,5 @@
+from typing import Awaitable
+
 from pytest import mark, raises  # type: ignore
 
 from graphql.execution import MiddlewareManager, execute
@@ -112,10 +114,11 @@ def describe_middleware():
                 return (await next_(*args, **kwargs))[::-1]
 
             middlewares = MiddlewareManager(reverse_middleware)
-            result = await execute(
+            awaitable_result = execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
-
+            assert isinstance(awaitable_result, Awaitable)
+            result = await awaitable_result
             assert result.data == {"first": "eno", "second": "owt"}
 
         def single_object():
@@ -206,15 +209,19 @@ def describe_middleware():
                     return (await next_(*args, **kwargs)).capitalize()
 
             middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
-            result = await execute(
+            awaitable_result = execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
+            assert isinstance(awaitable_result, Awaitable)
+            result = await awaitable_result
             assert result.data == {"field": "Devloser"}
 
             middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
-            result = await execute(
+            awaitable_result = execute(
                 GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
+            assert isinstance(awaitable_result, Awaitable)
+            result = await awaitable_result
             assert result.data == {"field": "devloseR"}
 
     def describe_without_manager():
@@ -259,8 +266,11 @@ def describe_middleware():
 
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                execute(  # type: ignore
-                    GraphQLSchema(test_type), doc, None, middleware={"bad": "value"}
+                execute(
+                    GraphQLSchema(test_type),
+                    doc,
+                    None,
+                    middleware={"bad": "value"},  # type: ignore
                 )
 
             assert str(exc_info.value) == (

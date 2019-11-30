@@ -1,4 +1,5 @@
 import asyncio
+from typing import Awaitable
 
 from pytest import mark  # type: ignore
 
@@ -51,7 +52,9 @@ def describe_parallel_execution():
         ast = parse("{foo, bar}")
 
         # raises TimeoutError if not parallel
-        result = await asyncio.wait_for(execute(schema, ast), 1.0)
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await asyncio.wait_for(awaitable_result, 1.0)
 
         assert result == ({"foo": True, "bar": True}, None)
 
@@ -79,7 +82,9 @@ def describe_parallel_execution():
         ast = parse("{foo}")
 
         # raises TimeoutError if not parallel
-        result = await asyncio.wait_for(execute(schema, ast), 1.0)
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await asyncio.wait_for(awaitable_result, 1.0)
 
         assert result == ({"foo": [True, True]}, None)
 
@@ -140,7 +145,9 @@ def describe_parallel_execution():
         )
 
         # raises TimeoutError if not parallel
-        result = await asyncio.wait_for(execute(schema, ast), 1.0)
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await asyncio.wait_for(awaitable_result, 1.0)
 
         assert result == (
             {"foo": [{"foo": "bar", "foobar": 1}, {"foo": "baz", "foobaz": 2}]},

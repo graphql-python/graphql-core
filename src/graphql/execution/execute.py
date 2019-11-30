@@ -34,7 +34,8 @@ from ..pyutils import (
     FrozenList,
     Path,
 )
-from ..utilities import get_operation_root_type, type_from_ast
+from ..utilities.get_operation_root_type import get_operation_root_type
+from ..utilities.type_from_ast import type_from_ast
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,

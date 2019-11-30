@@ -89,12 +89,11 @@ def find_breaking_changes(
     Given two schemas, returns a list containing descriptions of all the types of
     breaking changes covered by the other functions down below.
     """
-    breaking_changes = [
+    return [
         change
         for change in find_schema_changes(old_schema, new_schema)
         if isinstance(change.type, BreakingChangeType)
     ]
-    return cast(List[BreakingChange], breaking_changes)
 
 
 def find_dangerous_changes(
@@ -105,12 +104,11 @@ def find_dangerous_changes(
     Given two schemas, returns a list containing descriptions of all the types of
     potentially dangerous changes covered by the other functions down below.
     """
-    dangerous_changes = [
+    return [
         change
         for change in find_schema_changes(old_schema, new_schema)
         if isinstance(change.type, DangerousChangeType)
     ]
-    return cast(List[DangerousChange], dangerous_changes)
 
 
 def find_schema_changes(

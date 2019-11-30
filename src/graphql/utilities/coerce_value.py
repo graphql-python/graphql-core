@@ -4,7 +4,7 @@ from ..error import GraphQLError, INVALID
 from ..language import Node
 from ..pyutils import Path, inspect, print_path_list
 from ..type import GraphQLInputType
-from . import coerce_input_value
+from .coerce_input_value import coerce_input_value
 
 __all__ = ["coerce_value", "CoercedValue"]
 

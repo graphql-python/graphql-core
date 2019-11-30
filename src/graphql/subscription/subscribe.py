@@ -62,7 +62,7 @@ async def subscribe(
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
 
-    async def map_source_to_response(payload):
+    async def map_source_to_response(payload) -> ExecutionResult:
         """Map source to response.
 
         For each payload yielded from a subscription, map it over the normal GraphQL
@@ -81,7 +81,7 @@ async def subscribe(
             operation_name,
             field_resolver,
         )
-        return await result if isawaitable(result) else result
+        return await result if isawaitable(result) else result  # type: ignore
 
     return MapAsyncIterator(result_or_stream, map_source_to_response)
 
