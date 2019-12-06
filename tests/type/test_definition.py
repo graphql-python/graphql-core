@@ -1,3 +1,4 @@
+from math import isnan, nan
 from typing import cast
 
 from pytest import mark, raises  # type: ignore
@@ -814,13 +815,15 @@ def describe_type_system_enums():
 
     def defines_an_enum_type_with_a_value_of_none_and_invalid():
         EnumTypeWithNullishValue = GraphQLEnumType(
-            name="EnumWithNullishValue", values={"NULL": None, "UNDEFINED": INVALID}
+            name="EnumWithNullishValue",
+            values={"NULL": None, "NAN": nan, "NO_CUSTOM_VALUE": INVALID},
         )
 
-        assert EnumTypeWithNullishValue.values == {
-            "NULL": GraphQLEnumValue(),
-            "UNDEFINED": GraphQLEnumValue(INVALID),
-        }
+        assert list(EnumTypeWithNullishValue.values) == [
+            "NULL",
+            "NAN",
+            "NO_CUSTOM_VALUE",
+        ]
         null_value = EnumTypeWithNullishValue.values["NULL"]
         assert null_value.description is None
         assert null_value.value is None
@@ -828,13 +831,20 @@ def describe_type_system_enums():
         assert null_value.deprecation_reason is None
         assert null_value.extensions is None
         assert null_value.ast_node is None
-        undefined_value = EnumTypeWithNullishValue.values["UNDEFINED"]
-        assert undefined_value.description is None
-        assert undefined_value.value is INVALID
-        assert undefined_value.is_deprecated is False
-        assert undefined_value.deprecation_reason is None
-        assert undefined_value.extensions is None
-        assert undefined_value.ast_node is None
+        null_value = EnumTypeWithNullishValue.values["NAN"]
+        assert null_value.description is None
+        assert isnan(null_value.value)
+        assert null_value.is_deprecated is False
+        assert null_value.deprecation_reason is None
+        assert null_value.extensions is None
+        assert null_value.ast_node is None
+        no_custom_value = EnumTypeWithNullishValue.values["NO_CUSTOM_VALUE"]
+        assert no_custom_value.description is None
+        assert no_custom_value.value is INVALID
+        assert no_custom_value.is_deprecated is False
+        assert no_custom_value.deprecation_reason is None
+        assert no_custom_value.extensions is None
+        assert no_custom_value.ast_node is None
 
     def accepts_a_well_defined_enum_type_with_empty_value_definition():
         enum_type = GraphQLEnumType("SomeEnum", {"FOO": None, "BAR": None})

@@ -130,10 +130,12 @@ def value_from_ast(
         if not isinstance(value_node, EnumValueNode):
             return INVALID
         type_ = cast(GraphQLEnumType, type_)
-        enum_value = type_.values.get(value_node.value)
+        value_name = value_node.value
+        enum_value = type_.values.get(value_name)
         if not enum_value:
             return INVALID
-        return enum_value.value
+        value = enum_value.value
+        return value_name if value is INVALID else value
 
     if is_scalar_type(type_):
         # Scalars fulfill parsing a literal value via `parse_literal()`. Invalid values

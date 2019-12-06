@@ -1,4 +1,4 @@
-from math import nan, isnan
+from math import isnan, nan
 
 from graphql.error import INVALID
 from graphql.language import parse_value
@@ -20,11 +20,11 @@ from graphql.utilities import value_from_ast
 def describe_value_from_ast():
     def _test_case(type_, value_text, expected):
         value_node = parse_value(value_text)
-        assert value_from_ast(value_node, type_) == expected
-
-    def _test_case_expect_nan(type_, value_text):
-        value_node = parse_value(value_text)
-        assert isnan(value_from_ast(value_node, type_))
+        value = value_from_ast(value_node, type_)
+        if isinstance(expected, float) and isnan(expected):
+            assert isnan(value)
+        else:
+            assert value == expected
 
     def _test_case_with_vars(variables, type_, value_text, expected):
         value_node = parse_value(value_text)
@@ -56,7 +56,14 @@ def describe_value_from_ast():
 
     test_enum = GraphQLEnumType(
         "TestColor",
-        {"RED": 1, "GREEN": 2, "BLUE": 3, "NULL": None, "INVALID": INVALID, "NAN": nan},
+        {
+            "RED": 1,
+            "GREEN": 2,
+            "BLUE": 3,
+            "NULL": None,
+            "NAN": nan,
+            "NO_CUSTOM_VALUE": INVALID,
+        },
     )
 
     def converts_enum_values_according_to_input_coercion_rules():
@@ -67,9 +74,8 @@ def describe_value_from_ast():
         _test_case(test_enum, '"BLUE"', INVALID)
         _test_case(test_enum, "null", None)
         _test_case(test_enum, "NULL", None)
-        _test_case(test_enum, "INVALID", INVALID)
-        # nan is not equal to itself, needs a special test case
-        _test_case_expect_nan(test_enum, "NAN")
+        _test_case(test_enum, "NAN", nan)
+        _test_case(test_enum, "NO_CUSTOM_VALUE", "NO_CUSTOM_VALUE")
 
     # Boolean!
     non_null_bool = GraphQLNonNull(GraphQLBoolean)

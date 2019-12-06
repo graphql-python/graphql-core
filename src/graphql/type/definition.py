@@ -1065,7 +1065,7 @@ class GraphQLEnumType(GraphQLNamedType):
         lookup: Dict[Any, str] = {}
         for name, enum_value in self.values.items():
             value = enum_value.value
-            if value is None:
+            if value is None or value is INVALID:
                 value = name
             try:
                 if value not in lookup:
@@ -1089,7 +1089,7 @@ class GraphQLEnumType(GraphQLNamedType):
                 enum_value = self.values[value]
             except KeyError:
                 return INVALID
-            if enum_value.value is None:
+            if enum_value.value is None or enum_value.value is INVALID:
                 return value
             return enum_value.value
         return INVALID
@@ -1104,7 +1104,7 @@ class GraphQLEnumType(GraphQLNamedType):
                 enum_value = self.values[value]
             except KeyError:
                 return INVALID
-            if enum_value.value is None:
+            if enum_value.value is None or enum_value.value is INVALID:
                 return value
             return enum_value.value
         return INVALID
