@@ -235,7 +235,6 @@ class ExecutionContext:
         Throws a GraphQLError if a valid execution context cannot be created.
         """
         operation: Optional[OperationDefinitionNode] = None
-        has_multiple_assumed_operations = False
         fragments: Dict[str, FragmentDefinitionNode] = {}
         middleware_manager: Optional[MiddlewareManager] = None
         if middleware is not None:
@@ -252,26 +251,24 @@ class ExecutionContext:
 
         for definition in document.definitions:
             if isinstance(definition, OperationDefinitionNode):
-                if not operation_name and operation:
-                    has_multiple_assumed_operations = True
-                elif not operation_name or (
-                    definition.name and definition.name.value == operation_name
-                ):
+                if operation_name is None:
+                    if operation:
+                        return [
+                            GraphQLError(
+                                "Must provide operation name"
+                                " if query contains multiple operations."
+                            )
+                        ]
+                    operation = definition
+                elif definition.name and definition.name.value == operation_name:
                     operation = definition
             elif isinstance(definition, FragmentDefinitionNode):
                 fragments[definition.name.value] = definition
 
         if not operation:
-            if operation_name:
+            if operation_name is not None:
                 return [GraphQLError(f"Unknown operation named '{operation_name}'.")]
             return [GraphQLError("Must provide an operation.")]
-
-        if has_multiple_assumed_operations:
-            return [
-                GraphQLError(
-                    "Must provide operation name if query contains multiple operations."
-                )
-            ]
 
         coerced_variable_values = get_variable_values(
             schema,

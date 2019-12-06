@@ -12,11 +12,11 @@ a query language for APIs created by Facebook.
 [![Python 3 Status](https://pyup.io/repos/github/graphql-python/graphql-core-next/python-3-shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core-next/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 3.0.1 of GraphQL-core is up-to-date
+The current stable version 3.0.1 of GraphQL-core is up-to-date
 with GraphQL.js version 14.5.8.
 
 All parts of the API are covered by an extensive test suite
-of currently 1990 unit tests.
+of currently 1991 unit tests.
 
 
 ## Documentation

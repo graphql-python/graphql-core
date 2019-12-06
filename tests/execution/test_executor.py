@@ -627,6 +627,16 @@ def describe_execute_handles_basic_execution_tasks():
             [{"message": "Unknown operation named 'UnknownExample'."}],
         )
 
+    def errors_if_empty_string_is_provided_as_operation_name():
+        schema = GraphQLSchema(
+            GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
+        )
+
+        document = parse("{ a }")
+
+        result = execute(schema, document, operation_name="")
+        assert result == (None, [{"message": "Unknown operation named ''."}],)
+
     def uses_the_query_schema_for_queries():
         schema = GraphQLSchema(
             GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
