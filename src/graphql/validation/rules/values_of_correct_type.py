@@ -73,25 +73,18 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     their position.
     """
 
-    def enter_null_value(self, node: NullValueNode, *_args):
-        type_ = self.context.get_input_type()
-        if is_non_null_type(type_):
-            self.report_error(
-                GraphQLError(bad_value_message(type_, print_ast(node)), node)
-            )
-
     def enter_list_value(self, node: ListValueNode, *_args):
         # Note: TypeInfo will traverse into a list's item type, so look to the parent
         # input type to check if it is a list.
         type_ = get_nullable_type(self.context.get_parent_input_type())
         if not is_list_type(type_):
-            self.is_valid_scalar(node)
+            self.is_valid_value_node(node)
             return self.SKIP  # Don't traverse further.
 
     def enter_object_value(self, node: ObjectValueNode, *_args):
         type_ = get_named_type(self.context.get_input_type())
         if not is_input_object_type(type_):
-            self.is_valid_scalar(node)
+            self.is_valid_value_node(node)
             return self.SKIP  # Don't traverse further.
         # Ensure every required field exists.
         field_node_map = {field.name.value: field for field in node.fields}
@@ -120,36 +113,30 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                 )
             )
 
-    def enter_enum_value(self, node: EnumValueNode, *_args):
-        type_ = get_named_type(self.context.get_input_type())
-        if not is_enum_type(type_):
-            self.is_valid_scalar(node)
-        elif node.value not in type_.values:
+    def enter_null_value(self, node: NullValueNode, *_args):
+        type_ = self.context.get_input_type()
+        if is_non_null_type(type_):
             self.report_error(
-                GraphQLError(
-                    bad_enum_value_message(
-                        type_.name,
-                        print_ast(node),
-                        enum_type_suggestion(cast(GraphQLEnumType, type_), node),
-                    ),
-                    node,
-                )
+                GraphQLError(bad_value_message(type_, print_ast(node)), node)
             )
 
+    def enter_enum_value(self, node: EnumValueNode, *_args):
+        self.is_valid_value_node(node)
+
     def enter_int_value(self, node: IntValueNode, *_args):
-        self.is_valid_scalar(node)
+        self.is_valid_value_node(node)
 
     def enter_float_value(self, node: FloatValueNode, *_args):
-        self.is_valid_scalar(node)
+        self.is_valid_value_node(node)
 
     def enter_string_value(self, node: StringValueNode, *_args):
-        self.is_valid_scalar(node)
+        self.is_valid_value_node(node)
 
     def enter_boolean_value(self, node: BooleanValueNode, *_args):
-        self.is_valid_scalar(node)
+        self.is_valid_value_node(node)
 
-    def is_valid_scalar(self, node: ValueNode) -> None:
-        """Check whether this is a valid scalar.
+    def is_valid_value_node(self, node: ValueNode) -> None:
+        """Check whether this is a valid value node.
 
         Any value literal may be a valid representation of a Scalar, depending on that
         scalar type.
@@ -161,20 +148,24 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
         type_ = get_named_type(location_type)
 
-        if not is_scalar_type(type_):
-            message = (
-                bad_enum_value_message(
-                    location_type,
-                    print_ast(node),
-                    enum_type_suggestion(
-                        cast(GraphQLEnumType, type_), cast(EnumValueNode, node)
-                    ),
+        if is_enum_type(type_):
+            if not isinstance(node, EnumValueNode) or node.value not in type_.values:
+                self.report_error(
+                    GraphQLError(
+                        bad_enum_value_message(
+                            type_.name,
+                            print_ast(node),
+                            enum_type_suggestion(cast(GraphQLEnumType, type_), node),
+                        ),
+                        node,
+                    )
                 )
-                if is_enum_type(type_)
-                else bad_value_message(location_type, print_ast(node))
-            )
+            return
 
-            self.report_error(GraphQLError(message, node))
+        if not is_scalar_type(type_):
+            self.report_error(
+                GraphQLError(bad_value_message(location_type, print_ast(node)), node)
+            )
             return
 
         # Scalars determine if a literal value is valid via `parse_literal()` which may
@@ -199,5 +190,5 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
 
 
-def enum_type_suggestion(type_: GraphQLEnumType, node: EnumValueNode) -> List[str]:
+def enum_type_suggestion(type_: GraphQLEnumType, node: ValueNode) -> List[str]:
     return suggestion_list(print_ast(node), list(type_.values))
