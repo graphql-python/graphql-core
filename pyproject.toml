@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graphql-core"
-version = "3.0.0"
+version = "3.1.0a0"
 description = """
 GraphQL-core is a Python port of GraphQL.js,
  the JavaScript reference implementation for GraphQL."""
@@ -37,7 +37,7 @@ pytest-asyncio = ">=0.10,<1"
 pytest-benchmark = "^3.2"
 pytest-cov = "^2.8"
 pytest-describe = ">=0.12,<1"
-pyyaml = "^5.1"
+pyyaml = "^5.2"
 black = "19.10b0"
 flake8 = "^3.7"
 mypy = ">=0.750,<0.760"

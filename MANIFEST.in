@@ -18,7 +18,7 @@ include pyproject.toml
 
 graft src/graphql
 graft tests
-recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
+recursive-include docs *.txt *.rst conf.py Makefile make.bat *.jpg *.png *.gif
 prune docs/_build
 
 global-exclude *.py[co] __pycache__
