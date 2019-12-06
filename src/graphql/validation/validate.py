@@ -86,12 +86,13 @@ def validate_sdl(
     rules: Sequence[RuleType] = None,
 ) -> List[GraphQLError]:
     """Validate an SDL document."""
-    context = SDLValidationContext(document_ast, schema_to_extend)
+    errors: List[GraphQLError] = []
+    context = SDLValidationContext(document_ast, schema_to_extend, errors.append)
     if rules is None:
         rules = specified_sdl_rules
     visitors = [rule(context) for rule in rules]
     visit(document_ast, ParallelVisitor(visitors))
-    return context.errors
+    return errors
 
 
 def assert_valid_sdl(document_ast: DocumentNode) -> None:

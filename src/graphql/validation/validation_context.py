@@ -62,25 +62,27 @@ class ASTValidationContext:
     """
 
     document: DocumentNode
-    on_error: Optional[Callable[[GraphQLError], None]]
-    errors: List[GraphQLError]
+
+    _fragments: Optional[Dict[str, FragmentDefinitionNode]]
+    _fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]]
+    _recursively_referenced_fragments: Dict[
+        OperationDefinitionNode, List[FragmentDefinitionNode]
+    ]
 
     def __init__(
-        self, ast: DocumentNode, on_error: Callable[[GraphQLError], None] = None
+        self, ast: DocumentNode, on_error: Callable[[GraphQLError], None]
     ) -> None:
         self.document = ast
-        self.on_error = on_error
-        self.errors = []
-        self._fragments: Optional[Dict[str, FragmentDefinitionNode]] = None
-        self._fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]] = {}
-        self._recursively_referenced_fragments: Dict[
-            OperationDefinitionNode, List[FragmentDefinitionNode]
-        ] = {}
+        self.on_error = on_error  # type: ignore
+        self._fragments = None
+        self._fragment_spreads = {}
+        self._recursively_referenced_fragments = {}
+
+    def on_error(self, error: GraphQLError):
+        pass
 
     def report_error(self, error: GraphQLError):
-        self.errors.append(error)
-        if self.on_error:
-            self.on_error(error)
+        self.on_error(error)
 
     def get_fragment(self, name: str) -> Optional[FragmentDefinitionNode]:
         fragments = self._fragments
@@ -155,8 +157,8 @@ class SDLValidationContext(ASTValidationContext):
     def __init__(
         self,
         ast: DocumentNode,
-        schema: GraphQLSchema = None,
-        on_error: Callable[[GraphQLError], None] = None,
+        schema: Optional[GraphQLSchema],
+        on_error: Callable[[GraphQLError], None],
     ) -> None:
         super().__init__(ast, on_error)
         self.schema = schema
@@ -172,20 +174,22 @@ class ValidationContext(ASTValidationContext):
 
     schema: GraphQLSchema
 
+    _type_info: TypeInfo
+    _variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]]
+    _recursive_variable_usages: Dict[OperationDefinitionNode, List[VariableUsage]]
+
     def __init__(
         self,
         schema: GraphQLSchema,
         ast: DocumentNode,
         type_info: TypeInfo,
-        on_error: Callable[[GraphQLError], None] = None,
+        on_error: Callable[[GraphQLError], None],
     ) -> None:
         super().__init__(ast, on_error)
         self.schema = schema
         self._type_info = type_info
-        self._variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]] = {}
-        self._recursive_variable_usages: Dict[
-            OperationDefinitionNode, List[VariableUsage]
-        ] = {}
+        self._variable_usages = {}
+        self._recursive_variable_usages = {}
 
     def get_variable_usages(self, node: NodeWithSelectionSet) -> List[VariableUsage]:
         usages = self._variable_usages.get(node)
