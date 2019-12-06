@@ -34,7 +34,7 @@ deploy:
   provider: pypi
   distributions: sdist bdist_wheel
   on:
-    branch: master
+    branch: js-14.x.x
     tags: true
     python: 3.7
   skip_existing: true
