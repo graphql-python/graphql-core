@@ -70,10 +70,6 @@ Coerce a Python value to a GraphQL type, or produce errors:
 
 .. autofunction:: coerce_input_value
 
-Deprecated, use :func:`coerce_input_value`:
-
-.. autofunction:: coerce_value
-
 Concatenate multiple ASTs together:
 
 .. autofunction:: concat_ast
