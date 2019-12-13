@@ -8,7 +8,7 @@ __all__ = ["UniqueFragmentNamesRule", "duplicate_fragment_name_message"]
 
 
 def duplicate_fragment_name_message(frag_name: str) -> str:
-    return f"There can only be one fragment named '{frag_name}'."
+    return f"There can be only one fragment named '{frag_name}'."
 
 
 class UniqueFragmentNamesRule(ASTValidationRule):

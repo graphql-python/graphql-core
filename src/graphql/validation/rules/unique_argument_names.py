@@ -8,7 +8,7 @@ __all__ = ["UniqueArgumentNamesRule", "duplicate_arg_message"]
 
 
 def duplicate_arg_message(arg_name: str) -> str:
-    return f"There can only be one argument named '{arg_name}'."
+    return f"There can be only one argument named '{arg_name}'."
 
 
 class UniqueArgumentNamesRule(ASTValidationRule):

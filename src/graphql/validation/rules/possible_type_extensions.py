@@ -28,7 +28,7 @@ def extending_unknown_type_message(type_name: str, suggested_types: List[str]) -
 
 
 def extending_different_type_kind_message(type_name: str, kind: str) -> str:
-    return f"Cannot extend non-{kind} type {type_name}"
+    return f"Cannot extend non-{kind} type '{type_name}'."
 
 
 class PossibleTypeExtensionsRule(SDLValidationRule):

@@ -12,15 +12,14 @@ __all__ = [
 
 def no_subselection_allowed_message(field_name: str, type_: str) -> str:
     return (
-        f"Field '{field_name}' must not have a sub selection"
+        f"Field '{field_name}' must not have a selection"
         f" since type '{type_}' has no subfields."
     )
 
 
 def required_subselection_message(field_name: str, type_: str) -> str:
     return (
-        f"Field '{field_name}' of type '{type_}' must have a"
-        " sub selection of subfields."
+        f"Field '{field_name}' of type '{type_}' must have a selection of subfields."
         f" Did you mean '{field_name} {{ ... }}'?"
     )
 

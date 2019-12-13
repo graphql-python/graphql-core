@@ -8,7 +8,7 @@ __all__ = ["UniqueOperationNamesRule", "duplicate_operation_name_message"]
 
 
 def duplicate_operation_name_message(operation_name: str) -> str:
-    return f"There can only be one operation named '{operation_name}'."
+    return f"There can be only one operation named '{operation_name}'."
 
 
 class UniqueOperationNamesRule(ASTValidationRule):

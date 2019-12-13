@@ -32,6 +32,7 @@ from . import ValidationRule
 __all__ = [
     "ValuesOfCorrectTypeRule",
     "bad_value_message",
+    "bad_enum_value_message",
     "required_field_message",
     "unknown_field_message",
 ]
@@ -63,7 +64,7 @@ def unknown_field_message(
     type_name: str, field_name: str, suggested_fields: Sequence[str]
 ) -> str:
     hint = did_you_mean(suggested_fields)
-    return f"Field '{field_name}'' is not defined by type {type_name}.{hint}"
+    return f"Field '{field_name}' is not defined by type {type_name}.{hint}"
 
 
 class ValuesOfCorrectTypeRule(ValidationRule):

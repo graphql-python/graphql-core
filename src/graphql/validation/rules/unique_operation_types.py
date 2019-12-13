@@ -18,12 +18,12 @@ __all__ = [
 
 
 def duplicate_operation_type_message(operation: str) -> str:
-    return f"There can be only one '{operation}' type in schema."
+    return f"There can be only one {operation} type in schema."
 
 
 def existed_operation_type_message(operation: str) -> str:
     return (
-        f"Type for '{operation}' already defined in the schema."
+        f"Type for {operation} already defined in the schema."
         " It cannot be redefined."
     )
 

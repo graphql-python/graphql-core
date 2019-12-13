@@ -8,7 +8,7 @@ __all__ = ["UniqueInputFieldNamesRule", "duplicate_input_field_message"]
 
 
 def duplicate_input_field_message(field_name: str) -> str:
-    return f"There can only be one input field named '{field_name}'."
+    return f"There can be only one input field named '{field_name}'."
 
 
 class UniqueInputFieldNamesRule(ASTValidationRule):

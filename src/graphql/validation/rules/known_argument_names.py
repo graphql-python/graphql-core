@@ -28,7 +28,7 @@ def unknown_directive_arg_message(
     arg_name: str, directive_name: str, suggested_args: List[str]
 ) -> str:
     hint = did_you_mean([f"'{s}'" for s in suggested_args])
-    return f"Unknown argument '{arg_name}' on directive '@{directive_name}'. {hint}"
+    return f"Unknown argument '{arg_name}' on directive '@{directive_name}'.{hint}"
 
 
 class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):

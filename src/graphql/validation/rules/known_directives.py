@@ -61,9 +61,7 @@ class KnownDirectivesRule(ASTValidationRule):
             if candidate_location and candidate_location not in locations:
                 self.report_error(
                     GraphQLError(
-                        misplaced_directive_message(
-                            node.name.value, candidate_location.value
-                        ),
+                        misplaced_directive_message(name, candidate_location.value),
                         node,
                     )
                 )
