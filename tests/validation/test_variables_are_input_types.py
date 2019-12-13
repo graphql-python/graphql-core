@@ -1,9 +1,6 @@
 from functools import partial
 
 from graphql.validation import VariablesAreInputTypesRule
-from graphql.validation.rules.variables_are_input_types import (
-    non_input_type_on_var_message,
-)
 
 from .harness import assert_validation_errors
 
@@ -32,15 +29,16 @@ def describe_validate_variables_are_input_types():
             [
                 {
                     "locations": [(2, 27)],
-                    "message": non_input_type_on_var_message("a", "Dog"),
+                    "message": "Variable '$a' cannot be non-input type 'Dog'.",
                 },
                 {
                     "locations": [(2, 36)],
-                    "message": non_input_type_on_var_message("b", "[[CatOrDog!]]!"),
+                    "message": "Variable '$b' cannot be"
+                    " non-input type '[[CatOrDog!]]!'.",
                 },
                 {
                     "locations": [(2, 56)],
-                    "message": non_input_type_on_var_message("c", "Pet"),
+                    "message": "Variable '$c' cannot be non-input type 'Pet'.",
                 },
             ],
         )

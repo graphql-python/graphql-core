@@ -1,6 +1,6 @@
 import re
 from functools import partial
-from typing import Any, List
+from typing import Any, Optional
 
 from ...error import GraphQLError
 from ...language import TypeDefinitionNode, TypeExtensionNode
@@ -15,20 +15,7 @@ from ...type import (
 )
 from . import SDLValidationContext, SDLValidationRule
 
-__all__ = [
-    "PossibleTypeExtensionsRule",
-    "extending_unknown_type_message",
-    "extending_different_type_kind_message",
-]
-
-
-def extending_unknown_type_message(type_name: str, suggested_types: List[str]) -> str:
-    hint = did_you_mean([f"'{s}'" for s in suggested_types])
-    return f"Cannot extend type '{type_name}' because it is not defined.{hint}"
-
-
-def extending_different_type_kind_message(type_name: str, kind: str) -> str:
-    return f"Cannot extend non-{kind} type {type_name}"
+__all__ = ["PossibleTypeExtensionsRule"]
 
 
 class PossibleTypeExtensionsRule(SDLValidationRule):
@@ -52,26 +39,21 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
         def_node = self.defined_types.get(type_name)
         existing_type = schema.get_type(type_name) if schema else None
 
+        expected_kind: Optional[str]
         if def_node:
             expected_kind = def_kind_to_ext_kind(def_node.kind)
-            if expected_kind != node.kind:
-                self.report_error(
-                    GraphQLError(
-                        extending_different_type_kind_message(
-                            type_name, extension_kind_to_type_name(expected_kind)
-                        ),
-                        [def_node, node],
-                    )
-                )
         elif existing_type:
             expected_kind = type_to_ext_kind(existing_type)
+        else:
+            expected_kind = None
+
+        if expected_kind:
             if expected_kind != node.kind:
+                kind_str = extension_kind_to_type_name(expected_kind)
                 self.report_error(
                     GraphQLError(
-                        extending_different_type_kind_message(
-                            type_name, extension_kind_to_type_name(expected_kind)
-                        ),
-                        node,
+                        f"Cannot extend non-{kind_str} type '{type_name}'.",
+                        [def_node, node] if def_node else node,
                     )
                 )
         else:
@@ -81,7 +63,8 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
             suggested_types = suggestion_list(type_name, all_type_names)
             self.report_error(
                 GraphQLError(
-                    extending_unknown_type_message(type_name, suggested_types),
+                    f"Cannot extend type '{type_name}' because it is not defined."
+                    + did_you_mean([f"'{s}'" for s in suggested_types]),
                     node.name,
                 )
             )

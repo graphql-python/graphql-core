@@ -14,19 +14,7 @@ from ...language import FieldNode
 from ...pyutils import did_you_mean, suggestion_list
 from . import ValidationRule
 
-__all__ = ["FieldsOnCorrectTypeRule", "undefined_field_message"]
-
-
-def undefined_field_message(
-    field_name: str,
-    type_: str,
-    suggested_type_names: List[str],
-    suggested_field_names: List[str],
-) -> str:
-    hint = did_you_mean(
-        [f"'{s}'" for s in suggested_type_names], "to use an inline fragment on"
-    ) or did_you_mean([f"'{s}'" for s in suggested_field_names])
-    return f"Cannot query field '{field_name}' on type '{type_}'.{hint}"
+__all__ = ["FieldsOnCorrectTypeRule"]
 
 
 class FieldsOnCorrectTypeRule(ValidationRule):
@@ -54,10 +42,14 @@ class FieldsOnCorrectTypeRule(ValidationRule):
         )
 
         # Report an error, including helpful suggestions.
+        quoted_type_names = [f"'{s}'" for s in suggested_type_names]
+        quoted_field_names = [f"'{s}'" for s in suggested_field_names]
         self.report_error(
             GraphQLError(
-                undefined_field_message(
-                    field_name, type_.name, suggested_type_names, suggested_field_names
+                f"Cannot query field '{field_name}' on type '{type_}'."
+                + (
+                    did_you_mean(quoted_type_names, "to use an inline fragment on")
+                    or did_you_mean(quoted_field_names)
                 ),
                 node,
             )

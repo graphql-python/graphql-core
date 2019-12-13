@@ -4,22 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, TypeDefinitionNode
 from . import SDLValidationContext, SDLValidationRule
 
-__all__ = [
-    "UniqueTypeNamesRule",
-    "duplicate_type_name_message",
-    "existed_type_name_message",
-]
-
-
-def duplicate_type_name_message(type_name: str) -> str:
-    return f"There can be only one type named '{type_name}'."
-
-
-def existed_type_name_message(type_name: str) -> str:
-    return (
-        f"Type '{type_name}' already exists in the schema."
-        " It cannot also be defined in this type definition."
-    )
+__all__ = ["UniqueTypeNamesRule"]
 
 
 class UniqueTypeNamesRule(SDLValidationRule):
@@ -38,13 +23,17 @@ class UniqueTypeNamesRule(SDLValidationRule):
 
         if self.schema and self.schema.get_type(type_name):
             self.report_error(
-                GraphQLError(existed_type_name_message(type_name), node.name)
+                GraphQLError(
+                    f"Type '{type_name}' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    node.name,
+                )
             )
         else:
             if type_name in self.known_type_names:
                 self.report_error(
                     GraphQLError(
-                        duplicate_type_name_message(type_name),
+                        f"There can be only one type named '{type_name}'.",
                         [self.known_type_names[type_name], node.name],
                     )
                 )

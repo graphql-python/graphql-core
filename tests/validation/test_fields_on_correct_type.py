@@ -1,22 +1,15 @@
 from functools import partial
 
-from graphql.validation import FieldsOnCorrectTypeRule
-from graphql.validation.rules.fields_on_correct_type import undefined_field_message
+from graphql.language import parse
+from graphql.type import GraphQLSchema
+from graphql.utilities import build_schema
+from graphql.validation import validate, FieldsOnCorrectTypeRule
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, FieldsOnCorrectTypeRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def undefined_field(field, type_, suggested_types, suggested_fields, line, column):
-    return {
-        "message": undefined_field_message(
-            field, type_, suggested_types, suggested_fields
-        ),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_fields_on_correct_type():
@@ -89,8 +82,14 @@ def describe_validate_fields_on_correct_type():
             },
             """,
             [
-                undefined_field("unknown_pet_field", "Pet", [], [], 3, 15),
-                undefined_field("unknown_cat_field", "Cat", [], [], 5, 19),
+                {
+                    "message": "Cannot query field 'unknown_pet_field' on type 'Pet'.",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Cannot query field 'unknown_cat_field' on type 'Cat'.",
+                    "locations": [(5, 19)],
+                },
             ],
         )
 
@@ -101,7 +100,13 @@ def describe_validate_fields_on_correct_type():
               meowVolume
             }
             """,
-            [undefined_field("meowVolume", "Dog", [], ["barkVolume"], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'meowVolume' on type 'Dog'."
+                    " Did you mean 'barkVolume'?",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def ignores_deeply_unknown_field():
@@ -113,7 +118,12 @@ def describe_validate_fields_on_correct_type():
               }
             }
             """,
-            [undefined_field("unknown_field", "Dog", [], [], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'unknown_field' on type 'Dog'.",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def sub_field_not_defined():
@@ -125,7 +135,12 @@ def describe_validate_fields_on_correct_type():
               }
             }
             """,
-            [undefined_field("unknown_field", "Pet", [], [], 4, 17)],
+            [
+                {
+                    "message": "Cannot query field 'unknown_field' on type 'Pet'.",
+                    "locations": [(4, 17)],
+                },
+            ],
         )
 
     def field_not_defined_on_inline_fragment():
@@ -137,7 +152,13 @@ def describe_validate_fields_on_correct_type():
               }
             }
             """,
-            [undefined_field("meowVolume", "Dog", [], ["barkVolume"], 4, 17)],
+            [
+                {
+                    "message": "Cannot query field 'meowVolume' on type 'Dog'."
+                    " Did you mean 'barkVolume'?",
+                    "locations": [(4, 17)],
+                },
+            ],
         )
 
     def aliased_field_target_not_defined():
@@ -147,7 +168,13 @@ def describe_validate_fields_on_correct_type():
               volume : mooVolume
             }
             """,
-            [undefined_field("mooVolume", "Dog", [], ["barkVolume"], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'mooVolume' on type 'Dog'."
+                    " Did you mean 'barkVolume'?",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def aliased_lying_field_target_not_defined():
@@ -157,7 +184,13 @@ def describe_validate_fields_on_correct_type():
               barkVolume : kawVolume
             }
             """,
-            [undefined_field("kawVolume", "Dog", [], ["barkVolume"], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'kawVolume' on type 'Dog'."
+                    " Did you mean 'barkVolume'?",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def not_defined_on_interface():
@@ -167,7 +200,12 @@ def describe_validate_fields_on_correct_type():
               tailLength
             }
             """,
-            [undefined_field("tailLength", "Pet", [], [], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'tailLength' on type 'Pet'.",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def defined_on_implementors_but_not_on_interface():
@@ -177,7 +215,13 @@ def describe_validate_fields_on_correct_type():
               nickname
             }
             """,
-            [undefined_field("nickname", "Pet", ["Dog", "Cat"], ["name"], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'nickname' on type 'Pet'."
+                    " Did you mean to use an inline fragment on 'Dog' or 'Cat'?",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def meta_field_selection_on_union():
@@ -196,7 +240,12 @@ def describe_validate_fields_on_correct_type():
               directField
             }
             """,
-            [undefined_field("directField", "CatOrDog", [], [], 3, 15)],
+            [
+                {
+                    "message": "Cannot query field 'directField' on type 'CatOrDog'.",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def defined_on_implementors_queried_on_union():
@@ -207,14 +256,12 @@ def describe_validate_fields_on_correct_type():
             }
             """,
             [
-                undefined_field(
-                    "name",
-                    "CatOrDog",
-                    ["Being", "Pet", "Canine", "Dog", "Cat"],
-                    [],
-                    3,
-                    15,
-                )
+                {
+                    "message": "Cannot query field 'name' on type 'CatOrDog'."
+                    " Did you mean to use an inline fragment"
+                    " on 'Being', 'Pet', 'Canine', 'Dog' or 'Cat'?",
+                    "locations": [(3, 15)],
+                },
             ],
         )
 
@@ -234,41 +281,113 @@ def describe_validate_fields_on_correct_type():
 
 
 def describe_fields_on_correct_type_error_message():
+    def _error_message(schema: GraphQLSchema, query_str: str):
+        errors = validate(schema, parse(query_str), [FieldsOnCorrectTypeRule])
+        assert len(errors) == 1
+        return errors[0].message
+
     def fields_correct_type_no_suggestion():
-        assert (
-            undefined_field_message("f", "T", [], [])
-            == "Cannot query field 'f' on type 'T'."
+        schema = build_schema(
+            """
+            type T {
+              fieldWithVeryLongNameThatWillNeverBeSuggested: String
+            }
+            type Query { t: T }
+            """
+        )
+        assert _error_message(schema, "{ t { f } }") == (
+            "Cannot query field 'f' on type 'T'."
         )
 
     def works_with_no_small_numbers_of_type_suggestion():
-        assert undefined_field_message("f", "T", ["A", "B"], []) == (
+        schema = build_schema(
+            """
+            union T = A | B
+            type Query { t: T }
+
+            type A { f: String }
+            type B { f: String }
+            """
+        )
+        assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'."
             " Did you mean to use an inline fragment on 'A' or 'B'?"
         )
 
     def works_with_no_small_numbers_of_field_suggestion():
-        assert undefined_field_message("f", "T", [], ["z", "y"]) == (
+        schema = build_schema(
+            """
+            type T {
+              z: String
+              y: String
+            }
+            type Query { t: T }
+            """
+        )
+        assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'. Did you mean 'z' or 'y'?"
         )
 
     def only_shows_one_set_of_suggestions_at_a_time_preferring_types():
-        assert undefined_field_message("f", "T", ["A", "B"], ["z", "y"]) == (
+        schema = build_schema(
+            """
+            interface T {
+              z: String
+              y: String
+            }
+            type Query { t: T }
+
+            type A implements T {
+              f: String
+              z: String
+              y: String
+            }
+            type B implements T {
+              f: String
+              z: String
+              y: String
+            }
+            """
+        )
+        assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'."
             " Did you mean to use an inline fragment on 'A' or 'B'?"
         )
 
     def limits_lots_of_type_suggestions():
-        assert undefined_field_message(
-            "f", "T", ["A", "B", "C", "D", "E", "F"], []
-        ) == (
+        schema = build_schema(
+            """
+            union T = A | B | C | D | E | F
+            type Query { t: T }
+
+            type A { f: String }
+            type B { f: String }
+            type C { f: String }
+            type D { f: String }
+            type E { f: String }
+            type F { f: String }
+            """
+        )
+        assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'. Did you mean to use"
             " an inline fragment on 'A', 'B', 'C', 'D' or 'E'?"
         )
 
     def limits_lots_of_field_suggestions():
-        assert undefined_field_message(
-            "f", "T", [], ["z", "y", "x", "w", "v", "u"]
-        ) == (
+        schema = build_schema(
+            """
+            type T {
+              z: String
+              y: String
+              x: String
+              w: String
+              v: String
+              u: String
+            }
+            type Query { t: T }
+            """
+        )
+        assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'."
             " Did you mean 'z', 'y', 'x', 'w' or 'v'?"
         )

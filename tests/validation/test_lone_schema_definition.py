@@ -1,31 +1,13 @@
 from functools import partial
 
 from graphql.utilities import build_schema
-from graphql.validation.rules.lone_schema_definition import (
-    LoneSchemaDefinitionRule,
-    schema_definition_not_alone_message,
-    cannot_define_schema_within_extension_message,
-)
+from graphql.validation.rules.lone_schema_definition import LoneSchemaDefinitionRule
 
 from .harness import assert_sdl_validation_errors
 
 assert_sdl_errors = partial(assert_sdl_validation_errors, LoneSchemaDefinitionRule)
 
 assert_sdl_valid = partial(assert_sdl_errors, errors=[])
-
-
-def schema_definition_not_alone(line, column):
-    return {
-        "message": schema_definition_not_alone_message(),
-        "locations": [(line, column)],
-    }
-
-
-def cannot_define_schema_within_extension(line, column):
-    return {
-        "message": cannot_define_schema_within_extension_message(),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_schema_definition_should_be_alone():
@@ -70,7 +52,16 @@ def describe_validate_schema_definition_should_be_alone():
               subscription: Foo
             }
             """,
-            [schema_definition_not_alone(10, 13), schema_definition_not_alone(14, 13)],
+            [
+                {
+                    "message": "Must provide only one schema definition.",
+                    "locations": [(10, 13)],
+                },
+                {
+                    "message": "Must provide only one schema definition.",
+                    "locations": [(14, 13)],
+                },
+            ],
         )
 
     def define_schema_in_schema_extension():
@@ -110,7 +101,12 @@ def describe_validate_schema_definition_should_be_alone():
               mutation: Foo
             }
             """,
-            [cannot_define_schema_within_extension(2, 13)],
+            [
+                {
+                    "message": "Cannot define a new schema within a schema extension.",
+                    "locations": [(2, 13)],
+                }
+            ],
             schema,
         )
 
@@ -133,7 +129,12 @@ def describe_validate_schema_definition_should_be_alone():
               mutation: Foo
             }
             """,
-            [cannot_define_schema_within_extension(2, 13)],
+            [
+                {
+                    "message": "Cannot define a new schema within a schema extension.",
+                    "locations": [(2, 13)],
+                },
+            ],
             schema,
         )
 

@@ -2,10 +2,6 @@ from functools import partial
 
 from graphql.utilities import build_schema
 from graphql.validation import KnownDirectivesRule
-from graphql.validation.rules.known_directives import (
-    unknown_directive_message,
-    misplaced_directive_message,
-)
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors
 
@@ -16,20 +12,6 @@ assert_valid = partial(assert_errors, errors=[])
 assert_sdl_errors = partial(assert_sdl_validation_errors, KnownDirectivesRule)
 
 assert_sdl_valid = partial(assert_sdl_errors, errors=[])
-
-
-def unknown_directive(directive_name, line, column):
-    return {
-        "message": unknown_directive_message(directive_name),
-        "locations": [(line, column)],
-    }
-
-
-def misplaced_directive(directive_name, placement, line, column):
-    return {
-        "message": misplaced_directive_message(directive_name, placement),
-        "locations": [(line, column)],
-    }
 
 
 schema_with_sdl_directives = build_schema(
@@ -87,7 +69,7 @@ def describe_known_directives():
               }
             }
             """,
-            [unknown_directive("unknown", 3, 19)],
+            [{"message": "Unknown directive 'unknown'.", "locations": [(3, 19)]}],
         )
 
     def with_many_unknown_directives():
@@ -106,9 +88,9 @@ def describe_known_directives():
             }
             """,
             [
-                unknown_directive("unknown", 3, 19),
-                unknown_directive("unknown", 6, 21),
-                unknown_directive("unknown", 8, 22),
+                {"message": "Unknown directive 'unknown'.", "locations": [(3, 19)]},
+                {"message": "Unknown directive 'unknown'.", "locations": [(6, 21)]},
+                {"message": "Unknown directive 'unknown'.", "locations": [(8, 22)]},
             ],
         )
 
@@ -150,10 +132,23 @@ def describe_known_directives():
             }
             """,
             [
-                misplaced_directive("include", "query", 2, 38),
-                misplaced_directive("onQuery", "field", 3, 20),
-                misplaced_directive("onQuery", "fragment spread", 4, 23),
-                misplaced_directive("onQuery", "mutation", 7, 26),
+                {
+                    "message": "Directive 'include' may not be used on query.",
+                    "locations": [(2, 38)],
+                },
+                {
+                    "message": "Directive 'onQuery' may not be used on field.",
+                    "locations": [(3, 20)],
+                },
+                {
+                    "message": "Directive 'onQuery'"
+                    " may not be used on fragment spread.",
+                    "locations": [(4, 23)],
+                },
+                {
+                    "message": "Directive 'onQuery' may not be used on mutation.",
+                    "locations": [(7, 26)],
+                },
             ],
         )
 
@@ -164,7 +159,13 @@ def describe_known_directives():
               name
             }
             """,
-            [misplaced_directive("onField", "variable definition", 2, 37)],
+            [
+                {
+                    "message": "Directive 'onField'"
+                    " may not be used on variable definition.",
+                    "locations": [(2, 37)],
+                },
+            ],
         )
 
     def describe_within_sdl():
@@ -244,7 +245,7 @@ def describe_known_directives():
                 """
                 extend type Query @unknown
                 """,
-                [unknown_directive("unknown", 2, 35)],
+                [{"message": "Unknown directive 'unknown'.", "locations": [(2, 35)]}],
                 schema,
             )
 
@@ -322,30 +323,68 @@ def describe_known_directives():
                 extend schema @onObject
                 """,  # noqa: E501
                 [
-                    misplaced_directive("onInterface", "object", 2, 51),
-                    misplaced_directive(
-                        "onInputFieldDefinition", "argument definition", 3, 38
-                    ),
-                    misplaced_directive(
-                        "onInputFieldDefinition", "field definition", 3, 71
-                    ),
-                    misplaced_directive("onEnum", "scalar", 6, 33),
-                    misplaced_directive("onObject", "interface", 8, 39),
-                    misplaced_directive(
-                        "onInputFieldDefinition", "argument definition", 9, 38
-                    ),
-                    misplaced_directive(
-                        "onInputFieldDefinition", "field definition", 9, 71
-                    ),
-                    misplaced_directive("onEnumValue", "union", 12, 31),
-                    misplaced_directive("onScalar", "enum", 14, 29),
-                    misplaced_directive("onUnion", "enum value", 15, 28),
-                    misplaced_directive("onEnum", "input object", 18, 31),
-                    misplaced_directive(
-                        "onArgumentDefinition", "input field definition", 19, 32
-                    ),
-                    misplaced_directive("onObject", "schema", 22, 24),
-                    misplaced_directive("onObject", "schema", 26, 31),
+                    {
+                        "message": "Directive 'onInterface' may not be used on object.",
+                        "locations": [(2, 51)],
+                    },
+                    {
+                        "message": "Directive 'onInputFieldDefinition'"
+                        " may not be used on argument definition.",
+                        "locations": [(3, 38)],
+                    },
+                    {
+                        "message": "Directive 'onInputFieldDefinition'"
+                        " may not be used on field definition.",
+                        "locations": [(3, 71)],
+                    },
+                    {
+                        "message": "Directive 'onEnum' may not be used on scalar.",
+                        "locations": [(6, 33)],
+                    },
+                    {
+                        "message": "Directive 'onObject' may not be used on interface.",
+                        "locations": [(8, 39)],
+                    },
+                    {
+                        "message": "Directive 'onInputFieldDefinition'"
+                        " may not be used on argument definition.",
+                        "locations": [(9, 38)],
+                    },
+                    {
+                        "message": "Directive 'onInputFieldDefinition'"
+                        " may not be used on field definition.",
+                        "locations": [(9, 71)],
+                    },
+                    {
+                        "message": "Directive 'onEnumValue' may not be used on union.",
+                        "locations": [(12, 31)],
+                    },
+                    {
+                        "message": "Directive 'onScalar' may not be used on enum.",
+                        "locations": [(14, 29)],
+                    },
+                    {
+                        "message": "Directive 'onUnion' may not be used on enum value.",
+                        "locations": [(15, 28)],
+                    },
+                    {
+                        "message": "Directive 'onEnum'"
+                        " may not be used on input object.",
+                        "locations": [(18, 31)],
+                    },
+                    {
+                        "message": "Directive 'onArgumentDefinition'"
+                        " may not be used on input field definition.",
+                        "locations": [(19, 32)],
+                    },
+                    {
+                        "message": "Directive 'onObject' may not be used on schema.",
+                        "locations": [(22, 24)],
+                    },
+                    {
+                        "message": "Directive 'onObject' may not be used on schema.",
+                        "locations": [(26, 31)],
+                    },
                 ],
                 schema_with_sdl_directives,
             )

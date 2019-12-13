@@ -6,22 +6,7 @@ from ...language import NameNode, EnumTypeDefinitionNode
 from ...type import is_enum_type, GraphQLEnumType
 from . import SDLValidationContext, SDLValidationRule
 
-__all__ = [
-    "UniqueEnumValueNamesRule",
-    "duplicate_enum_value_name_message",
-    "existed_enum_value_name_message",
-]
-
-
-def duplicate_enum_value_name_message(type_name: str, value_name: str) -> str:
-    return f"Enum value '{type_name}.{value_name}' can only be defined once."
-
-
-def existed_enum_value_name_message(type_name: str, value_name: str) -> str:
-    return (
-        f"Enum value '{type_name}.{value_name}' already exists in the schema."
-        " It cannot also be defined in this type extension."
-    )
+__all__ = ["UniqueEnumValueNamesRule"]
 
 
 class UniqueEnumValueNamesRule(SDLValidationRule):
@@ -52,14 +37,17 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
                 ):
                     self.report_error(
                         GraphQLError(
-                            existed_enum_value_name_message(type_name, value_name),
+                            f"Enum value '{type_name}.{value_name}'"
+                            " already exists in the schema."
+                            " It cannot also be defined in this type extension.",
                             value_def.name,
                         )
                     )
                 elif value_name in value_names:
                     self.report_error(
                         GraphQLError(
-                            duplicate_enum_value_name_message(type_name, value_name),
+                            f"Enum value '{type_name}.{value_name}'"
+                            " can only be defined once.",
                             [value_names[value_name], value_def.name],
                         )
                     )

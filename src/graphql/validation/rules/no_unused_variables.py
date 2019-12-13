@@ -4,15 +4,7 @@ from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
 from . import ValidationContext, ValidationRule
 
-__all__ = ["NoUnusedVariablesRule", "unused_variable_message"]
-
-
-def unused_variable_message(var_name: str, op_name: str = None) -> str:
-    return (
-        f"Variable '${var_name}' is never used in operation '{op_name}'."
-        if op_name
-        else f"Variable '${var_name}' is never used."
-    )
+__all__ = ["NoUnusedVariablesRule"]
 
 
 class NoUnusedVariablesRule(ValidationRule):
@@ -32,7 +24,6 @@ class NoUnusedVariablesRule(ValidationRule):
     def leave_operation_definition(self, operation: OperationDefinitionNode, *_args):
         variable_name_used: Set[str] = set()
         usages = self.context.get_recursive_variable_usages(operation)
-        op_name = operation.name.value if operation.name else None
 
         for usage in usages:
             variable_name_used.add(usage.node.name.value)
@@ -42,7 +33,11 @@ class NoUnusedVariablesRule(ValidationRule):
             if variable_name not in variable_name_used:
                 self.report_error(
                     GraphQLError(
-                        unused_variable_message(variable_name, op_name), variable_def
+                        f"Variable '${variable_name}' is never used"
+                        f" in operation '{operation.name.value}'."
+                        if operation.name
+                        else f"Variable '${variable_name}' is never used.",
+                        variable_def,
                     )
                 )
 

@@ -6,22 +6,7 @@ from ...language import NameNode, ObjectTypeDefinitionNode
 from ...type import is_object_type, is_interface_type, is_input_object_type
 from . import SDLValidationContext, SDLValidationRule
 
-__all__ = [
-    "UniqueFieldDefinitionNamesRule",
-    "duplicate_field_definition_name_message",
-    "existed_field_definition_name_message",
-]
-
-
-def duplicate_field_definition_name_message(type_name: str, field_name: str) -> str:
-    return f"Field '{type_name}.{field_name}' can only be defined once."
-
-
-def existed_field_definition_name_message(type_name: str, field_name: str) -> str:
-    return (
-        f"Field '{type_name}.{field_name}' already exists in the schema."
-        " It cannot also be defined in this type extension."
-    )
+__all__ = ["UniqueFieldDefinitionNamesRule"]
 
 
 class UniqueFieldDefinitionNamesRule(SDLValidationRule):
@@ -48,18 +33,17 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
                 if has_field(existing_type_map.get(type_name), field_name):
                     self.report_error(
                         GraphQLError(
-                            existed_field_definition_name_message(
-                                type_name, field_name
-                            ),
+                            f"Field '{type_name}.{field_name}'"
+                            " already exists in the schema."
+                            " It cannot also be defined in this type extension.",
                             field_def.name,
                         )
                     )
                 elif field_name in field_names:
                     self.report_error(
                         GraphQLError(
-                            duplicate_field_definition_name_message(
-                                type_name, field_name
-                            ),
+                            f"Field '{type_name}.{field_name}'"
+                            " can only be defined once.",
                             [field_names[field_name], field_def.name],
                         )
                     )

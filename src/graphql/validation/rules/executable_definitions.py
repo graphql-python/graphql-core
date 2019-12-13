@@ -11,11 +11,7 @@ from ...language import (
 )
 from . import ASTValidationRule
 
-__all__ = ["ExecutableDefinitionsRule", "non_executable_definitions_message"]
-
-
-def non_executable_definitions_message(def_name: str) -> str:
-    return f"The {def_name} definition is not executable."
+__all__ = ["ExecutableDefinitionsRule"]
 
 
 class ExecutableDefinitionsRule(ASTValidationRule):
@@ -28,19 +24,18 @@ class ExecutableDefinitionsRule(ASTValidationRule):
     def enter_document(self, node: DocumentNode, *_args):
         for definition in node.definitions:
             if not isinstance(definition, ExecutableDefinitionNode):
+                def_name = (
+                    "schema"
+                    if isinstance(
+                        definition, (SchemaDefinitionNode, SchemaExtensionNode)
+                    )
+                    else cast(
+                        Union[DirectiveDefinitionNode, TypeDefinitionNode], definition,
+                    ).name.value
+                )
                 self.report_error(
                     GraphQLError(
-                        non_executable_definitions_message(
-                            "schema"
-                            if isinstance(
-                                definition, (SchemaDefinitionNode, SchemaExtensionNode)
-                            )
-                            else cast(
-                                Union[DirectiveDefinitionNode, TypeDefinitionNode],
-                                definition,
-                            ).name.value
-                        ),
-                        definition,
+                        f"The {def_name} definition is not executable.", definition,
                     )
                 )
         return self.SKIP

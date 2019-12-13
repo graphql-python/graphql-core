@@ -1,9 +1,6 @@
 from functools import partial
 
 from graphql.validation import SingleFieldSubscriptionsRule
-from graphql.validation.rules.single_field_subscriptions import (
-    single_field_only_message,
-)
 
 from .harness import assert_validation_errors
 
@@ -32,7 +29,8 @@ def describe_validate_subscriptions_with_single_field():
             """,
             [
                 {
-                    "message": single_field_only_message("ImportantEmails"),
+                    "message": "Subscription 'ImportantEmails'"
+                    " must select only one top level field.",
                     "locations": [(4, 15)],
                 }
             ],
@@ -48,7 +46,8 @@ def describe_validate_subscriptions_with_single_field():
             """,
             [
                 {
-                    "message": single_field_only_message("ImportantEmails"),
+                    "message": "Subscription 'ImportantEmails'"
+                    " must select only one top level field.",
                     "locations": [(4, 15)],
                 }
             ],
@@ -65,7 +64,8 @@ def describe_validate_subscriptions_with_single_field():
             """,
             [
                 {
-                    "message": single_field_only_message("ImportantEmails"),
+                    "message": "Subscription 'ImportantEmails'"
+                    " must select only one top level field.",
                     "locations": [(4, 15), (5, 15)],
                 }
             ],
@@ -79,5 +79,11 @@ def describe_validate_subscriptions_with_single_field():
               notImportantEmails
             }
             """,
-            [{"message": single_field_only_message(None), "locations": [(4, 15)]}],
+            [
+                {
+                    "message": "Anonymous Subscription"
+                    " must select only one top level field.",
+                    "locations": [(4, 15)],
+                }
+            ],
         )

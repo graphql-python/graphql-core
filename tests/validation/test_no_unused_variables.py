@@ -1,20 +1,12 @@
 from functools import partial
 
 from graphql.validation import NoUnusedVariablesRule
-from graphql.validation.rules.no_unused_variables import unused_variable_message
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, NoUnusedVariablesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def unused_var(var_name, op_name, line, column):
-    return {
-        "message": unused_variable_message(var_name, op_name),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_no_unused_variables():
@@ -118,7 +110,7 @@ def describe_validate_no_unused_variables():
               field(a: $a, b: $b)
             }
             """,
-            [unused_var("c", None, 2, 44)],
+            [{"message": "Variable '$c' is never used.", "locations": [(2, 44)]}],
         )
 
     def multiple_variables_not_used():
@@ -128,7 +120,16 @@ def describe_validate_no_unused_variables():
               field(b: $b)
             }
             """,
-            [unused_var("a", "Foo", 2, 23), unused_var("c", "Foo", 2, 47)],
+            [
+                {
+                    "message": "Variable '$a' is never used in operation 'Foo'.",
+                    "locations": [(2, 23)],
+                },
+                {
+                    "message": "Variable '$c' is never used in operation 'Foo'.",
+                    "locations": [(2, 47)],
+                },
+            ],
         )
 
     def variable_not_used_in_fragments():
@@ -151,7 +152,12 @@ def describe_validate_no_unused_variables():
               field
             }
             """,
-            [unused_var("c", "Foo", 2, 47)],
+            [
+                {
+                    "message": "Variable '$c' is never used in operation 'Foo'.",
+                    "locations": [(2, 47)],
+                },
+            ],
         )
 
     def multiple_variables_not_used_in_fragments():
@@ -174,7 +180,16 @@ def describe_validate_no_unused_variables():
               field
             }
             """,
-            [unused_var("a", "Foo", 2, 23), unused_var("c", "Foo", 2, 47)],
+            [
+                {
+                    "message": "Variable '$a' is never used in operation 'Foo'.",
+                    "locations": [(2, 23)],
+                },
+                {
+                    "message": "Variable '$c' is never used in operation 'Foo'.",
+                    "locations": [(2, 47)],
+                },
+            ],
         )
 
     def variable_not_used_by_unreferenced_fragment():
@@ -190,7 +205,12 @@ def describe_validate_no_unused_variables():
               field(b: $b)
             }
             """,
-            [unused_var("b", "Foo", 2, 23)],
+            [
+                {
+                    "message": "Variable '$b' is never used in operation 'Foo'.",
+                    "locations": [(2, 23)],
+                },
+            ],
         )
 
     def variable_not_used_by_fragment_used_by_other_operation():
@@ -209,5 +229,14 @@ def describe_validate_no_unused_variables():
               field(b: $b)
             }
             """,
-            [unused_var("b", "Foo", 2, 23), unused_var("a", "Bar", 5, 23)],
+            [
+                {
+                    "message": "Variable '$b' is never used in operation 'Foo'.",
+                    "locations": [(2, 23)],
+                },
+                {
+                    "message": "Variable '$a' is never used in operation 'Bar'.",
+                    "locations": [(5, 23)],
+                },
+            ],
         )

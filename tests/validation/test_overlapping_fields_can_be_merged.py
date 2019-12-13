@@ -2,9 +2,6 @@ from functools import partial
 
 from graphql.utilities import build_schema
 from graphql.validation import OverlappingFieldsCanBeMergedRule
-from graphql.validation.rules.overlapping_fields_can_be_merged import (
-    fields_conflict_message,
-)
 
 from .harness import assert_validation_errors
 
@@ -101,9 +98,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "fido", "name and nickname are different fields"
-                    ),
+                    "message": "Fields 'fido' conflict"
+                    " because name and nickname are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
                     "path": None,
                 }
@@ -134,9 +132,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "name", "nickname and name are different fields"
-                    ),
+                    "message": "Fields 'name' conflict"
+                    " because nickname and name are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
                 }
             ],
@@ -152,9 +151,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "doesKnowCommand", "they have differing arguments"
-                    ),
+                    "message": "Fields 'doesKnowCommand' conflict"
+                    " because they have differing arguments."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
                 }
             ],
@@ -170,9 +170,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "doesKnowCommand", "they have differing arguments"
-                    ),
+                    "message": "Fields 'doesKnowCommand' conflict"
+                    " because they have differing arguments."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
                 }
             ],
@@ -188,9 +189,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "doesKnowCommand", "they have differing arguments"
-                    ),
+                    "message": "Fields 'doesKnowCommand' conflict"
+                    " because they have differing arguments."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
                 }
             ],
@@ -228,9 +230,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "x", "a and b are different fields"
-                    ),
+                    "message": "Fields 'x' conflict"
+                    " because a and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(7, 15), (10, 15)],
                 }
             ],
@@ -263,21 +266,24 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "x", "a and b are different fields"
-                    ),
+                    "message": "Fields 'x' conflict"
+                    " because a and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(18, 15), (21, 15)],
                 },
                 {
-                    "message": fields_conflict_message(
-                        "x", "c and a are different fields"
-                    ),
+                    "message": "Fields 'x' conflict"
+                    " because c and a are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(14, 17), (18, 15)],
                 },
                 {
-                    "message": fields_conflict_message(
-                        "x", "c and b are different fields"
-                    ),
+                    "message": "Fields 'x' conflict"
+                    " because c and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(14, 17), (21, 15)],
                 },
             ],
@@ -297,9 +303,11 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "field", [("x", "a and b are different fields")]
-                    ),
+                    "message": "Fields 'field' conflict"
+                    " because subfields 'x' conflict"
+                    " because a and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 17), (6, 15), (7, 17)],
                 }
             ],
@@ -321,13 +329,13 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "field",
-                        [
-                            ("x", "a and b are different fields"),
-                            ("y", "c and d are different fields"),
-                        ],
-                    ),
+                    "message": "Fields 'field' conflict"
+                    " because subfields 'x' conflict"
+                    " because a and b are different fields"
+                    " and subfields 'y' conflict"
+                    " because c and d are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 17), (5, 17), (7, 15), (8, 17), (9, 17)],
                     "path": None,
                 }
@@ -352,10 +360,12 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "field",
-                        [("deepField", [("x", "a and b are different fields")])],
-                    ),
+                    "message": "Fields 'field' conflict"
+                    " because subfields 'deepField' conflict"
+                    " because subfields 'x' conflict"
+                    " because a and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [
                         (3, 15),
                         (4, 17),
@@ -390,9 +400,11 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "deepField", [("x", "a and b are different fields")]
-                    ),
+                    "message": "Fields 'deepField' conflict"
+                    " because subfields 'x' conflict"
+                    " because a and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(4, 17), (5, 19), (7, 17), (8, 19)],
                 }
             ],
@@ -427,9 +439,11 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "deeperField", [("x", "a and b are different fields")]
-                    ),
+                    "message": "Fields 'deeperField' conflict"
+                    " because subfields 'x' conflict"
+                    " because a and b are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(12, 17), (13, 19), (15, 17), (16, 19)],
                 }
             ],
@@ -463,13 +477,13 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "field",
-                        [
-                            ("x", "a and b are different fields"),
-                            ("y", "c and d are different fields"),
-                        ],
-                    ),
+                    "message": "Fields 'field' conflict"
+                    " because subfields 'x' conflict"
+                    " because a and b are different fields"
+                    " and subfields 'y' conflict"
+                    " because c and d are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [
                         (3, 15),
                         (11, 15),
@@ -586,9 +600,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "scalar", "they return conflicting types Int and String!"
-                        ),
+                        "message": "Fields 'scalar' conflict because"
+                        " they return conflicting types Int and String!."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(5, 23), (8, 23)],
                     }
                 ],
@@ -635,9 +650,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "scalar", "they return conflicting types Int and String"
-                        ),
+                        "message": "Fields 'scalar' conflict because"
+                        " they return conflicting types Int and String."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(5, 23), (8, 23)],
                     }
                 ],
@@ -692,15 +708,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "other",
-                            [
-                                (
-                                    "scalar",
-                                    "scalar and unrelatedField are different fields",
-                                )
-                            ],
-                        ),
+                        "message": "Fields 'other' conflict because"
+                        " subfields 'scalar' conflict because"
+                        " scalar and unrelatedField are different fields."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(31, 19), (39, 19), (34, 19), (42, 19)],
                         "path": None,
                     }
@@ -724,9 +736,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "scalar", "they return conflicting types String! and String"
-                        ),
+                        "message": "Fields 'scalar' conflict because"
+                        " they return conflicting types String! and String."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(5, 23), (8, 23)],
                     }
                 ],
@@ -753,11 +766,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "box",
-                            "they return conflicting types"
-                            " [StringBox] and StringBox",
-                        ),
+                        "message": "Fields 'box' conflict because they return"
+                        " conflicting types [StringBox] and StringBox."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(5, 23), (10, 23)],
                     }
                 ],
@@ -783,11 +795,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "box",
-                            "they return conflicting types"
-                            " StringBox and [StringBox]",
-                        ),
+                        "message": "Fields 'box' conflict because they return"
+                        " conflicting types StringBox and [StringBox]."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(5, 23), (10, 23)],
                     }
                 ],
@@ -815,9 +826,10 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "val", "scalar and unrelatedField are different fields"
-                        ),
+                        "message": "Fields 'val' conflict because"
+                        " scalar and unrelatedField are different fields."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(6, 25), (7, 25)],
                     }
                 ],
@@ -844,15 +856,11 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "box",
-                            [
-                                (
-                                    "scalar",
-                                    "they return conflicting types String and Int",
-                                )
-                            ],
-                        ),
+                        "message": "Fields 'box' conflict"
+                        " because subfields 'scalar' conflict"
+                        " because they return conflicting types String and Int."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [(5, 23), (6, 25), (10, 23), (11, 25)],
                         "path": None,
                     }
@@ -931,10 +939,12 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """,
                 [
                     {
-                        "message": fields_conflict_message(
-                            "edges",
-                            [("node", [("id", "name and id are different fields")])],
-                        ),
+                        "message": "Fields 'edges' conflict"
+                        " because subfields 'node' conflict"
+                        " because subfields 'id' conflict"
+                        " because name and id are different fields."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
                         "locations": [
                             (5, 21),
                             (6, 23),
@@ -964,16 +974,6 @@ def describe_validate_overlapping_fields_can_be_merged():
                 }
                 """,
                 schema=schema,
-            )
-
-        def error_message_contains_hint_for_alias_conflict():
-            # The error template should end with a hint for the user to try
-            # using different aliases.
-            error = fields_conflict_message("x", "a and b are different fields")
-            assert error == (
-                "Fields 'x' conflict because a and b are different fields."
-                " Use different aliases on the fields to fetch both"
-                " if this was intentional."
             )
 
         def works_for_field_names_that_are_js_keywords():
@@ -1058,9 +1058,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": fields_conflict_message(
-                        "fido", "name and nickname are different fields"
-                    ),
+                    "message": "Fields 'fido' conflict"
+                    " because name and nickname are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
                     "locations": [(4, 15), (5, 15)],
                 }
             ],

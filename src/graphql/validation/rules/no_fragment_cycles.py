@@ -4,12 +4,7 @@ from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, FragmentSpreadNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["NoFragmentCyclesRule", "cycle_error_message"]
-
-
-def cycle_error_message(frag_name: str, spread_names: List[str]) -> str:
-    via = f" via {', '.join(spread_names)}" if spread_names else ""
-    return f"Cannot spread fragment '{frag_name}' within itself{via}."
+__all__ = ["NoFragmentCyclesRule"]
 
 
 class NoFragmentCyclesRule(ASTValidationRule):
@@ -63,10 +58,12 @@ class NoFragmentCyclesRule(ASTValidationRule):
                     self.detect_cycle_recursive(spread_fragment)
             else:
                 cycle_path = spread_path[cycle_index:]
-                fragment_names = [s.name.value for s in cycle_path[:-1]]
+                via_names = [s.name.value for s in cycle_path[:-1]]
                 self.report_error(
                     GraphQLError(
-                        cycle_error_message(spread_name, fragment_names), cycle_path
+                        f"Cannot spread fragment '{spread_name}' within itself"
+                        + (f" via {', '.join(via_names)}." if via_names else "."),
+                        cycle_path,
                     )
                 )
             spread_path.pop()

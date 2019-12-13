@@ -4,15 +4,7 @@ from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
 from . import ValidationContext, ValidationRule
 
-__all__ = ["NoUndefinedVariablesRule", "undefined_var_message"]
-
-
-def undefined_var_message(var_name: str, op_name: str = None) -> str:
-    return (
-        f"Variable '${var_name}' is not defined by operation '{op_name}'."
-        if op_name
-        else f"Variable '${var_name}' is not defined."
-    )
+__all__ = ["NoUndefinedVariablesRule"]
 
 
 class NoUndefinedVariablesRule(ValidationRule):
@@ -36,10 +28,13 @@ class NoUndefinedVariablesRule(ValidationRule):
             node = usage.node
             var_name = node.name.value
             if var_name not in defined_variables:
-                op_name = operation.name.value if operation.name else None
                 self.report_error(
                     GraphQLError(
-                        undefined_var_message(var_name, op_name), [node, operation]
+                        f"Variable '${var_name}' is not defined"
+                        f" by operation '{operation.name.value}'."
+                        if operation.name
+                        else f"Variable '${var_name}' is not defined.",
+                        [node, operation],
                     )
                 )
 

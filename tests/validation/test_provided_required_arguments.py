@@ -4,8 +4,6 @@ from graphql.utilities import build_schema
 from graphql.validation import ProvidedRequiredArgumentsRule
 from graphql.validation.rules.provided_required_arguments import (
     ProvidedRequiredArgumentsOnDirectivesRule,
-    missing_field_arg_message,
-    missing_directive_arg_message,
 )
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors
@@ -19,20 +17,6 @@ assert_sdl_errors = partial(
 )
 
 assert_sdl_valid = partial(assert_sdl_errors, errors=[])
-
-
-def missing_field_arg(field_name, arg_name, type_name, line, column):
-    return {
-        "message": missing_field_arg_message(field_name, arg_name, type_name),
-        "locations": [(line, column)],
-    }
-
-
-def missing_directive_arg(directive_name, arg_name, type_name, line, column):
-    return {
-        "message": missing_directive_arg_message(directive_name, arg_name, type_name),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_provided_required_arguments():
@@ -175,7 +159,13 @@ def describe_validate_provided_required_arguments():
                   }
                 }
                 """,
-                [missing_field_arg("multipleReqs", "req1", "Int!", 4, 21)],
+                [
+                    {
+                        "message": "Field 'multipleReqs' argument 'req1'"
+                        " of type 'Int!' is required, but it was not provided.",
+                        "locations": [(4, 21)],
+                    },
+                ],
             )
 
         def missing_multiple_non_nullable_arguments():
@@ -188,8 +178,16 @@ def describe_validate_provided_required_arguments():
                 }
                 """,
                 [
-                    missing_field_arg("multipleReqs", "req1", "Int!", 4, 21),
-                    missing_field_arg("multipleReqs", "req2", "Int!", 4, 21),
+                    {
+                        "message": "Field 'multipleReqs' argument 'req1'"
+                        " of type 'Int!' is required, but it was not provided.",
+                        "locations": [(4, 21)],
+                    },
+                    {
+                        "message": "Field 'multipleReqs' argument 'req2'"
+                        " of type 'Int!' is required, but it was not provided.",
+                        "locations": [(4, 21)],
+                    },
                 ],
             )
 
@@ -202,7 +200,13 @@ def describe_validate_provided_required_arguments():
                   }
                 }
                 """,
-                [missing_field_arg("multipleReqs", "req2", "Int!", 4, 21)],
+                [
+                    {
+                        "message": "Field 'multipleReqs' argument 'req2'"
+                        " of type 'Int!' is required, but it was not provided.",
+                        "locations": [(4, 21)],
+                    },
+                ],
             )
 
     def describe_directive_arguments():
@@ -239,8 +243,16 @@ def describe_validate_provided_required_arguments():
                 }
                 """,
                 [
-                    missing_directive_arg("include", "if", "Boolean!", 3, 23),
-                    missing_directive_arg("skip", "if", "Boolean!", 4, 26),
+                    {
+                        "message": "Directive '@include' argument 'if' of type"
+                        " 'Boolean!' is required, but it was not provided.",
+                        "locations": [(3, 23)],
+                    },
+                    {
+                        "message": "Directive '@skip' argument 'if' of type"
+                        " 'Boolean!' is required, but it was not provided.",
+                        "locations": [(4, 26)],
+                    },
                 ],
             )
 
@@ -265,7 +277,13 @@ def describe_validate_provided_required_arguments():
 
                 directive @test(arg: String!) on FIELD_DEFINITION
                 """,
-                [missing_directive_arg("test", "arg", "String!", 3, 31)],
+                [
+                    {
+                        "message": "Directive '@test' argument 'arg' of type"
+                        " 'String!' is required, but it was not provided.",
+                        "locations": [(3, 31)],
+                    },
+                ],
             )
 
         def missing_arg_on_standard_directive():
@@ -275,7 +293,13 @@ def describe_validate_provided_required_arguments():
                   foo: String @include
                 }
                 """,
-                [missing_directive_arg("include", "if", "Boolean!", 3, 31)],
+                [
+                    {
+                        "message": "Directive '@include' argument 'if' of type"
+                        " 'Boolean!' is required, but it was not provided.",
+                        "locations": [(3, 31)],
+                    },
+                ],
             )
 
         def missing_arg_on_overridden_standard_directive():
@@ -286,7 +310,13 @@ def describe_validate_provided_required_arguments():
                 }
                 directive @deprecated(reason: String!) on FIELD
                 """,
-                [missing_directive_arg("deprecated", "reason", "String!", 3, 31)],
+                [
+                    {
+                        "message": "Directive '@deprecated' argument 'reason' of type"
+                        " 'String!' is required, but it was not provided.",
+                        "locations": [(3, 31)],
+                    },
+                ],
             )
 
         def missing_arg_on_directive_defined_in_schema_extension():
@@ -303,7 +333,13 @@ def describe_validate_provided_required_arguments():
 
                 extend type Query  @test
                 """,
-                [missing_directive_arg("test", "arg", "String!", 4, 36)],
+                [
+                    {
+                        "message": "Directive '@test' argument 'arg' of type"
+                        " 'String!' is required, but it was not provided.",
+                        "locations": [(4, 36)],
+                    },
+                ],
                 schema,
             )
 
@@ -321,6 +357,12 @@ def describe_validate_provided_required_arguments():
                 """
                 extend type Query  @test
                 """,
-                [missing_directive_arg("test", "arg", "String!", 2, 36)],
+                [
+                    {
+                        "message": "Directive '@test' argument 'arg' of type"
+                        " 'String!' is required, but it was not provided.",
+                        "locations": [(2, 36)],
+                    },
+                ],
                 schema,
             )

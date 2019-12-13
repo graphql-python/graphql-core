@@ -6,29 +6,7 @@ from ...pyutils import did_you_mean, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-__all__ = [
-    "KnownArgumentNamesRule",
-    "KnownArgumentNamesOnDirectivesRule",
-    "unknown_arg_message",
-    "unknown_directive_arg_message",
-]
-
-
-def unknown_arg_message(
-    arg_name: str, field_name: str, type_name: str, suggested_args: List[str]
-) -> str:
-    hint = did_you_mean([f"'{s}'" for s in suggested_args])
-    return (
-        f"Unknown argument '{arg_name}' on field '{field_name}'"
-        f" of type '{type_name}'.{hint}"
-    )
-
-
-def unknown_directive_arg_message(
-    arg_name: str, directive_name: str, suggested_args: List[str]
-) -> str:
-    hint = did_you_mean([f"'{s}'" for s in suggested_args])
-    return f"Unknown argument '{arg_name}' on directive '@{directive_name}'. {hint}"
+__all__ = ["KnownArgumentNamesRule", "KnownArgumentNamesOnDirectivesRule"]
 
 
 class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
@@ -67,9 +45,9 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
                     suggestions = suggestion_list(arg_name, known_args)
                     self.report_error(
                         GraphQLError(
-                            unknown_directive_arg_message(
-                                arg_name, directive_name, suggestions
-                            ),
+                            f"Unknown argument '{arg_name}'"
+                            f" on directive '@{directive_name}'."
+                            + did_you_mean([f"'{s}'" for s in suggestions]),
                             arg_node,
                         )
                     )
@@ -96,14 +74,12 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
             arg_name = arg_node.name.value
             field_name = args[3][-1].name.value
             known_args_names = list(field_def.args)
+            suggestions = suggestion_list(arg_name, known_args_names)
             context.report_error(
                 GraphQLError(
-                    unknown_arg_message(
-                        arg_name,
-                        field_name,
-                        parent_type.name,
-                        suggestion_list(arg_name, known_args_names),
-                    ),
+                    f"Unknown argument '{arg_name}' on field '{field_name}'"
+                    f" of type '{parent_type.name}'."
+                    + did_you_mean([f"'{s}'" for s in suggestions]),
                     arg_node,
                 )
             )

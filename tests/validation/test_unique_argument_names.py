@@ -1,19 +1,11 @@
 from functools import partial
 from graphql.validation import UniqueArgumentNamesRule
-from graphql.validation.rules.unique_argument_names import duplicate_arg_message
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, UniqueArgumentNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_arg(arg_name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_arg_message(arg_name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
 
 
 def describe_validate_unique_argument_names():
@@ -106,7 +98,12 @@ def describe_validate_unique_argument_names():
               field(arg1: "value", arg1: "value")
             }
             """,
-            [duplicate_arg("arg1", 3, 21, 3, 36)],
+            [
+                {
+                    "message": "There can be only one argument named 'arg1'.",
+                    "locations": [(3, 21), (3, 36)],
+                },
+            ],
         )
 
     def many_duplicate_field_arguments():
@@ -116,7 +113,16 @@ def describe_validate_unique_argument_names():
               field(arg1: "value", arg1: "value", arg1: "value")
             }
             """,
-            [duplicate_arg("arg1", 3, 21, 3, 36), duplicate_arg("arg1", 3, 21, 3, 51)],
+            [
+                {
+                    "message": "There can be only one argument named 'arg1'.",
+                    "locations": [(3, 21), (3, 36)],
+                },
+                {
+                    "message": "There can be only one argument named 'arg1'.",
+                    "locations": [(3, 21), (3, 51)],
+                },
+            ],
         )
 
     def duplicate_directive_arguments():
@@ -126,7 +132,12 @@ def describe_validate_unique_argument_names():
               field @directive(arg1: "value", arg1: "value")
             }
             """,
-            [duplicate_arg("arg1", 3, 32, 3, 47)],
+            [
+                {
+                    "message": "There can be only one argument named 'arg1'.",
+                    "locations": [(3, 32), (3, 47)],
+                },
+            ],
         )
 
     def many_duplicate_directive_arguments():
@@ -136,5 +147,14 @@ def describe_validate_unique_argument_names():
               field @directive(arg1: "value", arg1: "value", arg1: "value")
             }
             """,
-            [duplicate_arg("arg1", 3, 32, 3, 47), duplicate_arg("arg1", 3, 32, 3, 62)],
+            [
+                {
+                    "message": "There can be only one argument named 'arg1'.",
+                    "locations": [(3, 32), (3, 47)],
+                },
+                {
+                    "message": "There can be only one argument named 'arg1'.",
+                    "locations": [(3, 32), (3, 62)],
+                },
+            ],
         )

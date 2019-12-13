@@ -1,22 +1,12 @@
 from functools import partial
 
 from graphql.validation import UniqueOperationNamesRule
-from graphql.validation.rules.unique_operation_names import (
-    duplicate_operation_name_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, UniqueOperationNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_op(op_name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_operation_name_message(op_name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
 
 
 def describe_validate_unique_operation_names():
@@ -99,7 +89,12 @@ def describe_validate_unique_operation_names():
               fieldB
             }
             """,
-            [duplicate_op("Foo", 2, 19, 5, 19)],
+            [
+                {
+                    "message": "There can be only one operation named 'Foo'.",
+                    "locations": [(2, 19), (5, 19)],
+                },
+            ],
         )
 
     def multiple_ops_of_same_name_of_different_types_mutation():
@@ -112,7 +107,12 @@ def describe_validate_unique_operation_names():
               fieldB
             }
             """,
-            [duplicate_op("Foo", 2, 19, 5, 22)],
+            [
+                {
+                    "message": "There can be only one operation named 'Foo'.",
+                    "locations": [(2, 19), (5, 22)],
+                },
+            ],
         )
 
     def multiple_ops_of_same_name_of_different_types_subscription():
@@ -125,5 +125,10 @@ def describe_validate_unique_operation_names():
               fieldB
             }
             """,
-            [duplicate_op("Foo", 2, 19, 5, 26)],
+            [
+                {
+                    "message": "There can be only one operation named 'Foo'.",
+                    "locations": [(2, 19), (5, 26)],
+                },
+            ],
         )

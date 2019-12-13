@@ -4,11 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, ObjectFieldNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["UniqueInputFieldNamesRule", "duplicate_input_field_message"]
-
-
-def duplicate_input_field_message(field_name: str) -> str:
-    return f"There can only be one input field named '{field_name}'."
+__all__ = ["UniqueInputFieldNamesRule"]
 
 
 class UniqueInputFieldNamesRule(ASTValidationRule):
@@ -36,7 +32,7 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
         if field_name in known_names:
             self.report_error(
                 GraphQLError(
-                    duplicate_input_field_message(field_name),
+                    f"There can be only one input field named '{field_name}'.",
                     [known_names[field_name], node.name],
                 )
             )

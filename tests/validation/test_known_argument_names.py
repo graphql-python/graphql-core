@@ -4,8 +4,6 @@ from graphql.utilities import build_schema
 from graphql.validation import KnownArgumentNamesRule
 from graphql.validation.rules.known_argument_names import (
     KnownArgumentNamesOnDirectivesRule,
-    unknown_arg_message,
-    unknown_directive_arg_message,
 )
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors
@@ -19,22 +17,6 @@ assert_sdl_errors = partial(
 )
 
 assert_sdl_valid = partial(assert_sdl_errors, errors=[])
-
-
-def unknown_arg(arg_name, field_name, type_name, suggested_args, line, column):
-    return {
-        "message": unknown_arg_message(arg_name, field_name, type_name, suggested_args),
-        "locations": [(line, column)],
-    }
-
-
-def unknown_directive_arg(arg_name, directive_name, suggested_args, line, column):
-    return {
-        "message": unknown_directive_arg_message(
-            arg_name, directive_name, suggested_args
-        ),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_known_argument_names():
@@ -117,7 +99,12 @@ def describe_validate_known_argument_names():
               dog @skip(unless: true)
             }
             """,
-            [unknown_directive_arg("unless", "skip", [], 3, 25)],
+            [
+                {
+                    "message": "Unknown argument 'unless' on directive '@skip'.",
+                    "locations": [(3, 25)],
+                }
+            ],
         )
 
     def directive_without_args_is_valid():
@@ -136,7 +123,12 @@ def describe_validate_known_argument_names():
                 dog @onField(if: true)
             }
             """,
-            [unknown_directive_arg("if", "onField", [], 3, 30)],
+            [
+                {
+                    "message": "Unknown argument 'if' on directive '@onField'.",
+                    "locations": [(3, 30)],
+                }
+            ],
         )
 
     def misspelled_directive_args_are_reported():
@@ -146,7 +138,13 @@ def describe_validate_known_argument_names():
               dog @skip(iff: true)
             }
             """,
-            [unknown_directive_arg("iff", "skip", ["if"], 3, 25)],
+            [
+                {
+                    "message": "Unknown argument 'iff' on directive '@skip'."
+                    " Did you mean 'if'?",
+                    "locations": [(3, 25)],
+                }
+            ],
         )
 
     def invalid_arg_name():
@@ -156,10 +154,16 @@ def describe_validate_known_argument_names():
               doesKnowCommand(unknown: true)
             }
             """,
-            [unknown_arg("unknown", "doesKnowCommand", "Dog", [], 3, 31)],
+            [
+                {
+                    "message": "Unknown argument 'unknown' on field 'doesKnowCommand'"
+                    " of type 'Dog'.",
+                    "locations": [(3, 31)],
+                },
+            ],
         )
 
-    def misspelled_args_name_is_reported():
+    def misspelled_arg_name_is_reported():
         assert_errors(
             """
             fragment invalidArgName on Dog {
@@ -167,9 +171,12 @@ def describe_validate_known_argument_names():
             }
             """,
             [
-                unknown_arg(
-                    "dogcommand", "doesKnowCommand", "Dog", ["dogCommand"], 3, 31
-                )
+                {
+                    "message": "Unknown argument 'dogcommand'"
+                    " on field 'doesKnowCommand' of type 'Dog'."
+                    " Did you mean 'dogCommand'?",
+                    "locations": [(3, 31)],
+                }
             ],
         )
 
@@ -181,8 +188,16 @@ def describe_validate_known_argument_names():
             }
             """,
             [
-                unknown_arg("whoknows", "doesKnowCommand", "Dog", [], 3, 31),
-                unknown_arg("unknown", "doesKnowCommand", "Dog", [], 3, 61),
+                {
+                    "message": "Unknown argument 'whoknows'"
+                    " on field 'doesKnowCommand' of type 'Dog'.",
+                    "locations": [(3, 31)],
+                },
+                {
+                    "message": "Unknown argument 'unknown'"
+                    " on field 'doesKnowCommand' of type 'Dog'.",
+                    "locations": [(3, 61)],
+                },
             ],
         )
 
@@ -203,8 +218,16 @@ def describe_validate_known_argument_names():
             }
             """,
             [
-                unknown_arg("unknown", "doesKnowCommand", "Dog", [], 4, 33),
-                unknown_arg("unknown", "doesKnowCommand", "Dog", [], 9, 37),
+                {
+                    "message": "Unknown argument 'unknown' on field 'doesKnowCommand'"
+                    " of type 'Dog'.",
+                    "locations": [(4, 33)],
+                },
+                {
+                    "message": "Unknown argument 'unknown' on field 'doesKnowCommand'"
+                    " of type 'Dog'.",
+                    "locations": [(9, 37)],
+                },
             ],
         )
 
@@ -229,7 +252,12 @@ def describe_validate_known_argument_names():
 
                 directive @test(arg: String) on FIELD_DEFINITION
                 """,
-                [unknown_directive_arg("unknown", "test", [], 3, 37)],
+                [
+                    {
+                        "message": "Unknown argument 'unknown' on directive '@test'.",
+                        "locations": [(3, 37)],
+                    },
+                ],
             )
 
         def misspelled_arg_name_is_reported_on_directive_defined_inside_sdl():
@@ -241,7 +269,13 @@ def describe_validate_known_argument_names():
 
                 directive @test(arg: String) on FIELD_DEFINITION
                 """,
-                [unknown_directive_arg("agr", "test", ["arg"], 3, 37)],
+                [
+                    {
+                        "message": "Unknown argument 'agr' on directive '@test'."
+                        " Did you mean 'arg'?",
+                        "locations": [(3, 37)],
+                    },
+                ],
             )
 
         def unknown_arg_on_standard_directive():
@@ -251,7 +285,13 @@ def describe_validate_known_argument_names():
                   foo: String @deprecated(unknown: "")
                 }
                 """,
-                [unknown_directive_arg("unknown", "deprecated", [], 3, 43)],
+                [
+                    {
+                        "message": "Unknown argument 'unknown'"
+                        " on directive '@deprecated'.",
+                        "locations": [(3, 43)],
+                    },
+                ],
             )
 
         def unknown_arg_on_overridden_standard_directive():
@@ -262,7 +302,13 @@ def describe_validate_known_argument_names():
                 }
                 directive @deprecated(arg: String) on FIELD
                 """,
-                [unknown_directive_arg("reason", "deprecated", [], 3, 43)],
+                [
+                    {
+                        "message": "Unknown argument 'reason'"
+                        " on directive '@deprecated'.",
+                        "locations": [(3, 43)],
+                    },
+                ],
             )
 
         def unknown_arg_on_directive_defined_in_schema_extension():
@@ -279,7 +325,12 @@ def describe_validate_known_argument_names():
 
                 extend type Query  @test(unknown: "")
                 """,
-                [unknown_directive_arg("unknown", "test", [], 4, 42)],
+                [
+                    {
+                        "message": "Unknown argument 'unknown' on directive '@test'.",
+                        "locations": [(4, 42)],
+                    },
+                ],
                 schema,
             )
 
@@ -297,6 +348,11 @@ def describe_validate_known_argument_names():
                 """
                 extend type Query @test(unknown: "")
                 """,
-                [unknown_directive_arg("unknown", "test", [], 2, 41)],
+                [
+                    {
+                        "message": "Unknown argument 'unknown' on directive '@test'.",
+                        "locations": [(2, 41)],
+                    },
+                ],
                 schema,
             )

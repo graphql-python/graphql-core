@@ -1,22 +1,12 @@
 from functools import partial
 
 from graphql.validation import LoneAnonymousOperationRule
-from graphql.validation.rules.lone_anonymous_operation import (
-    anonymous_operation_not_alone_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, LoneAnonymousOperationRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def anon_operation_not_alone(line, column):
-    return {
-        "message": anonymous_operation_not_alone_message(),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_anonymous_operation_must_be_alone():
@@ -73,7 +63,18 @@ def describe_validate_anonymous_operation_must_be_alone():
               fieldB
             }
             """,
-            [anon_operation_not_alone(2, 13), anon_operation_not_alone(5, 13)],
+            [
+                {
+                    "message": "This anonymous operation"
+                    " must be the only defined operation.",
+                    "locations": [(2, 13)],
+                },
+                {
+                    "message": "This anonymous operation"
+                    " must be the only defined operation.",
+                    "locations": [(5, 13)],
+                },
+            ],
         )
 
     def anon_operation_with_a_mutation():
@@ -86,7 +87,13 @@ def describe_validate_anonymous_operation_must_be_alone():
               fieldB
             }
             """,
-            [anon_operation_not_alone(2, 13)],
+            [
+                {
+                    "message": "This anonymous operation"
+                    " must be the only defined operation.",
+                    "locations": [(2, 13)],
+                },
+            ],
         )
 
     def anon_operation_with_a_subscription():
@@ -99,5 +106,11 @@ def describe_validate_anonymous_operation_must_be_alone():
               fieldB
             }
             """,
-            [anon_operation_not_alone(2, 13)],
+            [
+                {
+                    "message": "This anonymous operation"
+                    " must be the only defined operation.",
+                    "locations": [(2, 13)],
+                },
+            ],
         )

@@ -11,19 +11,7 @@ from ...language import (
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-__all__ = [
-    "KnownDirectivesRule",
-    "unknown_directive_message",
-    "misplaced_directive_message",
-]
-
-
-def unknown_directive_message(directive_name: str) -> str:
-    return f"Unknown directive '{directive_name}'."
-
-
-def misplaced_directive_message(directive_name: str, location: str) -> str:
-    return f"Directive '{directive_name}' may not be used on {location}."
+__all__ = ["KnownDirectivesRule"]
 
 
 class KnownDirectivesRule(ASTValidationRule):
@@ -61,16 +49,13 @@ class KnownDirectivesRule(ASTValidationRule):
             if candidate_location and candidate_location not in locations:
                 self.report_error(
                     GraphQLError(
-                        misplaced_directive_message(
-                            node.name.value, candidate_location.value
-                        ),
+                        f"Directive '{name}'"
+                        f" may not be used on {candidate_location.value}.",
                         node,
                     )
                 )
         else:
-            self.report_error(
-                GraphQLError(unknown_directive_message(node.name.value), node)
-            )
+            self.report_error(GraphQLError(f"Unknown directive '{name}'.", node))
 
 
 _operation_location = {

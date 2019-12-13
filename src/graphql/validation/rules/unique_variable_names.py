@@ -4,11 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, VariableDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["UniqueVariableNamesRule", "duplicate_variable_message"]
-
-
-def duplicate_variable_message(variable_name: str) -> str:
-    return f"There can be only one variable named '{variable_name}'."
+__all__ = ["UniqueVariableNamesRule"]
 
 
 class UniqueVariableNamesRule(ASTValidationRule):
@@ -30,7 +26,7 @@ class UniqueVariableNamesRule(ASTValidationRule):
         if variable_name in known_variable_names:
             self.report_error(
                 GraphQLError(
-                    duplicate_variable_message(variable_name),
+                    f"There can be only one variable named '{variable_name}'.",
                     [known_variable_names[variable_name], node.variable.name],
                 )
             )

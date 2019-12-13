@@ -1,28 +1,13 @@
 from functools import partial
 
 from graphql.utilities import build_schema
-from graphql.validation.rules.unique_operation_types import (
-    UniqueOperationTypesRule,
-    duplicate_operation_type_message,
-    existed_operation_type_message,
-)
+from graphql.validation.rules.unique_operation_types import UniqueOperationTypesRule
 
 from .harness import assert_sdl_validation_errors
 
 assert_errors = partial(assert_sdl_validation_errors, UniqueOperationTypesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_type(name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_operation_type_message(name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
-
-
-def existed_type(name, line, col):
-    return {"message": existed_operation_type_message(name), "locations": [(line, col)]}
 
 
 def describe_validate_unique_operation_types():
@@ -99,9 +84,18 @@ def describe_validate_unique_operation_types():
             }
             """,
             [
-                duplicate_type("query", 5, 15, 9, 15),
-                duplicate_type("mutation", 6, 15, 10, 15),
-                duplicate_type("subscription", 7, 15, 11, 15),
+                {
+                    "message": "There can be only one query type in schema.",
+                    "locations": [(5, 15), (9, 15)],
+                },
+                {
+                    "message": "There can be only one mutation type in schema.",
+                    "locations": [(6, 15), (10, 15)],
+                },
+                {
+                    "message": "There can be only one subscription type in schema.",
+                    "locations": [(7, 15), (11, 15)],
+                },
             ],
         )
 
@@ -123,9 +117,18 @@ def describe_validate_unique_operation_types():
             }
             """,
             [
-                duplicate_type("query", 5, 15, 11, 15),
-                duplicate_type("mutation", 6, 15, 12, 15),
-                duplicate_type("subscription", 7, 15, 13, 15),
+                {
+                    "message": "There can be only one query type in schema.",
+                    "locations": [(5, 15), (11, 15)],
+                },
+                {
+                    "message": "There can be only one mutation type in schema.",
+                    "locations": [(6, 15), (12, 15)],
+                },
+                {
+                    "message": "There can be only one subscription type in schema.",
+                    "locations": [(7, 15), (13, 15)],
+                },
             ],
         )
 
@@ -153,12 +156,30 @@ def describe_validate_unique_operation_types():
             }
             """,
             [
-                duplicate_type("query", 5, 15, 11, 15),
-                duplicate_type("mutation", 6, 15, 12, 15),
-                duplicate_type("subscription", 7, 15, 13, 15),
-                duplicate_type("query", 5, 15, 17, 15),
-                duplicate_type("mutation", 6, 15, 18, 15),
-                duplicate_type("subscription", 7, 15, 19, 15),
+                {
+                    "message": "There can be only one query type in schema.",
+                    "locations": [(5, 15), (11, 15)],
+                },
+                {
+                    "message": "There can be only one mutation type in schema.",
+                    "locations": [(6, 15), (12, 15)],
+                },
+                {
+                    "message": "There can be only one subscription type in schema.",
+                    "locations": [(7, 15), (13, 15)],
+                },
+                {
+                    "message": "There can be only one query type in schema.",
+                    "locations": [(5, 15), (17, 15)],
+                },
+                {
+                    "message": "There can be only one mutation type in schema.",
+                    "locations": [(6, 15), (18, 15)],
+                },
+                {
+                    "message": "There can be only one subscription type in schema.",
+                    "locations": [(7, 15), (19, 15)],
+                },
             ],
         )
 
@@ -183,9 +204,18 @@ def describe_validate_unique_operation_types():
             }
             """,
             [
-                duplicate_type("query", 5, 15, 14, 15),
-                duplicate_type("mutation", 9, 15, 15, 15),
-                duplicate_type("subscription", 10, 15, 16, 15),
+                {
+                    "message": "There can be only one query type in schema.",
+                    "locations": [(5, 15), (14, 15)],
+                },
+                {
+                    "message": "There can be only one mutation type in schema.",
+                    "locations": [(9, 15), (15, 15)],
+                },
+                {
+                    "message": "There can be only one subscription type in schema.",
+                    "locations": [(10, 15), (16, 15)],
+                },
             ],
         )
 
@@ -242,9 +272,21 @@ def describe_validate_unique_operation_types():
         assert_errors(
             sdl,
             [
-                existed_type("query", 3, 15),
-                existed_type("mutation", 4, 15),
-                existed_type("subscription", 5, 15),
+                {
+                    "message": "Type for query already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Type for mutation already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(4, 15)],
+                },
+                {
+                    "message": "Type for subscription already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(5, 15)],
+                },
             ],
             schema,
         )
@@ -275,12 +317,36 @@ def describe_validate_unique_operation_types():
         assert_errors(
             sdl,
             [
-                existed_type("query", 3, 15),
-                existed_type("mutation", 4, 15),
-                existed_type("subscription", 5, 15),
-                existed_type("query", 9, 15),
-                existed_type("mutation", 10, 15),
-                existed_type("subscription", 11, 15),
+                {
+                    "message": "Type for query already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Type for mutation already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(4, 15)],
+                },
+                {
+                    "message": "Type for subscription already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(5, 15)],
+                },
+                {
+                    "message": "Type for query already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(9, 15)],
+                },
+                {
+                    "message": "Type for mutation already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(10, 15)],
+                },
+                {
+                    "message": "Type for subscription already defined in the schema."
+                    " It cannot be redefined.",
+                    "locations": [(11, 15)],
+                },
             ],
             schema,
         )

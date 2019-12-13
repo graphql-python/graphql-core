@@ -1,20 +1,12 @@
 from functools import partial
 
 from graphql.validation import NoUnusedFragmentsRule
-from graphql.validation.rules.no_unused_fragments import unused_fragment_message
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, NoUnusedFragmentsRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def unused_frag(frag_name, line, column):
-    return {
-        "message": unused_fragment_message(frag_name),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_no_unused_fragments():
@@ -98,7 +90,16 @@ def describe_validate_no_unused_fragments():
               name
             }
             """,
-            [unused_frag("Unused1", 22, 13), unused_frag("Unused2", 25, 13)],
+            [
+                {
+                    "message": "Fragment 'Unused1' is never used.",
+                    "locations": [(22, 13)],
+                },
+                {
+                    "message": "Fragment 'Unused2' is never used.",
+                    "locations": [(25, 13)],
+                },
+            ],
         )
 
     def contains_unknown_fragments_with_ref_cycle():
@@ -133,7 +134,16 @@ def describe_validate_no_unused_fragments():
               ...Unused1
             }
             """,
-            [unused_frag("Unused1", 22, 13), unused_frag("Unused2", 26, 13)],
+            [
+                {
+                    "message": "Fragment 'Unused1' is never used.",
+                    "locations": [(22, 13)],
+                },
+                {
+                    "message": "Fragment 'Unused2' is never used.",
+                    "locations": [(26, 13)],
+                },
+            ],
         )
 
     def contains_unknown_and_undefined_fragments():
@@ -148,5 +158,5 @@ def describe_validate_no_unused_fragments():
               name
             }
             """,
-            [unused_frag("foo", 7, 13)],
+            [{"message": "Fragment 'foo' is never used.", "locations": [(7, 13)]}],
         )

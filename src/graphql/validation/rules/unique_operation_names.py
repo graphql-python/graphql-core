@@ -4,11 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, OperationDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["UniqueOperationNamesRule", "duplicate_operation_name_message"]
-
-
-def duplicate_operation_name_message(operation_name: str) -> str:
-    return f"There can only be one operation named '{operation_name}'."
+__all__ = ["UniqueOperationNamesRule"]
 
 
 class UniqueOperationNamesRule(ASTValidationRule):
@@ -28,7 +24,8 @@ class UniqueOperationNamesRule(ASTValidationRule):
             if operation_name.value in known_operation_names:
                 self.report_error(
                     GraphQLError(
-                        duplicate_operation_name_message(operation_name.value),
+                        "There can be only one operation"
+                        f" named '{operation_name.value}'.",
                         [known_operation_names[operation_name.value], operation_name],
                     )
                 )

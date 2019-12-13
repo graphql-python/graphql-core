@@ -1,22 +1,12 @@
 from functools import partial
 
 from graphql.validation import UniqueFragmentNamesRule
-from graphql.validation.rules.unique_fragment_names import (
-    duplicate_fragment_name_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, UniqueFragmentNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_fragment(frag_name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_fragment_name_message(frag_name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
 
 
 def describe_validate_unique_fragment_names():
@@ -100,7 +90,12 @@ def describe_validate_unique_fragment_names():
               fieldB
             }
             """,
-            [duplicate_fragment("fragA", 5, 22, 8, 22)],
+            [
+                {
+                    "message": "There can be only one fragment named 'fragA'.",
+                    "locations": [(5, 22), (8, 22)],
+                },
+            ],
         )
 
     def fragments_named_the_same_without_being_referenced():
@@ -113,5 +108,10 @@ def describe_validate_unique_fragment_names():
               fieldB
             }
             """,
-            [duplicate_fragment("fragA", 2, 22, 5, 22)],
+            [
+                {
+                    "message": "There can be only one fragment named 'fragA'.",
+                    "locations": [(2, 22), (5, 22)],
+                },
+            ],
         )

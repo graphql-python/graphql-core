@@ -1,11 +1,7 @@
 from functools import partial
 
 from graphql.utilities import build_schema
-from graphql.validation.rules.unique_directive_names import (
-    UniqueDirectiveNamesRule,
-    duplicate_directive_name_message,
-    existed_directive_name_message,
-)
+from graphql.validation.rules.unique_directive_names import UniqueDirectiveNamesRule
 
 from .harness import assert_sdl_validation_errors
 
@@ -58,7 +54,7 @@ def describe_validate_unique_directive_names():
             """,
             [
                 {
-                    "message": duplicate_directive_name_message("foo"),
+                    "message": "There can be only one directive named 'foo'.",
                     "locations": [(2, 24), (4, 24)],
                 }
             ],
@@ -76,7 +72,8 @@ def describe_validate_unique_directive_names():
             "directive @skip on SCHEMA",
             [
                 {
-                    "message": existed_directive_name_message("skip"),
+                    "message": "Directive 'skip' already exists in the schema."
+                    " It cannot be redefined.",
                     "locations": [(1, 12)],
                 }
             ],
@@ -95,7 +92,8 @@ def describe_validate_unique_directive_names():
             "directive @foo on SCHEMA",
             [
                 {
-                    "message": existed_directive_name_message("foo"),
+                    "message": "Directive 'foo' already exists in the schema."
+                    " It cannot be redefined.",
                     "locations": [(1, 12)],
                 }
             ],

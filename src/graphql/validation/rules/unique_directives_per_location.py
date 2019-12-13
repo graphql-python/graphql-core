@@ -5,11 +5,7 @@ from ...language import DirectiveDefinitionNode, DirectiveNode, Node
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-__all__ = ["UniqueDirectivesPerLocationRule", "duplicate_directive_message"]
-
-
-def duplicate_directive_message(directive_name: str) -> str:
-    return f"The directive '{directive_name}' can only be used once at this location."
+__all__ = ["UniqueDirectivesPerLocationRule"]
 
 
 class UniqueDirectivesPerLocationRule(ASTValidationRule):
@@ -50,7 +46,8 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
                     if directive_name in known_directives:
                         self.report_error(
                             GraphQLError(
-                                duplicate_directive_message(directive_name),
+                                f"The directive '{directive_name}'"
+                                " can only be used once at this location.",
                                 [known_directives[directive_name], directive],
                             )
                         )

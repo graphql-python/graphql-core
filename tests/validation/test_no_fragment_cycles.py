@@ -1,7 +1,6 @@
 from functools import partial
 
 from graphql.validation import NoFragmentCyclesRule
-from graphql.validation.rules.no_fragment_cycles import cycle_error_message
 
 from .harness import assert_validation_errors
 
@@ -64,7 +63,12 @@ def describe_validate_no_circular_fragment_spreads():
             """
             fragment fragA on Human { relatives { ...fragA } },
             """,
-            [{"message": cycle_error_message("fragA", []), "locations": [(2, 51)]}],
+            [
+                {
+                    "message": "Cannot spread fragment 'fragA' within itself.",
+                    "locations": [(2, 51)],
+                }
+            ],
         )
 
     def no_spreading_itself_directly():
@@ -72,7 +76,12 @@ def describe_validate_no_circular_fragment_spreads():
             """
             fragment fragA on Dog { ...fragA }
             """,
-            [{"message": cycle_error_message("fragA", []), "locations": [(2, 37)]}],
+            [
+                {
+                    "message": "Cannot spread fragment 'fragA' within itself.",
+                    "locations": [(2, 37)],
+                }
+            ],
         )
 
     def no_spreading_itself_directly_within_inline_fragment():
@@ -84,7 +93,12 @@ def describe_validate_no_circular_fragment_spreads():
               }
             }
             """,
-            [{"message": cycle_error_message("fragA", []), "locations": [(4, 17)]}],
+            [
+                {
+                    "message": "Cannot spread fragment 'fragA' within itself.",
+                    "locations": [(4, 17)],
+                }
+            ],
         )
 
     def no_spreading_itself_indirectly():
@@ -95,7 +109,8 @@ def describe_validate_no_circular_fragment_spreads():
             """,
             [
                 {
-                    "message": cycle_error_message("fragA", ["fragB"]),
+                    "message": "Cannot spread fragment 'fragA'"
+                    " within itself via fragB.",
                     "locations": [(2, 37), (3, 37)],
                 }
             ],
@@ -109,7 +124,8 @@ def describe_validate_no_circular_fragment_spreads():
             """,
             [
                 {
-                    "message": cycle_error_message("fragB", ["fragA"]),
+                    "message": "Cannot spread fragment 'fragB'"
+                    " within itself via fragA.",
                     "locations": [(2, 37), (3, 37)],
                 }
             ],
@@ -131,7 +147,8 @@ def describe_validate_no_circular_fragment_spreads():
             """,
             [
                 {
-                    "message": cycle_error_message("fragA", ["fragB"]),
+                    "message": "Cannot spread fragment 'fragA'"
+                    " within itself via fragB.",
                     "locations": [(4, 17), (9, 17)],
                 }
             ],
@@ -151,16 +168,14 @@ def describe_validate_no_circular_fragment_spreads():
             """,
             [
                 {
-                    "message": cycle_error_message(
-                        "fragA", ["fragB", "fragC", "fragO", "fragP"]
-                    ),
+                    "message": "Cannot spread fragment 'fragA' within itself"
+                    " via fragB, fragC, fragO, fragP.",
                     "locations": [(2, 37), (3, 37), (4, 37), (8, 37), (9, 37)],
                     "path": None,
                 },
                 {
-                    "message": cycle_error_message(
-                        "fragO", ["fragP", "fragX", "fragY", "fragZ"]
-                    ),
+                    "message": "Cannot spread fragment 'fragO' within itself"
+                    " via fragP, fragX, fragY, fragZ.",
                     "locations": [(8, 37), (9, 47), (5, 37), (6, 37), (7, 37)],
                     "path": None,
                 },
@@ -176,11 +191,13 @@ def describe_validate_no_circular_fragment_spreads():
             """,
             [
                 {
-                    "message": cycle_error_message("fragA", ["fragB"]),
+                    "message": "Cannot spread fragment 'fragA'"
+                    " within itself via fragB.",
                     "locations": [(2, 37), (3, 37)],
                 },
                 {
-                    "message": cycle_error_message("fragA", ["fragC"]),
+                    "message": "Cannot spread fragment 'fragA'"
+                    " within itself via fragC.",
                     "locations": [(2, 47), (4, 37)],
                 },
             ],
@@ -195,11 +212,13 @@ def describe_validate_no_circular_fragment_spreads():
             """,
             [
                 {
-                    "message": cycle_error_message("fragA", ["fragC"]),
+                    "message": "Cannot spread fragment 'fragA'"
+                    " within itself via fragC.",
                     "locations": [(2, 37), (4, 37)],
                 },
                 {
-                    "message": cycle_error_message("fragC", ["fragB"]),
+                    "message": "Cannot spread fragment 'fragC'"
+                    " within itself via fragB.",
                     "locations": [(4, 47), (3, 37)],
                 },
             ],
@@ -213,13 +232,18 @@ def describe_validate_no_circular_fragment_spreads():
             fragment fragC on Dog { ...fragA, ...fragB }
             """,
             [
-                {"message": cycle_error_message("fragB", []), "locations": [(3, 37)]},
                 {
-                    "message": cycle_error_message("fragA", ["fragB", "fragC"]),
+                    "message": "Cannot spread fragment 'fragB' within itself.",
+                    "locations": [(3, 37)],
+                },
+                {
+                    "message": "Cannot spread fragment 'fragA'"
+                    " within itself via fragB, fragC.",
                     "locations": [(2, 37), (3, 47), (4, 37)],
                 },
                 {
-                    "message": cycle_error_message("fragB", ["fragC"]),
+                    "message": "Cannot spread fragment 'fragB'"
+                    " within itself via fragC.",
                     "locations": [(3, 47), (4, 47)],
                 },
             ],

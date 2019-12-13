@@ -2,19 +2,7 @@ from ...error import GraphQLError
 from ...language import SchemaDefinitionNode
 from . import SDLValidationRule, SDLValidationContext
 
-__all__ = [
-    "LoneSchemaDefinitionRule",
-    "schema_definition_not_alone_message",
-    "cannot_define_schema_within_extension_message",
-]
-
-
-def schema_definition_not_alone_message():
-    return "Must provide only one schema definition."
-
-
-def cannot_define_schema_within_extension_message():
-    return "Cannot define a new schema within a schema extension."
+__all__ = ["LoneSchemaDefinitionRule"]
 
 
 class LoneSchemaDefinitionRule(SDLValidationRule):
@@ -37,11 +25,13 @@ class LoneSchemaDefinitionRule(SDLValidationRule):
     def enter_schema_definition(self, node: SchemaDefinitionNode, *_args):
         if self.already_defined:
             self.report_error(
-                GraphQLError(cannot_define_schema_within_extension_message(), node)
+                GraphQLError(
+                    "Cannot define a new schema within a schema extension.", node
+                )
             )
         else:
             if self.schema_definitions_count:
                 self.report_error(
-                    GraphQLError(schema_definition_not_alone_message(), node)
+                    GraphQLError("Must provide only one schema definition.", node)
                 )
             self.schema_definitions_count += 1

@@ -1,20 +1,12 @@
 from functools import partial
 
 from graphql.validation import KnownFragmentNamesRule
-from graphql.validation.rules.known_fragment_names import unknown_fragment_message
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, KnownFragmentNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def unknmown_fragment(fragment_name, line, column):
-    return {
-        "message": unknown_fragment_message(fragment_name),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_known_fragment_names():
@@ -62,8 +54,17 @@ def describe_validate_known_fragment_names():
             }
             """,
             [
-                unknmown_fragment("UnknownFragment1", 4, 20),
-                unknmown_fragment("UnknownFragment2", 6, 22),
-                unknmown_fragment("UnknownFragment3", 12, 18),
+                {
+                    "message": "Unknown fragment 'UnknownFragment1'.",
+                    "locations": [(4, 20)],
+                },
+                {
+                    "message": "Unknown fragment 'UnknownFragment2'.",
+                    "locations": [(6, 22)],
+                },
+                {
+                    "message": "Unknown fragment 'UnknownFragment3'.",
+                    "locations": [(12, 18)],
+                },
             ],
         )

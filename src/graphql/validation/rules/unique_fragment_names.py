@@ -4,11 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, FragmentDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["UniqueFragmentNamesRule", "duplicate_fragment_name_message"]
-
-
-def duplicate_fragment_name_message(frag_name: str) -> str:
-    return f"There can only be one fragment named '{frag_name}'."
+__all__ = ["UniqueFragmentNamesRule"]
 
 
 class UniqueFragmentNamesRule(ASTValidationRule):
@@ -30,7 +26,7 @@ class UniqueFragmentNamesRule(ASTValidationRule):
         if fragment_name in known_fragment_names:
             self.report_error(
                 GraphQLError(
-                    duplicate_fragment_name_message(fragment_name),
+                    f"There can be only one fragment named '{fragment_name}'.",
                     [known_fragment_names[fragment_name], node.name],
                 )
             )

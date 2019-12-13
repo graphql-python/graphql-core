@@ -4,11 +4,7 @@ from ...type import is_input_type
 from ...utilities import type_from_ast
 from . import ValidationRule
 
-__all__ = ["VariablesAreInputTypesRule", "non_input_type_on_var_message"]
-
-
-def non_input_type_on_var_message(variable_name: str, type_name: str) -> str:
-    return f"Variable '${variable_name}' cannot be non-input type '{type_name}'."
+__all__ = ["VariablesAreInputTypesRule"]
 
 
 class VariablesAreInputTypesRule(ValidationRule):
@@ -24,9 +20,11 @@ class VariablesAreInputTypesRule(ValidationRule):
         # If the variable type is not an input type, return an error.
         if type_ and not is_input_type(type_):
             variable_name = node.variable.name.value
+            type_name = print_ast(node.type)
             self.report_error(
                 GraphQLError(
-                    non_input_type_on_var_message(variable_name, print_ast(node.type)),
+                    f"Variable '${variable_name}'"
+                    f" cannot be non-input type '{type_name}'.",
                     node.type,
                 )
             )

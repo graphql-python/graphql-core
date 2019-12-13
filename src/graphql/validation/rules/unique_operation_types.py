@@ -10,22 +10,7 @@ from ...language import (
 from ...type import GraphQLObjectType
 from . import SDLValidationContext, SDLValidationRule
 
-__all__ = [
-    "UniqueOperationTypesRule",
-    "duplicate_operation_type_message",
-    "existed_operation_type_message",
-]
-
-
-def duplicate_operation_type_message(operation: str) -> str:
-    return f"There can be only one '{operation}' type in schema."
-
-
-def existed_operation_type_message(operation: str) -> str:
-    return (
-        f"Type for '{operation}' already defined in the schema."
-        " It cannot be redefined."
-    )
+__all__ = ["UniqueOperationTypesRule"]
 
 
 class UniqueOperationTypesRule(SDLValidationRule):
@@ -63,13 +48,15 @@ class UniqueOperationTypesRule(SDLValidationRule):
             if self.existing_operation_types.get(operation):
                 self.report_error(
                     GraphQLError(
-                        existed_operation_type_message(operation.value), operation_type
+                        f"Type for {operation.value} already defined in the schema."
+                        " It cannot be redefined.",
+                        operation_type,
                     )
                 )
             elif already_defined_operation_type:
                 self.report_error(
                     GraphQLError(
-                        duplicate_operation_type_message(operation.value),
+                        f"There can be only one {operation.value} type in schema.",
                         [already_defined_operation_type, operation_type],
                     )
                 )

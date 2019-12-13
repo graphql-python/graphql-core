@@ -11,14 +11,7 @@ from ...type import GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type
 from ...utilities import type_from_ast, is_type_sub_type_of
 from . import ValidationContext, ValidationRule
 
-__all__ = ["VariablesInAllowedPositionRule", "bad_var_pos_message"]
-
-
-def bad_var_pos_message(var_name: str, var_type: str, expected_type: str) -> str:
-    return (
-        f"Variable '${var_name}' of type '{var_type}' used"
-        f" in position expecting type '{expected_type}'."
-    )
+__all__ = ["VariablesInAllowedPositionRule"]
 
 
 class VariablesInAllowedPositionRule(ValidationRule):
@@ -53,7 +46,8 @@ class VariablesInAllowedPositionRule(ValidationRule):
                 ):
                     self.report_error(
                         GraphQLError(
-                            bad_var_pos_message(var_name, str(var_type), str(type_)),
+                            f"Variable '${var_name}' of type '{var_type}' used"
+                            f" in position expecting type '{type_}'.",
                             [var_def, node],
                         )
                     )

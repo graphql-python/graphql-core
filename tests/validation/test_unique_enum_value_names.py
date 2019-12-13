@@ -1,31 +1,13 @@
 from functools import partial
 
 from graphql.utilities import build_schema
-from graphql.validation.rules.unique_enum_value_names import (
-    UniqueEnumValueNamesRule,
-    duplicate_enum_value_name_message,
-    existed_enum_value_name_message,
-)
+from graphql.validation.rules.unique_enum_value_names import UniqueEnumValueNamesRule
 
 from .harness import assert_sdl_validation_errors
 
 assert_errors = partial(assert_sdl_validation_errors, UniqueEnumValueNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_name(type_name, value_name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_enum_value_name_message(type_name, value_name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
-
-
-def existed_name(type_name, value_name, line, col):
-    return {
-        "message": existed_enum_value_name_message(type_name, value_name),
-        "locations": [(line, col)],
-    }
 
 
 def describe_validate_unique_field_definition_names():
@@ -64,7 +46,12 @@ def describe_validate_unique_field_definition_names():
               FOO
             }
             """,
-            [duplicate_name("SomeEnum", "FOO", 3, 15, 5, 15)],
+            [
+                {
+                    "message": "Enum value 'SomeEnum.FOO' can only be defined once.",
+                    "locations": [(3, 15), (5, 15)],
+                },
+            ],
         )
 
     def extend_enum_with_new_value():
@@ -92,7 +79,12 @@ def describe_validate_unique_field_definition_names():
               FOO
             }
             """,
-            [duplicate_name("SomeEnum", "FOO", 3, 15, 6, 15)],
+            [
+                {
+                    "message": "Enum value 'SomeEnum.FOO' can only be defined once.",
+                    "locations": [(3, 15), (6, 15)],
+                },
+            ],
         )
 
     def duplicate_value_inside_extension():
@@ -105,7 +97,12 @@ def describe_validate_unique_field_definition_names():
               FOO
             }
             """,
-            [duplicate_name("SomeEnum", "FOO", 4, 15, 6, 15)],
+            [
+                {
+                    "message": "Enum value 'SomeEnum.FOO' can only be defined once.",
+                    "locations": [(4, 15), (6, 15)],
+                },
+            ],
         )
 
     def duplicate_value_inside_different_extension():
@@ -119,7 +116,12 @@ def describe_validate_unique_field_definition_names():
               FOO
             }
             """,
-            [duplicate_name("SomeEnum", "FOO", 4, 15, 7, 15)],
+            [
+                {
+                    "message": "Enum value 'SomeEnum.FOO' can only be defined once.",
+                    "locations": [(4, 15), (7, 15)],
+                },
+            ],
         )
 
     def adding_new_value_to_the_enum_inside_existing_schema():
@@ -152,8 +154,16 @@ def describe_validate_unique_field_definition_names():
         assert_errors(
             sdl,
             [
-                existed_name("SomeEnum", "FOO", 3, 15),
-                existed_name("SomeEnum", "FOO", 6, 15),
+                {
+                    "message": "Enum value 'SomeEnum.FOO' already exists in the schema."
+                    " It cannot also be defined in this type extension.",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Enum value 'SomeEnum.FOO' already exists in the schema."
+                    " It cannot also be defined in this type extension.",
+                    "locations": [(6, 15)],
+                },
             ],
             schema,
         )
@@ -169,4 +179,13 @@ def describe_validate_unique_field_definition_names():
             }
             """
 
-        assert_errors(sdl, [duplicate_name("SomeEnum", "FOO", 3, 15, 6, 15)], schema)
+        assert_errors(
+            sdl,
+            [
+                {
+                    "message": "Enum value 'SomeEnum.FOO' can only be defined once.",
+                    "locations": [(3, 15), (6, 15)],
+                },
+            ],
+            schema,
+        )

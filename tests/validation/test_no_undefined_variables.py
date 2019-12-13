@@ -1,20 +1,12 @@
 from functools import partial
 
 from graphql.validation import NoUndefinedVariablesRule
-from graphql.validation.rules.no_undefined_variables import undefined_var_message
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, NoUndefinedVariablesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def undef_var(var_name, l1, c1, op_name, l2, c2):
-    return {
-        "message": undefined_var_message(var_name, op_name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
 
 
 def describe_validate_no_undefined_variables():
@@ -133,7 +125,12 @@ def describe_validate_no_undefined_variables():
               field(a: $a, b: $b, c: $c, d: $d)
             }
             """,
-            [undef_var("d", 3, 45, "Foo", 2, 13)],
+            [
+                {
+                    "message": "Variable '$d' is not defined by operation 'Foo'.",
+                    "locations": [(3, 45), (2, 13)],
+                },
+            ],
         )
 
     def variable_not_defined_by_unnamed_query():
@@ -143,7 +140,12 @@ def describe_validate_no_undefined_variables():
               field(a: $a)
             }
             """,
-            [undef_var("a", 3, 24, "", 2, 13)],
+            [
+                {
+                    "message": "Variable '$a' is not defined.",
+                    "locations": [(3, 24), (2, 13)],
+                },
+            ],
         )
 
     def multiple_variables_not_defined():
@@ -153,7 +155,16 @@ def describe_validate_no_undefined_variables():
               field(a: $a, b: $b, c: $c)
             }
             """,
-            [undef_var("a", 3, 24, "Foo", 2, 13), undef_var("c", 3, 38, "Foo", 2, 13)],
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(3, 24), (2, 13)],
+                },
+                {
+                    "message": "Variable '$c' is not defined by operation 'Foo'.",
+                    "locations": [(3, 38), (2, 13)],
+                },
+            ],
         )
 
     def variable_in_fragment_not_defined_by_unnamed_query():
@@ -166,7 +177,12 @@ def describe_validate_no_undefined_variables():
               field(a: $a)
             }
             """,
-            [undef_var("a", 6, 24, "", 2, 13)],
+            [
+                {
+                    "message": "Variable '$a' is not defined.",
+                    "locations": [(6, 24), (2, 13)],
+                },
+            ],
         )
 
     def variable_in_fragment_not_defined_by_operation():
@@ -189,7 +205,12 @@ def describe_validate_no_undefined_variables():
               field(c: $c)
             }
             """,
-            [undef_var("c", 16, 24, "Foo", 2, 13)],
+            [
+                {
+                    "message": "Variable '$c' is not defined by operation 'Foo'.",
+                    "locations": [(16, 24), (2, 13)],
+                },
+            ],
         )
 
     def multiple_variables_in_fragments_not_defined():
@@ -212,7 +233,16 @@ def describe_validate_no_undefined_variables():
               field(c: $c)
             }
             """,
-            [undef_var("a", 6, 24, "Foo", 2, 13), undef_var("c", 16, 24, "Foo", 2, 13)],
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(6, 24), (2, 13)],
+                },
+                {
+                    "message": "Variable '$c' is not defined by operation 'Foo'.",
+                    "locations": [(16, 24), (2, 13)],
+                },
+            ],
         )
 
     def single_variable_in_fragment_not_defined_by_multiple_operations():
@@ -228,7 +258,16 @@ def describe_validate_no_undefined_variables():
               field(a: $a, b: $b)
             }
             """,
-            [undef_var("b", 9, 31, "Foo", 2, 13), undef_var("b", 9, 31, "Bar", 5, 13)],
+            [
+                {
+                    "message": "Variable '$b' is not defined by operation 'Foo'.",
+                    "locations": [(9, 31), (2, 13)],
+                },
+                {
+                    "message": "Variable '$b' is not defined by operation 'Bar'.",
+                    "locations": [(9, 31), (5, 13)],
+                },
+            ],
         )
 
     def variables_in_fragment_not_defined_by_multiple_operations():
@@ -244,7 +283,16 @@ def describe_validate_no_undefined_variables():
               field(a: $a, b: $b)
             }
             """,
-            [undef_var("a", 9, 24, "Foo", 2, 13), undef_var("b", 9, 31, "Bar", 5, 13)],
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(9, 24), (2, 13)],
+                },
+                {
+                    "message": "Variable '$b' is not defined by operation 'Bar'.",
+                    "locations": [(9, 31), (5, 13)],
+                },
+            ],
         )
 
     def variable_in_fragment_used_by_other_operation():
@@ -263,7 +311,16 @@ def describe_validate_no_undefined_variables():
               field(b: $b)
             }
             """,
-            [undef_var("a", 9, 24, "Foo", 2, 13), undef_var("b", 12, 24, "Bar", 5, 13)],
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(9, 24), (2, 13)],
+                },
+                {
+                    "message": "Variable '$b' is not defined by operation 'Bar'.",
+                    "locations": [(12, 24), (5, 13)],
+                },
+            ],
         )
 
     def multiple_undefined_variables_produce_multiple_errors():
@@ -285,11 +342,29 @@ def describe_validate_no_undefined_variables():
             }
             """,
             [
-                undef_var("a", 9, 25, "Foo", 2, 13),
-                undef_var("a", 11, 25, "Foo", 2, 13),
-                undef_var("c", 14, 25, "Foo", 2, 13),
-                undef_var("b", 9, 32, "Bar", 5, 13),
-                undef_var("b", 11, 32, "Bar", 5, 13),
-                undef_var("c", 14, 25, "Bar", 5, 13),
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(9, 25), (2, 13)],
+                },
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(11, 25), (2, 13)],
+                },
+                {
+                    "message": "Variable '$c' is not defined by operation 'Foo'.",
+                    "locations": [(14, 25), (2, 13)],
+                },
+                {
+                    "message": "Variable '$b' is not defined by operation 'Bar'.",
+                    "locations": [(9, 32), (5, 13)],
+                },
+                {
+                    "message": "Variable '$b' is not defined by operation 'Bar'.",
+                    "locations": [(11, 32), (5, 13)],
+                },
+                {
+                    "message": "Variable '$c' is not defined by operation 'Bar'.",
+                    "locations": [(14, 25), (5, 13)],
+                },
             ],
         )

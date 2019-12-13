@@ -2,11 +2,7 @@ from ...error import GraphQLError
 from ...language import DocumentNode, OperationDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["LoneAnonymousOperationRule", "anonymous_operation_not_alone_message"]
-
-
-def anonymous_operation_not_alone_message() -> str:
-    return "This anonymous operation must be the only defined operation."
+__all__ = ["LoneAnonymousOperationRule"]
 
 
 class LoneAnonymousOperationRule(ASTValidationRule):
@@ -30,5 +26,7 @@ class LoneAnonymousOperationRule(ASTValidationRule):
     def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
         if not node.name and self.operation_count > 1:
             self.report_error(
-                GraphQLError(anonymous_operation_not_alone_message(), node)
+                GraphQLError(
+                    "This anonymous operation must be the only defined operation.", node
+                )
             )

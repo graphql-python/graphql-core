@@ -13,12 +13,7 @@ from ...type import specified_scalar_types
 from ...pyutils import did_you_mean, suggestion_list
 from . import ASTValidationRule, ValidationContext, SDLValidationContext
 
-__all__ = ["KnownTypeNamesRule", "unknown_type_message"]
-
-
-def unknown_type_message(type_name: str, suggested_types: List[str]) -> str:
-    hint = did_you_mean([f"'{s}'" for s in suggested_types])
-    return f"Unknown type '{type_name}'.{hint}"
+__all__ = ["KnownTypeNamesRule"]
 
 
 class KnownTypeNamesRule(ASTValidationRule):
@@ -65,7 +60,11 @@ class KnownTypeNamesRule(ASTValidationRule):
                 else self.type_names,
             )
             self.report_error(
-                GraphQLError(unknown_type_message(type_name, suggested_types), node)
+                GraphQLError(
+                    f"Unknown type '{type_name}'."
+                    + did_you_mean([f"'{s}'" for s in suggested_types]),
+                    node,
+                )
             )
 
 

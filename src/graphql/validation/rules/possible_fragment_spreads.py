@@ -4,27 +4,7 @@ from ...type import is_composite_type
 from ...utilities import do_types_overlap, type_from_ast
 from . import ValidationRule
 
-__all__ = [
-    "PossibleFragmentSpreadsRule",
-    "type_incompatible_spread_message",
-    "type_incompatible_anon_spread_message",
-]
-
-
-def type_incompatible_spread_message(
-    frag_name: str, parent_type: str, frag_type: str
-) -> str:
-    return (
-        f"Fragment '{frag_name}' cannot be spread here as objects"
-        f" of type '{parent_type}' can never be of type '{frag_type}'."
-    )
-
-
-def type_incompatible_anon_spread_message(parent_type: str, frag_type: str) -> str:
-    return (
-        f"Fragment cannot be spread here as objects"
-        f" of type '{parent_type}' can never be of type '{frag_type}'."
-    )
+__all__ = ["PossibleFragmentSpreadsRule"]
 
 
 class PossibleFragmentSpreadsRule(ValidationRule):
@@ -46,9 +26,8 @@ class PossibleFragmentSpreadsRule(ValidationRule):
         ):
             context.report_error(
                 GraphQLError(
-                    type_incompatible_anon_spread_message(
-                        str(parent_type), str(frag_type)
-                    ),
+                    f"Fragment cannot be spread here as objects"
+                    f" of type '{parent_type}' can never be of type '{frag_type}'.",
                     node,
                 )
             )
@@ -65,9 +44,8 @@ class PossibleFragmentSpreadsRule(ValidationRule):
         ):
             context.report_error(
                 GraphQLError(
-                    type_incompatible_spread_message(
-                        frag_name, str(parent_type), str(frag_type)
-                    ),
+                    f"Fragment '{frag_name}' cannot be spread here as objects"
+                    f" of type '{parent_type}' can never be of type '{frag_type}'.",
                     node,
                 )
             )

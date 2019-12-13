@@ -2,7 +2,6 @@ from functools import partial
 
 from graphql.utilities import build_schema
 from graphql.validation import KnownTypeNamesRule
-from graphql.validation.rules.known_type_names import unknown_type_message
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors
 
@@ -13,13 +12,6 @@ assert_valid = partial(assert_errors, errors=[])
 assert_sdl_errors = partial(assert_sdl_validation_errors, KnownTypeNamesRule)
 
 assert_sdl_valid = partial(assert_sdl_errors, errors=[])
-
-
-def unknown_type(type_name, suggested_types, line, column):
-    return {
-        "message": unknown_type_message(type_name, suggested_types),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_known_type_names():
@@ -51,9 +43,15 @@ def describe_validate_known_type_names():
             }
             """,
             [
-                unknown_type("JumbledUpLetters", [], 2, 29),
-                unknown_type("Badger", [], 5, 31),
-                unknown_type("Peettt", ["Pet"], 8, 35),
+                {
+                    "message": "Unknown type 'JumbledUpLetters'.",
+                    "locations": [(2, 29)],
+                },
+                {"message": "Unknown type 'Badger'.", "locations": [(5, 31)]},
+                {
+                    "message": "Unknown type 'Peettt'. Did you mean 'Pet'?",
+                    "locations": [(8, 35)],
+                },
             ],
         )
 
@@ -67,9 +65,9 @@ def describe_validate_known_type_names():
         assert_errors(
             query,
             [
-                unknown_type("ID", [], 2, 25),
-                unknown_type("Float", [], 2, 37),
-                unknown_type("Int", [], 2, 50),
+                {"message": "Unknown type 'ID'.", "locations": [(2, 25)]},
+                {"message": "Unknown type 'Float'.", "locations": [(2, 37)]},
+                {"message": "Unknown type 'Int'.", "locations": [(2, 50)]},
             ],
             schema,
         )
@@ -139,18 +137,54 @@ def describe_validate_known_type_names():
             }
             """,
             [
-                unknown_type("C", ["A", "B"], 5, 40),
-                unknown_type("D", ["ID", "A", "B"], 6, 20),
-                unknown_type("E", ["A", "B"], 6, 24),
-                unknown_type("F", ["A", "B"], 9, 31),
-                unknown_type("G", ["A", "B"], 9, 35),
-                unknown_type("H", ["A", "B"], 12, 20),
-                unknown_type("I", ["ID", "A", "B"], 12, 24),
-                unknown_type("J", ["A", "B"], 16, 18),
-                unknown_type("K", ["A", "B"], 19, 41),
-                unknown_type("L", ["A", "B"], 22, 22),
-                unknown_type("M", ["A", "B"], 23, 25),
-                unknown_type("N", ["A", "B"], 24, 29),
+                {
+                    "message": "Unknown type 'C'. Did you mean 'A' or 'B'?",
+                    "locations": [(5, 40)],
+                },
+                {
+                    "message": "Unknown type 'D'. Did you mean 'ID', 'A' or 'B'?",
+                    "locations": [(6, 20)],
+                },
+                {
+                    "message": "Unknown type 'E'. Did you mean 'A' or 'B'?",
+                    "locations": [(6, 24)],
+                },
+                {
+                    "message": "Unknown type 'F'. Did you mean 'A' or 'B'?",
+                    "locations": [(9, 31)],
+                },
+                {
+                    "message": "Unknown type 'G'. Did you mean 'A' or 'B'?",
+                    "locations": [(9, 35)],
+                },
+                {
+                    "message": "Unknown type 'H'. Did you mean 'A' or 'B'?",
+                    "locations": [(12, 20)],
+                },
+                {
+                    "message": "Unknown type 'I'. Did you mean 'ID', 'A' or 'B'?",
+                    "locations": [(12, 24)],
+                },
+                {
+                    "message": "Unknown type 'J'. Did you mean 'A' or 'B'?",
+                    "locations": [(16, 18)],
+                },
+                {
+                    "message": "Unknown type 'K'. Did you mean 'A' or 'B'?",
+                    "locations": [(19, 41)],
+                },
+                {
+                    "message": "Unknown type 'L'. Did you mean 'A' or 'B'?",
+                    "locations": [(22, 22)],
+                },
+                {
+                    "message": "Unknown type 'M'. Did you mean 'A' or 'B'?",
+                    "locations": [(23, 25)],
+                },
+                {
+                    "message": "Unknown type 'N'. Did you mean 'A' or 'B'?",
+                    "locations": [(24, 29)],
+                },
             ],
         )
 
@@ -165,7 +199,7 @@ def describe_validate_known_type_names():
               foo: Foo
             }
             """,
-            [unknown_type("Foo", [], 7, 20)],
+            [{"message": "Unknown type 'Foo'.", "locations": [(7, 20)]}],
         )
 
     def reference_standard_scalars_inside_extension_document():
@@ -230,18 +264,54 @@ def describe_validate_known_type_names():
         assert_sdl_errors(
             sdl,
             [
-                unknown_type("C", ["A", "B"], 4, 40),
-                unknown_type("D", ["ID", "A", "B"], 5, 20),
-                unknown_type("E", ["A", "B"], 5, 24),
-                unknown_type("F", ["A", "B"], 8, 31),
-                unknown_type("G", ["A", "B"], 8, 35),
-                unknown_type("H", ["A", "B"], 11, 20),
-                unknown_type("I", ["ID", "A", "B"], 11, 24),
-                unknown_type("J", ["A", "B"], 15, 18),
-                unknown_type("K", ["A", "B"], 18, 41),
-                unknown_type("L", ["A", "B"], 21, 22),
-                unknown_type("M", ["A", "B"], 22, 25),
-                unknown_type("N", ["A", "B"], 23, 29),
+                {
+                    "message": "Unknown type 'C'. Did you mean 'A' or 'B'?",
+                    "locations": [(4, 40)],
+                },
+                {
+                    "message": "Unknown type 'D'. Did you mean 'ID', 'A' or 'B'?",
+                    "locations": [(5, 20)],
+                },
+                {
+                    "message": "Unknown type 'E'. Did you mean 'A' or 'B'?",
+                    "locations": [(5, 24)],
+                },
+                {
+                    "message": "Unknown type 'F'. Did you mean 'A' or 'B'?",
+                    "locations": [(8, 31)],
+                },
+                {
+                    "message": "Unknown type 'G'. Did you mean 'A' or 'B'?",
+                    "locations": [(8, 35)],
+                },
+                {
+                    "message": "Unknown type 'H'. Did you mean 'A' or 'B'?",
+                    "locations": [(11, 20)],
+                },
+                {
+                    "message": "Unknown type 'I'. Did you mean 'ID', 'A' or 'B'?",
+                    "locations": [(11, 24)],
+                },
+                {
+                    "message": "Unknown type 'J'. Did you mean 'A' or 'B'?",
+                    "locations": [(15, 18)],
+                },
+                {
+                    "message": "Unknown type 'K'. Did you mean 'A' or 'B'?",
+                    "locations": [(18, 41)],
+                },
+                {
+                    "message": "Unknown type 'L'. Did you mean 'A' or 'B'?",
+                    "locations": [(21, 22)],
+                },
+                {
+                    "message": "Unknown type 'M'. Did you mean 'A' or 'B'?",
+                    "locations": [(22, 25)],
+                },
+                {
+                    "message": "Unknown type 'N'. Did you mean 'A' or 'B'?",
+                    "locations": [(23, 29)],
+                },
             ],
             schema,
         )

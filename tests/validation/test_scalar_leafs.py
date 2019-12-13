@@ -1,30 +1,12 @@
 from functools import partial
 
 from graphql.validation import ScalarLeafsRule
-from graphql.validation.rules.scalar_leafs import (
-    no_subselection_allowed_message,
-    required_subselection_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, ScalarLeafsRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def no_scalar_subselection(field, type_, line, column):
-    return {
-        "message": no_subselection_allowed_message(field, type_),
-        "locations": [(line, column)],
-    }
-
-
-def missing_obj_subselection(field, type_, line, column):
-    return {
-        "message": required_subselection_message(field, type_),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_scalar_leafs():
@@ -44,7 +26,14 @@ def describe_validate_scalar_leafs():
               human
             }
             """,
-            [missing_obj_subselection("human", "Human", 3, 15)],
+            [
+                {
+                    "message": "Field 'human' of type 'Human'"
+                    " must have a selection of subfields."
+                    " Did you mean 'human { ... }'?",
+                    "locations": [(3, 15)],
+                },
+            ],
         )
 
     def interface_type_missing_selection():
@@ -54,7 +43,14 @@ def describe_validate_scalar_leafs():
               human { pets }
             }
             """,
-            [missing_obj_subselection("pets", "[Pet]", 3, 23)],
+            [
+                {
+                    "message": "Field 'pets' of type '[Pet]'"
+                    " must have a selection of subfields."
+                    " Did you mean 'pets { ... }'?",
+                    "locations": [(3, 23)],
+                },
+            ],
         )
 
     def valid_scalar_selection_with_args():
@@ -73,7 +69,13 @@ def describe_validate_scalar_leafs():
               barks { sinceWhen }
             }
             """,
-            [no_scalar_subselection("barks", "Boolean", 3, 21)],
+            [
+                {
+                    "message": "Field 'barks' must not have a selection"
+                    " since type 'Boolean' has no subfields.",
+                    "locations": [(3, 21)],
+                },
+            ],
         )
 
     def scalar_selection_not_allowed_on_enum():
@@ -83,7 +85,13 @@ def describe_validate_scalar_leafs():
               furColor { inHexdec }
             }
             """,
-            [no_scalar_subselection("furColor", "FurColor", 3, 24)],
+            [
+                {
+                    "message": "Field 'furColor' must not have a selection"
+                    " since type 'FurColor' has no subfields.",
+                    "locations": [(3, 24)],
+                },
+            ],
         )
 
     def scalar_selection_not_allowed_with_args():
@@ -93,7 +101,13 @@ def describe_validate_scalar_leafs():
               doesKnowCommand(dogCommand: SIT) { sinceWhen }
             }
             """,
-            [no_scalar_subselection("doesKnowCommand", "Boolean", 3, 48)],
+            [
+                {
+                    "message": "Field 'doesKnowCommand' must not have a selection"
+                    " since type 'Boolean' has no subfields.",
+                    "locations": [(3, 48)],
+                },
+            ],
         )
 
     def scalar_selection_not_allowed_with_directives():
@@ -103,7 +117,13 @@ def describe_validate_scalar_leafs():
               name @include(if: true) { isAlsoHumanName }
             }
             """,
-            [no_scalar_subselection("name", "String", 3, 39)],
+            [
+                {
+                    "message": "Field 'name' must not have a selection"
+                    " since type 'String' has no subfields.",
+                    "locations": [(3, 39)],
+                },
+            ],
         )
 
     def scalar_selection_not_allowed_with_directives_and_args():
@@ -113,5 +133,11 @@ def describe_validate_scalar_leafs():
               doesKnowCommand(dogCommand: SIT) @include(if: true) { sinceWhen }
             }
             """,
-            [no_scalar_subselection("doesKnowCommand", "Boolean", 3, 67)],
+            [
+                {
+                    "message": "Field 'doesKnowCommand' must not have a selection"
+                    " since type 'Boolean' has no subfields.",
+                    "locations": [(3, 67)],
+                },
+            ],
         )

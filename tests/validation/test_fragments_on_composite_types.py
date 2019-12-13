@@ -1,23 +1,12 @@
 from functools import partial
 
 from graphql.validation import FragmentsOnCompositeTypesRule
-from graphql.validation.rules.fragments_on_composite_types import (
-    fragment_on_non_composite_error_message,
-    inline_fragment_on_non_composite_error_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, FragmentsOnCompositeTypesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def fragment_on_non_composite(frag_name, type_name, line, column):
-    return {
-        "message": fragment_on_non_composite_error_message(frag_name, type_name),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_fragments_on_composite_types():
@@ -77,7 +66,13 @@ def describe_validate_fragments_on_composite_types():
               bad
             }
             """,
-            [fragment_on_non_composite("scalarFragment", "Boolean", 2, 40)],
+            [
+                {
+                    "message": "Fragment 'scalarFragment' cannot condition"
+                    " on non composite type 'Boolean'.",
+                    "locations": [(2, 40)],
+                },
+            ],
         )
 
     def enum_is_invalid_fragment_type():
@@ -87,7 +82,13 @@ def describe_validate_fragments_on_composite_types():
               bad
             }
             """,
-            [fragment_on_non_composite("scalarFragment", "FurColor", 2, 40)],
+            [
+                {
+                    "message": "Fragment 'scalarFragment' cannot condition"
+                    " on non composite type 'FurColor'.",
+                    "locations": [(2, 40)],
+                },
+            ],
         )
 
     def input_object_is_invalid_fragment_type():
@@ -97,7 +98,13 @@ def describe_validate_fragments_on_composite_types():
               stringField
             }
             """,
-            [fragment_on_non_composite("inputFragment", "ComplexInput", 2, 39)],
+            [
+                {
+                    "message": "Fragment 'inputFragment' cannot condition"
+                    " on non composite type 'ComplexInput'.",
+                    "locations": [(2, 39)],
+                },
+            ],
         )
 
     def scalar_is_invalid_inline_fragment_type():
@@ -111,7 +118,8 @@ def describe_validate_fragments_on_composite_types():
             """,
             [
                 {
-                    "message": inline_fragment_on_non_composite_error_message("String"),
+                    "message": "Fragment cannot condition"
+                    " on non composite type 'String'.",
                     "locations": [(3, 22)],
                 }
             ],

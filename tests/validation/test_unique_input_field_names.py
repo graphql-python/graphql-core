@@ -1,22 +1,12 @@
 from functools import partial
 
 from graphql.validation import UniqueInputFieldNamesRule
-from graphql.validation.rules.unique_input_field_names import (
-    duplicate_input_field_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, UniqueInputFieldNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_field(name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_input_field_message(name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
 
 
 def describe_validate_unique_input_field_names():
@@ -71,7 +61,12 @@ def describe_validate_unique_input_field_names():
               field(arg: { f1: "value", f1: "value" })
             }
             """,
-            [duplicate_field("f1", 3, 28, 3, 41)],
+            [
+                {
+                    "message": "There can be only one input field named 'f1'.",
+                    "locations": [(3, 28), (3, 41)],
+                },
+            ],
         )
 
     def many_duplicate_input_object_fields():
@@ -81,7 +76,16 @@ def describe_validate_unique_input_field_names():
               field(arg: { f1: "value", f1: "value", f1: "value" })
             }
             """,
-            [duplicate_field("f1", 3, 28, 3, 41), duplicate_field("f1", 3, 28, 3, 54)],
+            [
+                {
+                    "message": "There can be only one input field named 'f1'.",
+                    "locations": [(3, 28), (3, 41)],
+                },
+                {
+                    "message": "There can be only one input field named 'f1'.",
+                    "locations": [(3, 28), (3, 54)],
+                },
+            ],
         )
 
     def nested_duplicate_input_object_fields():
@@ -91,5 +95,10 @@ def describe_validate_unique_input_field_names():
               field(arg: { f1: {f2: "value", f2: "value" }})
             }
             """,
-            [duplicate_field("f2", 3, 33, 3, 46)],
+            [
+                {
+                    "message": "There can be only one input field named 'f2'.",
+                    "locations": [(3, 33), (3, 46)],
+                },
+            ],
         )

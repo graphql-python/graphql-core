@@ -1,7 +1,6 @@
 from functools import partial
 
 from graphql.validation import VariablesInAllowedPositionRule
-from graphql.validation.rules.variables_in_allowed_position import bad_var_pos_message
 
 from .harness import assert_validation_errors
 
@@ -173,7 +172,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("intArg", "Int", "Int!"),
+                    "message": "Variable '$intArg' of type 'Int'"
+                    " used in position expecting type 'Int!'.",
                     "locations": [(2, 25), (4, 51)],
                 }
             ],
@@ -194,7 +194,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("intArg", "Int", "Int!"),
+                    "message": "Variable '$intArg' of type 'Int'"
+                    " used in position expecting type 'Int!'.",
                     "locations": [(6, 25), (3, 49)],
                 }
             ],
@@ -219,7 +220,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("intArg", "Int", "Int!"),
+                    "message": "Variable '$intArg' of type 'Int'"
+                    " used in position expecting type 'Int!'.",
                     "locations": [(10, 25), (7, 49)],
                 }
             ],
@@ -236,7 +238,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("stringVar", "String", "Boolean"),
+                    "message": "Variable '$stringVar' of type 'String'"
+                    " used in position expecting type 'Boolean'.",
                     "locations": [(2, 25), (4, 45)],
                 }
             ],
@@ -253,7 +256,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("stringVar", "String", "[String]"),
+                    "message": "Variable '$stringVar' of type 'String'"
+                    " used in position expecting type '[String]'.",
                     "locations": [(2, 25), (4, 51)],
                 }
             ],
@@ -268,7 +272,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("boolVar", "Boolean", "Boolean!"),
+                    "message": "Variable '$boolVar' of type 'Boolean'"
+                    " used in position expecting type 'Boolean!'.",
                     "locations": [(2, 25), (3, 32)],
                 }
             ],
@@ -283,7 +288,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message("stringVar", "String", "Boolean!"),
+                    "message": "Variable '$stringVar' of type 'String'"
+                    " used in position expecting type 'Boolean!'.",
                     "locations": [(2, 25), (3, 32)],
                 }
             ],
@@ -301,9 +307,8 @@ def describe_validate_variables_are_in_allowed_positions():
             """,
             [
                 {
-                    "message": bad_var_pos_message(
-                        "stringListVar", "[String]", "[String!]"
-                    ),
+                    "message": "Variable '$stringListVar' of type '[String]'"
+                    " used in position expecting type '[String!]'.",
                     "locations": [(2, 25), (5, 65)],
                 }
             ],
@@ -321,7 +326,8 @@ def describe_validate_variables_are_in_allowed_positions():
                 """,
                 [
                     {
-                        "message": bad_var_pos_message("intVar", "Int", "Int!"),
+                        "message": "Variable '$intVar' of type 'Int'"
+                        " used in position expecting type 'Int!'.",
                         "locations": [(2, 29), (4, 55)],
                     }
                 ],

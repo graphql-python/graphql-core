@@ -14,28 +14,7 @@ from ...pyutils import FrozenList
 from ...type import GraphQLArgument, is_required_argument, is_type, specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-__all__ = [
-    "ProvidedRequiredArgumentsRule",
-    "ProvidedRequiredArgumentsOnDirectivesRule",
-    "missing_field_arg_message",
-    "missing_directive_arg_message",
-]
-
-
-def missing_field_arg_message(field_name: str, arg_name: str, type_: str) -> str:
-    return (
-        f"Field '{field_name}' argument '{arg_name}'"
-        f" of type '{type_}' is required, but it was not provided."
-    )
-
-
-def missing_directive_arg_message(
-    directive_name: str, arg_name: str, type_: str
-) -> str:
-    return (
-        f"Directive '@{directive_name}' argument '{arg_name}'"
-        f" of type '{type_}' is required, but it was not provided."
-    )
+__all__ = ["ProvidedRequiredArgumentsRule", "ProvidedRequiredArgumentsOnDirectivesRule"]
 
 
 class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
@@ -87,15 +66,16 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
             for arg_name in required_args:
                 if arg_name not in arg_node_set:
                     arg_type = required_args[arg_name].type
+                    arg_type_str = (
+                        str(arg_type)
+                        if is_type(arg_type)
+                        else print_ast(cast(TypeNode, arg_type))
+                    )
                     self.report_error(
                         GraphQLError(
-                            missing_directive_arg_message(
-                                directive_name,
-                                arg_name,
-                                str(arg_type)
-                                if is_type(arg_type)
-                                else print_ast(cast(TypeNode, arg_type)),
-                            ),
+                            f"Directive '@{directive_name}' argument '{arg_name}'"
+                            f" of type '{arg_type_str}' is required,"
+                            " but it was not provided.",
                             directive_node,
                         )
                     )
@@ -126,9 +106,9 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
             if not arg_node and is_required_argument(arg_def):
                 self.report_error(
                     GraphQLError(
-                        missing_field_arg_message(
-                            field_node.name.value, arg_name, str(arg_def.type)
-                        ),
+                        f"Field '{field_node.name.value}' argument '{arg_name}'"
+                        f" of type '{arg_def.type}' is required,"
+                        " but it was not provided.",
                         field_node,
                     )
                 )

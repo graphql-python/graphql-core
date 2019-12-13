@@ -12,9 +12,6 @@ from graphql.type import (
     GraphQLString,
 )
 from graphql.utilities import get_introspection_query
-from graphql.validation.rules.provided_required_arguments import (
-    missing_field_arg_message,
-)
 
 
 def describe_introspection():
@@ -1175,7 +1172,8 @@ def describe_introspection():
             None,
             [
                 {
-                    "message": missing_field_arg_message("__type", "name", "String!"),
+                    "message": "Field '__type' argument 'name'"
+                    " of type 'String!' is required, but it was not provided.",
                     "locations": [(3, 15)],
                 }
             ],

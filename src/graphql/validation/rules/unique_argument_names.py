@@ -4,11 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, ArgumentNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["UniqueArgumentNamesRule", "duplicate_arg_message"]
-
-
-def duplicate_arg_message(arg_name: str) -> str:
-    return f"There can only be one argument named '{arg_name}'."
+__all__ = ["UniqueArgumentNamesRule"]
 
 
 class UniqueArgumentNamesRule(ASTValidationRule):
@@ -34,7 +30,7 @@ class UniqueArgumentNamesRule(ASTValidationRule):
         if arg_name in known_arg_names:
             self.report_error(
                 GraphQLError(
-                    duplicate_arg_message(arg_name),
+                    f"There can be only one argument named '{arg_name}'.",
                     [known_arg_names[arg_name], node.name],
                 )
             )

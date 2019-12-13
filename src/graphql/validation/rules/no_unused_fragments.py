@@ -4,11 +4,7 @@ from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, OperationDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
-__all__ = ["NoUnusedFragmentsRule", "unused_fragment_message"]
-
-
-def unused_fragment_message(frag_name: str) -> str:
-    return f"Fragment '{frag_name}' is never used."
+__all__ = ["NoUnusedFragmentsRule"]
 
 
 class NoUnusedFragmentsRule(ASTValidationRule):
@@ -42,5 +38,5 @@ class NoUnusedFragmentsRule(ASTValidationRule):
             frag_name = fragment_def.name.value
             if frag_name not in fragment_names_used:
                 self.report_error(
-                    GraphQLError(unused_fragment_message(frag_name), fragment_def)
+                    GraphQLError(f"Fragment '{frag_name}' is never used.", fragment_def)
                 )

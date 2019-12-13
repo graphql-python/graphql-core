@@ -1,22 +1,12 @@
 from functools import partial
 
 from graphql.validation import ExecutableDefinitionsRule
-from graphql.validation.rules.executable_definitions import (
-    non_executable_definitions_message,
-)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, ExecutableDefinitionsRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def non_executable_definition(def_name, line, column):
-    return {
-        "message": non_executable_definitions_message(def_name),
-        "locations": [(line, column)],
-    }
 
 
 def describe_validate_executable_definitions():
@@ -65,8 +55,14 @@ def describe_validate_executable_definitions():
             }
             """,
             [
-                non_executable_definition("Cow", 8, 13),
-                non_executable_definition("Dog", 12, 13),
+                {
+                    "message": "The Cow definition is not executable.",
+                    "locations": [(8, 13)],
+                },
+                {
+                    "message": "The Dog definition is not executable.",
+                    "locations": [(12, 13)],
+                },
             ],
         )
 
@@ -84,8 +80,17 @@ def describe_validate_executable_definitions():
             extend schema @directive
             """,
             [
-                non_executable_definition("schema", 2, 13),
-                non_executable_definition("Query", 6, 13),
-                non_executable_definition("schema", 10, 13),
+                {
+                    "message": "The schema definition is not executable.",
+                    "locations": [(2, 13)],
+                },
+                {
+                    "message": "The Query definition is not executable.",
+                    "locations": [(6, 13)],
+                },
+                {
+                    "message": "The schema definition is not executable.",
+                    "locations": [(10, 13)],
+                },
             ],
         )

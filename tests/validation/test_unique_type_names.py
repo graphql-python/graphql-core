@@ -1,28 +1,13 @@
 from functools import partial
 
 from graphql.utilities import build_schema
-from graphql.validation.rules.unique_type_names import (
-    UniqueTypeNamesRule,
-    duplicate_type_name_message,
-    existed_type_name_message,
-)
+from graphql.validation.rules.unique_type_names import UniqueTypeNamesRule
 
 from .harness import assert_sdl_validation_errors
 
 assert_errors = partial(assert_sdl_validation_errors, UniqueTypeNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])
-
-
-def duplicate_type(name, l1, c1, l2, c2):
-    return {
-        "message": duplicate_type_name_message(name),
-        "locations": [(l1, c1), (l2, c2)],
-    }
-
-
-def existed_type(name, line, col):
-    return {"message": existed_type_name_message(name), "locations": [(line, col)]}
 
 
 def describe_validate_unique_type_names():
@@ -73,12 +58,30 @@ def describe_validate_unique_type_names():
             input Foo
             """,
             [
-                duplicate_type("Foo", 2, 18, 4, 20),
-                duplicate_type("Foo", 2, 18, 5, 18),
-                duplicate_type("Foo", 2, 18, 6, 23),
-                duplicate_type("Foo", 2, 18, 7, 19),
-                duplicate_type("Foo", 2, 18, 8, 18),
-                duplicate_type("Foo", 2, 18, 9, 19),
+                {
+                    "message": "There can be only one type named 'Foo'.",
+                    "locations": [(2, 18), (4, 20)],
+                },
+                {
+                    "message": "There can be only one type named 'Foo'.",
+                    "locations": [(2, 18), (5, 18)],
+                },
+                {
+                    "message": "There can be only one type named 'Foo'.",
+                    "locations": [(2, 18), (6, 23)],
+                },
+                {
+                    "message": "There can be only one type named 'Foo'.",
+                    "locations": [(2, 18), (7, 19)],
+                },
+                {
+                    "message": "There can be only one type named 'Foo'.",
+                    "locations": [(2, 18), (8, 18)],
+                },
+                {
+                    "message": "There can be only one type named 'Foo'.",
+                    "locations": [(2, 18), (9, 19)],
+                },
             ],
         )
 
@@ -106,12 +109,36 @@ def describe_validate_unique_type_names():
         assert_errors(
             sdl,
             [
-                existed_type("Foo", 2, 20),
-                existed_type("Foo", 3, 18),
-                existed_type("Foo", 4, 23),
-                existed_type("Foo", 5, 19),
-                existed_type("Foo", 6, 18),
-                existed_type("Foo", 7, 19),
+                {
+                    "message": "Type 'Foo' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    "locations": [(2, 20)],
+                },
+                {
+                    "message": "Type 'Foo' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    "locations": [(3, 18)],
+                },
+                {
+                    "message": "Type 'Foo' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    "locations": [(4, 23)],
+                },
+                {
+                    "message": "Type 'Foo' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    "locations": [(5, 19)],
+                },
+                {
+                    "message": "Type 'Foo' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    "locations": [(6, 18)],
+                },
+                {
+                    "message": "Type 'Foo' already exists in the schema."
+                    " It cannot also be defined in this type definition.",
+                    "locations": [(7, 19)],
+                },
             ],
             schema,
         )

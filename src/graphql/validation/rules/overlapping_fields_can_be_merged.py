@@ -30,19 +30,7 @@ from . import ValidationContext, ValidationRule
 
 MYPY = False
 
-__all__ = [
-    "OverlappingFieldsCanBeMergedRule",
-    "fields_conflict_message",
-    "reason_message",
-]
-
-
-def fields_conflict_message(response_name: str, reason: "ConflictReasonMessage") -> str:
-    return (
-        f"Fields '{response_name}' conflict because {reason_message(reason)}."
-        " Use different aliases on the fields to fetch both if this was"
-        " intentional."
-    )
+__all__ = ["OverlappingFieldsCanBeMergedRule"]
 
 
 def reason_message(reason: "ConflictReasonMessage") -> str:
@@ -83,9 +71,13 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             selection_set,
         )
         for (reason_name, reason), fields1, fields2 in conflicts:
+            reason_msg = reason_message(reason)
             self.report_error(
                 GraphQLError(
-                    fields_conflict_message(reason_name, reason), fields1 + fields2
+                    f"Fields '{reason_name}' conflict because {reason_msg}."
+                    " Use different aliases on the fields to fetch both"
+                    " if this was intentional.",
+                    fields1 + fields2,
                 )
             )
 
