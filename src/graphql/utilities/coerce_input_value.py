@@ -48,7 +48,7 @@ def coerce_input_value(
             path.as_list() if path else [],
             input_value,
             GraphQLError(
-                f"Expected non-nullable type {inspect(type_)} not to be None."
+                f"Expected non-nullable type '{inspect(type_)}' not to be None."
             ),
         )
         return INVALID
@@ -79,7 +79,7 @@ def coerce_input_value(
             on_error(
                 path.as_list() if path else [],
                 input_value,
-                GraphQLError(f"Expected type {type_.name} to be a dict."),
+                GraphQLError(f"Expected type '{type_.name}' to be a dict."),
             )
             return INVALID
 
@@ -99,7 +99,7 @@ def coerce_input_value(
                         path.as_list() if path else [],
                         input_value,
                         GraphQLError(
-                            f"Field {field_name} of required type {type_str}"
+                            f"Field '{field_name}' of required type '{type_str}'"
                             " was not provided."
                         ),
                     )
@@ -117,7 +117,7 @@ def coerce_input_value(
                     path.as_list() if path else [],
                     input_value,
                     GraphQLError(
-                        f"Field '{field_name}' is not defined by type {type_.name}."
+                        f"Field '{field_name}' is not defined by type '{type_.name}'."
                         + did_you_mean(suggestions)
                     ),
                 )
@@ -134,7 +134,7 @@ def coerce_input_value(
                 path.as_list() if path else [],
                 input_value,
                 GraphQLError(
-                    f"Expected type {type_.name}. {error}", original_error=error
+                    f"Expected type '{type_.name}'. {error}", original_error=error
                 ),
             )
             return INVALID
@@ -142,7 +142,7 @@ def coerce_input_value(
             on_error(
                 path.as_list() if path else [],
                 input_value,
-                GraphQLError(f"Expected type {type_.name}."),
+                GraphQLError(f"Expected type '{type_.name}'."),
             )
         return parse_result
 
@@ -157,7 +157,10 @@ def coerce_input_value(
         on_error(
             path.as_list() if path else [],
             input_value,
-            GraphQLError(f"Expected type {type_.name}." + did_you_mean(suggestions)),
+            GraphQLError(
+                f"Expected type '{type_.name}'."
+                + did_you_mean(suggestions, "the enum value")
+            ),
         )
         return INVALID
 

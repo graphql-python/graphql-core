@@ -361,11 +361,11 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             {"foo": None},
             [
                 {
-                    "message": "Abstract type FooInterface must resolve to an"
-                    " Object type at runtime for field Query.foo with value 'dummy',"
-                    " received '[]'. Either the FooInterface type should provide"
-                    ' a "resolve_type" function or each possible type'
-                    ' should provide an "is_type_of" function.',
+                    "message": "Abstract type 'FooInterface' must resolve to an"
+                    " Object type at runtime for field 'Query.foo' with value 'dummy',"
+                    " received '[]'. Either the 'FooInterface' type should provide"
+                    " a 'resolve_type' function or each possible type"
+                    " should provide an 'is_type_of' function.",
                     "locations": [(1, 3)],
                     "path": ["foo"],
                 }

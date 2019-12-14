@@ -365,7 +365,7 @@ def describe_execute_handles_inputs():
                         {
                             "message": "Variable '$input' got invalid value"
                             " None at 'input.c';"
-                            " Expected non-nullable type String! not to be None.",
+                            " Expected non-nullable type 'String!' not to be None.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -379,7 +379,7 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value 'foo bar';"
-                            " Expected type TestInputObject to be a dict.",
+                            " Expected type 'TestInputObject' to be a dict.",
                             "locations": [(2, 24)],
                             "path": None,
                         }
@@ -395,7 +395,7 @@ def describe_execute_handles_inputs():
                         {
                             "message": "Variable '$input' got invalid value"
                             " {'a': 'foo', 'b': 'bar'};"
-                            " Field c of required type String! was not provided.",
+                            " Field 'c' of required type 'String!' was not provided.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -415,13 +415,13 @@ def describe_execute_handles_inputs():
                         {
                             "message": "Variable '$input' got invalid value"
                             " {'a': 'foo'} at 'input.na';"
-                            " Field c of required type String! was not provided.",
+                            " Field 'c' of required type 'String!' was not provided.",
                             "locations": [(2, 28)],
                         },
                         {
                             "message": "Variable '$input' got invalid value"
                             " {'na': {'a': 'foo'}};"
-                            " Field nb of required type String! was not provided.",
+                            " Field 'nb' of required type 'String!' was not provided.",
                             "locations": [(2, 28)],
                         },
                     ],
@@ -437,7 +437,7 @@ def describe_execute_handles_inputs():
                         {
                             "message": "Variable '$input' got invalid value {'a':"
                             " 'foo', 'b': 'bar', 'c': 'baz', 'extra': 'dog'}; Field"
-                            " 'extra' is not defined by type TestInputObject.",
+                            " 'extra' is not defined by type 'TestInputObject'.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -658,7 +658,7 @@ def describe_execute_handles_inputs():
                 [
                     {
                         "message": "Variable '$value' got invalid value [1, 2, 3];"
-                        " Expected type String. String cannot represent"
+                        " Expected type 'String'. String cannot represent"
                         " a non string value: [1, 2, 3]",
                         "locations": [(2, 24)],
                         "path": None,
@@ -807,7 +807,7 @@ def describe_execute_handles_inputs():
                     {
                         "message": "Variable '$input' got invalid value None"
                         " at 'input[1]';"
-                        " Expected non-nullable type String! not to be None.",
+                        " Expected non-nullable type 'String!' not to be None.",
                         "locations": [(2, 24)],
                     }
                 ],
@@ -856,7 +856,7 @@ def describe_execute_handles_inputs():
                     {
                         "message": "Variable '$input' got invalid value None"
                         " at 'input[1]';"
-                        " Expected non-nullable type String! not to be None.",
+                        " Expected non-nullable type 'String!' not to be None.",
                         "locations": [(2, 24)],
                         "path": None,
                     }
@@ -974,7 +974,7 @@ def describe_execute_handles_inputs():
             return {
                 "message": "Variable '$input' got invalid value"
                 f" {value} at 'input[{index}]';"
-                " Expected type String."
+                " Expected type 'String'."
                 f" String cannot represent a non string value: {value}",
                 "locations": [(2, 20)],
             }

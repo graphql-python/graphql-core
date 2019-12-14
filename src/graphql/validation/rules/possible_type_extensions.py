@@ -64,7 +64,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
             self.report_error(
                 GraphQLError(
                     f"Cannot extend type '{type_name}' because it is not defined."
-                    + did_you_mean([f"'{s}'" for s in suggested_types]),
+                    + did_you_mean(suggested_types),
                     node.name,
                 )
             )

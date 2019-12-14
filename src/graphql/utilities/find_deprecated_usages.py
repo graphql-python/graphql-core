@@ -40,7 +40,7 @@ class FindDeprecatedUsages(Visitor):
                 reason = field_def.deprecation_reason
                 self.errors.append(
                     GraphQLError(
-                        f"The field {parent_type.name}.{field_name}"
+                        f"The field '{parent_type.name}.{field_name}'"
                         " is deprecated." + (f" {reason}" if reason else ""),
                         node,
                     )
@@ -55,7 +55,7 @@ class FindDeprecatedUsages(Visitor):
                 reason = enum_val.deprecation_reason
                 self.errors.append(
                     GraphQLError(
-                        f"The enum value {type_.name}.{enum_val_name}"
+                        f"The enum value '{type_.name}.{enum_val_name}'"
                         " is deprecated." + (f" {reason}" if reason else ""),
                         node,
                     )

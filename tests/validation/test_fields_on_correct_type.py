@@ -259,7 +259,7 @@ def describe_validate_fields_on_correct_type():
                 {
                     "message": "Cannot query field 'name' on type 'CatOrDog'."
                     " Did you mean to use an inline fragment"
-                    " on 'Being', 'Pet', 'Canine', 'Dog' or 'Cat'?",
+                    " on 'Being', 'Pet', 'Canine', 'Dog', or 'Cat'?",
                     "locations": [(3, 15)],
                 },
             ],
@@ -370,7 +370,7 @@ def describe_fields_on_correct_type_error_message():
         )
         assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'. Did you mean to use"
-            " an inline fragment on 'A', 'B', 'C', 'D' or 'E'?"
+            " an inline fragment on 'A', 'B', 'C', 'D', or 'E'?"
         )
 
     def limits_lots_of_field_suggestions():
@@ -389,5 +389,5 @@ def describe_fields_on_correct_type_error_message():
         )
         assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'."
-            " Did you mean 'z', 'y', 'x', 'w' or 'v'?"
+            " Did you mean 'z', 'y', 'x', 'w', or 'v'?"
         )

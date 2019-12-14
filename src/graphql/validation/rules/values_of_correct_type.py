@@ -74,7 +74,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                 GraphQLError(
                     f"Field '{node.name.value}'"
                     f" is not defined by type '{parent_type.name}'."
-                    + did_you_mean([f"'{name}'" for name in suggestions]),
+                    + did_you_mean(suggestions),
                     node,
                 )
             )
@@ -119,9 +119,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if is_enum_type(type_):
             if not isinstance(node, EnumValueNode) or node.value not in type_.values:
                 all_names = list(type_.values)
-                suggested_values = [
-                    f"'{name}'" for name in suggestion_list(print_ast(node), all_names)
-                ]
+                suggested_values = suggestion_list(print_ast(node), all_names)
                 self.report_error(
                     GraphQLError(
                         f"Expected value of type '{type_.name}',"

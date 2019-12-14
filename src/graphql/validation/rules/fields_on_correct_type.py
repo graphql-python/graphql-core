@@ -42,14 +42,12 @@ class FieldsOnCorrectTypeRule(ValidationRule):
         )
 
         # Report an error, including helpful suggestions.
-        quoted_type_names = [f"'{s}'" for s in suggested_type_names]
-        quoted_field_names = [f"'{s}'" for s in suggested_field_names]
         self.report_error(
             GraphQLError(
                 f"Cannot query field '{field_name}' on type '{type_}'."
                 + (
-                    did_you_mean(quoted_type_names, "to use an inline fragment on")
-                    or did_you_mean(quoted_field_names)
+                    did_you_mean(suggested_type_names, "to use an inline fragment on")
+                    or did_you_mean(suggested_field_names)
                 ),
                 node,
             )

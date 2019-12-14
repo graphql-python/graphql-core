@@ -47,7 +47,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
                         GraphQLError(
                             f"Unknown argument '{arg_name}'"
                             f" on directive '@{directive_name}'."
-                            + did_you_mean([f"'{s}'" for s in suggestions]),
+                            + did_you_mean(suggestions),
                             arg_node,
                         )
                     )
@@ -79,7 +79,7 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
                 GraphQLError(
                     f"Unknown argument '{arg_name}'"
                     f" on field '{parent_type.name}.{field_name}'."
-                    + did_you_mean([f"'{s}'" for s in suggestions]),
+                    + did_you_mean(suggestions),
                     arg_node,
                 )
             )

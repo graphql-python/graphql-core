@@ -249,7 +249,7 @@ def describe_type_system_enum_values():
             [
                 {
                     "message": "Variable '$color' got invalid value 2;"
-                    " Expected type Color.",
+                    " Expected type 'Color'.",
                     "locations": [(1, 8)],
                 }
             ],

@@ -142,7 +142,7 @@ def describe_validate_known_type_names():
                     "locations": [(5, 40)],
                 },
                 {
-                    "message": "Unknown type 'D'. Did you mean 'ID', 'A' or 'B'?",
+                    "message": "Unknown type 'D'. Did you mean 'ID', 'A', or 'B'?",
                     "locations": [(6, 20)],
                 },
                 {
@@ -162,7 +162,7 @@ def describe_validate_known_type_names():
                     "locations": [(12, 20)],
                 },
                 {
-                    "message": "Unknown type 'I'. Did you mean 'ID', 'A' or 'B'?",
+                    "message": "Unknown type 'I'. Did you mean 'ID', 'A', or 'B'?",
                     "locations": [(12, 24)],
                 },
                 {
@@ -269,7 +269,7 @@ def describe_validate_known_type_names():
                     "locations": [(4, 40)],
                 },
                 {
-                    "message": "Unknown type 'D'. Did you mean 'ID', 'A' or 'B'?",
+                    "message": "Unknown type 'D'. Did you mean 'ID', 'A', or 'B'?",
                     "locations": [(5, 20)],
                 },
                 {
@@ -289,7 +289,7 @@ def describe_validate_known_type_names():
                     "locations": [(11, 20)],
                 },
                 {
-                    "message": "Unknown type 'I'. Did you mean 'ID', 'A' or 'B'?",
+                    "message": "Unknown type 'I'. Did you mean 'ID', 'A', or 'B'?",
                     "locations": [(11, 24)],
                 },
                 {

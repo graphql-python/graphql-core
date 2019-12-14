@@ -61,8 +61,7 @@ class KnownTypeNamesRule(ASTValidationRule):
             )
             self.report_error(
                 GraphQLError(
-                    f"Unknown type '{type_name}'."
-                    + did_you_mean([f"'{s}'" for s in suggested_types]),
+                    f"Unknown type '{type_name}'." + did_you_mean(suggested_types),
                     node,
                 )
             )

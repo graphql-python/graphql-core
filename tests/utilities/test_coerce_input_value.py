@@ -58,13 +58,13 @@ def describe_coerce_input_value():
         def returns_an_error_for_undefined_value():
             result = _coerce_value(INVALID, TestNonNull)
             assert expect_errors(result) == [
-                ("Expected non-nullable type Int! not to be None.", [], INVALID)
+                ("Expected non-nullable type 'Int!' not to be None.", [], INVALID)
             ]
 
         def returns_an_error_for_null_value():
             result = _coerce_value(None, TestNonNull)
             assert expect_errors(result) == [
-                ("Expected non-nullable type Int! not to be None.", [], None)
+                ("Expected non-nullable type 'Int!' not to be None.", [], None)
             ]
 
     def describe_for_graphql_scalar():
@@ -92,7 +92,7 @@ def describe_coerce_input_value():
         def returns_an_error_for_undefined_result():
             result = _coerce_value({"value": INVALID}, TestScalar)
             assert expect_errors(result) == [
-                ("Expected type TestScalar.", [], {"value": INVALID})
+                ("Expected type 'TestScalar'.", [], {"value": INVALID})
             ]
 
         def returns_an_error_for_undefined_result_with_some_error_message():
@@ -100,7 +100,7 @@ def describe_coerce_input_value():
             result = _coerce_value(input_value, TestScalar)
             assert expect_errors(result) == [
                 (
-                    "Expected type TestScalar. Some error message",
+                    "Expected type 'TestScalar'. Some error message",
                     [],
                     {"error": "Some error message"},
                 )
@@ -121,16 +121,20 @@ def describe_coerce_input_value():
         def returns_an_error_for_misspelled_enum_value():
             result = _coerce_value("foo", TestEnum)
             assert expect_errors(result) == [
-                ("Expected type TestEnum. Did you mean FOO?", [], "foo")
+                (
+                    "Expected type 'TestEnum'. Did you mean the enum value 'FOO'?",
+                    [],
+                    "foo",
+                )
             ]
 
         def returns_an_error_for_incorrect_value_type():
             result1 = _coerce_value(123, TestEnum)
-            assert expect_errors(result1) == [("Expected type TestEnum.", [], 123)]
+            assert expect_errors(result1) == [("Expected type 'TestEnum'.", [], 123)]
 
             result2 = _coerce_value({"field": "value"}, TestEnum)
             assert expect_errors(result2) == [
-                ("Expected type TestEnum.", [], {"field": "value"})
+                ("Expected type 'TestEnum'.", [], {"field": "value"})
             ]
 
     def describe_for_graphql_input_object():
@@ -149,14 +153,15 @@ def describe_coerce_input_value():
         def returns_an_error_for_a_non_dict_value():
             result = _coerce_value(123, TestInputObject)
             assert expect_errors(result) == [
-                ("Expected type TestInputObject to be a dict.", [], 123)
+                ("Expected type 'TestInputObject' to be a dict.", [], 123)
             ]
 
         def returns_an_error_for_an_invalid_field():
             result = _coerce_value({"foo": nan}, TestInputObject)
             assert expect_errors(result) == [
                 (
-                    "Expected type Int. Int cannot represent non-integer value: nan",
+                    "Expected type 'Int'."
+                    " Int cannot represent non-integer value: nan",
                     ["foo"],
                     nan,
                 )
@@ -166,12 +171,14 @@ def describe_coerce_input_value():
             result = _coerce_value({"foo": "abc", "bar": "def"}, TestInputObject)
             assert expect_errors(result) == [
                 (
-                    "Expected type Int. Int cannot represent non-integer value: 'abc'",
+                    "Expected type 'Int'."
+                    " Int cannot represent non-integer value: 'abc'",
                     ["foo"],
                     "abc",
                 ),
                 (
-                    "Expected type Int. Int cannot represent non-integer value: 'def'",
+                    "Expected type 'Int'."
+                    " Int cannot represent non-integer value: 'def'",
                     ["bar"],
                     "def",
                 ),
@@ -180,14 +187,18 @@ def describe_coerce_input_value():
         def returns_error_for_a_missing_required_field():
             result = _coerce_value({"bar": 123}, TestInputObject)
             assert expect_errors(result) == [
-                ("Field foo of required type Int! was not provided.", [], {"bar": 123})
+                (
+                    "Field 'foo' of required type 'Int!' was not provided.",
+                    [],
+                    {"bar": 123},
+                )
             ]
 
         def returns_error_for_an_unknown_field():
             result = _coerce_value({"foo": 123, "unknownField": 123}, TestInputObject)
             assert expect_errors(result) == [
                 (
-                    "Field 'unknownField' is not defined by type TestInputObject.",
+                    "Field 'unknownField' is not defined by type 'TestInputObject'.",
                     [],
                     {"foo": 123, "unknownField": 123},
                 )
@@ -197,8 +208,8 @@ def describe_coerce_input_value():
             result = _coerce_value({"foo": 123, "bart": 123}, TestInputObject)
             assert expect_errors(result) == [
                 (
-                    "Field 'bart' is not defined by type TestInputObject."
-                    " Did you mean bar?",
+                    "Field 'bart' is not defined by type 'TestInputObject'."
+                    " Did you mean 'bar'?",
                     [],
                     {"foo": 123, "bart": 123},
                 )
@@ -271,12 +282,14 @@ def describe_coerce_input_value():
             result = _coerce_value([1, "b", True, 4], TestList)
             assert expect_errors(result) == [
                 (
-                    "Expected type Int. Int cannot represent non-integer value: 'b'",
+                    "Expected type 'Int'."
+                    " Int cannot represent non-integer value: 'b'",
                     [1],
                     "b",
                 ),
                 (
-                    "Expected type Int. Int cannot represent non-integer value: True",
+                    "Expected type 'Int'."
+                    " Int cannot represent non-integer value: True",
                     [2],
                     True,
                 ),
@@ -290,7 +303,7 @@ def describe_coerce_input_value():
             result = _coerce_value("INVALID", TestList)
             assert expect_errors(result) == [
                 (
-                    "Expected type Int."
+                    "Expected type 'Int'."
                     " Int cannot represent non-integer value: 'INVALID'",
                     [],
                     "INVALID",
@@ -329,7 +342,7 @@ def describe_coerce_input_value():
             with raises(GraphQLError) as exc_info:
                 assert coerce_input_value(None, GraphQLNonNull(GraphQLInt))
             assert exc_info.value.message == (
-                "Invalid value None: Expected non-nullable type Int! not to be None."
+                "Invalid value None: Expected non-nullable type 'Int!' not to be None."
             )
 
         def throw_error_with_path():
@@ -339,5 +352,5 @@ def describe_coerce_input_value():
                 )
             assert exc_info.value.message == (
                 "Invalid value None at 'value[0]':"
-                " Expected non-nullable type Int! not to be None."
+                " Expected non-nullable type 'Int!' not to be None."
             )

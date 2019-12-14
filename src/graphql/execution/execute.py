@@ -797,7 +797,7 @@ class ExecutionContext:
         if not isinstance(result, Iterable) or isinstance(result, str):
             raise GraphQLError(
                 "Expected Iterable, but did not find one for field"
-                f" {info.parent_type.name}.{info.field_name}."
+                f" '{info.parent_type.name}.{info.field_name}'."
             )
 
         # This is specified as a simple map, however we're optimizing the path where
@@ -916,13 +916,13 @@ class ExecutionContext:
 
         if not is_object_type(runtime_type):
             raise GraphQLError(
-                f"Abstract type {return_type.name} must resolve"
+                f"Abstract type '{return_type.name}' must resolve"
                 " to an Object type at runtime"
-                f" for field {info.parent_type.name}.{info.field_name}"
+                f" for field '{info.parent_type.name}.{info.field_name}'"
                 f" with value {inspect(result)}, received '{inspect(runtime_type)}'."
-                f" Either the {return_type.name} type should provide"
-                ' a "resolve_type" function or each possible type should'
-                ' provide an "is_type_of" function.',
+                f" Either the '{return_type.name}' type should provide"
+                " a 'resolve_type' function or each possible type should"
+                " provide an 'is_type_of' function.",
                 field_nodes,
             )
         runtime_type = cast(GraphQLObjectType, runtime_type)
