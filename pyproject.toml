@@ -52,6 +52,5 @@ tox = "^3.14"
 target-version = ['py36', 'py37', 'py38']
 
 [build-system]
-requires = ["poetry>=1.0.0b8"]
+requires = ["poetry>=1.0.0"]
 build-backend = "poetry.masonry.api"
-
