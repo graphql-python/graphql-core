@@ -31,7 +31,7 @@ In this case, we will get::
          " Did you mean 'homePlanet'?",
          locations=[SourceLocation(line=5, column=9)]),
      GraphQLError(
-        "Field 'friends' of type '[Character]' must have a sub selection of subfields."
+        "Field 'friends' of type '[Character]' must have a selection of subfields."
          "  Did you mean 'friends { ... }'?",
          locations=[SourceLocation(line=6, column=9)])]
 
