@@ -132,8 +132,8 @@ description = "Cross-platform colored terminal text."
 marker = "sys_platform == \"win32\" or platform_system == \"Windows\""
 name = "colorama"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "0.4.1"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "0.4.3"
 
 [[package]]
 category = "dev"
@@ -204,7 +204,7 @@ marker = "python_version < \"3.8\""
 name = "importlib-metadata"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
-version = "1.2.0"
+version = "1.3.0"
 
 [package.dependencies]
 zipp = ">=0.5"
@@ -365,7 +365,7 @@ description = "pytest: simple powerful testing with Python"
 name = "pytest"
 optional = false
 python-versions = ">=3.5"
-version = "5.3.1"
+version = "5.3.2"
 
 [package.dependencies]
 atomicwrites = ">=1.0"
@@ -463,7 +463,7 @@ description = "Alternative regular expression module, to replace re."
 name = "regex"
 optional = false
 python-versions = "*"
-version = "2019.11.1"
+version = "2019.12.9"
 
 [[package]]
 category = "dev"
@@ -760,8 +760,8 @@ codecov = [
     {file = "codecov-2.0.15.tar.gz", hash = "sha256:8ed8b7c6791010d359baed66f84f061bba5bd41174bf324c31311e8737602788"},
 ]
 colorama = [
-    {file = "colorama-0.4.1-py2.py3-none-any.whl", hash = "sha256:f8ac84de7840f5b9c4e3347b3c1eaa50f7e49c2b07596221daec5edaabbd7c48"},
-    {file = "colorama-0.4.1.tar.gz", hash = "sha256:05eed71e2e327246ad6b38c540c4a3117230b19679b875190486ddd2d721422d"},
+    {file = "colorama-0.4.3-py2.py3-none-any.whl", hash = "sha256:7d73d2a99753107a36ac6b455ee49046802e59d9d076ef8e47b61499fa29afff"},
+    {file = "colorama-0.4.3.tar.gz", hash = "sha256:e96da0d330793e2cb9485e9ddfd918d456036c7149416295932478192f4436a1"},
 ]
 coverage = [
     {file = "coverage-4.5.4-cp26-cp26m-macosx_10_12_x86_64.whl", hash = "sha256:eee64c616adeff7db37cc37da4180a3a5b6177f5c46b187894e633f088fb5b28"},
@@ -823,8 +823,8 @@ imagesize = [
     {file = "imagesize-1.1.0.tar.gz", hash = "sha256:f3832918bc3c66617f92e35f5d70729187676313caa60c187eb0f28b8fe5e3b5"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-1.2.0-py2.py3-none-any.whl", hash = "sha256:3a8b2dfd0a2c6a3636e7c016a7e54ae04b997d30e69d5eacdca7a6c2221a1402"},
-    {file = "importlib_metadata-1.2.0.tar.gz", hash = "sha256:41e688146d000891f32b1669e8573c57e39e5060e7f5f647aa617cd9a9568278"},
+    {file = "importlib_metadata-1.3.0-py2.py3-none-any.whl", hash = "sha256:d95141fbfa7ef2ec65cfd945e2af7e5a6ddbd7c8d9a25e66ff3be8e3daf9f60f"},
+    {file = "importlib_metadata-1.3.0.tar.gz", hash = "sha256:073a852570f92da5f744a3472af1b61e28e9f78ccf0c9117658dc32b15de7b45"},
 ]
 jinja2 = [
     {file = "Jinja2-2.10.3-py2.py3-none-any.whl", hash = "sha256:74320bb91f31270f9551d46522e33af46a80c3d619f4a4bf42b3164d30b5911f"},
@@ -923,8 +923,8 @@ pyparsing = [
     {file = "pyparsing-2.4.5.tar.gz", hash = "sha256:4ca62001be367f01bd3e92ecbb79070272a9d4964dce6a48a82ff0b8bc7e683a"},
 ]
 pytest = [
-    {file = "pytest-5.3.1-py3-none-any.whl", hash = "sha256:63344a2e3bce2e4d522fd62b4fdebb647c019f1f9e4ca075debbd13219db4418"},
-    {file = "pytest-5.3.1.tar.gz", hash = "sha256:f67403f33b2b1d25a6756184077394167fe5e2f9d8bdaab30707d19ccec35427"},
+    {file = "pytest-5.3.2-py3-none-any.whl", hash = "sha256:e41d489ff43948babd0fad7ad5e49b8735d5d55e26628a58673c39ff61d95de4"},
+    {file = "pytest-5.3.2.tar.gz", hash = "sha256:6b571215b5a790f9b41f19f3531c53a45cf6bb8ef2988bc1ff9afb38270b25fa"},
 ]
 pytest-asyncio = [
     {file = "pytest-asyncio-0.10.0.tar.gz", hash = "sha256:9fac5100fd716cbecf6ef89233e8590a4ad61d729d1732e0a96b84182df1daaf"},
@@ -959,19 +959,17 @@ pyyaml = [
     {file = "PyYAML-5.2.tar.gz", hash = "sha256:c0ee8eca2c582d29c3c2ec6e2c4f703d1b7f1fb10bc72317355a746057e7346c"},
 ]
 regex = [
-    {file = "regex-2019.11.1-cp27-none-win32.whl", hash = "sha256:604dc563a02a74d70ae1f55208ddc9bfb6d9f470f6d1a5054c4bd5ae58744ab1"},
-    {file = "regex-2019.11.1-cp27-none-win_amd64.whl", hash = "sha256:5e00f65cc507d13ab4dfa92c1232d004fa202c1d43a32a13940ab8a5afe2fb96"},
-    {file = "regex-2019.11.1-cp35-none-win32.whl", hash = "sha256:15454b37c5a278f46f7aa2d9339bda450c300617ca2fca6558d05d870245edc7"},
-    {file = "regex-2019.11.1-cp35-none-win_amd64.whl", hash = "sha256:d2b302f8cdd82c8f48e9de749d1d17f85ce9a0f082880b9a4859f66b07037dc6"},
-    {file = "regex-2019.11.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:b4e0406d822aa4993ac45072a584d57aa4931cf8288b5455bbf30c1d59dbad59"},
-    {file = "regex-2019.11.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:7faf534c1841c09d8fefa60ccde7b9903c9b528853ecf41628689793290ca143"},
-    {file = "regex-2019.11.1-cp36-none-win32.whl", hash = "sha256:7caf47e4a9ac6ef08cabd3442cc4ca3386db141fb3c8b2a7e202d0470028e910"},
-    {file = "regex-2019.11.1-cp36-none-win_amd64.whl", hash = "sha256:e3d8dd0ec0ea280cf89026b0898971f5750a7bd92cb62c51af5a52abd020054a"},
-    {file = "regex-2019.11.1-cp37-none-win32.whl", hash = "sha256:c31eaf28c6fe75ea329add0022efeed249e37861c19681960f99bbc7db981fb2"},
-    {file = "regex-2019.11.1-cp37-none-win_amd64.whl", hash = "sha256:1ad40708c255943a227e778b022c6497c129ad614bb7a2a2f916e12e8a359ee7"},
-    {file = "regex-2019.11.1-cp38-none-win32.whl", hash = "sha256:ec032cbfed59bd5a4b8eab943c310acfaaa81394e14f44454ad5c9eba4f24a74"},
-    {file = "regex-2019.11.1-cp38-none-win_amd64.whl", hash = "sha256:c7393597191fc2043c744db021643549061e12abe0b3ff5c429d806de7b93b66"},
-    {file = "regex-2019.11.1.tar.gz", hash = "sha256:720e34a539a76a1fedcebe4397290604cc2bdf6f81eca44adb9fb2ea071c0c69"},
+    {file = "regex-2019.12.9-cp27-none-win32.whl", hash = "sha256:40b7d1291a56897927e08bb973f8c186c2feb14c7f708bfe7aaee09483e85a20"},
+    {file = "regex-2019.12.9-cp27-none-win_amd64.whl", hash = "sha256:c203c9ee755e9656d0af8fab82754d5a664ebaf707b3f883c7eff6a3dd5151cf"},
+    {file = "regex-2019.12.9-cp35-none-win32.whl", hash = "sha256:719978a9145d59fc78509ea1d1bb74243f93583ef2a34dcc5623cf8118ae9726"},
+    {file = "regex-2019.12.9-cp35-none-win_amd64.whl", hash = "sha256:75cf3796f89f75f83207a5c6a6e14eaf57e0369ef0ffff8e22bf36bbcfa0f1de"},
+    {file = "regex-2019.12.9-cp36-none-win32.whl", hash = "sha256:3dbd8333fd2ebd50977ac8747385a73aa1f546eb6b16fcd83d274470fe11f243"},
+    {file = "regex-2019.12.9-cp36-none-win_amd64.whl", hash = "sha256:ad9e3c7260809c0d1ded100269f78ea0217c0704f1eaaf40a382008461848b45"},
+    {file = "regex-2019.12.9-cp37-none-win32.whl", hash = "sha256:91235c98283d2bddf1a588f0fbc2da8afa37959294bbd18b76297bdf316ba4d6"},
+    {file = "regex-2019.12.9-cp37-none-win_amd64.whl", hash = "sha256:aaffd68c4c1ed891366d5c390081f4bf6337595e76a157baf453603d8e53fbcb"},
+    {file = "regex-2019.12.9-cp38-none-win32.whl", hash = "sha256:e865bc508e316a3a09d36c8621596e6599a203bc54f1cd41020a127ccdac468a"},
+    {file = "regex-2019.12.9-cp38-none-win_amd64.whl", hash = "sha256:77396cf80be8b2a35db863cca4c1a902d88ceeb183adab328b81184e71a5eafe"},
+    {file = "regex-2019.12.9.tar.gz", hash = "sha256:77a3799152951d6d14ae5720ca162c97c64f85d4755da585418eac216b736cad"},
 ]
 requests = [
     {file = "requests-2.22.0-py2.py3-none-any.whl", hash = "sha256:9cf5292fcd0f598c671cfc1e0d7d1a7f13bb8085e9a590f48c010551dc6c4b31"},
