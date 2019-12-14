@@ -28,7 +28,7 @@ def default_on_error(
 ) -> None:
     error_prefix = "Invalid value " + inspect(invalid_value)
     if path:
-        error_prefix += f" at 'value{print_path_list(path)}': "
+        error_prefix += f" at 'value{print_path_list(path)}'"
     error.message = error_prefix + ": " + error.message
     raise error
 
