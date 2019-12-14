@@ -330,22 +330,23 @@ def describe_type_system_objects():
     def defines_an_object_type_with_deprecated_field():
         TypeWithDeprecatedField = GraphQLObjectType(
             "foo",
-            {"bar": GraphQLField(ScalarType, deprecation_reason="A terrible reason")},
+            {
+                "bar": GraphQLField(ScalarType, deprecation_reason="A terrible reason"),
+                "baz": GraphQLField(ScalarType, deprecation_reason=""),
+            },
         )
 
         deprecated_field = TypeWithDeprecatedField.fields["bar"]
         assert deprecated_field == GraphQLField(
             ScalarType, deprecation_reason="A terrible reason"
         )
-        assert deprecated_field.description is None
-        assert deprecated_field.type is ScalarType
-        assert deprecated_field.args == {}
-        assert deprecated_field.resolve is None
-        assert deprecated_field.subscribe is None
         assert deprecated_field.is_deprecated is True
         assert deprecated_field.deprecation_reason == "A terrible reason"
-        assert deprecated_field.extensions is None
-        assert deprecated_field.ast_node is None
+
+        deprecated_field = TypeWithDeprecatedField.fields["baz"]
+        assert deprecated_field == GraphQLField(ScalarType, deprecation_reason="")
+        assert deprecated_field.is_deprecated is True
+        assert deprecated_field.deprecation_reason == ""
 
     def accepts_an_object_type_with_output_type_as_field():
         # this is a shortcut syntax for simple fields

@@ -250,7 +250,7 @@ def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue])
         return ""
     reason = field_or_enum_value.deprecation_reason
     reason_ast = ast_from_value(reason, GraphQLString)
-    if not reason_ast or reason == "" or reason == DEFAULT_DEPRECATION_REASON:
+    if not reason_ast or reason == DEFAULT_DEPRECATION_REASON:
         return " @deprecated"
     return f" @deprecated(reason: {print_ast(reason_ast)})"
 

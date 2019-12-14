@@ -16,7 +16,7 @@ The current stable version 3.0.1 of GraphQL-core is up-to-date
 with GraphQL.js version 14.5.8.
 
 All parts of the API are covered by an extensive test suite
-of currently 1991 unit tests.
+of currently 1992 unit tests.
 
 
 ## Documentation

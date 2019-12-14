@@ -527,7 +527,7 @@ class GraphQLField:
 
     @property
     def is_deprecated(self) -> bool:
-        return bool(self.deprecation_reason)
+        return self.deprecation_reason is not None
 
 
 class GraphQLResolveInfo(NamedTuple):
@@ -1177,7 +1177,7 @@ class GraphQLEnumValue:
 
     @property
     def is_deprecated(self) -> bool:
-        return bool(self.deprecation_reason)
+        return self.deprecation_reason is not None
 
 
 GraphQLInputFieldMap = Dict[str, "GraphQLInputField"]
