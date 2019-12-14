@@ -69,7 +69,7 @@ def describe_known_directives():
               }
             }
             """,
-            [{"message": "Unknown directive 'unknown'.", "locations": [(3, 19)]}],
+            [{"message": "Unknown directive '@unknown'.", "locations": [(3, 19)]}],
         )
 
     def with_many_unknown_directives():
@@ -88,9 +88,9 @@ def describe_known_directives():
             }
             """,
             [
-                {"message": "Unknown directive 'unknown'.", "locations": [(3, 19)]},
-                {"message": "Unknown directive 'unknown'.", "locations": [(6, 21)]},
-                {"message": "Unknown directive 'unknown'.", "locations": [(8, 22)]},
+                {"message": "Unknown directive '@unknown'.", "locations": [(3, 19)]},
+                {"message": "Unknown directive '@unknown'.", "locations": [(6, 21)]},
+                {"message": "Unknown directive '@unknown'.", "locations": [(8, 22)]},
             ],
         )
 
@@ -133,20 +133,20 @@ def describe_known_directives():
             """,
             [
                 {
-                    "message": "Directive 'include' may not be used on query.",
+                    "message": "Directive '@include' may not be used on query.",
                     "locations": [(2, 38)],
                 },
                 {
-                    "message": "Directive 'onQuery' may not be used on field.",
+                    "message": "Directive '@onQuery' may not be used on field.",
                     "locations": [(3, 20)],
                 },
                 {
-                    "message": "Directive 'onQuery'"
+                    "message": "Directive '@onQuery'"
                     " may not be used on fragment spread.",
                     "locations": [(4, 23)],
                 },
                 {
-                    "message": "Directive 'onQuery' may not be used on mutation.",
+                    "message": "Directive '@onQuery' may not be used on mutation.",
                     "locations": [(7, 26)],
                 },
             ],
@@ -161,7 +161,7 @@ def describe_known_directives():
             """,
             [
                 {
-                    "message": "Directive 'onField'"
+                    "message": "Directive '@onField'"
                     " may not be used on variable definition.",
                     "locations": [(2, 37)],
                 },
@@ -245,7 +245,7 @@ def describe_known_directives():
                 """
                 extend type Query @unknown
                 """,
-                [{"message": "Unknown directive 'unknown'.", "locations": [(2, 35)]}],
+                [{"message": "Unknown directive '@unknown'.", "locations": [(2, 35)]}],
                 schema,
             )
 
@@ -324,65 +324,68 @@ def describe_known_directives():
                 """,  # noqa: E501
                 [
                     {
-                        "message": "Directive 'onInterface' may not be used on object.",
+                        "message": "Directive '@onInterface'"
+                        " may not be used on object.",
                         "locations": [(2, 51)],
                     },
                     {
-                        "message": "Directive 'onInputFieldDefinition'"
+                        "message": "Directive '@onInputFieldDefinition'"
                         " may not be used on argument definition.",
                         "locations": [(3, 38)],
                     },
                     {
-                        "message": "Directive 'onInputFieldDefinition'"
+                        "message": "Directive '@onInputFieldDefinition'"
                         " may not be used on field definition.",
                         "locations": [(3, 71)],
                     },
                     {
-                        "message": "Directive 'onEnum' may not be used on scalar.",
+                        "message": "Directive '@onEnum' may not be used on scalar.",
                         "locations": [(6, 33)],
                     },
                     {
-                        "message": "Directive 'onObject' may not be used on interface.",
+                        "message": "Directive '@onObject'"
+                        " may not be used on interface.",
                         "locations": [(8, 39)],
                     },
                     {
-                        "message": "Directive 'onInputFieldDefinition'"
+                        "message": "Directive '@onInputFieldDefinition'"
                         " may not be used on argument definition.",
                         "locations": [(9, 38)],
                     },
                     {
-                        "message": "Directive 'onInputFieldDefinition'"
+                        "message": "Directive '@onInputFieldDefinition'"
                         " may not be used on field definition.",
                         "locations": [(9, 71)],
                     },
                     {
-                        "message": "Directive 'onEnumValue' may not be used on union.",
+                        "message": "Directive '@onEnumValue' may not be used on union.",
                         "locations": [(12, 31)],
                     },
                     {
-                        "message": "Directive 'onScalar' may not be used on enum.",
+                        "message": "Directive '@onScalar' may not be used on enum.",
                         "locations": [(14, 29)],
                     },
                     {
-                        "message": "Directive 'onUnion' may not be used on enum value.",
+                        "message": "Directive '@onUnion'"
+                        " may not be used on enum value.",
                         "locations": [(15, 28)],
                     },
                     {
-                        "message": "Directive 'onEnum'"
+                        "message": "Directive '@onEnum'"
                         " may not be used on input object.",
                         "locations": [(18, 31)],
                     },
                     {
-                        "message": "Directive 'onArgumentDefinition'"
+                        "message": "Directive '@onArgumentDefinition'"
                         " may not be used on input field definition.",
                         "locations": [(19, 32)],
                     },
                     {
-                        "message": "Directive 'onObject' may not be used on schema.",
+                        "message": "Directive '@onObject' may not be used on schema.",
                         "locations": [(22, 24)],
                     },
                     {
-                        "message": "Directive 'onObject' may not be used on schema.",
+                        "message": "Directive '@onObject' may not be used on schema.",
                         "locations": [(26, 31)],
                     },
                 ],

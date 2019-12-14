@@ -27,19 +27,19 @@ def describe_validate_unique_variable_names():
             """,
             [
                 {
-                    "message": "There can be only one variable named 'x'.",
+                    "message": "There can be only one variable named '$x'.",
                     "locations": [(2, 22), (2, 31)],
                 },
                 {
-                    "message": "There can be only one variable named 'x'.",
+                    "message": "There can be only one variable named '$x'.",
                     "locations": [(2, 22), (2, 40)],
                 },
                 {
-                    "message": "There can be only one variable named 'x'.",
+                    "message": "There can be only one variable named '$x'.",
                     "locations": [(3, 22), (3, 34)],
                 },
                 {
-                    "message": "There can be only one variable named 'x'.",
+                    "message": "There can be only one variable named '$x'.",
                     "locations": [(4, 22), (4, 31)],
                 },
             ],

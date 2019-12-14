@@ -49,13 +49,13 @@ class KnownDirectivesRule(ASTValidationRule):
             if candidate_location and candidate_location not in locations:
                 self.report_error(
                     GraphQLError(
-                        f"Directive '{name}'"
+                        f"Directive '@{name}'"
                         f" may not be used on {candidate_location.value}.",
                         node,
                     )
                 )
         else:
-            self.report_error(GraphQLError(f"Unknown directive '{name}'.", node))
+            self.report_error(GraphQLError(f"Unknown directive '@{name}'.", node))
 
 
 _operation_location = {

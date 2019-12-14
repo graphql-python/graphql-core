@@ -845,7 +845,7 @@ def describe_schema_builder():
         with raises(TypeError) as exc_info:
             build_schema(sdl)
         msg = str(exc_info.value)
-        assert msg == "Unknown directive 'unknown'."
+        assert msg == "Unknown directive '@unknown'."
 
     def allows_to_disable_sdl_validation():
         sdl = """

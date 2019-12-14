@@ -37,7 +37,7 @@ def describe_validate_supports_full_validation():
         errors = validate(test_schema, doc)
         assert errors == [
             {
-                "message": 'Expected type Invalid, found "bad value";'
+                "message": "Expected value of type 'Invalid', found \"bad value\";"
                 " Invalid scalar is always invalid: 'bad value'",
                 "locations": [(3, 31)],
             }

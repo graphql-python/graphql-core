@@ -59,8 +59,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                 field_type = field_def.type
                 self.report_error(
                     GraphQLError(
-                        f"Field {type_.name}.{field_name} of required type"
-                        f" {field_type} was not provided.",
+                        f"Field '{type_.name}.{field_name}' of required type"
+                        f" '{field_type}' was not provided.",
                         node,
                     )
                 )
@@ -73,8 +73,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             self.report_error(
                 GraphQLError(
                     f"Field '{node.name.value}'"
-                    f" is not defined by type {parent_type.name}."
-                    + did_you_mean(suggestions),
+                    f" is not defined by type '{parent_type.name}'."
+                    + did_you_mean([f"'{name}'" for name in suggestions]),
                     node,
                 )
             )
@@ -83,7 +83,9 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         type_ = self.context.get_input_type()
         if is_non_null_type(type_):
             self.report_error(
-                GraphQLError(f"Expected type {type_}, found {print_ast(node)}.", node)
+                GraphQLError(
+                    f"Expected value of type '{type_}', found {print_ast(node)}.", node
+                )
             )
 
     def enter_enum_value(self, node: EnumValueNode, *_args):
@@ -117,10 +119,13 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if is_enum_type(type_):
             if not isinstance(node, EnumValueNode) or node.value not in type_.values:
                 all_names = list(type_.values)
-                suggested_values = suggestion_list(print_ast(node), all_names)
+                suggested_values = [
+                    f"'{name}'" for name in suggestion_list(print_ast(node), all_names)
+                ]
                 self.report_error(
                     GraphQLError(
-                        f"Expected type {type_.name}, found {print_ast(node)}."
+                        f"Expected value of type '{type_.name}',"
+                        f" found {print_ast(node)}."
                         + did_you_mean(suggested_values, "the enum value"),
                         node,
                     )
@@ -130,7 +135,9 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if not is_scalar_type(type_):
             self.report_error(
                 GraphQLError(
-                    f"Expected type {location_type}, found {print_ast(node)}.", node
+                    f"Expected value of type '{location_type}',"
+                    f" found {print_ast(node)}.",
+                    node,
                 )
             )
             return
@@ -143,14 +150,17 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             if is_invalid(parse_result):
                 self.report_error(
                     GraphQLError(
-                        f"Expected type {location_type}, found {print_ast(node)}.", node
+                        f"Expected value of type '{location_type}',"
+                        f" found {print_ast(node)}.",
+                        node,
                     )
                 )
         except Exception as error:
             # Ensure a reference to the original error is maintained.
             self.report_error(
                 GraphQLError(
-                    f"Expected type {location_type}, found {print_ast(node)}; {error}",
+                    f"Expected value of type '{location_type}',"
+                    f" found {print_ast(node)}; {error}",
                     node,
                     original_error=error,
                 )

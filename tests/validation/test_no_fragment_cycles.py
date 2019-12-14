@@ -110,7 +110,7 @@ def describe_validate_no_circular_fragment_spreads():
             [
                 {
                     "message": "Cannot spread fragment 'fragA'"
-                    " within itself via fragB.",
+                    " within itself via 'fragB'.",
                     "locations": [(2, 37), (3, 37)],
                 }
             ],
@@ -125,7 +125,7 @@ def describe_validate_no_circular_fragment_spreads():
             [
                 {
                     "message": "Cannot spread fragment 'fragB'"
-                    " within itself via fragA.",
+                    " within itself via 'fragA'.",
                     "locations": [(2, 37), (3, 37)],
                 }
             ],
@@ -148,7 +148,7 @@ def describe_validate_no_circular_fragment_spreads():
             [
                 {
                     "message": "Cannot spread fragment 'fragA'"
-                    " within itself via fragB.",
+                    " within itself via 'fragB'.",
                     "locations": [(4, 17), (9, 17)],
                 }
             ],
@@ -169,13 +169,13 @@ def describe_validate_no_circular_fragment_spreads():
             [
                 {
                     "message": "Cannot spread fragment 'fragA' within itself"
-                    " via fragB, fragC, fragO, fragP.",
+                    " via 'fragB', 'fragC', 'fragO', 'fragP'.",
                     "locations": [(2, 37), (3, 37), (4, 37), (8, 37), (9, 37)],
                     "path": None,
                 },
                 {
                     "message": "Cannot spread fragment 'fragO' within itself"
-                    " via fragP, fragX, fragY, fragZ.",
+                    " via 'fragP', 'fragX', 'fragY', 'fragZ'.",
                     "locations": [(8, 37), (9, 47), (5, 37), (6, 37), (7, 37)],
                     "path": None,
                 },
@@ -192,12 +192,12 @@ def describe_validate_no_circular_fragment_spreads():
             [
                 {
                     "message": "Cannot spread fragment 'fragA'"
-                    " within itself via fragB.",
+                    " within itself via 'fragB'.",
                     "locations": [(2, 37), (3, 37)],
                 },
                 {
                     "message": "Cannot spread fragment 'fragA'"
-                    " within itself via fragC.",
+                    " within itself via 'fragC'.",
                     "locations": [(2, 47), (4, 37)],
                 },
             ],
@@ -213,12 +213,12 @@ def describe_validate_no_circular_fragment_spreads():
             [
                 {
                     "message": "Cannot spread fragment 'fragA'"
-                    " within itself via fragC.",
+                    " within itself via 'fragC'.",
                     "locations": [(2, 37), (4, 37)],
                 },
                 {
                     "message": "Cannot spread fragment 'fragC'"
-                    " within itself via fragB.",
+                    " within itself via 'fragB'.",
                     "locations": [(4, 47), (3, 37)],
                 },
             ],
@@ -238,12 +238,12 @@ def describe_validate_no_circular_fragment_spreads():
                 },
                 {
                     "message": "Cannot spread fragment 'fragA'"
-                    " within itself via fragB, fragC.",
+                    " within itself via 'fragB', 'fragC'.",
                     "locations": [(2, 37), (3, 47), (4, 37)],
                 },
                 {
                     "message": "Cannot spread fragment 'fragB'"
-                    " within itself via fragC.",
+                    " within itself via 'fragC'.",
                     "locations": [(3, 47), (4, 47)],
                 },
             ],

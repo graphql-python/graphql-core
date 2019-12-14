@@ -24,7 +24,7 @@ class UniqueDirectiveNamesRule(SDLValidationRule):
         if self.schema and self.schema.get_directive(directive_name):
             self.report_error(
                 GraphQLError(
-                    f"Directive '{directive_name}' already exists in the schema."
+                    f"Directive '@{directive_name}' already exists in the schema."
                     " It cannot be redefined.",
                     node.name,
                 )
@@ -33,7 +33,7 @@ class UniqueDirectiveNamesRule(SDLValidationRule):
             if directive_name in self.known_directive_names:
                 self.report_error(
                     GraphQLError(
-                        f"There can be only one directive named '{directive_name}'.",
+                        f"There can be only one directive named '@{directive_name}'.",
                         [self.known_directive_names[directive_name], node.name],
                     )
                 )

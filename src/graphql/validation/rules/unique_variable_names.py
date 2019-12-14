@@ -26,7 +26,7 @@ class UniqueVariableNamesRule(ASTValidationRule):
         if variable_name in known_variable_names:
             self.report_error(
                 GraphQLError(
-                    f"There can be only one variable named '{variable_name}'.",
+                    f"There can be only one variable named '${variable_name}'.",
                     [known_variable_names[variable_name], node.variable.name],
                 )
             )

@@ -146,8 +146,8 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": 'Expected type Color, found "GREEN".'
-                    " Did you mean the enum value GREEN?",
+                    "message": "Expected value of type 'Color', found \"GREEN\"."
+                    " Did you mean the enum value 'GREEN'?",
                     "locations": [(1, 23)],
                 }
             ],
@@ -160,8 +160,8 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected type Color, found GREENISH."
-                    " Did you mean the enum value GREEN?",
+                    "message": "Expected value of type 'Color', found GREENISH."
+                    " Did you mean the enum value 'GREEN'?",
                     "locations": [(1, 23)],
                 }
             ],
@@ -174,8 +174,8 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected type Color, found green."
-                    " Did you mean the enum value GREEN?",
+                    "message": "Expected value of type 'Color', found green."
+                    " Did you mean the enum value 'GREEN'?",
                     "locations": [(1, 23)],
                 }
             ],
@@ -201,7 +201,12 @@ def describe_type_system_enum_values():
 
         assert result == (
             None,
-            [{"message": "Expected type Color, found 1.", "locations": [(1, 23)]}],
+            [
+                {
+                    "message": "Expected value of type 'Color', found 1.",
+                    "locations": [(1, 23)],
+                }
+            ],
         )
 
     def does_not_accept_internal_value_in_place_of_int():
@@ -209,7 +214,12 @@ def describe_type_system_enum_values():
 
         assert result == (
             None,
-            [{"message": "Expected type Int, found GREEN.", "locations": [(1, 22)]}],
+            [
+                {
+                    "message": "Expected value of type 'Int', found GREEN.",
+                    "locations": [(1, 22)],
+                }
+            ],
         )
 
     def accepts_json_string_as_enum_variable():

@@ -140,27 +140,27 @@ def describe_validate_possible_type_extensions():
             """,
             [
                 {
-                    "message": "Cannot extend non-scalar type 'FooScalar'.",
+                    "message": "Cannot extend non-object type 'FooScalar'.",
                     "locations": [(2, 13), (9, 13)],
                 },
                 {
-                    "message": "Cannot extend non-object type 'FooObject'.",
+                    "message": "Cannot extend non-interface type 'FooObject'.",
                     "locations": [(3, 13), (10, 13)],
                 },
                 {
-                    "message": "Cannot extend non-interface type 'FooInterface'.",
+                    "message": "Cannot extend non-union type 'FooInterface'.",
                     "locations": [(4, 13), (11, 13)],
                 },
                 {
-                    "message": "Cannot extend non-union type 'FooUnion'.",
+                    "message": "Cannot extend non-enum type 'FooUnion'.",
                     "locations": [(5, 13), (12, 13)],
                 },
                 {
-                    "message": "Cannot extend non-enum type 'FooEnum'.",
+                    "message": "Cannot extend non-input object type 'FooEnum'.",
                     "locations": [(6, 13), (13, 13)],
                 },
                 {
-                    "message": "Cannot extend non-input object type 'FooInputObject'.",
+                    "message": "Cannot extend non-scalar type 'FooInputObject'.",
                     "locations": [(7, 13), (14, 13)],
                 },
             ],
@@ -240,27 +240,27 @@ def describe_validate_possible_type_extensions():
             sdl,
             [
                 {
-                    "message": "Cannot extend non-scalar type 'FooScalar'.",
+                    "message": "Cannot extend non-object type 'FooScalar'.",
                     "locations": [(2, 13)],
                 },
                 {
-                    "message": "Cannot extend non-object type 'FooObject'.",
+                    "message": "Cannot extend non-interface type 'FooObject'.",
                     "locations": [(3, 13)],
                 },
                 {
-                    "message": "Cannot extend non-interface type 'FooInterface'.",
+                    "message": "Cannot extend non-union type 'FooInterface'.",
                     "locations": [(4, 13)],
                 },
                 {
-                    "message": "Cannot extend non-union type 'FooUnion'.",
+                    "message": "Cannot extend non-enum type 'FooUnion'.",
                     "locations": [(5, 13)],
                 },
                 {
-                    "message": "Cannot extend non-enum type 'FooEnum'.",
+                    "message": "Cannot extend non-input object type 'FooEnum'.",
                     "locations": [(6, 13)],
                 },
                 {
-                    "message": "Cannot extend non-input object type 'FooInputObject'.",
+                    "message": "Cannot extend non-scalar type 'FooInputObject'.",
                     "locations": [(7, 13)],
                 },
             ],

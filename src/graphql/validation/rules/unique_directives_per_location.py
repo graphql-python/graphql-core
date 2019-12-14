@@ -46,7 +46,7 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
                     if directive_name in known_directives:
                         self.report_error(
                             GraphQLError(
-                                f"The directive '{directive_name}'"
+                                f"The directive '@{directive_name}'"
                                 " can only be used once at this location.",
                                 [known_directives[directive_name], directive],
                             )

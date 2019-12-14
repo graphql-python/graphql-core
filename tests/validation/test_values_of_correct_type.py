@@ -165,7 +165,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found 1.",
+                        "message": "Expected value of type 'String', found 1.",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -182,7 +182,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found 1.0.",
+                        "message": "Expected value of type 'String', found 1.0.",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -199,7 +199,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found true.",
+                        "message": "Expected value of type 'String', found true.",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -216,7 +216,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found BAR.",
+                        "message": "Expected value of type 'String', found BAR.",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -234,7 +234,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Int, found "3".',
+                        "message": "Expected value of type 'Int', found \"3\".",
                         "locations": [(4, 41)],
                     },
                 ],
@@ -251,7 +251,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Int,"
+                        "message": "Expected value of type 'Int',"
                         " found 829384293849283498239482938.",
                         "locations": [(4, 41)],
                     },
@@ -269,7 +269,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Int, found FOO.",
+                        "message": "Expected value of type 'Int', found FOO.",
                         "locations": [(4, 41)],
                     },
                 ],
@@ -284,7 +284,12 @@ def describe_validate_values_of_correct_type():
                   }
                 }
                 """,
-                [{"message": "Expected type Int, found 3.0.", "locations": [(4, 41)]}],
+                [
+                    {
+                        "message": "Expected value of type 'Int', found 3.0.",
+                        "locations": [(4, 41)],
+                    }
+                ],
             )
 
         def float_into_int():
@@ -298,7 +303,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Int, found 3.333.",
+                        "message": "Expected value of type 'Int', found 3.333.",
                         "locations": [(4, 41)],
                     },
                 ],
@@ -316,7 +321,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Float, found "3.333".',
+                        "message": "Expected value of type 'Float', found \"3.333\".",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -333,7 +338,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Float, found true.",
+                        "message": "Expected value of type 'Float', found true.",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -350,7 +355,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Float, found FOO.",
+                        "message": "Expected value of type 'Float', found FOO.",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -368,7 +373,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Boolean, found 2.",
+                        "message": "Expected value of type 'Boolean', found 2.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -385,7 +390,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Boolean, found 1.0.",
+                        "message": "Expected value of type 'Boolean', found 1.0.",
                         "locations": [(4, 49)],
                     }
                 ],
@@ -402,7 +407,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Boolean, found "true".',
+                        "message": "Expected value of type 'Boolean', found \"true\".",
                         "locations": [(4, 49)],
                     }
                 ],
@@ -419,7 +424,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Boolean, found TRUE.",
+                        "message": "Expected value of type 'Boolean', found TRUE.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -435,7 +440,12 @@ def describe_validate_values_of_correct_type():
                   }
                 }
                 """,
-                [{"message": "Expected type ID, found 1.0.", "locations": [(4, 39)]}],
+                [
+                    {
+                        "message": "Expected value of type 'ID', found 1.0.",
+                        "locations": [(4, 39)],
+                    }
+                ],
             )
 
         def boolean_into_id():
@@ -449,7 +459,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type ID, found true.",
+                        "message": "Expected value of type 'ID', found true.",
                         "locations": [(4, 39)],
                     },
                 ],
@@ -466,7 +476,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type ID, found SOMETHING.",
+                        "message": "Expected value of type 'ID', found SOMETHING.",
                         "locations": [(4, 39)],
                     },
                 ],
@@ -484,7 +494,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type DogCommand, found 2.",
+                        "message": "Expected value of type 'DogCommand', found 2.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -501,7 +511,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type DogCommand, found 1.0.",
+                        "message": "Expected value of type 'DogCommand', found 1.0.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -518,8 +528,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type DogCommand, found "SIT".'
-                        " Did you mean the enum value SIT?",
+                        "message": "Expected value of type 'DogCommand', found \"SIT\"."
+                        " Did you mean the enum value 'SIT'?",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -536,7 +546,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type DogCommand, found true.",
+                        "message": "Expected value of type 'DogCommand', found true.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -553,7 +563,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type DogCommand, found JUGGLE.",
+                        "message": "Expected value of type 'DogCommand', found JUGGLE.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -570,8 +580,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type DogCommand, found sit."
-                        " Did you mean the enum value SIT?",
+                        "message": "Expected value of type 'DogCommand', found sit."
+                        " Did you mean the enum value 'SIT'?",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -634,7 +644,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found 2.",
+                        "message": "Expected value of type 'String', found 2.",
                         "locations": [(4, 63)],
                     },
                 ],
@@ -651,7 +661,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type [String], found 1.",
+                        "message": "Expected value of type '[String]', found 1.",
                         "locations": [(4, 55)],
                     },
                 ],
@@ -780,11 +790,11 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Int!, found "two".',
+                        "message": "Expected value of type 'Int!', found \"two\".",
                         "locations": [(4, 40)],
                     },
                     {
-                        "message": 'Expected type Int!, found "one".',
+                        "message": "Expected value of type 'Int!', found \"one\".",
                         "locations": [(4, 53)],
                     },
                 ],
@@ -801,7 +811,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Int!, found "one".',
+                        "message": "Expected value of type 'Int!', found \"one\".",
                         "locations": [(4, 40)],
                     },
                 ],
@@ -818,7 +828,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Int!, found null.",
+                        "message": "Expected value of type 'Int!', found null.",
                         "locations": [(4, 40)],
                     },
                 ],
@@ -915,8 +925,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field ComplexInput.requiredField"
-                        " of required type Boolean! was not provided.",
+                        "message": "Field 'ComplexInput.requiredField'"
+                        " of required type 'Boolean!' was not provided.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -936,7 +946,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found 2.",
+                        "message": "Expected value of type 'String', found 2.",
                         "locations": [(5, 48)],
                     },
                 ],
@@ -956,7 +966,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Boolean!, found null.",
+                        "message": "Expected value of type 'Boolean!', found null.",
                         "locations": [(6, 37)],
                     }
                 ],
@@ -977,8 +987,8 @@ def describe_validate_values_of_correct_type():
                 [
                     {
                         "message": "Field 'unknownField'"
-                        " is not defined by type ComplexInput."
-                        " Did you mean nonNullField, intField or booleanField?",
+                        " is not defined by type 'ComplexInput'."
+                        " Did you mean 'nonNullField', 'intField' or 'booleanField'?",
                         "locations": [(6, 23)],
                     },
                 ],
@@ -993,7 +1003,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Invalid, found 123;"
+                        "message": "Expected value of type 'Invalid', found 123;"
                         " Invalid scalar is always invalid: 123",
                         "locations": [(3, 35)],
                     },
@@ -1041,11 +1051,11 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Boolean!, found "yes".',
+                        "message": "Expected value of type 'Boolean!', found \"yes\".",
                         "locations": [(3, 36)],
                     },
                     {
-                        "message": "Expected type Boolean!, found ENUM.",
+                        "message": "Expected value of type 'Boolean!', found ENUM.",
                         "locations": [(4, 36)],
                     },
                 ],
@@ -1092,15 +1102,15 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Int!, found null.",
+                        "message": "Expected value of type 'Int!', found null.",
                         "locations": [(3, 30)],
                     },
                     {
-                        "message": "Expected type String!, found null.",
+                        "message": "Expected value of type 'String!', found null.",
                         "locations": [(4, 33)],
                     },
                     {
-                        "message": "Expected type Boolean!, found null.",
+                        "message": "Expected value of type 'Boolean!', found null.",
                         "locations": [(5, 55)],
                     },
                 ],
@@ -1119,15 +1129,15 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": 'Expected type Int, found "one".',
+                        "message": "Expected value of type 'Int', found \"one\".",
                         "locations": [(3, 29)],
                     },
                     {
-                        "message": "Expected type String, found 4.",
+                        "message": "Expected value of type 'String', found 4.",
                         "locations": [(4, 32)],
                     },
                     {
-                        "message": "Expected type ComplexInput,"
+                        "message": "Expected value of type 'ComplexInput',"
                         ' found "notverycomplex".',
                         "locations": [(5, 38)],
                     },
@@ -1145,11 +1155,11 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type Boolean!, found 123.",
+                        "message": "Expected value of type 'Boolean!', found 123.",
                         "locations": [(3, 55)],
                     },
                     {
-                        "message": 'Expected type Int, found "abc".',
+                        "message": "Expected value of type 'Int', found \"abc\".",
                         "locations": [(3, 70)],
                     },
                 ],
@@ -1164,8 +1174,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field ComplexInput.requiredField"
-                        " of required type Boolean! was not provided.",
+                        "message": "Field 'ComplexInput.requiredField'"
+                        " of required type 'Boolean!' was not provided.",
                         "locations": [(2, 63)],
                     },
                 ],
@@ -1180,7 +1190,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected type String, found 2.",
+                        "message": "Expected value of type 'String', found 2.",
                         "locations": [(2, 58)],
                     },
                 ],

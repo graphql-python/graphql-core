@@ -49,7 +49,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
 
         if expected_kind:
             if expected_kind != node.kind:
-                kind_str = extension_kind_to_type_name(expected_kind)
+                kind_str = extension_kind_to_type_name(node.kind)
                 self.report_error(
                     GraphQLError(
                         f"Cannot extend non-{kind_str} type '{type_name}'.",

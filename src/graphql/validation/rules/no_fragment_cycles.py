@@ -58,11 +58,11 @@ class NoFragmentCyclesRule(ASTValidationRule):
                     self.detect_cycle_recursive(spread_fragment)
             else:
                 cycle_path = spread_path[cycle_index:]
-                via_names = [s.name.value for s in cycle_path[:-1]]
+                via_path = ", ".join("'" + s.name.value + "'" for s in cycle_path[:-1])
                 self.report_error(
                     GraphQLError(
                         f"Cannot spread fragment '{spread_name}' within itself"
-                        + (f" via {', '.join(via_names)}." if via_names else "."),
+                        + (f" via {via_path}." if via_path else "."),
                         cycle_path,
                     )
                 )

@@ -77,8 +77,8 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
             suggestions = suggestion_list(arg_name, known_args_names)
             context.report_error(
                 GraphQLError(
-                    f"Unknown argument '{arg_name}' on field '{field_name}'"
-                    f" of type '{parent_type.name}'."
+                    f"Unknown argument '{arg_name}'"
+                    f" on field '{parent_type.name}.{field_name}'."
                     + did_you_mean([f"'{s}'" for s in suggestions]),
                     arg_node,
                 )

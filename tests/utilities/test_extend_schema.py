@@ -1071,7 +1071,7 @@ def describe_extend_schema():
         with raises(TypeError) as exc_info:
             extend_test_schema(sdl)
         msg = str(exc_info.value)
-        assert msg == "Unknown directive 'unknown'."
+        assert msg == "Unknown directive '@unknown'."
 
     def allows_to_disable_sdl_validation():
         sdl = """
@@ -1087,7 +1087,7 @@ def describe_extend_schema():
         with raises(TypeError) as exc_info:
             extend_test_schema(sdl)
         assert str(exc_info.value).startswith(
-            "Directive 'include' already exists in the schema."
+            "Directive '@include' already exists in the schema."
             " It cannot be redefined."
         )
 

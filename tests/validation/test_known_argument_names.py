@@ -156,8 +156,8 @@ def describe_validate_known_argument_names():
             """,
             [
                 {
-                    "message": "Unknown argument 'unknown' on field 'doesKnowCommand'"
-                    " of type 'Dog'.",
+                    "message": "Unknown argument 'unknown'"
+                    " on field 'Dog.doesKnowCommand'.",
                     "locations": [(3, 31)],
                 },
             ],
@@ -173,7 +173,7 @@ def describe_validate_known_argument_names():
             [
                 {
                     "message": "Unknown argument 'dogcommand'"
-                    " on field 'doesKnowCommand' of type 'Dog'."
+                    " on field 'Dog.doesKnowCommand'."
                     " Did you mean 'dogCommand'?",
                     "locations": [(3, 31)],
                 }
@@ -190,12 +190,12 @@ def describe_validate_known_argument_names():
             [
                 {
                     "message": "Unknown argument 'whoknows'"
-                    " on field 'doesKnowCommand' of type 'Dog'.",
+                    " on field 'Dog.doesKnowCommand'.",
                     "locations": [(3, 31)],
                 },
                 {
                     "message": "Unknown argument 'unknown'"
-                    " on field 'doesKnowCommand' of type 'Dog'.",
+                    " on field 'Dog.doesKnowCommand'.",
                     "locations": [(3, 61)],
                 },
             ],
@@ -219,13 +219,13 @@ def describe_validate_known_argument_names():
             """,
             [
                 {
-                    "message": "Unknown argument 'unknown' on field 'doesKnowCommand'"
-                    " of type 'Dog'.",
+                    "message": "Unknown argument 'unknown'"
+                    " on field 'Dog.doesKnowCommand'.",
                     "locations": [(4, 33)],
                 },
                 {
-                    "message": "Unknown argument 'unknown' on field 'doesKnowCommand'"
-                    " of type 'Dog'.",
+                    "message": "Unknown argument 'unknown'"
+                    " on field 'Dog.doesKnowCommand'.",
                     "locations": [(9, 37)],
                 },
             ],

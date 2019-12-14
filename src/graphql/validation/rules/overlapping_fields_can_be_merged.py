@@ -545,7 +545,7 @@ def find_conflict(
         name2 = node2.name.value
         if name1 != name2:
             return (
-                (response_name, f"{name1} and {name2} are different fields"),
+                (response_name, f"'{name1}' and '{name2}' are different fields"),
                 [node1],
                 [node2],
             )
@@ -556,7 +556,7 @@ def find_conflict(
 
     if type1 and type2 and do_types_conflict(type1, type2):
         return (
-            (response_name, f"they return conflicting types {type1} and {type2}"),
+            (response_name, f"they return conflicting types '{type1}' and '{type2}'"),
             [node1],
             [node2],
         )

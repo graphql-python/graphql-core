@@ -24,7 +24,7 @@ As a result, you will get a complete list of all errors that the validators has 
 In this case, we will get::
 
     [GraphQLError(
-        'Expected type String!, found NEWHOPE.',
+        "Expected value of type 'String!', found NEWHOPE.",
         locations=[SourceLocation(line=3, column=17)]),
      GraphQLError(
         "Cannot query field 'homeTown' on type 'Human'."

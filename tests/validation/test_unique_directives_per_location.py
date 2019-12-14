@@ -105,7 +105,7 @@ def describe_validate_directives_are_unique_per_location():
             """,
             [
                 {
-                    "message": "The directive 'directive'"
+                    "message": "The directive '@directive'"
                     " can only be used once at this location.",
                     "locations": [(3, 21), (3, 32)],
                 },
@@ -121,12 +121,12 @@ def describe_validate_directives_are_unique_per_location():
             """,
             [
                 {
-                    "message": "The directive 'directive'"
+                    "message": "The directive '@directive'"
                     " can only be used once at this location.",
                     "locations": [(3, 21), (3, 32)],
                 },
                 {
-                    "message": "The directive 'directive'"
+                    "message": "The directive '@directive'"
                     " can only be used once at this location.",
                     "locations": [(3, 21), (3, 43)],
                 },
@@ -142,12 +142,12 @@ def describe_validate_directives_are_unique_per_location():
             """,
             [
                 {
-                    "message": "The directive 'directiveA'"
+                    "message": "The directive '@directiveA'"
                     " can only be used once at this location.",
                     "locations": [(3, 21), (3, 45)],
                 },
                 {
-                    "message": "The directive 'directiveB'"
+                    "message": "The directive '@directiveB'"
                     " can only be used once at this location.",
                     "locations": [(3, 33), (3, 57)],
                 },
@@ -163,12 +163,12 @@ def describe_validate_directives_are_unique_per_location():
             """,
             [
                 {
-                    "message": "The directive 'directive'"
+                    "message": "The directive '@directive'"
                     " can only be used once at this location.",
                     "locations": [(2, 35), (2, 46)],
                 },
                 {
-                    "message": "The directive 'directive'"
+                    "message": "The directive '@directive'"
                     " can only be used once at this location.",
                     "locations": [(3, 21), (3, 32)],
                 },
@@ -201,62 +201,62 @@ def describe_validate_directives_are_unique_per_location():
             """,
             [
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(5, 20), (5, 35)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(6, 27), (6, 42)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(8, 31), (8, 46)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(9, 38), (9, 53)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(11, 29), (11, 44)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(12, 36), (12, 51)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(14, 37), (14, 52)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(15, 44), (15, 59)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(17, 29), (17, 44)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(18, 36), (18, 51)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(20, 29), (20, 44)],
                 },
                 {
-                    "message": "The directive 'nonRepeatable'"
+                    "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(21, 36), (21, 51)],
                 },

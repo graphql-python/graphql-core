@@ -29,9 +29,12 @@ class ExecutableDefinitionsRule(ASTValidationRule):
                     if isinstance(
                         definition, (SchemaDefinitionNode, SchemaExtensionNode)
                     )
-                    else cast(
-                        Union[DirectiveDefinitionNode, TypeDefinitionNode], definition,
-                    ).name.value
+                    else "'{}'".format(
+                        cast(
+                            Union[DirectiveDefinitionNode, TypeDefinitionNode],
+                            definition,
+                        ).name.value
+                    )
                 )
                 self.report_error(
                     GraphQLError(

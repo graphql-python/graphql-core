@@ -54,7 +54,7 @@ def describe_validate_unique_directive_names():
             """,
             [
                 {
-                    "message": "There can be only one directive named 'foo'.",
+                    "message": "There can be only one directive named '@foo'.",
                     "locations": [(2, 24), (4, 24)],
                 }
             ],
@@ -72,7 +72,7 @@ def describe_validate_unique_directive_names():
             "directive @skip on SCHEMA",
             [
                 {
-                    "message": "Directive 'skip' already exists in the schema."
+                    "message": "Directive '@skip' already exists in the schema."
                     " It cannot be redefined.",
                     "locations": [(1, 12)],
                 }
@@ -92,7 +92,7 @@ def describe_validate_unique_directive_names():
             "directive @foo on SCHEMA",
             [
                 {
-                    "message": "Directive 'foo' already exists in the schema."
+                    "message": "Directive '@foo' already exists in the schema."
                     " It cannot be redefined.",
                     "locations": [(1, 12)],
                 }
