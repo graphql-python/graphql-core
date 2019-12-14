@@ -338,6 +338,6 @@ def describe_coerce_input_value():
                     [None], GraphQLList(GraphQLNonNull(GraphQLInt))
                 )
             assert exc_info.value.message == (
-                "Invalid value None at 'value[0]': :"
+                "Invalid value None at 'value[0]':"
                 " Expected non-nullable type Int! not to be None."
             )
