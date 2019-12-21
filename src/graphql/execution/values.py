@@ -43,7 +43,9 @@ def get_variable_values(
 
     Prepares a dict of variable values of the correct type based on the provided
     variable definitions and arbitrary input. If the input cannot be parsed to match
-    the variable definitions, a GraphQLError will be thrown.
+    the variable definitions, a GraphQLError will be raised.
+
+    For internal use only.
     """
     errors: List[GraphQLError] = []
 
@@ -146,8 +148,10 @@ def get_argument_values(
 ) -> Dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
 
-    Prepares an dict of argument values given a list of argument definitions and list
+    Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
+
+    For internal use only.
     """
     coerced_values: Dict[str, Any] = {}
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}

@@ -14,6 +14,8 @@ def dedent_block_string_value(raw_string: str) -> str:
     strip_heredoc.
 
     This implements the GraphQL spec's BlockStringValue() static algorithm.
+
+    For internal use only.
     """
     # Expand a block string's raw value into independent lines.
     lines = raw_string.splitlines()
@@ -36,6 +38,10 @@ def dedent_block_string_value(raw_string: str) -> str:
 
 
 def get_block_string_indentation(lines: List[str]) -> int:
+    """Get the amount of indentation for the given block string.
+
+    For internal use only.
+    """
     common_indent = None
 
     for line in lines[1:]:
@@ -67,6 +73,8 @@ def print_block_string(
     Prints a block string in the indented block form by adding a leading and
     trailing blank line. However, if a block string starts with whitespace and
     is a single-line, adding a leading blank line would strip that whitespace.
+
+    For internal use only.
     """
     is_single_line = "\n" not in value
     has_leading_space = value.startswith(" ") or value.startswith("\t")

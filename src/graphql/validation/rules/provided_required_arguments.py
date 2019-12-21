@@ -22,6 +22,8 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
 
     A directive is only valid if all required (non-null without a default value)
     arguments have been provided.
+
+    For internal use only.
     """
 
     context: Union[ValidationContext, SDLValidationContext]

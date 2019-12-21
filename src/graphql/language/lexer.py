@@ -30,6 +30,10 @@ _punctuator_token_kinds = frozenset(
 
 
 def is_punctuator_token_kind(kind: TokenKind) -> bool:
+    """Check whether the given token kind corresponds to a punctuator.
+
+    For internal use only.
+    """
     return kind in _punctuator_token_kinds
 
 

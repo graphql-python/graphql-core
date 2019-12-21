@@ -85,7 +85,10 @@ def validate_sdl(
     schema_to_extend: GraphQLSchema = None,
     rules: Sequence[RuleType] = None,
 ) -> List[GraphQLError]:
-    """Validate an SDL document."""
+    """Validate an SDL document.
+
+    For internal use only.
+    """
     errors: List[GraphQLError] = []
     context = SDLValidationContext(document_ast, schema_to_extend, errors.append)
     if rules is None:

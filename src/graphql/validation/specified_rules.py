@@ -61,6 +61,7 @@ from .rules.unique_directives_per_location import UniqueDirectivesPerLocationRul
 
 # Spec Section: "Argument Names"
 from .rules.known_argument_names import KnownArgumentNamesRule
+from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
 
 # Spec Section: "Argument Uniqueness"
 from .rules.unique_argument_names import UniqueArgumentNamesRule
@@ -70,6 +71,7 @@ from .rules.values_of_correct_type import ValuesOfCorrectTypeRule
 
 # Spec Section: "Argument Optionality"
 from .rules.provided_required_arguments import ProvidedRequiredArgumentsRule
+from .rules.provided_required_arguments import ProvidedRequiredArgumentsOnDirectivesRule
 
 # Spec Section: "All Variable Usages Are Allowed"
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
@@ -88,8 +90,6 @@ from .rules.unique_enum_value_names import UniqueEnumValueNamesRule
 from .rules.unique_field_definition_names import UniqueFieldDefinitionNamesRule
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
 from .rules.possible_type_extensions import PossibleTypeExtensionsRule
-from .rules.known_argument_names import KnownArgumentNamesOnDirectivesRule
-from .rules.provided_required_arguments import ProvidedRequiredArgumentsOnDirectivesRule
 
 __all__ = ["specified_rules", "specified_sdl_rules"]
 
@@ -154,4 +154,8 @@ specified_sdl_rules: FrozenList[RuleType] = FrozenList(
         ProvidedRequiredArgumentsOnDirectivesRule,
     ]
 )
-specified_sdl_rules.__doc__ = """This list includes all rules for validating SDL."""
+specified_sdl_rules.__doc__ = """\
+    This list includes all rules for validating SDL.
+
+    For internal use only.
+    """

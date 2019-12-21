@@ -233,6 +233,8 @@ class ExecutionContext:
         we will pass throughout the other execution methods.
 
         Throws a GraphQLError if a valid execution context cannot be created.
+
+        For internal use only.
         """
         operation: Optional[OperationDefinitionNode] = None
         fragments: Dict[str, FragmentDefinitionNode] = {}
@@ -471,6 +473,8 @@ class ExecutionContext:
         collect_fields requires the "runtime type" of an object. For a field which
         returns an Interface or Union type, the "runtime type" will be the actual
         Object type returned by that field.
+
+        For internal use only.
         """
         for selection in selection_set.selections:
             if isinstance(selection, FieldNode):
@@ -551,6 +555,9 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         path: Path,
     ) -> GraphQLResolveInfo:
+        """Build the GraphQLResolveInfo object.
+
+        For internal use only."""
         # The resolve function's first argument is a collection of information about
         # the current execution state.
         return GraphQLResolveInfo(
@@ -612,6 +619,13 @@ class ExecutionContext:
         source: Any,
         info: GraphQLResolveInfo,
     ) -> Union[Exception, Any]:
+        """Resolve field to a value or an error.
+
+        Isolates the "ReturnOrAbrupt" behavior to not de-opt the resolve_field()
+        method. Returns the result of resolveFn or the abrupt-return Error object.
+
+        For internal use only.
+        """
         try:
             # Build a dictionary of arguments from the field.arguments AST, using the
             # variables scope to fulfill any variable references.
@@ -1021,6 +1035,8 @@ def assert_valid_execution_arguments(
 
     Essential assertions before executing to provide developer feedback for improper use
     of the GraphQL library.
+
+    For internal use only.
     """
     if not document:
         raise TypeError("Must provide document")
@@ -1048,6 +1064,8 @@ def get_field_def(
     other fields are allowed, like on a Union. `__schema` could get automatically
     added to the query type, but that would require mutating type definitions, which
     would cause issues.
+
+    For internal use only.
     """
     if field_name == "__schema" and schema.query_type == parent_type:
         return SchemaMetaFieldDef

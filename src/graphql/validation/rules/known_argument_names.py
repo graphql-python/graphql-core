@@ -13,6 +13,8 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
     """Known argument names on directives
 
     A GraphQL directive is only valid if all supplied arguments are defined.
+
+    For internal use only.
     """
 
     context: Union[ValidationContext, SDLValidationContext]
