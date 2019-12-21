@@ -69,7 +69,7 @@ def describe_execute_synchronously_when_possible():
                 None,
                 [
                     {
-                        "message": "Syntax Error: Expected Name, found {",
+                        "message": "Syntax Error: Expected Name, found '{'.",
                         "locations": [(1, 29)],
                     }
                 ],

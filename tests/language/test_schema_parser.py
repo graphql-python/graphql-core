@@ -225,7 +225,7 @@ def describe_schema_parser():
         assert extension.loc == (52, 95)
 
     def extension_without_anything_throws():
-        assert_syntax_error("extend type Hello", "Unexpected <EOF>", (1, 18))
+        assert_syntax_error("extend type Hello", "Unexpected <EOF>.", (1, 18))
 
     def extension_do_not_include_descriptions():
         assert_syntax_error(
@@ -234,7 +234,7 @@ def describe_schema_parser():
             extend type Hello {
               world: String
             }""",
-            "Unexpected Name 'extend'",
+            "Unexpected Name 'extend'.",
             (3, 13),
         )
         assert_syntax_error(
@@ -242,7 +242,7 @@ def describe_schema_parser():
             extend "Description" type Hello {
               world: String
             }""",
-            "Unexpected String 'Description'",
+            "Unexpected String 'Description'.",
             (2, 20),
         )
 
@@ -282,7 +282,7 @@ def describe_schema_parser():
         ]
 
     def schema_extension_without_anything_throws():
-        assert_syntax_error("extend schema", "Unexpected <EOF>", (1, 14))
+        assert_syntax_error("extend schema", "Unexpected <EOF>.", (1, 14))
 
     def simple_non_null_type():
         body = dedent(
@@ -567,16 +567,21 @@ def describe_schema_parser():
         assert definition.loc == (0, 24)
 
     def union_fails_with_no_types():
-        assert_syntax_error("union Hello = |", "Expected Name, found <EOF>", (1, 16))
+        assert_syntax_error("union Hello = |", "Expected Name, found <EOF>.", (1, 16))
 
     def union_fails_with_leading_double_pipe():
         assert_syntax_error(
-            "union Hello = || Wo | Rld", "Expected Name, found |", (1, 16)
+            "union Hello = || Wo | Rld", "Expected Name, found '|'.", (1, 16)
+        )
+
+    def union_fails_with_double_pipe():
+        assert_syntax_error(
+            "union Hello = Wo || Rld", "Expected Name, found '|'.", (1, 19)
         )
 
     def union_fails_with_trailing_pipe():
         assert_syntax_error(
-            "union Hello = | Wo | Rld |", "Expected Name, found <EOF>", (1, 27)
+            "union Hello = | Wo | Rld |", "Expected Name, found <EOF>.", (1, 27)
         )
 
     def scalar():
@@ -608,7 +613,7 @@ def describe_schema_parser():
     def simple_input_object_with_args_should_fail():
         assert_syntax_error(
             "\ninput Hello {\n  world(foo : Int): String\n}",
-            "Expected :, found (",
+            "Expected ':', found '('.",
             (3, 8),
         )
 
@@ -641,7 +646,7 @@ def describe_schema_parser():
     def directive_with_incorrect_locations():
         assert_syntax_error(
             "\ndirective @foo on FIELD | INCORRECT_LOCATION",
-            "Unexpected Name 'INCORRECT_LOCATION'",
+            "Unexpected Name 'INCORRECT_LOCATION'.",
             (2, 27),
         )
 
@@ -649,11 +654,11 @@ def describe_schema_parser():
         assert parse(kitchen_sink_sdl)
 
     def disallow_legacy_sdl_empty_fields_supports_type_with_empty_fields():
-        assert_syntax_error("type Hello { }", "Expected Name, found }", (1, 14))
+        assert_syntax_error("type Hello { }", "Expected Name, found '}'.", (1, 14))
 
     def disallow_legacy_sdl_implements_interfaces():
         assert_syntax_error(
             "type Hello implements Wo rld { field: String }",
-            "Unexpected Name 'rld'",
+            "Unexpected Name 'rld'.",
             (1, 26),
         )

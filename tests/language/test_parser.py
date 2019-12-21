@@ -65,12 +65,12 @@ def describe_parser():
         with raises(GraphQLSyntaxError) as exc_info:
             parse("{")
         error = exc_info.value
-        assert error.message == "Syntax Error: Expected Name, found <EOF>"
+        assert error.message == "Syntax Error: Expected Name, found <EOF>."
         assert error.positions == [1]
         assert error.locations == [(1, 2)]
         assert str(error) + "\n" == dedent(
             """
-            Syntax Error: Expected Name, found <EOF>
+            Syntax Error: Expected Name, found <EOF>.
 
             GraphQL request:1:2
             1 | {
@@ -79,14 +79,14 @@ def describe_parser():
         )
         assert_syntax_error(
             "\n      { ...MissingOn }\n      fragment MissingOn Type",
-            "Expected 'on', found Name 'Type'",
+            "Expected 'on', found Name 'Type'.",
             (3, 26),
         )
-        assert_syntax_error("{ field: {} }", "Expected Name, found {", (1, 10))
+        assert_syntax_error("{ field: {} }", "Expected Name, found '{'.", (1, 10))
         assert_syntax_error(
-            "notanoperation Foo { field }", "Unexpected Name 'notanoperation'", (1, 1)
+            "notanoperation Foo { field }", "Unexpected Name 'notanoperation'.", (1, 1)
         )
-        assert_syntax_error("...", "Unexpected ...", (1, 1))
+        assert_syntax_error("...", "Unexpected '...'.", (1, 1))
 
     def parse_provides_useful_error_when_using_source():
         with raises(GraphQLSyntaxError) as exc_info:
@@ -94,7 +94,7 @@ def describe_parser():
         error = exc_info.value
         assert str(error) + "\n" == dedent(
             """
-            Syntax Error: Expected {, found <EOF>
+            Syntax Error: Expected '{', found <EOF>.
 
             MyQuery.graphql:1:6
             1 | query
@@ -108,7 +108,7 @@ def describe_parser():
     def parses_constant_default_values():
         assert_syntax_error(
             "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }",
-            "Unexpected $",
+            "Unexpected '$'.",
             (1, 37),
         )
 
@@ -116,10 +116,12 @@ def describe_parser():
         parse("query Foo($x: Boolean = false @bar) { field }")
 
     def does_not_accept_fragments_named_on():
-        assert_syntax_error("fragment on on on { on }", "Unexpected Name 'on'", (1, 10))
+        assert_syntax_error(
+            "fragment on on on { on }", "Unexpected Name 'on'.", (1, 10)
+        )
 
     def does_not_accept_fragments_spread_of_on():
-        assert_syntax_error("{ ...on }", "Expected Name, found }", (1, 9))
+        assert_syntax_error("{ ...on }", "Expected Name, found '}'.", (1, 9))
 
     def parses_multi_byte_characters():
         # Note: \u0A0A could be naively interpreted as two line-feed chars.

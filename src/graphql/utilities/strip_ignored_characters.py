@@ -5,7 +5,7 @@ from ..language.block_string import (
     dedent_block_string_value,
     get_block_string_indentation,
 )
-from ..language.lexer import is_punctuator_token
+from ..language.lexer import is_punctuator_token_kind
 from ..pyutils import inspect
 
 
@@ -82,7 +82,7 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
         # Every two non-punctuator tokens should have space between them.
         # Also prevent case of non-punctuator token following by spread resulting
         # in invalid token (e.g.`1...` is invalid Float token).
-        is_non_punctuator = not is_punctuator_token(current_token)
+        is_non_punctuator = not is_punctuator_token_kind(current_token.kind)
         if was_last_added_token_non_punctuator:
             if is_non_punctuator or current_token.kind == TokenKind.SPREAD:
                 stripped_body += " "

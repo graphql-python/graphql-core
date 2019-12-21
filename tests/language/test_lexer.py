@@ -4,7 +4,7 @@ from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
-from graphql.language.lexer import is_punctuator_token
+from graphql.language.lexer import is_punctuator_token_kind
 from graphql.pyutils import dedent, inspect
 
 
@@ -431,27 +431,30 @@ def describe_lexer():
         ]
 
 
-def describe_is_punctuator_token():
+def describe_is_punctuator_token_kind():
+    def _is_punctuator_token(text: str) -> bool:
+        return is_punctuator_token_kind(lex_one(text).kind)
+
     def returns_true_for_punctuator_tokens():
-        assert is_punctuator_token(lex_one("!")) is True
-        assert is_punctuator_token(lex_one("$")) is True
-        assert is_punctuator_token(lex_one("&")) is True
-        assert is_punctuator_token(lex_one("(")) is True
-        assert is_punctuator_token(lex_one(")")) is True
-        assert is_punctuator_token(lex_one("...")) is True
-        assert is_punctuator_token(lex_one(":")) is True
-        assert is_punctuator_token(lex_one("=")) is True
-        assert is_punctuator_token(lex_one("@")) is True
-        assert is_punctuator_token(lex_one("[")) is True
-        assert is_punctuator_token(lex_one("]")) is True
-        assert is_punctuator_token(lex_one("{")) is True
-        assert is_punctuator_token(lex_one("|")) is True
-        assert is_punctuator_token(lex_one("}")) is True
+        assert _is_punctuator_token("!") is True
+        assert _is_punctuator_token("$") is True
+        assert _is_punctuator_token("&") is True
+        assert _is_punctuator_token("(") is True
+        assert _is_punctuator_token(")") is True
+        assert _is_punctuator_token("...") is True
+        assert _is_punctuator_token(":") is True
+        assert _is_punctuator_token("=") is True
+        assert _is_punctuator_token("@") is True
+        assert _is_punctuator_token("[") is True
+        assert _is_punctuator_token("]") is True
+        assert _is_punctuator_token("{") is True
+        assert _is_punctuator_token("|") is True
+        assert _is_punctuator_token("}") is True
 
     def returns_false_for_non_punctuator_tokens():
-        assert is_punctuator_token(lex_one("")) is False
-        assert is_punctuator_token(lex_one("name")) is False
-        assert is_punctuator_token(lex_one("1")) is False
-        assert is_punctuator_token(lex_one("3.14")) is False
-        assert is_punctuator_token(lex_one('"str"')) is False
-        assert is_punctuator_token(lex_one('"""str"""')) is False
+        assert _is_punctuator_token("") is False
+        assert _is_punctuator_token("name") is False
+        assert _is_punctuator_token("1") is False
+        assert _is_punctuator_token("3.14") is False
+        assert _is_punctuator_token('"str"') is False
+        assert _is_punctuator_token('"""str"""') is False

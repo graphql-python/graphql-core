@@ -6,10 +6,10 @@ from .block_string import dedent_block_string_value
 from .source import Source
 from .token_kind import TokenKind
 
-__all__ = ["Lexer", "is_punctuator_token"]
+__all__ = ["Lexer", "is_punctuator_token_kind"]
 
 
-_punctuator_tokens = frozenset(
+_punctuator_token_kinds = frozenset(
     [
         TokenKind.BANG,
         TokenKind.DOLLAR,
@@ -29,8 +29,8 @@ _punctuator_tokens = frozenset(
 )
 
 
-def is_punctuator_token(token: Token) -> bool:
-    return token.kind in _punctuator_tokens
+def is_punctuator_token_kind(kind: TokenKind) -> bool:
+    return kind in _punctuator_token_kinds
 
 
 def print_char(char):

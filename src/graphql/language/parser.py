@@ -56,7 +56,7 @@ from .ast import (
 )
 from .directive_locations import DirectiveLocation
 from .ast import Token
-from .lexer import Lexer
+from .lexer import Lexer, is_punctuator_token_kind
 from .source import Source
 from .token_kind import TokenKind
 from ..error import GraphQLError, GraphQLSyntaxError
@@ -975,7 +975,7 @@ class Parser:
         raise GraphQLSyntaxError(
             self._lexer.source,
             token.start,
-            f"Expected {kind.value}, found {token.kind.value}",
+            f"Expected {get_token_kind_desc(kind)}, found {get_token_desc(token)}.",
         )
 
     def expect_optional_token(self, kind: TokenKind) -> Optional[Token]:
@@ -1004,7 +1004,7 @@ class Parser:
             raise GraphQLSyntaxError(
                 self._lexer.source,
                 token.start,
-                f"Expected {value!r}, found {token.desc}",
+                f"Expected '{value}', found {get_token_desc(token)}.",
             )
 
     def expect_optional_keyword(self, value: str) -> bool:
@@ -1024,7 +1024,7 @@ class Parser:
         """Create an error when an unexpected lexed token is encountered."""
         token = at_token or self._lexer.token
         return GraphQLSyntaxError(
-            self._lexer.source, token.start, f"Unexpected {token.desc}"
+            self._lexer.source, token.start, f"Unexpected {get_token_desc(token)}."
         )
 
     def any(
@@ -1076,3 +1076,15 @@ class Parser:
         while not self.expect_optional_token(close_kind):
             append(parse_fn())
         return nodes
+
+
+def get_token_desc(token: Token) -> str:
+    """Describe a token as a string for debugging."""
+    return get_token_kind_desc(token.kind) + (
+        f" '{token.value}'" if token.value else ""
+    )
+
+
+def get_token_kind_desc(kind: TokenKind) -> str:
+    """Describe a token kind as a string for debugging."""
+    return f"'{kind.value}'" if is_punctuator_token_kind(kind) else kind.value
