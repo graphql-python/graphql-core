@@ -23,7 +23,7 @@ class Source:
         """
 
         self.body = body
-        self.name = name or "GraphQL request"
+        self.name = "GraphQL request" if name is None else name
         if not location_offset:
             location_offset = SourceLocation(1, 1)
         elif not isinstance(location_offset, SourceLocation):

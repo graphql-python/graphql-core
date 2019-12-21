@@ -41,7 +41,7 @@ class FindDeprecatedUsages(Visitor):
                 self.errors.append(
                     GraphQLError(
                         f"The field '{parent_type.name}.{field_name}'"
-                        " is deprecated." + (f" {reason}" if reason else ""),
+                        " is deprecated." + ("" if reason is None else f" {reason}"),
                         node,
                     )
                 )

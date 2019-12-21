@@ -128,7 +128,7 @@ def extend_schema(
         return type_map[type_.name]
 
     def get_maybe_type_by_name(type_name: Optional[str]) -> Optional[GraphQLNamedType]:
-        return type_map[type_name] if type_name else None
+        return None if type_name is None else type_map[type_name]
 
     def get_merged_directives() -> List[GraphQLDirective]:
         if not schema.directives:

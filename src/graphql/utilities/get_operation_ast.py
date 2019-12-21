@@ -17,7 +17,7 @@ def get_operation_ast(
     operation = None
     for definition in document_ast.definitions:
         if isinstance(definition, OperationDefinitionNode):
-            if not operation_name:
+            if operation_name is None:
                 # If no operation name was provided, only return an Operation if there
                 # is one defined in the document.
                 # Upon encountering the second, return None.
