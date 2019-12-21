@@ -19,11 +19,12 @@ def lex_second(s: str) -> Token:
     return lexer.advance()
 
 
-def assert_syntax_error(text, message, location, second=False):
+def assert_syntax_error(text, message, location):
     with raises(GraphQLSyntaxError) as exc_info:
-        lex_second(text) if second else lex_one(text)
+        lex_second(text)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"
+    assert error.description == message
     assert error.locations == [location]
 
 
@@ -347,13 +348,13 @@ def describe_lexer():
             "1_1234", "Invalid number, expected digit but got: '_'.", (1, 2)
         )
         assert_syntax_error(
-            "1ß", "Cannot parse the unexpected character 'ß'.", (1, 2), second=True,
+            "1ß", "Cannot parse the unexpected character 'ß'.", (1, 2),
         )
         assert_syntax_error(
             "1.23f", "Invalid number, expected digit but got: 'f'.", (1, 5)
         )
         assert_syntax_error(
-            "12ß", "Cannot parse the unexpected character 'ß'.", (1, 3), second=True,
+            "12ß", "Cannot parse the unexpected character 'ß'.", (1, 3),
         )
 
     # noinspection PyArgumentEqualDefault

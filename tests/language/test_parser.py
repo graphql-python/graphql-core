@@ -37,7 +37,8 @@ def assert_syntax_error(text, message, location):
     with raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value
-    assert message in error.message
+    assert error.message == f"Syntax Error: {message}"
+    assert error.description == message
     assert error.locations == [location]
 
 

@@ -37,7 +37,8 @@ def assert_syntax_error(text, message, location):
     with raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value
-    assert message in error.message
+    assert error.message == f"Syntax Error: {message}"
+    assert error.description == message
     assert error.locations == [location]
 
 
@@ -648,13 +649,11 @@ def describe_schema_parser():
         assert parse(kitchen_sink_sdl)
 
     def disallow_legacy_sdl_empty_fields_supports_type_with_empty_fields():
-        assert_syntax_error(
-            "type Hello { }", "Syntax Error: Expected Name, found }", (1, 14)
-        )
+        assert_syntax_error("type Hello { }", "Expected Name, found }", (1, 14))
 
     def disallow_legacy_sdl_implements_interfaces():
         assert_syntax_error(
             "type Hello implements Wo rld { field: String }",
-            "Syntax Error: Unexpected Name 'rld'",
+            "Unexpected Name 'rld'",
             (1, 26),
         )
