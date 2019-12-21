@@ -1,7 +1,6 @@
 from math import isfinite
 from typing import Any
 
-from ..error import INVALID
 from ..pyutils import inspect, is_finite, is_integer, FrozenDict
 from ..language.ast import (
     BooleanValueNode,
@@ -9,6 +8,7 @@ from ..language.ast import (
     IntValueNode,
     StringValueNode,
 )
+from ..language.printer import print_ast
 from .definition import GraphQLScalarType, is_scalar_type
 
 __all__ = [
@@ -71,11 +71,14 @@ def coerce_int(value: Any) -> int:
 
 def parse_int_literal(ast, _variables=None):
     """Parse an integer value node in the AST."""
-    if isinstance(ast, IntValueNode):
-        num = int(ast.value)
-        if MIN_INT <= num <= MAX_INT:
-            return num
-    return INVALID
+    if not isinstance(ast, IntValueNode):
+        raise TypeError(f"Int cannot represent non-integer value: {print_ast(ast)}")
+    num = int(ast.value)
+    if not MIN_INT <= num <= MAX_INT:
+        raise TypeError(
+            f"Int cannot represent non 32-bit signed integer value: {print_ast(ast)}"
+        )
+    return num
 
 
 GraphQLInt = GraphQLScalarType(
@@ -112,9 +115,9 @@ def coerce_float(value: Any) -> float:
 
 def parse_float_literal(ast, _variables=None):
     """Parse a float value node in the AST."""
-    if isinstance(ast, (FloatValueNode, IntValueNode)):
-        return float(ast.value)
-    return INVALID
+    if not isinstance(ast, (FloatValueNode, IntValueNode)):
+        raise TypeError(f"Float cannot represent non numeric value: {print_ast(ast)}")
+    return float(ast.value)
 
 
 GraphQLFloat = GraphQLScalarType(
@@ -151,9 +154,9 @@ def coerce_string(value: Any) -> str:
 
 def parse_string_literal(ast, _variables=None):
     """Parse a string value node in the AST."""
-    if isinstance(ast, StringValueNode):
-        return ast.value
-    return INVALID
+    if not isinstance(ast, StringValueNode):
+        raise TypeError(f"String cannot represent a non string value: {print_ast(ast)}")
+    return ast.value
 
 
 GraphQLString = GraphQLScalarType(
@@ -186,9 +189,11 @@ def coerce_boolean(value: Any) -> bool:
 
 def parse_boolean_literal(ast, _variables=None):
     """Parse a boolean value node in the AST."""
-    if isinstance(ast, BooleanValueNode):
-        return ast.value
-    return INVALID
+    if not isinstance(ast, BooleanValueNode):
+        raise TypeError(
+            f"Boolean cannot represent a non boolean value: {print_ast(ast)}"
+        )
+    return ast.value
 
 
 GraphQLBoolean = GraphQLScalarType(
@@ -222,9 +227,11 @@ def coerce_id(value: Any) -> str:
 
 def parse_id_literal(ast, _variables=None):
     """Parse an ID value node in the AST."""
-    if isinstance(ast, (StringValueNode, IntValueNode)):
-        return ast.value
-    return INVALID
+    if not isinstance(ast, (StringValueNode, IntValueNode)):
+        raise TypeError(
+            f"ID cannot represent a non-string and non-integer value: {print_ast(ast)}"
+        )
+    return ast.value
 
 
 GraphQLID = GraphQLScalarType(

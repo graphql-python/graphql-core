@@ -130,6 +130,13 @@ def describe_type_system_scalar_coercion():
             GraphQLString.serialize({})
         assert str(exc_info.value) == "String cannot represent value: {}"
 
+        with raises(Exception) as exc_info:
+            GraphQLString.serialize({"value_of": "value_of string"})
+        assert (
+            str(exc_info.value) == "String cannot represent value:"
+            " {'value_of': 'value_of string'}"
+        )
+
     def serializes_output_as_boolean():
         assert GraphQLBoolean.serialize(1) is True
         assert GraphQLBoolean.serialize(0) is False
@@ -190,12 +197,12 @@ def describe_type_system_scalar_coercion():
 
         with raises(Exception) as exc_info:
             GraphQLID.serialize(3.14)
-        assert str(exc_info.value) == ("ID cannot represent value: 3.14")
+        assert str(exc_info.value) == "ID cannot represent value: 3.14"
 
         with raises(Exception) as exc_info:
             GraphQLID.serialize({})
-        assert str(exc_info.value) == ("ID cannot represent value: {}")
+        assert str(exc_info.value) == "ID cannot represent value: {}"
 
         with raises(Exception) as exc_info:
             GraphQLID.serialize(["abc"])
-        assert str(exc_info.value) == ("ID cannot represent value: ['abc']")
+        assert str(exc_info.value) == "ID cannot represent value: ['abc']"

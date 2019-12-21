@@ -165,7 +165,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found 1.",
+                        "message": "Expected value of type 'String', found 1;"
+                        " String cannot represent a non string value: 1",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -182,7 +183,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found 1.0.",
+                        "message": "Expected value of type 'String', found 1.0;"
+                        " String cannot represent a non string value: 1.0",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -199,7 +201,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found true.",
+                        "message": "Expected value of type 'String', found true;"
+                        " String cannot represent a non string value: true",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -216,7 +219,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found BAR.",
+                        "message": "Expected value of type 'String', found BAR;"
+                        " String cannot represent a non string value: BAR",
                         "locations": [(4, 47)],
                     },
                 ],
@@ -234,7 +238,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int', found \"3\".",
+                        "message": "Expected value of type 'Int', found \"3\";"
+                        ' Int cannot represent non-integer value: "3"',
                         "locations": [(4, 41)],
                     },
                 ],
@@ -252,7 +257,9 @@ def describe_validate_values_of_correct_type():
                 [
                     {
                         "message": "Expected value of type 'Int',"
-                        " found 829384293849283498239482938.",
+                        " found 829384293849283498239482938;"
+                        " Int cannot represent non 32-bit signed integer value:"
+                        " 829384293849283498239482938",
                         "locations": [(4, 41)],
                     },
                 ],
@@ -269,7 +276,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int', found FOO.",
+                        "message": "Expected value of type 'Int', found FOO;"
+                        " Int cannot represent non-integer value: FOO",
                         "locations": [(4, 41)],
                     },
                 ],
@@ -286,7 +294,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int', found 3.0.",
+                        "message": "Expected value of type 'Int', found 3.0;"
+                        " Int cannot represent non-integer value: 3.0",
                         "locations": [(4, 41)],
                     }
                 ],
@@ -303,7 +312,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int', found 3.333.",
+                        "message": "Expected value of type 'Int', found 3.333;"
+                        " Int cannot represent non-integer value: 3.333",
                         "locations": [(4, 41)],
                     },
                 ],
@@ -321,7 +331,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Float', found \"3.333\".",
+                        "message": "Expected value of type 'Float', found \"3.333\";"
+                        ' Float cannot represent non numeric value: "3.333"',
                         "locations": [(4, 45)],
                     },
                 ],
@@ -338,7 +349,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Float', found true.",
+                        "message": "Expected value of type 'Float', found true;"
+                        " Float cannot represent non numeric value: true",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -355,7 +367,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Float', found FOO.",
+                        "message": "Expected value of type 'Float', found FOO;"
+                        " Float cannot represent non numeric value: FOO",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -373,7 +386,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean', found 2.",
+                        "message": "Expected value of type 'Boolean', found 2;"
+                        " Boolean cannot represent a non boolean value: 2",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -390,7 +404,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean', found 1.0.",
+                        "message": "Expected value of type 'Boolean', found 1.0;"
+                        " Boolean cannot represent a non boolean value: 1.0",
                         "locations": [(4, 49)],
                     }
                 ],
@@ -407,7 +422,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean', found \"true\".",
+                        "message": "Expected value of type 'Boolean', found \"true\";"
+                        ' Boolean cannot represent a non boolean value: "true"',
                         "locations": [(4, 49)],
                     }
                 ],
@@ -424,7 +440,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean', found TRUE.",
+                        "message": "Expected value of type 'Boolean', found TRUE;"
+                        " Boolean cannot represent a non boolean value: TRUE",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -442,7 +459,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'ID', found 1.0.",
+                        "message": "Expected value of type 'ID', found 1.0;"
+                        " ID cannot represent a non-string and non-integer value: 1.0",
                         "locations": [(4, 39)],
                     }
                 ],
@@ -459,7 +477,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'ID', found true.",
+                        "message": "Expected value of type 'ID', found true;"
+                        " ID cannot represent a non-string and non-integer value: true",
                         "locations": [(4, 39)],
                     },
                 ],
@@ -476,7 +495,9 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'ID', found SOMETHING.",
+                        "message": "Expected value of type 'ID', found SOMETHING;"
+                        " ID cannot represent a non-string and non-integer value:"
+                        " SOMETHING",
                         "locations": [(4, 39)],
                     },
                 ],
@@ -644,7 +665,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found 2.",
+                        "message": "Expected value of type 'String', found 2;"
+                        " String cannot represent a non string value: 2",
                         "locations": [(4, 63)],
                     },
                 ],
@@ -661,7 +683,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type '[String]', found 1.",
+                        "message": "Expected value of type '[String]', found 1;"
+                        " String cannot represent a non string value: 1",
                         "locations": [(4, 55)],
                     },
                 ],
@@ -790,11 +813,13 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int!', found \"two\".",
+                        "message": "Expected value of type 'Int!', found \"two\";"
+                        ' Int cannot represent non-integer value: "two"',
                         "locations": [(4, 40)],
                     },
                     {
-                        "message": "Expected value of type 'Int!', found \"one\".",
+                        "message": "Expected value of type 'Int!', found \"one\";"
+                        ' Int cannot represent non-integer value: "one"',
                         "locations": [(4, 53)],
                     },
                 ],
@@ -811,7 +836,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int!', found \"one\".",
+                        "message": "Expected value of type 'Int!', found \"one\";"
+                        ' Int cannot represent non-integer value: "one"',
                         "locations": [(4, 40)],
                     },
                 ],
@@ -946,7 +972,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found 2.",
+                        "message": "Expected value of type 'String', found 2;"
+                        " String cannot represent a non string value: 2",
                         "locations": [(5, 48)],
                     },
                 ],
@@ -1051,11 +1078,13 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean!', found \"yes\".",
+                        "message": "Expected value of type 'Boolean!', found \"yes\";"
+                        ' Boolean cannot represent a non boolean value: "yes"',
                         "locations": [(3, 36)],
                     },
                     {
-                        "message": "Expected value of type 'Boolean!', found ENUM.",
+                        "message": "Expected value of type 'Boolean!', found ENUM;"
+                        " Boolean cannot represent a non boolean value: ENUM",
                         "locations": [(4, 36)],
                     },
                 ],
@@ -1129,11 +1158,13 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int', found \"one\".",
+                        "message": "Expected value of type 'Int', found \"one\";"
+                        ' Int cannot represent non-integer value: "one"',
                         "locations": [(3, 29)],
                     },
                     {
-                        "message": "Expected value of type 'String', found 4.",
+                        "message": "Expected value of type 'String', found 4;"
+                        " String cannot represent a non string value: 4",
                         "locations": [(4, 32)],
                     },
                     {
@@ -1155,11 +1186,13 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean!', found 123.",
+                        "message": "Expected value of type 'Boolean!', found 123;"
+                        " Boolean cannot represent a non boolean value: 123",
                         "locations": [(3, 55)],
                     },
                     {
-                        "message": "Expected value of type 'Int', found \"abc\".",
+                        "message": "Expected value of type 'Int', found \"abc\";"
+                        ' Int cannot represent non-integer value: "abc"',
                         "locations": [(3, 70)],
                     },
                 ],
@@ -1190,7 +1223,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'String', found 2.",
+                        "message": "Expected value of type 'String', found 2;"
+                        " String cannot represent a non string value: 2",
                         "locations": [(2, 58)],
                     },
                 ],

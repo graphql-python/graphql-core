@@ -209,14 +209,15 @@ def describe_type_system_enum_values():
             ],
         )
 
-    def does_not_accept_internal_value_in_place_of_int():
+    def does_not_accept_enum_literal_in_place_of_int():
         result = execute_query("{ colorEnum(fromInt: GREEN) }")
 
         assert result == (
             None,
             [
                 {
-                    "message": "Expected value of type 'Int', found GREEN.",
+                    "message": "Expected value of type 'Int', found GREEN;"
+                    " Int cannot represent non-integer value: GREEN",
                     "locations": [(1, 22)],
                 }
             ],
