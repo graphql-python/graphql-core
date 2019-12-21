@@ -33,6 +33,35 @@ def describe_find_breaking_changes():
         ]
         assert find_breaking_changes(old_schema, old_schema) == []
 
+    def should_detect_if_a_standard_scalar_was_removed():
+        old_schema = build_schema(
+            """
+            type Query {
+              foo: Float
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        assert find_breaking_changes(old_schema, new_schema) == [
+            (
+                BreakingChangeType.TYPE_REMOVED,
+                "Standard scalar Float was removed"
+                " because it is not referenced anymore.",
+            ),
+            (
+                BreakingChangeType.FIELD_CHANGED_KIND,
+                "Query.foo changed type from Float to String.",
+            ),
+        ]
+
     def should_detect_if_a_type_changed_its_type():
         old_schema = build_schema(
             """
@@ -611,7 +640,7 @@ def describe_find_breaking_changes():
             directive @DirectiveName on FIELD_DEFINITION | QUERY
 
             type ArgThatChanges {
-                field1(id: Int): String
+                field1(id: Float): String
             }
 
             enum EnumTypeThatLosesAValue {
@@ -672,11 +701,15 @@ def describe_find_breaking_changes():
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [
-            (BreakingChangeType.TYPE_REMOVED, "Int was removed."),
+            (
+                BreakingChangeType.TYPE_REMOVED,
+                "Standard scalar Float was removed"
+                " because it is not referenced anymore.",
+            ),
             (BreakingChangeType.TYPE_REMOVED, "TypeThatGetsRemoved was removed."),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "ArgThatChanges.field1 arg id has changed type from Int to String.",
+                "ArgThatChanges.field1 arg id has changed type from Float to String.",
             ),
             (
                 BreakingChangeType.VALUE_REMOVED_FROM_ENUM,

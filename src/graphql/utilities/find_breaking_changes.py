@@ -22,11 +22,12 @@ from ..type import (
     is_interface_type,
     is_list_type,
     is_named_type,
-    is_required_argument,
-    is_required_input_field,
     is_non_null_type,
     is_object_type,
+    is_required_argument,
+    is_required_input_field,
     is_scalar_type,
+    is_specified_scalar_type,
     is_union_type,
 )
 from .ast_from_value import ast_from_value
@@ -172,9 +173,15 @@ def find_type_changes(
     schema_changes: List[Change] = []
     types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
 
-    for type_name in types_diff.removed:
+    for type_name, old_type in types_diff.removed.items():
         schema_changes.append(
-            BreakingChange(BreakingChangeType.TYPE_REMOVED, f"{type_name} was removed.")
+            BreakingChange(
+                BreakingChangeType.TYPE_REMOVED,
+                f"Standard scalar {type_name} was removed"
+                " because it is not referenced anymore."
+                if is_specified_scalar_type(old_type)
+                else f"{type_name} was removed.",
+            )
         )
 
     for type_name, (old_type, new_type) in types_diff.persisted.items():
