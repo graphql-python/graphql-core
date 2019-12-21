@@ -153,13 +153,15 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                         node,
                     )
                 )
+        except GraphQLError as error:
+            self.report_error(error)
         except Exception as error:
-            # Ensure a reference to the original error is maintained.
             self.report_error(
                 GraphQLError(
                     f"Expected value of type '{location_type}',"
                     f" found {print_ast(node)}; {error}",
                     node,
+                    # Ensure a reference to the original error is maintained.
                     original_error=error,
                 )
             )

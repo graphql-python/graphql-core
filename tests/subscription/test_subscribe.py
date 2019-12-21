@@ -471,14 +471,14 @@ def describe_subscription_initialization_phase():
             None,
             [
                 {
-                    "message": "Variable '$priority' got invalid value 'meow'; Expected"
-                    " type 'Int'. Int cannot represent non-integer value: 'meow'",
+                    "message": "Variable '$priority' got invalid value 'meow';"
+                    " Int cannot represent non-integer value: 'meow'",
                     "locations": [(2, 27)],
                 }
             ],
         )
 
-        assert result.errors[0].original_error is not None  # type: ignore
+        assert result.errors[0].original_error is None  # type: ignore
 
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.

@@ -24,8 +24,7 @@ As a result, you will get a complete list of all errors that the validators has 
 In this case, we will get::
 
     [GraphQLError(
-        "Expected value of type 'String!', found NEWHOPE;"
-        " String cannot represent a non string value: NEWHOPE",
+        'String cannot represent a non string value: NEWHOPE',
         locations=[SourceLocation(line=3, column=17)]),
      GraphQLError(
         "Cannot query field 'homeTown' on type 'Human'."

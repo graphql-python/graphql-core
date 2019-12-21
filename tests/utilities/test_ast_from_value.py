@@ -2,7 +2,7 @@ from math import nan
 
 from pytest import raises  # type: ignore
 
-from graphql.error import INVALID
+from graphql.error import GraphQLError, INVALID
 from graphql.language import (
     BooleanValueNode,
     EnumValueNode,
@@ -58,13 +58,13 @@ def describe_ast_from_value():
 
         # GraphQL spec does not allow coercing non-integer values to Int to
         # avoid accidental data loss.
-        with raises(TypeError) as exc_info:
+        with raises(GraphQLError) as exc_info:
             assert ast_from_value(123.5, GraphQLInt)
         msg = str(exc_info.value)
         assert msg == "Int cannot represent non-integer value: 123.5"
 
         # Note: outside the bounds of 32bit signed int.
-        with raises(TypeError) as exc_info:
+        with raises(GraphQLError) as exc_info:
             assert ast_from_value(1e40, GraphQLInt)
         msg = str(exc_info.value)
         assert msg == "Int cannot represent non 32-bit signed integer value: 1e+40"
@@ -115,7 +115,7 @@ def describe_ast_from_value():
 
         assert ast_from_value("01", GraphQLID) == StringValueNode(value="01")
 
-        with raises(TypeError) as exc_info:
+        with raises(GraphQLError) as exc_info:
             assert ast_from_value(False, GraphQLID)
         assert str(exc_info.value) == "ID cannot represent value: False"
 

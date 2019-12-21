@@ -216,8 +216,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected value of type 'Int', found GREEN;"
-                    " Int cannot represent non-integer value: GREEN",
+                    "message": "Int cannot represent non-integer value: GREEN",
                     "locations": [(1, 22)],
                 }
             ],

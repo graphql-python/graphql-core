@@ -129,7 +129,10 @@ def coerce_input_value(
         type_ = cast(GraphQLScalarType, type_)
         try:
             parse_result = type_.parse_value(input_value)
-        except (TypeError, ValueError) as error:
+        except GraphQLError as error:
+            on_error(path.as_list() if path else [], input_value, error)
+            return INVALID
+        except Exception as error:
             on_error(
                 path.as_list() if path else [],
                 input_value,

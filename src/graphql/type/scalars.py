@@ -1,6 +1,7 @@
 from math import isfinite
 from typing import Any
 
+from ..error import GraphQLError
 from ..pyutils import inspect, is_finite, is_integer, FrozenDict
 from ..language.ast import (
     BooleanValueNode,
@@ -51,9 +52,9 @@ def serialize_int(value: Any) -> int:
             if num != float_value:
                 raise ValueError
     except (OverflowError, ValueError, TypeError):
-        raise TypeError(f"Int cannot represent non-integer value: {inspect(value)}")
+        raise GraphQLError(f"Int cannot represent non-integer value: {inspect(value)}")
     if not MIN_INT <= num <= MAX_INT:
-        raise TypeError(
+        raise GraphQLError(
             f"Int cannot represent non 32-bit signed integer value: {inspect(value)}"
         )
     return num
@@ -61,9 +62,9 @@ def serialize_int(value: Any) -> int:
 
 def coerce_int(value: Any) -> int:
     if not is_integer(value):
-        raise TypeError(f"Int cannot represent non-integer value: {inspect(value)}")
+        raise GraphQLError(f"Int cannot represent non-integer value: {inspect(value)}")
     if not MIN_INT <= value <= MAX_INT:
-        raise TypeError(
+        raise GraphQLError(
             f"Int cannot represent non 32-bit signed integer value: {inspect(value)}"
         )
     return int(value)
@@ -72,11 +73,14 @@ def coerce_int(value: Any) -> int:
 def parse_int_literal(ast, _variables=None):
     """Parse an integer value node in the AST."""
     if not isinstance(ast, IntValueNode):
-        raise TypeError(f"Int cannot represent non-integer value: {print_ast(ast)}")
+        raise GraphQLError(
+            f"Int cannot represent non-integer value: {print_ast(ast)}", ast
+        )
     num = int(ast.value)
     if not MIN_INT <= num <= MAX_INT:
-        raise TypeError(
-            f"Int cannot represent non 32-bit signed integer value: {print_ast(ast)}"
+        raise GraphQLError(
+            f"Int cannot represent non 32-bit signed integer value: {print_ast(ast)}",
+            ast,
         )
     return num
 
@@ -103,20 +107,26 @@ def serialize_float(value: Any) -> float:
         if not isfinite(num):
             raise ValueError
     except (ValueError, TypeError):
-        raise TypeError(f"Float cannot represent non numeric value: {inspect(value)}")
+        raise GraphQLError(
+            f"Float cannot represent non numeric value: {inspect(value)}"
+        )
     return num
 
 
 def coerce_float(value: Any) -> float:
     if not is_finite(value):
-        raise TypeError(f"Float cannot represent non numeric value: {inspect(value)}")
+        raise GraphQLError(
+            f"Float cannot represent non numeric value: {inspect(value)}"
+        )
     return float(value)
 
 
 def parse_float_literal(ast, _variables=None):
     """Parse a float value node in the AST."""
     if not isinstance(ast, (FloatValueNode, IntValueNode)):
-        raise TypeError(f"Float cannot represent non numeric value: {print_ast(ast)}")
+        raise GraphQLError(
+            f"Float cannot represent non numeric value: {print_ast(ast)}", ast
+        )
     return float(ast.value)
 
 
@@ -142,20 +152,24 @@ def serialize_string(value: Any) -> str:
     # do not serialize builtin types as strings, but allow serialization of custom
     # types via their `__str__` method
     if type(value).__module__ == "builtins":
-        raise TypeError(f"String cannot represent value: {inspect(value)}")
+        raise GraphQLError(f"String cannot represent value: {inspect(value)}")
     return str(value)
 
 
 def coerce_string(value: Any) -> str:
     if not isinstance(value, str):
-        raise TypeError(f"String cannot represent a non string value: {inspect(value)}")
+        raise GraphQLError(
+            f"String cannot represent a non string value: {inspect(value)}"
+        )
     return value
 
 
 def parse_string_literal(ast, _variables=None):
     """Parse a string value node in the AST."""
     if not isinstance(ast, StringValueNode):
-        raise TypeError(f"String cannot represent a non string value: {print_ast(ast)}")
+        raise GraphQLError(
+            f"String cannot represent a non string value: {print_ast(ast)}", ast
+        )
     return ast.value
 
 
@@ -176,12 +190,14 @@ def serialize_boolean(value: Any) -> bool:
         return value
     if is_finite(value):
         return bool(value)
-    raise TypeError(f"Boolean cannot represent a non boolean value: {inspect(value)}")
+    raise GraphQLError(
+        f"Boolean cannot represent a non boolean value: {inspect(value)}"
+    )
 
 
 def coerce_boolean(value: Any) -> bool:
     if not isinstance(value, bool):
-        raise TypeError(
+        raise GraphQLError(
             f"Boolean cannot represent a non boolean value: {inspect(value)}"
         )
     return value
@@ -190,8 +206,8 @@ def coerce_boolean(value: Any) -> bool:
 def parse_boolean_literal(ast, _variables=None):
     """Parse a boolean value node in the AST."""
     if not isinstance(ast, BooleanValueNode):
-        raise TypeError(
-            f"Boolean cannot represent a non boolean value: {print_ast(ast)}"
+        raise GraphQLError(
+            f"Boolean cannot represent a non boolean value: {print_ast(ast)}", ast
         )
     return ast.value
 
@@ -213,13 +229,13 @@ def serialize_id(value: Any) -> str:
     # do not serialize builtin types as IDs, but allow serialization of custom types
     # via their `__str__` method
     if type(value).__module__ == "builtins":
-        raise TypeError(f"ID cannot represent value: {inspect(value)}")
+        raise GraphQLError(f"ID cannot represent value: {inspect(value)}")
     return str(value)
 
 
 def coerce_id(value: Any) -> str:
     if not isinstance(value, str) and not is_integer(value):
-        raise TypeError(f"ID cannot represent value: {inspect(value)}")
+        raise GraphQLError(f"ID cannot represent value: {inspect(value)}")
     if isinstance(value, float):
         value = int(value)
     return str(value)
@@ -228,8 +244,9 @@ def coerce_id(value: Any) -> str:
 def parse_id_literal(ast, _variables=None):
     """Parse an ID value node in the AST."""
     if not isinstance(ast, (StringValueNode, IntValueNode)):
-        raise TypeError(
-            f"ID cannot represent a non-string and non-integer value: {print_ast(ast)}"
+        raise GraphQLError(
+            f"ID cannot represent a non-string and non-integer value: {print_ast(ast)}",
+            ast,
         )
     return ast.value
 

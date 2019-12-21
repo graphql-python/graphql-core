@@ -159,29 +159,14 @@ def describe_coerce_input_value():
         def returns_an_error_for_an_invalid_field():
             result = _coerce_value({"foo": nan}, TestInputObject)
             assert expect_errors(result) == [
-                (
-                    "Expected type 'Int'."
-                    " Int cannot represent non-integer value: nan",
-                    ["foo"],
-                    nan,
-                )
+                ("Int cannot represent non-integer value: nan", ["foo"], nan,)
             ]
 
         def returns_multiple_errors_for_multiple_invalid_fields():
             result = _coerce_value({"foo": "abc", "bar": "def"}, TestInputObject)
             assert expect_errors(result) == [
-                (
-                    "Expected type 'Int'."
-                    " Int cannot represent non-integer value: 'abc'",
-                    ["foo"],
-                    "abc",
-                ),
-                (
-                    "Expected type 'Int'."
-                    " Int cannot represent non-integer value: 'def'",
-                    ["bar"],
-                    "def",
-                ),
+                ("Int cannot represent non-integer value: 'abc'", ["foo"], "abc",),
+                ("Int cannot represent non-integer value: 'def'", ["bar"], "def",),
             ]
 
         def returns_error_for_a_missing_required_field():
@@ -281,18 +266,8 @@ def describe_coerce_input_value():
         def returns_an_error_for_an_invalid_input():
             result = _coerce_value([1, "b", True, 4], TestList)
             assert expect_errors(result) == [
-                (
-                    "Expected type 'Int'."
-                    " Int cannot represent non-integer value: 'b'",
-                    [1],
-                    "b",
-                ),
-                (
-                    "Expected type 'Int'."
-                    " Int cannot represent non-integer value: True",
-                    [2],
-                    True,
-                ),
+                ("Int cannot represent non-integer value: 'b'", [1], "b",),
+                ("Int cannot represent non-integer value: True", [2], True,),
             ]
 
         def returns_a_list_for_a_non_list_value():
@@ -302,12 +277,7 @@ def describe_coerce_input_value():
         def returns_a_list_for_a_non_list_invalid_value():
             result = _coerce_value("INVALID", TestList)
             assert expect_errors(result) == [
-                (
-                    "Expected type 'Int'."
-                    " Int cannot represent non-integer value: 'INVALID'",
-                    [],
-                    "INVALID",
-                )
+                ("Int cannot represent non-integer value: 'INVALID'", [], "INVALID",)
             ]
 
         def returns_null_for_a_null_value():

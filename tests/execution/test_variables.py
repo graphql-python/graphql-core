@@ -658,15 +658,14 @@ def describe_execute_handles_inputs():
                 [
                     {
                         "message": "Variable '$value' got invalid value [1, 2, 3];"
-                        " Expected type 'String'. String cannot represent"
-                        " a non string value: [1, 2, 3]",
+                        " String cannot represent a non string value: [1, 2, 3]",
                         "locations": [(2, 24)],
                         "path": None,
                     }
                 ],
             )
 
-            assert isinstance(result.errors[0].original_error, TypeError)
+            assert result.errors[0].original_error is None
 
         def reports_error_for_non_provided_variables_for_non_nullable_inputs():
             # Note: this test would typically fail validation before
@@ -974,7 +973,6 @@ def describe_execute_handles_inputs():
             return {
                 "message": "Variable '$input' got invalid value"
                 f" {value} at 'input[{index}]';"
-                " Expected type 'String'."
                 f" String cannot represent a non string value: {value}",
                 "locations": [(2, 20)],
             }
