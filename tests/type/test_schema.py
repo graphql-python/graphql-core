@@ -158,12 +158,7 @@ def describe_type_system_schema():
             SomeSubtype = GraphQLObjectType(
                 "SomeSubtype", {}, interfaces=lambda: [SomeInterface]
             )
-            schema = GraphQLSchema(
-                query=GraphQLObjectType(
-                    "Query", {"iface": GraphQLField(SomeInterface)}
-                ),
-                types=[SomeSubtype],
-            )
+            schema = GraphQLSchema(types=[SomeSubtype],)
             assert schema.type_map["SomeInterface"] is SomeInterface
             assert schema.type_map["SomeSubtype"] is SomeSubtype
 
