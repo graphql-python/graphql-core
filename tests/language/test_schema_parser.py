@@ -573,6 +573,11 @@ def describe_schema_parser():
             "union Hello = || Wo | Rld", "Expected Name, found |", (1, 16)
         )
 
+    def union_fails_with_double_pipe():
+        assert_syntax_error(
+            "union Hello = Wo || Rld", "Expected Name, found |", (1, 19)
+        )
+
     def union_fails_with_trailing_pipe():
         assert_syntax_error(
             "union Hello = | Wo | Rld |", "Expected Name, found <EOF>", (1, 27)
