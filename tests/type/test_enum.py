@@ -204,7 +204,7 @@ def describe_type_system_enum_values():
             [{"message": "Expected type Color, found 1.", "locations": [(1, 23)]}],
         )
 
-    def does_not_accept_internal_value_in_place_of_int():
+    def does_not_accept_enum_literal_in_place_of_int():
         result = execute_query("{ colorEnum(fromInt: GREEN) }")
 
         assert result == (
