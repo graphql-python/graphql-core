@@ -215,8 +215,8 @@ class Lexer:
             position = self.read_digits(position, char)
             char = body[position : position + 1]
 
-        # Numbers cannot be followed by . or e
-        if char and char in ".eE":
+        # Numbers cannot be followed by . or NameStart
+        if char and (char == "." or is_name_start(char)):
             raise GraphQLSyntaxError(
                 source,
                 position,
@@ -436,3 +436,8 @@ def char2hex(a: str):
     elif "a" <= a <= "f":  # a-f
         return ord(a) - 87
     return -1
+
+
+def is_name_start(char: str) -> bool:
+    """Check whether char is an underscore or a plain ASCII letter"""
+    return char == "_" or "A" <= char <= "Z" or "a" <= char <= "z"
