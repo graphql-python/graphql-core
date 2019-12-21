@@ -201,7 +201,8 @@ def extend_schema(
                         for field in field_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
+                + extensions,
             }
         )
 
@@ -220,7 +221,8 @@ def extend_schema(
                         for value in value_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
+                + extensions,
             }
         )
 
@@ -231,7 +233,8 @@ def extend_schema(
         return GraphQLScalarType(
             **{
                 **kwargs,
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
+                + extensions,
             }
         )
 
@@ -263,7 +266,8 @@ def extend_schema(
                         for node in field_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
+                + extensions,
             }
         )
 
@@ -285,7 +289,8 @@ def extend_schema(
                         for node in field_nodes
                     },
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
+                + extensions,
             }
         )
 
@@ -304,7 +309,8 @@ def extend_schema(
                 # typed values, that would throw immediately while type system
                 # validation with validate_schema will produce more actionable results.
                 + [ast_builder.get_named_type(node) for node in type_nodes],
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
+                + extensions,
             }
         )
 
