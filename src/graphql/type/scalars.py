@@ -10,7 +10,7 @@ from ..language.ast import (
     StringValueNode,
 )
 from ..language.printer import print_ast
-from .definition import GraphQLScalarType, is_scalar_type
+from .definition import GraphQLNamedType, GraphQLScalarType
 
 __all__ = [
     "is_specified_scalar_type",
@@ -279,5 +279,6 @@ specified_scalar_types: FrozenDict[str, GraphQLScalarType] = FrozenDict(
 )
 
 
-def is_specified_scalar_type(type_: Any) -> bool:
-    return is_scalar_type(type_) and type_.name in specified_scalar_types
+def is_specified_scalar_type(type_: GraphQLNamedType) -> bool:
+    """Check whether the given named GraphQL type is a specified scalar type."""
+    return type_.name in specified_scalar_types

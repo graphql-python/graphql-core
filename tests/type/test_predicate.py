@@ -7,7 +7,6 @@ from graphql.type import (
     GraphQLBoolean,
     GraphQLDirective,
     GraphQLEnumType,
-    GraphQLField,
     GraphQLFloat,
     GraphQLID,
     GraphQLIncludeDirective,
@@ -139,32 +138,6 @@ def describe_type_predicates():
             assert is_specified_scalar_type(GraphQLFloat) is True
             assert is_specified_scalar_type(GraphQLBoolean) is True
             assert is_specified_scalar_type(GraphQLID) is True
-
-        def returns_false_for_custom_scalar():
-            assert is_specified_scalar_type(ScalarType) is False
-
-        def returns_false_for_scalar_class_rather_than_specified_instance():
-            assert is_specified_scalar_type(GraphQLScalarType) is False
-
-        def returns_false_for_wrapped_specified_scalar():
-            assert is_scalar_type(GraphQLList(GraphQLString)) is False
-
-        def returns_false_for_non_scalar():
-            assert is_specified_scalar_type(EnumType) is False
-            assert is_specified_scalar_type(Directive) is False
-
-        def returns_false_for_spec_defined_directive():
-            assert is_specified_scalar_type(GraphQLSkipDirective) is False
-
-        def returns_false_for_object_type_named_like_specified_directive():
-            ObjectNamedLikeScalar = GraphQLObjectType(
-                "String", {"serialize": GraphQLField(GraphQLString)}
-            )
-            assert is_specified_scalar_type(ObjectNamedLikeScalar) is False
-
-        def returns_false_for_random_garbage():
-            assert is_specified_scalar_type(None) is False
-            assert is_specified_scalar_type({"what": "is this"}) is False
 
     def describe_is_object_type():
         def returns_true_for_object_type():
@@ -561,21 +534,3 @@ def describe_type_predicates():
 
             def returns_false_for_custom_directive():
                 assert is_specified_directive(Directive) is False
-
-            def returns_false_for_directive_class_rather_than_specified_instance():
-                assert is_specified_directive(GraphQLDirective) is False
-
-            def returns_false_for_non_directive():
-                assert is_specified_directive(EnumType) is False
-                assert is_specified_directive(ScalarType) is False
-
-            def returns_false_for_spec_defined_scalar_type():
-                assert is_specified_directive(GraphQLString) is False
-
-            def returns_false_for_scalar_type_named_like_specified_directive():
-                ScalarNamedLikeDirective = GraphQLScalarType("deprecated")
-                assert is_specified_directive(ScalarNamedLikeDirective) is False
-
-            def returns_false_for_random_garbage():
-                assert is_specified_directive(None) is False
-                assert is_specified_directive({"what": "is this"}) is False

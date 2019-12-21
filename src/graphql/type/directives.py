@@ -203,9 +203,9 @@ specified_directives: FrozenList[GraphQLDirective] = FrozenList(
 specified_directives.__doc__ = """The full list of specified directives."""
 
 
-def is_specified_directive(directive: Any) -> bool:
+def is_specified_directive(directive: GraphQLDirective) -> bool:
     """Check whether the given directive is one of the specified directives."""
-    return is_directive(directive) and any(
+    return any(
         specified_directive.name == directive.name
         for specified_directive in specified_directives
     )

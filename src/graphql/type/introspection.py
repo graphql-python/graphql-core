@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Any
 
 from .definition import (
     GraphQLArgument,
@@ -7,6 +6,7 @@ from .definition import (
     GraphQLEnumValue,
     GraphQLField,
     GraphQLList,
+    GraphQLNamedType,
     GraphQLNonNull,
     GraphQLObjectType,
     is_abstract_type,
@@ -14,7 +14,6 @@ from .definition import (
     is_input_object_type,
     is_interface_type,
     is_list_type,
-    is_named_type,
     is_non_null_type,
     is_object_type,
     is_scalar_type,
@@ -507,5 +506,6 @@ introspection_types = FrozenDict(
 introspection_types.__doc__ = """A dictionary containing all introspection types."""
 
 
-def is_introspection_type(type_: Any) -> bool:
-    return is_named_type(type_) and type_.name in introspection_types
+def is_introspection_type(type_: GraphQLNamedType) -> bool:
+    """Check whether the given named GraphQL type is an introspection type."""
+    return type_.name in introspection_types
