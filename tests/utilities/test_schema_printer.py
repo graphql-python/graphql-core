@@ -491,6 +491,17 @@ def describe_type_system_printer():
             '''  # noqa: E501
         )
 
+    def prints_an_empty_description():
+        output = print_single_field_schema(GraphQLField(GraphQLString, description=""))
+        assert output == dedent(
+            '''
+            type Query {
+              """"""
+              singleField: String
+            }
+            '''
+        )
+
     def one_line_prints_a_short_description():
         description = "This field is awesome"
         output = print_single_field_schema(

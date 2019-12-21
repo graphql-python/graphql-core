@@ -260,7 +260,7 @@ def print_description(
     indentation="",
     first_in_block=True,
 ) -> str:
-    if not def_.description:
+    if def_.description is None:
         return ""
 
     lines = description_lines(def_.description, 120 - len(indentation))
