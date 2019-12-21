@@ -87,6 +87,7 @@ def describe_parser():
             "notanoperation Foo { field }", "Unexpected Name 'notanoperation'.", (1, 1)
         )
         assert_syntax_error("...", "Unexpected '...'.", (1, 1))
+        assert_syntax_error('{ ""', "Expected Name, found String ''.", (1, 3))
 
     def parse_provides_useful_error_when_using_source():
         with raises(GraphQLSyntaxError) as exc_info:

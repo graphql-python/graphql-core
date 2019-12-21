@@ -1080,8 +1080,9 @@ class Parser:
 
 def get_token_desc(token: Token) -> str:
     """Describe a token as a string for debugging."""
+    value = token.value
     return get_token_kind_desc(token.kind) + (
-        f" '{token.value}'" if token.value else ""
+        f" '{value}'" if value is not None else ""
     )
 
 
