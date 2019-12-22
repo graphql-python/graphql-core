@@ -42,18 +42,21 @@ test_schema = build_schema(
     scalar SomeScalar
 
     interface SomeInterface {
-      name: String
       some: SomeInterface
     }
 
-    type Foo implements SomeInterface {
+    interface AnotherInterface implements SomeInterface {
       name: String
-      some: SomeInterface
+      some: AnotherInterface
+    }
+
+    type Foo implements AnotherInterface & SomeInterface {
+      name: String
+      some: AnotherInterface
       tree: [Foo]!
     }
 
     type Bar implements SomeInterface {
-      name: String
       some: SomeInterface
       foo: Foo
     }
@@ -178,9 +181,9 @@ def describe_extend_schema():
         )
         assert print_test_schema_changes(extended_schema) == dedent(
             """
-            type Foo implements SomeInterface {
+            type Foo implements AnotherInterface & SomeInterface {
               name: String
-              some: SomeInterface
+              some: AnotherInterface
               tree: [Foo]!
               newField: String
             }
@@ -643,9 +646,9 @@ def describe_extend_schema():
         )
         assert print_test_schema_changes(extended_schema) == dedent(
             """
-            type Foo implements SomeInterface {
+            type Foo implements AnotherInterface & SomeInterface {
               name: String
-              some: SomeInterface
+              some: AnotherInterface
               tree: [Foo]!
               newField(arg1: String, arg2: NewInputObj!): String
             }
@@ -668,9 +671,9 @@ def describe_extend_schema():
         )
         assert print_test_schema_changes(extended_schema) == dedent(
             """
-            type Foo implements SomeInterface {
+            type Foo implements AnotherInterface & SomeInterface {
               name: String
-              some: SomeInterface
+              some: AnotherInterface
               tree: [Foo]!
               newField(arg1: SomeEnum!): SomeEnum
             }
@@ -732,9 +735,9 @@ def describe_extend_schema():
         )
         assert print_test_schema_changes(extended_schema) == dedent(
             """
-            type Foo implements SomeInterface {
+            type Foo implements AnotherInterface & SomeInterface {
               name: String
-              some: SomeInterface
+              some: AnotherInterface
               tree: [Foo]!
               newObject: NewObject
               newInterface: NewInterface
@@ -781,9 +784,9 @@ def describe_extend_schema():
         )
         assert print_test_schema_changes(extended_schema) == dedent(
             """
-            type Foo implements SomeInterface & NewInterface {
+            type Foo implements AnotherInterface & SomeInterface & NewInterface {
               name: String
-              some: SomeInterface
+              some: AnotherInterface
               tree: [Foo]!
               baz: String
             }
@@ -891,6 +894,10 @@ def describe_extend_schema():
               newField: String
             }
 
+            extend interface AnotherInterface {
+              newField: String
+            }
+
             extend type Bar {
               newField: String
             }
@@ -902,23 +909,64 @@ def describe_extend_schema():
         )
         assert print_test_schema_changes(extended_schema) == dedent(
             """
-            type Bar implements SomeInterface {
+            interface AnotherInterface implements SomeInterface {
               name: String
+              some: AnotherInterface
+              newField: String
+            }
+
+            type Bar implements SomeInterface {
               some: SomeInterface
               foo: Foo
               newField: String
             }
 
-            type Foo implements SomeInterface {
+            type Foo implements AnotherInterface & SomeInterface {
               name: String
-              some: SomeInterface
+              some: AnotherInterface
               tree: [Foo]!
               newField: String
             }
 
             interface SomeInterface {
-              name: String
               some: SomeInterface
+              newField: String
+            }
+            """
+        )
+
+    def extends_interfaces_by_adding_new_implemented_interfaces():
+        extended_schema = extend_test_schema(
+            """
+            interface NewInterface {
+              newField: String
+            }
+
+            extend interface AnotherInterface implements NewInterface {
+              newField: String
+            }
+
+            extend type Foo implements NewInterface {
+              newField: String
+            }
+            """
+        )
+        assert print_test_schema_changes(extended_schema) == dedent(
+            """
+            interface AnotherInterface implements SomeInterface & NewInterface {
+              name: String
+              some: AnotherInterface
+              newField: String
+            }
+
+            type Foo implements AnotherInterface & SomeInterface & NewInterface {
+              name: String
+              some: AnotherInterface
+              tree: [Foo]!
+              newField: String
+            }
+
+            interface NewInterface {
               newField: String
             }
             """
@@ -937,7 +985,6 @@ def describe_extend_schema():
         assert print_test_schema_changes(extended_schema) == dedent(
             """
             interface SomeInterface {
-              name: String
               some: SomeInterface
               newField: String
             }
@@ -959,7 +1006,6 @@ def describe_extend_schema():
         assert print_test_schema_changes(extended_schema) == dedent(
             """
             interface SomeInterface {
-              name: String
               some: SomeInterface
               newFieldA: Int
               newFieldB(test: Boolean): String

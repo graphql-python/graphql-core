@@ -88,14 +88,25 @@ def describe_type_comparators():
             schema = _test_schema(union)
             assert is_type_sub_type_of(schema, member, union)
 
-        def implementation_is_subtype_of_interface():
+        def implementing_object_is_subtype_of_interface():
             iface = GraphQLInterfaceType(
                 "Interface", {"field": GraphQLField(GraphQLString)}
             )
             impl = GraphQLObjectType(
-                "Object",
-                fields={"field": GraphQLField(GraphQLString)},
-                interfaces=[iface],
+                "Object", {"field": GraphQLField(GraphQLString)}, [iface],
             )
             schema = _test_schema(impl)
             assert is_type_sub_type_of(schema, impl, iface)
+
+        def implementing_interface_is_subtype_of_interface():
+            iface = GraphQLInterfaceType(
+                "Interface", {"field": GraphQLField(GraphQLString)}
+            )
+            iface2 = GraphQLInterfaceType(
+                "Interface2", {"field": GraphQLField(GraphQLString)}, [iface]
+            )
+            impl = GraphQLObjectType(
+                "Object", {"field": GraphQLField(GraphQLString)}, [iface2, iface],
+            )
+            schema = _test_schema(impl)
+            assert is_type_sub_type_of(schema, iface2, iface)

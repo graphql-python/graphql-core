@@ -274,11 +274,21 @@ def extend_schema(
     def extend_interface_type(type_: GraphQLInterfaceType) -> GraphQLInterfaceType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])
+        interface_nodes = chain.from_iterable(
+            node.interfaces or [] for node in extensions
+        )
         field_nodes = chain.from_iterable(node.fields or [] for node in extensions)
 
         return GraphQLInterfaceType(
             **{
                 **kwargs,
+                "interfaces": lambda: [
+                    replace_named_type(interface) for interface in kwargs["interfaces"]
+                ]
+                # Note: While this could make early assertions to get the correctly
+                # typed values, that would throw immediately while type system
+                # validation with validate_schema will produce more actionable results.
+                + [ast_builder.get_named_type(node) for node in interface_nodes],
                 "fields": lambda: {
                     **{
                         name: extend_field(field)

@@ -602,8 +602,32 @@ def describe_find_breaking_changes():
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
-                BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
+                BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
                 "Type1 no longer implements interface Interface1.",
+            )
+        ]
+
+    def should_detect_intrefaces_removed_from_interfaces():
+        old_schema = build_schema(
+            """
+            interface Interface1
+
+            interface Interface2 implements Interface1
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            interface Interface1
+
+            interface Interface2
+            """
+        )
+
+        assert find_breaking_changes(old_schema, new_schema) == [
+            (
+                BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
+                "Interface2 no longer implements interface Interface1.",
             )
         ]
 
@@ -716,7 +740,7 @@ def describe_find_breaking_changes():
                 "VALUE0 was removed from enum type EnumTypeThatLosesAValue.",
             ),
             (
-                BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
+                BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
                 "TypeThatLoosesInterface1 no longer implements interface Interface1.",
             ),
             (
@@ -1052,8 +1076,34 @@ def describe_find_dangerous_changes():
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
-                DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
+                DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
                 "NewInterface added to interfaces implemented by Type1.",
+            )
+        ]
+
+    def should_detect_interfaces_added_to_interfaces():
+        old_schema = build_schema(
+            """
+            interface OldInterface
+            interface NewInterface
+
+            interface Interface1 implements OldInterface
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            interface OldInterface
+            interface NewInterface
+
+            interface Interface1 implements OldInterface & NewInterface
+            """
+        )
+
+        assert find_dangerous_changes(old_schema, new_schema) == [
+            (
+                DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
+                "NewInterface added to interfaces implemented by Interface1.",
             )
         ]
 
@@ -1160,7 +1210,7 @@ def describe_find_dangerous_changes():
                 ' from "test" to "Test".',
             ),
             (
-                DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
+                DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
                 "Interface1 added to interfaces implemented"
                 " by TypeThatGainsInterface1.",
             ),

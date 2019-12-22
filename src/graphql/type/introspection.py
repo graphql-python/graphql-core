@@ -281,7 +281,7 @@ class TypeFieldResolvers:
 
     @staticmethod
     def interfaces(type_, _info):
-        if is_object_type(type_):
+        if is_object_type(type_) or is_interface_type(type_):
             return type_.interfaces
 
     @staticmethod
@@ -435,7 +435,7 @@ __TypeKind: GraphQLEnumType = GraphQLEnumType(
         "INTERFACE": GraphQLEnumValue(
             TypeKind.INTERFACE,
             description="Indicates this type is an interface."
-            " `fields` and `possibleTypes` are valid fields.",
+            " `fields`, `interfaces`, and `possibleTypes` are valid fields.",
         ),
         "UNION": GraphQLEnumValue(
             TypeKind.UNION,

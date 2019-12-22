@@ -325,7 +325,18 @@ class ASTDefinitionBuilder:
     def _make_interface_def(
         self, ast_node: InterfaceTypeDefinitionNode
     ) -> GraphQLInterfaceType:
+        interface_nodes = ast_node.interfaces
         field_nodes = ast_node.fields
+
+        # Note: While this could make assertions to get the correctly typed
+        # values below, that would throw immediately while type system
+        # validation with validate_schema() will produce more actionable results.
+        interfaces = cast(
+            Thunk[Sequence[GraphQLInterfaceType]],
+            (lambda: [self.get_named_type(ref) for ref in interface_nodes])
+            if interface_nodes
+            else [],
+        )
 
         fields = cast(
             Thunk[GraphQLFieldMap],
@@ -341,6 +352,7 @@ class ASTDefinitionBuilder:
         return GraphQLInterfaceType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
+            interfaces=interfaces,
             fields=fields,
             ast_node=ast_node,
         )

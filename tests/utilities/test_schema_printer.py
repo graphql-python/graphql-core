@@ -363,6 +363,55 @@ def describe_type_system_printer():
             """
         )
 
+    def prints_hierarchical_interface():
+        foo_type = GraphQLInterfaceType(
+            name="Foo", fields={"str": GraphQLField(GraphQLString)}
+        )
+
+        baaz_type = GraphQLInterfaceType(
+            name="Baaz",
+            interfaces=[foo_type],
+            fields={
+                "int": GraphQLField(GraphQLInt),
+                "str": GraphQLField(GraphQLString),
+            },
+        )
+
+        bar_type = GraphQLObjectType(
+            name="Bar",
+            fields={
+                "str": GraphQLField(GraphQLString),
+                "int": GraphQLField(GraphQLInt),
+            },
+            interfaces=[foo_type, baaz_type],
+        )
+
+        query = GraphQLObjectType(name="Query", fields={"bar": GraphQLField(bar_type)})
+
+        schema = GraphQLSchema(query, types=[bar_type])
+        output = print_for_test(schema)
+        assert output == dedent(
+            """
+            interface Baaz implements Foo {
+              int: Int
+              str: String
+            }
+
+            type Bar implements Foo & Baaz {
+              str: String
+              int: Int
+            }
+
+            interface Foo {
+              str: String
+            }
+
+            type Query {
+              bar: Bar
+            }
+            """
+        )
+
     def prints_unions():
         foo_type = GraphQLObjectType(
             name="Foo", fields={"bool": GraphQLField(GraphQLBoolean)}
@@ -729,7 +778,7 @@ def describe_type_system_printer():
               OBJECT
 
               """
-              Indicates this type is an interface. `fields` and `possibleTypes` are valid fields.
+              Indicates this type is an interface. `fields`, `interfaces`, and `possibleTypes` are valid fields.
               """
               INTERFACE
 

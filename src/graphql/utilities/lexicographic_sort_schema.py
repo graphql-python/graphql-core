@@ -92,25 +92,28 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             return type_
         elif is_object_type(type_):
             kwargs = type_.to_kwargs()
-            object_type = cast(GraphQLObjectType, type_)
+            type_ = cast(GraphQLObjectType, type_)
             kwargs.update(
-                interfaces=lambda: sort_types(object_type.interfaces),
-                fields=lambda: sort_fields(object_type.fields),
+                interfaces=lambda: sort_types(type_.interfaces),
+                fields=lambda: sort_fields(type_.fields),
             )
             return GraphQLObjectType(**kwargs)
         elif is_interface_type(type_):
             kwargs = type_.to_kwargs()
-            interface_type = cast(GraphQLInterfaceType, type_)
-            kwargs.update(fields=lambda: sort_fields(interface_type.fields))
+            type_ = cast(GraphQLInterfaceType, type_)
+            kwargs.update(
+                interfaces=lambda: sort_types(type_.interfaces),
+                fields=lambda: sort_fields(type_.fields),
+            )
             return GraphQLInterfaceType(**kwargs)
         elif is_union_type(type_):
             kwargs = type_.to_kwargs()
-            union_type = cast(GraphQLUnionType, type_)
-            kwargs.update(types=lambda: sort_types(union_type.types))
+            type_ = cast(GraphQLUnionType, type_)
+            kwargs.update(types=lambda: sort_types(type_.types))
             return GraphQLUnionType(**kwargs)
         elif is_enum_type(type_):
             kwargs = type_.to_kwargs()
-            enum_type = cast(GraphQLEnumType, type_)
+            type_ = cast(GraphQLEnumType, type_)
             kwargs.update(
                 values={
                     name: GraphQLEnumValue(
@@ -119,14 +122,14 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                         deprecation_reason=val.deprecation_reason,
                         ast_node=val.ast_node,
                     )
-                    for name, val in sorted(enum_type.values.items())
+                    for name, val in sorted(type_.values.items())
                 }
             )
             return GraphQLEnumType(**kwargs)
         elif is_input_object_type(type_):
             kwargs = type_.to_kwargs()
-            input_object_type = cast(GraphQLInputObjectType, type_)
-            kwargs.update(fields=lambda: sort_input_fields(input_object_type.fields))
+            type_ = cast(GraphQLInputObjectType, type_)
+            kwargs.update(fields=lambda: sort_input_fields(type_.fields))
             return GraphQLInputObjectType(**kwargs)
 
         # Not reachable. All possible types have been considered.

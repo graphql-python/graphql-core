@@ -1603,7 +1603,7 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
             }
         ]
 
-    def rejects_an_object_with_an_incorrectly_typed_field_and__argument():
+    def rejects_an_object_with_an_incorrectly_typed_field_and_argument():
         schema = build_schema(
             """
             type Query {
@@ -1705,7 +1705,7 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
             }
         ]
 
-    def rejects_a_object_with_a_list_interface_field_non_list_type():
+    def rejects_an_object_with_a_list_interface_field_non_list_type():
         schema = build_schema(
             """
             type Query {
@@ -1747,7 +1747,7 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
         )
         assert validate_schema(schema) == []
 
-    def rejects_a_object_with_a_superset_nullable_interface_field_type():
+    def rejects_an_object_with_a_superset_nullable_interface_field_type():
         schema = build_schema(
             """
             type Query {
@@ -1769,4 +1769,480 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
                 " String! but AnotherObject.field is type String.",
                 "locations": [(7, 22), (11, 22)],
             }
+        ]
+
+    def rejects_an_object_missing_a_transitive_interface():
+        schema = build_schema(
+            """
+            type Query {
+              test: AnotherObject
+            }
+
+            interface SuperInterface {
+              field: String!
+            }
+
+            interface AnotherInterface implements SuperInterface {
+              field: String!
+            }
+
+            type AnotherObject implements AnotherInterface {
+              field: String!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type AnotherObject must implement SuperInterface"
+                " because it is implemented by AnotherInterface.",
+                "locations": [(10, 51), (14, 43)],
+            }
+        ]
+
+
+def describe_interfaces_must_adhere_to_interface_they_implement():
+    def accepts_an_interface_which_implements_an_interface():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(input: String): String
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_an_interface_which_implements_an_interface_along_with_more_fields():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(input: String): String
+              anotherField: String
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_an_interface_which_implements_an_interface_with_additional_args():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(input: String, anotherInput: String): String
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_an_interface_missing_an_interface_field():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              anotherField: String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field expected"
+                " but ChildInterface does not provide it.",
+                "locations": [(7, 15), (10, 13)],
+            }
+        ]
+
+    def rejects_an_interface_with_an_incorrectly_typed_interface_field():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(input: String): Int
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field expects type String"
+                " but ChildInterface.field is type Int.",
+                "locations": [(7, 37), (11, 37)],
+            }
+        ]
+
+    def rejects_an_interface_with_a_differently_typed_interface_field():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            type A { foo: String }
+            type B { foo: String }
+
+            interface ParentInterface {
+              field: A
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: B
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field expects type A"
+                " but ChildInterface.field is type B.",
+                "locations": [(10, 22), (14, 22)],
+            }
+        ]
+
+    def accepts_an_interface_with_a_subtyped_interface_field_union():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            type SomeObject {
+              field: String
+            }
+
+            union SomeUnionType = SomeObject
+
+            interface ParentInterface {
+              field: SomeUnionType
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: SomeObject
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_an_interface_missing_an_interface_argument():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field argument ParentInterface.field(input:)"
+                " expected but ChildInterface.field does not provide it.",
+                "locations": [(7, 21), (11, 15)],
+            }
+        ]
+
+    def rejects_an_interface_with_an_incorrectly_typed_interface_argument():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(input: Int): String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field argument ParentInterface.field(input:)"
+                " expects type String but ChildInterface.field(input:) is type Int.",
+                "locations": [(7, 28), (11, 28)],
+            }
+        ]
+
+    def rejects_an_interface_with_both_an_incorrectly_typed_field_and_argument():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(input: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(input: Int): Int
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field expects type String"
+                " but ChildInterface.field is type Int.",
+                "locations": [(7, 37), (11, 34)],
+            },
+            {
+                "message": "Interface field argument ParentInterface.field(input:)"
+                " expects type String but ChildInterface.field(input:) is type Int.",
+                "locations": [(7, 28), (11, 28)],
+            },
+        ]
+
+    def rejects_an_interface_implementing_an_interface_field_with_additional_args():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field(baseArg: String): String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field(
+                baseArg: String,
+                requiredArg: String!
+                optionalArg1: String,
+                optionalArg2: String = "",
+              ): String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Object field ChildInterface.field includes"
+                " required argument requiredArg that is missing"
+                " from the Interface field ParentInterface.field.",
+                "locations": [(13, 17), (7, 15)],
+            }
+        ]
+
+    def accepts_an_interface_with_an_equivalently_wrapped_interface_field_type():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field: [String]!
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: [String]!
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_an_interface_with_a_non_list_interface_field_list_type():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field: [String]
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field"
+                " expects type [String] but ChildInterface.field is type String.",
+                "locations": [(7, 22), (11, 22)],
+            }
+        ]
+
+    def rejects_an_interface_with_a_list_interface_field_non_list_type():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field: String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: [String]
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field expects type String"
+                " but ChildInterface.field is type [String].",
+                "locations": [(7, 22), (11, 22)],
+            }
+        ]
+
+    def accepts_an_interface_with_a_subset_non_null_interface_field_type():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field: String
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: String!
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_an_interface_with_a_superset_nullable_interface_field_type():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field: String!
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field ParentInterface.field expects type String!"
+                " but ChildInterface.field is type String.",
+                "locations": [(7, 22), (11, 22)],
+            }
+        ]
+
+    def rejects_an_object_missing_a_transitive_interface():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface SuperInterface {
+              field: String!
+            }
+
+            interface ParentInterface implements SuperInterface {
+              field: String!
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: String!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type ChildInterface must implement SuperInterface"
+                " because it is implemented by ParentInterface.",
+                "locations": [(10, 50), (14, 49)],
+            }
+        ]
+
+    def rejects_a_self_reference_interface():
+        schema = build_schema(
+            """
+            type Query {
+            test: FooInterface
+            }
+
+            interface FooInterface implements FooInterface {
+            field: String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type FooInterface cannot implement itself"
+                " because it would create a circular reference.",
+                "locations": [(6, 47)],
+            }
+        ]
+
+    def rejects_a_circular_interface_implementation():
+        schema = build_schema(
+            """
+            type Query {
+              test: FooInterface
+            }
+
+            interface FooInterface implements BarInterface {
+              field: String
+            }
+
+            interface BarInterface implements FooInterface {
+              field: String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type FooInterface cannot implement BarInterface"
+                " because it would create a circular reference.",
+                "locations": [(10, 47), (6, 47)],
+            },
+            {
+                "message": "Type BarInterface cannot implement FooInterface"
+                " because it would create a circular reference.",
+                "locations": [(6, 47), (10, 47)],
+            },
         ]

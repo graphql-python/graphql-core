@@ -72,7 +72,7 @@ def describe_lexicographic_sort_schema():
               dummy: String
             }
 
-            interface FooC {
+            interface FooC implements FooB & FooA {
               dummy: String
             }
 
@@ -92,7 +92,7 @@ def describe_lexicographic_sort_schema():
               dummy: String
             }
 
-            interface FooC {
+            interface FooC implements FooA & FooB {
               dummy: String
             }
 

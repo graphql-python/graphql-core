@@ -14,6 +14,7 @@ from graphql.language import (
     InputObjectTypeDefinitionNode,
     InputValueDefinitionNode,
     InterfaceTypeDefinitionNode,
+    InterfaceTypeExtensionNode,
     ListTypeNode,
     NameNode,
     NamedTypeNode,
@@ -193,7 +194,7 @@ def describe_schema_parser():
         ]
         assert extension.loc == (1, 38)
 
-    def extension_without_fields():
+    def object_extension_without_fields():
         body = "extend type Hello implements Greeting"
         extension = assert_definitions(body, (0, 37))
         assert isinstance(extension, ObjectTypeExtensionNode)
@@ -203,7 +204,17 @@ def describe_schema_parser():
         assert extension.fields == []
         assert extension.loc == (0, 37)
 
-    def extension_without_fields_followed_by_extension():
+    def interface_extension_without_fields():
+        body = "extend interface Hello implements Greeting"
+        extension = assert_definitions(body, (0, 42))
+        assert isinstance(extension, InterfaceTypeExtensionNode)
+        assert extension.name == name_node("Hello", (17, 22))
+        assert extension.interfaces == [type_node("Greeting", (34, 42))]
+        assert extension.directives == []
+        assert extension.fields == []
+        assert extension.loc == (0, 42)
+
+    def object_extension_without_fields_followed_by_extension():
         body = (
             "\n      extend type Hello implements Greeting\n\n"
             "      extend type Hello implements SecondGreeting\n    "
@@ -224,10 +235,34 @@ def describe_schema_parser():
         assert extension.fields == []
         assert extension.loc == (52, 95)
 
-    def extension_without_anything_throws():
+    def interface_extension_without_fields_followed_by_extension():
+        body = (
+            "\n      extend interface Hello implements Greeting\n\n"
+            "      extend interface Hello implements SecondGreeting\n    "
+        )
+        extensions = assert_definitions(body, (0, 110), 2)
+        extension = extensions[0]
+        assert isinstance(extension, InterfaceTypeExtensionNode)
+        assert extension.name == name_node("Hello", (24, 29))
+        assert extension.interfaces == [type_node("Greeting", (41, 49))]
+        assert extension.directives == []
+        assert extension.fields == []
+        assert extension.loc == (7, 49)
+        extension = extensions[1]
+        assert isinstance(extension, InterfaceTypeExtensionNode)
+        assert extension.name == name_node("Hello", (74, 79))
+        assert extension.interfaces == [type_node("SecondGreeting", (91, 105))]
+        assert extension.directives == []
+        assert extension.fields == []
+        assert extension.loc == (57, 105)
+
+    def object_extension_without_anything_throws():
         assert_syntax_error("extend type Hello", "Unexpected <EOF>.", (1, 18))
 
-    def extension_do_not_include_descriptions():
+    def interface_extension_without_anything_throws():
+        assert_syntax_error("extend interface Hello", "Unexpected <EOF>.", (1, 23))
+
+    def object_extension_do_not_include_descriptions():
         assert_syntax_error(
             """
             "Description"
@@ -240,6 +275,25 @@ def describe_schema_parser():
         assert_syntax_error(
             """
             extend "Description" type Hello {
+              world: String
+            }""",
+            "Unexpected String 'Description'.",
+            (2, 20),
+        )
+
+    def interface_extension_do_not_include_descriptions():
+        assert_syntax_error(
+            """
+            "Description"
+            extend interface Hello {
+              world: String
+            }""",
+            "Unexpected Name 'extend'.",
+            (3, 13),
+        )
+        assert_syntax_error(
+            """
+            extend "Description" interface Hello {
               world: String
             }""",
             "Unexpected String 'Description'.",
@@ -307,6 +361,21 @@ def describe_schema_parser():
         ]
         assert definition.loc == (1, 32)
 
+    def simple_interface_inheriting_interface():
+        body = "interface Hello implements World { field: String }"
+        definition = assert_definitions(body, (0, 50))
+        assert isinstance(definition, InterfaceTypeDefinitionNode)
+        assert definition.name == name_node("Hello", (10, 15))
+        assert definition.description is None
+        assert definition.interfaces == [type_node("World", (27, 32))]
+        assert definition.directives == []
+        assert definition.fields == [
+            field_node(
+                name_node("field", (35, 40)), type_node("String", (42, 48)), (35, 48)
+            )
+        ]
+        assert definition.loc == (0, 50)
+
     def simple_type_inheriting_interface():
         body = "type Hello implements World { field: String }"
         definition = assert_definitions(body, (0, 45))
@@ -340,6 +409,24 @@ def describe_schema_parser():
         ]
         assert definition.loc == (0, 48)
 
+    def simple_interface_inheriting_multiple_interfaces():
+        body = "interface Hello implements Wo & rld { field: String }"
+        definition = assert_definitions(body, (0, 53))
+        assert isinstance(definition, InterfaceTypeDefinitionNode)
+        assert definition.name == name_node("Hello", (10, 15))
+        assert definition.description is None
+        assert definition.interfaces == [
+            type_node("Wo", (27, 29)),
+            type_node("rld", (32, 35)),
+        ]
+        assert definition.directives == []
+        assert definition.fields == [
+            field_node(
+                name_node("field", (38, 43)), type_node("String", (45, 51)), (38, 51)
+            )
+        ]
+        assert definition.loc == (0, 53)
+
     def simple_type_inheriting_multiple_interfaces_with_leading_ampersand():
         body = "type Hello implements & Wo & rld { field: String }"
         definition = assert_definitions(body, (0, 50))
@@ -357,6 +444,24 @@ def describe_schema_parser():
             )
         ]
         assert definition.loc == (0, 50)
+
+    def simple_interface_inheriting_multiple_interfaces_with_leading_ampersand():
+        body = "interface Hello implements & Wo & rld { field: String }"
+        definition = assert_definitions(body, (0, 55))
+        assert isinstance(definition, InterfaceTypeDefinitionNode)
+        assert definition.name == name_node("Hello", (10, 15))
+        assert definition.description is None
+        assert definition.interfaces == [
+            type_node("Wo", (29, 31)),
+            type_node("rld", (34, 37)),
+        ]
+        assert definition.directives == []
+        assert definition.fields == [
+            field_node(
+                name_node("field", (40, 45)), type_node("String", (47, 53)), (40, 53)
+            )
+        ]
+        assert definition.loc == (0, 55)
 
     def single_value_enum():
         body = "enum Hello { WORLD }"
@@ -393,6 +498,7 @@ def describe_schema_parser():
         assert isinstance(definition, InterfaceTypeDefinitionNode)
         assert definition.name == name_node("Hello", (11, 16))
         assert definition.description is None
+        assert definition.interfaces == []
         assert definition.directives == []
         assert definition.fields == [
             field_node(

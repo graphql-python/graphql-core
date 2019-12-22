@@ -801,6 +801,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         self,
         name: str,
         fields: Thunk[GraphQLFieldMap] = None,
+        interfaces: Thunk[Sequence["GraphQLInterfaceType"]] = None,
         resolve_type: GraphQLTypeResolver = None,
         description: str = None,
         extensions: Dict[str, Any] = None,
@@ -829,12 +830,14 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 " as a sequence of InterfaceTypeExtensionNode instances."
             )
         self._fields = fields
+        self._interfaces = interfaces
         self.resolve_type = resolve_type
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
             **super().to_kwargs(),
             fields=self.fields.copy(),
+            interfaces=self.interfaces.copy(),
             resolve_type=self.resolve_type,
         )
 
@@ -863,6 +866,26 @@ class GraphQLInterfaceType(GraphQLNamedType):
             name: value if isinstance(value, GraphQLField) else GraphQLField(value)
             for name, value in fields.items()
         }
+
+    @cached_property
+    def interfaces(self) -> List["GraphQLInterfaceType"]:
+        """Get provided interfaces."""
+        try:
+            interfaces: Sequence["GraphQLInterfaceType"] = resolve_thunk(
+                self._interfaces
+            )
+        except Exception as error:
+            raise TypeError(f"{self.name} interfaces cannot be resolved: {error}")
+        if interfaces is None:
+            interfaces = []
+        elif not isinstance(interfaces, AbstractSequence) or not all(
+            isinstance(value, GraphQLInterfaceType) for value in interfaces
+        ):
+            raise TypeError(
+                f"{self.name} interfaces must be specified"
+                " as a sequence of GraphQLInterfaceType instances."
+            )
+        return list(interfaces)
 
 
 def is_interface_type(type_: Any) -> bool:

@@ -703,11 +703,13 @@ class Parser:
         description = self.parse_description()
         self.expect_keyword("interface")
         name = self.parse_name()
+        interfaces = self.parse_implements_interfaces()
         directives = self.parse_directives(True)
         fields = self.parse_fields_definition()
         return InterfaceTypeDefinitionNode(
             description=description,
             name=name,
+            interfaces=interfaces,
             directives=directives,
             fields=fields,
             loc=self.loc(start),
@@ -852,12 +854,17 @@ class Parser:
         self.expect_keyword("extend")
         self.expect_keyword("interface")
         name = self.parse_name()
+        interfaces = self.parse_implements_interfaces()
         directives = self.parse_directives(True)
         fields = self.parse_fields_definition()
-        if not (directives or fields):
+        if not (interfaces or directives or fields):
             raise self.unexpected()
         return InterfaceTypeExtensionNode(
-            name=name, directives=directives, fields=fields, loc=self.loc(start)
+            name=name,
+            interfaces=interfaces,
+            directives=directives,
+            fields=fields,
+            loc=self.loc(start),
         )
 
     def parse_union_type_extension(self) -> UnionTypeExtensionNode:

@@ -543,7 +543,7 @@ class ExecutionContext:
         if conditional_type is type_:
             return True
         if is_abstract_type(conditional_type):
-            return self.schema.is_possible_type(
+            return self.schema.is_sub_type(
                 cast(GraphQLAbstractType, conditional_type), type_
             )
         return False
@@ -941,7 +941,7 @@ class ExecutionContext:
             )
         runtime_type = cast(GraphQLObjectType, runtime_type)
 
-        if not self.schema.is_possible_type(return_type, runtime_type):
+        if not self.schema.is_sub_type(return_type, runtime_type):
             raise GraphQLError(
                 f"Runtime Object type '{runtime_type.name}' is not a possible"
                 f" type for '{return_type.name}'.",

@@ -16,12 +16,12 @@ from graphql.utilities import get_introspection_query
 
 def describe_introspection():
     def executes_an_introspection_query():
-        EmptySchema = GraphQLSchema(
+        empty_schema = GraphQLSchema(
             GraphQLObjectType("QueryRoot", {"onlyField": GraphQLField(GraphQLString)})
         )
 
         query = get_introspection_query(descriptions=False)
-        result = graphql_sync(EmptySchema, query)
+        result = graphql_sync(empty_schema, query)
         assert result.errors is None
         assert result.data == {
             "__schema": {
@@ -1276,7 +1276,8 @@ def describe_introspection():
                         },
                         {
                             "description": "Indicates this type is an interface."
-                            " `fields` and `possibleTypes` are valid fields.",
+                            " `fields`, `interfaces`, and `possibleTypes`"
+                            " are valid fields.",
                             "name": "INTERFACE",
                         },
                         {

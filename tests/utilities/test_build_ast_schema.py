@@ -4,7 +4,7 @@ from typing import Union
 from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DocumentNode
+from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
@@ -277,6 +277,11 @@ def describe_schema_builder():
             interface EmptyInterface
             """
         )
+
+        definition = parse(sdl).definitions[0]
+        assert isinstance(definition, InterfaceTypeDefinitionNode)
+        assert definition.interfaces == []
+
         assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_interface():
@@ -287,6 +292,28 @@ def describe_schema_builder():
             }
 
             interface WorldInterface {
+              str: String
+            }
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
+    def simple_interface_hierarchy():
+        sdl = dedent(
+            """
+            schema {
+              query: Child
+            }
+
+            interface Child implements Parent {
+              str: String
+            }
+
+            type Hello implements Parent & Child {
+              str: String
+            }
+
+            interface Parent {
               str: String
             }
             """
@@ -653,6 +680,24 @@ def describe_schema_builder():
 
             type Query {
               iface: Iface
+            }
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
+    def unreferenced_interface_implementing_referenced_interface():
+        sdl = dedent(
+            """
+            interface Child implements Parent {
+              key: String
+            }
+
+            interface Parent {
+              key: String
+            }
+
+            type Query {
+              iface: Parent
             }
             """
         )

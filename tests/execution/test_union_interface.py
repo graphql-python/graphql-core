@@ -1,4 +1,4 @@
-from typing import NamedTuple, Union, List
+from typing import Optional, Union, List
 
 from graphql.execution import execute
 from graphql.language import parse
@@ -14,38 +14,94 @@ from graphql.type import (
 )
 
 
-class Dog(NamedTuple):
+class Dog:
 
     name: str
     barks: bool
+    mother: Optional["Dog"]
+    father: Optional["Dog"]
+    progeny: List["Dog"]
+
+    def __init__(self, name: str, barks: bool):
+        self.name = name
+        self.barks = barks
+        self.mother = None
+        self.father = None
+        self.progeny = []
 
 
-class Cat(NamedTuple):
+class Cat:
 
     name: str
     meows: bool
+    mother: Optional["Cat"]
+    father: Optional["Cat"]
+    progeny: List["Cat"]
+
+    def __init__(self, name: str, meows: bool):
+        self.name = name
+        self.meows = meows
+        self.mother = None
+        self.father = None
+        self.progeny = []
 
 
-class Person(NamedTuple):
+class Person:
 
     name: str
-    pets: List[Union[Dog, Cat]]
-    friends: List[Union[Dog, Cat, "Person"]]  # type: ignore
+    pets: Optional[List[Union[Dog, Cat]]]
+    friends: Optional[List[Union[Dog, Cat, "Person"]]]
+
+    def __init__(
+        self,
+        name: str,
+        pets: List[Union[Dog, Cat]] = None,
+        friends: List[Union[Dog, Cat, "Person"]] = None,
+    ):
+        self.name = name
+        self.pets = pets
+        self.friends = friends
 
 
 NamedType = GraphQLInterfaceType("Named", {"name": GraphQLField(GraphQLString)})
 
+LifeType = GraphQLInterfaceType(
+    "Life", lambda: {"progeny": GraphQLField(GraphQLList(LifeType))}  # type: ignore
+)
+
+MammalType = GraphQLInterfaceType(
+    "Mammal",
+    lambda: {
+        "progeny": GraphQLField(GraphQLList(MammalType)),  # type: ignore
+        "mother": GraphQLField(MammalType),  # type: ignore
+        "father": GraphQLField(MammalType),  # type: ignore
+    },
+    interfaces=[LifeType],
+)
+
 DogType = GraphQLObjectType(
     "Dog",
-    {"name": GraphQLField(GraphQLString), "barks": GraphQLField(GraphQLBoolean)},
-    interfaces=[NamedType],
+    lambda: {
+        "name": GraphQLField(GraphQLString),
+        "barks": GraphQLField(GraphQLBoolean),
+        "progeny": GraphQLField(GraphQLList(DogType)),  # type: ignore
+        "mother": GraphQLField(DogType),  # type: ignore
+        "father": GraphQLField(DogType),  # type: ignore
+    },
+    interfaces=[MammalType, LifeType, NamedType],
     is_type_of=lambda value, info: isinstance(value, Dog),
 )
 
 CatType = GraphQLObjectType(
     "Cat",
-    {"name": GraphQLField(GraphQLString), "meows": GraphQLField(GraphQLBoolean)},
-    interfaces=[NamedType],
+    lambda: {
+        "name": GraphQLField(GraphQLString),
+        "meows": GraphQLField(GraphQLBoolean),
+        "progeny": GraphQLField(GraphQLList(CatType)),  # type: ignore
+        "mother": GraphQLField(CatType),  # type: ignore
+        "father": GraphQLField(CatType),  # type: ignore
+    },
+    interfaces=[MammalType, LifeType, NamedType],
     is_type_of=lambda value, info: isinstance(value, Cat),
 )
 
@@ -61,19 +117,28 @@ PetType = GraphQLUnionType("Pet", [DogType, CatType], resolve_type=resolve_pet_t
 
 PersonType = GraphQLObjectType(
     "Person",
-    {
+    lambda: {
         "name": GraphQLField(GraphQLString),
         "pets": GraphQLField(GraphQLList(PetType)),
         "friends": GraphQLField(GraphQLList(NamedType)),
+        "progeny": GraphQLField(GraphQLList(PersonType)),  # type: ignore
+        "mother": GraphQLField(PersonType),  # type: ignore
+        "father": GraphQLField(PersonType),  # type: ignore
     },
-    interfaces=[NamedType],
+    interfaces=[NamedType, MammalType, LifeType],
     is_type_of=lambda value, _info: isinstance(value, Person),
 )
 
 schema = GraphQLSchema(PersonType, types=[PetType])
 
 garfield = Cat("Garfield", False)
+garfield.mother = Cat("Garfield's Mom", False)
+garfield.mother.progeny = [garfield]
+
 odie = Dog("Odie", True)
+odie.mother = Dog("Odie's Mom", True)
+odie.mother.progeny = [odie]
+
 liz = Person("Liz", [], [])
 john = Person("John", [garfield, odie], [liz, odie])
 
@@ -84,6 +149,15 @@ def describe_execute_union_and_intersection_types():
             """
             {
               Named: __type(name: "Named") {
+                kind
+                name
+                fields { name }
+                interfaces { name }
+                possibleTypes { name }
+                enumValues { name }
+                inputFields { name }
+              }
+              Mammal: __type(name: "Mammal") {
                 kind
                 name
                 fields { name }
@@ -111,7 +185,24 @@ def describe_execute_union_and_intersection_types():
                     "kind": "INTERFACE",
                     "name": "Named",
                     "fields": [{"name": "name"}],
-                    "interfaces": None,
+                    "interfaces": [],
+                    "possibleTypes": [
+                        {"name": "Person"},
+                        {"name": "Dog"},
+                        {"name": "Cat"},
+                    ],
+                    "enumValues": None,
+                    "inputFields": None,
+                },
+                "Mammal": {
+                    "kind": "INTERFACE",
+                    "name": "Mammal",
+                    "fields": [
+                        {"name": "progeny"},
+                        {"name": "mother"},
+                        {"name": "father"},
+                    ],
+                    "interfaces": [{"name": "Life"}],
                     "possibleTypes": [
                         {"name": "Person"},
                         {"name": "Dog"},
@@ -241,6 +332,20 @@ def describe_execute_union_and_intersection_types():
                 ... on Cat {
                   meows
                 }
+
+                ... on Mammal {
+                  mother {
+                    __typename
+                    ... on Dog {
+                      name
+                      barks
+                    }
+                    ... on Cat {
+                      name
+                      meows
+                    }
+                  }
+                }
               }
             }
             """
@@ -251,8 +356,17 @@ def describe_execute_union_and_intersection_types():
                 "__typename": "Person",
                 "name": "John",
                 "friends": [
-                    {"__typename": "Person", "name": "Liz"},
-                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                    {"__typename": "Person", "name": "Liz", "mother": None},
+                    {
+                        "__typename": "Dog",
+                        "name": "Odie",
+                        "barks": True,
+                        "mother": {
+                            "__typename": "Dog",
+                            "name": "Odie's Mom",
+                            "barks": True,
+                        },
+                    },
                 ],
             },
             None,
@@ -264,7 +378,14 @@ def describe_execute_union_and_intersection_types():
             {
               __typename
               name
-              pets { ...PetFields }
+              pets {
+                ...PetFields,
+                ...on Mammal {
+                  mother {
+                    ...ProgenyFields
+                  }
+                }
+              }
               friends { ...FriendFields }
             }
 
@@ -290,6 +411,12 @@ def describe_execute_union_and_intersection_types():
                 meows
               }
             }
+
+            fragment ProgenyFields on Life {
+              progeny {
+                __typename
+              }
+            }
             """
         )
 
@@ -298,8 +425,18 @@ def describe_execute_union_and_intersection_types():
                 "__typename": "Person",
                 "name": "John",
                 "pets": [
-                    {"__typename": "Cat", "name": "Garfield", "meows": False},
-                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                    {
+                        "__typename": "Cat",
+                        "name": "Garfield",
+                        "meows": False,
+                        "mother": {"progeny": [{"__typename": "Cat"}]},
+                    },
+                    {
+                        "__typename": "Dog",
+                        "name": "Odie",
+                        "barks": True,
+                        "mother": {"progeny": [{"__typename": "Dog"}]},
+                    },
                 ],
                 "friends": [
                     {"__typename": "Person", "name": "Liz"},

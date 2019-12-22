@@ -602,6 +602,7 @@ def describe_type_system_interfaces():
             "name": "AnotherInterface",
             "description": None,
             "fields": fields,
+            "interfaces": [],
             "resolve_type": None,
             "extensions": None,
             "ast_node": None,
@@ -647,9 +648,36 @@ def describe_type_system_interfaces():
         assert "f" in interface.fields
         assert calls == 1
 
+    def accepts_an_interface_type_with_a_list_of_interfaces():
+        implementing = GraphQLInterfaceType(
+            "AnotherInterface", {}, interfaces=[InterfaceType]
+        )
+        assert implementing.interfaces == [InterfaceType]
+
+    def accepts_an_interface_type_with_an_interfaces_function():
+        implementing = GraphQLInterfaceType(
+            "AnotherInterface", {}, interfaces=lambda: [InterfaceType]
+        )
+        assert implementing.interfaces == [InterfaceType]
+
+    def thunk_for_interfaces_of_interface_type_is_resolved_only_once():
+        calls = 0
+
+        def interfaces():
+            nonlocal calls
+            calls += 1
+            return [InterfaceType]
+
+        implementing = GraphQLInterfaceType(
+            "AnotherInterface", {}, interfaces=interfaces
+        )
+        assert implementing.interfaces == [InterfaceType]
+        assert calls == 1
+        assert implementing.interfaces == [InterfaceType]
+        assert calls == 1
+
     def rejects_an_interface_type_with_incorrectly_typed_fields():
         interface = GraphQLInterfaceType("SomeInterface", [])  # type: ignore
-
         with raises(TypeError) as exc_info:
             if interface.fields:
                 pass
@@ -664,6 +692,18 @@ def describe_type_system_interfaces():
                 pass
         assert str(exc_info.value) == (
             "SomeInterface fields must be GraphQLField or output type objects."
+        )
+
+    def rejects_an_interface_type_with_incorrectly_typed_interfaces():
+        interface = GraphQLInterfaceType(
+            "AnotherInterface", {}, lambda: {}  # type: ignore
+        )
+        with raises(TypeError) as exc_info:
+            if interface.interfaces:
+                pass
+        assert str(exc_info.value) == (
+            "AnotherInterface interfaces must be specified"
+            " as a sequence of GraphQLInterfaceType instances."
         )
 
     def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():

@@ -203,7 +203,13 @@ class PrintAstVisitor(Visitor):
     @add_description
     def leave_interface_type_definition(self, node, *_args):
         return join(
-            ["interface", node.name, join(node.directives, " "), block(node.fields)],
+            [
+                "interface",
+                node.name,
+                wrap("implements ", join(node.interfaces, " & ")),
+                join(node.directives, " "),
+                block(node.fields),
+            ],
             " ",
         )
 
@@ -273,6 +279,7 @@ class PrintAstVisitor(Visitor):
             [
                 "extend interface",
                 node.name,
+                wrap("implements ", join(node.interfaces, " & ")),
                 join(node.directives, " "),
                 block(node.fields),
             ],

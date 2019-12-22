@@ -8,6 +8,7 @@ from ..type import (
     GraphQLSchema,
     GraphQLType,
     is_abstract_type,
+    is_interface_type,
     is_list_type,
     is_non_null_type,
     is_object_type,
@@ -38,7 +39,6 @@ def is_equal_type(type_a: GraphQLType, type_b: GraphQLType):
     return False
 
 
-# noinspection PyUnresolvedReferences
 def is_type_sub_type_of(
     schema: GraphQLSchema, maybe_subtype: GraphQLType, super_type: GraphQLType
 ) -> bool:
@@ -66,7 +66,7 @@ def is_type_sub_type_of(
             schema, cast(GraphQLNonNull, maybe_subtype).of_type, super_type
         )
 
-    # If superType type is a list, maybeSubType type must also be a list.
+    # If super_type type is a list, maybeSubType type must also be a list.
     if is_list_type(super_type):
         if is_list_type(maybe_subtype):
             return is_type_sub_type_of(
@@ -79,21 +79,16 @@ def is_type_sub_type_of(
         # If super_type is not a list, maybe_subtype must also be not a list.
         return False
 
-    # If super_type type is an abstract type, maybe_subtype type may be a currently
-    # possible object type.
-    # noinspection PyTypeChecker
-    if (
+    # If super_type type is abstract, check if it is super type of maybe_subtype.
+    # Otherwise, the child type is not a valid subtype of the parent type.
+    return (
         is_abstract_type(super_type)
-        and is_object_type(maybe_subtype)
-        and schema.is_possible_type(
+        and (is_interface_type(maybe_subtype) or is_object_type(maybe_subtype))
+        and schema.is_sub_type(
             cast(GraphQLAbstractType, super_type),
             cast(GraphQLObjectType, maybe_subtype),
         )
-    ):
-        return True
-
-    # Otherwise, the child type is not a valid subtype of the parent type.
-    return False
+    )
 
 
 def do_types_overlap(schema, type_a, type_b):
@@ -116,15 +111,15 @@ def do_types_overlap(schema, type_a, type_b):
             # If both types are abstract, then determine if there is any intersection
             # between possible concrete types of each.
             return any(
-                schema.is_possible_type(type_b, type_)
+                schema.is_sub_type(type_b, type_)
                 for type_ in schema.get_possible_types(type_a)
             )
         # Determine if latter type is a possible concrete type of the former.
-        return schema.is_possible_type(type_a, type_b)
+        return schema.is_sub_type(type_a, type_b)
 
     if is_abstract_type(type_b):
         # Determine if former type is a possible concrete type of the latter.
-        return schema.is_possible_type(type_b, type_a)
+        return schema.is_sub_type(type_b, type_a)
 
     # Otherwise the types do not overlap.
     return False

@@ -137,20 +137,26 @@ def build_client_schema(
             description=scalar_introspection.get("description"),
         )
 
-    def build_object_def(object_introspection: Dict) -> GraphQLObjectType:
-        interfaces = object_introspection.get("interfaces")
+    def build_implementations_list(
+        implementing_introspection: Dict,
+    ) -> List[GraphQLInterfaceType]:
+        interfaces = implementing_introspection.get("interfaces")
         if interfaces is None:
+            # Temporary workaround until GraphQL ecosystem will fully support
+            # 'interfaces' on interface types
+            if implementing_introspection["kind"] == TypeKind.INTERFACE.name:
+                return []
             raise TypeError(
                 "Introspection result missing interfaces:"
-                f" {inspect(object_introspection)}"
+                f" {inspect(implementing_introspection)}"
             )
+        return [get_interface_type(interface) for interface in interfaces]
+
+    def build_object_def(object_introspection: Dict) -> GraphQLObjectType:
         return GraphQLObjectType(
             name=object_introspection["name"],
             description=object_introspection.get("description"),
-            interfaces=lambda: [
-                get_interface_type(interface)
-                for interface in cast(List[Dict], interfaces)
-            ],
+            interfaces=lambda: build_implementations_list(object_introspection),
             fields=lambda: build_field_def_map(object_introspection),
         )
 
@@ -158,6 +164,7 @@ def build_client_schema(
         return GraphQLInterfaceType(
             name=interface_introspection["name"],
             description=interface_introspection.get("description"),
+            interfaces=lambda: build_implementations_list(interface_introspection),
             fields=lambda: build_field_def_map(interface_introspection),
         )
 

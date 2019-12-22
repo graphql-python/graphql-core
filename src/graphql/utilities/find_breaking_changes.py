@@ -48,7 +48,7 @@ class BreakingChangeType(Enum):
     TYPE_REMOVED_FROM_UNION = 20
     VALUE_REMOVED_FROM_ENUM = 21
     REQUIRED_INPUT_FIELD_ADDED = 22
-    INTERFACE_REMOVED_FROM_OBJECT = 23
+    IMPLEMENTED_INTERFACE_REMOVED = 23
     FIELD_REMOVED = 30
     FIELD_CHANGED_KIND = 31
     REQUIRED_ARG_ADDED = 40
@@ -65,7 +65,7 @@ class DangerousChangeType(Enum):
     TYPE_ADDED_TO_UNION = 61
     OPTIONAL_INPUT_FIELD_ADDED = 62
     OPTIONAL_ARG_ADDED = 63
-    INTERFACE_ADDED_TO_OBJECT = 64
+    IMPLEMENTED_INTERFACE_ADDED = 64
     ARG_DEFAULT_VALUE_CHANGE = 65
 
 
@@ -192,9 +192,15 @@ def find_type_changes(
         elif is_input_object_type(old_type) and is_input_object_type(new_type):
             schema_changes.extend(find_input_object_type_changes(old_type, new_type))
         elif is_object_type(old_type) and is_object_type(new_type):
-            schema_changes.extend(find_object_type_changes(old_type, new_type))
+            schema_changes.extend(find_field_changes(old_type, new_type))
+            schema_changes.extend(
+                find_implemented_interfaces_changes(old_type, new_type)
+            )
         elif is_interface_type(old_type) and is_interface_type(new_type):
             schema_changes.extend(find_field_changes(old_type, new_type))
+            schema_changes.extend(
+                find_implemented_interfaces_changes(old_type, new_type)
+            )
         elif old_type.__class__ is not new_type.__class__:
             schema_changes.append(
                 BreakingChange(
@@ -306,16 +312,17 @@ def find_enum_type_changes(
     return schema_changes
 
 
-def find_object_type_changes(
-    old_type: GraphQLObjectType, new_type: GraphQLObjectType
+def find_implemented_interfaces_changes(
+    old_type: Union[GraphQLObjectType, GraphQLInterfaceType],
+    new_type: Union[GraphQLObjectType, GraphQLInterfaceType],
 ) -> List[Change]:
-    schema_changes: List[Change] = find_field_changes(old_type, new_type)
+    schema_changes: List[Change] = []
     interfaces_diff = list_diff(old_type.interfaces, new_type.interfaces)
 
     for interface in interfaces_diff.added:
         schema_changes.append(
             DangerousChange(
-                DangerousChangeType.INTERFACE_ADDED_TO_OBJECT,
+                DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
                 f"{interface.name} added to interfaces implemented by {old_type.name}.",
             )
         )
@@ -323,7 +330,7 @@ def find_object_type_changes(
     for interface in interfaces_diff.removed:
         schema_changes.append(
             BreakingChange(
-                BreakingChangeType.INTERFACE_REMOVED_FROM_OBJECT,
+                BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
                 f"{old_type.name} no longer implements interface {interface.name}.",
             )
         )

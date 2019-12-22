@@ -36,14 +36,31 @@ Being = GraphQLInterfaceType(
     {"name": GraphQLField(GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)})},
 )
 
+Mammal = GraphQLInterfaceType(
+    "Mammal",
+    lambda: {
+        "mother": GraphQLField(Mammal),  # type: ignore
+        "father": GraphQLField(Mammal),  # type: ignore
+    },
+    interfaces=[],
+)
+
 Pet = GraphQLInterfaceType(
     "Pet",
     {"name": GraphQLField(GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)})},
+    interfaces=[Being],
 )
 
 Canine = GraphQLInterfaceType(
     "Canine",
-    {"name": GraphQLField(GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)})},
+    lambda: {
+        "name": GraphQLField(
+            GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
+        ),
+        "mother": GraphQLField(Canine),  # type: ignore
+        "father": GraphQLField(Canine),  # type: ignore
+    },
+    interfaces=[Mammal, Being],
 )
 
 DogCommand = GraphQLEnumType(
@@ -57,7 +74,7 @@ DogCommand = GraphQLEnumType(
 
 Dog = GraphQLObjectType(
     "Dog",
-    {
+    lambda: {
         "name": GraphQLField(
             GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
         ),
@@ -75,8 +92,10 @@ Dog = GraphQLObjectType(
             GraphQLBoolean,
             args={"x": GraphQLArgument(GraphQLInt), "y": GraphQLArgument(GraphQLInt)},
         ),
+        "mother": GraphQLField(Dog),  # type: ignore
+        "father": GraphQLField(Dog),  # type: ignore
     },
-    interfaces=[Being, Pet, Canine],
+    interfaces=[Being, Pet, Mammal, Canine],
     is_type_of=lambda *_args: True,
 )
 

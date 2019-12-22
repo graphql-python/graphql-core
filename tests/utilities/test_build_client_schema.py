@@ -218,6 +218,37 @@ def describe_type_system_build_schema_from_introspection():
 
         assert cycle_introspection(sdl) == sdl
 
+    def builds_a_schema_with_an_interface_hierarchy():
+        sdl = dedent(
+            '''
+            type Dog implements Friendly & Named {
+              bestFriend: Friendly
+              name: String
+            }
+
+            interface Friendly implements Named {
+              """The best friend of this friendly thing"""
+              bestFriend: Friendly
+              name: String
+            }
+
+            type Human implements Friendly & Named {
+              bestFriend: Friendly
+              name: String
+            }
+
+            interface Named {
+              name: String
+            }
+
+            type Query {
+              friendly: Friendly
+            }
+            '''
+        )
+
+        assert cycle_introspection(sdl) == sdl
+
     def builds_a_schema_with_an_implicit_interface():
         sdl = dedent(
             '''
@@ -527,6 +558,10 @@ def describe_type_system_build_schema_from_introspection():
               foo(bar: String): String
             }
 
+            interface SomeInterface {
+              foo: String
+            }
+
             union SomeUnion = Query
 
             enum SomeEnum { FOO }
@@ -648,18 +683,33 @@ def describe_type_system_build_schema_from_introspection():
                 build_client_schema(introspection)
 
             assert str(exc_info.value).startswith(
-                "Introspection result missing interfaces:"
+                "Query interfaces cannot be resolved:"
+                " Introspection result missing interfaces:"
                 " {'kind': 'OBJECT', 'name': 'Query',"
             )
 
+        def legacy_support_for_interfaces_with_null_as_interfaces_field():
+            introspection = introspection_from_schema(dummy_schema)
+            some_interface_introspection = [
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "SomeInterface"
+            ][0]
+
+            assert some_interface_introspection["interfaces"] == []
+            some_interface_introspection["interfaces"] = None
+
+            client_schema = build_client_schema(introspection)
+            assert print_schema(client_schema) == print_schema(dummy_schema)
+
         def throws_when_missing_fields():
             introspection = introspection_from_schema(dummy_schema)
-
             query_type_introspection = [
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
             ][0]
+
             assert query_type_introspection["fields"]
             del query_type_introspection["fields"]
 

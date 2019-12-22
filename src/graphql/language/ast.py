@@ -501,9 +501,10 @@ class InputValueDefinitionNode(TypeDefinitionNode):
 
 
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("fields",)
+    __slots__ = "fields", "interfaces"
 
     fields: Optional[FrozenList["FieldDefinitionNode"]]
+    interfaces: Optional[FrozenList[NamedTypeNode]]
 
 
 class UnionTypeDefinitionNode(TypeDefinitionNode):
@@ -576,8 +577,9 @@ class ObjectTypeExtensionNode(TypeExtensionNode):
 
 
 class InterfaceTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("fields",)
+    __slots__ = "interfaces", "fields"
 
+    interfaces: Optional[FrozenList[NamedTypeNode]]
     fields: Optional[FrozenList[FieldDefinitionNode]]
 
 

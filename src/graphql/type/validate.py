@@ -98,16 +98,16 @@ class SchemaValidationContext:
         self,
         message: str,
         nodes: Union[Optional[Node], Sequence[Optional[Node]]] = None,
-    ):
+    ) -> None:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
         nodes = cast(Optional[Sequence[Node]], nodes)
         self.add_error(GraphQLError(message, nodes))
 
-    def add_error(self, error: GraphQLError):
+    def add_error(self, error: GraphQLError) -> None:
         self.errors.append(error)
 
-    def validate_root_types(self):
+    def validate_root_types(self) -> None:
         schema = self.schema
 
         query_type = schema.query_type
@@ -137,7 +137,7 @@ class SchemaValidationContext:
                 ),
             )
 
-    def validate_directives(self):
+    def validate_directives(self) -> None:
         directives = self.schema.directives
         for directive in directives:
             # Ensure all directives are in fact GraphQL directives.
@@ -180,7 +180,7 @@ class SchemaValidationContext:
                         arg.ast_node,
                     )
 
-    def validate_name(self, node: Any, name: str = None):
+    def validate_name(self, node: Any, name: str = None) -> None:
         # Ensure names are valid, however introspection types opt out.
         try:
             if not name:
@@ -194,7 +194,7 @@ class SchemaValidationContext:
             if error:
                 self.add_error(error)
 
-    def validate_types(self):
+    def validate_types(self) -> None:
         validate_input_object_circular_refs = InputObjectCircularRefsValidator(self)
         for type_ in self.schema.type_map.values():
 
@@ -216,11 +216,14 @@ class SchemaValidationContext:
                 self.validate_fields(type_)
 
                 # Ensure objects implement the interfaces they claim to.
-                self.validate_object_interfaces(type_)
+                self.validate_interfaces(type_)
             elif is_interface_type(type_):
                 type_ = cast(GraphQLInterfaceType, type_)
                 # Ensure fields are valid.
                 self.validate_fields(type_)
+
+                # Ensure interfaces implement the interfaces they claim to.
+                self.validate_interfaces(type_)
             elif is_union_type(type_):
                 type_ = cast(GraphQLUnionType, type_)
                 # Ensure Unions include valid member types.
@@ -237,7 +240,9 @@ class SchemaValidationContext:
                 # Ensure Input Objects do not contain non-nullable circular references
                 validate_input_object_circular_refs(type_)
 
-    def validate_fields(self, type_: Union[GraphQLObjectType, GraphQLInterfaceType]):
+    def validate_fields(
+        self, type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+    ) -> None:
         fields = type_.fields
 
         # Objects and Interfaces both must define one or more fields.
@@ -290,99 +295,132 @@ class SchemaValidationContext:
                         arg.ast_node and arg.ast_node.type,
                     )
 
-    def validate_object_interfaces(self, obj: GraphQLObjectType):
-        implemented_type_names: Set[str] = set()
-        for iface in obj.interfaces:
+    def validate_interfaces(
+        self, type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+    ) -> None:
+        iface_type_names: Set[str] = set()
+        for iface in type_.interfaces:
             if not is_interface_type(iface):
                 self.report_error(
-                    f"Type {obj.name} must only implement Interface"
+                    f"Type {type_.name} must only implement Interface"
                     f" types, it cannot implement {inspect(iface)}.",
-                    get_all_implements_interface_nodes(obj, iface),
+                    get_all_implements_interface_nodes(type_, iface),
                 )
                 continue
-            if iface.name in implemented_type_names:
-                self.report_error(
-                    f"Type {obj.name} can only implement {iface.name} once.",
-                    get_all_implements_interface_nodes(obj, iface),
-                )
-                continue
-            implemented_type_names.add(iface.name)
-            self.validate_object_implements_interface(obj, iface)
 
-    def validate_object_implements_interface(
-        self, obj: GraphQLObjectType, iface: GraphQLInterfaceType
-    ):
-        obj_fields, iface_fields = obj.fields, iface.fields
+            if type_ is iface:
+                self.report_error(
+                    f"Type {type_.name} cannot implement itself"
+                    " because it would create a circular reference.",
+                    get_all_implements_interface_nodes(type_, iface),
+                )
+
+            if iface.name in iface_type_names:
+                self.report_error(
+                    f"Type {type_.name} can only implement {iface.name} once.",
+                    get_all_implements_interface_nodes(type_, iface),
+                )
+                continue
+
+            iface_type_names.add(iface.name)
+
+            self.validate_type_implements_ancestors(type_, iface)
+            self.validate_type_implements_interface(type_, iface)
+
+    def validate_type_implements_interface(
+        self,
+        type_: Union[GraphQLObjectType, GraphQLInterfaceType],
+        iface: GraphQLInterfaceType,
+    ) -> None:
+        type_fields, iface_fields = type_.fields, iface.fields
 
         # Assert each interface field is implemented.
         for field_name, iface_field in iface_fields.items():
-            obj_field = obj_fields.get(field_name)
+            type_field = type_fields.get(field_name)
 
             # Assert interface field exists on object.
-            if not obj_field:
+            if not type_field:
                 self.report_error(
                     f"Interface field {iface.name}.{field_name}"
-                    f" expected but {obj.name} does not provide it.",
-                    [iface_field.ast_node, *get_all_nodes(obj)],
+                    f" expected but {type_.name} does not provide it.",
+                    [iface_field.ast_node, *get_all_nodes(type_)],
                 )
                 continue
 
-            # Assert interface field type is satisfied by object field type, by being
+            # Assert interface field type is satisfied by type field type, by being
             # a valid subtype (covariant).
-            if not is_type_sub_type_of(self.schema, obj_field.type, iface_field.type):
+            if not is_type_sub_type_of(self.schema, type_field.type, iface_field.type):
                 self.report_error(
                     f"Interface field {iface.name}.{field_name}"
                     f" expects type {iface_field.type}"
-                    f" but {obj.name}.{field_name}"
-                    f" is type {obj_field.type}.",
+                    f" but {type_.name}.{field_name}"
+                    f" is type {type_field.type}.",
                     [
                         iface_field.ast_node and iface_field.ast_node.type,
-                        obj_field.ast_node and obj_field.ast_node.type,
+                        type_field.ast_node and type_field.ast_node.type,
                     ],
                 )
 
             # Assert each interface field arg is implemented.
             for arg_name, iface_arg in iface_field.args.items():
-                obj_arg = obj_field.args.get(arg_name)
+                type_arg = type_field.args.get(arg_name)
 
                 # Assert interface field arg exists on object field.
-                if not obj_arg:
+                if not type_arg:
                     self.report_error(
                         "Interface field argument"
                         f" {iface.name}.{field_name}({arg_name}:)"
-                        f" expected but {obj.name}.{field_name}"
+                        f" expected but {type_.name}.{field_name}"
                         " does not provide it.",
-                        [iface_arg.ast_node, obj_field.ast_node],
+                        [iface_arg.ast_node, type_field.ast_node],
                     )
                     continue
 
                 # Assert interface field arg type matches object field arg type
                 # (invariant).
-                if not is_equal_type(iface_arg.type, obj_arg.type):
+                if not is_equal_type(iface_arg.type, type_arg.type):
                     self.report_error(
                         "Interface field argument"
                         f" {iface.name}.{field_name}({arg_name}:)"
                         f" expects type {iface_arg.type}"
-                        f" but {obj.name}.{field_name}({arg_name}:)"
-                        f" is type {obj_arg.type}.",
+                        f" but {type_.name}.{field_name}({arg_name}:)"
+                        f" is type {type_arg.type}.",
                         [
                             iface_arg.ast_node and iface_arg.ast_node.type,
-                            obj_arg.ast_node and obj_arg.ast_node.type,
+                            type_arg.ast_node and type_arg.ast_node.type,
                         ],
                     )
 
             # Assert additional arguments must not be required.
-            for arg_name, obj_arg in obj_field.args.items():
+            for arg_name, type_arg in type_field.args.items():
                 iface_arg = iface_field.args.get(arg_name)
-                if not iface_arg and is_required_argument(obj_arg):
+                if not iface_arg and is_required_argument(type_arg):
                     self.report_error(
-                        f"Object field {obj.name}.{field_name} includes"
+                        f"Object field {type_.name}.{field_name} includes"
                         f" required argument {arg_name} that is missing from"
                         f" the Interface field {iface.name}.{field_name}.",
-                        [obj_arg.ast_node, iface_field.ast_node],
+                        [type_arg.ast_node, iface_field.ast_node],
                     )
 
-    def validate_union_members(self, union: GraphQLUnionType):
+    def validate_type_implements_ancestors(
+        self,
+        type_: Union[GraphQLObjectType, GraphQLInterfaceType],
+        iface: GraphQLInterfaceType,
+    ) -> None:
+        type_interfaces, iface_interfaces = type_.interfaces, iface.interfaces
+        for transitive in iface_interfaces:
+            if transitive not in type_interfaces:
+                self.report_error(
+                    f"Type {type_.name} cannot implement {iface.name}"
+                    " because it would create a circular reference."
+                    if transitive is type_
+                    else f"Type {type_.name} must implement {transitive.name}"
+                    f" because it is implemented by {iface.name}.",
+                    get_all_implements_interface_nodes(iface, transitive)
+                    + get_all_implements_interface_nodes(type_, iface),
+                )
+
+    def validate_union_members(self, union: GraphQLUnionType) -> None:
         member_types = union.types
 
         if not member_types:
@@ -402,7 +440,7 @@ class SchemaValidationContext:
                 continue
             included_type_names.add(member_type.name)
 
-    def validate_enum_values(self, enum_type: GraphQLEnumType):
+    def validate_enum_values(self, enum_type: GraphQLEnumType) -> None:
         enum_values = enum_type.values
 
         if not enum_values:
@@ -421,7 +459,7 @@ class SchemaValidationContext:
                     enum_value.ast_node,
                 )
 
-    def validate_input_fields(self, input_obj: GraphQLInputObjectType):
+    def validate_input_fields(self, input_obj: GraphQLInputObjectType) -> None:
         fields = input_obj.fields
 
         if not fields:
@@ -462,7 +500,7 @@ def get_operation_type_node(
 class InputObjectCircularRefsValidator:
     """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
 
-    def __init__(self, context: SchemaValidationContext):
+    def __init__(self, context: SchemaValidationContext) -> None:
         self.context = context
         # Tracks already visited types to maintain O(N) and to ensure that cycles
         # are not redundantly reported.
@@ -472,7 +510,7 @@ class InputObjectCircularRefsValidator:
         # Position in the type path
         self.field_path_index_by_type_name: Dict[str, int] = {}
 
-    def __call__(self, input_obj: GraphQLInputObjectType):
+    def __call__(self, input_obj: GraphQLInputObjectType) -> None:
         """Detect cycles recursively."""
         # This does a straight-forward DFS to find cycles.
         # It does not terminate when a cycle was found but continues to explore
@@ -543,7 +581,7 @@ def get_all_sub_nodes(
 
 
 def get_all_implements_interface_nodes(
-    type_: GraphQLObjectType, iface: GraphQLInterfaceType
+    type_: Union[GraphQLObjectType, GraphQLInterfaceType], iface: GraphQLInterfaceType
 ) -> List[NamedTypeNode]:
     implements_nodes = cast(
         List[NamedTypeNode], get_all_sub_nodes(type_, attrgetter("interfaces"))

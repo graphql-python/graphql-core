@@ -1,6 +1,17 @@
 from collections.abc import Sequence as AbstractSequence
 from functools import reduce
-from typing import Any, Dict, List, Optional, Sequence, Set, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Iterable,
+    Sequence,
+    Set,
+    Union,
+    cast,
+)
 
 from ..error import GraphQLError
 from ..language import ast
@@ -8,10 +19,10 @@ from ..pyutils import inspect, FrozenList
 from .definition import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
+    GraphQLInputObjectType,
     GraphQLNamedType,
     GraphQLObjectType,
     GraphQLUnionType,
-    GraphQLInputObjectType,
     get_named_type,
     is_input_object_type,
     is_interface_type,
@@ -26,6 +37,12 @@ __all__ = ["GraphQLSchema", "is_schema", "assert_schema"]
 
 
 TypeMap = Dict[str, GraphQLNamedType]
+
+
+class InterfaceImplementations(NamedTuple):
+
+    objects: List[GraphQLObjectType]
+    interfaces: List[GraphQLInterfaceType]
 
 
 class GraphQLSchema:
@@ -83,6 +100,9 @@ class GraphQLSchema:
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[ast.SchemaDefinitionNode]
     extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
+
+    _implementations: Dict[str, InterfaceImplementations]
+    _sub_type_map: Dict[str, Set[str]]
 
     def __init__(
         self,
@@ -197,17 +217,10 @@ class GraphQLSchema:
         # Storing the resulting map for reference by the schema
         self.type_map = type_map
 
-        self._possible_type_map: Dict[str, Set[str]] = {}
+        self._sub_type_map = {}
 
         # Keep track of all implementations by interface name.
-        self._implementations: Dict[str, List[GraphQLObjectType]] = {}
-        setdefault = self._implementations.setdefault
-        for type_ in self.type_map.values():
-            if is_object_type(type_):
-                type_ = cast(GraphQLObjectType, type_)
-                for interface in type_.interfaces:
-                    if is_interface_type(interface):
-                        setdefault(interface.name, []).append(type_)
+        self._implementations = collect_implementations(type_map.values())
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
@@ -231,19 +244,51 @@ class GraphQLSchema:
         self, abstract_type: GraphQLAbstractType
     ) -> Sequence[GraphQLObjectType]:
         """Get list of all possible concrete types for given abstract type."""
-        if is_union_type(abstract_type):
-            abstract_type = cast(GraphQLUnionType, abstract_type)
-            return abstract_type.types
-        return self._implementations[abstract_type.name] or []
+        return (
+            cast(GraphQLUnionType, abstract_type).types
+            if is_union_type(abstract_type)
+            else self.get_implementations(
+                cast(GraphQLInterfaceType, abstract_type)
+            ).objects
+        )
+
+    def get_implementations(
+        self, interface_type: GraphQLInterfaceType
+    ) -> InterfaceImplementations:
+        return self._implementations[interface_type.name]
 
     def is_possible_type(
         self, abstract_type: GraphQLAbstractType, possible_type: GraphQLObjectType
     ) -> bool:
-        """Check whether a concrete type is possible for an abstract type."""
-        return possible_type.name in self._possible_type_map.setdefault(
-            abstract_type.name,
-            {type_.name for type_ in self.get_possible_types(abstract_type)},
-        )
+        """Check whether a concrete type is possible for an abstract type.
+
+        Deprecated: Use is_sub_type() instead.
+        """
+        return self.is_sub_type(abstract_type, possible_type)
+
+    def is_sub_type(
+        self,
+        abstract_type: GraphQLAbstractType,
+        maybe_sub_type: Union[GraphQLObjectType, GraphQLInterfaceType],
+    ) -> bool:
+        """Check whether a type is a subtype of a given abstract type."""
+        types = self._sub_type_map.get(abstract_type.name)
+        if types is None:
+            types = set()
+            add = types.add
+            if is_union_type(abstract_type):
+                for type_ in cast(GraphQLUnionType, abstract_type).types:
+                    add(type_.name)
+            else:
+                implementations = self.get_implementations(
+                    cast(GraphQLInterfaceType, abstract_type)
+                )
+                for type_ in implementations.objects:
+                    add(type_.name)
+                for type_ in implementations.interfaces:
+                    add(type_.name)
+            self._sub_type_map[abstract_type.name] = types
+        return maybe_sub_type.name in types
 
     def get_directive(self, name: str) -> Optional[GraphQLDirective]:
         for directive in self.directives:
@@ -278,17 +323,17 @@ class GraphQLSchema:
             named_type = cast(GraphQLUnionType, named_type)
             map_ = reduce(self.type_map_reducer, named_type.types, map_)
 
-        if is_object_type(named_type):
-            named_type = cast(GraphQLObjectType, named_type)
+        elif is_object_type(named_type) or is_interface_type(named_type):
+            named_type = cast(
+                Union[GraphQLObjectType, GraphQLInterfaceType], named_type
+            )
             map_ = reduce(self.type_map_reducer, named_type.interfaces, map_)
-
-        if is_object_type(named_type) or is_interface_type(named_type):
             for field in cast(GraphQLInterfaceType, named_type).fields.values():
                 types = [arg.type for arg in field.args.values()]
                 map_ = reduce(self.type_map_reducer, types, map_)
                 map_ = self.type_map_reducer(map_, field.type)
 
-        if is_input_object_type(named_type):
+        elif is_input_object_type(named_type):
             for field in cast(GraphQLInputObjectType, named_type).fields.values():
                 map_ = self.type_map_reducer(map_, field.type)
 
@@ -309,6 +354,42 @@ class GraphQLSchema:
             directive.args.values(),
             map_,
         )
+
+
+def collect_implementations(
+    types: Iterable[GraphQLNamedType],
+) -> Dict[str, InterfaceImplementations]:
+    implementations: Dict[str, InterfaceImplementations] = {}
+    for type_ in types:
+        if is_interface_type(type_):
+            type_ = cast(GraphQLInterfaceType, type_)
+            if type_.name not in implementations:
+                implementations[type_.name] = InterfaceImplementations(
+                    objects=[], interfaces=[]
+                )
+            # Store implementations by interface.
+            for iface in type_.interfaces:
+                if is_interface_type(iface):
+                    impls = implementations.get(iface.name)
+                    if impls is None:
+                        implementations[iface.name] = InterfaceImplementations(
+                            objects=[], interfaces=[type_]
+                        )
+                    else:
+                        impls.interfaces.append(type_)
+        elif is_object_type(type_):
+            type_ = cast(GraphQLObjectType, type_)
+            # Store implementations by objects.
+            for iface in type_.interfaces:
+                if is_interface_type(iface):
+                    impls = implementations.get(iface.name)
+                    if impls is None:
+                        implementations[iface.name] = InterfaceImplementations(
+                            objects=[type_], interfaces=[]
+                        )
+                    else:
+                        impls.objects.append(type_)
+    return implementations
 
 
 def is_schema(schema: Any) -> bool:

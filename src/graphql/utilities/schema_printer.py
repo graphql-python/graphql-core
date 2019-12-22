@@ -148,20 +148,29 @@ def print_scalar(type_: GraphQLScalarType) -> str:
     return print_description(type_) + f"scalar {type_.name}"
 
 
-def print_object(type_: GraphQLObjectType) -> str:
+def print_implemented_interfaces(
+    type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+) -> str:
     interfaces = type_.interfaces
-    implemented_interfaces = (
-        (" implements " + " & ".join(i.name for i in interfaces)) if interfaces else ""
-    )
+    return " implements " + " & ".join(i.name for i in interfaces) if interfaces else ""
+
+
+def print_object(type_: GraphQLObjectType) -> str:
     return (
         print_description(type_)
-        + f"type {type_.name}{implemented_interfaces}"
+        + f"type {type_.name}"
+        + print_implemented_interfaces(type_)
         + print_fields(type_)
     )
 
 
 def print_interface(type_: GraphQLInterfaceType) -> str:
-    return print_description(type_) + f"interface {type_.name}" + print_fields(type_)
+    return (
+        print_description(type_)
+        + f"interface {type_.name}"
+        + print_implemented_interfaces(type_)
+        + print_fields(type_)
+    )
 
 
 def print_union(type_: GraphQLUnionType) -> str:

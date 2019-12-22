@@ -39,6 +39,17 @@ def describe_validate_fragments_on_composite_types():
             """
         )
 
+    def interface_is_valid_inline_fragment_type():
+        assert_valid(
+            """
+            fragment validFragment on Mammal {
+              ... on Canine {
+                name
+              }
+            }
+            """
+        )
+
     def inline_fragment_without_type_is_valid():
         assert_valid(
             """

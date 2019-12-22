@@ -154,12 +154,16 @@ def describe_type_system_schema():
             assert schema.type_map["SomeSubtype"] is SomeSubtype
 
         def includes_interfaces_thunk_subtypes_in_the_type_map():
-            SomeInterface = GraphQLInterfaceType("SomeInterface", {})
+            AnotherInterface = GraphQLInterfaceType("AnotherInterface", {})
+            SomeInterface = GraphQLInterfaceType(
+                "SomeInterface", {}, interfaces=lambda: [AnotherInterface]
+            )
             SomeSubtype = GraphQLObjectType(
                 "SomeSubtype", {}, interfaces=lambda: [SomeInterface]
             )
             schema = GraphQLSchema(types=[SomeSubtype],)
             assert schema.type_map["SomeInterface"] is SomeInterface
+            assert schema.type_map["AnotherInterface"] is AnotherInterface
             assert schema.type_map["SomeSubtype"] is SomeSubtype
 
         def includes_nested_input_objects_in_the_map():
