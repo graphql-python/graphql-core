@@ -68,17 +68,19 @@ class Lexer:
     """
 
     def __init__(self, source: Source) -> None:
-        """Given a Source object, this returns a Lexer for that source."""
+        """Given a Source object, initialize a Lexer for that source."""
         self.source = source
         self.token = self.last_token = Token(TokenKind.SOF, 0, 0, 0, 0)
         self.line, self.line_start = 1, 0
 
     def advance(self) -> Token:
+        """Advance the token stream to the next non-ignored token."""
         self.last_token = self.token
         token = self.token = self.lookahead()
         return token
 
     def lookahead(self) -> Token:
+        """Look ahead and return the next non-ignored token, but do not change state."""
         token = self.token
         if token.kind != TokenKind.EOF:
             while True:
