@@ -286,7 +286,7 @@ def describe_extend_schema():
             )
         assert str(exc_info.value) == (
             "SomeUnion types must be specified"
-            " as a sequence of GraphQLObjectType instances."
+            " as a collection of GraphQLObjectType instances."
         )
 
     def extends_inputs_by_adding_new_fields():

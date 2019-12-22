@@ -1,13 +1,11 @@
-from collections.abc import Sequence as AbstractSequence
 from functools import reduce
 from typing import (
     Any,
+    Collection,
     Dict,
     List,
     NamedTuple,
     Optional,
-    Iterable,
-    Sequence,
     Set,
     Union,
     cast,
@@ -15,7 +13,7 @@ from typing import (
 
 from ..error import GraphQLError
 from ..language import ast
-from ..pyutils import inspect, FrozenList
+from ..pyutils import inspect, is_collection, FrozenList
 from .definition import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
@@ -109,11 +107,11 @@ class GraphQLSchema:
         query: GraphQLObjectType = None,
         mutation: GraphQLObjectType = None,
         subscription: GraphQLObjectType = None,
-        types: Sequence[GraphQLNamedType] = None,
-        directives: Sequence[GraphQLDirective] = None,
+        types: Collection[GraphQLNamedType] = None,
+        directives: Collection[GraphQLDirective] = None,
         extensions: Dict[str, Any] = None,
         ast_node: ast.SchemaDefinitionNode = None,
-        extension_ast_nodes: Sequence[ast.SchemaExtensionNode] = None,
+        extension_ast_nodes: Collection[ast.SchemaExtensionNode] = None,
         assume_valid: bool = False,
     ) -> None:
         """Initialize GraphQL schema.
@@ -133,26 +131,26 @@ class GraphQLSchema:
             if types is None:
                 types = []
             else:
-                if not isinstance(types, AbstractSequence) or (
+                if not is_collection(types) or (
                     # if reducer has been overridden, don't check types
                     getattr(self.type_map_reducer, "__func__", None)
                     is GraphQLSchema.type_map_reducer
                     and not all(is_named_type(type_) for type_ in types)
                 ):
                     raise TypeError(
-                        "Schema types must be specified as a sequence"
+                        "Schema types must be specified as a collection"
                         " of GraphQLNamedType instances."
                     )
             if directives is not None:
                 # noinspection PyUnresolvedReferences
-                if not isinstance(directives, AbstractSequence) or (
+                if not is_collection(directives) or (
                     # if reducer has been overridden, don't check directive types
                     getattr(self.type_map_directive_reducer, "__func__", None)
                     is GraphQLSchema.type_map_directive_reducer
                     and not all(is_directive(directive) for directive in directives)
                 ):
                     raise TypeError(
-                        "Schema directives must be specified as a sequence"
+                        "Schema directives must be specified as a collection"
                         " of GraphQLDirective instances."
                     )
                 if not isinstance(directives, FrozenList):
@@ -167,13 +165,13 @@ class GraphQLSchema:
             if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):
                 raise TypeError("Schema AST node must be a SchemaDefinitionNode.")
             if extension_ast_nodes:
-                if not isinstance(extension_ast_nodes, AbstractSequence) or not all(
+                if not is_collection(extension_ast_nodes) or not all(
                     isinstance(node, ast.SchemaExtensionNode)
                     for node in extension_ast_nodes
                 ):
                     raise TypeError(
                         "Schema extension AST nodes must be specified"
-                        " as a sequence of SchemaExtensionNode instances."
+                        " as a collection of SchemaExtensionNode instances."
                     )
                 if not isinstance(extension_ast_nodes, FrozenList):
                     extension_ast_nodes = FrozenList(extension_ast_nodes)
@@ -242,7 +240,7 @@ class GraphQLSchema:
 
     def get_possible_types(
         self, abstract_type: GraphQLAbstractType
-    ) -> Sequence[GraphQLObjectType]:
+    ) -> List[GraphQLObjectType]:
         """Get list of all possible concrete types for given abstract type."""
         return (
             cast(GraphQLUnionType, abstract_type).types
@@ -357,7 +355,7 @@ class GraphQLSchema:
 
 
 def collect_implementations(
-    types: Iterable[GraphQLNamedType],
+    types: Collection[GraphQLNamedType],
 ) -> Dict[str, InterfaceImplementations]:
     implementations: Dict[str, InterfaceImplementations] = {}
     for type_ in types:

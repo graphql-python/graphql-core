@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Sequence, Union
+from typing import TYPE_CHECKING, Collection, Union
 
 from .graphql_error import GraphQLError
 
@@ -10,8 +10,8 @@ __all__ = ["located_error"]
 
 def located_error(
     original_error: Union[Exception, GraphQLError],
-    nodes: Sequence["Node"],
-    path: Sequence[Union[str, int]],
+    nodes: Collection["Node"],
+    path: Collection[Union[str, int]],
 ) -> GraphQLError:
     """Located GraphQL Error
 

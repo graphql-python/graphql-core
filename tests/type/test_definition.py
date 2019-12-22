@@ -194,7 +194,7 @@ def describe_type_system_scalars():
             )
         assert str(exc_info.value) == (
             "SomeScalar extension AST nodes must be specified"
-            " as a sequence of TypeExtensionNode instances."
+            " as a collection of TypeExtensionNode instances."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -203,7 +203,7 @@ def describe_type_system_scalars():
             )
         assert str(exc_info.value) == (
             "SomeScalar extension AST nodes must be specified"
-            " as a sequence of ScalarTypeExtensionNode instances."
+            " as a collection of ScalarTypeExtensionNode instances."
         )
 
 
@@ -499,27 +499,25 @@ def describe_type_system_objects():
             )
 
     def rejects_an_object_type_with_incorrectly_typed_interfaces():
-        obj_type = GraphQLObjectType("SomeObject", {}, interfaces={})  # type: ignore
+        obj_type = GraphQLObjectType("SomeObject", {}, interfaces={})
         with raises(TypeError) as exc_info:
             if obj_type.interfaces:
                 pass
         msg = str(exc_info.value)
         assert msg == (
             "SomeObject interfaces must be specified"
-            " as a sequence of GraphQLInterfaceType instances."
+            " as a collection of GraphQLInterfaceType instances."
         )
 
     def rejects_object_type_with_incorrectly_typed_interfaces_as_a_function():
-        obj_type = GraphQLObjectType(
-            "SomeObject", {}, interfaces=lambda: {}  # type: ignore
-        )
+        obj_type = GraphQLObjectType("SomeObject", {}, interfaces=lambda: {})
         with raises(TypeError) as exc_info:
             if obj_type.interfaces:
                 pass
         msg = str(exc_info.value)
         assert msg == (
             "SomeObject interfaces must be specified"
-            " as a sequence of GraphQLInterfaceType instances."
+            " as a collection of GraphQLInterfaceType instances."
         )
 
     def rejects_an_empty_object_field_resolver():
@@ -573,7 +571,7 @@ def describe_type_system_objects():
             )
         assert str(exc_info.value) == (
             "SomeObject extension AST nodes must be specified"
-            " as a sequence of TypeExtensionNode instances."
+            " as a collection of TypeExtensionNode instances."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -584,7 +582,7 @@ def describe_type_system_objects():
             )
         assert str(exc_info.value) == (
             "SomeObject extension AST nodes must be specified"
-            " as a sequence of ObjectTypeExtensionNode instances."
+            " as a collection of ObjectTypeExtensionNode instances."
         )
 
 
@@ -695,15 +693,13 @@ def describe_type_system_interfaces():
         )
 
     def rejects_an_interface_type_with_incorrectly_typed_interfaces():
-        interface = GraphQLInterfaceType(
-            "AnotherInterface", {}, lambda: {}  # type: ignore
-        )
+        interface = GraphQLInterfaceType("AnotherInterface", {}, lambda: {})
         with raises(TypeError) as exc_info:
             if interface.interfaces:
                 pass
         assert str(exc_info.value) == (
             "AnotherInterface interfaces must be specified"
-            " as a sequence of GraphQLInterfaceType instances."
+            " as a collection of GraphQLInterfaceType instances."
         )
 
     def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
@@ -739,7 +735,7 @@ def describe_type_system_interfaces():
             )
         assert str(exc_info.value) == (
             "SomeInterface extension AST nodes must be specified"
-            " as a sequence of TypeExtensionNode instances."
+            " as a collection of TypeExtensionNode instances."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -749,7 +745,7 @@ def describe_type_system_interfaces():
             )
         assert str(exc_info.value) == (
             "SomeInterface extension AST nodes must be specified"
-            " as a sequence of InterfaceTypeExtensionNode instances."
+            " as a collection of InterfaceTypeExtensionNode instances."
         )
 
 
@@ -791,7 +787,7 @@ def describe_type_system_unions():
         msg = str(exc_info.value)
         assert msg == (
             "SomeUnion types must be specified"
-            " as a sequence of GraphQLObjectType instances."
+            " as a collection of GraphQLObjectType instances."
         )
 
     def rejects_a_union_type_with_an_incorrect_ast_node():
@@ -816,7 +812,7 @@ def describe_type_system_unions():
             )
         assert str(exc_info.value) == (
             "SomeUnion extension AST nodes must be specified"
-            " as a sequence of TypeExtensionNode instances."
+            " as a collection of TypeExtensionNode instances."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -827,7 +823,7 @@ def describe_type_system_unions():
             )
         assert str(exc_info.value) == (
             "SomeUnion extension AST nodes must be specified"
-            " as a sequence of UnionTypeExtensionNode instances."
+            " as a collection of UnionTypeExtensionNode instances."
         )
 
 
@@ -1014,7 +1010,7 @@ def describe_type_system_enums():
             )
         assert str(exc_info.value) == (
             "SomeEnum extension AST nodes must be specified"
-            " as a sequence of TypeExtensionNode instances."
+            " as a collection of TypeExtensionNode instances."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -1025,7 +1021,7 @@ def describe_type_system_enums():
             )
         assert str(exc_info.value) == (
             "SomeEnum extension AST nodes must be specified"
-            " as a sequence of EnumTypeExtensionNode instances."
+            " as a collection of EnumTypeExtensionNode instances."
         )
 
     def describe_enum_values():
@@ -1154,7 +1150,7 @@ def describe_type_system_input_objects():
             )
         assert str(exc_info.value) == (
             "SomeInputObject extension AST nodes must be specified"
-            " as a sequence of TypeExtensionNode instances."
+            " as a collection of TypeExtensionNode instances."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
@@ -1165,7 +1161,7 @@ def describe_type_system_input_objects():
             )
         assert str(exc_info.value) == (
             "SomeInputObject extension AST nodes must be specified"
-            " as a sequence of InputObjectTypeExtensionNode instances."
+            " as a collection of InputObjectTypeExtensionNode instances."
         )
 
     def describe_input_objects_must_have_fields():

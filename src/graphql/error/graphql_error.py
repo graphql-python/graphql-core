@@ -1,5 +1,5 @@
 from sys import exc_info
-from typing import Any, Dict, List, Optional, Sequence, Union, TYPE_CHECKING
+from typing import Any, Collection, Dict, List, Optional, Union, TYPE_CHECKING
 
 from .format_error import format_error
 
@@ -56,7 +56,7 @@ class GraphQLError(Exception):
     nodes after the first node.
     """
 
-    positions: Optional[Sequence[int]]
+    positions: Optional[Collection[int]]
     """Error positions
 
     A list of character offsets within the source GraphQL document which correspond
@@ -85,10 +85,10 @@ class GraphQLError(Exception):
     def __init__(
         self,
         message: str,
-        nodes: Union[Sequence["Node"], "Node"] = None,
+        nodes: Union[Collection["Node"], "Node"] = None,
         source: "Source" = None,
-        positions: Sequence[int] = None,
-        path: Sequence[Union[str, int]] = None,
+        positions: Collection[int] = None,
+        path: Collection[Union[str, int]] = None,
         original_error: Exception = None,
         extensions: Dict[str, Any] = None,
     ) -> None:

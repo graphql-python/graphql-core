@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from typing import Collection, List
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, TypeInfoVisitor, visit
@@ -19,7 +19,7 @@ class ValidationAbortedError(RuntimeError):
 def validate(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
-    rules: Sequence[RuleType] = None,
+    rules: Collection[RuleType] = None,
     type_info: TypeInfo = None,
     max_errors: int = None,
 ) -> List[GraphQLError]:
@@ -83,7 +83,7 @@ def validate(
 def validate_sdl(
     document_ast: DocumentNode,
     schema_to_extend: GraphQLSchema = None,
-    rules: Sequence[RuleType] = None,
+    rules: Collection[RuleType] = None,
 ) -> List[GraphQLError]:
     """Validate an SDL document.
 

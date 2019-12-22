@@ -141,7 +141,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
     }
 
     return GraphQLSchema(
-        types=list(type_map.values()),
+        types=type_map.values(),
         directives=[
             sort_directive(directive)
             for directive in sorted(schema.directives, key=sort_by_name_key)

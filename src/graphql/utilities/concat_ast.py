@@ -1,12 +1,12 @@
-from typing import Sequence
 from itertools import chain
+from typing import Collection
 
 from ..language.ast import DocumentNode
 
 __all__ = ["concat_ast"]
 
 
-def concat_ast(asts: Sequence[DocumentNode]) -> DocumentNode:
+def concat_ast(asts: Collection[DocumentNode]) -> DocumentNode:
     """Concat ASTs.
 
     Provided a collection of ASTs, presumably each from different files, concatenate

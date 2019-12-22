@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, NoReturn, Optional, Union, Sequence, cast
+from typing import Callable, Collection, Dict, List, NoReturn, Optional, Union, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -154,7 +154,7 @@ def build_ast_schema(
         subscription=cast(GraphQLObjectType, type_map.get(subscription_type))
         if subscription_type
         else None,
-        types=list(type_map.values()),
+        types=type_map.values(),
         directives=directives,
         ast_node=schema_def,
         assume_valid=assume_valid,
@@ -292,7 +292,7 @@ class ASTDefinitionBuilder:
         # values, that would throw immediately while type system validation with
         # `validate_schema()` will produce more actionable results.
         interfaces = cast(
-            Thunk[Sequence[GraphQLInterfaceType]],
+            Thunk[Collection[GraphQLInterfaceType]],
             (
                 (lambda: [self.get_named_type(ref) for ref in interface_nodes])
                 if interface_nodes
@@ -332,7 +332,7 @@ class ASTDefinitionBuilder:
         # values below, that would throw immediately while type system
         # validation with validate_schema() will produce more actionable results.
         interfaces = cast(
-            Thunk[Sequence[GraphQLInterfaceType]],
+            Thunk[Collection[GraphQLInterfaceType]],
             (lambda: [self.get_named_type(ref) for ref in interface_nodes])
             if interface_nodes
             else [],
@@ -376,7 +376,7 @@ class ASTDefinitionBuilder:
         # below, that would throw immediately while type system validation with
         # `validate_schema()` will get more actionable results.
         types = cast(
-            Thunk[Sequence[GraphQLObjectType]],
+            Thunk[Collection[GraphQLObjectType]],
             (lambda: [self.get_named_type(ref) for ref in type_nodes])
             if type_nodes
             else [],

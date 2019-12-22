@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, cast
+from typing import Collection, Dict, List, Optional, Set, Tuple, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -583,7 +583,7 @@ def find_conflict(
 
 
 def same_arguments(
-    arguments1: Sequence[ArgumentNode], arguments2: Sequence[ArgumentNode]
+    arguments1: Collection[ArgumentNode], arguments2: Collection[ArgumentNode]
 ) -> bool:
     if len(arguments1) != len(arguments2):
         return False

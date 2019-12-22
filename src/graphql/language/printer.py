@@ -1,6 +1,6 @@
 from functools import wraps
 from json import dumps
-from typing import Optional, Sequence
+from typing import Collection, Optional
 
 from .ast import Node, OperationType
 from .visitor import visit, Visitor
@@ -310,8 +310,8 @@ class PrintAstVisitor(Visitor):
         )
 
 
-def join(strings: Optional[Sequence[str]], separator: str = "") -> str:
-    """Join strings in a given sequence.
+def join(strings: Optional[Collection[str]], separator: str = "") -> str:
+    """Join strings in a given collection.
 
     Return an empty string if it is None or empty, otherwise join all items together
     separated by separator if provided.
@@ -319,11 +319,11 @@ def join(strings: Optional[Sequence[str]], separator: str = "") -> str:
     return separator.join(s for s in strings if s) if strings else ""
 
 
-def block(strings: Sequence[str]) -> str:
+def block(strings: Collection[str]) -> str:
     """Return strings inside a block.
 
-    Given a sequence of strings, return a string with each item on its own line, wrapped
-    in an indented "{ }" block.
+    Given a collection of strings, return a string with each item on its own line,
+    wrapped in an indented "{ }" block.
     """
     return "{\n" + indent(join(strings, "\n")) + "\n}" if strings else ""
 
@@ -351,6 +351,6 @@ def is_multiline(string: str) -> bool:
     return "\n" in string
 
 
-def has_multiline_items(maybe_list: Optional[Sequence[str]]):
+def has_multiline_items(maybe_list: Optional[Collection[str]]):
     """Check whether one of the items in the list has multiple lines."""
     return maybe_list and any(is_multiline(item) for item in maybe_list)

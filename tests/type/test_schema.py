@@ -246,9 +246,9 @@ def describe_type_system_schema():
                     # noinspection PyTypeChecker
                     GraphQLSchema(lambda: None)  # type: ignore
                 with raises(Exception):
-                    GraphQLSchema(types={})  # type: ignore
+                    GraphQLSchema(types={})
                 with raises(Exception):
-                    GraphQLSchema(directives={})  # type: ignore
+                    GraphQLSchema(directives={})
 
     def describe_a_schema_must_contain_uniquely_named_types():
         def rejects_a_schema_which_redefines_a_built_in_type():
@@ -327,5 +327,5 @@ def describe_type_system_schema():
                 )
             assert str(exc_info.value) == (
                 "Schema extension AST nodes must be specified"
-                " as a sequence of SchemaExtensionNode instances."
+                " as a collection of SchemaExtensionNode instances."
             )

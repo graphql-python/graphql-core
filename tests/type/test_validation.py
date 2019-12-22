@@ -400,7 +400,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
         msg = str(exc_info.value)
         assert msg == (
             "Schema directives must be specified"
-            " as a sequence of GraphQLDirective instances."
+            " as a collection of GraphQLDirective instances."
         )
 
         schema = GraphQLSchema(SomeObjectType)
@@ -618,7 +618,7 @@ def describe_type_system_union_types_must_be_valid():
 
         assert str(exc_info.value) == (
             "BadUnion types must be specified"
-            " as a sequence of GraphQLObjectType instances."
+            " as a collection of GraphQLObjectType instances."
         )
 
         bad_union_member_types = [
@@ -638,7 +638,7 @@ def describe_type_system_union_types_must_be_valid():
                 )
             assert str(exc_info.value) == (
                 "BadUnion types must be specified"
-                " as a sequence of GraphQLObjectType instances."
+                " as a collection of GraphQLObjectType instances."
             )
 
 
@@ -970,7 +970,7 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
             )
         assert str(exc_info.value) == (
             "BadObject interfaces must be specified"
-            " as a sequence of GraphQLInterfaceType instances."
+            " as a collection of GraphQLInterfaceType instances."
         )
 
     def rejects_an_object_implementing_the_same_interface_twice():

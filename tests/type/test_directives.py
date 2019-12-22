@@ -136,7 +136,7 @@ def describe_type_system_directive():
             GraphQLDirective("Foo", locations=None)  # type: ignore
         assert str(exc_info.value) == (
             "Foo locations must be specified"
-            " as a sequence of DirectiveLocation enum values."
+            " as a collection of DirectiveLocation enum values."
         )
 
     def rejects_a_directive_with_incorrectly_typed_locations():
@@ -145,14 +145,14 @@ def describe_type_system_directive():
             GraphQLDirective("Foo", locations="bad")  # type: ignore
         assert (
             str(exc_info.value) == "Foo locations must be specified"
-            " as a sequence of DirectiveLocation enum values."
+            " as a collection of DirectiveLocation enum values."
         )
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=["bad"])  # type: ignore
         assert str(exc_info.value) == (
             "Foo locations must be specified"
-            " as a sequence of DirectiveLocation enum values."
+            " as a collection of DirectiveLocation enum values."
         )
 
     def rejects_a_directive_with_incorrectly_typed_description():

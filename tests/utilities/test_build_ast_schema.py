@@ -430,7 +430,7 @@ def describe_schema_builder():
         msg = str(exc_info.value)
         assert (
             msg == "Hello types must be specified"
-            " as a sequence of GraphQLObjectType instances."
+            " as a collection of GraphQLObjectType instances."
         )
 
     def describe_specifying_union_type_using_typename():

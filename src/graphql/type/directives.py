@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, cast
+from typing import Any, Collection, Dict, List, Optional, cast
 
 from ..language import ast, DirectiveLocation
 from ..pyutils import inspect, is_description, FrozenList
@@ -37,7 +37,7 @@ class GraphQLDirective:
     def __init__(
         self,
         name: str,
-        locations: Sequence[DirectiveLocation],
+        locations: Collection[DirectiveLocation],
         args: Dict[str, GraphQLArgument] = None,
         is_repeatable: bool = False,
         description: str = None,
@@ -58,7 +58,7 @@ class GraphQLDirective:
         except (KeyError, TypeError):
             raise TypeError(
                 f"{name} locations must be specified"
-                " as a sequence of DirectiveLocation enum values."
+                " as a collection of DirectiveLocation enum values."
             )
         if args is None:
             args = {}

@@ -3,10 +3,10 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Collection,
     List,
     NamedTuple,
     Optional,
-    Sequence,
     Tuple,
     Union,
 )
@@ -346,7 +346,7 @@ class ParallelVisitor(Visitor):
     If a prior visitor edits a node, no following visitors will see that node.
     """
 
-    def __init__(self, visitors: Sequence[Visitor]) -> None:
+    def __init__(self, visitors: Collection[Visitor]) -> None:
         """Create a new visitor from the given list of parallel visitors."""
         self.visitors = visitors
         self.skipping: List[Any] = [None] * len(visitors)

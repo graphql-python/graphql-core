@@ -164,7 +164,7 @@ def trunc_list(s: List) -> List:
 
 
 class InspectEllipsisType:
-    """Singleton class for indicating ellipses in sequences."""
+    """Singleton class for indicating ellipses in iterables."""
 
 
 ELLIPSIS = InspectEllipsisType()

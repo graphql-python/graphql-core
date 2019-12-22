@@ -1,14 +1,13 @@
-from collections.abc import Sequence as AbstractSequence
 from enum import Enum
 from typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     Generic,
     List,
     NamedTuple,
     Optional,
-    Sequence,
     TYPE_CHECKING,
     Type,
     TypeVar,
@@ -48,6 +47,7 @@ from ..pyutils import (
     Path,
     cached_property,
     inspect,
+    is_collection,
     is_description,
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
@@ -200,7 +200,7 @@ class GraphQLNamedType(GraphQLType):
         description: str = None,
         extensions: Dict[str, Any] = None,
         ast_node: TypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[TypeExtensionNode] = None,
+        extension_ast_nodes: Collection[TypeExtensionNode] = None,
     ) -> None:
         if not name:
             raise TypeError("Must provide name.")
@@ -216,12 +216,12 @@ class GraphQLNamedType(GraphQLType):
         if ast_node and not isinstance(ast_node, TypeDefinitionNode):
             raise TypeError(f"{name} AST node must be a TypeDefinitionNode.")
         if extension_ast_nodes:
-            if not isinstance(extension_ast_nodes, AbstractSequence) or not all(
+            if not is_collection(extension_ast_nodes) or not all(
                 isinstance(node, TypeExtensionNode) for node in extension_ast_nodes
             ):
                 raise TypeError(
                     f"{name} extension AST nodes must be specified"
-                    " as a sequence of TypeExtensionNode instances."
+                    " as a collection of TypeExtensionNode instances."
                 )
             if not isinstance(extension_ast_nodes, FrozenList):
                 extension_ast_nodes = FrozenList(extension_ast_nodes)
@@ -327,7 +327,7 @@ class GraphQLScalarType(GraphQLNamedType):
         description: str = None,
         extensions: Dict[str, Any] = None,
         ast_node: ScalarTypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[ScalarTypeExtensionNode] = None,
+        extension_ast_nodes: Collection[ScalarTypeExtensionNode] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -358,7 +358,7 @@ class GraphQLScalarType(GraphQLNamedType):
         ):
             raise TypeError(
                 f"{name} extension AST nodes must be specified"
-                " as a sequence of ScalarTypeExtensionNode instances."
+                " as a collection of ScalarTypeExtensionNode instances."
             )
         if serialize is not None:
             self.serialize = serialize  # type: ignore
@@ -681,12 +681,12 @@ class GraphQLObjectType(GraphQLNamedType):
         self,
         name: str,
         fields: Thunk[GraphQLFieldMap],
-        interfaces: Thunk[Sequence["GraphQLInterfaceType"]] = None,
+        interfaces: Thunk[Collection["GraphQLInterfaceType"]] = None,
         is_type_of: GraphQLIsTypeOfFn = None,
         extensions: Dict[str, Any] = None,
         description: str = None,
         ast_node: ObjectTypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[ObjectTypeExtensionNode] = None,
+        extension_ast_nodes: Collection[ObjectTypeExtensionNode] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -707,7 +707,7 @@ class GraphQLObjectType(GraphQLNamedType):
         ):
             raise TypeError(
                 f"{name} extension AST nodes must be specified"
-                " as a sequence of ObjectTypeExtensionNode instances."
+                " as a collection of ObjectTypeExtensionNode instances."
             )
         self._fields = fields
         self._interfaces = interfaces
@@ -751,19 +751,19 @@ class GraphQLObjectType(GraphQLNamedType):
     def interfaces(self) -> List["GraphQLInterfaceType"]:
         """Get provided interfaces."""
         try:
-            interfaces: Sequence["GraphQLInterfaceType"] = resolve_thunk(
+            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
                 self._interfaces
             )
         except Exception as error:
             raise TypeError(f"{self.name} interfaces cannot be resolved: {error}")
         if interfaces is None:
             interfaces = []
-        elif not isinstance(interfaces, AbstractSequence) or not all(
+        elif not is_collection(interfaces) or not all(
             isinstance(value, GraphQLInterfaceType) for value in interfaces
         ):
             raise TypeError(
                 f"{self.name} interfaces must be specified"
-                " as a sequence of GraphQLInterfaceType instances."
+                " as a collection of GraphQLInterfaceType instances."
             )
         return list(interfaces)
 
@@ -801,12 +801,12 @@ class GraphQLInterfaceType(GraphQLNamedType):
         self,
         name: str,
         fields: Thunk[GraphQLFieldMap] = None,
-        interfaces: Thunk[Sequence["GraphQLInterfaceType"]] = None,
+        interfaces: Thunk[Collection["GraphQLInterfaceType"]] = None,
         resolve_type: GraphQLTypeResolver = None,
         description: str = None,
         extensions: Dict[str, Any] = None,
         ast_node: InterfaceTypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[InterfaceTypeExtensionNode] = None,
+        extension_ast_nodes: Collection[InterfaceTypeExtensionNode] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -827,7 +827,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         ):
             raise TypeError(
                 f"{name} extension AST nodes must be specified"
-                " as a sequence of InterfaceTypeExtensionNode instances."
+                " as a collection of InterfaceTypeExtensionNode instances."
             )
         self._fields = fields
         self._interfaces = interfaces
@@ -871,19 +871,19 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def interfaces(self) -> List["GraphQLInterfaceType"]:
         """Get provided interfaces."""
         try:
-            interfaces: Sequence["GraphQLInterfaceType"] = resolve_thunk(
+            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
                 self._interfaces
             )
         except Exception as error:
             raise TypeError(f"{self.name} interfaces cannot be resolved: {error}")
         if interfaces is None:
             interfaces = []
-        elif not isinstance(interfaces, AbstractSequence) or not all(
+        elif not is_collection(interfaces) or not all(
             isinstance(value, GraphQLInterfaceType) for value in interfaces
         ):
             raise TypeError(
                 f"{self.name} interfaces must be specified"
-                " as a sequence of GraphQLInterfaceType instances."
+                " as a collection of GraphQLInterfaceType instances."
             )
         return list(interfaces)
 
@@ -925,12 +925,12 @@ class GraphQLUnionType(GraphQLNamedType):
     def __init__(
         self,
         name,
-        types: Thunk[Sequence[GraphQLObjectType]],
+        types: Thunk[Collection[GraphQLObjectType]],
         resolve_type: GraphQLTypeResolver = None,
         description: str = None,
         extensions: Dict[str, Any] = None,
         ast_node: UnionTypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[UnionTypeExtensionNode] = None,
+        extension_ast_nodes: Collection[UnionTypeExtensionNode] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -951,7 +951,7 @@ class GraphQLUnionType(GraphQLNamedType):
         ):
             raise TypeError(
                 f"{name} extension AST nodes must be specified"
-                " as a sequence of UnionTypeExtensionNode instances."
+                " as a collection of UnionTypeExtensionNode instances."
             )
         self._types = types
         self.resolve_type = resolve_type
@@ -965,17 +965,17 @@ class GraphQLUnionType(GraphQLNamedType):
     def types(self) -> List[GraphQLObjectType]:
         """Get provided types."""
         try:
-            types: Sequence[GraphQLObjectType] = resolve_thunk(self._types)
+            types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
         except Exception as error:
             raise TypeError(f"{self.name} types cannot be resolved: {error}")
         if types is None:
             types = []
-        elif not isinstance(types, AbstractSequence) or not all(
+        elif not is_collection(types) or not all(
             isinstance(value, GraphQLObjectType) for value in types
         ):
             raise TypeError(
                 f"{self.name} types must be specified"
-                " as a sequence of GraphQLObjectType instances."
+                " as a collection of GraphQLObjectType instances."
             )
         return list(types)
 
@@ -1035,7 +1035,7 @@ class GraphQLEnumType(GraphQLNamedType):
         description: str = None,
         extensions: Dict[str, Any] = None,
         ast_node: EnumTypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[EnumTypeExtensionNode] = None,
+        extension_ast_nodes: Collection[EnumTypeExtensionNode] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1075,7 +1075,7 @@ class GraphQLEnumType(GraphQLNamedType):
         ):
             raise TypeError(
                 f"{name} extension AST nodes must be specified"
-                " as a sequence of EnumTypeExtensionNode instances."
+                " as a collection of EnumTypeExtensionNode instances."
             )
         self.values = values
 
@@ -1243,7 +1243,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         out_type: GraphQLInputFieldOutType = None,
         extensions: Dict[str, Any] = None,
         ast_node: InputObjectTypeDefinitionNode = None,
-        extension_ast_nodes: Sequence[InputObjectTypeExtensionNode] = None,
+        extension_ast_nodes: Collection[InputObjectTypeExtensionNode] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1264,7 +1264,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         ):
             raise TypeError(
                 f"{name} extension AST nodes must be specified"
-                " as a sequence of InputObjectTypeExtensionNode instances."
+                " as a collection of InputObjectTypeExtensionNode instances."
             )
         self._fields = fields
         if out_type is not None:

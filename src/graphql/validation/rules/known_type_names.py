@@ -1,4 +1,4 @@
-from typing import List, Sequence, Union, cast
+from typing import Collection, List, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -67,7 +67,7 @@ class KnownTypeNamesRule(ASTValidationRule):
             )
 
 
-def is_sdl_node(value: Union[Node, Sequence[Node], None]) -> bool:
+def is_sdl_node(value: Union[Node, Collection[Node], None]) -> bool:
     return (
         value is not None
         and not isinstance(value, list)

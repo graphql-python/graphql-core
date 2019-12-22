@@ -2,10 +2,10 @@ from operator import attrgetter, itemgetter
 from typing import (
     Any,
     Callable,
+    Collection,
     Dict,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Union,
@@ -97,11 +97,11 @@ class SchemaValidationContext:
     def report_error(
         self,
         message: str,
-        nodes: Union[Optional[Node], Sequence[Optional[Node]]] = None,
+        nodes: Union[Optional[Node], Collection[Optional[Node]]] = None,
     ) -> None:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
-        nodes = cast(Optional[Sequence[Node]], nodes)
+        nodes = cast(Optional[Collection[Node]], nodes)
         self.add_error(GraphQLError(message, nodes))
 
     def add_error(self, error: GraphQLError) -> None:
@@ -540,7 +540,7 @@ class InputObjectCircularRefsValidator:
                         " within itself through a series of non-null fields:"
                         f" '{'.'.join(field_names)}'.",
                         cast(
-                            Sequence[Node],
+                            Collection[Node],
                             map(attrgetter("ast_node"), map(itemgetter(1), cycle_path)),
                         ),
                     )

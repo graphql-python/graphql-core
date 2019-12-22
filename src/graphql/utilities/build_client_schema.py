@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import cast, Callable, Dict, List, Sequence
+from typing import cast, Callable, Collection, Dict, List
 
 from ..error import INVALID
 from ..language import DirectiveLocation, parse_value
@@ -311,7 +311,7 @@ def build_client_schema(
             description=directive_introspection.get("description"),
             locations=list(
                 cast(
-                    Sequence[DirectiveLocation],
+                    Collection[DirectiveLocation],
                     directive_introspection.get("locations"),
                 )
             ),

@@ -5,7 +5,7 @@ data from a backend service rather than from hardcoded JSON objects in a more co
 demo.
 """
 
-from typing import Sequence, Iterator
+from typing import Collection, Iterator
 
 __all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_backstory"]
 
@@ -16,8 +16,8 @@ __all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_back
 class Character:
     id: str
     name: str
-    friends: Sequence[str]
-    appearsIn: Sequence[str]
+    friends: Collection[str]
+    appearsIn: Collection[str]
 
 
 # noinspection PyPep8Naming

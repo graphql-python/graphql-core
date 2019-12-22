@@ -393,7 +393,7 @@ def extend_schema(
         subscription=get_maybe_type_by_name(  # type: ignore
             operation_types[OperationType.SUBSCRIPTION]
         ),
-        types=list(type_map.values()),
+        types=type_map.values(),
         directives=get_merged_directives(),
         ast_node=schema_def or schema.ast_node,
         extension_ast_nodes=(
