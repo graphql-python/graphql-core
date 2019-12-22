@@ -269,14 +269,13 @@ def print_description(
     indentation="",
     first_in_block=True,
 ) -> str:
-    if def_.description is None:
+    description = def_.description
+    if description is None:
         return ""
 
-    lines = description_lines(def_.description, 120 - len(indentation))
+    prefer_multiple_lines = len(description) > 70
+    block_string = print_block_string(description, "", prefer_multiple_lines)
 
-    text = "\n".join(lines)
-    prefer_multiple_lines = len(text) > 70
-    block_string = print_block_string(text, "", prefer_multiple_lines)
     prefix = "\n" + indentation if indentation and not first_in_block else indentation
 
     return prefix + block_string.replace("\n", "\n" + indentation) + "\n"
