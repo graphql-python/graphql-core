@@ -1,14 +1,12 @@
 
 .cache
 .coverage
-.env
-.env.bak
+.env*
 .idea
 .mypy_cache
 .pytest_cache
 .tox
-.venv
-.venv.bak
+.venv*
 .vs
 
 build
