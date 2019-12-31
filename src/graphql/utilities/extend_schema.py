@@ -1,6 +1,5 @@
 from collections import defaultdict
-from itertools import chain
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -125,21 +124,34 @@ def extend_schema(
         return replace_named_type(type_)  # type: ignore
 
     def replace_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
+        # Note: While this could make early assertions to get the correctly
+        # typed values below, that would throw immediately while type system
+        # validation with validate_schema() will produce more actionable results.
         return type_map[type_.name]
 
-    def get_maybe_type_by_name(type_name: Optional[str]) -> Optional[GraphQLNamedType]:
-        return None if type_name is None else type_map[type_name]
-
     def get_merged_directives() -> List[GraphQLDirective]:
-        if not schema.directives:
+        existing_directives: List[GraphQLDirective] = []
+        for directive in schema.directives:
+            kwargs = directive.to_kwargs()
+            existing_directives.append(
+                GraphQLDirective(
+                    **{  # type: ignore
+                        **kwargs,
+                        "args": {
+                            name: extend_arg(arg)
+                            for name, arg in kwargs["args"].items()
+                        },
+                    }
+                )
+            )
+
+        if not existing_directives:
             raise TypeError("schema must have default directives")
 
-        return list(
-            chain(
-                map(extend_directive, schema.directives),
-                map(ast_builder.build_directive, directive_defs),
-            )
+        existing_directives.extend(
+            ast_builder.build_directive(node) for node in directive_defs
         )
+        return existing_directives
 
     def extend_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         if is_introspection_type(type_) or is_specified_scalar_type(type_):
@@ -167,21 +179,11 @@ def extend_schema(
         # Not reachable. All possible types have been considered.
         raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
 
-    def extend_directive(directive: GraphQLDirective) -> GraphQLDirective:
-        kwargs = directive.to_kwargs()
-        return GraphQLDirective(
-            **{  # type: ignore
-                **kwargs,
-                "args": {name: extend_arg(arg) for name, arg in kwargs["args"].items()},
-            }
-        )
-
     def extend_input_object_type(
         type_: GraphQLInputObjectType,
     ) -> GraphQLInputObjectType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])
-        field_nodes = chain.from_iterable(node.fields or [] for node in extensions)
 
         return GraphQLInputObjectType(
             **{
@@ -196,10 +198,7 @@ def extend_schema(
                         )
                         for name, field in kwargs["fields"].items()
                     },
-                    **{
-                        field.name.value: ast_builder.build_input_field(field)
-                        for field in field_nodes
-                    },
+                    **ast_builder.build_input_field_map(extensions),
                 },
                 "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
                 + extensions,
@@ -209,17 +208,13 @@ def extend_schema(
     def extend_enum_type(type_: GraphQLEnumType) -> GraphQLEnumType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])
-        value_nodes = chain.from_iterable(node.values or [] for node in extensions)
 
         return GraphQLEnumType(
             **{
                 **kwargs,
                 "values": {
                     **kwargs["values"],
-                    **{
-                        value.name.value: ast_builder.build_enum_value(value)
-                        for value in value_nodes
-                    },
+                    **ast_builder.build_enum_value_map(extensions),
                 },
                 "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
                 + extensions,
@@ -241,30 +236,21 @@ def extend_schema(
     def extend_object_type(type_: GraphQLObjectType) -> GraphQLObjectType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])
-        interface_nodes = chain.from_iterable(
-            node.interfaces or [] for node in extensions
-        )
-        field_nodes = chain.from_iterable(node.fields or [] for node in extensions)
 
         return GraphQLObjectType(
             **{
                 **kwargs,
                 "interfaces": lambda: [
-                    replace_named_type(interface) for interface in kwargs["interfaces"]
+                    cast(GraphQLInterfaceType, replace_named_type(interface))
+                    for interface in kwargs["interfaces"]
                 ]
-                # Note: While this could make early assertions to get the correctly
-                # typed values, that would throw immediately while type system
-                # validation with validate_schema will produce more actionable results.
-                + [ast_builder.get_named_type(node) for node in interface_nodes],
+                + ast_builder.build_interfaces(extensions),
                 "fields": lambda: {
                     **{
                         name: extend_field(field)
                         for name, field in kwargs["fields"].items()
                     },
-                    **{
-                        node.name.value: ast_builder.build_field(node)
-                        for node in field_nodes
-                    },
+                    **ast_builder.build_field_map(extensions),
                 },
                 "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
                 + extensions,
@@ -274,30 +260,21 @@ def extend_schema(
     def extend_interface_type(type_: GraphQLInterfaceType) -> GraphQLInterfaceType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])
-        interface_nodes = chain.from_iterable(
-            node.interfaces or [] for node in extensions
-        )
-        field_nodes = chain.from_iterable(node.fields or [] for node in extensions)
 
         return GraphQLInterfaceType(
             **{
                 **kwargs,
                 "interfaces": lambda: [
-                    replace_named_type(interface) for interface in kwargs["interfaces"]
+                    cast(GraphQLInterfaceType, replace_named_type(interface))
+                    for interface in kwargs["interfaces"]
                 ]
-                # Note: While this could make early assertions to get the correctly
-                # typed values, that would throw immediately while type system
-                # validation with validate_schema will produce more actionable results.
-                + [ast_builder.get_named_type(node) for node in interface_nodes],
+                + ast_builder.build_interfaces(extensions),
                 "fields": lambda: {
                     **{
                         name: extend_field(field)
                         for name, field in kwargs["fields"].items()
                     },
-                    **{
-                        node.name.value: ast_builder.build_field(node)
-                        for node in field_nodes
-                    },
+                    **ast_builder.build_field_map(extensions),
                 },
                 "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
                 + extensions,
@@ -307,18 +284,15 @@ def extend_schema(
     def extend_union_type(type_: GraphQLUnionType) -> GraphQLUnionType:
         kwargs = type_.to_kwargs()
         extensions = type_exts_map.get(kwargs["name"], [])
-        type_nodes = chain.from_iterable(node.types or [] for node in extensions)
 
         return GraphQLUnionType(
             **{
                 **kwargs,
                 "types": lambda: [
-                    replace_named_type(member_type) for member_type in kwargs["types"]
+                    cast(GraphQLObjectType, replace_named_type(member_type))
+                    for member_type in kwargs["types"]
                 ]
-                # Note: While this could make early assertions to get the correctly
-                # typed values, that would throw immediately while type system
-                # validation with validate_schema will produce more actionable results.
-                + [ast_builder.get_named_type(node) for node in type_nodes],
+                + ast_builder.build_union_types(extensions),
                 "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
                 + extensions,
             }
@@ -352,47 +326,43 @@ def extend_schema(
         assume_valid=assume_valid, resolve_type=resolve_type
     )
 
-    type_map = {node.name.value: ast_builder.build_type(node) for node in type_defs}
+    type_map = ast_builder.build_type_map(type_defs)
     for existing_type_name, existing_type in schema.type_map.items():
         type_map[existing_type_name] = extend_named_type(existing_type)
 
     # Get the extended root operation types.
-    operation_types: Dict[OperationType, Optional[str]] = {
-        OperationType.QUERY: schema.query_type.name if schema.query_type else None,
-        OperationType.MUTATION: schema.mutation_type.name
-        if schema.mutation_type
-        else None,
-        OperationType.SUBSCRIPTION: schema.subscription_type.name
-        if schema.subscription_type
-        else None,
-    }
-
+    schema_types: List[Union[SchemaDefinitionNode, SchemaExtensionNode]] = []
     if schema_def:
-        for operation_type in schema_def.operation_types:
-            operation = operation_type.operation
-            operation_types[operation] = operation_type.type.name.value
-
-    # Then, incorporate schema definition and all schema extensions.
-    for schema_ext in schema_exts:
-        if schema_ext.operation_types:
-            for operation_type in schema_ext.operation_types:
-                operation = operation_type.operation
-                operation_types[operation] = operation_type.type.name.value
+        schema_types.append(schema_def)
+    if schema_exts:
+        schema_types.extend(schema_exts)
+    operation_types: Dict[OperationType, GraphQLObjectType] = {}
+    if schema.query_type:
+        operation_types[OperationType.QUERY] = cast(
+            GraphQLObjectType, replace_named_type(schema.query_type)
+        )
+    if schema.mutation_type:
+        operation_types[OperationType.MUTATION] = cast(
+            GraphQLObjectType, replace_named_type(schema.mutation_type)
+        )
+    if schema.subscription_type:
+        operation_types[OperationType.SUBSCRIPTION] = cast(
+            GraphQLObjectType, replace_named_type(schema.subscription_type)
+        )
+    operation_types.update(
+        # Then, incorporate schema definition and all schema extensions.
+        ast_builder.get_operation_types(schema_types)
+    )
 
     # Then produce and return a Schema with these types.
+    get_operation = operation_types.get
     return GraphQLSchema(
         # Note: While this could make early assertions to get the correctly
         # typed values, that would throw immediately while type system
         # validation with validateSchema() will produce more actionable results.
-        query=get_maybe_type_by_name(  # type: ignore
-            operation_types[OperationType.QUERY]
-        ),
-        mutation=get_maybe_type_by_name(  # type: ignore
-            operation_types[OperationType.MUTATION]
-        ),
-        subscription=get_maybe_type_by_name(  # type: ignore
-            operation_types[OperationType.SUBSCRIPTION]
-        ),
+        query=get_operation(OperationType.QUERY),
+        mutation=get_operation(OperationType.MUTATION),
+        subscription=get_operation(OperationType.SUBSCRIPTION),
         types=type_map.values(),
         directives=get_merged_directives(),
         ast_node=schema_def or schema.ast_node,

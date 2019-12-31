@@ -5,32 +5,40 @@ from ..language import (
     DirectiveLocation,
     DocumentNode,
     EnumTypeDefinitionNode,
+    EnumTypeExtensionNode,
     EnumValueDefinitionNode,
     FieldDefinitionNode,
     InputObjectTypeDefinitionNode,
+    InputObjectTypeExtensionNode,
     InputValueDefinitionNode,
     InterfaceTypeDefinitionNode,
+    InterfaceTypeExtensionNode,
     ListTypeNode,
     NamedTypeNode,
     NonNullTypeNode,
     ObjectTypeDefinitionNode,
+    ObjectTypeExtensionNode,
     OperationType,
     ScalarTypeDefinitionNode,
     SchemaDefinitionNode,
+    SchemaExtensionNode,
     Source,
     TypeDefinitionNode,
     TypeNode,
     UnionTypeDefinitionNode,
+    UnionTypeExtensionNode,
     parse,
     Node,
 )
-from ..pyutils import inspect, FrozenList
+from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
+    GraphQLArgumentMap,
     GraphQLDeprecatedDirective,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
+    GraphQLEnumValueMap,
     GraphQLField,
     GraphQLFieldMap,
     GraphQLIncludeDirective,
@@ -50,7 +58,6 @@ from ..type import (
     GraphQLSkipDirective,
     GraphQLType,
     GraphQLUnionType,
-    Thunk,
     introspection_types,
     specified_scalar_types,
 )
@@ -117,16 +124,22 @@ def build_ast_schema(
         assume_valid=assume_valid, resolve_type=resolve_type
     )
 
-    type_map = {node.name.value: ast_builder.build_type(node) for node in type_defs}
+    type_map = ast_builder.build_type_map(type_defs)
 
-    if schema_def:
-        operation_types = get_operation_types(schema_def)
-    else:
-        operation_types = {
-            OperationType.QUERY: "Query",
-            OperationType.MUTATION: "Mutation",
-            OperationType.SUBSCRIPTION: "Subscription",
+    operation_types: Dict[OperationType, GraphQLObjectType] = (
+        ast_builder.get_operation_types([schema_def])
+        if schema_def
+        else {
+            # Note: While this could make early assertions to get the correctly
+            # typed values below, that would throw immediately while type system
+            # validation with validate_schema() will produce more actionable results.
+            OperationType.QUERY: cast(GraphQLObjectType, type_map.get("Query")),
+            OperationType.MUTATION: cast(GraphQLObjectType, type_map.get("Mutation")),
+            OperationType.SUBSCRIPTION: cast(
+                GraphQLObjectType, type_map.get("Subscription")
+            ),
         }
+    )
 
     directives = [
         ast_builder.build_directive(directive_def) for directive_def in directive_defs
@@ -140,32 +153,16 @@ def build_ast_schema(
     if not any(directive.name == "deprecated" for directive in directives):
         directives.append(GraphQLDeprecatedDirective)
 
-    query_type = operation_types.get(OperationType.QUERY)
-    mutation_type = operation_types.get(OperationType.MUTATION)
-    subscription_type = operation_types.get(OperationType.SUBSCRIPTION)
+    get_operation = operation_types.get
     return GraphQLSchema(
-        # Note: While this could make early assertions to get the correctly
-        # typed values below, that would throw immediately while type system
-        # validation with `validate_schema()` will produce more actionable results.
-        query=cast(GraphQLObjectType, type_map.get(query_type)) if query_type else None,
-        mutation=cast(GraphQLObjectType, type_map.get(mutation_type))
-        if mutation_type
-        else None,
-        subscription=cast(GraphQLObjectType, type_map.get(subscription_type))
-        if subscription_type
-        else None,
+        query=get_operation(OperationType.QUERY),
+        mutation=get_operation(OperationType.MUTATION),
+        subscription=get_operation(OperationType.SUBSCRIPTION),
         types=type_map.values(),
         directives=directives,
         ast_node=schema_def,
         assume_valid=assume_valid,
     )
-
-
-def get_operation_types(schema: SchemaDefinitionNode) -> Dict[OperationType, str]:
-    op_types: Dict[OperationType, str] = {}
-    for operation_type in schema.operation_types:
-        op_types[operation_type.operation] = operation_type.type.name.value
-    return op_types
 
 
 def default_type_resolver(type_name: str, *_args) -> NoReturn:
@@ -188,6 +185,22 @@ class ASTDefinitionBuilder:
         self._assume_valid = assume_valid
         self._resolve_type = resolve_type
 
+    def get_operation_types(
+        self, nodes: Collection[Union[SchemaDefinitionNode, SchemaExtensionNode]]
+    ) -> Dict[OperationType, GraphQLObjectType]:
+        # Note: While this could make early assertions to get the correctly
+        # typed values below, that would throw immediately while type system
+        # validation with validate_schema() will produce more actionable results.
+        op_types: Dict[OperationType, GraphQLObjectType] = {}
+        for node in nodes:
+            if node.operation_types:
+                for operation_type in node.operation_types:
+                    type_name = operation_type.type.name.value
+                    op_types[operation_type.operation] = cast(
+                        GraphQLObjectType, self._resolve_type(type_name)
+                    )
+        return op_types
+
     def get_named_type(self, node: NamedTypeNode) -> GraphQLNamedType:
         name = node.name.value
         return std_type_map.get(name) or self._resolve_type(name)
@@ -209,216 +222,214 @@ class ASTDefinitionBuilder:
             description=directive.description.value if directive.description else None,
             locations=locations,
             is_repeatable=directive.repeatable,
-            args={
-                arg.name.value: self.build_arg(arg) for arg in directive.arguments or []
-            },
+            args=self.build_argument_map(directive.arguments),
             ast_node=directive,
         )
 
-    def build_field(self, field: FieldDefinitionNode) -> GraphQLField:
-        # Note: While this could make assertions to get the correctly typed value, that
-        # would throw immediately while type system validation with `validate_schema()`
-        # will produce more actionable results.
-        type_ = self.get_wrapped_type(field.type)
-        type_ = cast(GraphQLOutputType, type_)
-        return GraphQLField(
-            type_=type_,
-            description=field.description.value if field.description else None,
-            args={arg.name.value: self.build_arg(arg) for arg in field.arguments or []},
-            deprecation_reason=get_deprecation_reason(field),
-            ast_node=field,
-        )
+    def build_field_map(
+        self,
+        nodes: Collection[
+            Union[
+                InterfaceTypeDefinitionNode,
+                InterfaceTypeExtensionNode,
+                ObjectTypeDefinitionNode,
+                ObjectTypeExtensionNode,
+            ]
+        ],
+    ) -> GraphQLFieldMap:
+        field_map: GraphQLFieldMap = {}
+        for node in nodes:
+            if node.fields:
+                for field in node.fields:
+                    # Note: While this could make assertions to get the correctly typed
+                    # value, that would throw immediately while type system validation
+                    # with validate_schema() will produce more actionable results.
+                    field_map[field.name.value] = GraphQLField(
+                        type_=cast(
+                            GraphQLOutputType, self.get_wrapped_type(field.type)
+                        ),
+                        description=field.description.value
+                        if field.description
+                        else None,
+                        args=self.build_argument_map(field.arguments),
+                        deprecation_reason=get_deprecation_reason(field),
+                        ast_node=field,
+                    )
+        return field_map
 
-    def build_arg(self, value: InputValueDefinitionNode) -> GraphQLArgument:
-        # Note: While this could make assertions to get the correctly typed value, that
-        # would throw immediately while type system validation with `validate_schema()`
-        # will produce more actionable results.
-        type_ = self.get_wrapped_type(value.type)
-        type_ = cast(GraphQLInputType, type_)
-        return GraphQLArgument(
-            type_=type_,
-            description=value.description.value if value.description else None,
-            default_value=value_from_ast(value.default_value, type_),
-            ast_node=value,
-        )
+    def build_argument_map(
+        self, args: Optional[Collection[InputValueDefinitionNode]]
+    ) -> GraphQLArgumentMap:
+        arg_map: GraphQLArgumentMap = {}
+        if args:
+            for arg in args:
+                # Note: While this could make assertions to get the correctly typed
+                # value, that would throw immediately while type system validation
+                # with validate_schema() will produce more actionable results.
+                type_ = cast(GraphQLInputType, self.get_wrapped_type(arg.type))
+                arg_map[arg.name.value] = GraphQLArgument(
+                    type_=type_,
+                    description=arg.description.value if arg.description else None,
+                    default_value=value_from_ast(arg.default_value, type_),
+                    ast_node=arg,
+                )
+        return arg_map
 
-    def build_input_field(self, value: InputValueDefinitionNode) -> GraphQLInputField:
-        # Note: While this could make assertions to get the correctly typed value, that
-        # would throw immediately while type system validation with `validate_schema()`
-        # will produce more actionable results.
-        type_ = self.get_wrapped_type(value.type)
-        type_ = cast(GraphQLInputType, type_)
-        return GraphQLInputField(
-            type_=type_,
-            description=value.description.value if value.description else None,
-            default_value=value_from_ast(value.default_value, type_),
-            ast_node=value,
-        )
+    def build_input_field_map(
+        self,
+        nodes: Collection[
+            Union[InputObjectTypeDefinitionNode, InputObjectTypeExtensionNode]
+        ],
+    ) -> GraphQLInputFieldMap:
+        input_field_map: GraphQLInputFieldMap = {}
+        for node in nodes:
+            if node.fields:
+                for field in node.fields:
+                    # Note: While this could make assertions to get the correctly typed
+                    # value, that would throw immediately while type system validation
+                    # with validate_schema() will produce more actionable results.
+                    type_ = cast(GraphQLInputType, self.get_wrapped_type(field.type))
+                    input_field_map[field.name.value] = GraphQLInputField(
+                        type_=type_,
+                        description=field.description.value
+                        if field.description
+                        else None,
+                        default_value=value_from_ast(field.default_value, type_),
+                        ast_node=field,
+                    )
+        return input_field_map
 
     @staticmethod
-    def build_enum_value(value: EnumValueDefinitionNode) -> GraphQLEnumValue:
-        return GraphQLEnumValue(
-            description=value.description.value if value.description else None,
-            deprecation_reason=get_deprecation_reason(value),
-            ast_node=value,
-        )
+    def build_enum_value_map(
+        nodes: Collection[Union[EnumTypeDefinitionNode, EnumTypeExtensionNode]]
+    ) -> GraphQLEnumValueMap:
+        enum_value_map: GraphQLEnumValueMap = {}
+        for node in nodes:
+            if node.values:
+                for value in node.values:
+                    # Note: While this could make assertions to get the correctly typed
+                    # value, that would throw immediately while type system validation
+                    # with validate_schema() will produce more actionable results.
+                    enum_value_map[value.name.value] = GraphQLEnumValue(
+                        description=value.description.value
+                        if value.description
+                        else None,
+                        deprecation_reason=get_deprecation_reason(value),
+                        ast_node=value,
+                    )
+        return enum_value_map
 
-    def build_type(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
-        name = ast_node.name.value
-        if name in std_type_map:
-            return std_type_map[name]
+    def build_interfaces(
+        self,
+        nodes: Collection[
+            Union[
+                InterfaceTypeDefinitionNode,
+                InterfaceTypeExtensionNode,
+                ObjectTypeDefinitionNode,
+                ObjectTypeExtensionNode,
+            ]
+        ],
+    ) -> List[GraphQLInterfaceType]:
+        interfaces: List[GraphQLInterfaceType] = []
+        for node in nodes:
+            if node.interfaces:
+                for type_ in node.interfaces:
+                    # Note: While this could make assertions to get the correctly typed
+                    # value, that would throw immediately while type system validation
+                    # with validate_schema() will produce more actionable results.
+                    interfaces.append(
+                        cast(GraphQLInterfaceType, self.get_named_type(type_))
+                    )
+        return interfaces
 
-        method = {
-            "object_type_definition": self._make_type_def,
-            "interface_type_definition": self._make_interface_def,
-            "enum_type_definition": self._make_enum_def,
-            "union_type_definition": self._make_union_def,
-            "scalar_type_definition": self._make_scalar_def,
-            "input_object_type_definition": self._make_input_object_def,
-        }.get(ast_node.kind)
-        if method:
-            return method(ast_node)  # type: ignore
+    def build_union_types(
+        self, nodes: Collection[Union[UnionTypeDefinitionNode, UnionTypeExtensionNode]],
+    ) -> List[GraphQLObjectType]:
+        types: List[GraphQLObjectType] = []
+        for node in nodes:
+            if node.types:
+                for type_ in node.types:
+                    # Note: While this could make assertions to get the correctly typed
+                    # value, that would throw immediately while type system validation
+                    # with validate_schema() will produce more actionable results.
+                    types.append(cast(GraphQLObjectType, self.get_named_type(type_)))
+        return types
 
-        # Not reachable. All possible type definition nodes have been considered.
-        raise TypeError(  # pragma: no cover
-            f"Unexpected type definition node: '{inspect(ast_node)}'."
-        )
+    def build_type_map(
+        self, nodes: Collection[TypeDefinitionNode]
+    ) -> Dict[str, GraphQLNamedType]:
+        type_map: Dict[str, GraphQLNamedType] = {}
+        for node in nodes:
+            name = node.name.value
+            type_map[name] = std_type_map.get(name) or self._build_type(node)
+        return type_map
 
-    def _make_type_def(self, ast_node: ObjectTypeDefinitionNode) -> GraphQLObjectType:
-        interface_nodes = ast_node.interfaces
-        field_nodes = ast_node.fields
+    def _build_type(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
+        try:
+            # object_type_definition_node is built with _build_object_type etc.
+            method = getattr(self, "_build_" + ast_node.kind[:-11])
+        except AttributeError:
+            # Not reachable. All possible type definition nodes have been considered.
+            raise TypeError(  # pragma: no cover
+                f"Unexpected type definition node: '{inspect(ast_node)}'."
+            )
+        else:
+            return method(ast_node)
 
-        # Note: While this could make early assertions to get the correctly typed
-        # values, that would throw immediately while type system validation with
-        # `validate_schema()` will produce more actionable results.
-        interfaces = cast(
-            Thunk[Collection[GraphQLInterfaceType]],
-            (
-                (lambda: [self.get_named_type(ref) for ref in interface_nodes])
-                if interface_nodes
-                else []
-            ),
-        )
-
-        fields = cast(
-            Thunk[GraphQLFieldMap],
-            (
-                (
-                    lambda: {
-                        field.name.value: self.build_field(field)
-                        for field in field_nodes
-                    }
-                )
-                if field_nodes
-                else {}
-            ),
-        )
-
+    def _build_object_type(
+        self, ast_node: ObjectTypeDefinitionNode
+    ) -> GraphQLObjectType:
         return GraphQLObjectType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            fields=fields,
-            interfaces=interfaces,
+            interfaces=lambda: self.build_interfaces([ast_node]),
+            fields=lambda: self.build_field_map([ast_node]),
             ast_node=ast_node,
         )
 
-    def _make_interface_def(
+    def _build_interface_type(
         self, ast_node: InterfaceTypeDefinitionNode
     ) -> GraphQLInterfaceType:
-        interface_nodes = ast_node.interfaces
-        field_nodes = ast_node.fields
-
-        # Note: While this could make assertions to get the correctly typed
-        # values below, that would throw immediately while type system
-        # validation with validate_schema() will produce more actionable results.
-        interfaces = cast(
-            Thunk[Collection[GraphQLInterfaceType]],
-            (lambda: [self.get_named_type(ref) for ref in interface_nodes])
-            if interface_nodes
-            else [],
-        )
-
-        fields = cast(
-            Thunk[GraphQLFieldMap],
-            (
-                lambda: {
-                    field.name.value: self.build_field(field) for field in field_nodes
-                }
-            )
-            if field_nodes
-            else {},
-        )
-
         return GraphQLInterfaceType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            interfaces=interfaces,
-            fields=fields,
+            interfaces=lambda: self.build_interfaces([ast_node]),
+            fields=lambda: self.build_field_map([ast_node]),
             ast_node=ast_node,
         )
 
-    def _make_enum_def(self, ast_node: EnumTypeDefinitionNode) -> GraphQLEnumType:
-        value_nodes = ast_node.values or FrozenList()
-
+    def _build_enum_type(self, ast_node: EnumTypeDefinitionNode) -> GraphQLEnumType:
         return GraphQLEnumType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            values={
-                value.name.value: self.build_enum_value(value) for value in value_nodes
-            },
+            values=self.build_enum_value_map([ast_node]),
             ast_node=ast_node,
         )
 
-    def _make_union_def(self, type_def: UnionTypeDefinitionNode) -> GraphQLUnionType:
-        type_nodes = type_def.types
-
-        # Note: While this could make assertions to get the correctly typed values
-        # below, that would throw immediately while type system validation with
-        # `validate_schema()` will get more actionable results.
-        types = cast(
-            Thunk[Collection[GraphQLObjectType]],
-            (lambda: [self.get_named_type(ref) for ref in type_nodes])
-            if type_nodes
-            else [],
-        )
-
+    def _build_union_type(self, ast_node: UnionTypeDefinitionNode) -> GraphQLUnionType:
         return GraphQLUnionType(
-            name=type_def.name.value,
-            description=type_def.description.value if type_def.description else None,
-            types=types,
-            ast_node=type_def,
+            name=ast_node.name.value,
+            description=ast_node.description.value if ast_node.description else None,
+            types=lambda: self.build_union_types([ast_node]),
+            ast_node=ast_node,
         )
 
     @staticmethod
-    def _make_scalar_def(ast_node: ScalarTypeDefinitionNode) -> GraphQLScalarType:
+    def _build_scalar_type(ast_node: ScalarTypeDefinitionNode) -> GraphQLScalarType:
         return GraphQLScalarType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
             ast_node=ast_node,
         )
 
-    def _make_input_object_def(
-        self, type_def: InputObjectTypeDefinitionNode
+    def _build_input_object_type(
+        self, ast_node: InputObjectTypeDefinitionNode
     ) -> GraphQLInputObjectType:
-        field_nodes = type_def.fields
-
-        fields = cast(
-            Thunk[GraphQLInputFieldMap],
-            (
-                lambda: {
-                    field.name.value: self.build_input_field(field)
-                    for field in field_nodes
-                }
-            )
-            if field_nodes
-            else {},
-        )
-
         return GraphQLInputObjectType(
-            name=type_def.name.value,
-            description=type_def.description.value if type_def.description else None,
-            fields=fields,
-            ast_node=type_def,
+            name=ast_node.name.value,
+            description=ast_node.description.value if ast_node.description else None,
+            fields=lambda: self.build_input_field_map([ast_node]),
+            ast_node=ast_node,
         )
 
 
