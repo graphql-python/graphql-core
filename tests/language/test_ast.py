@@ -80,48 +80,53 @@ def describe_location_class():
     source = Source("source")
 
     def initializes():
-        loc = Location(1, 2, token1, token2, source)
-        assert loc.start == 1
-        assert loc.end == 2
+        loc = Location(token1, token2, source)
+        assert loc.start == token1.start
+        assert loc.end == token2.end
         assert loc.start_token is token1
         assert loc.end_token is token2
         assert loc.source is source
 
     def can_stringify_with_start_and_end():
-        loc = Location(1, 2, token1, token2, source)
-        assert str(loc) == "1:2"
+        loc = Location(token1, token2, source)
+        assert str(loc) == "1:3"
 
     def has_representation_with_start_and_end():
-        loc = Location(1, 2, token1, token2, source)
-        assert repr(loc) == "<Location 1:2>"
+        loc = Location(token1, token2, source)
+        assert repr(loc) == "<Location 1:3>"
         assert inspect(loc) == repr(loc)
 
     def can_check_equality():
-        loc1 = Location(1, 2, token1, token2, source)
-        loc2 = Location(1, 2, token1, token2, source)
+        loc1 = Location(token1, token2, source)
+        loc2 = Location(token1, token2, source)
         assert loc2 == loc1
-        loc3 = Location(3, 2, token1, token2, source)
+        loc3 = Location(token1, token1, source)
         assert loc3 != loc1
-        loc4 = Location(1, 4, token1, token2, source)
+        loc4 = Location(token2, token2, source)
         assert loc4 != loc1
+        assert loc4 != loc3
 
     def can_check_equality_with_tuple_or_list():
-        loc = Location(1, 2, token1, token2, source)
-        assert loc == (1, 2)
-        assert loc == [1, 2]
-        assert not loc != (1, 2)
-        assert not loc != [1, 2]
-        assert loc != (3, 2)
-        assert loc != [1, 4]
+        loc = Location(token1, token2, source)
+        assert loc == (1, 3)
+        assert loc == [1, 3]
+        assert not loc != (1, 3)
+        assert not loc != [1, 3]
+        assert loc != (1, 2)
+        assert loc != [2, 3]
 
     def can_hash():
-        loc1 = Location(1, 2, token1, token2, source)
-        loc2 = Location(1, 2, token1, token2, source)
+        loc1 = Location(token1, token2, source)
+        loc2 = Location(token1, token2, source)
         assert loc2 == loc1
         assert hash(loc2) == hash(loc1)
-        loc3 = Location(1, 3, token1, token2, source)
+        loc3 = Location(token1, token1, source)
         assert loc3 != loc1
         assert hash(loc3) != hash(loc1)
+        loc4 = Location(token2, token2, source)
+        assert loc4 != loc1
+        assert hash(loc4) != hash(loc1)
+        assert hash(loc4) != hash(loc3)
 
 
 def describe_node_class():

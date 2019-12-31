@@ -959,9 +959,7 @@ class Parser:
         if not self._no_location:
             end_token = self._lexer.last_token
             source = self._lexer.source
-            return Location(
-                start_token.start, end_token.end, start_token, end_token, source
-            )
+            return Location(start_token, end_token, source)
         return None
 
     def peek(self, kind: TokenKind) -> bool:

@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from enum import Enum
-from typing import List, NamedTuple, Optional, Union
+from typing import List, Optional, Union
 
 from .source import Source
 from .token_kind import TokenKind
@@ -138,18 +138,27 @@ class Token:
         return f"{kind} {value!r}" if value else kind
 
 
-class Location(NamedTuple):
+class Location:
     """AST Location
 
     Contains a range of UTF-8 character offsets and token references that identify the
     region of the source from which the AST derived.
     """
 
+    __slots__ = ("start", "end", "start_token", "end_token", "source")
+
     start: int  # character offset at which this Node begins
     end: int  # character offset at which this Node ends
     start_token: Token  # Token at which this Node begins
     end_token: Token  # Token at which this Node ends.
     source: Source  # Source document the AST represents
+
+    def __init__(self, start_token: Token, end_token: Token, source: Source):
+        self.start = start_token.start
+        self.end = end_token.end
+        self.start_token = start_token
+        self.end_token = end_token
+        self.source = source
 
     def __str__(self):
         return f"{self.start}:{self.end}"
