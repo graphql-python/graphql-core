@@ -67,7 +67,24 @@ __all__ = [
 
 
 class Token:
+    """AST Token
+
+    Represents a range of characters represented by a lexical token within a Source.
+    """
+
     __slots__ = ("kind", "start", "end", "line", "column", "prev", "next", "value")
+
+    kind: TokenKind  # the kind of token
+    start: int  # the character offset at which this Node begins
+    end: int  # the character offset at which this Node ends
+    line: int  # the 1-indexed line number on which this Token appears
+    column: int  # the 1-indexed column number at which this Token begins
+    # for non-punctuation tokens, represents the interpreted value of the token:
+    value: Optional[str]
+    # Tokens exist as nodes in a double-linked-list amongst all tokens including
+    # ignored tokens. <SOF> is always the first node and <EOF> the last.
+    prev: Optional["Token"]
+    next: Optional["Token"]
 
     def __init__(
         self,
@@ -82,9 +99,9 @@ class Token:
         self.kind = kind
         self.start, self.end = start, end
         self.line, self.column = line, column
-        self.prev: Optional[Token] = prev
-        self.next: Optional[Token] = None
-        self.value: Optional[str] = value
+        self.value = value
+        self.prev = prev
+        self.next = None
 
     def __str__(self):
         return self.desc
