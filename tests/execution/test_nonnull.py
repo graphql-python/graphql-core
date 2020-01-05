@@ -1,5 +1,5 @@
 import re
-from inspect import isawaitable
+from asyncio import iscoroutine
 
 from pytest import mark  # type: ignore
 
@@ -107,7 +107,7 @@ def patch(data):
 
 async def execute_sync_and_async(query, root_value):
     sync_result = execute_query(query, root_value)
-    if isawaitable(sync_result):
+    if iscoroutine(sync_result):
         sync_result = await sync_result
     async_result = await execute_query(patch(query), root_value)
 

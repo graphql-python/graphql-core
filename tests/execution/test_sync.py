@@ -1,4 +1,4 @@
-from inspect import isawaitable
+from asyncio import iscoroutine
 from typing import Awaitable, cast
 
 from pytest import mark, raises  # type: ignore
@@ -55,7 +55,7 @@ def describe_execute_synchronously_when_possible():
     async def returns_a_promise_if_any_field_is_asynchronous():
         doc = "query Example { syncField, asyncField }"
         result = execute(schema, parse(doc), "rootValue")
-        assert isawaitable(result)
+        assert iscoroutine(result)
         result = cast(Awaitable, result)
         assert await result == (
             {"syncField": "rootValue", "asyncField": "rootValue"},

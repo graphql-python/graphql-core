@@ -1,5 +1,4 @@
-from asyncio import gather
-from inspect import isawaitable
+from asyncio import gather, iscoroutine
 from typing import (
     Any,
     Awaitable,
@@ -303,7 +302,7 @@ class ExecutionContext:
         Given a completed execution context and data, build the (data, errors) response
         defined by the "Response" section of the GraphQL spec.
         """
-        if isawaitable(data):
+        if iscoroutine(data):
 
             async def build_response_async():
                 return self.build_response(await data)  # type: ignore
@@ -351,7 +350,7 @@ class ExecutionContext:
             self.errors.append(error)
             return None
         else:
-            if isawaitable(result):
+            if iscoroutine(result):
                 # noinspection PyShadowingNames
                 async def await_result():
                     try:
@@ -384,12 +383,12 @@ class ExecutionContext:
             )
             if result is INVALID:
                 continue
-            if isawaitable(results):
+            if iscoroutine(results):
                 # noinspection PyShadowingNames
                 async def await_and_set_result(results, response_name, result):
                     awaited_results = await results
                     awaited_results[response_name] = (
-                        await result if isawaitable(result) else result
+                        await result if iscoroutine(result) else result
                     )
                     return awaited_results
 
@@ -397,7 +396,7 @@ class ExecutionContext:
                 results = await_and_set_result(
                     cast(Awaitable, results), response_name, result
                 )
-            elif isawaitable(result):
+            elif iscoroutine(result):
                 # noinspection PyShadowingNames
                 async def set_result(results, response_name, result):
                     results[response_name] = await result
@@ -407,7 +406,7 @@ class ExecutionContext:
                 results = set_result(results, response_name, result)
             else:
                 results[response_name] = result
-        if isawaitable(results):
+        if iscoroutine(results):
             # noinspection PyShadowingNames
             async def get_results():
                 return await cast(Awaitable, results)
@@ -436,7 +435,7 @@ class ExecutionContext:
             )
             if result is not INVALID:
                 results[response_name] = result
-                if isawaitable(result):
+                if iscoroutine(result):
                     append_awaitable(response_name)
 
         #  If there are no coroutines, we can just return the object
@@ -634,7 +633,7 @@ class ExecutionContext:
             # Note that contrary to the JavaScript implementation, we pass the context
             # value as part of the resolve info.
             result = resolve_fn(source, info, **args)
-            if isawaitable(result):
+            if iscoroutine(result):
                 # noinspection PyShadowingNames
                 async def await_result():
                     try:
@@ -665,13 +664,13 @@ class ExecutionContext:
         the execution context.
         """
         try:
-            if isawaitable(result):
+            if iscoroutine(result):
 
                 async def await_result():
                     value = self.complete_value(
                         return_type, field_nodes, info, path, await result
                     )
-                    if isawaitable(value):
+                    if iscoroutine(value):
                         return await value
                     return value
 
@@ -680,7 +679,7 @@ class ExecutionContext:
                 completed = self.complete_value(
                     return_type, field_nodes, info, path, result
                 )
-            if isawaitable(completed):
+            if iscoroutine(completed):
                 # noinspection PyShadowingNames
                 async def await_completed():
                     try:
@@ -830,7 +829,7 @@ class ExecutionContext:
                 item_type, field_nodes, info, field_path, item
             )
 
-            if isawaitable(completed_item):
+            if iscoroutine(completed_item):
                 append_awaitable(index)
             append_result(completed_item)
 
@@ -881,7 +880,7 @@ class ExecutionContext:
         resolve_type_fn = return_type.resolve_type or self.type_resolver
         runtime_type = resolve_type_fn(result, info, return_type)  # type: ignore
 
-        if isawaitable(runtime_type):
+        if iscoroutine(runtime_type):
 
             async def await_complete_object_value():
                 value = self.complete_object_value(
@@ -897,7 +896,7 @@ class ExecutionContext:
                     path,
                     result,
                 )
-                if isawaitable(value):
+                if iscoroutine(value):
                     return await value  # type: ignore
                 return value
 
@@ -965,7 +964,7 @@ class ExecutionContext:
         if return_type.is_type_of:
             is_type_of = return_type.is_type_of(result, info)
 
-            if isawaitable(is_type_of):
+            if iscoroutine(is_type_of):
 
                 async def collect_and_execute_subfields_async():
                     if not await is_type_of:  # type: ignore
@@ -1126,7 +1125,7 @@ def default_type_resolver(
         if type_.is_type_of:
             is_type_of_result = type_.is_type_of(value, info)
 
-            if isawaitable(is_type_of_result):
+            if iscoroutine(is_type_of_result):
                 append_awaitable_results(cast(Awaitable, is_type_of_result))
                 append_awaitable_types(type_)
             elif is_type_of_result:

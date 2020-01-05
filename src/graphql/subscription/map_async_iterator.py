@@ -1,6 +1,6 @@
-from asyncio import Event, ensure_future, Future, wait
+from asyncio import Event, ensure_future, Future, wait, iscoroutine
 from concurrent.futures import FIRST_COMPLETED
-from inspect import isasyncgen, isawaitable
+from inspect import isasyncgen
 from typing import AsyncIterable, Callable, Set
 
 __all__ = ["MapAsyncIterator"]
@@ -62,7 +62,7 @@ class MapAsyncIterator:
                 value = anext.result()
                 result = self.callback(value)
 
-        return await result if isawaitable(result) else result
+        return await result if iscoroutine(result) else result
 
     async def athrow(self, type_, value=None, traceback=None):
         if not self.is_closed:

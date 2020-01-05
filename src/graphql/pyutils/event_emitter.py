@@ -1,7 +1,6 @@
 from typing import cast, Callable, Dict, List, Optional
 
-from asyncio import AbstractEventLoop, Queue, ensure_future
-from inspect import isawaitable
+from asyncio import AbstractEventLoop, Queue, ensure_future, iscoroutine
 
 from collections import defaultdict
 
@@ -32,7 +31,7 @@ class EventEmitter:
             return False
         for listener in listeners:
             result = listener(*args, **kwargs)
-            if isawaitable(result):
+            if iscoroutine(result):
                 ensure_future(result, loop=self.loop)
         return True
 

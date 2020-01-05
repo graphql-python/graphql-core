@@ -1,5 +1,4 @@
-from asyncio import ensure_future
-from inspect import isawaitable
+from asyncio import ensure_future, iscoroutine
 from typing import Any, Awaitable, Dict, Union, Type, cast
 
 from .error import GraphQLError
@@ -84,7 +83,7 @@ async def graphql(
         execution_context_class,
     )
 
-    if isawaitable(result):
+    if iscoroutine(result):
         return await cast(Awaitable[ExecutionResult], result)
 
     return cast(ExecutionResult, result)
@@ -123,7 +122,7 @@ def graphql_sync(
     )
 
     # Assert that the execution was synchronous.
-    if isawaitable(result):
+    if iscoroutine(result):
         ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 

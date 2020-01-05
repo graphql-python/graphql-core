@@ -1,4 +1,4 @@
-from inspect import isawaitable
+from asyncio import iscoroutine
 from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Dict, Union, cast
 
 from ..error import GraphQLError, located_error
@@ -81,7 +81,7 @@ async def subscribe(
             operation_name,
             field_resolver,
         )
-        return await result if isawaitable(result) else result  # type: ignore
+        return await result if iscoroutine(result) else result  # type: ignore
 
     return MapAsyncIterator(result_or_stream, map_source_to_response)
 
@@ -162,7 +162,7 @@ async def create_source_event_stream(
     result = context.resolve_field_value_or_error(
         field_def, field_nodes, resolve_fn, root_value, info
     )
-    event_stream = await cast(Awaitable, result) if isawaitable(result) else result
+    event_stream = await cast(Awaitable, result) if iscoroutine(result) else result
     # If `event_stream` is an Error, rethrow a located error.
     if isinstance(event_stream, Exception):
         raise located_error(event_stream, field_nodes, path.as_list())
