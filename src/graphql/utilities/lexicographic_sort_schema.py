@@ -31,7 +31,10 @@ __all__ = ["lexicographic_sort_schema"]
 
 
 def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
-    """Sort GraphQLSchema."""
+    """Sort GraphQLSchema.
+
+    This function returns a sorted copy of the given GraphQLSchema.
+    """
 
     def replace_type(type_):
         if is_list_type(type_):
