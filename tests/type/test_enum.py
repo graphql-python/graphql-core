@@ -26,7 +26,7 @@ class ColorTypeEnumValues(Enum):
 class Complex1:
     # noinspection PyMethodMayBeStatic
     def some_random_function(self):
-        return {}
+        return None
 
 
 class Complex2:
