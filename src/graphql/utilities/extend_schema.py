@@ -129,29 +129,22 @@ def extend_schema(
         # validation with validate_schema() will produce more actionable results.
         return type_map[type_.name]
 
-    def get_merged_directives() -> List[GraphQLDirective]:
-        existing_directives: List[GraphQLDirective] = []
-        for directive in schema.directives:
-            kwargs = directive.to_kwargs()
-            existing_directives.append(
-                GraphQLDirective(
-                    **{  # type: ignore
-                        **kwargs,
-                        "args": {
-                            name: extend_arg(arg)
-                            for name, arg in kwargs["args"].items()
-                        },
-                    }
-                )
-            )
+    def replace_directive(directive: GraphQLDirective) -> GraphQLDirective:
+        kwargs = directive.to_kwargs()
+        return GraphQLDirective(
+            **{  # type: ignore
+                **kwargs,
+                "args": {name: extend_arg(arg) for name, arg in kwargs["args"].items()},
+            }
+        )
 
-        if not existing_directives:
+    def replace_directives(
+        directives: List[GraphQLDirective],
+    ) -> List[GraphQLDirective]:
+        if not directives:
             raise TypeError("schema must have default directives")
 
-        existing_directives.extend(
-            ast_builder.build_directive(node) for node in directive_defs
-        )
-        return existing_directives
+        return [replace_directive(directive) for directive in schema.directives]
 
     def extend_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         if is_introspection_type(type_) or is_specified_scalar_type(type_):
@@ -364,7 +357,8 @@ def extend_schema(
         mutation=get_operation(OperationType.MUTATION),
         subscription=get_operation(OperationType.SUBSCRIPTION),
         types=type_map.values(),
-        directives=get_merged_directives(),
+        directives=replace_directives(schema.directives)
+        + ast_builder.build_directives(directive_defs),
         ast_node=schema_def or schema.ast_node,
         extension_ast_nodes=(
             (

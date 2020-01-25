@@ -141,9 +141,7 @@ def build_ast_schema(
         }
     )
 
-    directives = [
-        ast_builder.build_directive(directive_def) for directive_def in directive_defs
-    ]
+    directives = ast_builder.build_directives(directive_defs)
 
     # If specified directives were not explicitly declared, add them.
     if not any(directive.name == "skip" for directive in directives):
@@ -225,6 +223,11 @@ class ASTDefinitionBuilder:
             args=self.build_argument_map(directive.arguments),
             ast_node=directive,
         )
+
+    def build_directives(
+        self, nodes: Collection[DirectiveDefinitionNode]
+    ) -> List[GraphQLDirective]:
+        return [self.build_directive(node) for node in nodes]
 
     def build_field_map(
         self,
