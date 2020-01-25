@@ -861,7 +861,7 @@ def describe_validate_values_of_correct_type():
                 """
             )
 
-        def partial_object_required_field_can_be_falsey():
+        def partial_object_required_field_can_be_falsy():
             assert_valid(
                 """
                 {

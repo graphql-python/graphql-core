@@ -56,7 +56,7 @@ fragment frag on Friend @onFragmentDefinition {
 }
 
 {
-  unnamed(truthy: true, falsey: false, nullish: null),
+  unnamed(truthy: true, falsy: false, nullish: null),
   query
 }
 
