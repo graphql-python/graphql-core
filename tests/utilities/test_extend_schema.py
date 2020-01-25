@@ -155,7 +155,9 @@ def describe_extend_schema():
             """
         )
 
-        result = graphql_sync(extended_schema, "{ newField }", {"newField": 123})
+        result = graphql_sync(
+            schema=extended_schema, source="{ newField }", root_value={"newField": 123}
+        )
         assert result == ({"newField": "123"}, None)
 
     def can_describe_the_extended_fields():

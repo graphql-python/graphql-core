@@ -93,7 +93,8 @@ schema = GraphQLSchema(
 def describe_execute_handles_mutation_execution_ordering():
     @mark.asyncio
     async def evaluates_mutations_serially():
-        doc = """
+        document = parse(
+            """
             mutation M {
               first: immediatelyChangeTheNumber(newNumber: 1) {
                 theNumber
@@ -112,8 +113,12 @@ def describe_execute_handles_mutation_execution_ordering():
               }
             }
             """
+        )
 
-        awaitable_result = execute(schema, parse(doc), Root(6))
+        root_value = Root(6)
+        awaitable_result = execute(
+            schema=schema, document=document, root_value=root_value
+        )
         assert isinstance(awaitable_result, Awaitable)
         mutation_result = await awaitable_result
 
@@ -130,7 +135,8 @@ def describe_execute_handles_mutation_execution_ordering():
 
     @mark.asyncio
     async def evaluates_mutations_correctly_in_presence_of_a_failed_mutation():
-        doc = """
+        document = parse(
+            """
             mutation M {
               first: immediatelyChangeTheNumber(newNumber: 1) {
                 theNumber
@@ -152,8 +158,12 @@ def describe_execute_handles_mutation_execution_ordering():
               }
             }
             """
+        )
 
-        awaitable_result = execute(schema, parse(doc), Root(6))
+        root_value = Root(6)
+        awaitable_result = execute(
+            schema=schema, document=document, root_value=root_value
+        )
         assert isinstance(awaitable_result, Awaitable)
         result = await awaitable_result
 

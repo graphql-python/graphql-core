@@ -16,12 +16,12 @@ from graphql.utilities import get_introspection_query
 
 def describe_introspection():
     def executes_an_introspection_query():
-        empty_schema = GraphQLSchema(
+        schema = GraphQLSchema(
             GraphQLObjectType("QueryRoot", {"onlyField": GraphQLField(GraphQLString)})
         )
+        source = get_introspection_query(descriptions=False)
 
-        query = get_introspection_query(descriptions=False)
-        result = graphql_sync(empty_schema, query)
+        result = graphql_sync(schema=schema, source=source)
         assert result.errors is None
         assert result.data == {
             "__schema": {
@@ -874,7 +874,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type(name: "TestInputObject") {
                 kind
@@ -905,7 +905,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "__type": {
                     "kind": "INPUT_OBJECT",
@@ -954,7 +954,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type(name: "TestType") {
                 name
@@ -962,7 +962,10 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == ({"__type": {"name": "TestType"}}, None)
+        assert graphql_sync(schema=schema, source=source) == (
+            {"__type": {"name": "TestType"}},
+            None,
+        )
 
     def identifies_deprecated_fields():
         TestType = GraphQLObjectType(
@@ -976,7 +979,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type(name: "TestType") {
                 name
@@ -989,7 +992,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "__type": {
                     "name": "TestType",
@@ -1022,7 +1025,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type(name: "TestType") {
                 name
@@ -1039,7 +1042,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "__type": {
                     "name": "TestType",
@@ -1064,7 +1067,7 @@ def describe_introspection():
         TestType = GraphQLObjectType("TestType", {"testEnum": GraphQLField(TestEnum)})
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type(name: "TestEnum") {
                 name
@@ -1077,7 +1080,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "__type": {
                     "name": "TestEnum",
@@ -1116,7 +1119,7 @@ def describe_introspection():
         TestType = GraphQLObjectType("TestType", {"testEnum": GraphQLField(TestEnum)})
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type(name: "TestEnum") {
                   name
@@ -1133,7 +1136,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "__type": {
                     "name": "TestEnum",
@@ -1161,14 +1164,14 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(TestType)
-        request = """
+        source = """
             {
               __type {
                 name
               }
             }
             """
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             None,
             [
                 {
@@ -1185,8 +1188,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(QueryRoot)
-
-        request = """
+        source = """
             {
               schemaType: __type(name: "__Schema") {
                 name,
@@ -1199,7 +1201,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "schemaType": {
                     "name": "__Schema",
@@ -1245,7 +1247,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(QueryRoot)
-        request = """
+        source = """
             {
               typeKindType: __type(name: "__TypeKind") {
                 name,
@@ -1258,7 +1260,7 @@ def describe_introspection():
             }
             """
 
-        assert graphql_sync(schema, request) == (
+        assert graphql_sync(schema=schema, source=source) == (
             {
                 "typeKindType": {
                     "name": "__TypeKind",
@@ -1325,5 +1327,5 @@ def describe_introspection():
             called_for_fields.add(f"{info.parent_type.name}::{info.field_name}")
             return value
 
-        graphql_sync(schema, source, field_resolver=field_resolver)
+        graphql_sync(schema=schema, source=source, field_resolver=field_resolver)
         assert not called_for_fields

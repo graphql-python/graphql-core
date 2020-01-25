@@ -145,7 +145,7 @@ john = Person("John", [garfield, odie], [liz, odie])
 
 def describe_execute_union_and_intersection_types():
     def can_introspect_on_union_and_intersection_types():
-        ast = parse(
+        document = parse(
             """
             {
               Named: __type(name: "Named") {
@@ -179,7 +179,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema, ast) == (
+        assert execute(schema=schema, document=document) == (
             {
                 "Named": {
                     "kind": "INTERFACE",
@@ -226,7 +226,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_using_union_types():
         # NOTE: This is an *invalid* query, but it should be *executable*.
-        ast = parse(
+        document = parse(
             """
             {
               __typename
@@ -241,7 +241,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema, ast, john) == (
+        assert execute(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -255,7 +255,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_union_types_with_inline_fragment():
         # This is the valid version of the query in the above test.
-        ast = parse(
+        document = parse(
             """
             {
               __typename
@@ -275,7 +275,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema, ast, john) == (
+        assert execute(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -289,7 +289,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_using_interface_types():
         # NOTE: This is an *invalid* query, but it should be a *executable*.
-        ast = parse(
+        document = parse(
             """
             {
               __typename
@@ -304,7 +304,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema, ast, john) == (
+        assert execute(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -318,7 +318,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_interface_types_with_inline_fragment():
         # This is the valid version of the query in the above test.
-        ast = parse(
+        document = parse(
             """
             {
               __typename
@@ -351,7 +351,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema, ast, john) == (
+        assert execute(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -373,7 +373,7 @@ def describe_execute_union_and_intersection_types():
         )
 
     def allows_fragment_conditions_to_be_abstract_types():
-        ast = parse(
+        document = parse(
             """
             {
               __typename
@@ -420,7 +420,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema, ast, john) == (
+        assert execute(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -446,6 +446,7 @@ def describe_execute_union_and_intersection_types():
             None,
         )
 
+    # noinspection PyPep8Naming
     def gets_execution_info_in_resolver():
         encountered = {}
 
@@ -469,20 +470,19 @@ def describe_execute_union_and_intersection_types():
         )
 
         schema2 = GraphQLSchema(PersonType2)
+        document = parse("{ name, friends { name } }")
+        root_value = Person("John", [], [liz])
+        context_value = {"authToken": "123abc"}
 
-        john2 = Person("John", [], [liz])
-
-        context = {"authToken": "123abc"}
-
-        ast = parse("{ name, friends { name } }")
-
-        assert execute(schema2, ast, john2, context) == (
-            {"name": "John", "friends": [{"name": "Liz"}]},
-            None,
-        )
+        assert execute(
+            schema=schema2,
+            document=document,
+            root_value=root_value,
+            context_value=context_value,
+        ) == ({"name": "John", "friends": [{"name": "Liz"}]}, None,)
 
         assert encountered == {
             "schema": schema2,
-            "root_value": john2,
-            "context": context,
+            "root_value": root_value,
+            "context": context_value,
         }

@@ -96,9 +96,10 @@ schema = build_schema(
 
 
 def execute_query(query, root_value):
-    return execute(schema, parse(query), root_value)
+    return execute(schema=schema, document=parse(query), root_value=root_value)
 
 
+# avoids also doing any nests
 def patch(data):
     return re.sub(
         r"\bsyncNonNull\b", "promiseNonNull", re.sub(r"\bsync\b", "promise", data)

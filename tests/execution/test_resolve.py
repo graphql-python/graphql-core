@@ -16,42 +16,38 @@ def describe_execute_resolve_function():
         return GraphQLSchema(GraphQLObjectType("Query", {"test": test_field}))
 
     def default_function_accesses_attributes():
-        schema = _test_schema(GraphQLField(GraphQLString))
-
-        class Source:
+        class RootValue:
             test = "testValue"
 
-        assert graphql_sync(schema, "{ test }", Source()) == (
-            {"test": "testValue"},
-            None,
-        )
+        assert graphql_sync(
+            schema=_test_schema(GraphQLField(GraphQLString)),
+            source="{ test }",
+            root_value=RootValue(),
+        ) == ({"test": "testValue"}, None,)
 
     def default_function_accesses_keys():
-        schema = _test_schema(GraphQLField(GraphQLString))
+        root_value = {"test": "testValue"}
 
-        source = {"test": "testValue"}
-
-        assert graphql_sync(schema, "{ test }", source) == ({"test": "testValue"}, None)
+        assert graphql_sync(
+            schema=_test_schema(GraphQLField(GraphQLString)),
+            source="{ test }",
+            root_value=root_value,
+        ) == ({"test": "testValue"}, None)
 
     def default_function_calls_methods():
-        schema = _test_schema(GraphQLField(GraphQLString))
-
-        class Source:
-            _secret = "testValue"
+        class RootValue:
+            _secret = "secretValue"
 
             def test(self, _info):
                 return self._secret
 
-        assert graphql_sync(schema, "{ test }", Source()) == (
-            {"test": "testValue"},
-            None,
-        )
+        assert graphql_sync(
+            schema=_test_schema(GraphQLField(GraphQLString)),
+            source="{ test }",
+            root_value=RootValue(),
+        ) == ({"test": "secretValue"}, None,)
 
     def default_function_passes_args_and_context():
-        schema = _test_schema(
-            GraphQLField(GraphQLInt, args={"addend1": GraphQLArgument(GraphQLInt)})
-        )
-
         class Adder:
             _num: int
 
@@ -61,15 +57,24 @@ def describe_execute_resolve_function():
             def test(self, info, addend1):
                 return self._num + addend1 + info.context.addend2
 
-        source = Adder(700)
+        root_value = Adder(700)
 
-        class Context:
+        schema = _test_schema(
+            GraphQLField(GraphQLInt, args={"addend1": GraphQLArgument(GraphQLInt)})
+        )
+
+        class ContextValue:
             addend2 = 9
 
-        assert graphql_sync(schema, "{ test(addend1: 80) }", source, Context()) == (
-            {"test": 789},
-            None,
-        )
+        context_value = ContextValue()
+        source = "{ test(addend1: 80) }"
+
+        assert graphql_sync(
+            schema=schema,
+            source=source,
+            root_value=root_value,
+            context_value=context_value,
+        ) == ({"test": 789}, None,)
 
     def uses_provided_resolve_function():
         schema = _test_schema(
@@ -83,21 +88,27 @@ def describe_execute_resolve_function():
             )
         )
 
-        assert graphql_sync(schema, "{ test }") == ({"test": "[None, {}]"}, None)
+        def execute(source, root_value=None, context_value=None):
+            return graphql_sync(
+                schema=schema,
+                source=source,
+                root_value=root_value,
+                context_value=context_value,
+            )
 
-        assert graphql_sync(schema, "{ test }", "Source!") == (
-            {"test": "['Source!', {}]"},
-            None,
-        )
+        assert execute("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert graphql_sync(schema, '{ test(aStr: "String!") }', "Source!") == (
+        assert execute("{ test }", "Source!") == ({"test": "['Source!', {}]"}, None,)
+
+        assert execute('{ test(aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'aStr': 'String!'}]"},
             None,
         )
 
-        assert graphql_sync(
-            schema, '{ test(aInt: -123, aStr: "String!") }', "Source!"
-        ) == ({"test": "['Source!', {'aStr': 'String!', 'aInt': -123}]"}, None)
+        assert execute('{ test(aInt: -123, aStr: "String!") }', "Source!") == (
+            {"test": "['Source!', {'aStr': 'String!', 'aInt': -123}]"},
+            None,
+        )
 
     def transforms_arguments_using_out_names():
         # This is an extension of GraphQL.js.
@@ -112,21 +123,22 @@ def describe_execute_resolve_function():
             )
         )
 
-        assert graphql_sync(schema, "{ test }") == ({"test": "[None, {}]"}, None)
+        def execute(source, root_value=None):
+            return graphql_sync(schema=schema, source=source, root_value=root_value)
 
-        assert graphql_sync(schema, "{ test }", "Source!") == (
-            {"test": "['Source!', {}]"},
-            None,
-        )
+        assert execute("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert graphql_sync(schema, '{ test(aStr: "String!") }', "Source!") == (
+        assert execute("{ test }", "Source!") == ({"test": "['Source!', {}]"}, None,)
+
+        assert execute('{ test(aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'a_str': 'String!'}]"},
             None,
         )
 
-        assert graphql_sync(
-            schema, '{ test(aInt: -123, aStr: "String!") }', "Source!"
-        ) == ({"test": "['Source!', {'a_str': 'String!', 'a_int': -123}]"}, None)
+        assert execute('{ test(aInt: -123, aStr: "String!") }', "Source!") == (
+            {"test": "['Source!', {'a_str': 'String!', 'a_int': -123}]"},
+            None,
+        )
 
     def transforms_arguments_with_inputs_using_out_names():
         # This is an extension of GraphQL.js.
@@ -148,14 +160,17 @@ def describe_execute_resolve_function():
             )
         )
 
-        assert graphql_sync(schema, "{ test }") == ({"test": "[None, {}]"}, None)
+        def execute(source, root_value=None):
+            return graphql_sync(schema=schema, source=source, root_value=root_value,)
 
-        assert graphql_sync(
-            schema, '{ test(aInput: {inputOne: "String!"}) }', "Source!"
-        ) == ({"test": "['Source!', {'a_input': {'input_one': 'String!'}}]"}, None)
+        assert execute("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert graphql_sync(
-            schema,
+        assert execute('{ test(aInput: {inputOne: "String!"}) }', "Source!") == (
+            {"test": "['Source!', {'a_input': {'input_one': 'String!'}}]"},
+            None,
+        )
+
+        assert execute(
             '{ test(aInput: {inputRecursive: {inputOne: "SourceRecursive!"}}) }',
             "Source!",
         ) == (

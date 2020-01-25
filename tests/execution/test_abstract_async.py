@@ -96,7 +96,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
+        source = """
             {
               pets {
                 name
@@ -110,7 +110,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             }
             """
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         assert result == (
             {
                 "pets": [
@@ -161,7 +161,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
+        source = """
             {
               pets {
                 name
@@ -175,7 +175,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             }
             """
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         # Note: we get two errors, because first all types are resolved
         # and only then they are checked sequentially
         assert result.data == {"pets": [None, None]}
@@ -229,7 +229,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             )
         )
 
-        query = """
+        source = """
             {
               pets {
                 ... on Dog {
@@ -244,7 +244,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             }
             """
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         assert result == (
             {
                 "pets": [
@@ -306,7 +306,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
+        source = """
             {
               pets {
                 name
@@ -320,7 +320,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             }
             """
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         assert result.data == {
             "pets": [
                 {"name": "Odie", "woofs": True},
@@ -382,7 +382,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             )
         )
 
-        query = """
+        source = """
             {
               pets {
                 ... on Dog {
@@ -397,7 +397,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             }
             """
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         assert result.data == {
             "pets": [
                 {"name": "Odie", "woofs": True},
@@ -454,7 +454,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """{
+        source = """{
           pets {
             name
             ... on Dog {
@@ -466,7 +466,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
           }
         }"""
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         assert result == (
             {
                 "pets": [
@@ -514,7 +514,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """{
+        source = """{
           pets {
             name
             ... on Dog {
@@ -526,7 +526,7 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
           }
         }"""
 
-        result = await graphql(schema, query)
+        result = await graphql(schema=schema, source=source)
         assert result == (
             {"pets": [None, None]},
             [

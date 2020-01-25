@@ -107,7 +107,8 @@ def describe_execute_handles_execution_with_a_complex_schema():
                 self.width = f"{width}"
                 self.height = f"{height}"
 
-        request = """
+        document = parse(
+            """
             {
               feed {
                 id,
@@ -140,10 +141,11 @@ def describe_execute_handles_execution_with_a_complex_schema():
               notdefined
             }
             """
+        )
 
         # Note: this is intentionally not validating to ensure appropriate
         # behavior occurs when executing an invalid query.
-        assert execute(BlogSchema, parse(request)) == (
+        assert execute(schema=BlogSchema, document=document) == (
             {
                 "feed": [
                     {"id": "1", "title": "My Article 1"},

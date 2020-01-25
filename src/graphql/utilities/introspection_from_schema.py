@@ -22,11 +22,11 @@ def introspection_from_schema(
     This is the inverse of build_client_schema. The primary use case is outside of the
     server context, for instance when doing schema comparisons.
     """
-    query_ast = parse(get_introspection_query(descriptions))
+    document = parse(get_introspection_query(descriptions))
 
     from ..execution.execute import execute, ExecutionResult
 
-    result = execute(schema, query_ast)
+    result = execute(schema, document)
     if not isinstance(result, ExecutionResult):
         raise RuntimeError("Introspection cannot be executed")
     if result.errors or not result.data:

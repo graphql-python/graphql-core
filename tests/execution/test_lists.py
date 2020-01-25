@@ -37,11 +37,11 @@ def get_response(test_type, test_data):
         },
     )
 
-    schema = GraphQLSchema(data_type)
-
-    ast = parse("{ nest { test } }")
-
-    return execute(schema, ast, data)
+    return execute(
+        schema=GraphQLSchema(data_type),
+        document=parse("{ nest { test } }"),
+        context_value=data,
+    )
 
 
 def check_response(response, expected):

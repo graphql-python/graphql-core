@@ -66,9 +66,9 @@ def describe_schema_builder():
             )
         )
 
-        data = namedtuple("Data", "str")(123)  # type: ignore
+        root_value = namedtuple("Data", "str")(123)  # type: ignore
 
-        result = graphql_sync(schema, "{ str }", data)
+        result = graphql_sync(schema=schema, source="{ str }", root_value=root_value)
         assert result == ({"str": "123"}, None)
 
     def can_build_a_schema_directly_from_the_source():
@@ -79,13 +79,14 @@ def describe_schema_builder():
             }
             """
         )
+        source = "{ add(x: 34, y: 55) }"
 
         # noinspection PyMethodMayBeStatic
-        class Root:
+        class RootValue:
             def add(self, _info, x, y):
                 return x + y
 
-        assert graphql_sync(schema, "{ add(x: 34, y: 55) }", Root()) == (
+        assert graphql_sync(schema=schema, source=source, root_value=RootValue()) == (
             {"add": 89},
             None,
         )
@@ -453,7 +454,7 @@ def describe_schema_builder():
             """
         )
 
-        query = """
+        source = """
             {
               fruits {
                 ... on Apple {
@@ -469,14 +470,17 @@ def describe_schema_builder():
         expected = ({"fruits": [{"color": "green"}, {"length": 5}]}, None)
 
         def using_dicts():
-            root = {
+            root_value = {
                 "fruits": [
                     {"color": "green", "__typename": "Apple"},
                     {"length": 5, "__typename": "Banana"},
                 ]
             }
 
-            assert graphql_sync(schema, query, root) == expected
+            assert (
+                graphql_sync(schema=schema, source=source, root_value=root_value)
+                == expected
+            )
 
         def using_objects():
             class Apple:
@@ -487,10 +491,13 @@ def describe_schema_builder():
                 __typename = "Banana"
                 length = 5
 
-            class Root:
+            class RootValue:
                 fruits = [Apple(), Banana()]
 
-            assert graphql_sync(schema, query, Root()) == expected
+            assert (
+                graphql_sync(schema=schema, source=source, root_value=RootValue())
+                == expected
+            )
 
     def describe_specifying_interface_type_using_typename():
         schema = build_schema(
@@ -515,7 +522,7 @@ def describe_schema_builder():
             """
         )
 
-        query = """
+        source = """
             {
               characters {
                 name
@@ -540,7 +547,7 @@ def describe_schema_builder():
         )
 
         def using_dicts():
-            root = {
+            root_value = {
                 "characters": [
                     {"name": "Han Solo", "totalCredits": 10, "__typename": "Human"},
                     {
@@ -551,7 +558,10 @@ def describe_schema_builder():
                 ]
             }
 
-            assert graphql_sync(schema, query, root) == expected
+            assert (
+                graphql_sync(schema=schema, source=source, root_value=root_value)
+                == expected
+            )
 
         def using_objects():
             class Human:
@@ -564,10 +574,13 @@ def describe_schema_builder():
                 name = "R2-D2"
                 primaryFunction = "Astromech"
 
-            class Root:
+            class RootValue:
                 characters = [Human(), Droid()]
 
-            assert graphql_sync(schema, query, Root()) == expected
+            assert (
+                graphql_sync(schema=schema, source=source, root_value=RootValue())
+                == expected
+            )
 
     def custom_scalar():
         sdl = dedent(
