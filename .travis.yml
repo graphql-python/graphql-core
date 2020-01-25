@@ -18,7 +18,7 @@ cache:
     - "$HOME/.cache/pip"
     - "$TRAVIS_BUILD_DIR/.tox"
 install:
-  - pip install "poetry>=1.0.0"
+  - pip install "poetry>=1,<2"
   - poetry install
 script:
   - tox -e $TOXENV -- --cov-report=term-missing --cov=graphql
@@ -30,7 +30,7 @@ deploy:
   on:
     branch: master
     tags: true
-    python: 3.7
+    python: 3.8
   skip_existing: true
   user: mvanlonden
   password:
