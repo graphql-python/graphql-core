@@ -29,8 +29,7 @@ def cycle_introspection(sdl_string):
 
     This function does a full cycle of going from a string with the contents of the SDL,
     build in-memory GraphQLSchema from it, produce a client-side representation of the
-    schema by using "build_client_schema" and then finally printing that that schema
-    into the SDL.
+    schema by using "build_client_schema" and then return that schema printed as SDL.
     """
     server_schema = build_schema(sdl_string)
     initial_introspection = introspection_from_schema(server_schema)
@@ -53,7 +52,7 @@ def describe_type_system_build_schema_from_introspection():
               query: Simple
             }
 
-            """This is simple type"""
+            """This is a simple type"""
             type Simple {
               """This is a string field"""
               string: String
@@ -144,7 +143,7 @@ def describe_type_system_build_schema_from_introspection():
         custom_scalar = schema.get_type("CustomScalar")
         assert client_schema.get_type("CustomScalar") is not custom_scalar
 
-    def include_standard_type_only_if_it_is_used():
+    def includes_standard_types_only_if_they_are_used():
         schema = build_schema(
             """
             type Query {
@@ -582,7 +581,7 @@ def describe_type_system_build_schema_from_introspection():
             assert str(exc_info.value) == (
                 "Invalid or incomplete introspection result. Ensure that you"
                 " are passing the 'data' attribute of an introspection response"
-                " and no 'errors' were returned alongside: None"
+                " and no 'errors' were returned alongside: None."
             )
 
             with raises(TypeError) as exc_info:
@@ -592,7 +591,7 @@ def describe_type_system_build_schema_from_introspection():
             assert str(exc_info.value) == (
                 "Invalid or incomplete introspection result. Ensure that you"
                 " are passing the 'data' attribute of an introspection response"
-                " and no 'errors' were returned alongside: {}"
+                " and no 'errors' were returned alongside: {}."
             )
 
         def throws_when_referenced_unknown_type():
@@ -646,7 +645,7 @@ def describe_type_system_build_schema_from_introspection():
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
-            assert str(exc_info.value) == "Unknown type reference: {}"
+            assert str(exc_info.value) == "Unknown type reference: {}."
 
         def throws_when_missing_kind():
             introspection = introspection_from_schema(dummy_schema)
@@ -659,14 +658,13 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["kind"] == "OBJECT"
             del query_type_introspection["kind"]
 
-            with raises(TypeError) as exc_info:
-                build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Invalid or incomplete introspection result."
+            with raises(
+                TypeError,
+                match=r"^Invalid or incomplete introspection result\."
                 " Ensure that a full introspection query is used"
-                " in order to build a client schema: {'name': 'Query',"
-            )
+                r" in order to build a client schema: {'name': 'Query', .*}\.$",
+            ):
+                build_client_schema(introspection)
 
         def throws_when_missing_interfaces():
             introspection = introspection_from_schema(dummy_schema)
@@ -679,14 +677,13 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["interfaces"] == []
             del query_type_introspection["interfaces"]
 
-            with raises(TypeError) as exc_info:
-                build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Query interfaces cannot be resolved:"
+            with raises(
+                TypeError,
+                match="^Query interfaces cannot be resolved:"
                 " Introspection result missing interfaces:"
-                " {'kind': 'OBJECT', 'name': 'Query',"
-            )
+                r" {'kind': 'OBJECT', 'name': 'Query', .*}\.$",
+            ):
+                build_client_schema(introspection)
 
         def legacy_support_for_interfaces_with_null_as_interfaces_field():
             introspection = introspection_from_schema(dummy_schema)
@@ -713,14 +710,13 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["fields"]
             del query_type_introspection["fields"]
 
-            with raises(TypeError) as exc_info:
-                build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Query fields cannot be resolved:"
+            with raises(
+                TypeError,
+                match="^Query fields cannot be resolved:"
                 " Introspection result missing fields:"
-                " {'kind': 'OBJECT', 'name': 'Query',"
-            )
+                r" {'kind': 'OBJECT', 'name': 'Query', .*}\.$",
+            ):
+                build_client_schema(introspection)
 
         def throws_when_missing_field_args():
             introspection = introspection_from_schema(dummy_schema)
@@ -733,13 +729,12 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["fields"][0]["args"]
             del query_type_introspection["fields"][0]["args"]
 
-            with raises(TypeError) as exc_info:
+            with raises(
+                TypeError,
+                match="^Query fields cannot be resolved:"
+                r" Introspection result missing field args: {'name': 'foo', .*}\.$",
+            ):
                 build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Query fields cannot be resolved:"
-                " Introspection result missing field args: {'name': 'foo',"
-            )
 
         def throws_when_output_type_is_used_as_an_arg_type():
             introspection = introspection_from_schema(dummy_schema)
@@ -797,13 +792,12 @@ def describe_type_system_build_schema_from_introspection():
             assert some_union_introspection["possibleTypes"]
             del some_union_introspection["possibleTypes"]
 
-            with raises(TypeError) as exc_info:
+            with raises(
+                TypeError,
+                match="^Introspection result missing possibleTypes:"
+                r" {'kind': 'UNION', 'name': 'SomeUnion', .*}\.$",
+            ):
                 build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Introspection result missing possibleTypes:"
-                " {'kind': 'UNION', 'name': 'SomeUnion',"
-            )
 
         def throws_when_missing_enum_values():
             introspection = introspection_from_schema(dummy_schema)
@@ -816,13 +810,12 @@ def describe_type_system_build_schema_from_introspection():
             assert some_enum_introspection["enumValues"]
             del some_enum_introspection["enumValues"]
 
-            with raises(TypeError) as exc_info:
+            with raises(
+                TypeError,
+                match="^Introspection result missing enumValues:"
+                r" {'kind': 'ENUM', 'name': 'SomeEnum', .*}\.$",
+            ):
                 build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Introspection result missing enumValues:"
-                " {'kind': 'ENUM', 'name': 'SomeEnum',"
-            )
 
         def throws_when_missing_input_fields():
             introspection = introspection_from_schema(dummy_schema)
@@ -835,13 +828,12 @@ def describe_type_system_build_schema_from_introspection():
             assert some_input_object_introspection["inputFields"]
             del some_input_object_introspection["inputFields"]
 
-            with raises(TypeError) as exc_info:
+            with raises(
+                TypeError,
+                match="^Introspection result missing inputFields:"
+                r" {'kind': 'INPUT_OBJECT', 'name': 'SomeInputObject', .*}\.$",
+            ):
                 build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Introspection result missing inputFields:"
-                " {'kind': 'INPUT_OBJECT', 'name': 'SomeInputObject',"
-            )
 
         def throws_when_missing_directive_locations():
             introspection = introspection_from_schema(dummy_schema)
@@ -851,13 +843,12 @@ def describe_type_system_build_schema_from_introspection():
             assert some_directive_introspection["locations"] == ["QUERY"]
             del some_directive_introspection["locations"]
 
-            with raises(TypeError) as exc_info:
+            with raises(
+                TypeError,
+                match="^Introspection result missing directive locations:"
+                r" {'name': 'SomeDirective', .*}\.$",
+            ):
                 build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Introspection result missing directive locations:"
-                " {'name': 'SomeDirective',"
-            )
 
         def throws_when_missing_directive_args():
             introspection = introspection_from_schema(dummy_schema)
@@ -867,13 +858,12 @@ def describe_type_system_build_schema_from_introspection():
             assert some_directive_introspection["args"] == []
             del some_directive_introspection["args"]
 
-            with raises(TypeError) as exc_info:
+            with raises(
+                TypeError,
+                match="^Introspection result missing directive args:"
+                r" {'name': 'SomeDirective', .*}\.$",
+            ):
                 build_client_schema(introspection)
-
-            assert str(exc_info.value).startswith(
-                "Introspection result missing directive args:"
-                " {'name': 'SomeDirective',"
-            )
 
     def describe_very_deep_decorators_are_not_supported():
         def fails_on_very_deep_lists_more_than_7_levels():
