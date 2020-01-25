@@ -867,7 +867,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
         document = parse("{ foo }")
 
-        def field_resolver(source_, info):
+        def field_resolver(_source, info):
             # For the purposes of test, just return the name of the field!
             return info.field_name
 

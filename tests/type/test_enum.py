@@ -50,7 +50,7 @@ QueryType = GraphQLObjectType(
                 "fromInt": GraphQLArgument(GraphQLInt),
                 "fromString": GraphQLArgument(GraphQLString),
             },
-            resolve=lambda value, info, **args: args.get("fromInt")
+            resolve=lambda _source, info, **args: args.get("fromInt")
             or args.get("fromString")
             or args.get("fromEnum"),
         ),
@@ -60,7 +60,7 @@ QueryType = GraphQLObjectType(
                 "fromEnum": GraphQLArgument(ColorType),
                 "fromInt": GraphQLArgument(GraphQLInt),
             },
-            resolve=lambda value, info, **args: args.get("fromInt")
+            resolve=lambda _source, info, **args: args.get("fromInt")
             or args.get("fromEnum"),
         ),
         "complexEnum": GraphQLField(
@@ -72,7 +72,7 @@ QueryType = GraphQLObjectType(
                 "provideGoodValue": GraphQLArgument(GraphQLBoolean),
                 "provideBadValue": GraphQLArgument(GraphQLBoolean),
             },
-            resolve=lambda value, info, **args:
+            resolve=lambda _source, info, **args:
             # Note: this is one of the references of the internal values
             # which ComplexEnum allows.
             complex2 if args.get("provideGoodValue")
@@ -89,7 +89,7 @@ MutationType = GraphQLObjectType(
         "favoriteEnum": GraphQLField(
             ColorType,
             args={"color": GraphQLArgument(ColorType)},
-            resolve=lambda value, info, color=None: color,
+            resolve=lambda _source, info, color=None: color,
         )
     },
 )
@@ -100,7 +100,7 @@ SubscriptionType = GraphQLObjectType(
         "subscribeToEnum": GraphQLField(
             ColorType,
             args={"color": GraphQLArgument(ColorType)},
-            resolve=lambda value, info, color=None: color,
+            resolve=lambda _source, info, color=None: color,
         )
     },
 )

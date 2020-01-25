@@ -469,7 +469,7 @@ SchemaMetaFieldDef = GraphQLField(
     GraphQLNonNull(__Schema),  # name = '__schema'
     description="Access the current type schema of this server.",
     args={},
-    resolve=lambda source, info: info.schema,
+    resolve=lambda _source, info: info.schema,
 )
 
 
@@ -477,7 +477,7 @@ TypeMetaFieldDef = GraphQLField(
     __Type,  # name = '__type'
     description="Request the type information of a single type.",
     args={"name": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    resolve=lambda source, info, **args: info.schema.get_type(args["name"]),
+    resolve=lambda _source, info, **args: info.schema.get_type(args["name"]),
 )
 
 
@@ -485,7 +485,7 @@ TypeNameMetaFieldDef = GraphQLField(
     GraphQLNonNull(GraphQLString),  # name='__typename'
     description="The name of the current Object type at runtime.",
     args={},
-    resolve=lambda source, info, **args: info.parent_type.name,
+    resolve=lambda _source, info, **_args: info.parent_type.name,
 )
 
 

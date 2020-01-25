@@ -449,7 +449,7 @@ def describe_execute_union_and_intersection_types():
     def gets_execution_info_in_resolver():
         encountered = {}
 
-        def resolve_type(_obj, info, _type):
+        def resolve_type(_source, info, _type):
             encountered["context"] = info.context
             encountered["schema"] = info.schema
             encountered["root_value"] = info.root_value

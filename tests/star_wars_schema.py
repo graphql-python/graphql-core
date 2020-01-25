@@ -229,7 +229,7 @@ query_type = GraphQLObjectType(
                     ),
                 )
             },
-            resolve=lambda root, _info, episode=None: get_hero(episode),
+            resolve=lambda _source, _info, episode=None: get_hero(episode),
         ),
         "human": GraphQLField(
             human_type,
@@ -238,7 +238,7 @@ query_type = GraphQLObjectType(
                     GraphQLNonNull(GraphQLString), description="id of the human"
                 )
             },
-            resolve=lambda root, _info, id: get_human(id),
+            resolve=lambda _source, _info, id: get_human(id),
         ),
         "droid": GraphQLField(
             droid_type,
@@ -247,7 +247,7 @@ query_type = GraphQLObjectType(
                     GraphQLNonNull(GraphQLString), description="id of the droid"
                 )
             },
-            resolve=lambda root, _info, id: get_droid(id),
+            resolve=lambda _source, _info, id: get_droid(id),
         ),
     },
 )
