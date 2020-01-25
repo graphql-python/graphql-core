@@ -348,10 +348,8 @@ def describe_type_system_build_schema_from_introspection():
                 "VEGETABLES": GraphQLEnumValue(
                     1, description="Foods that are vegetables."
                 ),
-                "FRUITS": GraphQLEnumValue(2, description="Foods that are fruits."),
-                "OILS": GraphQLEnumValue(3, description="Foods that are oils."),
-                "DAIRY": GraphQLEnumValue(4, description="Foods that are dairy."),
-                "MEAT": GraphQLEnumValue(5, description="Foods that are meat."),
+                "FRUITS": GraphQLEnumValue(2),
+                "OILS": GraphQLEnumValue(3, deprecation_reason="Too fatty."),
             },
             description="Varieties of food stuffs",
         )
@@ -382,21 +380,34 @@ def describe_type_system_build_schema_from_introspection():
         # It's also an Enum type on the client.
         client_food_enum = assert_enum_type(client_schema.get_type("Food"))
 
-        values_dict = client_food_enum.values
-        descriptions = {name: value.description for name, value in values_dict.items()}
-        assert descriptions == {
-            "VEGETABLES": "Foods that are vegetables.",
-            "FRUITS": "Foods that are fruits.",
-            "OILS": "Foods that are oils.",
-            "DAIRY": "Foods that are dairy.",
-            "MEAT": "Foods that are meat.",
+        # Client types do not get server-only values, so they are set to None
+        # rather than using the integers defined in the "server" schema.
+        values = {
+            name: value.to_kwargs() for name, value in client_food_enum.values.items()
         }
-        values = values_dict.values()
-        assert all(value.value is None for value in values)
-        assert all(value.is_deprecated is False for value in values)
-        assert all(value.deprecation_reason is None for value in values)
-        assert all(value.extensions is None for value in values)
-        assert all(value.ast_node is None for value in values)
+        assert values == {
+            "VEGETABLES": {
+                "value": None,
+                "description": "Foods that are vegetables.",
+                "deprecation_reason": None,
+                "extensions": None,
+                "ast_node": None,
+            },
+            "FRUITS": {
+                "value": None,
+                "description": None,
+                "deprecation_reason": None,
+                "extensions": None,
+                "ast_node": None,
+            },
+            "OILS": {
+                "value": None,
+                "description": None,
+                "deprecation_reason": "Too fatty.",
+                "extensions": None,
+                "ast_node": None,
+            },
+        }
 
     def builds_a_schema_with_an_input_object():
         sdl = dedent(
