@@ -14,7 +14,7 @@ class NoUnusedFragmentsRule(ASTValidationRule):
     operations, or spread within other fragments spread within operations.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.operation_defs: List[OperationDefinitionNode] = []
         self.fragment_defs: List[FragmentDefinitionNode] = []

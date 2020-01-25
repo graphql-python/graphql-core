@@ -14,7 +14,7 @@ class NoUndefinedVariablesRule(ValidationRule):
     via fragment spreads, are defined by that operation.
     """
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
         self.defined_variable_names: Set[str] = set()
 

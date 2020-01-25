@@ -19,7 +19,7 @@ class UniqueOperationTypesRule(SDLValidationRule):
     A GraphQL document is only valid if it has only one type per operation.
     """
 
-    def __init__(self, context: SDLValidationContext) -> None:
+    def __init__(self, context: SDLValidationContext):
         super().__init__(context)
         schema = context.schema
         self.defined_operation_types: Dict[

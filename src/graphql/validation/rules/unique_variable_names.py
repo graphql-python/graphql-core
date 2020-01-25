@@ -13,7 +13,7 @@ class UniqueVariableNamesRule(ASTValidationRule):
     A GraphQL operation is only valid if all its variables are uniquely named.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.known_variable_names: Dict[str, NameNode] = {}
 

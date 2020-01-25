@@ -23,7 +23,7 @@ class KnownTypeNamesRule(ASTValidationRule):
     definitions and fragment conditions) are defined by the type schema.
     """
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
         schema = context.schema
         self.existing_types_map = schema.type_map if schema else {}

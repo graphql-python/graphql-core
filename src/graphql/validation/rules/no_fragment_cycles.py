@@ -10,7 +10,7 @@ __all__ = ["NoFragmentCyclesRule"]
 class NoFragmentCyclesRule(ASTValidationRule):
     """No fragment cycles"""
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         # Tracks already visited fragments to maintain O(N) and to ensure that
         # cycles are not redundantly reported.

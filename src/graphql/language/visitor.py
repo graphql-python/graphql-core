@@ -341,7 +341,7 @@ class ParallelVisitor(Visitor):
     If a prior visitor edits a node, no following visitors will see that node.
     """
 
-    def __init__(self, visitors: Collection[Visitor]) -> None:
+    def __init__(self, visitors: Collection[Visitor]):
         """Create a new visitor from the given list of parallel visitors."""
         self.visitors = visitors
         self.skipping: List[Any] = [None] * len(visitors)

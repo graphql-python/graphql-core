@@ -14,7 +14,7 @@ class NoUnusedVariablesRule(ValidationRule):
     either directly or within a spread fragment.
     """
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
         self.variable_defs: List[VariableDefinitionNode] = []
 

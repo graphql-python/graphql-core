@@ -53,7 +53,7 @@ class MutationEnum(Enum):
 class UserRegistry:
     """"Simulation of a user registry with asynchronous database backend access."""
 
-    def __init__(self, **users) -> None:
+    def __init__(self, **users):
         self._registry: Dict[str, User] = users
         self._emitter = EventEmitter()
 

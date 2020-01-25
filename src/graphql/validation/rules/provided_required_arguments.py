@@ -28,7 +28,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
         required_args_map: Dict[
             str, Dict[str, Union[GraphQLArgument, InputValueDefinitionNode]]
@@ -92,7 +92,7 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
 
     context: ValidationContext
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
 
     def leave_field(self, field_node: FieldNode, *_args):

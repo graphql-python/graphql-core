@@ -14,7 +14,7 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
     named.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.known_names_stack: List[Dict[str, NameNode]] = []
         self.known_names: Dict[str, NameNode] = {}

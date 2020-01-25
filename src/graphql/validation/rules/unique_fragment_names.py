@@ -13,7 +13,7 @@ class UniqueFragmentNamesRule(ASTValidationRule):
     A GraphQL document is only valid if all defined fragments have unique names.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.known_fragment_names: Dict[str, NameNode] = {}
 

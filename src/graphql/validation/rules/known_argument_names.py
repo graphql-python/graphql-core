@@ -19,7 +19,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
         directive_args: Dict[str, List[str]] = {}
 
@@ -64,7 +64,7 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
 
     context: ValidationContext
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
 
     def enter_argument(self, arg_node: ArgumentNode, *args):

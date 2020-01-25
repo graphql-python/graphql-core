@@ -12,7 +12,7 @@ class LoneAnonymousOperationRule(ASTValidationRule):
     (the query short-hand) that it contains only that one operation definition.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.operation_count = 0
 

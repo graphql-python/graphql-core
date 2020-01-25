@@ -36,7 +36,7 @@ class VariableUsageVisitor(Visitor):
 
     usages: List[VariableUsage]
 
-    def __init__(self, type_info: TypeInfo) -> None:
+    def __init__(self, type_info: TypeInfo):
         self.usages = []
         self._append_usage = self.usages.append
         self._type_info = type_info

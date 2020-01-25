@@ -26,7 +26,7 @@ class FindDeprecatedUsages(Visitor):
     type_info: TypeInfo
     errors: List[GraphQLError]
 
-    def __init__(self, type_info: TypeInfo) -> None:
+    def __init__(self, type_info: TypeInfo):
         super().__init__()
         self.type_info = type_info
         self.errors = []

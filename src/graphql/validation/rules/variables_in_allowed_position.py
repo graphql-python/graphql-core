@@ -17,7 +17,7 @@ __all__ = ["VariablesInAllowedPositionRule"]
 class VariablesInAllowedPositionRule(ValidationRule):
     """Variables passed to field arguments conform to type"""
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
         self.var_def_map: Dict[str, Any] = {}
 

@@ -161,7 +161,7 @@ class GraphQLWrappingType(GraphQLType, Generic[GT]):
 
     of_type: GT
 
-    def __init__(self, type_: GT) -> None:
+    def __init__(self, type_: GT):
         if not is_type(type_):
             raise TypeError(
                 f"Can only create a wrapper for a GraphQLType, but got: {type_}."
@@ -1415,7 +1415,7 @@ class GraphQLList(Generic[GT], GraphQLWrappingType[GT]):
                 }
     """
 
-    def __init__(self, type_: GT) -> None:
+    def __init__(self, type_: GT):
         super().__init__(type_=type_)
 
     def __str__(self):
@@ -1455,7 +1455,7 @@ class GraphQLNonNull(GraphQLWrappingType[GNT], Generic[GNT]):
     Note: the enforcement of non-nullability occurs within the executor.
     """
 
-    def __init__(self, type_: GNT) -> None:
+    def __init__(self, type_: GNT):
         super().__init__(type_=type_)
         if isinstance(type_, GraphQLNonNull):
             raise TypeError(

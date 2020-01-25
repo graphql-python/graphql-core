@@ -17,7 +17,7 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
         unique_directive_map: Dict[str, bool] = {}
 

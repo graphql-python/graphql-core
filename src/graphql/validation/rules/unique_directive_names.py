@@ -13,7 +13,7 @@ class UniqueDirectiveNamesRule(SDLValidationRule):
     A GraphQL document is only valid if all defined directives have unique names.
     """
 
-    def __init__(self, context: SDLValidationContext) -> None:
+    def __init__(self, context: SDLValidationContext):
         super().__init__(context)
         self.known_directive_names: Dict[str, NameNode] = {}
         self.schema = context.schema

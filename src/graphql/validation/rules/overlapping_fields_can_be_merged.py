@@ -50,7 +50,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     either correspond to distinct response names or can be merged without ambiguity.
     """
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
         # A memoization for when two fragments are compared "between" each other for
         # conflicts. Two fragments may be compared many times, so memoizing this can

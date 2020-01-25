@@ -15,7 +15,7 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
     A GraphQL complex type is only valid if all its fields are uniquely named.
     """
 
-    def __init__(self, context: SDLValidationContext) -> None:
+    def __init__(self, context: SDLValidationContext):
         super().__init__(context)
         schema = context.schema
         self.existing_type_map = schema.type_map if schema else {}

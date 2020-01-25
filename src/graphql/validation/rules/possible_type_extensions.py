@@ -24,7 +24,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
      A type extension is only valid if the type is defined and has the same kind.
     """
 
-    def __init__(self, context: SDLValidationContext) -> None:
+    def __init__(self, context: SDLValidationContext):
         super().__init__(context)
         self.schema = context.schema
         self.defined_types = {

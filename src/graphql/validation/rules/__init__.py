@@ -18,7 +18,7 @@ class ASTValidationRule(Visitor):
 
     context: ASTValidationContext
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         self.context = context
 
     def report_error(self, error: GraphQLError):
@@ -30,7 +30,7 @@ class SDLValidationRule(ASTValidationRule):
 
     context: ValidationContext
 
-    def __init__(self, context: SDLValidationContext) -> None:
+    def __init__(self, context: SDLValidationContext):
         super().__init__(context)
 
 
@@ -39,7 +39,7 @@ class ValidationRule(ASTValidationRule):
 
     context: ValidationContext
 
-    def __init__(self, context: ValidationContext) -> None:
+    def __init__(self, context: ValidationContext):
         super().__init__(context)
 
 

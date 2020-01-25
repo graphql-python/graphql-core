@@ -25,7 +25,7 @@ class MiddlewareManager:
     _cached_resolvers: Dict[GraphQLFieldResolver, GraphQLFieldResolver]
     _middleware_resolvers: Optional[List[Callable]]
 
-    def __init__(self, *middlewares: Any) -> None:
+    def __init__(self, *middlewares: Any):
         self.middlewares = middlewares
         self._middleware_resolvers = (
             list(get_middleware_resolvers(middlewares)) if middlewares else None

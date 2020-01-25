@@ -20,7 +20,7 @@ from graphql.type import (
 class Barrier:
     """Barrier that makes progress only after a certain number of waits."""
 
-    def __init__(self, number: int) -> None:
+    def __init__(self, number: int):
         self.event = asyncio.Event()
         self.number = number
 

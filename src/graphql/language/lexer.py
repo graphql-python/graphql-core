@@ -67,7 +67,7 @@ class Lexer:
     EOF token whenever called.
     """
 
-    def __init__(self, source: Source) -> None:
+    def __init__(self, source: Source):
         """Given a Source object, initialize a Lexer for that source."""
         self.source = source
         self.token = self.last_token = Token(TokenKind.SOF, 0, 0, 0, 0)

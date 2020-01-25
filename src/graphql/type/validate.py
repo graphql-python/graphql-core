@@ -90,7 +90,7 @@ class SchemaValidationContext:
     errors: List[GraphQLError]
     schema: GraphQLSchema
 
-    def __init__(self, schema: GraphQLSchema) -> None:
+    def __init__(self, schema: GraphQLSchema):
         self.errors = []
         self.schema = schema
 
@@ -500,7 +500,7 @@ def get_operation_type_node(
 class InputObjectCircularRefsValidator:
     """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
 
-    def __init__(self, context: SchemaValidationContext) -> None:
+    def __init__(self, context: SchemaValidationContext):
         self.context = context
         # Tracks already visited types to maintain O(N) and to ensure that cycles
         # are not redundantly reported.

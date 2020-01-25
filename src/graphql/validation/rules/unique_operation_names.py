@@ -13,7 +13,7 @@ class UniqueOperationNamesRule(ASTValidationRule):
     A GraphQL document is only valid if all defined operations have unique names.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.known_operation_names: Dict[str, NameNode] = {}
 

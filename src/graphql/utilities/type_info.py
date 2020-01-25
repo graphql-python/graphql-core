@@ -288,7 +288,7 @@ def get_field_def(
 class TypeInfoVisitor(Visitor):
     """A visitor which maintains a provided TypeInfo."""
 
-    def __init__(self, type_info: "TypeInfo", visitor: Visitor) -> None:
+    def __init__(self, type_info: "TypeInfo", visitor: Visitor):
         self.type_info = type_info
         self.visitor = visitor
 

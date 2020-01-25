@@ -14,7 +14,7 @@ class UniqueArgumentNamesRule(ASTValidationRule):
     named.
     """
 
-    def __init__(self, context: ASTValidationContext) -> None:
+    def __init__(self, context: ASTValidationContext):
         super().__init__(context)
         self.known_arg_names: Dict[str, NameNode] = {}
 

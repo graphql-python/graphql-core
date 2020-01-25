@@ -15,7 +15,7 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
     A GraphQL enum type is only valid if all its values are uniquely named.
     """
 
-    def __init__(self, context: SDLValidationContext) -> None:
+    def __init__(self, context: SDLValidationContext):
         super().__init__(context)
         schema = context.schema
         self.existing_type_map = schema.type_map if schema else {}
