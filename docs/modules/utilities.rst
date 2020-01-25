@@ -65,6 +65,7 @@ A helper to use within recursive-descent visitors which need to be aware of the 
 type system:
 
 .. autoclass:: TypeInfo
+.. autoclass:: TypeInfoVisitor
 
 Coerce a Python value to a GraphQL type, or produce errors:
 

@@ -50,7 +50,7 @@ from .ast_from_value import ast_from_value
 
 # A helper to use within recursive-descent visitors which need to be aware of
 # the GraphQL type system
-from .type_info import TypeInfo
+from .type_info import TypeInfo, TypeInfoVisitor
 
 # Coerce a Python value to a GraphQL type, or produce errors.
 from .coerce_input_value import coerce_input_value
@@ -90,6 +90,7 @@ __all__ = [
     "DangerousChange",
     "DangerousChangeType",
     "TypeInfo",
+    "TypeInfoVisitor",
     "assert_valid_name",
     "ast_from_value",
     "build_ast_schema",

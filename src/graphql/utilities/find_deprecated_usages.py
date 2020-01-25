@@ -1,9 +1,9 @@
 from typing import List
 
 from ..error import GraphQLError
-from ..language import DocumentNode, TypeInfoVisitor, Visitor, visit
+from ..language import DocumentNode, Visitor, visit
 from ..type import GraphQLSchema, get_named_type
-from .type_info import TypeInfo
+from .type_info import TypeInfo, TypeInfoVisitor
 
 
 __all__ = ["find_deprecated_usages"]

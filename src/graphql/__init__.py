@@ -179,7 +179,6 @@ from .language import (
     # Visit
     visit,
     ParallelVisitor,
-    TypeInfoVisitor,
     Visitor,
     BREAK,
     SKIP,
@@ -362,6 +361,7 @@ from .utilities import (
     # A helper to use within recursive-descent visitors which need to be aware of the
     # GraphQL type system.
     TypeInfo,
+    TypeInfoVisitor,
     # Coerce a Python value to a GraphQL type, or produce errors.
     coerce_input_value,
     # Concatenates multiple ASTs together.

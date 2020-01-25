@@ -1,10 +1,10 @@
 from typing import Collection, List
 
 from ..error import GraphQLError
-from ..language import DocumentNode, ParallelVisitor, TypeInfoVisitor, visit
+from ..language import DocumentNode, ParallelVisitor, visit
 from ..type import GraphQLSchema, assert_valid_schema
 from ..pyutils import inspect
-from ..utilities import TypeInfo
+from ..utilities import TypeInfo, TypeInfoVisitor
 from .rules import RuleType
 from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext

@@ -98,7 +98,6 @@ Visitor
 .. autofunction:: visit
 .. autoclass:: Visitor
 .. autoclass:: ParallelVisitor
-.. autoclass:: TypeInfoVisitor
 
 The module also exports the following special symbols which can be used as
 return values in the :class:`Visitor` methods to signal particular actions:

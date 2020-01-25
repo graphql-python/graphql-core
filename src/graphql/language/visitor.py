@@ -1,6 +1,5 @@
 from copy import copy
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Collection,
@@ -16,13 +15,9 @@ from . import ast
 
 from .ast import Node
 
-if TYPE_CHECKING:  # pragma: no cover
-    from ..utilities import TypeInfo  # noqa: F401
-
 __all__ = [
     "Visitor",
     "ParallelVisitor",
-    "TypeInfoVisitor",
     "visit",
     "BREAK",
     "SKIP",
@@ -378,28 +373,3 @@ class ParallelVisitor(Visitor):
                         return result
             elif skipping[i] is node:
                 skipping[i] = None
-
-
-class TypeInfoVisitor(Visitor):
-    """A visitor which maintains a provided TypeInfo."""
-
-    def __init__(self, type_info: "TypeInfo", visitor: Visitor) -> None:
-        self.type_info = type_info
-        self.visitor = visitor
-
-    def enter(self, node, *args):
-        self.type_info.enter(node)
-        fn = self.visitor.get_visit_fn(node.kind)
-        if fn:
-            result = fn(self.visitor, node, *args)
-            if result is not None:
-                self.type_info.leave(node)
-                if isinstance(result, ast.Node):
-                    self.type_info.enter(result)
-            return result
-
-    def leave(self, node, *args):
-        fn = self.visitor.get_visit_fn(node.kind, is_leaving=True)
-        result = fn(self.visitor, node, *args) if fn else None
-        self.type_info.leave(node)
-        return result

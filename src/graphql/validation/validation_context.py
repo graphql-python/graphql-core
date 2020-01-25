@@ -7,13 +7,12 @@ from ..language import (
     FragmentSpreadNode,
     OperationDefinitionNode,
     SelectionSetNode,
-    TypeInfoVisitor,
     VariableNode,
     Visitor,
     visit,
 )
 from ..type import GraphQLSchema, GraphQLInputType
-from ..utilities import TypeInfo
+from ..utilities import TypeInfo, TypeInfoVisitor
 
 __all__ = [
     "ASTValidationContext",

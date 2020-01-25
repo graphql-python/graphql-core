@@ -14,6 +14,7 @@ from ..language import (
     OperationType,
     SelectionSetNode,
     VariableDefinitionNode,
+    Visitor,
 )
 from ..type import (
     GraphQLArgument,
@@ -43,7 +44,7 @@ from ..type import (
 )
 from .type_from_ast import type_from_ast
 
-__all__ = ["TypeInfo"]
+__all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
 GetFieldDefType = Callable[
@@ -282,3 +283,28 @@ def get_field_def(
         parent_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], parent_type)
         return parent_type.fields.get(name)
     return None
+
+
+class TypeInfoVisitor(Visitor):
+    """A visitor which maintains a provided TypeInfo."""
+
+    def __init__(self, type_info: "TypeInfo", visitor: Visitor) -> None:
+        self.type_info = type_info
+        self.visitor = visitor
+
+    def enter(self, node, *args):
+        self.type_info.enter(node)
+        fn = self.visitor.get_visit_fn(node.kind)
+        if fn:
+            result = fn(self.visitor, node, *args)
+            if result is not None:
+                self.type_info.leave(node)
+                if isinstance(result, Node):
+                    self.type_info.enter(result)
+            return result
+
+    def leave(self, node, *args):
+        fn = self.visitor.get_visit_fn(node.kind, is_leaving=True)
+        result = fn(self.visitor, node, *args) if fn else None
+        self.type_info.leave(node)
+        return result
