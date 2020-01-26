@@ -133,3 +133,13 @@ Spec Section: "Variables are Input Types"
 Spec Section: "All Variable Usages Are Allowed"
 
 .. autoclass:: VariablesInAllowedPositionRule
+
+SDL-specific validation rules
+
+.. autoclass:: LoneSchemaDefinitionRule
+.. autoclass:: UniqueOperationTypesRule
+.. autoclass:: UniqueTypeNamesRule
+.. autoclass:: UniqueEnumValueNamesRule
+.. autoclass:: UniqueFieldDefinitionNamesRule
+.. autoclass:: UniqueDirectiveNamesRule
+.. autoclass:: PossibleTypeExtensionsRule

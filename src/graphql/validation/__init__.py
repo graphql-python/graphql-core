@@ -95,6 +95,15 @@ from .rules.variables_are_input_types import VariablesAreInputTypesRule
 # Spec Section: "All Variable Usages Are Allowed"
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
+# SDL-specific validation rules
+from .rules.lone_schema_definition import LoneSchemaDefinitionRule
+from .rules.unique_operation_types import UniqueOperationTypesRule
+from .rules.unique_type_names import UniqueTypeNamesRule
+from .rules.unique_enum_value_names import UniqueEnumValueNamesRule
+from .rules.unique_field_definition_names import UniqueFieldDefinitionNamesRule
+from .rules.unique_directive_names import UniqueDirectiveNamesRule
+from .rules.possible_type_extensions import PossibleTypeExtensionsRule
+
 __all__ = [
     "validate",
     "ASTValidationContext",
@@ -130,4 +139,11 @@ __all__ = [
     "ValuesOfCorrectTypeRule",
     "VariablesAreInputTypesRule",
     "VariablesInAllowedPositionRule",
+    "LoneSchemaDefinitionRule",
+    "UniqueOperationTypesRule",
+    "UniqueTypeNamesRule",
+    "UniqueEnumValueNamesRule",
+    "UniqueFieldDefinitionNamesRule",
+    "UniqueDirectiveNamesRule",
+    "PossibleTypeExtensionsRule",
 ]
