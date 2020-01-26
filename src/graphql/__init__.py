@@ -33,7 +33,7 @@ The sub-packages of GraphQL-core 3 are:
   - :mod:`graphql.execution`: The Execution phase of fulfilling a GraphQL request.
   - :mod:`graphql.error`: Creating and formatting GraphQL errors.
   - :mod:`graphql.utilities`:
-     Common useful computations upon the GraphQL language and type objects.
+    Common useful computations upon the GraphQL language and type objects.
   - :mod:`graphql.subscription`: Subscribe to data updates.
 """
 
@@ -284,6 +284,7 @@ from .validation import (
     # All validation rules in the GraphQL Specification.
     specified_rules,
     # Individual validation rules.
+    ExecutableDefinitionsRule,
     FieldsOnCorrectTypeRule,
     FragmentsOnCompositeTypesRule,
     KnownArgumentNamesRule,
@@ -309,6 +310,14 @@ from .validation import (
     ValuesOfCorrectTypeRule,
     VariablesAreInputTypesRule,
     VariablesInAllowedPositionRule,
+    # SDL-specific validation rules
+    LoneSchemaDefinitionRule,
+    UniqueOperationTypesRule,
+    UniqueTypeNamesRule,
+    UniqueEnumValueNamesRule,
+    UniqueFieldDefinitionNamesRule,
+    UniqueDirectiveNamesRule,
+    PossibleTypeExtensionsRule,
 )
 
 # Create, format, and print GraphQL errors.
@@ -604,6 +613,7 @@ __all__ = [
     "ASTValidationRule",
     "SDLValidationRule",
     "specified_rules",
+    "ExecutableDefinitionsRule",
     "FieldsOnCorrectTypeRule",
     "FragmentsOnCompositeTypesRule",
     "KnownArgumentNamesRule",
@@ -629,6 +639,13 @@ __all__ = [
     "ValuesOfCorrectTypeRule",
     "VariablesAreInputTypesRule",
     "VariablesInAllowedPositionRule",
+    "LoneSchemaDefinitionRule",
+    "UniqueOperationTypesRule",
+    "UniqueTypeNamesRule",
+    "UniqueEnumValueNamesRule",
+    "UniqueFieldDefinitionNamesRule",
+    "UniqueDirectiveNamesRule",
+    "PossibleTypeExtensionsRule",
     "GraphQLError",
     "GraphQLSyntaxError",
     "located_error",

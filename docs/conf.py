@@ -102,7 +102,8 @@ nitpicky = True
 nitpick_ignore = [('py:class', t) for t in (
     'dict', 'list', 'object', 'tuple',
     'Exception', 'TypeError', 'ValueError',
-    'builtins.str', 'enum.Enum', 'typing.Generic',
+    'builtins.str', 'enum.Enum',
+    'typing.Callable', 'typing.Dict', 'typing.Generic', 'typing.List',
     'graphql.pyutils.cached_property.CachedProperty',
     'graphql.pyutils.path.Path',
     'graphql.error.graphql_error.GraphQLError',
@@ -121,6 +122,7 @@ nitpick_ignore = [('py:class', t) for t in (
     'graphql.type.definition.GraphQLType',
     'graphql.type.definition.GraphQLWrappingType',
     'graphql.validation.rules.ASTValidationRule',
+    'graphql.validation.rules.SDLValidationRule',
     'graphql.validation.rules.ValidationRule',
     'graphql.validation.validation_context.ASTValidationContext',
     'graphql.validation.rules.known_argument_names'
