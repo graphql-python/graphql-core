@@ -2,20 +2,14 @@ language: python
 matrix:
   include:
     - name: Code quality tests
-      env: TOXENV=black,flake8,mypy,docs
+      env: TOXENV=black,flake8,mypy,docs,manifest
       python: 3.7
-      dist: xenial
-      sudo: true
     - name: Unit tests with Python 3.8
       env: TOXENV=py38
       python: 3.8
-      dist: xenial
-      sudo: true
     - name: Unit tests with Python 3.7
       env: TOXENV=py37
       python: 3.7
-      dist: xenial
-      sudo: true
     - name: Unit tests with Python 3.6
       env: TOXENV=py36
       python: 3.6
@@ -24,10 +18,10 @@ cache:
     - "$HOME/.cache/pip"
     - "$TRAVIS_BUILD_DIR/.tox"
 install:
-  - pip install "poetry>=1.0.0"
+  - pip install "poetry>=1,<2"
   - poetry install
 script:
-  - tox -e $TOXENV -- --cov-report term-missing --cov=graphql
+  - tox -e $TOXENV -- --cov-report=term-missing --cov=graphql
 after_success:
   - codecov
 deploy:
@@ -36,7 +30,7 @@ deploy:
   on:
     branch: js-14.x.x
     tags: true
-    python: 3.7
+    python: 3.8
   skip_existing: true
   user: mvanlonden
   password:
