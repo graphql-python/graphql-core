@@ -1,4 +1,4 @@
-from typing import Collection, List
+from typing import Collection, List, Optional
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
@@ -19,9 +19,9 @@ class ValidationAbortedError(RuntimeError):
 def validate(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
-    rules: Collection[RuleType] = None,
-    type_info: TypeInfo = None,
-    max_errors: int = None,
+    rules: Optional[Collection[RuleType]] = None,
+    type_info: Optional[TypeInfo] = None,
+    max_errors: Optional[int] = None,
 ) -> List[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -82,8 +82,8 @@ def validate(
 
 def validate_sdl(
     document_ast: DocumentNode,
-    schema_to_extend: GraphQLSchema = None,
-    rules: Collection[RuleType] = None,
+    schema_to_extend: Optional[GraphQLSchema] = None,
+    rules: Optional[Collection[RuleType]] = None,
 ) -> List[GraphQLError]:
     """Validate an SDL document.
 
