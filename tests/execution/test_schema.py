@@ -138,7 +138,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
               title,
               body,
               hidden,
-              notdefined
+              notDefined
             }
             """
         )

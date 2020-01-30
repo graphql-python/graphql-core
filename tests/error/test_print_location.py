@@ -5,7 +5,7 @@ from graphql.pyutils import dedent
 def describe_print_location():
     def prints_minified_documents():
         minified_source = Source(
-            "query SomeMiniFiedQueryWithErrorInside("
+            "query SomeMinifiedQueryWithErrorInside("
             "$foo:String!=FIRST_ERROR_HERE$bar:String)"
             "{someField(foo:$foo bar:$bar baz:SECOND_ERROR_HERE)"
             "{fieldA fieldB{fieldC fieldD...on THIRD_ERROR_HERE}}}"
@@ -18,7 +18,7 @@ def describe_print_location():
         assert first_location + "\n" == dedent(
             """
             GraphQL request:1:53
-            1 | query SomeMiniFiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
+            1 | query SomeMinifiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
               |                                                     ^
               | {someField(foo:$foo bar:$bar baz:SECOND_ERROR_HERE){fieldA fieldB{fieldC fieldD.
             """  # noqa: E501
@@ -31,7 +31,7 @@ def describe_print_location():
         assert second_location + "\n" == dedent(
             """
             GraphQL request:1:114
-            1 | query SomeMiniFiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
+            1 | query SomeMinifiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
               | {someField(foo:$foo bar:$bar baz:SECOND_ERROR_HERE){fieldA fieldB{fieldC fieldD.
               |                                  ^
               | ..on THIRD_ERROR_HERE}}}
@@ -45,7 +45,7 @@ def describe_print_location():
         assert third_location + "\n" == dedent(
             """
             GraphQL request:1:166
-            1 | query SomeMiniFiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
+            1 | query SomeMinifiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
               | {someField(foo:$foo bar:$bar baz:SECOND_ERROR_HERE){fieldA fieldB{fieldC fieldD.
               | ..on THIRD_ERROR_HERE}}}
               |      ^

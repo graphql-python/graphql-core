@@ -331,8 +331,8 @@ def describe_type_system_printer():
             name="Foo", fields={"str": GraphQLField(GraphQLString)}
         )
 
-        baaz_type = GraphQLInterfaceType(
-            name="Baaz", fields={"int": GraphQLField(GraphQLInt)}
+        baz_type = GraphQLInterfaceType(
+            name="Baz", fields={"int": GraphQLField(GraphQLInt)}
         )
 
         bar_type = GraphQLObjectType(
@@ -341,19 +341,19 @@ def describe_type_system_printer():
                 "str": GraphQLField(GraphQLString),
                 "int": GraphQLField(GraphQLInt),
             },
-            interfaces=[foo_type, baaz_type],
+            interfaces=[foo_type, baz_type],
         )
 
         schema = GraphQLSchema(types=[bar_type])
         output = print_for_test(schema)
         assert output == dedent(
             """
-            interface Baaz {
+            type Bar implements Foo & Baz {
+              str: String
               int: Int
             }
 
-            type Bar implements Foo & Baaz {
-              str: String
+            interface Baz {
               int: Int
             }
 
@@ -368,8 +368,8 @@ def describe_type_system_printer():
             name="Foo", fields={"str": GraphQLField(GraphQLString)}
         )
 
-        baaz_type = GraphQLInterfaceType(
-            name="Baaz",
+        baz_type = GraphQLInterfaceType(
+            name="Baz",
             interfaces=[foo_type],
             fields={
                 "int": GraphQLField(GraphQLInt),
@@ -383,7 +383,7 @@ def describe_type_system_printer():
                 "str": GraphQLField(GraphQLString),
                 "int": GraphQLField(GraphQLInt),
             },
-            interfaces=[foo_type, baaz_type],
+            interfaces=[foo_type, baz_type],
         )
 
         query = GraphQLObjectType(name="Query", fields={"bar": GraphQLField(bar_type)})
@@ -392,14 +392,14 @@ def describe_type_system_printer():
         output = print_for_test(schema)
         assert output == dedent(
             """
-            interface Baaz implements Foo {
-              int: Int
+            type Bar implements Foo & Baz {
               str: String
+              int: Int
             }
 
-            type Bar implements Foo & Baaz {
-              str: String
+            interface Baz implements Foo {
               int: Int
+              str: String
             }
 
             interface Foo {

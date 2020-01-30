@@ -902,7 +902,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                 schema=schema,
             )
 
-        def allows_inline_typeless_fragments():
+        def allows_inline_fragments_without_type_condition():
             assert_valid(
                 """
                 {

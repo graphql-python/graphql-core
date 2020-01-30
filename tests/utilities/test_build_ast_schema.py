@@ -212,10 +212,10 @@ def describe_schema_builder():
             """
             type Query {
               nonNullStr: String!
-              listOfStrs: [String]
-              listOfNonNullStrs: [String!]
-              nonNullListOfStrs: [String]!
-              nonNullListOfNonNullStrs: [String!]!
+              listOfStrings: [String]
+              listOfNonNullStrings: [String!]
+              nonNullListOfStrings: [String]!
+              nonNullListOfNonNullStrings: [String!]!
             }
             """
         )

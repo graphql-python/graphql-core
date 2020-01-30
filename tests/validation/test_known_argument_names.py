@@ -167,12 +167,12 @@ def describe_validate_known_argument_names():
         assert_errors(
             """
             fragment invalidArgName on Dog {
-              doesKnowCommand(dogcommand: true)
+              doesKnowCommand(DogCommand: true)
             }
             """,
             [
                 {
-                    "message": "Unknown argument 'dogcommand'"
+                    "message": "Unknown argument 'DogCommand'"
                     " on field 'Dog.doesKnowCommand'."
                     " Did you mean 'dogCommand'?",
                     "locations": [(3, 31)],
@@ -184,12 +184,12 @@ def describe_validate_known_argument_names():
         assert_errors(
             """
             fragment oneGoodArgOneInvalidArg on Dog {
-              doesKnowCommand(whoknows: 1, dogCommand: SIT, unknown: true)
+              doesKnowCommand(whoKnows: 1, dogCommand: SIT, unknown: true)
             }
             """,
             [
                 {
-                    "message": "Unknown argument 'whoknows'"
+                    "message": "Unknown argument 'whoKnows'"
                     " on field 'Dog.doesKnowCommand'.",
                     "locations": [(3, 31)],
                 },

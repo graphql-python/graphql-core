@@ -24,13 +24,13 @@ def describe_dedent():
         assert (
             dedent(
                 """
-                qux
-                  quux
-                    quuux
-                      quuuux
+                first
+                  second
+                    third
+                      fourth
                 """
             )
-            == "qux\n  quux\n    quuux\n      quuuux\n"
+            == "first\n  second\n    third\n      fourth\n"
         )
 
     def does_not_escape_special_characters():

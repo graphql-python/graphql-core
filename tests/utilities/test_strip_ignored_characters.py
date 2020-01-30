@@ -186,7 +186,7 @@ def describe_strip_ignored_characters():
             ExpectStripped("".join(ignored_tokens) + token).to_equal(token)
             ExpectStripped(token + "".join(ignored_tokens)).to_equal(token)
 
-    def strips_ignored_tokens_beetween_punctuator_tokens():
+    def strips_ignored_tokens_between_punctuator_tokens():
         ExpectStripped("[,)").to_equal("[)")
         ExpectStripped("[\r)").to_equal("[)")
         ExpectStripped("[\r\r)").to_equal("[)")
@@ -207,7 +207,7 @@ def describe_strip_ignored_characters():
                     left + right
                 )
 
-    def strips_ignored_tokens_beetween_punctuator_and_non_punctuator_tokens():
+    def strips_ignored_tokens_between_punctuator_and_non_punctuator_tokens():
         ExpectStripped("[,1").to_equal("[1")
         ExpectStripped("[\r1").to_equal("[1")
         ExpectStripped("[\r\r1").to_equal("[1")
@@ -342,13 +342,11 @@ def describe_strip_ignored_characters():
         # noinspection PyShadowingNames
         def expect_stripped_string(block_str: str):
             original_value = lex_value(block_str)
-
-            stripped_str = strip_ignored_characters(block_str)
-            stripped_value = lex_value(stripped_str)
+            stripped_value = lex_value(strip_ignored_characters(block_str))
 
             assert original_value == stripped_value, dedent(
                 f"""
-                Expected lexOne(stripIgnoredCharacters({block_str!r})
+                Expected lexValue(stripIgnoredCharacters({block_str!r})
                   to equal {original_value!r}
                   but got {stripped_value!r}
                 """
@@ -400,12 +398,11 @@ def describe_strip_ignored_characters():
                 except (AssertionError, GraphQLSyntaxError):
                     continue  # skip invalid values
 
-                stripped_str = strip_ignored_characters(test_str)
-                stripped_value = lex_value(stripped_str)
+                stripped_value = lex_value(strip_ignored_characters(test_str))
 
                 assert test_value == stripped_value, dedent(
                     f"""
-                    Expected lexOne(stripIgnoredCharacters({test_str!r})
+                    Expected lexValue(stripIgnoredCharacters({test_str!r})
                       to equal {test_value!r}
                       but got {stripped_value!r}
                     """

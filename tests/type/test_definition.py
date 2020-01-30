@@ -42,7 +42,7 @@ InputObjectType = GraphQLInputObjectType("InputObject", {})
 ListOfScalarsType = GraphQLList(ScalarType)
 NonNullScalarType = GraphQLNonNull(ScalarType)
 ListOfNonNullScalarsType = GraphQLList(NonNullScalarType)
-NonNullListOfScalarsType = GraphQLNonNull(ListOfScalarsType)
+NonNullListOfScalars = GraphQLNonNull(ListOfScalarsType)
 
 
 def describe_type_system_scalars():
@@ -1459,7 +1459,7 @@ def describe_type_system_test_utility_methods():
 
         assert str(NonNullScalarType) == "Scalar!"
         assert str(ListOfScalarsType) == "[Scalar]"
-        assert str(NonNullListOfScalarsType) == "[Scalar]!"
+        assert str(NonNullListOfScalars) == "[Scalar]!"
         assert str(ListOfNonNullScalarsType) == "[Scalar!]"
         assert str(GraphQLList(ListOfScalarsType)) == "[[Scalar]]"
 

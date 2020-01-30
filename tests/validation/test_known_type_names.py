@@ -38,7 +38,7 @@ def describe_validate_known_type_names():
                 pets { ... on Badger { name }, ...PetFields, ... { name } }
               }
             }
-            fragment PetFields on Peettt {
+            fragment PetFields on Peat {
               name
             }
             """,
@@ -49,7 +49,7 @@ def describe_validate_known_type_names():
                 },
                 {"message": "Unknown type 'Badger'.", "locations": [(5, 31)]},
                 {
-                    "message": "Unknown type 'Peettt'. Did you mean 'Pet'?",
+                    "message": "Unknown type 'Peat'. Did you mean 'Pet' or 'Cat'?",
                     "locations": [(8, 35)],
                 },
             ],

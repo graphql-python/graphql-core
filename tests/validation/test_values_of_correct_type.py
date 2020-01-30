@@ -1127,7 +1127,7 @@ def describe_validate_values_of_correct_type():
                 query InvalidDefaultValues(
                   $a: Int = "one",
                   $b: String = 4,
-                  $c: ComplexInput = "notverycomplex"
+                  $c: ComplexInput = "NotVeryComplex"
                 ) {
                   dog { name }
                 }
@@ -1143,7 +1143,7 @@ def describe_validate_values_of_correct_type():
                     },
                     {
                         "message": "Expected value of type 'ComplexInput',"
-                        ' found "notverycomplex".',
+                        ' found "NotVeryComplex".',
                         "locations": [(5, 38)],
                     },
                 ],

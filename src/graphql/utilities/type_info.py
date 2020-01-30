@@ -69,7 +69,7 @@ class TypeInfo:
         """Initialize the TypeInfo for the given GraphQL schema.
 
         The experimental optional second parameter is only needed in order to support
-        non-spec-compliant codebases. You should never need to use it. It may disappear
+        non-spec-compliant code bases. You should never need to use it. It may disappear
         in the future.
 
         Initial type may be provided in rare cases to facilitate traversals beginning

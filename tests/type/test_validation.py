@@ -395,7 +395,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             GraphQLSchema(
-                SomeObjectType, directives=[cast(GraphQLDirective, "somedirective")]
+                SomeObjectType, directives=[cast(GraphQLDirective, "SomeDirective")]
             )
         msg = str(exc_info.value)
         assert msg == (
@@ -404,10 +404,10 @@ def describe_type_system_a_schema_must_have_object_root_types():
         )
 
         schema = GraphQLSchema(SomeObjectType)
-        schema.directives = FrozenList([cast(GraphQLDirective, "somedirective")])
+        schema.directives = FrozenList([cast(GraphQLDirective, "SomeDirective")])
 
         msg = validate_schema(schema)[0].message
-        assert msg == "Expected directive but got: 'somedirective'."
+        assert msg == "Expected directive but got: 'SomeDirective'."
 
 
 def describe_type_system_objects_must_have_fields():

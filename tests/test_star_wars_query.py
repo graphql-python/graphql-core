@@ -85,7 +85,7 @@ def describe_star_wars_query_tests():
                         "friends": [
                             {
                                 "name": "Luke Skywalker",
-                                "appearsIn": ["NEWHOPE", "EMPIRE", "JEDI"],
+                                "appearsIn": ["NEW_HOPE", "EMPIRE", "JEDI"],
                                 "friends": [
                                     {"name": "Han Solo"},
                                     {"name": "Leia Organa"},
@@ -95,7 +95,7 @@ def describe_star_wars_query_tests():
                             },
                             {
                                 "name": "Han Solo",
-                                "appearsIn": ["NEWHOPE", "EMPIRE", "JEDI"],
+                                "appearsIn": ["NEW_HOPE", "EMPIRE", "JEDI"],
                                 "friends": [
                                     {"name": "Luke Skywalker"},
                                     {"name": "Leia Organa"},
@@ -104,7 +104,7 @@ def describe_star_wars_query_tests():
                             },
                             {
                                 "name": "Leia Organa",
-                                "appearsIn": ["NEWHOPE", "EMPIRE", "JEDI"],
+                                "appearsIn": ["NEW_HOPE", "EMPIRE", "JEDI"],
                                 "friends": [
                                     {"name": "Luke Skywalker"},
                                     {"name": "Han Solo"},

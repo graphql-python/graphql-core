@@ -4,7 +4,7 @@ from graphql.utilities import concat_ast
 
 
 def describe_concat_ast():
-    def concats_two_acts_together():
+    def concatenates_two_asts_together():
         source_a = Source(
             """
             { a, b, ... Frag }

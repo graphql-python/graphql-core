@@ -84,7 +84,7 @@ def describe_parser():
         )
         assert_syntax_error("{ field: {} }", "Expected Name, found '{'.", (1, 10))
         assert_syntax_error(
-            "notanoperation Foo { field }", "Unexpected Name 'notanoperation'.", (1, 1)
+            "notAnOperation Foo { field }", "Unexpected Name 'notAnOperation'.", (1, 1)
         )
         assert_syntax_error("...", "Unexpected '...'.", (1, 1))
         assert_syntax_error('{ ""', "Expected Name, found String ''.", (1, 3))

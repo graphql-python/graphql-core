@@ -1058,9 +1058,9 @@ def describe_introspection():
         TestEnum = GraphQLEnumType(
             "TestEnum",
             {
-                "NONDEPRECATED": GraphQLEnumValue(0),
+                "NON_DEPRECATED": GraphQLEnumValue(0),
                 "DEPRECATED": GraphQLEnumValue(1, deprecation_reason="Removed in 1.0"),
-                "ALSONONDEPRECATED": GraphQLEnumValue(2),
+                "ALSO_NON_DEPRECATED": GraphQLEnumValue(2),
             },
         )
 
@@ -1086,7 +1086,7 @@ def describe_introspection():
                     "name": "TestEnum",
                     "enumValues": [
                         {
-                            "name": "NONDEPRECATED",
+                            "name": "NON_DEPRECATED",
                             "isDeprecated": False,
                             "deprecationReason": None,
                         },
@@ -1096,7 +1096,7 @@ def describe_introspection():
                             "deprecationReason": "Removed in 1.0",
                         },
                         {
-                            "name": "ALSONONDEPRECATED",
+                            "name": "ALSO_NON_DEPRECATED",
                             "isDeprecated": False,
                             "deprecationReason": None,
                         },
@@ -1110,9 +1110,9 @@ def describe_introspection():
         TestEnum = GraphQLEnumType(
             "TestEnum",
             {
-                "NONDEPRECATED": GraphQLEnumValue(0),
+                "NON_DEPRECATED": GraphQLEnumValue(0),
                 "DEPRECATED": GraphQLEnumValue(1, deprecation_reason="Removed in 1.0"),
-                "ALSONONDEPRECATED": GraphQLEnumValue(2),
+                "ALSO_NON_DEPRECATED": GraphQLEnumValue(2),
             },
         )
 
@@ -1141,17 +1141,17 @@ def describe_introspection():
                 "__type": {
                     "name": "TestEnum",
                     "trueValues": [
-                        {"name": "NONDEPRECATED"},
+                        {"name": "NON_DEPRECATED"},
                         {"name": "DEPRECATED"},
-                        {"name": "ALSONONDEPRECATED"},
+                        {"name": "ALSO_NON_DEPRECATED"},
                     ],
                     "falseValues": [
-                        {"name": "NONDEPRECATED"},
-                        {"name": "ALSONONDEPRECATED"},
+                        {"name": "NON_DEPRECATED"},
+                        {"name": "ALSO_NON_DEPRECATED"},
                     ],
                     "omittedValues": [
-                        {"name": "NONDEPRECATED"},
-                        {"name": "ALSONONDEPRECATED"},
+                        {"name": "NON_DEPRECATED"},
+                        {"name": "ALSO_NON_DEPRECATED"},
                     ],
                 }
             },

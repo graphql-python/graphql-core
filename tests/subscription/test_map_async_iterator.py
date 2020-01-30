@@ -52,7 +52,7 @@ def describe_map_async_iterator():
         # Early return
         await doubles.aclose()
 
-        # Subsequent nexts
+        # Subsequent next calls
         with raises(StopAsyncIteration):
             await anext(doubles)
         with raises(StopAsyncIteration):
@@ -66,8 +66,8 @@ def describe_map_async_iterator():
                 yield 2
                 yield 3
             finally:
-                yield "done"
-                yield "last"
+                yield "Done"
+                yield "Last"
 
         doubles = MapAsyncIterator(source(), lambda x: x + x)
 
@@ -77,8 +77,8 @@ def describe_map_async_iterator():
         # Early return
         await doubles.aclose()
 
-        # Subsequent nexts may yield from finally block
-        assert await anext(doubles) == "lastlast"
+        # Subsequent next calls may yield from finally block
+        assert await anext(doubles) == "LastLast"
         with raises(GeneratorExit):
             assert await anext(doubles)
 
@@ -96,9 +96,9 @@ def describe_map_async_iterator():
 
         # Throw error
         with raises(RuntimeError) as exc_info:
-            await doubles.athrow(RuntimeError("ouch"))
+            await doubles.athrow(RuntimeError("Ouch"))
 
-        assert str(exc_info.value) == "ouch"
+        assert str(exc_info.value) == "Ouch"
 
         with raises(StopAsyncIteration):
             await anext(doubles)

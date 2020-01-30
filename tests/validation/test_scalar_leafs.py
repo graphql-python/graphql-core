@@ -82,7 +82,7 @@ def describe_validate_scalar_leafs():
         assert_errors(
             """
             fragment scalarSelectionsNotAllowedOnEnum on Cat {
-              furColor { inHexdec }
+              furColor { inHexDec }
             }
             """,
             [

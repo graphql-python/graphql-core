@@ -195,8 +195,8 @@ def describe_lexer():
         assert lex_one('"""contains " quote"""') == Token(
             TokenKind.BLOCK_STRING, 0, 22, 1, 1, None, 'contains " quote'
         )
-        assert lex_one('"""contains \\""" triplequote"""') == Token(
-            TokenKind.BLOCK_STRING, 0, 31, 1, 1, None, 'contains """ triplequote'
+        assert lex_one('"""contains \\""" triple-quote"""') == Token(
+            TokenKind.BLOCK_STRING, 0, 32, 1, 1, None, 'contains """ triple-quote'
         )
         assert lex_one('"""multi\nline"""') == Token(
             TokenKind.BLOCK_STRING, 0, 16, 1, 1, None, "multi\nline"

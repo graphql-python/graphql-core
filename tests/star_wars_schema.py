@@ -10,7 +10,7 @@ NOTE: This may contain spoilers for the original Star Wars trilogy.
 Using our shorthand to describe type systems, the type system for our Star Wars example
 is::
 
-    enum Episode { NEWHOPE, EMPIRE, JEDI }
+    enum Episode { NEW_HOPE, EMPIRE, JEDI }
 
     interface Character {
       id: String!
@@ -69,12 +69,12 @@ __all__ = ["star_wars_schema"]
 # The original trilogy consists of three movies.
 #
 # This implements the following type system shorthand:
-#   enum Episode { NEWHOPE, EMPIRE, JEDI }
+#   enum Episode { NEW_HOPE, EMPIRE, JEDI }
 
 episode_enum = GraphQLEnumType(
     "Episode",
     {
-        "NEWHOPE": GraphQLEnumValue(4, description="Released in 1977."),
+        "NEW_HOPE": GraphQLEnumValue(4, description="Released in 1977."),
         "EMPIRE": GraphQLEnumValue(5, description="Released in 1980."),
         "JEDI": GraphQLEnumValue(6, description="Released in 1983."),
     },

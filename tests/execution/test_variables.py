@@ -888,7 +888,7 @@ def describe_execute_handles_inputs():
                   fieldWithObjectInput(input: $input)
                 }
                 """
-            result = execute_query(doc, {"input": "whoknows"})
+            result = execute_query(doc, {"input": "whoKnows"})
 
             assert result == (
                 None,
