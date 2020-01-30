@@ -92,7 +92,7 @@ default_subscription_ast = parse(
 
 
 async def create_subscription(
-    pubsub, schema: GraphQLSchema = email_schema, ast=default_subscription_ast
+    pubsub, schema: GraphQLSchema = email_schema, document=default_subscription_ast
 ):
     data: Dict[str, Any] = {
         "inbox": {
@@ -121,14 +121,14 @@ async def create_subscription(
     # `subscribe` yields AsyncIterator or ExecutionResult
     return (
         send_important_email,
-        await subscribe(schema, ast, data),
+        await subscribe(schema=schema, document=document, root_value=data),
     )
 
 
 # Check all error cases when initializing the subscription.
 def describe_subscription_initialization_phase():
     @mark.asyncio
-    async def accepts_an_object_with_named_properties_as_arguments():
+    async def accepts_positional_arguments():
         document = parse(
             """
             subscription {
@@ -194,15 +194,16 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        ast = parse(
-            """
+        subscription = await subscribe(
+            schema=schema,
+            document=parse(
+                """
             subscription {
               importantEmail
             }
             """
+            ),
         )
-
-        subscription = await subscribe(schema, ast)
 
         pubsub.emit("importantEmail", {"importantEmail": {}})
 
@@ -227,15 +228,16 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        ast = parse(
-            """
+        subscription = await subscribe(
+            schema=schema,
+            document=parse(
+                """
             subscription {
               importantEmail
             }
             """
+            ),
         )
-
-        subscription = await subscribe(schema, ast)
 
         pubsub.emit("importantEmail", {"importantEmail": {}})
 
@@ -265,20 +267,20 @@ def describe_subscription_initialization_phase():
             },
         )
 
-        test_schema = GraphQLSchema(
-            query=QueryType, subscription=SubscriptionTypeMultiple
-        )
+        schema = GraphQLSchema(query=QueryType, subscription=SubscriptionTypeMultiple)
 
-        ast = parse(
-            """
+        subscription = await subscribe(
+            schema=schema,
+            document=parse(
+                """
             subscription {
               importantEmail
               nonImportantEmail
             }
             """
+            ),
         )
 
-        subscription = await subscribe(test_schema, ast)
         ignored = anext(subscription)  # Ask for a result, but ignore it.
 
         assert did_resolve["importantEmail"] is True
@@ -337,7 +339,7 @@ def describe_subscription_initialization_phase():
 
         pubsub = EventEmitter()
 
-        subscription = (await create_subscription(pubsub, ast=ast))[1]
+        subscription = (await create_subscription(pubsub, document=ast))[1]
 
         assert subscription == (
             None,
@@ -376,8 +378,8 @@ def describe_subscription_initialization_phase():
     async def resolves_to_an_error_for_subscription_resolver_errors():
         async def test_reports_error(schema):
             result = await subscribe(
-                schema,
-                parse(
+                schema=schema,
+                document=parse(
                     """
                     subscription {
                       importantEmail
@@ -447,7 +449,7 @@ def describe_subscription_initialization_phase():
         )
 
         pubsub = EventEmitter()
-        data = {
+        root_value = {
             "inbox": {
                 "emails": [
                     {
@@ -464,7 +466,10 @@ def describe_subscription_initialization_phase():
         }
 
         result = await subscribe(
-            email_schema, ast, data, variable_values={"priority": "meow"}
+            schema=email_schema,
+            document=ast,
+            root_value=root_value,
+            variable_values={"priority": "meow"},
         )
 
         assert result == (
@@ -708,8 +713,8 @@ def describe_subscription_publish_phase():
         erroring_email_schema = email_schema_with_resolvers(subscribe_fn, resolve_fn)
 
         subscription = await subscribe(
-            erroring_email_schema,
-            parse(
+            schema=erroring_email_schema,
+            document=parse(
                 """
                 subscription {
                   importantEmail {
@@ -744,8 +749,8 @@ def describe_subscription_publish_phase():
         async_email_schema = email_schema_with_resolvers(subscribe_fn, resolve_fn)
 
         subscription = await subscribe(
-            async_email_schema,
-            parse(
+            schema=async_email_schema,
+            document=parse(
                 """
                 subscription {
                   importantEmail {
