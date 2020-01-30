@@ -73,9 +73,26 @@ def email_schema_with_resolvers(subscribe_fn=None, resolve_fn=None):
 
 email_schema = email_schema_with_resolvers()
 
+default_subscription_ast = parse(
+    """
+    subscription ($priority: Int = 0) {
+      importantEmail(priority: $priority) {
+        email {
+          from
+          subject
+        }
+        inbox {
+          unread
+          total
+        }
+      }
+    }
+    """
+)
+
 
 async def create_subscription(
-    pubsub, schema: GraphQLSchema = email_schema, ast=None, variables=None
+    pubsub, schema: GraphQLSchema = email_schema, ast=default_subscription_ast
 ):
     data: Dict[str, Any] = {
         "inbox": {
@@ -101,27 +118,10 @@ async def create_subscription(
             {"importantEmail": {"email": new_email, "inbox": data["inbox"]}},
         )
 
-    default_ast = parse(
-        """
-        subscription ($priority: Int = 0) {
-          importantEmail(priority: $priority) {
-            email {
-              from
-              subject
-            }
-            inbox {
-              unread
-              total
-            }
-          }
-        }
-        """
-    )
-
     # `subscribe` yields AsyncIterator or ExecutionResult
     return (
         send_important_email,
-        await subscribe(schema, ast or default_ast, data, variable_values=variables),
+        await subscribe(schema, ast, data),
     )
 
 
