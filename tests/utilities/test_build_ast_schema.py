@@ -4,7 +4,7 @@ from typing import Union
 from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
+from graphql.language import parse, print_ast, InterfaceTypeDefinitionNode
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
@@ -819,21 +819,17 @@ def describe_schema_builder():
         test_scalar = assert_scalar_type(schema.get_type("TestScalar"))
         test_directive = assert_directive(schema.get_directive("test"))
 
-        restored_schema_ast = DocumentNode(
-            definitions=[
-                schema.ast_node,
-                query.ast_node,
-                test_input.ast_node,
-                test_enum.ast_node,
-                test_union.ast_node,
-                test_interface.ast_node,
-                test_type.ast_node,
-                test_scalar.ast_node,
-                test_directive.ast_node,
-            ],
-            loc=None,
-        )
-        assert restored_schema_ast == ast
+        assert [
+            schema.ast_node,
+            query.ast_node,
+            test_input.ast_node,
+            test_enum.ast_node,
+            test_union.ast_node,
+            test_interface.ast_node,
+            test_type.ast_node,
+            test_scalar.ast_node,
+            test_directive.ast_node,
+        ] == ast.definitions
 
         test_field = query.fields["testField"]
         assert print_ast_node(test_field) == (

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Union
 
 from pytest import raises  # type: ignore
 
@@ -7,8 +7,6 @@ from graphql.language import (
     parse,
     print_ast,
     DirectiveLocation,
-    DocumentNode,
-    TypeSystemDefinitionNode,
 )
 from graphql.pyutils import dedent, FrozenList
 from graphql.type import (
@@ -330,7 +328,7 @@ def describe_extend_schema():
         ]
 
     def correctly_assigns_ast_nodes_to_new_and_extended_types():
-        extended_schema = extend_test_schema(
+        first_extension_ast = parse(
             """
             extend type Query {
               newField(testArg: TestInput): TestEnum
@@ -361,7 +359,9 @@ def describe_extend_schema():
             }
             """
         )
-        ast = parse(
+        extended_schema = extend_schema(test_schema, first_extension_ast)
+
+        second_extension_ast = parse(
             """
             extend type Query {
               oneMoreNewField: TestUnion
@@ -396,7 +396,7 @@ def describe_extend_schema():
             directive @test(arg: Int) repeatable on FIELD | SCALAR
             """
         )
-        extended_twice_schema = extend_schema(extended_schema, ast)
+        extended_twice_schema = extend_schema(extended_schema, second_extension_ast)
 
         query = assert_object_type(extended_twice_schema.get_type("Query"))
         some_enum = assert_enum_type(extended_twice_schema.get_type("SomeEnum"))
@@ -439,30 +439,20 @@ def describe_extend_schema():
         assert some_interface.extension_ast_nodes
         assert len(some_interface.extension_ast_nodes) == 2
 
-        definitions: List[Optional[TypeSystemDefinitionNode]] = [
+        assert {
             test_input.ast_node,
             test_enum.ast_node,
             test_union.ast_node,
             test_interface.ast_node,
             test_type.ast_node,
             test_directive.ast_node,
-        ]
-        extensions: List[Optional[FrozenList[TypeSystemDefinitionNode]]] = [
-            query.extension_ast_nodes,
-            some_scalar.extension_ast_nodes,
-            some_enum.extension_ast_nodes,
-            some_union.extension_ast_nodes,
-            some_input.extension_ast_nodes,
-            some_interface.extension_ast_nodes,
-        ]
-        for extension_ast_nodes in extensions:
-            if extension_ast_nodes:
-                definitions.extend(extension_ast_nodes)
-        restored_extension_ast = DocumentNode(definitions=definitions)
-
-        assert print_schema(
-            extend_schema(test_schema, restored_extension_ast)
-        ) == print_schema(extended_twice_schema)
+            *query.extension_ast_nodes,
+            *some_scalar.extension_ast_nodes,
+            *some_enum.extension_ast_nodes,
+            *some_union.extension_ast_nodes,
+            *some_input.extension_ast_nodes,
+            *some_interface.extension_ast_nodes,
+        } == {*first_extension_ast.definitions, *second_extension_ast.definitions}
 
         new_field = query.fields["newField"]
         assert print_ast_node(new_field) == "newField(testArg: TestInput): TestEnum"
