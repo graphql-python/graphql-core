@@ -268,7 +268,7 @@ def describe_inspect():
     def inspect_overly_nested_set():
         s: List[List[Set]] = [[set()]]
         assert inspect(s) == "[[set()]]"
-        s = [[set([1, 2, 3])]]
+        s = [[{1, 2, 3}]]
         assert inspect(s) == "[[set(...)]]"
         with increased_recursive_depth():
             assert inspect(s) == repr(s)
