@@ -128,7 +128,7 @@ async def create_subscription(
 # Check all error cases when initializing the subscription.
 def describe_subscription_initialization_phase():
     @mark.asyncio
-    async def accepts_an_object_with_named_properties_as_arguments():
+    async def accepts_keyword_arguments():
         document = parse(
             """
             subscription {
@@ -142,7 +142,9 @@ def describe_subscription_initialization_phase():
                 yield value
 
         await subscribe(
-            email_schema, document, {"importantEmail": empty_async_iterator}
+            schema=email_schema,
+            document=document,
+            root_value={"importantEmail": empty_async_iterator},
         )
 
     @mark.asyncio
