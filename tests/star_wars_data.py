@@ -5,7 +5,7 @@ data from a backend service rather than from hardcoded JSON objects in a more co
 demo.
 """
 
-from typing import Collection, Iterator
+from typing import Awaitable, Collection, Iterator
 
 __all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_backstory"]
 
@@ -102,13 +102,15 @@ droid_data = {"2000": threepio, "2001": artoo}
 
 
 # noinspection PyShadowingBuiltins
-def get_character(id: str) -> Character:
+async def get_character(id: str) -> Character:
     """Helper function to get a character by ID."""
+    # We use an async function just to illustrate that GraphQL-core supports it.
     return human_data.get(id) or droid_data.get(id)  # type: ignore
 
 
-def get_friends(character: Character) -> Iterator[Character]:
+def get_friends(character: Character) -> Iterator[Awaitable[Character]]:
     """Allows us to query for a character's friends."""
+    # Notice that GraphQL-core accepts iterators of awaitables.
     return map(get_character, character.friends)
 
 
