@@ -264,12 +264,12 @@ def get_named_type(type_: None) -> None:
     ...  # pragma: no cover
 
 
-@overload  # noqa: F811 (pycqa/flake8#423)
+@overload
 def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
     ...  # pragma: no cover
 
 
-def get_named_type(type_):  # noqa: F811
+def get_named_type(type_):
     """Unwrap possible wrapping type"""
     if type_:
         unwrapped_type = type_
@@ -1515,17 +1515,17 @@ def get_nullable_type(type_: None) -> None:
     ...  # pragma: no cover
 
 
-@overload  # noqa: F811 (pycqa/flake8#423)
+@overload
 def get_nullable_type(type_: GraphQLNullableType) -> GraphQLNullableType:
     ...  # pragma: no cover
 
 
-@overload  # noqa: F811
+@overload
 def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType:
     ...  # pragma: no cover
 
 
-def get_nullable_type(type_):  # noqa: F811
+def get_nullable_type(type_):
     """Unwrap possible non-null type"""
     if is_non_null_type(type_):
         type_ = cast(GraphQLNonNull, type_)

@@ -17,29 +17,29 @@ __all__ = ["type_from_ast"]
 def type_from_ast(
     schema: GraphQLSchema, type_node: NamedTypeNode
 ) -> Optional[GraphQLNamedType]:
-    ...
+    ...  # pragma: no cover
 
 
-@overload  # noqa: F811 (pycqa/flake8#423)
+@overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: ListTypeNode
 ) -> Optional[GraphQLList]:
-    ...
+    ...  # pragma: no cover
 
 
-@overload  # noqa: F811
+@overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: NonNullTypeNode
 ) -> Optional[GraphQLNonNull]:
-    ...
+    ...  # pragma: no cover
 
 
-@overload  # noqa: F811
+@overload
 def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> Optional[GraphQLType]:
-    ...
+    ...  # pragma: no cover
 
 
-def type_from_ast(schema, type_node):  # noqa: F811
+def type_from_ast(schema, type_node):
     """Get the GraphQL type definition from an AST node.
 
     Given a Schema and an AST node describing a type, return a GraphQLType definition
@@ -58,4 +58,4 @@ def type_from_ast(schema, type_node):  # noqa: F811
         return schema.get_type(type_node.name.value)
 
     # Not reachable. All possible type nodes have been considered.
-    raise TypeError(f"Unexpected type node: {inspect(type_node)}.")  # pragma: no cover
+    raise TypeError(f"Unexpected type node: {inspect(type_node)}.")
