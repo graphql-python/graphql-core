@@ -95,7 +95,7 @@ def build_ast_schema(
     a valid SDL document.
     """
     if not isinstance(document_ast, DocumentNode):
-        raise TypeError("Must provide a Document AST.")
+        raise TypeError("Must provide valid Document AST.")
 
     if not (assume_valid or assume_valid_sdl):
         from ..validation.validate import assert_valid_sdl
@@ -374,7 +374,7 @@ class ASTDefinitionBuilder:
         except AttributeError:
             # Not reachable. All possible type definition nodes have been considered.
             raise TypeError(  # pragma: no cover
-                f"Unexpected type definition node: '{inspect(ast_node)}'."
+                f"Unexpected type definition node: {inspect(ast_node)}."
             )
         else:
             return method(ast_node)

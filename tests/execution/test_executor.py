@@ -34,7 +34,7 @@ def describe_execute_handles_basic_execution_tasks():
         with raises(TypeError) as exc_info:
             assert execute(schema=schema, document=None)  # type: ignore
 
-        assert str(exc_info.value) == "Must provide document"
+        assert str(exc_info.value) == "Must provide document."
 
     # noinspection PyTypeChecker
     def throws_if_no_schema_is_provided():

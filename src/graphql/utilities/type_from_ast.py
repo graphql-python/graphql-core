@@ -58,6 +58,4 @@ def type_from_ast(schema, type_node):  # noqa: F811
         return schema.get_type(type_node.name.value)
 
     # Not reachable. All possible type nodes have been considered.
-    raise TypeError(  # pragma: no cover
-        f"Unexpected type node: '{inspect(type_node)}'."
-    )
+    raise TypeError(f"Unexpected type node: {inspect(type_node)}.")  # pragma: no cover

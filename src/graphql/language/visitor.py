@@ -172,7 +172,7 @@ class Visitor:
                         if not issubclass(node_cls, Node):
                             raise AttributeError
                     except AttributeError:
-                        raise AttributeError(f"Invalid AST node kind: {kind}")
+                        raise AttributeError(f"Invalid AST node kind: {kind}.")
 
     @classmethod
     def get_visit_fn(cls, kind, is_leaving=False) -> Callable:
@@ -214,9 +214,9 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
     dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
-        raise TypeError(f"Not an AST Node: {inspect(root)}")
+        raise TypeError(f"Not an AST Node: {inspect(root)}.")
     if not isinstance(visitor, Visitor):
-        raise TypeError(f"Not an AST Visitor: {inspect(visitor)}")
+        raise TypeError(f"Not an AST Visitor: {inspect(visitor)}.")
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
@@ -284,7 +284,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
             result = None
         else:
             if not isinstance(node, Node):
-                raise TypeError(f"Not an AST Node: {inspect(node)}")
+                raise TypeError(f"Invalid AST Node: {inspect(node)}.")
             visit_fn = visitor.get_visit_fn(node.kind, is_leaving)
             if visit_fn:
                 result = visit_fn(visitor, node, key, parent, path, ancestors)

@@ -39,7 +39,7 @@ def validate(
     created from the provided schema.
     """
     if not document_ast or not isinstance(document_ast, DocumentNode):
-        raise TypeError("You must provide a document node.")
+        raise TypeError("Must provide document.")
     # If the schema used for validation is invalid, throw an error.
     assert_valid_schema(schema)
     if type_info is None:

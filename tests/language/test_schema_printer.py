@@ -20,7 +20,7 @@ def describe_printer_sdl_document():
             # noinspection PyTypeChecker
             print_ast(bad_ast)  # type: ignore
         msg = str(exc_info.value)
-        assert msg == "Not an AST Node: {'random': 'Data'}"
+        assert msg == "Not an AST Node: {'random': 'Data'}."
 
     # noinspection PyShadowingNames
     def does_not_alter_ast(kitchen_sink_sdl):  # noqa: F811

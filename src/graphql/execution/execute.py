@@ -1039,7 +1039,7 @@ def assert_valid_execution_arguments(
     For internal use only.
     """
     if not document:
-        raise TypeError("Must provide document")
+        raise TypeError("Must provide document.")
 
     # If the schema used for execution is invalid, throw an error.
     assert_valid_schema(schema)

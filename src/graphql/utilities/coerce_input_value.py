@@ -168,4 +168,4 @@ def coerce_input_value(
         return INVALID
 
     # Not reachable. All possible input types have been considered.
-    raise TypeError(f"Unexpected input type: '{inspect(type_)}'.")  # pragma: no cover
+    raise TypeError(f"Unexpected input type: {inspect(type_)}.")  # pragma: no cover

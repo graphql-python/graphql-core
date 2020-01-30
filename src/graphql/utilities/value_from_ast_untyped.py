@@ -31,7 +31,7 @@ def value_from_ast_untyped(
 
     # Not reachable. All possible value nodes have been considered.
     raise TypeError(  # pragma: no cover
-        f"Unexpected value node: '{inspect(value_node)}'."
+        f"Unexpected value node: {inspect(value_node)}."
     )
 
 

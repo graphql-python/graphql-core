@@ -69,7 +69,7 @@ def extend_schema(
     assert_schema(schema)
 
     if not isinstance(document_ast, DocumentNode):
-        "Must provide valid Document AST"
+        "Must provide valid Document AST."
 
     if not (assume_valid or assume_valid_sdl):
         from ..validation.validate import assert_valid_sdl_extension
@@ -142,7 +142,7 @@ def extend_schema(
         directives: List[GraphQLDirective],
     ) -> List[GraphQLDirective]:
         if not directives:
-            raise TypeError("schema must have default directives")
+            raise TypeError("schema must have default directives.")
 
         return [replace_directive(directive) for directive in schema.directives]
 
@@ -170,7 +170,7 @@ def extend_schema(
             return extend_input_object_type(type_)
 
         # Not reachable. All possible types have been considered.
-        raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
+        raise TypeError(f"Unexpected type: {inspect(type_)}.")  # pragma: no cover
 
     def extend_input_object_type(
         type_: GraphQLInputObjectType,

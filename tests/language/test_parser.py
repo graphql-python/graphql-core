@@ -54,12 +54,12 @@ def describe_parser():
             # noinspection PyTypeChecker
             assert parse(None)  # type: ignore
         msg = str(exc_info.value)
-        assert "Must provide Source. Received: None" in msg
+        assert "Must provide Source. Received: None." in msg
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             assert parse({})  # type: ignore
         msg = str(exc_info.value)
-        assert "Must provide Source. Received: {}" in msg
+        assert "Must provide Source. Received: {}." in msg
 
     def parse_provides_useful_errors():
         with raises(GraphQLSyntaxError) as exc_info:

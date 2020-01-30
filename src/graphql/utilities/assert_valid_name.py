@@ -21,7 +21,7 @@ def assert_valid_name(name: str) -> str:
 def is_valid_name_error(name: str, node: Node = None) -> Optional[GraphQLError]:
     """Return an Error if a name is invalid."""
     if not isinstance(name, str):
-        raise TypeError("Expected string")
+        raise TypeError("Expected name to be a string.")
     if name.startswith("__"):
         return GraphQLError(
             f"Name {name!r} must not begin with '__',"

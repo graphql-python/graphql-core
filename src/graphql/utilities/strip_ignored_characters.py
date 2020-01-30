@@ -68,7 +68,7 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
     source_obj = Source(source) if isinstance(source, str) else source
     if not isinstance(source_obj, Source):
         raise TypeError(
-            f"Must provide string or Source. Received: {inspect(source_obj)}"
+            f"Must provide string or Source. Received: {inspect(source_obj)}."
         )
 
     body = source_obj.body

@@ -31,11 +31,11 @@ class Source:
             location_offset = SourceLocation._make(location_offset)
         if location_offset.line <= 0:
             raise ValueError(
-                "line in location_offset is 1-indexed and must be positive"
+                "line in location_offset is 1-indexed and must be positive."
             )
         if location_offset.column <= 0:
             raise ValueError(
-                "column in location_offset is 1-indexed and must be positive"
+                "column in location_offset is 1-indexed and must be positive."
             )
         self.location_offset = location_offset
 

@@ -161,7 +161,7 @@ class Parser:
         if isinstance(source, str):
             source = Source(source)
         elif not isinstance(source, Source):
-            raise TypeError(f"Must provide Source. Received: {inspect(source)}")
+            raise TypeError(f"Must provide Source. Received: {inspect(source)}.")
         self._lexer = Lexer(source)
         self._no_location = no_location
         self._experimental_fragment_variables = experimental_fragment_variables

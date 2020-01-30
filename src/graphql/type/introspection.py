@@ -260,7 +260,7 @@ class TypeFieldResolvers:
             return TypeKind.NON_NULL
 
         # Not reachable. All possible types have been considered.
-        raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
+        raise TypeError(f"Unexpected type: {inspect(type_)}.")  # pragma: no cover
 
     @staticmethod
     def name(type_, _info):

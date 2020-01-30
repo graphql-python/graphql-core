@@ -19,7 +19,7 @@ def describe_assert_valid_name():
             # noinspection PyTypeChecker
             assert_valid_name({})  # type: ignore
         msg = str(exc_info.value)
-        assert msg == "Expected string"
+        assert msg == "Expected name to be a string."
 
     def throws_for_names_with_invalid_characters():
         with raises(GraphQLError, match="Names must match"):

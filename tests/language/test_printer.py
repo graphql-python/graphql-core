@@ -28,7 +28,7 @@ def describe_printer_query_document():
             # noinspection PyTypeChecker
             print_ast(bad_ast)  # type: ignore
         msg = str(exc_info.value)
-        assert msg == "Not an AST Node: {'random': 'Data'}"
+        assert msg == "Not an AST Node: {'random': 'Data'}."
 
     def correctly_prints_query_operation_without_name():
         query_ast_shorthanded = parse("query { id, name }")

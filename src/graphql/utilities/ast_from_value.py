@@ -127,7 +127,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
             return StringValueNode(value=serialized)
 
-        raise TypeError(f"Cannot convert value to AST: {inspect(serialized)}")
+        raise TypeError(f"Cannot convert value to AST: {inspect(serialized)}.")
 
     # Not reachable. All possible input types have been considered.
-    raise TypeError(f"Unexpected input type: '{inspect(type_)}'.")  # pragma: no cover
+    raise TypeError(f"Unexpected input type: {inspect(type_)}.")  # pragma: no cover

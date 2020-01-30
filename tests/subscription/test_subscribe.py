@@ -321,7 +321,7 @@ def describe_subscription_initialization_phase():
             # noinspection PyTypeChecker
             await subscribe(email_schema, None)  # type: ignore
 
-        assert str(exc_info.value) == "Must provide document"
+        assert str(exc_info.value) == "Must provide document."
 
         with raises(TypeError, match="missing .* positional argument: 'document'"):
             # noinspection PyTypeChecker
@@ -371,7 +371,7 @@ def describe_subscription_initialization_phase():
             await create_subscription(pubsub, invalid_email_schema)
 
         assert str(exc_info.value) == (
-            "Subscription field must return AsyncIterable. Received: 'test'"
+            "Subscription field must return AsyncIterable. Received: 'test'."
         )
 
     @mark.asyncio

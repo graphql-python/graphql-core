@@ -10,7 +10,7 @@ from ..execution.execute import (
     ExecutionResult,
 )
 from ..language import DocumentNode
-from ..pyutils import Path
+from ..pyutils import Path, inspect
 from ..type import GraphQLFieldResolver, GraphQLSchema
 from ..utilities import get_operation_root_type
 from .map_async_iterator import MapAsyncIterator
@@ -171,5 +171,6 @@ async def create_source_event_stream(
     if isinstance(event_stream, AsyncIterable):
         return event_stream
     raise TypeError(
-        f"Subscription field must return AsyncIterable. Received: {event_stream!r}"
+        "Subscription field must return AsyncIterable."
+        f" Received: {inspect(event_stream)}."
     )

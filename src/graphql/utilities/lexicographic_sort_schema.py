@@ -136,7 +136,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             return GraphQLInputObjectType(**kwargs)
 
         # Not reachable. All possible types have been considered.
-        raise TypeError(f"Unexpected type: '{inspect(type_)}'.")  # pragma: no cover
+        raise TypeError(f"Unexpected type: {inspect(type_)}.")  # pragma: no cover
 
     type_map: Dict[str, GraphQLNamedType] = {
         type_.name: sort_named_type(type_)
