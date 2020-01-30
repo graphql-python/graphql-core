@@ -683,16 +683,16 @@ def describe_schema_builder():
     def unreferenced_type_implementing_referenced_interface():
         sdl = dedent(
             """
-            type Concrete implements Iface {
+            type Concrete implements Interface {
               key: String
             }
 
-            interface Iface {
+            interface Interface {
               key: String
             }
 
             type Query {
-              iface: Iface
+              interface: Interface
             }
             """
         )
@@ -710,7 +710,7 @@ def describe_schema_builder():
             }
 
             type Query {
-              iface: Parent
+              interfaceField: Parent
             }
             """
         )

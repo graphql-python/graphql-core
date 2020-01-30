@@ -84,7 +84,7 @@ Dog = GraphQLObjectType(
         "doesKnowCommand": GraphQLField(
             GraphQLBoolean, {"dogCommand": GraphQLArgument(DogCommand)}
         ),
-        "isHousetrained": GraphQLField(
+        "isHouseTrained": GraphQLField(
             GraphQLBoolean,
             args={"atOtherHomes": GraphQLArgument(GraphQLBoolean, default_value=True)},
         ),

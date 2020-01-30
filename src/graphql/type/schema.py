@@ -357,37 +357,37 @@ class GraphQLSchema:
 def collect_implementations(
     types: Collection[GraphQLNamedType],
 ) -> Dict[str, InterfaceImplementations]:
-    implementations: Dict[str, InterfaceImplementations] = {}
+    implementations_map: Dict[str, InterfaceImplementations] = {}
     for type_ in types:
         if is_interface_type(type_):
             type_ = cast(GraphQLInterfaceType, type_)
-            if type_.name not in implementations:
-                implementations[type_.name] = InterfaceImplementations(
+            if type_.name not in implementations_map:
+                implementations_map[type_.name] = InterfaceImplementations(
                     objects=[], interfaces=[]
                 )
             # Store implementations by interface.
-            for iface in type_.interfaces:
-                if is_interface_type(iface):
-                    impls = implementations.get(iface.name)
-                    if impls is None:
-                        implementations[iface.name] = InterfaceImplementations(
+            for interface in type_.interfaces:
+                if is_interface_type(interface):
+                    implementations = implementations_map.get(interface.name)
+                    if implementations is None:
+                        implementations_map[interface.name] = InterfaceImplementations(
                             objects=[], interfaces=[type_]
                         )
                     else:
-                        impls.interfaces.append(type_)
+                        implementations.interfaces.append(type_)
         elif is_object_type(type_):
             type_ = cast(GraphQLObjectType, type_)
             # Store implementations by objects.
-            for iface in type_.interfaces:
-                if is_interface_type(iface):
-                    impls = implementations.get(iface.name)
-                    if impls is None:
-                        implementations[iface.name] = InterfaceImplementations(
+            for interface in type_.interfaces:
+                if is_interface_type(interface):
+                    implementations = implementations_map.get(interface.name)
+                    if implementations is None:
+                        implementations_map[interface.name] = InterfaceImplementations(
                             objects=[type_], interfaces=[]
                         )
                     else:
-                        impls.objects.append(type_)
-    return implementations
+                        implementations.objects.append(type_)
+    return implementations_map
 
 
 def is_schema(schema: Any) -> bool:

@@ -677,7 +677,7 @@ def describe_validate_values_of_correct_type():
                 """
                 {
                   dog {
-                    isHousetrained(atOtherHomes: true)
+                    isHouseTrained(atOtherHomes: true)
                   }
                 }
                 """
@@ -688,7 +688,7 @@ def describe_validate_values_of_correct_type():
                 """
                 {
                   dog {
-                    isHousetrained
+                    isHouseTrained
                   }
                 }
                 """
@@ -749,7 +749,7 @@ def describe_validate_values_of_correct_type():
                 """
             )
 
-        def multiple_reqs_on_mixed_list():
+        def multiple_required_args_on_mixed_list():
             assert_valid(
                 """
                 {
@@ -760,7 +760,7 @@ def describe_validate_values_of_correct_type():
                 """
             )
 
-        def multiple_reqs_and_one_opt_on_mixed_list():
+        def multiple_required_and_one_optional_arg_on_mixed_list():
             assert_valid(
                 """
                 {
@@ -771,7 +771,7 @@ def describe_validate_values_of_correct_type():
                 """
             )
 
-        def all_reqs_and_and_opts_on_mixed_list():
+        def all_required_and_optional_args_on_mixed_list():
             assert_valid(
                 """
                 {

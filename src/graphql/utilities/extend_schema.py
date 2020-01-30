@@ -78,7 +78,7 @@ def extend_schema(
 
     # Collect the type definitions and extensions found in the document.
     type_defs: List[TypeDefinitionNode] = []
-    type_exts_map: Dict[str, Any] = defaultdict(list)
+    type_extensions_map: Dict[str, Any] = defaultdict(list)
 
     # New directives and types are separate because a directives and types can have the
     # same name. For example, a type named "skip".
@@ -86,28 +86,28 @@ def extend_schema(
 
     schema_def: Optional[SchemaDefinitionNode] = None
     # Schema extensions are collected which may add additional operation types.
-    schema_exts: List[SchemaExtensionNode] = []
+    schema_extensions: List[SchemaExtensionNode] = []
 
     for def_ in document_ast.definitions:
         if isinstance(def_, SchemaDefinitionNode):
             schema_def = def_
         elif isinstance(def_, SchemaExtensionNode):
-            schema_exts.append(def_)
+            schema_extensions.append(def_)
         elif isinstance(def_, TypeDefinitionNode):
             type_defs.append(def_)
         elif isinstance(def_, TypeExtensionNode):
             extended_type_name = def_.name.value
-            type_exts_map[extended_type_name].append(def_)
+            type_extensions_map[extended_type_name].append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
             directive_defs.append(def_)
 
     # If this document contains no new types, extensions, or directives then return the
     # same unmodified GraphQLSchema instance.
     if (
-        not type_exts_map
+        not type_extensions_map
         and not type_defs
         and not directive_defs
-        and not schema_exts
+        and not schema_extensions
         and not schema_def
     ):
         return schema
@@ -176,7 +176,7 @@ def extend_schema(
         type_: GraphQLInputObjectType,
     ) -> GraphQLInputObjectType:
         kwargs = type_.to_kwargs()
-        extensions = type_exts_map.get(kwargs["name"], [])
+        extensions = type_extensions_map.get(kwargs["name"], [])
 
         return GraphQLInputObjectType(
             **{
@@ -200,7 +200,7 @@ def extend_schema(
 
     def extend_enum_type(type_: GraphQLEnumType) -> GraphQLEnumType:
         kwargs = type_.to_kwargs()
-        extensions = type_exts_map.get(kwargs["name"], [])
+        extensions = type_extensions_map.get(kwargs["name"], [])
 
         return GraphQLEnumType(
             **{
@@ -216,7 +216,7 @@ def extend_schema(
 
     def extend_scalar_type(type_: GraphQLScalarType) -> GraphQLScalarType:
         kwargs = type_.to_kwargs()
-        extensions = type_exts_map.get(kwargs["name"], [])
+        extensions = type_extensions_map.get(kwargs["name"], [])
 
         return GraphQLScalarType(
             **{
@@ -228,7 +228,7 @@ def extend_schema(
 
     def extend_object_type(type_: GraphQLObjectType) -> GraphQLObjectType:
         kwargs = type_.to_kwargs()
-        extensions = type_exts_map.get(kwargs["name"], [])
+        extensions = type_extensions_map.get(kwargs["name"], [])
 
         return GraphQLObjectType(
             **{
@@ -252,7 +252,7 @@ def extend_schema(
 
     def extend_interface_type(type_: GraphQLInterfaceType) -> GraphQLInterfaceType:
         kwargs = type_.to_kwargs()
-        extensions = type_exts_map.get(kwargs["name"], [])
+        extensions = type_extensions_map.get(kwargs["name"], [])
 
         return GraphQLInterfaceType(
             **{
@@ -276,7 +276,7 @@ def extend_schema(
 
     def extend_union_type(type_: GraphQLUnionType) -> GraphQLUnionType:
         kwargs = type_.to_kwargs()
-        extensions = type_exts_map.get(kwargs["name"], [])
+        extensions = type_extensions_map.get(kwargs["name"], [])
 
         return GraphQLUnionType(
             **{
@@ -327,8 +327,8 @@ def extend_schema(
     schema_types: List[Union[SchemaDefinitionNode, SchemaExtensionNode]] = []
     if schema_def:
         schema_types.append(schema_def)
-    if schema_exts:
-        schema_types.extend(schema_exts)
+    if schema_extensions:
+        schema_types.extend(schema_extensions)
     operation_types: Dict[OperationType, GraphQLObjectType] = {}
     if schema.query_type:
         operation_types[OperationType.QUERY] = cast(
@@ -365,7 +365,7 @@ def extend_schema(
                 schema.extension_ast_nodes
                 or cast(FrozenList[SchemaExtensionNode], FrozenList())
             )
-            + schema_exts
+            + schema_extensions
         )
         or None,
     )

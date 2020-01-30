@@ -37,17 +37,19 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
 
     # Special case for minified documents
     if len(location_line) > 120:
-        subline_index, subline_column_num = divmod(column_num, 80)
-        sublines = [location_line[i : i + 80] for i in range(0, len(location_line), 80)]
+        sub_line_index, sub_line_column_num = divmod(column_num, 80)
+        sub_lines = [
+            location_line[i : i + 80] for i in range(0, len(location_line), 80)
+        ]
 
         return location_str + print_prefixed_lines(
-            (str(line_num), sublines[0]),
-            *[("", subline) for subline in sublines[1 : subline_index + 1]],
-            (" ", " " * (subline_column_num - 1) + "^"),
+            (str(line_num), sub_lines[0]),
+            *[("", sub_line) for sub_line in sub_lines[1 : sub_line_index + 1]],
+            (" ", " " * (sub_line_column_num - 1) + "^"),
             (
                 "",
-                sublines[subline_index + 1]
-                if subline_index < len(sublines) - 1
+                sub_lines[sub_line_index + 1]
+                if sub_line_index < len(sub_lines) - 1
                 else None,
             ),
         )

@@ -60,7 +60,7 @@ def describe_validate_known_argument_names():
         assert_valid(
             """
             fragment noArgOnOptionalArg on Dog {
-              isHousetrained
+              isHouseTrained
             }
             """
         )

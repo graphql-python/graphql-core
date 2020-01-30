@@ -113,7 +113,7 @@ semantically valid before executing it, reporting errors otherwise.
 ```python
 from graphql import graphql_sync
 
-query = '{ boyhowdy }'
+query = '{ BoyHowdy }'
 
 print(graphql_sync(schema, query))
 ```
@@ -122,7 +122,7 @@ Because we queried a non-existing field, we will get the following result:
 
 ```python
 ExecutionResult(data=None, errors=[GraphQLError(
-    "Cannot query field 'boyhowdy' on type 'RootQueryType'.",
+    "Cannot query field 'BoyHowdy' on type 'RootQueryType'.",
     locations=[SourceLocation(line=1, column=3)])])
 ```
 
