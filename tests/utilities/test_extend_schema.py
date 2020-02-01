@@ -32,7 +32,7 @@ from graphql.type import (
     assert_union_type,
     validate_schema,
 )
-from graphql.utilities import build_schema, extend_schema, print_schema
+from graphql.utilities import build_schema, concat_ast, extend_schema, print_schema
 
 TypeWithAstNode = Union[
     GraphQLArgument,
@@ -421,6 +421,13 @@ def describe_extend_schema():
             """
         )
         extended_twice_schema = extend_schema(extended_schema, second_extension_ast)
+
+        extend_in_one_go_schema = extend_schema(
+            schema, concat_ast([first_extension_ast, second_extension_ast])
+        )
+        assert print_schema(extend_in_one_go_schema) == print_schema(
+            extended_twice_schema
+        )
 
         query = assert_object_type(extended_twice_schema.get_type("Query"))
         some_enum = assert_enum_type(extended_twice_schema.get_type("SomeEnum"))

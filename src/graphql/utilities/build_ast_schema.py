@@ -1,4 +1,15 @@
-from typing import Callable, Collection, Dict, List, NoReturn, Optional, Union, cast
+from collections import defaultdict
+from typing import (
+    Callable,
+    Collection,
+    DefaultDict,
+    Dict,
+    List,
+    NoReturn,
+    Optional,
+    Union,
+    cast,
+)
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -20,10 +31,12 @@ from ..language import (
     ObjectTypeExtensionNode,
     OperationType,
     ScalarTypeDefinitionNode,
+    ScalarTypeExtensionNode,
     SchemaDefinitionNode,
     SchemaExtensionNode,
     Source,
     TypeDefinitionNode,
+    TypeExtensionNode,
     TypeNode,
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
@@ -102,15 +115,23 @@ def build_ast_schema(
 
         assert_valid_sdl(document_ast)
 
+    # Collect the definitions and extensions found in the document.
     schema_def: Optional[SchemaDefinitionNode] = None
+    schema_extensions: List[SchemaExtensionNode] = []
     type_defs: List[TypeDefinitionNode] = []
+    type_extensions_map: DefaultDict[str, List[TypeExtensionNode]] = defaultdict(list)
     directive_defs: List[DirectiveDefinitionNode] = []
     append_directive_def = directive_defs.append
     for def_ in document_ast.definitions:
         if isinstance(def_, SchemaDefinitionNode):
             schema_def = def_
+        elif isinstance(def_, SchemaExtensionNode):
+            schema_extensions.append(def_)
         elif isinstance(def_, TypeDefinitionNode):
             type_defs.append(def_)
+        elif isinstance(def_, TypeExtensionNode):
+            extended_type_name = def_.name.value
+            type_extensions_map[extended_type_name].append(def_)
         elif isinstance(def_, DirectiveDefinitionNode):
             append_directive_def(def_)
 
@@ -124,10 +145,10 @@ def build_ast_schema(
         assume_valid=assume_valid, resolve_type=resolve_type
     )
 
-    type_map = ast_builder.build_type_map(type_defs)
+    type_map = ast_builder.build_type_map(type_defs, type_extensions_map)
 
     operation_types: Dict[OperationType, GraphQLObjectType] = (
-        ast_builder.get_operation_types([schema_def])
+        ast_builder.get_operation_types([schema_def, *schema_extensions])
         if schema_def
         else {
             # Note: While this could make early assertions to get the correctly
@@ -159,6 +180,7 @@ def build_ast_schema(
         types=type_map.values(),
         directives=directives,
         ast_node=schema_def,
+        extension_ast_nodes=schema_extensions,
         assume_valid=assume_valid,
     )
 
@@ -359,15 +381,23 @@ class ASTDefinitionBuilder:
         return types
 
     def build_type_map(
-        self, nodes: Collection[TypeDefinitionNode]
+        self,
+        nodes: Collection[TypeDefinitionNode],
+        extensions_map: DefaultDict[str, List[TypeExtensionNode]],
     ) -> Dict[str, GraphQLNamedType]:
         type_map: Dict[str, GraphQLNamedType] = {}
         for node in nodes:
             name = node.name.value
-            type_map[name] = std_type_map.get(name) or self._build_type(node)
+            type_map[name] = std_type_map.get(name) or self._build_type(
+                node, extensions_map[name]
+            )
         return type_map
 
-    def _build_type(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
+    def _build_type(
+        self,
+        ast_node: TypeDefinitionNode,
+        extension_nodes: Collection[TypeExtensionNode],
+    ) -> GraphQLNamedType:
         try:
             # object_type_definition_node is built with _build_object_type etc.
             method = getattr(self, "_build_" + ast_node.kind[:-11])
@@ -377,62 +407,103 @@ class ASTDefinitionBuilder:
                 f"Unexpected type definition node: {inspect(ast_node)}."
             )
         else:
-            return method(ast_node)
+            return method(ast_node, extension_nodes)
 
     def _build_object_type(
-        self, ast_node: ObjectTypeDefinitionNode
+        self,
+        ast_node: ObjectTypeDefinitionNode,
+        extension_nodes: Collection[ObjectTypeExtensionNode],
     ) -> GraphQLObjectType:
+        all_nodes: List[Union[ObjectTypeDefinitionNode, ObjectTypeExtensionNode]] = [
+            ast_node,
+            *extension_nodes,
+        ]
         return GraphQLObjectType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            interfaces=lambda: self.build_interfaces([ast_node]),
-            fields=lambda: self.build_field_map([ast_node]),
+            interfaces=lambda: self.build_interfaces(all_nodes),
+            fields=lambda: self.build_field_map(all_nodes),
             ast_node=ast_node,
+            extension_ast_nodes=extension_nodes,
         )
 
     def _build_interface_type(
-        self, ast_node: InterfaceTypeDefinitionNode
+        self,
+        ast_node: InterfaceTypeDefinitionNode,
+        extension_nodes: Collection[InterfaceTypeExtensionNode],
     ) -> GraphQLInterfaceType:
+        all_nodes: List[
+            Union[InterfaceTypeDefinitionNode, InterfaceTypeExtensionNode]
+        ] = [ast_node, *extension_nodes]
         return GraphQLInterfaceType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            interfaces=lambda: self.build_interfaces([ast_node]),
-            fields=lambda: self.build_field_map([ast_node]),
+            interfaces=lambda: self.build_interfaces(all_nodes),
+            fields=lambda: self.build_field_map(all_nodes),
             ast_node=ast_node,
+            extension_ast_nodes=extension_nodes,
         )
 
-    def _build_enum_type(self, ast_node: EnumTypeDefinitionNode) -> GraphQLEnumType:
+    def _build_enum_type(
+        self,
+        ast_node: EnumTypeDefinitionNode,
+        extension_nodes: Collection[EnumTypeExtensionNode],
+    ) -> GraphQLEnumType:
+        all_nodes: List[Union[EnumTypeDefinitionNode, EnumTypeExtensionNode]] = [
+            ast_node,
+            *extension_nodes,
+        ]
         return GraphQLEnumType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            values=self.build_enum_value_map([ast_node]),
+            values=self.build_enum_value_map(all_nodes),
             ast_node=ast_node,
+            extension_ast_nodes=extension_nodes,
         )
 
-    def _build_union_type(self, ast_node: UnionTypeDefinitionNode) -> GraphQLUnionType:
+    def _build_union_type(
+        self,
+        ast_node: UnionTypeDefinitionNode,
+        extension_nodes: Collection[UnionTypeExtensionNode],
+    ) -> GraphQLUnionType:
+        all_nodes: List[Union[UnionTypeDefinitionNode, UnionTypeExtensionNode]] = [
+            ast_node,
+            *extension_nodes,
+        ]
         return GraphQLUnionType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            types=lambda: self.build_union_types([ast_node]),
+            types=lambda: self.build_union_types(all_nodes),
             ast_node=ast_node,
+            extension_ast_nodes=extension_nodes,
         )
 
     @staticmethod
-    def _build_scalar_type(ast_node: ScalarTypeDefinitionNode) -> GraphQLScalarType:
+    def _build_scalar_type(
+        ast_node: ScalarTypeDefinitionNode,
+        extension_nodes: Collection[ScalarTypeExtensionNode],
+    ) -> GraphQLScalarType:
         return GraphQLScalarType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
             ast_node=ast_node,
+            extension_ast_nodes=extension_nodes,
         )
 
     def _build_input_object_type(
-        self, ast_node: InputObjectTypeDefinitionNode
+        self,
+        ast_node: InputObjectTypeDefinitionNode,
+        extension_nodes: Collection[InputObjectTypeExtensionNode],
     ) -> GraphQLInputObjectType:
+        all_nodes: List[
+            Union[InputObjectTypeDefinitionNode, InputObjectTypeExtensionNode]
+        ] = [ast_node, *extension_nodes]
         return GraphQLInputObjectType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
-            fields=lambda: self.build_input_field_map([ast_node]),
+            fields=lambda: self.build_input_field_map(all_nodes),
             ast_node=ast_node,
+            extension_ast_nodes=extension_nodes,
         )
 
 

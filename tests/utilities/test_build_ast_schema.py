@@ -4,7 +4,7 @@ from typing import Union
 from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, InterfaceTypeDefinitionNode
+from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
@@ -29,7 +29,7 @@ from graphql.type import (
     validate_schema,
 )
 from graphql.pyutils import dedent
-from graphql.utilities import build_ast_schema, build_schema, print_schema
+from graphql.utilities import build_ast_schema, build_schema, print_schema, print_type
 
 
 def cycle_sdl(sdl: str) -> str:
@@ -48,10 +48,17 @@ TypeWithAstNode = Union[
     GraphQLArgument, GraphQLEnumValue, GraphQLField, GraphQLInputField, GraphQLNamedType
 ]
 
+TypeWithExtensionAstNodes = GraphQLNamedType
+
 
 def print_ast_node(obj: TypeWithAstNode) -> str:
     assert obj is not None and obj.ast_node is not None
     return print_ast(obj.ast_node)
+
+
+def print_all_ast_nodes(obj: TypeWithExtensionAstNodes) -> str:
+    assert obj is not None and obj.extension_ast_nodes is not None
+    return print_ast(DocumentNode(definitions=[obj.ast_node, *obj.extension_ast_nodes]))
 
 
 def describe_schema_builder():
@@ -783,6 +790,198 @@ def describe_schema_builder():
         field2 = root_fields["field2"]
         assert field2.is_deprecated is True
         assert field2.deprecation_reason == "Because I said so"
+
+    def correctly_extend_scalar_type():
+        scalar_sdl = dedent(
+            """
+            scalar SomeScalar
+
+            extend scalar SomeScalar @foo
+
+            extend scalar SomeScalar @bar
+            """
+        )
+        schema = build_schema(
+            scalar_sdl
+            + dedent(
+                """
+                directive @foo on SCALAR
+                directive @bar on SCALAR
+                """
+            )
+        )
+
+        some_scalar = assert_scalar_type(schema.get_type("SomeScalar"))
+        assert print_type(some_scalar) + "\n" == dedent(
+            """
+            scalar SomeScalar
+            """
+        )
+
+        assert print_all_ast_nodes(some_scalar) == scalar_sdl
+
+    def correctly_extend_object_type():
+        object_sdl = dedent(
+            """
+            type SomeObject implements Foo {
+              first: String
+            }
+
+            extend type SomeObject implements Bar {
+              second: Int
+            }
+
+            extend type SomeObject implements Baz {
+              third: Float
+            }
+            """
+        )
+        schema = build_schema(
+            object_sdl
+            + dedent(
+                """
+                interface Foo
+                interface Bar
+                interface Baz
+                """
+            )
+        )
+
+        some_object = assert_object_type(schema.get_type("SomeObject"))
+        assert print_type(some_object) + "\n" == dedent(
+            """
+            type SomeObject implements Foo & Bar & Baz {
+              first: String
+              second: Int
+              third: Float
+            }
+            """
+        )
+
+        assert print_all_ast_nodes(some_object) == object_sdl
+
+    def correctly_extend_interface_type():
+        interface_sdl = dedent(
+            """
+            interface SomeInterface {
+              first: String
+            }
+
+            extend interface SomeInterface {
+              second: Int
+            }
+
+            extend interface SomeInterface {
+              third: Float
+            }
+            """
+        )
+        schema = build_schema(interface_sdl)
+
+        some_interface = assert_interface_type(schema.get_type("SomeInterface"))
+        assert print_type(some_interface) + "\n" == dedent(
+            """
+            interface SomeInterface {
+              first: String
+              second: Int
+              third: Float
+            }
+            """
+        )
+
+        assert print_all_ast_nodes(some_interface) == interface_sdl
+
+    def correctly_extend_union_type():
+        union_sdl = dedent(
+            """
+            union SomeUnion = FirstType
+
+            extend union SomeUnion = SecondType
+
+            extend union SomeUnion = ThirdType
+            """
+        )
+        schema = build_schema(
+            union_sdl
+            + dedent(
+                """
+                type FirstType
+                type SecondType
+                type ThirdType
+                """
+            )
+        )
+
+        some_union = assert_union_type(schema.get_type("SomeUnion"))
+        assert print_type(some_union) + "\n" == dedent(
+            """
+            union SomeUnion = FirstType | SecondType | ThirdType
+            """
+        )
+
+        assert print_all_ast_nodes(some_union) == union_sdl
+
+    def correctly_extend_enum_type():
+        enum_sdl = dedent(
+            """
+            enum SomeEnum {
+              FIRST
+            }
+
+            extend enum SomeEnum {
+              SECOND
+            }
+
+            extend enum SomeEnum {
+              THIRD
+            }
+            """
+        )
+        schema = build_schema(enum_sdl)
+
+        some_enum = assert_enum_type(schema.get_type("SomeEnum"))
+        assert print_type(some_enum) + "\n" == dedent(
+            """
+            enum SomeEnum {
+              FIRST
+              SECOND
+              THIRD
+            }
+            """
+        )
+
+        assert print_all_ast_nodes(some_enum) == enum_sdl
+
+    def correctly_extend_input_object_type():
+        input_sdl = dedent(
+            """
+            input SomeInput {
+              first: String
+            }
+
+            extend input SomeInput {
+              second: Int
+            }
+
+            extend input SomeInput {
+              third: Float
+            }
+            """
+        )
+        schema = build_schema(input_sdl)
+
+        some_input = assert_input_object_type(schema.get_type("SomeInput"))
+        assert print_type(some_input) + "\n" == dedent(
+            """
+            input SomeInput {
+              first: String
+              second: Int
+              third: Float
+            }
+            """
+        )
+
+        assert print_all_ast_nodes(some_input) == input_sdl
 
     def correctly_assign_ast_nodes():
         sdl = dedent(

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, DefaultDict, Dict, List, Optional, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -78,7 +78,7 @@ def extend_schema(
 
     # Collect the type definitions and extensions found in the document.
     type_defs: List[TypeDefinitionNode] = []
-    type_extensions_map: Dict[str, Any] = defaultdict(list)
+    type_extensions_map: DefaultDict[str, Any] = defaultdict(list)
 
     # New directives and types are separate because a directives and types can have the
     # same name. For example, a type named "skip".
@@ -311,7 +311,7 @@ def extend_schema(
         assume_valid=assume_valid, resolve_type=resolve_type
     )
 
-    type_map = ast_builder.build_type_map(type_defs)
+    type_map = ast_builder.build_type_map(type_defs, type_extensions_map)
     for existing_type_name, existing_type in schema.type_map.items():
         type_map[existing_type_name] = extend_named_type(existing_type)
 
