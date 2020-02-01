@@ -91,6 +91,18 @@ def describe_schema_builder():
             None,
         )
 
+    def ignores_non_type_system_definitions():
+        sdl = """
+            type Query {
+              str: String
+            }
+
+            fragment SomeFragment on Query {
+              str
+            }
+            """
+        build_schema(sdl)
+
     def empty_type():
         sdl = dedent(
             """
@@ -428,9 +440,8 @@ def describe_schema_builder():
                 }
                 """
             )
-        msg = str(exc_info.value)
         assert (
-            msg == "Hello types must be specified"
+            str(exc_info.value) == "Hello types must be specified"
             " as a collection of GraphQLObjectType instances."
         )
 
@@ -898,8 +909,7 @@ def describe_schema_builder():
             """
         with raises(TypeError) as exc_info:
             build_schema(sdl)
-        msg = str(exc_info.value)
-        assert msg == "Unknown directive '@unknown'."
+        assert str(exc_info.value) == "Unknown directive '@unknown'."
 
     def allows_to_disable_sdl_validation():
         sdl = """
@@ -909,3 +919,21 @@ def describe_schema_builder():
             """
         build_schema(sdl, assume_valid=True)
         build_schema(sdl, assume_valid_sdl=True)
+
+    def throws_on_unknown_types():
+        sdl = """
+            type Query {
+              unknown: UnknownType
+            }
+            """
+        with raises(TypeError) as exc_info:
+            build_schema(sdl, assume_valid_sdl=True)
+        assert str(exc_info.value).endswith("'UnknownType' not found in document.")
+
+    def rejects_invalid_ast():
+        with raises(TypeError) as exc_info:
+            build_ast_schema(None)  # type: ignore
+        assert str(exc_info.value) == "Must provide valid Document AST."
+        with raises(TypeError) as exc_info:
+            build_ast_schema({})  # type: ignore
+        assert str(exc_info.value) == "Must provide valid Document AST."

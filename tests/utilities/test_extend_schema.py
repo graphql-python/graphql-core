@@ -1189,8 +1189,7 @@ def describe_extend_schema():
 
         with raises(TypeError) as exc_info:
             extend_schema(schema, extend_ast)
-        msg = str(exc_info.value)
-        assert msg == "Unknown directive '@unknown'."
+        assert str(exc_info.value) == "Unknown directive '@unknown'."
 
     def allows_to_disable_sdl_validation():
         schema = GraphQLSchema()
@@ -1198,6 +1197,30 @@ def describe_extend_schema():
 
         extend_schema(schema, extend_ast, assume_valid=True)
         extend_schema(schema, extend_ast, assume_valid_sdl=True)
+
+    def throws_on_unknown_types():
+        schema = GraphQLSchema()
+        ast = parse(
+            """
+            type Query {
+              unknown: UnknownType
+            }
+            """
+        )
+        with raises(TypeError) as exc_info:
+            extend_schema(schema, ast, assume_valid_sdl=True)
+        assert str(exc_info.value).endswith("Unknown type: 'UnknownType'.")
+
+    def rejects_invalid_ast():
+        schema = GraphQLSchema()
+
+        with raises(TypeError) as exc_info:
+            extend_schema(schema, None)  # type: ignore
+        assert str(exc_info.value) == "Must provide valid Document AST."
+
+        with raises(TypeError) as exc_info:
+            extend_schema(schema, {})  # type: ignore
+        assert str(exc_info.value) == "Must provide valid Document AST."
 
     def does_not_allow_replacing_a_default_directive():
         schema = GraphQLSchema()
@@ -1287,6 +1310,23 @@ def describe_extend_schema():
             mutation_type = extended_schema.mutation_type
             assert isinstance(mutation_type, GraphQLObjectType)
             assert mutation_type.name == "MutationRoot"
+            assert print_extension_nodes(extended_schema) == extension_sdl
+
+        def adds_directive_via_schema_extension():
+            schema = build_schema(
+                """
+                type Query
+
+                directive @foo on SCHEMA
+                """
+            )
+            extension_sdl = dedent(
+                """
+                extend schema @foo
+                """
+            )
+            extended_schema = extend_schema(schema, parse(extension_sdl))
+
             assert print_extension_nodes(extended_schema) == extension_sdl
 
         def adds_multiple_new_root_types_via_schema_extension():

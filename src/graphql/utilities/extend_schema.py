@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, cast
 
 from ..language import (
     DirectiveDefinitionNode,
@@ -69,7 +69,7 @@ def extend_schema(
     assert_schema(schema)
 
     if not isinstance(document_ast, DocumentNode):
-        "Must provide valid Document AST."
+        raise TypeError("Must provide valid Document AST.")
 
     if not (assume_valid or assume_valid_sdl):
         from ..validation.validate import assert_valid_sdl_extension
@@ -316,11 +316,6 @@ def extend_schema(
         type_map[existing_type_name] = extend_named_type(existing_type)
 
     # Get the extended root operation types.
-    schema_types: List[Union[SchemaDefinitionNode, SchemaExtensionNode]] = []
-    if schema_def:
-        schema_types.append(schema_def)
-    if schema_extensions:
-        schema_types.extend(schema_extensions)
     operation_types: Dict[OperationType, GraphQLObjectType] = {}
     if schema.query_type:
         operation_types[OperationType.QUERY] = cast(
@@ -334,10 +329,11 @@ def extend_schema(
         operation_types[OperationType.SUBSCRIPTION] = cast(
             GraphQLObjectType, replace_named_type(schema.subscription_type)
         )
-    operation_types.update(
-        # Then, incorporate schema definition and all schema extensions.
-        ast_builder.get_operation_types(schema_types)
-    )
+    # Then, incorporate schema definition and all schema extensions.
+    if schema_def:
+        operation_types.update(ast_builder.get_operation_types([schema_def]))
+    if schema_extensions:
+        operation_types.update(ast_builder.get_operation_types(schema_extensions))
 
     # Then produce and return a Schema with these types.
     get_operation = operation_types.get
