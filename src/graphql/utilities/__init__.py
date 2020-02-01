@@ -20,10 +20,10 @@ from .introspection_from_schema import introspection_from_schema
 from .build_client_schema import build_client_schema
 
 # Build a GraphQLSchema from GraphQL Schema language.
-from .build_ast_schema import build_ast_schema, build_schema, get_description
+from .build_ast_schema import build_ast_schema, build_schema
 
 # Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST.
-from .extend_schema import extend_schema
+from .extend_schema import extend_schema, get_description
 
 # Sort a GraphQLSchema.
 from .lexicographic_sort_schema import lexicographic_sort_schema

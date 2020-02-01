@@ -1127,7 +1127,7 @@ def describe_schema_builder():
             """
         with raises(TypeError) as exc_info:
             build_schema(sdl, assume_valid_sdl=True)
-        assert str(exc_info.value).endswith("'UnknownType' not found in document.")
+        assert str(exc_info.value).endswith("Unknown type: 'UnknownType'.")
 
     def rejects_invalid_ast():
         with raises(TypeError) as exc_info:

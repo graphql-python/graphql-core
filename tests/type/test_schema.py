@@ -17,6 +17,7 @@ from graphql.type import (
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
+    specified_directives,
 )
 from graphql.utilities import print_schema
 
@@ -93,7 +94,7 @@ def describe_type_system_schema():
             "query": BlogQuery,
             "mutation": BlogMutation,
             "subscription": BlogSubscription,
-            "directives": None,
+            "directives": specified_directives,
             "ast_node": None,
             "extensions": None,
             "extension_ast_nodes": None,

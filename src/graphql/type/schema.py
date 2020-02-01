@@ -226,9 +226,7 @@ class GraphQLSchema:
             mutation=self.mutation_type,
             subscription=self.subscription_type,
             types=FrozenList(self.type_map.values()) or None,
-            directives=None
-            if self.directives is specified_directives
-            else self.directives,
+            directives=self.directives[:],
             extensions=self.extensions,
             ast_node=self.ast_node,
             extension_ast_nodes=self.extension_ast_nodes,
