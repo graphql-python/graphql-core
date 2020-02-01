@@ -138,14 +138,6 @@ def extend_schema(
             }
         )
 
-    def replace_directives(
-        directives: List[GraphQLDirective],
-    ) -> List[GraphQLDirective]:
-        if not directives:
-            raise TypeError("schema must have default directives.")
-
-        return [replace_directive(directive) for directive in schema.directives]
-
     def extend_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         if is_introspection_type(type_) or is_specified_scalar_type(type_):
             # Builtin types are not extended.
@@ -357,7 +349,7 @@ def extend_schema(
         mutation=get_operation(OperationType.MUTATION),
         subscription=get_operation(OperationType.SUBSCRIPTION),
         types=type_map.values(),
-        directives=replace_directives(schema.directives)
+        directives=[replace_directive(directive) for directive in schema.directives]
         + ast_builder.build_directives(directive_defs),
         ast_node=schema_def or schema.ast_node,
         extension_ast_nodes=(
