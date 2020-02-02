@@ -4,15 +4,11 @@ from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLError, format_error
 from graphql.language import Node, Source
+from graphql.pyutils import Undefined
 
 
 def describe_format_error():
-    def throw_if_not_an_error():
-        with raises(TypeError):
-            # noinspection PyTypeChecker
-            format_error(None)  # type: ignore
-
-    def format_graphql_error():
+    def formats_graphql_error():
         source = Source(
             """
             query {
@@ -31,6 +27,7 @@ def describe_format_error():
             extensions=extensions,
         )
         formatted = format_error(error)
+        assert formatted == error.formatted
         assert formatted == {
             "message": "test message",
             "locations": [{"line": 2, "column": 14}, {"line": 3, "column": 20}],
@@ -38,7 +35,41 @@ def describe_format_error():
             "extensions": extensions,
         }
 
-    def add_default_message():
+    def uses_default_message():
         # noinspection PyTypeChecker
-        error = format_error(GraphQLError(None))  # type: ignore
-        assert error["message"] == "An unknown error occurred."
+        formatted = format_error(GraphQLError(None))  # type: ignore
+
+        assert formatted == {
+            "message": "An unknown error occurred.",
+            "locations": None,
+            "path": None,
+        }
+
+    def includes_path():
+        path: List[Union[int, str]] = ["path", 3, "to", "field"]
+        error = GraphQLError("msg", path=path)
+        formatted = format_error(error)
+        assert formatted == error.formatted
+        assert formatted == {"message": "msg", "locations": None, "path": path}
+
+    def includes_extension_fields():
+        error = GraphQLError("msg", extensions={"foo": "bar"})
+        formatted = format_error(error)
+        assert formatted == error.formatted
+        assert formatted == {
+            "message": "msg",
+            "locations": None,
+            "path": None,
+            "extensions": {"foo": "bar"},
+        }
+
+    def rejects_none_and_undefined_errors():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            format_error(None)  # type: ignore
+        assert str(exc_info.value) == "Received no error object."
+
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            format_error(Undefined)  # type: ignore
+        assert str(exc_info.value) == "Received no error object."

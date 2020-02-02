@@ -1,6 +1,6 @@
 from typing import cast, List, Union
 
-from graphql.error import GraphQLError, format_error, print_error
+from graphql.error import GraphQLError, print_error
 from graphql.language import (
     parse,
     OperationDefinitionNode,
@@ -113,24 +113,6 @@ def describe_graphql_error():
         e = GraphQLError("msg", path=path)
         assert e.path is path
         assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
-
-    def default_error_formatter_includes_path():
-        path: List[Union[int, str]] = ["path", 3, "to", "field"]
-        e = GraphQLError("msg", path=path)
-        formatted = format_error(e)
-        assert formatted == e.formatted
-        assert formatted == {"message": "msg", "locations": None, "path": path}
-
-    def default_error_formatter_includes_extension_fields():
-        e = GraphQLError("msg", extensions={"foo": "bar"})
-        formatted = format_error(e)
-        assert formatted == e.formatted
-        assert formatted == {
-            "message": "msg",
-            "locations": None,
-            "path": None,
-            "extensions": {"foo": "bar"},
-        }
 
     def is_hashable():
         hash(GraphQLError("msg"))
