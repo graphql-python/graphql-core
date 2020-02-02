@@ -152,25 +152,9 @@ class SchemaValidationContext:
             self.validate_name(directive)
 
             # Ensure the arguments are valid.
-            arg_names: Set[str] = set()
             for arg_name, arg in directive.args.items():
                 # Ensure they are named correctly.
                 self.validate_name(arg, arg_name)
-
-                # Ensure they are unique per directive.
-                if arg_name in arg_names:
-                    self.report_error(
-                        f"Argument @{directive.name}({arg_name}:)"
-                        " can only be defined once.",
-                        directive.ast_node
-                        and [
-                            arg.ast_node
-                            for name, arg in directive.args.items()
-                            if name == arg_name
-                        ],
-                    )
-                    continue
-                arg_names.add(arg_name)
 
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
@@ -266,25 +250,9 @@ class SchemaValidationContext:
                 )
 
             # Ensure the arguments are valid.
-            arg_names: Set[str] = set()
             for arg_name, arg in field.args.items():
                 # Ensure they are named correctly.
                 self.validate_name(arg, arg_name)
-
-                # Ensure they are unique per field.
-                if arg_name in arg_names:
-                    self.report_error(
-                        "Field argument"
-                        f" {type_.name}.{field_name}({arg_name}:)"
-                        " can only be defined once.",
-                        [
-                            arg.ast_node
-                            for name, arg in field.args.items()
-                            if name == arg_name
-                        ],
-                    )
-                    break
-                arg_names.add(arg_name)
 
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
