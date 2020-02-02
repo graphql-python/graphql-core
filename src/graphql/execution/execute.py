@@ -15,7 +15,7 @@ from typing import (
     cast,
 )
 
-from ..error import GraphQLError, INVALID, located_error
+from ..error import GraphQLError, located_error
 from ..language import (
     DocumentNode,
     FieldNode,
@@ -33,6 +33,7 @@ from ..pyutils import (
     AwaitableOrValue,
     FrozenList,
     Path,
+    Undefined,
 )
 from ..utilities.get_operation_root_type import get_operation_root_type
 from ..utilities.type_from_ast import type_from_ast
@@ -382,7 +383,7 @@ class ExecutionContext:
             result = self.resolve_field(
                 parent_type, source_value, field_nodes, field_path
             )
-            if result is INVALID:
+            if result is Undefined:
                 continue
             if isawaitable(results):
                 # noinspection PyShadowingNames
@@ -434,7 +435,7 @@ class ExecutionContext:
             result = self.resolve_field(
                 parent_type, source_value, field_nodes, field_path
             )
-            if result is not INVALID:
+            if result is not Undefined:
                 results[response_name] = result
                 if isawaitable(result):
                     append_awaitable(response_name)
@@ -592,7 +593,7 @@ class ExecutionContext:
 
         field_def = get_field_def(self.schema, parent_type, field_name)
         if not field_def:
-            return INVALID
+            return Undefined
 
         resolve_fn = field_def.resolve or self.field_resolver
 
@@ -762,7 +763,7 @@ class ExecutionContext:
                 )
             return completed
 
-        # If result value is null-ish (null, INVALID, or NaN) then return null.
+        # If result value is null-ish (null, Undefined, or NaN) then return null.
         if is_nullish(result):
             return None
 

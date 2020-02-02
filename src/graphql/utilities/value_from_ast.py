@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional, cast
 
-from ..error import INVALID
 from ..language import (
     EnumValueNode,
     ListValueNode,
@@ -9,7 +8,7 @@ from ..language import (
     ValueNode,
     VariableNode,
 )
-from ..pyutils import inspect, is_invalid
+from ..pyutils import inspect, is_invalid, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -37,7 +36,7 @@ def value_from_ast(
     A GraphQL type must be provided, which will be used to interpret different GraphQL
     Value literals.
 
-    Returns `INVALID` when the value could not be validly coerced according
+    Returns `Undefined` when the value could not be validly coerced according
     to the provided type.
 
     | GraphQL Value        | JSON Value    | Python Value |
@@ -54,11 +53,11 @@ def value_from_ast(
     if not value_node:
         # When there is no node, then there is also no value.
         # Importantly, this is different from returning the value null.
-        return INVALID
+        return Undefined
 
     if is_non_null_type(type_):
         if isinstance(value_node, NullValueNode):
-            return INVALID
+            return Undefined
         type_ = cast(GraphQLNonNull, type_)
         return value_from_ast(value_node, type_.of_type, variables)
 
@@ -68,12 +67,12 @@ def value_from_ast(
     if isinstance(value_node, VariableNode):
         variable_name = value_node.name.value
         if not variables:
-            return INVALID
-        variable_value = variables.get(variable_name, INVALID)
+            return Undefined
+        variable_value = variables.get(variable_name, Undefined)
         if is_invalid(variable_value):
-            return INVALID
+            return Undefined
         if variable_value is None and is_non_null_type(type_):
-            return INVALID
+            return Undefined
         # Note: This does no further checking that this variable is correct.
         # This assumes that this query has been validated and the variable usage here
         # is of the correct type.
@@ -90,22 +89,22 @@ def value_from_ast(
                     # If an array contains a missing variable, it is either coerced to
                     # None or if the item type is non-null, it is considered invalid.
                     if is_non_null_type(item_type):
-                        return INVALID
+                        return Undefined
                     append_value(None)
                 else:
                     item_value = value_from_ast(item_node, item_type, variables)
                     if is_invalid(item_value):
-                        return INVALID
+                        return Undefined
                     append_value(item_value)
             return coerced_values
         coerced_value = value_from_ast(value_node, item_type, variables)
         if is_invalid(coerced_value):
-            return INVALID
+            return Undefined
         return [coerced_value]
 
     if is_input_object_type(type_):
         if not isinstance(value_node, ObjectValueNode):
-            return INVALID
+            return Undefined
         type_ = cast(GraphQLInputObjectType, type_)
         coerced_obj: Dict[str, Any] = {}
         fields = type_.fields
@@ -113,33 +112,33 @@ def value_from_ast(
         for field_name, field in fields.items():
             field_node = field_nodes.get(field_name)
             if not field_node or is_missing_variable(field_node.value, variables):
-                if field.default_value is not INVALID:
+                if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_obj[field.out_name or field_name] = field.default_value
                 elif is_non_null_type(field.type):
-                    return INVALID
+                    return Undefined
                 continue
             field_value = value_from_ast(field_node.value, field.type, variables)
             if is_invalid(field_value):
-                return INVALID
+                return Undefined
             coerced_obj[field.out_name or field_name] = field_value
 
         return type_.out_type(coerced_obj)
 
     if is_enum_type(type_):
         if not isinstance(value_node, EnumValueNode):
-            return INVALID
+            return Undefined
         type_ = cast(GraphQLEnumType, type_)
         value_name = value_node.value
         enum_value = type_.values.get(value_name)
         if not enum_value:
-            return INVALID
+            return Undefined
         value = enum_value.value
-        return value_name if value is INVALID else value
+        return value_name if value is Undefined else value
 
     if is_scalar_type(type_):
         # Scalars fulfill parsing a literal value via `parse_literal()`. Invalid values
-        # represent a failure to parse correctly, in which case INVALID is returned.
+        # represent a failure to parse correctly, in which case Undefined is returned.
         type_ = cast(GraphQLScalarType, type_)
         # noinspection PyBroadException
         try:
@@ -148,9 +147,9 @@ def value_from_ast(
             else:
                 result = type_.parse_literal(value_node)
         except Exception:
-            return INVALID
+            return Undefined
         if is_invalid(result):
-            return INVALID
+            return Undefined
         return result
 
     # Not reachable. All possible input types have been considered.
@@ -162,5 +161,5 @@ def is_missing_variable(
 ) -> bool:
     """Check if `value_node` is a variable not defined in the `variables` dict."""
     return isinstance(value_node, VariableNode) and (
-        not variables or is_invalid(variables.get(value_node.name.value, INVALID))
+        not variables or is_invalid(variables.get(value_node.name.value, Undefined))
     )

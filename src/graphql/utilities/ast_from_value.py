@@ -62,11 +62,11 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
             return None
         return ast_value
 
-    # only explicit None, not INVALID or NaN
+    # only explicit None, not Undefined or NaN
     if value is None:
         return NullValueNode()
 
-    # INVALID or NaN
+    # Undefined or NaN
     if is_invalid(value):
         return None
 

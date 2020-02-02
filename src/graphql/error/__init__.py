@@ -12,11 +12,7 @@ from .located_error import located_error
 
 from .format_error import format_error
 
-from .invalid import INVALID, InvalidType
-
 __all__ = [
-    "INVALID",
-    "InvalidType",
     "GraphQLError",
     "GraphQLSyntaxError",
     "format_error",

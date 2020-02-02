@@ -1,8 +1,7 @@
 from typing import Any, Dict
 
-from ..error import INVALID
 from ..language import ValueNode
-from ..pyutils import inspect, is_invalid
+from ..pyutils import inspect, is_invalid, Undefined
 
 __all__ = ["value_from_ast_untyped"]
 
@@ -43,14 +42,14 @@ def value_from_int(value_node, _variables):
     try:
         return int(value_node.value)
     except ValueError:
-        return INVALID
+        return Undefined
 
 
 def value_from_float(value_node, _variables):
     try:
         return float(value_node.value)
     except ValueError:
-        return INVALID
+        return Undefined
 
 
 def value_from_string(value_node, _variables):
@@ -71,10 +70,10 @@ def value_from_object(value_node, variables):
 def value_from_variable(value_node, variables):
     variable_name = value_node.name.value
     if not variables:
-        return INVALID
-    value = variables.get(variable_name, INVALID)
+        return Undefined
+    value = variables.get(variable_name, Undefined)
     if is_invalid(value):
-        return INVALID
+        return Undefined
     return value
 
 

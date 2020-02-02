@@ -1,7 +1,6 @@
 from math import inf, nan
 
-from graphql.error import INVALID
-from graphql.pyutils import is_finite
+from graphql.pyutils import is_finite, Undefined
 
 
 def describe_is_finite():
@@ -38,4 +37,4 @@ def describe_is_finite():
         assert is_finite(-inf) is False
 
     def undefined_is_not_finite():
-        assert is_finite(INVALID) is False
+        assert is_finite(Undefined) is False

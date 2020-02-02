@@ -33,6 +33,7 @@ from .frozen_list import FrozenList
 from .frozen_dict import FrozenDict
 from .path import Path
 from .print_path_list import print_path_list
+from .undefined import Undefined, UndefinedType
 
 __all__ = [
     "camel_to_snake",
@@ -60,4 +61,6 @@ __all__ = [
     "FrozenDict",
     "Path",
     "print_path_list",
+    "Undefined",
+    "UndefinedType",
 ]

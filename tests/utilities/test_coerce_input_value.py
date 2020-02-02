@@ -3,7 +3,8 @@ from typing import Any, List, NamedTuple, Union
 
 from pytest import raises  # type: ignore
 
-from graphql.error import INVALID, GraphQLError
+from graphql.error import GraphQLError
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLEnumType,
     GraphQLFloat,
@@ -56,9 +57,9 @@ def describe_coerce_input_value():
             assert expect_value(result) == 1
 
         def returns_an_error_for_undefined_value():
-            result = _coerce_value(INVALID, TestNonNull)
+            result = _coerce_value(Undefined, TestNonNull)
             assert expect_errors(result) == [
-                ("Expected non-nullable type 'Int!' not to be None.", [], INVALID)
+                ("Expected non-nullable type 'Int!' not to be None.", [], Undefined)
             ]
 
         def returns_an_error_for_null_value():
@@ -90,9 +91,9 @@ def describe_coerce_input_value():
             assert expect_value(result) is nan
 
         def returns_an_error_for_undefined_result():
-            result = _coerce_value({"value": INVALID}, TestScalar)
+            result = _coerce_value({"value": Undefined}, TestScalar)
             assert expect_errors(result) == [
-                ("Expected type 'TestScalar'.", [], {"value": INVALID})
+                ("Expected type 'TestScalar'.", [], {"value": Undefined})
             ]
 
         def returns_an_error_for_undefined_result_with_some_error_message():
@@ -275,9 +276,13 @@ def describe_coerce_input_value():
             assert expect_value(result) == [42]
 
         def returns_a_list_for_a_non_list_invalid_value():
-            result = _coerce_value("INVALID", TestList)
+            result = _coerce_value("Undefined", TestList)
             assert expect_errors(result) == [
-                ("Int cannot represent non-integer value: 'INVALID'", [], "INVALID",)
+                (
+                    "Int cannot represent non-integer value: 'Undefined'",
+                    [],
+                    "Undefined",
+                )
             ]
 
         def returns_null_for_a_null_value():

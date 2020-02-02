@@ -1,7 +1,6 @@
 from math import inf, nan
 
-from graphql.error import INVALID
-from graphql.pyutils import is_invalid
+from graphql.pyutils import is_invalid, Undefined
 
 
 def describe_is_invalid():
@@ -25,7 +24,7 @@ def describe_is_invalid():
         assert is_invalid(-inf) is False
 
     def undefined_is_invalid():
-        assert is_invalid(INVALID) is True
+        assert is_invalid(Undefined) is True
 
     def nan_is_invalid():
         assert is_invalid(nan) is True

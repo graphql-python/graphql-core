@@ -2,9 +2,8 @@ from enum import Enum
 from operator import attrgetter
 from typing import Any, Dict, List, NamedTuple, Union, cast
 
-from ..error import INVALID
 from ..language import print_ast, visit, Visitor
-from ..pyutils import inspect
+from ..pyutils import inspect, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLField,
@@ -402,8 +401,8 @@ def find_arg_changes(
                     f" {old_arg.type} to {new_arg.type}.",
                 )
             )
-        elif old_arg.default_value is not INVALID:
-            if new_arg.default_value is INVALID:
+        elif old_arg.default_value is not Undefined:
+            if new_arg.default_value is Undefined:
                 schema_changes.append(
                     DangerousChange(
                         DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,

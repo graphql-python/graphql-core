@@ -1,6 +1,5 @@
 from typing import Any, Callable, List, Optional, Union, cast
 
-from ..error import INVALID
 from ..language import (
     ArgumentNode,
     DirectiveNode,
@@ -16,6 +15,7 @@ from ..language import (
     VariableDefinitionNode,
     Visitor,
 )
+from ..pyutils import Undefined
 from ..type import (
     GraphQLArgument,
     GraphQLCompositeType,
@@ -196,7 +196,9 @@ class TypeInfo:
         else:
             arg_def = arg_type = None
         self._argument = arg_def
-        self._default_value_stack.append(arg_def.default_value if arg_def else INVALID)
+        self._default_value_stack.append(
+            arg_def.default_value if arg_def else Undefined
+        )
         self._input_type_stack.append(arg_type if is_input_type(arg_type) else None)
 
     # noinspection PyUnusedLocal
@@ -204,7 +206,7 @@ class TypeInfo:
         list_type = get_nullable_type(self.get_input_type())
         item_type = list_type.of_type if is_list_type(list_type) else list_type
         # List positions never have a default value.
-        self._default_value_stack.append(INVALID)
+        self._default_value_stack.append(Undefined)
         self._input_type_stack.append(item_type if is_input_type(item_type) else None)
 
     def enter_object_field(self, node: ObjectFieldNode):
@@ -215,7 +217,7 @@ class TypeInfo:
         else:
             input_field = input_field_type = None
         self._default_value_stack.append(
-            input_field.default_value if input_field else INVALID
+            input_field.default_value if input_field else Undefined
         )
         self._input_type_stack.append(
             input_field_type if is_input_type(input_field_type) else None

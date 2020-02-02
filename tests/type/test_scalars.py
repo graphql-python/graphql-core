@@ -2,8 +2,9 @@ from math import inf, nan, pi
 
 from pytest import raises  # type: ignore
 
-from graphql.error import GraphQLError, INVALID
+from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLInt,
     GraphQLFloat,
@@ -39,7 +40,7 @@ def describe_type_system_specified_scalar_types():
             _parse_value_raises(nan, "Int cannot represent non-integer value: nan")
             _parse_value_raises(inf, "Int cannot represent non-integer value: inf")
             _parse_value_raises(
-                INVALID, "Int cannot represent non-integer value: <INVALID>"
+                Undefined, "Int cannot represent non-integer value: Undefined"
             )
             _parse_value_raises(None, "Int cannot represent non-integer value: None")
             _parse_value_raises("", "Int cannot represent non-integer value: ''")
@@ -195,7 +196,7 @@ def describe_type_system_specified_scalar_types():
             assert _parse_value("foo") == "foo"
 
             _parse_value_raises(
-                INVALID, "String cannot represent a non string value: <INVALID>"
+                Undefined, "String cannot represent a non string value: Undefined"
             )
             _parse_value_raises(
                 None, "String cannot represent a non string value: None"
@@ -268,7 +269,7 @@ def describe_type_system_specified_scalar_types():
             assert _parse_value(False) is False
 
             _parse_value_raises(
-                INVALID, "Boolean cannot represent a non boolean value: <INVALID>"
+                Undefined, "Boolean cannot represent a non boolean value: Undefined"
             )
             _parse_value_raises(
                 None, "Boolean cannot represent a non boolean value: None"
@@ -376,7 +377,7 @@ def describe_type_system_specified_scalar_types():
             assert _parse_value(9007199254740991) == "9007199254740991"
             assert _parse_value(-9007199254740991) == "-9007199254740991"
 
-            _parse_value_raises(INVALID, "ID cannot represent value: <INVALID>")
+            _parse_value_raises(Undefined, "ID cannot represent value: Undefined")
             _parse_value_raises(None, "ID cannot represent value: None")
             _parse_value_raises(0.1, "ID cannot represent value: 0.1")
             _parse_value_raises(nan, "ID cannot represent value: nan")

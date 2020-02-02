@@ -1,7 +1,6 @@
 from math import inf, nan
 
-from graphql.error import INVALID
-from graphql.pyutils import is_nullish
+from graphql.pyutils import is_nullish, Undefined
 
 
 class FakeNumpyArray:
@@ -41,7 +40,7 @@ def describe_is_nullish():
         assert is_nullish(-inf) is False
 
     def undefined_is_nullish():
-        assert is_nullish(INVALID) is True
+        assert is_nullish(Undefined) is True
 
     def nan_is_nullish():
         assert is_nullish(nan) is True

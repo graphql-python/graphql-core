@@ -1,5 +1,5 @@
-from graphql.error import INVALID
 from graphql.language import parse_value
+from graphql.pyutils import Undefined
 from graphql.utilities import value_from_ast_untyped
 
 
@@ -41,4 +41,4 @@ def describe_value_from_ast_untyped():
             "{a:[$testVariable]}", {"testVariable": "foo"}, {"a": ["foo"]}
         )
         _test_case_with_vars("$testVariable", {"testVariable": None}, None)
-        _test_case_with_vars("$testVariable", {}, INVALID)
+        _test_case_with_vars("$testVariable", {}, Undefined)

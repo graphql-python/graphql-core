@@ -5,8 +5,7 @@ from typing import Any, Dict, FrozenSet, List, Set, Tuple
 
 from pytest import mark  # type: ignore
 
-from graphql.error import INVALID
-from graphql.pyutils import inspect
+from graphql.pyutils import inspect, Undefined
 from graphql.type import (
     GraphQLField,
     GraphQLInt,
@@ -48,7 +47,7 @@ def increased_list_size():
 
 def describe_inspect():
     def inspect_invalid():
-        assert inspect(INVALID) == "<INVALID>"
+        assert inspect(Undefined) == "Undefined"
 
     def inspect_none():
         assert inspect(None) == "None"

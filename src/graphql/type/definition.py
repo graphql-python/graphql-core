@@ -16,7 +16,6 @@ from typing import (
     overload,
 )
 
-from ..error import INVALID, InvalidType
 from ..language import (
     EnumTypeDefinitionNode,
     EnumValueDefinitionNode,
@@ -49,6 +48,8 @@ from ..pyutils import (
     inspect,
     is_collection,
     is_description,
+    Undefined,
+    UndefinedType,
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
@@ -586,7 +587,7 @@ class GraphQLArgument:
     def __init__(
         self,
         type_: "GraphQLInputType",
-        default_value: Any = INVALID,
+        default_value: Any = Undefined,
         description: str = None,
         out_name: str = None,
         extensions: Dict[str, Any] = None,
@@ -636,7 +637,7 @@ class GraphQLArgument:
 
 
 def is_required_argument(arg: GraphQLArgument) -> bool:
-    return is_non_null_type(arg.type) and arg.default_value is INVALID
+    return is_non_null_type(arg.type) and arg.default_value is Undefined
 
 
 T = TypeVar("T")
@@ -1088,7 +1089,7 @@ class GraphQLEnumType(GraphQLNamedType):
         lookup: Dict[Any, str] = {}
         for name, enum_value in self.values.items():
             value = enum_value.value
-            if value is None or value is INVALID:
+            if value is None or value is Undefined:
                 value = name
             try:
                 if value not in lookup:
@@ -1097,25 +1098,25 @@ class GraphQLEnumType(GraphQLNamedType):
                 pass  # ignore unhashable values
         return lookup
 
-    def serialize(self, value: Any) -> Union[str, None, InvalidType]:
+    def serialize(self, value: Any) -> Union[str, None, UndefinedType]:
         try:
-            return self._value_lookup.get(value, INVALID)
+            return self._value_lookup.get(value, Undefined)
         except TypeError:  # unhashable value
             for enum_name, enum_value in self.values.items():
                 if enum_value.value == value:
                     return enum_name
-        return INVALID
+        return Undefined
 
     def parse_value(self, value: str) -> Any:
         if isinstance(value, str):
             try:
                 enum_value = self.values[value]
             except KeyError:
-                return INVALID
-            if enum_value.value is None or enum_value.value is INVALID:
+                return Undefined
+            if enum_value.value is None or enum_value.value is Undefined:
                 return value
             return enum_value.value
-        return INVALID
+        return Undefined
 
     def parse_literal(
         self, value_node: ValueNode, _variables: Dict[str, Any] = None
@@ -1126,11 +1127,11 @@ class GraphQLEnumType(GraphQLNamedType):
             try:
                 enum_value = self.values[value]
             except KeyError:
-                return INVALID
-            if enum_value.value is None or enum_value.value is INVALID:
+                return Undefined
+            if enum_value.value is None or enum_value.value is Undefined:
                 return value
             return enum_value.value
-        return INVALID
+        return Undefined
 
 
 def is_enum_type(type_: Any) -> bool:
@@ -1340,7 +1341,7 @@ class GraphQLInputField:
     def __init__(
         self,
         type_: "GraphQLInputType",
-        default_value: Any = INVALID,
+        default_value: Any = Undefined,
         description: str = None,
         out_name: str = None,
         extensions: Dict[str, Any] = None,
@@ -1390,7 +1391,7 @@ class GraphQLInputField:
 
 
 def is_required_input_field(field: GraphQLInputField) -> bool:
-    return is_non_null_type(field.type) and field.default_value is INVALID
+    return is_non_null_type(field.type) and field.default_value is Undefined
 
 
 # Wrapper types

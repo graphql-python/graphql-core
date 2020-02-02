@@ -2,7 +2,7 @@ from math import nan
 
 from pytest import raises  # type: ignore
 
-from graphql.error import GraphQLError, INVALID
+from graphql.error import GraphQLError
 from graphql.language import (
     BooleanValueNode,
     EnumValueNode,
@@ -15,6 +15,7 @@ from graphql.language import (
     ObjectValueNode,
     StringValueNode,
 )
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
     GraphQLEnumType,
@@ -36,7 +37,7 @@ def describe_ast_from_value():
 
         assert ast_from_value(False, GraphQLBoolean) == BooleanValueNode(value=False)
 
-        assert ast_from_value(INVALID, GraphQLBoolean) is None
+        assert ast_from_value(Undefined, GraphQLBoolean) is None
 
         assert ast_from_value(nan, GraphQLInt) is None
 
@@ -96,7 +97,7 @@ def describe_ast_from_value():
 
         assert ast_from_value(None, GraphQLString) == NullValueNode()
 
-        assert ast_from_value(INVALID, GraphQLString) is None
+        assert ast_from_value(Undefined, GraphQLString) is None
 
     def converts_id_values_to_int_or_string_asts():
         assert ast_from_value("hello", GraphQLID) == StringValueNode(value="hello")
@@ -121,7 +122,7 @@ def describe_ast_from_value():
 
         assert ast_from_value(None, GraphQLID) == NullValueNode()
 
-        assert ast_from_value(INVALID, GraphQLString) is None
+        assert ast_from_value(Undefined, GraphQLString) is None
 
     def does_not_convert_non_null_values_to_null_value():
         non_null_boolean = GraphQLNonNull(GraphQLBoolean)

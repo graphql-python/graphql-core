@@ -1,6 +1,6 @@
 from typing import cast, Any, TypeVar
 
-from ..error import INVALID
+from .undefined import Undefined
 
 __all__ = ["identity_func"]
 
@@ -8,6 +8,6 @@ __all__ = ["identity_func"]
 T = TypeVar("T")
 
 
-def identity_func(x: T = cast(Any, INVALID), *_args: Any) -> T:
+def identity_func(x: T = cast(Any, Undefined), *_args: Any) -> T:
     """Return the first received argument."""
     return x

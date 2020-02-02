@@ -31,3 +31,5 @@ PyUtils
 .. autoclass:: Path
    :members:
 .. autofunction:: print_path_list
+
+.. autodata:: Undefined

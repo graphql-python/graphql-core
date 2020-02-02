@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-from ..error import GraphQLError, INVALID
+from ..error import GraphQLError
 from ..language import (
     DirectiveNode,
     ExecutableDefinitionNode,
@@ -14,7 +14,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
-from ..pyutils import inspect, print_path_list, FrozenList
+from ..pyutils import inspect, print_path_list, FrozenList, Undefined
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -161,7 +161,7 @@ def get_argument_values(
         argument_node = arg_node_map.get(name)
 
         if argument_node is None:
-            if arg_def.default_value is not INVALID:
+            if arg_def.default_value is not Undefined:
                 coerced_values[arg_def.out_name or name] = arg_def.default_value
             elif is_non_null_type(arg_type):
                 raise GraphQLError(
@@ -177,7 +177,7 @@ def get_argument_values(
         if isinstance(value_node, VariableNode):
             variable_name = value_node.name.value
             if variable_values is None or variable_name not in variable_values:
-                if arg_def.default_value is not INVALID:
+                if arg_def.default_value is not Undefined:
                     coerced_values[arg_def.out_name or name] = arg_def.default_value
                 elif is_non_null_type(arg_type):
                     raise GraphQLError(
@@ -196,7 +196,7 @@ def get_argument_values(
             )
 
         coerced_value = value_from_ast(value_node, arg_type, variable_values)
-        if coerced_value is INVALID:
+        if coerced_value is Undefined:
             # Note: `values_of_correct_type` validation should catch this before
             # execution. This is a runtime check to ensure execution does not
             # continue with an invalid argument value.

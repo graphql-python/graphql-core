@@ -1,9 +1,9 @@
 from math import nan
 
-from graphql.error import INVALID
 from graphql.execution import execute
 from graphql.execution.values import get_variable_values
 from graphql.language import parse, OperationDefinitionNode
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumType,
@@ -62,7 +62,7 @@ TestEnum = GraphQLEnumType(
     "TestEnum",
     {
         "NULL": None,
-        "UNDEFINED": INVALID,
+        "UNDEFINED": Undefined,
         "NAN": nan,
         "FALSE": False,
         "CUSTOM": "custom value",

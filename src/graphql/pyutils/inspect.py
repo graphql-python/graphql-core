@@ -11,7 +11,7 @@ from inspect import (
 )
 from typing import Any, List
 
-from ..error import INVALID
+from .undefined import Undefined
 
 __all__ = ["inspect"]
 
@@ -35,7 +35,7 @@ def inspect(value: Any) -> str:
 
 
 def inspect_recursive(value: Any, seen_values: List) -> str:
-    if value is None or value is INVALID or isinstance(value, (bool, float, complex)):
+    if value is None or value is Undefined or isinstance(value, (bool, float, complex)):
         return repr(value)
     if isinstance(value, (int, str, bytes, bytearray)):
         return trunc_str(repr(value))

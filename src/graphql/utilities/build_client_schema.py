@@ -1,9 +1,8 @@
 from itertools import chain
 from typing import cast, Callable, Collection, Dict, List
 
-from ..error import INVALID
 from ..language import DirectiveLocation, parse_value
-from ..pyutils import inspect
+from ..pyutils import inspect, Undefined
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -253,7 +252,7 @@ def build_client_schema(
         type_ = get_input_type(arg_introspection["type"])
         default_value = arg_introspection.get("defaultValue")
         default_value = (
-            INVALID
+            Undefined
             if default_value is None
             else value_from_ast(parse_value(default_value), type_)
         )
@@ -275,7 +274,7 @@ def build_client_schema(
         type_ = get_input_type(input_value_introspection["type"])
         default_value = input_value_introspection.get("defaultValue")
         default_value = (
-            INVALID
+            Undefined
             if default_value is None
             else value_from_ast(parse_value(default_value), type_)
         )

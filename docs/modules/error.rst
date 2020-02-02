@@ -13,5 +13,3 @@ Error
 .. autofunction:: format_error
 .. autofunction:: located_error
 .. autofunction:: print_error
-
-.. autodata:: INVALID

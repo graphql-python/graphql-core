@@ -1,7 +1,7 @@
 from math import isnan, nan
 
-from graphql.error import INVALID
 from graphql.language import parse_value
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
     GraphQLEnumType,
@@ -32,7 +32,7 @@ def describe_value_from_ast():
 
     def rejects_empty_input():
         # noinspection PyTypeChecker
-        assert value_from_ast(None, GraphQLBoolean) is INVALID
+        assert value_from_ast(None, GraphQLBoolean) is Undefined
 
     def converts_according_to_input_coercion_rules():
         _test_case(GraphQLBoolean, "true", True)
@@ -45,14 +45,14 @@ def describe_value_from_ast():
         _test_case(GraphQLID, '"123456"', "123456")
 
     def does_not_convert_when_input_coercion_rules_reject_a_value():
-        _test_case(GraphQLBoolean, "123", INVALID)
-        _test_case(GraphQLInt, "123.456", INVALID)
-        _test_case(GraphQLInt, "true", INVALID)
-        _test_case(GraphQLInt, '"123"', INVALID)
-        _test_case(GraphQLFloat, '"123"', INVALID)
-        _test_case(GraphQLString, "123", INVALID)
-        _test_case(GraphQLString, "true", INVALID)
-        _test_case(GraphQLID, "123.456", INVALID)
+        _test_case(GraphQLBoolean, "123", Undefined)
+        _test_case(GraphQLInt, "123.456", Undefined)
+        _test_case(GraphQLInt, "true", Undefined)
+        _test_case(GraphQLInt, '"123"', Undefined)
+        _test_case(GraphQLFloat, '"123"', Undefined)
+        _test_case(GraphQLString, "123", Undefined)
+        _test_case(GraphQLString, "true", Undefined)
+        _test_case(GraphQLID, "123.456", Undefined)
 
     test_enum = GraphQLEnumType(
         "TestColor",
@@ -62,16 +62,16 @@ def describe_value_from_ast():
             "BLUE": 3,
             "NULL": None,
             "NAN": nan,
-            "NO_CUSTOM_VALUE": INVALID,
+            "NO_CUSTOM_VALUE": Undefined,
         },
     )
 
     def converts_enum_values_according_to_input_coercion_rules():
         _test_case(test_enum, "RED", 1)
         _test_case(test_enum, "BLUE", 3)
-        _test_case(test_enum, "YELLOW", INVALID)
-        _test_case(test_enum, "3", INVALID)
-        _test_case(test_enum, '"BLUE"', INVALID)
+        _test_case(test_enum, "YELLOW", Undefined)
+        _test_case(test_enum, "3", Undefined)
+        _test_case(test_enum, '"BLUE"', Undefined)
         _test_case(test_enum, "null", None)
         _test_case(test_enum, "NULL", None)
         _test_case(test_enum, "NAN", nan)
@@ -90,40 +90,40 @@ def describe_value_from_ast():
 
     def coerces_to_null_unless_non_null():
         _test_case(GraphQLBoolean, "null", None)
-        _test_case(non_null_bool, "null", INVALID)
+        _test_case(non_null_bool, "null", Undefined)
 
     def coerces_lists_of_values():
         _test_case(list_of_bool, "true", [True])
-        _test_case(list_of_bool, "123", INVALID)
+        _test_case(list_of_bool, "123", Undefined)
         _test_case(list_of_bool, "null", None)
         _test_case(list_of_bool, "[true, false]", [True, False])
-        _test_case(list_of_bool, "[true, 123]", INVALID)
+        _test_case(list_of_bool, "[true, 123]", Undefined)
         _test_case(list_of_bool, "[true, null]", [True, None])
-        _test_case(list_of_bool, "{ true: true }", INVALID)
+        _test_case(list_of_bool, "{ true: true }", Undefined)
 
     def coerces_non_null_lists_of_values():
         _test_case(non_null_list_of_bool, "true", [True])
-        _test_case(non_null_list_of_bool, "123", INVALID)
-        _test_case(non_null_list_of_bool, "null", INVALID)
+        _test_case(non_null_list_of_bool, "123", Undefined)
+        _test_case(non_null_list_of_bool, "null", Undefined)
         _test_case(non_null_list_of_bool, "[true, false]", [True, False])
-        _test_case(non_null_list_of_bool, "[true, 123]", INVALID)
+        _test_case(non_null_list_of_bool, "[true, 123]", Undefined)
         _test_case(non_null_list_of_bool, "[true, null]", [True, None])
 
     def coerces_lists_of_non_null_values():
         _test_case(list_of_non_null_bool, "true", [True])
-        _test_case(list_of_non_null_bool, "123", INVALID)
+        _test_case(list_of_non_null_bool, "123", Undefined)
         _test_case(list_of_non_null_bool, "null", None)
         _test_case(list_of_non_null_bool, "[true, false]", [True, False])
-        _test_case(list_of_non_null_bool, "[true, 123]", INVALID)
-        _test_case(list_of_non_null_bool, "[true, null]", INVALID)
+        _test_case(list_of_non_null_bool, "[true, 123]", Undefined)
+        _test_case(list_of_non_null_bool, "[true, null]", Undefined)
 
     def coerces_non_null_lists_of_non_null_values():
         _test_case(non_null_list_of_non_mull_bool, "true", [True])
-        _test_case(non_null_list_of_non_mull_bool, "123", INVALID)
-        _test_case(non_null_list_of_non_mull_bool, "null", INVALID)
+        _test_case(non_null_list_of_non_mull_bool, "123", Undefined)
+        _test_case(non_null_list_of_non_mull_bool, "null", Undefined)
         _test_case(non_null_list_of_non_mull_bool, "[true, false]", [True, False])
-        _test_case(non_null_list_of_non_mull_bool, "[true, 123]", INVALID)
-        _test_case(non_null_list_of_non_mull_bool, "[true, null]", INVALID)
+        _test_case(non_null_list_of_non_mull_bool, "[true, 123]", Undefined)
+        _test_case(non_null_list_of_non_mull_bool, "[true, null]", Undefined)
 
     test_input_obj = GraphQLInputObjectType(
         "TestInput",
@@ -136,8 +136,8 @@ def describe_value_from_ast():
 
     def coerces_input_objects_according_to_input_coercion_rules():
         _test_case(test_input_obj, "null", None)
-        _test_case(test_input_obj, "123", INVALID)
-        _test_case(test_input_obj, "[]", INVALID)
+        _test_case(test_input_obj, "123", Undefined)
+        _test_case(test_input_obj, "[]", Undefined)
         _test_case(
             test_input_obj,
             "{ int: 123, requiredBool: false }",
@@ -148,18 +148,18 @@ def describe_value_from_ast():
             "{ bool: true, requiredBool: false }",
             {"int": 42, "bool": True, "requiredBool": False},
         )
-        _test_case(test_input_obj, "{ int: true, requiredBool: true }", INVALID)
-        _test_case(test_input_obj, "{ requiredBool: null }", INVALID)
-        _test_case(test_input_obj, "{ bool: true }", INVALID)
+        _test_case(test_input_obj, "{ int: true, requiredBool: true }", Undefined)
+        _test_case(test_input_obj, "{ requiredBool: null }", Undefined)
+        _test_case(test_input_obj, "{ bool: true }", Undefined)
 
     def accepts_variable_values_assuming_already_coerced():
-        _test_case_with_vars({}, GraphQLBoolean, "$var", INVALID)
+        _test_case_with_vars({}, GraphQLBoolean, "$var", Undefined)
         _test_case_with_vars({"var": True}, GraphQLBoolean, "$var", True)
         _test_case_with_vars({"var": None}, GraphQLBoolean, "$var", None)
 
     def asserts_variables_are_provided_as_items_in_lists():
         _test_case_with_vars({}, list_of_bool, "[ $foo ]", [None])
-        _test_case_with_vars({}, list_of_non_null_bool, "[ $foo ]", INVALID)
+        _test_case_with_vars({}, list_of_non_null_bool, "[ $foo ]", Undefined)
         _test_case_with_vars({"foo": True}, list_of_non_null_bool, "[ $foo ]", [True])
         # Note: variables are expected to have already been coerced, so we
         # do not expect the singleton wrapping behavior for variables.
@@ -173,7 +173,7 @@ def describe_value_from_ast():
             "{ int: $foo, bool: $foo, requiredBool: true }",
             {"int": 42, "requiredBool": True},
         )
-        _test_case_with_vars({}, test_input_obj, "{ requiredBool: $foo }", INVALID)
+        _test_case_with_vars({}, test_input_obj, "{ requiredBool: $foo }", Undefined)
         _test_case_with_vars(
             {"foo": True},
             test_input_obj,

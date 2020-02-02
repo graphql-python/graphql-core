@@ -327,7 +327,6 @@ from .error import (
     located_error,
     format_error,
     print_error,
-    INVALID,
 )
 
 # Utilities for operating on GraphQL type schema and parsed sources.
@@ -396,6 +395,11 @@ from .utilities import (
     find_breaking_changes,
     find_dangerous_changes,
 )
+
+# Utilities for compatibility with the Python language.
+from .pyutils import Undefined, UndefinedType
+
+INVALID = Undefined  # deprecated alias
 
 # The GraphQL-core version info.
 __version__ = version
@@ -651,7 +655,6 @@ __all__ = [
     "located_error",
     "format_error",
     "print_error",
-    "INVALID",
     "get_introspection_query",
     "get_operation_ast",
     "get_operation_root_type",
@@ -685,4 +688,6 @@ __all__ = [
     "BreakingChangeType",
     "DangerousChange",
     "DangerousChangeType",
+    "Undefined",
+    "UndefinedType",
 ]

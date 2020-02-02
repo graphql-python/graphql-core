@@ -1,8 +1,15 @@
 from typing import Any, Callable, Dict, Iterable, List, Union, cast
 
 
-from ..error import GraphQLError, INVALID
-from ..pyutils import Path, did_you_mean, inspect, print_path_list, suggestion_list
+from ..error import GraphQLError
+from ..pyutils import (
+    Path,
+    did_you_mean,
+    inspect,
+    print_path_list,
+    suggestion_list,
+    Undefined,
+)
 from ..type import (
     GraphQLEnumType,
     GraphQLInputObjectType,
@@ -41,7 +48,7 @@ def coerce_input_value(
 ) -> Any:
     """Coerce a Python value given a GraphQL Input Type."""
     if is_non_null_type(type_):
-        if input_value is not None and input_value is not INVALID:
+        if input_value is not None and input_value is not Undefined:
             type_ = cast(GraphQLNonNull, type_)
             return coerce_input_value(input_value, type_.of_type, on_error, path)
         on_error(
@@ -51,9 +58,9 @@ def coerce_input_value(
                 f"Expected non-nullable type '{inspect(type_)}' not to be None."
             ),
         )
-        return INVALID
+        return Undefined
 
-    if input_value is None or input_value is INVALID:
+    if input_value is None or input_value is Undefined:
         # Explicitly return the value null.
         return None
 
@@ -81,16 +88,16 @@ def coerce_input_value(
                 input_value,
                 GraphQLError(f"Expected type '{type_.name}' to be a dict."),
             )
-            return INVALID
+            return Undefined
 
         coerced_dict: Dict[str, Any] = {}
         fields = type_.fields
 
         for field_name, field in fields.items():
-            field_value = input_value.get(field_name, INVALID)
+            field_value = input_value.get(field_name, Undefined)
 
-            if field_value is INVALID:
-                if field.default_value is not INVALID:
+            if field_value is Undefined:
+                if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_dict[field.out_name or field_name] = field.default_value
                 elif is_non_null_type(field.type):
@@ -131,7 +138,7 @@ def coerce_input_value(
             parse_result = type_.parse_value(input_value)
         except GraphQLError as error:
             on_error(path.as_list() if path else [], input_value, error)
-            return INVALID
+            return Undefined
         except Exception as error:
             on_error(
                 path.as_list() if path else [],
@@ -140,8 +147,8 @@ def coerce_input_value(
                     f"Expected type '{type_.name}'. {error}", original_error=error
                 ),
             )
-            return INVALID
-        if parse_result is INVALID:
+            return Undefined
+        if parse_result is Undefined:
             on_error(
                 path.as_list() if path else [],
                 input_value,
@@ -165,7 +172,7 @@ def coerce_input_value(
                 + did_you_mean(suggestions, "the enum value")
             ),
         )
-        return INVALID
+        return Undefined
 
     # Not reachable. All possible input types have been considered.
     raise TypeError(f"Unexpected input type: {inspect(type_)}.")  # pragma: no cover

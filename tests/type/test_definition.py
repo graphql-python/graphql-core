@@ -3,7 +3,6 @@ from typing import cast
 
 from pytest import mark, raises  # type: ignore
 
-from graphql.error import INVALID
 from graphql.language import (
     parse_value,
     EnumValueNode,
@@ -13,6 +12,7 @@ from graphql.language import (
     TypeDefinitionNode,
     TypeExtensionNode,
 )
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumValue,
@@ -404,7 +404,7 @@ def describe_type_system_objects():
         assert isinstance(arg, GraphQLArgument)
         assert arg.description is None
         assert arg.type is ScalarType
-        assert arg.default_value is INVALID
+        assert arg.default_value is Undefined
         assert arg.extensions is None
         assert arg.ast_node is None
         assert field.resolve is None
@@ -853,7 +853,7 @@ def describe_type_system_enums():
     def defines_an_enum_type_with_a_value_of_none_and_invalid():
         EnumTypeWithNullishValue = GraphQLEnumType(
             name="EnumWithNullishValue",
-            values={"NULL": None, "NAN": nan, "NO_CUSTOM_VALUE": INVALID},
+            values={"NULL": None, "NAN": nan, "NO_CUSTOM_VALUE": Undefined},
         )
 
         assert list(EnumTypeWithNullishValue.values) == [
@@ -877,7 +877,7 @@ def describe_type_system_enums():
         assert null_value.ast_node is None
         no_custom_value = EnumTypeWithNullishValue.values["NO_CUSTOM_VALUE"]
         assert no_custom_value.description is None
-        assert no_custom_value.value is INVALID
+        assert no_custom_value.value is Undefined
         assert no_custom_value.is_deprecated is False
         assert no_custom_value.deprecation_reason is None
         assert no_custom_value.extensions is None
@@ -905,33 +905,33 @@ def describe_type_system_enums():
         assert enum_type.values["FOO"].value == "fooValue"
         assert enum_type.values["BAR"].value == ["barValue"]
         assert enum_type.values["BAZ"].value is None
-        assert enum_type.serialize(None) is INVALID
-        assert enum_type.serialize(INVALID) is INVALID
+        assert enum_type.serialize(None) is Undefined
+        assert enum_type.serialize(Undefined) is Undefined
         assert enum_type.serialize("fooValue") == "FOO"
-        assert enum_type.serialize("FOO") is INVALID
+        assert enum_type.serialize("FOO") is Undefined
         assert enum_type.serialize(["barValue"]) == "BAR"
-        assert enum_type.serialize("BAR") is INVALID
+        assert enum_type.serialize("BAR") is Undefined
         assert enum_type.serialize("BAZ") == "BAZ"
-        assert enum_type.serialize("bazValue") is INVALID
-        assert enum_type.serialize(["bazValue"]) is INVALID
+        assert enum_type.serialize("bazValue") is Undefined
+        assert enum_type.serialize(["bazValue"]) is Undefined
 
     def parses_an_enum():
         enum_type = GraphQLEnumType(
             "SomeEnum", {"FOO": "fooValue", "BAR": ["barValue"], "BAZ": None}
         )
         assert enum_type.parse_value("FOO") == "fooValue"
-        assert enum_type.parse_value("fooValue") is INVALID
+        assert enum_type.parse_value("fooValue") is Undefined
         assert enum_type.parse_value("BAR") == ["barValue"]
         # noinspection PyTypeChecker
-        assert enum_type.parse_value(["barValue"]) is INVALID  # type: ignore
+        assert enum_type.parse_value(["barValue"]) is Undefined  # type: ignore
         assert enum_type.parse_value("BAZ") == "BAZ"
         assert enum_type.parse_literal(EnumValueNode(value="FOO")) == "fooValue"
-        assert enum_type.parse_literal(StringValueNode(value="FOO")) is INVALID
-        assert enum_type.parse_literal(EnumValueNode(value="fooValue")) is INVALID
+        assert enum_type.parse_literal(StringValueNode(value="FOO")) is Undefined
+        assert enum_type.parse_literal(EnumValueNode(value="fooValue")) is Undefined
         assert enum_type.parse_literal(EnumValueNode(value="BAR")) == ["barValue"]
-        assert enum_type.parse_literal(StringValueNode(value="BAR")) is INVALID
+        assert enum_type.parse_literal(StringValueNode(value="BAR")) is Undefined
         assert enum_type.parse_literal(EnumValueNode(value="BAZ")) == "BAZ"
-        assert enum_type.parse_literal(StringValueNode(value="BAZ")) is INVALID
+        assert enum_type.parse_literal(StringValueNode(value="BAZ")) is Undefined
 
     def rejects_an_enum_type_without_a_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
@@ -1174,7 +1174,7 @@ def describe_type_system_input_objects():
             assert isinstance(input_field, GraphQLInputField)
             assert input_field.description is None
             assert input_field.type is ScalarType
-            assert input_field.default_value is INVALID
+            assert input_field.default_value is Undefined
             assert input_field.extensions is None
             assert input_field.ast_node is None
             assert input_field.out_name is None
@@ -1197,7 +1197,7 @@ def describe_type_system_input_objects():
             assert isinstance(input_field, GraphQLInputField)
             assert input_field.description is None
             assert input_field.type is ScalarType
-            assert input_field.default_value is INVALID
+            assert input_field.default_value is Undefined
             assert input_field.extensions is None
             assert input_field.ast_node is None
             assert input_field.out_name is None
