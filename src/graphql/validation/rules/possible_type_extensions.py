@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from ...error import GraphQLError
 from ...language import TypeDefinitionNode, TypeExtensionNode
-from ...pyutils import did_you_mean, suggestion_list
+from ...pyutils import did_you_mean, inspect, suggestion_list
 from ...type import (
     is_enum_type,
     is_input_object_type,
@@ -80,18 +80,19 @@ def_kind_to_ext_kind = partial(re.compile("(?<=_type_)definition$").sub, "extens
 def type_to_ext_kind(type_: Any) -> str:
     if is_scalar_type(type_):
         return "scalar_type_extension"
-    elif is_object_type(type_):
+    if is_object_type(type_):
         return "object_type_extension"
-    elif is_interface_type(type_):
+    if is_interface_type(type_):
         return "interface_type_extension"
-    elif is_union_type(type_):
+    if is_union_type(type_):
         return "union_type_extension"
-    elif is_enum_type(type_):
+    if is_enum_type(type_):
         return "enum_type_extension"
-    elif is_input_object_type(type_):
+    if is_input_object_type(type_):
         return "input_object_type_extension"
-    else:
-        return "unknown_type_extension"
+
+    # Not reachable. All possible types have been considered.
+    raise TypeError(f"Unexpected type: {inspect(type_)}.")  # pragma: no cover
 
 
 _type_names_for_extension_kinds = {

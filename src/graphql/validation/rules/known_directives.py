@@ -95,7 +95,7 @@ def get_directive_location_for_ast_path(ancestors):
         kind = applied_to.kind
         if kind == "operation_definition":
             applied_to = cast(OperationDefinitionNode, applied_to)
-            return _operation_location.get(applied_to.operation.value)
+            return _operation_location[applied_to.operation.value]
         elif kind == "input_value_definition":
             parent_node = ancestors[-3]
             return (

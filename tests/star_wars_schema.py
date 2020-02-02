@@ -116,7 +116,7 @@ character_interface: GraphQLInterfaceType = GraphQLInterfaceType(
     resolve_type=lambda character, _info, _type: {
         "Human": human_type,
         "Droid": droid_type,
-    }.get(character.type),
+    }[character.type],
     description="A character in the Star Wars Trilogy",
 )
 

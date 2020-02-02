@@ -10,7 +10,6 @@ from ..language import (
     Node,
     ObjectFieldNode,
     OperationDefinitionNode,
-    OperationType,
     SelectionSetNode,
     VariableDefinitionNode,
     Visitor,
@@ -157,14 +156,7 @@ class TypeInfo:
         self._directive = self._schema.get_directive(node.name.value)
 
     def enter_operation_definition(self, node: OperationDefinitionNode):
-        if node.operation == OperationType.QUERY:
-            type_ = self._schema.query_type
-        elif node.operation == OperationType.MUTATION:
-            type_ = self._schema.mutation_type
-        elif node.operation == OperationType.SUBSCRIPTION:
-            type_ = self._schema.subscription_type
-        else:
-            type_ = None
+        type_ = getattr(self._schema, f"{node.operation.value}_type")
         self._type_stack.append(type_ if is_object_type(type_) else None)
 
     def enter_inline_fragment(self, node: InlineFragmentNode):
