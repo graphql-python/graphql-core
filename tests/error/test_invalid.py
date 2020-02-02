@@ -26,3 +26,8 @@ def describe_invalid():
         false_object = False
         assert INVALID != false_object
         assert not INVALID == false_object
+
+    def forward_compatibility():
+        from graphql import Undefined
+
+        assert INVALID is Undefined

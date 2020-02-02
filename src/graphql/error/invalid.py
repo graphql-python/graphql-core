@@ -30,4 +30,7 @@ INVALID.__doc__ = """Symbol for invalid or undefined values
 
 This singleton object is used to describe invalid or undefined values.
 It corresponds to the ``undefined`` value in GraphQL.js.
+
+Note: This will be considered deprecated in the next minor release.
+Please use ``graphql.Undefined`` instead to create forward compatible code.
 """
