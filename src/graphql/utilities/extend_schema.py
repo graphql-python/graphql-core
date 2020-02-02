@@ -86,6 +86,7 @@ from .value_from_ast import value_from_ast
 
 __all__ = [
     "extend_schema",
+    "extend_schema_impl",
     "get_description",
     "ASTDefinitionBuilder",
 ]
@@ -125,6 +126,18 @@ def extend_schema(
 
         assert_valid_sdl_extension(document_ast, schema)
 
+    schema_kwargs = schema.to_kwargs()
+    extended_kwargs = extend_schema_impl(schema_kwargs, document_ast, assume_valid)
+    return (
+        schema if schema_kwargs is extended_kwargs else GraphQLSchema(**extended_kwargs)
+    )
+
+
+def extend_schema_impl(
+    schema_kwargs: Dict[str, Any], document_ast: DocumentNode, assume_valid=False
+) -> Dict[str, Any]:
+    # Note: schema_kwargs should become a TypedDict once we require Python 3.8
+
     # Collect the type definitions and extensions found in the document.
     type_defs: List[TypeDefinitionNode] = []
     type_extensions_map: DefaultDict[str, Any] = defaultdict(list)
@@ -159,7 +172,7 @@ def extend_schema(
         and not schema_extensions
         and not schema_def
     ):
-        return schema
+        return schema_kwargs
 
     # Below are functions used for producing this schema that have closed over this
     # scope and have access to the schema, cache, and newly defined types.
@@ -359,23 +372,15 @@ def extend_schema(
     ast_builder = ASTDefinitionBuilder(resolve_type)
 
     type_map = ast_builder.build_type_map(type_defs, type_extensions_map)
-    for existing_type_name, existing_type in schema.type_map.items():
-        type_map[existing_type_name] = extend_named_type(existing_type)
+    for existing_type in schema_kwargs["types"]:
+        type_map[existing_type.name] = extend_named_type(existing_type)
 
     # Get the extended root operation types.
-    operation_types: Dict[OperationType, GraphQLObjectType] = {}
-    if schema.query_type:
-        operation_types[OperationType.QUERY] = cast(
-            GraphQLObjectType, replace_named_type(schema.query_type)
-        )
-    if schema.mutation_type:
-        operation_types[OperationType.MUTATION] = cast(
-            GraphQLObjectType, replace_named_type(schema.mutation_type)
-        )
-    if schema.subscription_type:
-        operation_types[OperationType.SUBSCRIPTION] = cast(
-            GraphQLObjectType, replace_named_type(schema.subscription_type)
-        )
+    operation_types: Dict[OperationType, GraphQLNamedType] = {}
+    for operation_type in OperationType:
+        original_type = schema_kwargs[operation_type.value]
+        if original_type:
+            operation_types[operation_type] = replace_named_type(original_type)
     # Then, incorporate schema definition and all schema extensions.
     if schema_def:
         operation_types.update(ast_builder.get_operation_types([schema_def]))
@@ -384,26 +389,27 @@ def extend_schema(
 
     # Then produce and return a Schema with these types.
     get_operation = operation_types.get
-    return GraphQLSchema(
-        # Note: While this could make early assertions to get the correctly
-        # typed values, that would throw immediately while type system
-        # validation with validateSchema() will produce more actionable results.
-        query=get_operation(OperationType.QUERY),
-        mutation=get_operation(OperationType.MUTATION),
-        subscription=get_operation(OperationType.SUBSCRIPTION),
-        types=type_map.values(),
-        directives=[replace_directive(directive) for directive in schema.directives]
+    return {
+        "query": get_operation(OperationType.QUERY),
+        "mutation": get_operation(OperationType.MUTATION),
+        "subscription": get_operation(OperationType.SUBSCRIPTION),
+        "types": type_map.values(),
+        "directives": [
+            replace_directive(directive) for directive in schema_kwargs["directives"]
+        ]
         + ast_builder.build_directives(directive_defs),
-        ast_node=schema_def or schema.ast_node,
-        extension_ast_nodes=(
+        "extensions": None,
+        "ast_node": schema_def or schema_kwargs["ast_node"],
+        "extension_ast_nodes": (
             (
-                schema.extension_ast_nodes
+                schema_kwargs["extension_ast_nodes"]
                 or cast(FrozenList[SchemaExtensionNode], FrozenList())
             )
             + schema_extensions
         )
         or None,
-    )
+        "assume_valid": assume_valid,
+    }
 
 
 def default_type_resolver(type_name: str, *_args) -> NoReturn:
@@ -427,15 +433,14 @@ class ASTDefinitionBuilder:
         # Note: While this could make early assertions to get the correctly
         # typed values below, that would throw immediately while type system
         # validation with validate_schema() will produce more actionable results.
-        op_types: Dict[OperationType, GraphQLObjectType] = {}
-        for node in nodes:
-            if node.operation_types:
-                for operation_type in node.operation_types:
-                    type_name = operation_type.type.name.value
-                    op_types[operation_type.operation] = cast(
-                        GraphQLObjectType, self._resolve_type(type_name)
-                    )
-        return op_types
+        return {
+            operation_type.operation: cast(
+                GraphQLObjectType, self._resolve_type(operation_type.type.name.value)
+            )
+            for node in nodes
+            if node.operation_types
+            for operation_type in node.operation_types
+        }
 
     def get_named_type(self, node: NamedTypeNode) -> GraphQLNamedType:
         name = node.name.value

@@ -11,7 +11,7 @@ from ..type import (
     GraphQLSchema,
     GraphQLSkipDirective,
 )
-from .extend_schema import extend_schema
+from .extend_schema import extend_schema_impl
 
 __all__ = [
     "build_ast_schema",
@@ -48,19 +48,20 @@ def build_ast_schema(
 
         assert_valid_sdl(document_ast)
 
-    empty_schema = GraphQLSchema(directives=[])
-    extended_schema = extend_schema(
-        empty_schema, document_ast, assume_valid=assume_valid, assume_valid_sdl=True
-    )
+    schema_kwargs = extend_schema_impl(empty_schema_config, document_ast, assume_valid)
 
-    schema_kwargs = extended_schema.to_kwargs()
-    if extended_schema.ast_node is None:
-        # Note: While this could make early assertions to get the correctly
-        # typed values below, that would throw immediately while type system
-        # validation with validate_schema() will produce more actionable results.
-        schema_kwargs["query"] = extended_schema.get_type("Query")
-        schema_kwargs["mutation"] = extended_schema.get_type("Mutation")
-        schema_kwargs["subscription"] = extended_schema.get_type("Subscription")
+    if not schema_kwargs["ast_node"]:
+        for type_ in schema_kwargs["types"]:
+            # Note: While this could make early assertions to get the correctly
+            # typed values below, that would throw immediately while type system
+            # validation with validate_schema() will produce more actionable results.
+            type_name = type_.name
+            if type_name == "Query":
+                schema_kwargs["query"] = type_
+            elif type_name == "Mutation":
+                schema_kwargs["mutation"] = type_
+            elif type_name == "Subscription":
+                schema_kwargs["subscription"] = type_
 
     directives = schema_kwargs["directives"]
     # If specified directives were not explicitly declared, add them.
@@ -71,8 +72,10 @@ def build_ast_schema(
     if not any(directive.name == "deprecated" for directive in directives):
         directives.append(GraphQLDeprecatedDirective)
 
-    schema_kwargs["assume_valid"] = assume_valid
     return GraphQLSchema(**schema_kwargs)
+
+
+empty_schema_config = GraphQLSchema(directives=[]).to_kwargs()
 
 
 def build_schema(
