@@ -37,7 +37,7 @@ def get_variable_values(
     schema: GraphQLSchema,
     var_def_nodes: FrozenList[VariableDefinitionNode],
     inputs: Dict[str, Any],
-    max_errors: int = None,
+    max_errors: Optional[int] = None,
 ) -> CoercedVariableValues:
     """Get coerced variable values based on provided definitions.
 
@@ -144,7 +144,7 @@ def coerce_variable_values(
 def get_argument_values(
     type_def: Union[GraphQLField, GraphQLDirective],
     node: Union[FieldNode, DirectiveNode],
-    variable_values: Dict[str, Any] = None,
+    variable_values: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
 
@@ -221,7 +221,7 @@ NodeWithDirective = Union[
 def get_directive_values(
     directive_def: GraphQLDirective,
     node: NodeWithDirective,
-    variable_values: Dict[str, Any] = None,
+    variable_values: Optional[Dict[str, Any]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Get coerced argument values based on provided nodes.
 

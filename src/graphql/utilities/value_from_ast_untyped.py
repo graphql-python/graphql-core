@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from ..language import ValueNode
 from ..pyutils import inspect, is_invalid, Undefined
@@ -7,7 +7,7 @@ __all__ = ["value_from_ast_untyped"]
 
 
 def value_from_ast_untyped(
-    value_node: ValueNode, variables: Dict[str, Any] = None
+    value_node: ValueNode, variables: Optional[Dict[str, Any]] = None
 ) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 

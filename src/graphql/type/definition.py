@@ -198,10 +198,10 @@ class GraphQLNamedType(GraphQLType):
     def __init__(
         self,
         name: str,
-        description: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: TypeDefinitionNode = None,
-        extension_ast_nodes: Collection[TypeExtensionNode] = None,
+        description: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[TypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[TypeExtensionNode]] = None,
     ) -> None:
         if not name:
             raise TypeError("Must provide name.")
@@ -322,13 +322,13 @@ class GraphQLScalarType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        serialize: GraphQLScalarSerializer = None,
-        parse_value: GraphQLScalarValueParser = None,
-        parse_literal: GraphQLScalarLiteralParser = None,
-        description: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: ScalarTypeDefinitionNode = None,
-        extension_ast_nodes: Collection[ScalarTypeExtensionNode] = None,
+        serialize: Optional[GraphQLScalarSerializer] = None,
+        parse_value: Optional[GraphQLScalarValueParser] = None,
+        parse_literal: Optional[GraphQLScalarLiteralParser] = None,
+        description: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[ScalarTypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[ScalarTypeExtensionNode]] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -392,7 +392,9 @@ class GraphQLScalarType(GraphQLNamedType):
         """
         return value
 
-    def parse_literal(self, node: ValueNode, _variables: Dict[str, Any] = None) -> Any:
+    def parse_literal(
+        self, node: ValueNode, _variables: Optional[Dict[str, Any]] = None
+    ) -> Any:
         """Parses an externally provided literal value to use as an input.
 
         This default method uses the parse_value method and should be replaced
@@ -444,13 +446,13 @@ class GraphQLField:
     def __init__(
         self,
         type_: "GraphQLOutputType",
-        args: GraphQLArgumentMap = None,
-        resolve: "GraphQLFieldResolver" = None,
-        subscribe: "GraphQLFieldResolver" = None,
-        description: str = None,
-        deprecation_reason: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: FieldDefinitionNode = None,
+        args: Optional[GraphQLArgumentMap] = None,
+        resolve: Optional["GraphQLFieldResolver"] = None,
+        subscribe: Optional["GraphQLFieldResolver"] = None,
+        description: Optional[str] = None,
+        deprecation_reason: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[FieldDefinitionNode] = None,
     ) -> None:
         if not is_output_type(type_):
             raise TypeError("Field type must be an output type.")
@@ -588,10 +590,10 @@ class GraphQLArgument:
         self,
         type_: "GraphQLInputType",
         default_value: Any = Undefined,
-        description: str = None,
-        out_name: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: InputValueDefinitionNode = None,
+        description: Optional[str] = None,
+        out_name: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[InputValueDefinitionNode] = None,
     ) -> None:
         if not is_input_type(type_):
             raise TypeError(f"Argument type must be a GraphQL input type.")
@@ -682,12 +684,12 @@ class GraphQLObjectType(GraphQLNamedType):
         self,
         name: str,
         fields: Thunk[GraphQLFieldMap],
-        interfaces: Thunk[Collection["GraphQLInterfaceType"]] = None,
-        is_type_of: GraphQLIsTypeOfFn = None,
-        extensions: Dict[str, Any] = None,
-        description: str = None,
-        ast_node: ObjectTypeDefinitionNode = None,
-        extension_ast_nodes: Collection[ObjectTypeExtensionNode] = None,
+        interfaces: Optional[Thunk[Collection["GraphQLInterfaceType"]]] = None,
+        is_type_of: Optional[GraphQLIsTypeOfFn] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        description: Optional[str] = None,
+        ast_node: Optional[ObjectTypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[ObjectTypeExtensionNode]] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -801,13 +803,13 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        fields: Thunk[GraphQLFieldMap] = None,
-        interfaces: Thunk[Collection["GraphQLInterfaceType"]] = None,
-        resolve_type: GraphQLTypeResolver = None,
-        description: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: InterfaceTypeDefinitionNode = None,
-        extension_ast_nodes: Collection[InterfaceTypeExtensionNode] = None,
+        fields: Optional[Thunk[GraphQLFieldMap]] = None,
+        interfaces: Optional[Thunk[Collection["GraphQLInterfaceType"]]] = None,
+        resolve_type: Optional[GraphQLTypeResolver] = None,
+        description: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[InterfaceTypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[InterfaceTypeExtensionNode]] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -927,11 +929,11 @@ class GraphQLUnionType(GraphQLNamedType):
         self,
         name,
         types: Thunk[Collection[GraphQLObjectType]],
-        resolve_type: GraphQLTypeResolver = None,
-        description: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: UnionTypeDefinitionNode = None,
-        extension_ast_nodes: Collection[UnionTypeExtensionNode] = None,
+        resolve_type: Optional[GraphQLTypeResolver] = None,
+        description: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[UnionTypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[UnionTypeExtensionNode]] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1033,10 +1035,10 @@ class GraphQLEnumType(GraphQLNamedType):
         self,
         name: str,
         values: Union[GraphQLEnumValueMap, Dict[str, Any], Type[Enum]],
-        description: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: EnumTypeDefinitionNode = None,
-        extension_ast_nodes: Collection[EnumTypeExtensionNode] = None,
+        description: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[EnumTypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[EnumTypeExtensionNode]] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1119,7 +1121,7 @@ class GraphQLEnumType(GraphQLNamedType):
         return Undefined
 
     def parse_literal(
-        self, value_node: ValueNode, _variables: Dict[str, Any] = None
+        self, value_node: ValueNode, _variables: Optional[Dict[str, Any]] = None
     ) -> Any:
         # Note: variables will be resolved before calling this method.
         if isinstance(value_node, EnumValueNode):
@@ -1155,10 +1157,10 @@ class GraphQLEnumValue:
     def __init__(
         self,
         value: Any = None,
-        description: str = None,
-        deprecation_reason: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: EnumValueDefinitionNode = None,
+        description: Optional[str] = None,
+        deprecation_reason: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[EnumValueDefinitionNode] = None,
     ) -> None:
         if description is not None and not is_description(description):
             raise TypeError("The description of the enum value must be a string.")
@@ -1240,11 +1242,11 @@ class GraphQLInputObjectType(GraphQLNamedType):
         self,
         name: str,
         fields: Thunk[GraphQLInputFieldMap],
-        description: str = None,
-        out_type: GraphQLInputFieldOutType = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: InputObjectTypeDefinitionNode = None,
-        extension_ast_nodes: Collection[InputObjectTypeExtensionNode] = None,
+        description: Optional[str] = None,
+        out_type: Optional[GraphQLInputFieldOutType] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[InputObjectTypeDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[InputObjectTypeExtensionNode]] = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1342,10 +1344,10 @@ class GraphQLInputField:
         self,
         type_: "GraphQLInputType",
         default_value: Any = Undefined,
-        description: str = None,
-        out_name: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: InputValueDefinitionNode = None,
+        description: Optional[str] = None,
+        out_name: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[InputValueDefinitionNode] = None,
     ) -> None:
         if not is_input_type(type_):
             raise TypeError(f"Input field type must be a GraphQL input type.")

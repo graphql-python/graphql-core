@@ -164,7 +164,7 @@ class SchemaValidationContext:
                         arg.ast_node,
                     )
 
-    def validate_name(self, node: Any, name: str = None) -> None:
+    def validate_name(self, node: Any, name: Optional[str] = None) -> None:
         # Ensure names are valid, however introspection types opt out.
         try:
             if not name:

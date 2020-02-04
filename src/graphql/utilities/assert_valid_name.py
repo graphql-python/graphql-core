@@ -18,7 +18,9 @@ def assert_valid_name(name: str) -> str:
     return name
 
 
-def is_valid_name_error(name: str, node: Node = None) -> Optional[GraphQLError]:
+def is_valid_name_error(
+    name: str, node: Optional[Node] = None
+) -> Optional[GraphQLError]:
     """Return an Error if a name is invalid."""
     if not isinstance(name, str):
         raise TypeError("Expected name to be a string.")

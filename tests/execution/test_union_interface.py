@@ -55,8 +55,8 @@ class Person:
     def __init__(
         self,
         name: str,
-        pets: List[Union[Dog, Cat]] = None,
-        friends: List[Union[Dog, Cat, "Person"]] = None,
+        pets: Optional[List[Union[Dog, Cat]]] = None,
+        friends: Optional[List[Union[Dog, Cat, "Person"]]] = None,
     ):
         self.name = name
         self.pets = pets

@@ -1,11 +1,11 @@
-from typing import Sequence
+from typing import Optional, Sequence
 
 __all__ = ["did_you_mean"]
 
 MAX_LENGTH = 5
 
 
-def did_you_mean(suggestions: Sequence[str], sub_message: str = None) -> str:
+def did_you_mean(suggestions: Sequence[str], sub_message: Optional[str] = None) -> str:
     """Given [ A, B, C ] return ' Did you mean A, B, or C?'"""
     if not suggestions:
         return ""

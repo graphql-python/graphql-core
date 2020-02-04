@@ -1,7 +1,7 @@
 from asyncio import Event, ensure_future, Future, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
-from typing import AsyncIterable, Callable, Set
+from typing import AsyncIterable, Callable, Optional, Set
 
 __all__ = ["MapAsyncIterator"]
 
@@ -21,7 +21,7 @@ class MapAsyncIterator:
         self,
         iterable: AsyncIterable,
         callback: Callable,
-        reject_callback: Callable = None,
+        reject_callback: Optional[Callable] = None,
     ) -> None:
         self.iterator = iterable.__aiter__()
         self.callback = callback

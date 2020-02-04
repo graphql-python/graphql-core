@@ -1025,7 +1025,7 @@ class Parser:
 
         return False
 
-    def unexpected(self, at_token: Token = None) -> GraphQLError:
+    def unexpected(self, at_token: Optional[Token] = None) -> GraphQLError:
         """Create an error when an unexpected lexed token is encountered."""
         token = at_token or self._lexer.token
         return GraphQLSyntaxError(

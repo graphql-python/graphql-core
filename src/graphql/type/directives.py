@@ -38,11 +38,11 @@ class GraphQLDirective:
         self,
         name: str,
         locations: Collection[DirectiveLocation],
-        args: Dict[str, GraphQLArgument] = None,
+        args: Optional[Dict[str, GraphQLArgument]] = None,
         is_repeatable: bool = False,
-        description: str = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: ast.DirectiveDefinitionNode = None,
+        description: Optional[str] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[ast.DirectiveDefinitionNode] = None,
     ) -> None:
         if not name:
             raise TypeError("Directive must be named.")

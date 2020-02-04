@@ -85,12 +85,12 @@ class GraphQLError(Exception):
     def __init__(
         self,
         message: str,
-        nodes: Union[Collection["Node"], "Node"] = None,
-        source: "Source" = None,
-        positions: Collection[int] = None,
-        path: Collection[Union[str, int]] = None,
-        original_error: Exception = None,
-        extensions: Dict[str, Any] = None,
+        nodes: Union[Collection["Node"], "Node", None] = None,
+        source: Optional["Source"] = None,
+        positions: Optional[Collection[int]] = None,
+        path: Optional[Collection[Union[str, int]]] = None,
+        original_error: Optional[Exception] = None,
+        extensions: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(message)
         self.message = message
