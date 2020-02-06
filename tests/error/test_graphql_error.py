@@ -52,6 +52,27 @@ def describe_graphql_error():
         assert e.original_error is original
         assert str(e.original_error) == "original"
 
+    def passes_the_context_of_an_original_error():
+        context = ValueError("cause")
+        try:
+            raise context
+        except ValueError:
+            try:
+                raise RuntimeError("effect")
+            except RuntimeError as runtime_error:
+                original = runtime_error
+        e = GraphQLError("msg", original_error=original)
+        assert e.__context__ is context
+
+    def passes_the_cause_of_an_original_error():
+        cause = ValueError("cause")
+        try:
+            raise RuntimeError("effect") from cause
+        except RuntimeError as runtime_error:
+            original = runtime_error
+        e = GraphQLError("msg", original_error=original)
+        assert e.__cause__ is cause
+
     def creates_new_stack_if_original_error_has_no_stack():
         try:
             raise RuntimeError
@@ -108,11 +129,21 @@ def describe_graphql_error():
             "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)])"
         )
 
+    def repr_includes_extensions():
+        e = GraphQLError("msg", extensions={"foo": "bar"})
+        assert repr(e) == ("GraphQLError('msg', extensions={'foo': 'bar'})")
+
     def serializes_to_include_path():
         path: List[Union[int, str]] = ["path", 3, "to", "field"]
         e = GraphQLError("msg", path=path)
         assert e.path is path
         assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
+
+    def always_stores_path_as_list():
+        path: List[Union[int, str]] = ["path", 3, "to", "field"]
+        e = GraphQLError("msg,", path=tuple(path))
+        assert isinstance(e.path, list)
+        assert e.path == path
 
     def is_hashable():
         hash(GraphQLError("msg"))

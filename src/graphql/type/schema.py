@@ -260,7 +260,7 @@ class GraphQLSchema:
 
         Deprecated: Use is_sub_type() instead.
         """
-        return self.is_sub_type(abstract_type, possible_type)
+        return self.is_sub_type(abstract_type, possible_type)  # pragma: no cover
 
     def is_sub_type(
         self,
@@ -341,7 +341,7 @@ class GraphQLSchema:
         """Reducer function for creating the type map from given directives."""
         # Directives are not validated until validate_schema() is called.
         if not is_directive(directive):
-            return map_
+            return map_  # pragma: no cover
         directive = cast(GraphQLDirective, directive)
         return reduce(
             lambda prev_map, arg: self.type_map_reducer(
