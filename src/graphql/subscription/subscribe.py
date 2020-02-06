@@ -1,5 +1,14 @@
 from inspect import isawaitable
-from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Dict, Union, cast
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Awaitable,
+    Dict,
+    Optional,
+    Union,
+    cast,
+)
 
 from ..error import GraphQLError, located_error
 from ..execution.execute import (
@@ -23,10 +32,10 @@ async def subscribe(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Dict[str, Any] = None,
-    operation_name: str = None,
-    field_resolver: GraphQLFieldResolver = None,
-    subscribe_field_resolver: GraphQLFieldResolver = None,
+    variable_values: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
+    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
 ) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -91,9 +100,9 @@ async def create_source_event_stream(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Dict[str, Any] = None,
-    operation_name: str = None,
-    field_resolver: GraphQLFieldResolver = None,
+    variable_values: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source even stream
 

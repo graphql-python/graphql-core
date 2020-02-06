@@ -104,14 +104,14 @@ class GraphQLSchema:
 
     def __init__(
         self,
-        query: GraphQLObjectType = None,
-        mutation: GraphQLObjectType = None,
-        subscription: GraphQLObjectType = None,
-        types: Collection[GraphQLNamedType] = None,
-        directives: Collection[GraphQLDirective] = None,
-        extensions: Dict[str, Any] = None,
-        ast_node: ast.SchemaDefinitionNode = None,
-        extension_ast_nodes: Collection[ast.SchemaExtensionNode] = None,
+        query: Optional[GraphQLObjectType] = None,
+        mutation: Optional[GraphQLObjectType] = None,
+        subscription: Optional[GraphQLObjectType] = None,
+        types: Optional[Collection[GraphQLNamedType]] = None,
+        directives: Optional[Collection[GraphQLDirective]] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+        ast_node: Optional[ast.SchemaDefinitionNode] = None,
+        extension_ast_nodes: Optional[Collection[ast.SchemaExtensionNode]] = None,
         assume_valid: bool = False,
     ) -> None:
         """Initialize GraphQL schema.
@@ -297,7 +297,7 @@ class GraphQLSchema:
         return self._validation_errors
 
     def type_map_reducer(
-        self, map_: TypeMap, type_: GraphQLNamedType = None
+        self, map_: TypeMap, type_: Optional[GraphQLNamedType] = None
     ) -> TypeMap:
         """Reducer function for creating the type map from given types."""
         if not type_:
@@ -336,7 +336,7 @@ class GraphQLSchema:
         return map_
 
     def type_map_directive_reducer(
-        self, map_: TypeMap, directive: GraphQLDirective = None
+        self, map_: TypeMap, directive: Optional[GraphQLDirective] = None
     ) -> TypeMap:
         """Reducer function for creating the type map from given directives."""
         # Directives are not validated until validate_schema() is called.

@@ -62,8 +62,8 @@ class TypeInfo:
     def __init__(
         self,
         schema: GraphQLSchema,
-        get_field_def_fn: GetFieldDefType = None,
-        initial_type: GraphQLType = None,
+        get_field_def_fn: Optional[GetFieldDefType] = None,
+        initial_type: Optional[GraphQLType] = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 

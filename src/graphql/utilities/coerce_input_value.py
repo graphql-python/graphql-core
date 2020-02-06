@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, List, Union, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
 
 
 from ..error import GraphQLError
@@ -44,7 +44,7 @@ def coerce_input_value(
     input_value: Any,
     type_: GraphQLInputType,
     on_error: OnErrorCB = default_on_error,
-    path: Path = None,
+    path: Optional[Path] = None,
 ) -> Any:
     """Coerce a Python value given a GraphQL Input Type."""
     if is_non_null_type(type_):

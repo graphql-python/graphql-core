@@ -117,12 +117,12 @@ def execute(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Dict[str, Any] = None,
-    operation_name: str = None,
-    field_resolver: GraphQLFieldResolver = None,
-    type_resolver: GraphQLTypeResolver = None,
-    middleware: Middleware = None,
-    execution_context_class: Type["ExecutionContext"] = None,
+    variable_values: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
+    type_resolver: Optional[GraphQLTypeResolver] = None,
+    middleware: Optional[Middleware] = None,
+    execution_context_class: Optional[Type["ExecutionContext"]] = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -222,11 +222,11 @@ class ExecutionContext:
         document: DocumentNode,
         root_value: Any = None,
         context_value: Any = None,
-        raw_variable_values: Dict[str, Any] = None,
-        operation_name: str = None,
-        field_resolver: GraphQLFieldResolver = None,
-        type_resolver: GraphQLTypeResolver = None,
-        middleware: Middleware = None,
+        raw_variable_values: Optional[Dict[str, Any]] = None,
+        operation_name: Optional[str] = None,
+        field_resolver: Optional[GraphQLFieldResolver] = None,
+        type_resolver: Optional[GraphQLTypeResolver] = None,
+        middleware: Optional[Middleware] = None,
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
         """Build an execution context
 
@@ -1030,7 +1030,7 @@ class ExecutionContext:
 def assert_valid_execution_arguments(
     schema: GraphQLSchema,
     document: DocumentNode,
-    raw_variable_values: Dict[str, Any] = None,
+    raw_variable_values: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Check that the arguments are acceptable.
 

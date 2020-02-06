@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .location import SourceLocation
 
 __all__ = ["Source"]
@@ -9,7 +11,10 @@ class Source:
     __slots__ = "body", "name", "location_offset"
 
     def __init__(
-        self, body: str, name: str = None, location_offset: SourceLocation = None
+        self,
+        body: str,
+        name: Optional[str] = None,
+        location_offset: Optional[SourceLocation] = None,
     ) -> None:
         """Initialize source input.
 

@@ -93,8 +93,8 @@ class Token:
         end: int,
         line: int,
         column: int,
-        prev: "Token" = None,
-        value: str = None,
+        prev: Optional["Token"] = None,
+        value: Optional[str] = None,
     ) -> None:
         self.kind = kind
         self.start, self.end = start, end

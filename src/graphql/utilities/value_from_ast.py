@@ -29,7 +29,7 @@ __all__ = ["value_from_ast"]
 def value_from_ast(
     value_node: Optional[ValueNode],
     type_: GraphQLInputType,
-    variables: Dict[str, Any] = None,
+    variables: Optional[Dict[str, Any]] = None,
 ) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 
@@ -157,7 +157,7 @@ def value_from_ast(
 
 
 def is_missing_variable(
-    value_node: ValueNode, variables: Dict[str, Any] = None
+    value_node: ValueNode, variables: Optional[Dict[str, Any]] = None
 ) -> bool:
     """Check if `value_node` is a variable not defined in the `variables` dict."""
     return isinstance(value_node, VariableNode) and (

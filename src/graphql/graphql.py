@@ -1,6 +1,6 @@
 from asyncio import ensure_future
 from inspect import isawaitable
-from typing import Any, Awaitable, Dict, Union, Type, cast
+from typing import Any, Awaitable, Dict, Optional, Union, Type, cast
 
 from .error import GraphQLError
 from .execution import execute, ExecutionResult, ExecutionContext, Middleware
@@ -21,11 +21,11 @@ async def graphql(
     source: Union[str, Source],
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Dict[str, Any] = None,
-    operation_name: str = None,
-    field_resolver: GraphQLFieldResolver = None,
-    type_resolver: GraphQLTypeResolver = None,
-    middleware: Middleware = None,
+    variable_values: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
+    type_resolver: Optional[GraphQLTypeResolver] = None,
+    middleware: Optional[Middleware] = None,
     execution_context_class: Type[ExecutionContext] = ExecutionContext,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
@@ -95,11 +95,11 @@ def graphql_sync(
     source: Union[str, Source],
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Dict[str, Any] = None,
-    operation_name: str = None,
-    field_resolver: GraphQLFieldResolver = None,
-    type_resolver: GraphQLTypeResolver = None,
-    middleware: Middleware = None,
+    variable_values: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
+    type_resolver: Optional[GraphQLTypeResolver] = None,
+    middleware: Optional[Middleware] = None,
     execution_context_class: Type[ExecutionContext] = ExecutionContext,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
