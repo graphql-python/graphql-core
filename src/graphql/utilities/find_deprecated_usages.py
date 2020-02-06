@@ -32,31 +32,25 @@ class FindDeprecatedUsages(Visitor):
         self.errors = []
 
     def enter_field(self, node, *_args):
+        parent_type = self.type_info.get_parent_type()
         field_def = self.type_info.get_field_def()
-        if field_def and field_def.is_deprecated:
-            parent_type = self.type_info.get_parent_type()
-            if parent_type:
-                field_name = node.name.value
-                reason = field_def.deprecation_reason
-                self.errors.append(
-                    GraphQLError(
-                        f"The field '{parent_type.name}.{field_name}'"
-                        " is deprecated." + ("" if reason is None else f" {reason}"),
-                        node,
-                    )
+        if parent_type and field_def.deprecation_reason is not None:
+            self.errors.append(
+                GraphQLError(
+                    f"The field '{parent_type.name}.{node.name.value}'"
+                    " is deprecated. " + field_def.deprecation_reason,
+                    node,
                 )
+            )
 
     def enter_enum_value(self, node, *_args):
+        type_ = get_named_type(self.type_info.get_input_type())
         enum_val = self.type_info.get_enum_value()
-        if enum_val and enum_val.is_deprecated:
-            type_ = get_named_type(self.type_info.get_input_type())
-            if type_:
-                enum_val_name = node.value
-                reason = enum_val.deprecation_reason
-                self.errors.append(
-                    GraphQLError(
-                        f"The enum value '{type_.name}.{enum_val_name}'"
-                        " is deprecated." + (f" {reason}" if reason else ""),
-                        node,
-                    )
+        if type_ and enum_val and enum_val.deprecation_reason is not None:
+            self.errors.append(
+                GraphQLError(
+                    f"The enum value '{type_.name}.{node.value}'"
+                    " is deprecated. " + enum_val.deprecation_reason,
+                    node,
                 )
+            )
