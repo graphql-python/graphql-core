@@ -31,9 +31,9 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                directive_args[def_.name.value] = (
-                    [arg.name.value for arg in def_.arguments] if def_.arguments else []
-                )
+                directive_args[def_.name.value] = [
+                    arg.name.value for arg in def_.arguments or []
+                ]
 
         self.directive_args = directive_args
 

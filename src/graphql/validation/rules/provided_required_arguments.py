@@ -46,14 +46,10 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                required_args_map[def_.name.value] = (
-                    {
-                        arg.name.value: arg
-                        for arg in filter(is_required_argument_node, def_.arguments)
-                    }
-                    if def_.arguments
-                    else {}
-                )
+                required_args_map[def_.name.value] = {
+                    arg.name.value: arg
+                    for arg in filter(is_required_argument_node, def_.arguments or [])
+                }
 
         self.required_args_map = required_args_map
 

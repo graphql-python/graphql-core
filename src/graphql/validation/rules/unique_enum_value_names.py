@@ -22,37 +22,36 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
         self.known_value_names: Dict[str, Dict[str, NameNode]] = defaultdict(dict)
 
     def check_value_uniqueness(self, node: EnumTypeDefinitionNode, *_args):
-        if node.values:
-            type_name = node.name.value
-            value_names = self.known_value_names[type_name]
-            existing_type_map = self.existing_type_map
+        existing_type_map = self.existing_type_map
+        type_name = node.name.value
+        value_names = self.known_value_names[type_name]
 
-            for value_def in node.values:
-                value_name = value_def.name.value
+        for value_def in node.values or []:
+            value_name = value_def.name.value
 
-                existing_type = existing_type_map.get(type_name)
-                if (
-                    is_enum_type(existing_type)
-                    and value_name in cast(GraphQLEnumType, existing_type).values
-                ):
-                    self.report_error(
-                        GraphQLError(
-                            f"Enum value '{type_name}.{value_name}'"
-                            " already exists in the schema."
-                            " It cannot also be defined in this type extension.",
-                            value_def.name,
-                        )
+            existing_type = existing_type_map.get(type_name)
+            if (
+                is_enum_type(existing_type)
+                and value_name in cast(GraphQLEnumType, existing_type).values
+            ):
+                self.report_error(
+                    GraphQLError(
+                        f"Enum value '{type_name}.{value_name}'"
+                        " already exists in the schema."
+                        " It cannot also be defined in this type extension.",
+                        value_def.name,
                     )
-                elif value_name in value_names:
-                    self.report_error(
-                        GraphQLError(
-                            f"Enum value '{type_name}.{value_name}'"
-                            " can only be defined once.",
-                            [value_names[value_name], value_def.name],
-                        )
+                )
+            elif value_name in value_names:
+                self.report_error(
+                    GraphQLError(
+                        f"Enum value '{type_name}.{value_name}'"
+                        " can only be defined once.",
+                        [value_names[value_name], value_def.name],
                     )
-                else:
-                    value_names[value_name] = value_def.name
+                )
+            else:
+                value_names[value_name] = value_def.name
 
         return self.SKIP
 

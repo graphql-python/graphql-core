@@ -380,8 +380,7 @@ def extend_schema_impl(
         return {
             operation_type.operation: get_named_type(operation_type.type)
             for node in nodes
-            if node.operation_types
-            for operation_type in node.operation_types
+            for operation_type in node.operation_types or []
         }
 
     # noinspection PyShadowingNames
@@ -426,38 +425,34 @@ def extend_schema_impl(
     ) -> GraphQLFieldMap:
         field_map: GraphQLFieldMap = {}
         for node in nodes:
-            if node.fields:
-                for field in node.fields:
-                    # Note: While this could make assertions to get the correctly typed
-                    # value, that would throw immediately while type system validation
-                    # with validate_schema() will produce more actionable results.
-                    field_map[field.name.value] = GraphQLField(
-                        type_=cast(GraphQLOutputType, get_wrapped_type(field.type)),
-                        description=field.description.value
-                        if field.description
-                        else None,
-                        args=build_argument_map(field.arguments),
-                        deprecation_reason=get_deprecation_reason(field),
-                        ast_node=field,
-                    )
+            for field in node.fields or []:
+                # Note: While this could make assertions to get the correctly typed
+                # value, that would throw immediately while type system validation
+                # with validate_schema() will produce more actionable results.
+                field_map[field.name.value] = GraphQLField(
+                    type_=cast(GraphQLOutputType, get_wrapped_type(field.type)),
+                    description=field.description.value if field.description else None,
+                    args=build_argument_map(field.arguments),
+                    deprecation_reason=get_deprecation_reason(field),
+                    ast_node=field,
+                )
         return field_map
 
     def build_argument_map(
         args: Optional[Collection[InputValueDefinitionNode]],
     ) -> GraphQLArgumentMap:
         arg_map: GraphQLArgumentMap = {}
-        if args:
-            for arg in args:
-                # Note: While this could make assertions to get the correctly typed
-                # value, that would throw immediately while type system validation
-                # with validate_schema() will produce more actionable results.
-                type_ = cast(GraphQLInputType, get_wrapped_type(arg.type))
-                arg_map[arg.name.value] = GraphQLArgument(
-                    type_=type_,
-                    description=arg.description.value if arg.description else None,
-                    default_value=value_from_ast(arg.default_value, type_),
-                    ast_node=arg,
-                )
+        for arg in args or []:
+            # Note: While this could make assertions to get the correctly typed
+            # value, that would throw immediately while type system validation
+            # with validate_schema() will produce more actionable results.
+            type_ = cast(GraphQLInputType, get_wrapped_type(arg.type))
+            arg_map[arg.name.value] = GraphQLArgument(
+                type_=type_,
+                description=arg.description.value if arg.description else None,
+                default_value=value_from_ast(arg.default_value, type_),
+                ast_node=arg,
+            )
         return arg_map
 
     def build_input_field_map(
@@ -467,20 +462,17 @@ def extend_schema_impl(
     ) -> GraphQLInputFieldMap:
         input_field_map: GraphQLInputFieldMap = {}
         for node in nodes:
-            if node.fields:
-                for field in node.fields:
-                    # Note: While this could make assertions to get the correctly typed
-                    # value, that would throw immediately while type system validation
-                    # with validate_schema() will produce more actionable results.
-                    type_ = cast(GraphQLInputType, get_wrapped_type(field.type))
-                    input_field_map[field.name.value] = GraphQLInputField(
-                        type_=type_,
-                        description=field.description.value
-                        if field.description
-                        else None,
-                        default_value=value_from_ast(field.default_value, type_),
-                        ast_node=field,
-                    )
+            for field in node.fields or []:
+                # Note: While this could make assertions to get the correctly typed
+                # value, that would throw immediately while type system validation
+                # with validate_schema() will produce more actionable results.
+                type_ = cast(GraphQLInputType, get_wrapped_type(field.type))
+                input_field_map[field.name.value] = GraphQLInputField(
+                    type_=type_,
+                    description=field.description.value if field.description else None,
+                    default_value=value_from_ast(field.default_value, type_),
+                    ast_node=field,
+                )
         return input_field_map
 
     def build_enum_value_map(
@@ -488,18 +480,15 @@ def extend_schema_impl(
     ) -> GraphQLEnumValueMap:
         enum_value_map: GraphQLEnumValueMap = {}
         for node in nodes:
-            if node.values:
-                for value in node.values:
-                    # Note: While this could make assertions to get the correctly typed
-                    # value, that would throw immediately while type system validation
-                    # with validate_schema() will produce more actionable results.
-                    enum_value_map[value.name.value] = GraphQLEnumValue(
-                        description=value.description.value
-                        if value.description
-                        else None,
-                        deprecation_reason=get_deprecation_reason(value),
-                        ast_node=value,
-                    )
+            for value in node.values or []:
+                # Note: While this could make assertions to get the correctly typed
+                # value, that would throw immediately while type system validation
+                # with validate_schema() will produce more actionable results.
+                enum_value_map[value.name.value] = GraphQLEnumValue(
+                    description=value.description.value if value.description else None,
+                    deprecation_reason=get_deprecation_reason(value),
+                    ast_node=value,
+                )
         return enum_value_map
 
     def build_interfaces(
@@ -514,12 +503,11 @@ def extend_schema_impl(
     ) -> List[GraphQLInterfaceType]:
         interfaces: List[GraphQLInterfaceType] = []
         for node in nodes:
-            if node.interfaces:
-                for type_ in node.interfaces:
-                    # Note: While this could make assertions to get the correctly typed
-                    # value, that would throw immediately while type system validation
-                    # with validate_schema() will produce more actionable results.
-                    interfaces.append(cast(GraphQLInterfaceType, get_named_type(type_)))
+            for type_ in node.interfaces or []:
+                # Note: While this could make assertions to get the correctly typed
+                # value, that would throw immediately while type system validation
+                # with validate_schema() will produce more actionable results.
+                interfaces.append(cast(GraphQLInterfaceType, get_named_type(type_)))
         return interfaces
 
     def build_union_types(
@@ -527,12 +515,11 @@ def extend_schema_impl(
     ) -> List[GraphQLObjectType]:
         types: List[GraphQLObjectType] = []
         for node in nodes:
-            if node.types:
-                for type_ in node.types:
-                    # Note: While this could make assertions to get the correctly typed
-                    # value, that would throw immediately while type system validation
-                    # with validate_schema() will produce more actionable results.
-                    types.append(cast(GraphQLObjectType, get_named_type(type_)))
+            for type_ in node.types or []:
+                # Note: While this could make assertions to get the correctly typed
+                # value, that would throw immediately while type system validation
+                # with validate_schema() will produce more actionable results.
+                types.append(cast(GraphQLObjectType, get_named_type(type_)))
         return types
 
     def build_object_type(ast_node: ObjectTypeDefinitionNode) -> GraphQLObjectType:
