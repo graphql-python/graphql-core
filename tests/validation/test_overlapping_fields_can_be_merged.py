@@ -10,10 +10,6 @@ assert_errors = partial(assert_validation_errors, OverlappingFieldsCanBeMergedRu
 assert_valid = partial(assert_errors, errors=[])
 
 
-def assert_valid_with_schema(schema, query_str):
-    assert_errors(query_str, [], schema)
-
-
 def describe_validate_overlapping_fields_can_be_merged():
     def unique_fields():
         assert_valid(

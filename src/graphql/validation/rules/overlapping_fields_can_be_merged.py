@@ -9,6 +9,7 @@ from ...language import (
     FragmentSpreadNode,
     InlineFragmentNode,
     SelectionSetNode,
+    ValueNode,
     print_ast,
 )
 from ...type import (
@@ -598,8 +599,8 @@ def same_arguments(
     return True
 
 
-def same_value(value1, value2):
-    return (not value1 and not value2) or (print_ast(value1) == print_ast(value2))
+def same_value(value1: ValueNode, value2: ValueNode) -> bool:
+    return print_ast(value1) == print_ast(value2)
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
