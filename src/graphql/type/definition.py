@@ -1100,23 +1100,23 @@ class GraphQLEnumType(GraphQLNamedType):
                 pass  # ignore unhashable values
         return lookup
 
-    def serialize(self, value: Any) -> Union[str, None, UndefinedType]:
+    def serialize(self, output_value: Any) -> Union[str, None, UndefinedType]:
         try:
-            return self._value_lookup.get(value, Undefined)
+            return self._value_lookup.get(output_value, Undefined)
         except TypeError:  # unhashable value
             for enum_name, enum_value in self.values.items():
-                if enum_value.value == value:
+                if enum_value.value == output_value:
                     return enum_name
         return Undefined
 
-    def parse_value(self, value: str) -> Any:
-        if isinstance(value, str):
+    def parse_value(self, input_value: str) -> Any:
+        if isinstance(input_value, str):
             try:
-                enum_value = self.values[value]
+                enum_value = self.values[input_value]
             except KeyError:
                 return Undefined
             if enum_value.value is None or enum_value.value is Undefined:
-                return value
+                return input_value
             return enum_value.value
         return Undefined
 
