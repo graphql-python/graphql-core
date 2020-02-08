@@ -1,14 +1,17 @@
 from graphql.language import (
     FieldNode,
     NameNode,
+    Node,
+    OperationDefinitionNode,
     SelectionSetNode,
     parse,
+    parse_value,
     print_ast,
     visit,
     Visitor,
 )
 from graphql.type import get_named_type, is_composite_type
-from graphql.utilities import TypeInfo, TypeInfoVisitor
+from graphql.utilities import TypeInfo, TypeInfoVisitor, build_schema
 
 from ..validation.harness import test_schema
 
@@ -16,7 +19,69 @@ from ..validation.harness import test_schema
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
 
+def describe_type_info():
+    def allow_all_methods_to_be_called_before_entering_any_mode():
+        type_info = TypeInfo(test_schema)
+
+        assert type_info.get_type() is None
+        assert type_info.get_parent_type() is None
+        assert type_info.get_input_type() is None
+        assert type_info.get_parent_input_type() is None
+        assert type_info.get_field_def() is None
+        assert type_info.get_default_value() is None
+        assert type_info.get_directive() is None
+        assert type_info.get_argument() is None
+        assert type_info.get_enum_value() is None
+
+
 def describe_visit_with_type_info():
+    def supports_different_operation_types():
+        schema = build_schema(
+            """
+            schema {
+              query: QueryRoot
+              mutation: MutationRoot
+              subscription: SubscriptionRoot
+            }
+
+            type QueryRoot {
+              foo: String
+            }
+
+            type MutationRoot {
+              bar: String
+            }
+
+            type SubscriptionRoot {
+              baz: String
+            }
+            """
+        )
+        ast = parse(
+            """
+            query { foo }
+            mutation { bar }
+            subscription { baz }
+            """
+        )
+
+        class TestVisitor(Visitor):
+            def __init__(self):
+                self.root_types = {}
+
+            def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
+                self.root_types[node.operation.value] = str(type_info.get_type())
+
+        type_info = TypeInfo(schema)
+        test_visitor = TestVisitor()
+        assert visit(ast, TypeInfoVisitor(type_info, test_visitor))
+
+        assert test_visitor.root_types == {
+            "query": "QueryRoot",
+            "mutation": "MutationRoot",
+            "subscription": "SubscriptionRoot",
+        }
+
     def provide_exact_same_arguments_to_wrapped_visitor():
         ast = parse("{ human(id: 4) { name, pets { ... { name } }, unknown } }")
 
@@ -235,4 +300,112 @@ def describe_visit_with_type_info():
             ("leave", "selection_set", None, "QueryRoot", "QueryRoot", None),
             ("leave", "operation_definition", None, None, "QueryRoot", None),
             ("leave", "document", None, None, None, None),
+        ]
+
+    def supports_traversal_of_input_values():
+        visited = []
+
+        complex_input_type = test_schema.get_type("ComplexInput")
+        assert complex_input_type is not None
+        type_info = TypeInfo(test_schema, None, complex_input_type)
+
+        ast = parse_value('{ stringListField: ["foo"] }')
+
+        # noinspection PyMethodMayBeStatic
+        class TestVisitor(Visitor):
+            def enter(self, node: Node, *_args):
+                type_ = type_info.get_input_type()
+                visited.append(
+                    (
+                        "enter",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(type_),
+                    )
+                )
+
+            def leave(self, node: Node, *_args):
+                type_ = type_info.get_input_type()
+                visited.append(
+                    (
+                        "leave",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(type_),
+                    )
+                )
+
+        visit(ast, TypeInfoVisitor(type_info, TestVisitor()))
+
+        assert visited == [
+            ("enter", "object_value", None, "ComplexInput"),
+            ("enter", "object_field", None, "[String]"),
+            ("enter", "name", "stringListField", "[String]"),
+            ("leave", "name", "stringListField", "[String]"),
+            ("enter", "list_value", None, "String"),
+            ("enter", "string_value", None, "String"),
+            ("leave", "string_value", None, "String"),
+            ("leave", "list_value", None, "String"),
+            ("leave", "object_field", None, "[String]"),
+            ("leave", "object_value", None, "ComplexInput"),
+        ]
+
+    def supports_traversal_of_selection_sets():
+        visited = []
+
+        human_type = test_schema.get_type("Human")
+        assert human_type is not None
+        type_info = TypeInfo(test_schema, None, human_type)
+
+        ast = parse("{ name, pets { name } }")
+        operation_node = ast.definitions[0]
+        assert isinstance(operation_node, OperationDefinitionNode)
+
+        # noinspection PyMethodMayBeStatic
+        class TestVisitor(Visitor):
+            def enter(self, node: Node, *_args):
+                parent_type = type_info.get_parent_type()
+                type_ = type_info.get_type()
+                visited.append(
+                    (
+                        "enter",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(parent_type),
+                        str(type_),
+                    )
+                )
+
+            def leave(self, node: Node, *_args):
+                parent_type = type_info.get_parent_type()
+                type_ = type_info.get_type()
+                visited.append(
+                    (
+                        "leave",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(parent_type),
+                        str(type_),
+                    )
+                )
+
+        visit(operation_node.selection_set, TypeInfoVisitor(type_info, TestVisitor()))
+
+        assert visited == [
+            ("enter", "selection_set", None, "Human", "Human"),
+            ("enter", "field", None, "Human", "String"),
+            ("enter", "name", "name", "Human", "String"),
+            ("leave", "name", "name", "Human", "String"),
+            ("leave", "field", None, "Human", "String"),
+            ("enter", "field", None, "Human", "[Pet]"),
+            ("enter", "name", "pets", "Human", "[Pet]"),
+            ("leave", "name", "pets", "Human", "[Pet]"),
+            ("enter", "selection_set", None, "Pet", "[Pet]"),
+            ("enter", "field", None, "Pet", "String"),
+            ("enter", "name", "name", "Pet", "String"),
+            ("leave", "name", "name", "Pet", "String"),
+            ("leave", "field", None, "Pet", "String"),
+            ("leave", "selection_set", None, "Pet", "[Pet]"),
+            ("leave", "field", None, "Human", "[Pet]"),
+            ("leave", "selection_set", None, "Human", "Human"),
         ]

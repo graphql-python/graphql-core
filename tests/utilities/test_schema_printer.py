@@ -281,23 +281,45 @@ def describe_type_system_printer():
             """  # noqa: E501
         )
 
-    def prints_custom_query_root_type():
-        custom_query_type = GraphQLObjectType(
-            "CustomQueryType", {"bar": GraphQLField(GraphQLString)}
-        )
-
-        schema = GraphQLSchema(custom_query_type)
+    def prints_custom_query_root_types():
+        schema = GraphQLSchema(query=GraphQLObjectType("CustomType", {}))
 
         output = print_for_test(schema)
         assert output == dedent(
             """
             schema {
-              query: CustomQueryType
+              query: CustomType
             }
 
-            type CustomQueryType {
-              bar: String
+            type CustomType
+            """
+        )
+
+    def prints_custom_mutation_root_types():
+        schema = GraphQLSchema(mutation=GraphQLObjectType("CustomType", {}))
+
+        output = print_for_test(schema)
+        assert output == dedent(
+            """
+            schema {
+              mutation: CustomType
             }
+
+            type CustomType
+            """
+        )
+
+    def prints_custom_subscription_root_types():
+        schema = GraphQLSchema(subscription=GraphQLObjectType("CustomType", {}))
+
+        output = print_for_test(schema)
+        assert output == dedent(
+            """
+            schema {
+              subscription: CustomType
+            }
+
+            type CustomType
             """
         )
 

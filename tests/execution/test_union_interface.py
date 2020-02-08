@@ -375,6 +375,42 @@ def describe_execute_union_and_intersection_types():
             None,
         )
 
+    def executes_interface_types_with_named_fragments():
+        document = parse(
+            """
+            {
+              __typename
+              name
+              friends {
+                __typename
+                name
+                ...DogBarks
+                ...CatMeows
+              }
+            }
+
+            fragment  DogBarks on Dog {
+              barks
+            }
+
+            fragment  CatMeows on Cat {
+              meows
+            }
+            """
+        )
+
+        assert execute(schema=schema, document=document, root_value=john) == (
+            {
+                "__typename": "Person",
+                "name": "John",
+                "friends": [
+                    {"__typename": "Person", "name": "Liz"},
+                    {"__typename": "Dog", "name": "Odie", "barks": True},
+                ],
+            },
+            None,
+        )
+
     def allows_fragment_conditions_to_be_abstract_types():
         document = parse(
             """

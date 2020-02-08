@@ -443,6 +443,18 @@ def describe_type_system_objects():
         )
         assert obj_type.fields
 
+    def rejects_an_object_type_without_a_name():
+        with raises(TypeError, match="missing .* required .* 'name'"):
+            # noinspection PyArgumentList
+            GraphQLObjectType()  # type: ignore
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLObjectType(None, {})  # type: ignore
+        assert str(exc_info.value) == "Must provide name."
+        with raises(TypeError) as exc_info:
+            GraphQLObjectType("", {})
+        assert str(exc_info.value) == "Must provide name."
+
     def rejects_an_object_type_field_with_undefined_config():
         undefined_field = cast(GraphQLField, None)
         obj_type = GraphQLObjectType("SomeObject", {"f": undefined_field})
@@ -692,6 +704,18 @@ def describe_type_system_interfaces():
             "SomeInterface fields must be GraphQLField or output type objects."
         )
 
+    def rejects_an_interface_type_without_a_name():
+        with raises(TypeError, match="missing .* required .* 'name'"):
+            # noinspection PyArgumentList
+            GraphQLInterfaceType()  # type: ignore
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInterfaceType(None)  # type: ignore
+        assert str(exc_info.value) == "Must provide name."
+        with raises(TypeError) as exc_info:
+            GraphQLInterfaceType("")
+        assert str(exc_info.value) == "Must provide name."
+
     def rejects_an_interface_type_with_incorrectly_typed_interfaces():
         interface = GraphQLInterfaceType("AnotherInterface", {}, lambda: {})
         with raises(TypeError) as exc_info:
@@ -769,6 +793,18 @@ def describe_type_system_unions():
         assert union_type.types == []
         union_type = GraphQLUnionType("SomeUnion", [])
         assert union_type.types == []
+
+    def rejects_an_union_type_without_a_name():
+        with raises(TypeError, match="missing .* required .* 'name'"):
+            # noinspection PyArgumentList
+            GraphQLUnionType()  # type: ignore
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLUnionType(None, [])
+        assert str(exc_info.value) == "Must provide name."
+        with raises(TypeError) as exc_info:
+            GraphQLUnionType("", [])
+        assert str(exc_info.value) == "Must provide name."
 
     def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
         with raises(TypeError) as exc_info:
@@ -1202,6 +1238,18 @@ def describe_type_system_input_objects():
             assert input_field.ast_node is None
             assert input_field.out_name is None
 
+        def rejects_an_input_object_type_without_a_name():
+            with raises(TypeError, match="missing .* required .* 'name'"):
+                # noinspection PyArgumentList
+                GraphQLInputObjectType()  # type: ignore
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                GraphQLInputObjectType(None, {})  # type: ignore
+            assert str(exc_info.value) == "Must provide name."
+            with raises(TypeError) as exc_info:
+                GraphQLInputObjectType("", {})
+            assert str(exc_info.value) == "Must provide name."
+
         def rejects_an_input_object_type_with_incorrect_fields():
             input_obj_type = GraphQLInputObjectType(
                 "SomeInputObject", []  # type: ignore
@@ -1236,13 +1284,13 @@ def describe_type_system_input_objects():
                     "SomeInputObject",
                     {
                         "f": GraphQLInputField(  # type: ignore
-                            ScalarType, resolve=lambda: 0
+                            ScalarType, resolve=lambda: None
                         )
                     },
                 )
             input_obj_type = GraphQLInputObjectType(
                 "SomeInputObject",
-                {"f": GraphQLField(ScalarType, resolve=lambda: 0)},  # type: ignore
+                {"f": GraphQLField(ScalarType, resolve=lambda: None)},  # type: ignore
             )
             with raises(TypeError) as exc_info:
                 if input_obj_type.fields:

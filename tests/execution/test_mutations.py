@@ -133,6 +133,12 @@ def describe_execute_handles_mutation_execution_ordering():
             None,
         )
 
+    def does_not_include_illegal_mutation_fields_in_output():
+        document = parse("mutation { thisIsIllegalDoNotIncludeMe }")
+
+        result = execute(schema=schema, document=document)
+        assert result == ({}, None)
+
     @mark.asyncio
     async def evaluates_mutations_correctly_in_presence_of_a_failed_mutation():
         document = parse(

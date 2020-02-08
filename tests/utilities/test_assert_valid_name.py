@@ -5,6 +5,9 @@ from graphql.utilities import assert_valid_name
 
 
 def describe_assert_valid_name():
+    def pass_through_valid_name():
+        assert assert_valid_name("_ValidName123") == "_ValidName123"
+
     def throws_for_use_of_leading_double_underscore():
         with raises(GraphQLError) as exc_info:
             assert assert_valid_name("__bad")

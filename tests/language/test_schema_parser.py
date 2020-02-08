@@ -174,6 +174,9 @@ def describe_schema_parser():
         assert description.block is True
         assert description.loc == (1, 20)
 
+    def reject_description_followed_by_non_type_system_definition():
+        assert_syntax_error('"Description" 1', "Unexpected Int '1'.", (1, 15))
+
     def simple_extension():
         body = dedent(
             """
@@ -235,6 +238,14 @@ def describe_schema_parser():
         assert extension.fields == []
         assert extension.loc == (52, 95)
 
+    def extension_without_anything_throws():
+        assert_syntax_error("extend scalar Hello", "Unexpected <EOF>.", (1, 20))
+        assert_syntax_error("extend type Hello", "Unexpected <EOF>.", (1, 18))
+        assert_syntax_error("extend interface Hello", "Unexpected <EOF>.", (1, 23))
+        assert_syntax_error("extend union Hello", "Unexpected <EOF>.", (1, 19))
+        assert_syntax_error("extend enum Hello", "Unexpected <EOF>.", (1, 18))
+        assert_syntax_error("extend input Hello", "Unexpected <EOF>.", (1, 19))
+
     def interface_extension_without_fields_followed_by_extension():
         body = (
             "\n      extend interface Hello implements Greeting\n\n"
@@ -255,12 +266,6 @@ def describe_schema_parser():
         assert extension.directives == []
         assert extension.fields == []
         assert extension.loc == (57, 105)
-
-    def object_extension_without_anything_throws():
-        assert_syntax_error("extend type Hello", "Unexpected <EOF>.", (1, 18))
-
-    def interface_extension_without_anything_throws():
-        assert_syntax_error("extend interface Hello", "Unexpected <EOF>.", (1, 23))
 
     def object_extension_do_not_include_descriptions():
         assert_syntax_error(
@@ -337,6 +342,11 @@ def describe_schema_parser():
 
     def schema_extension_without_anything_throws():
         assert_syntax_error("extend schema", "Unexpected <EOF>.", (1, 14))
+
+    def schema_extension_with_invalid_operation_type_throws():
+        assert_syntax_error(
+            "extend schema { unknown: SomeType }", "Unexpected Name 'unknown'.", (1, 17)
+        )
 
     def simple_non_null_type():
         body = dedent(

@@ -1,6 +1,6 @@
 from pytest import mark  # type: ignore
 
-from graphql import graphql
+from graphql import graphql, graphql_sync
 
 from .star_wars_schema import star_wars_schema as schema
 
@@ -30,6 +30,9 @@ def describe_star_wars_query_tests():
                 """
             result = await graphql(schema, source)
             assert result == ({"hero": {"name": "R2-D2"}}, None)
+
+            sync_result = graphql_sync(schema, source)
+            assert sync_result == result
 
         @mark.asyncio
         async def allows_us_to_query_for_the_id_and_friends_of_r2_d2():
@@ -132,16 +135,22 @@ def describe_star_wars_query_tests():
             assert result == ({"droid": {"name": "R2-D2"}}, None)
 
         @mark.asyncio
-        async def allows_us_to_query_for_luke_directly_using_his_id():
+        async def allows_us_to_query_characters_directly_using_their_id():
             source = """
-                query FetchLukeQuery {
+                query FetchLukeAndC3POQuery {
                   human(id: "1000") {
+                    name
+                  }
+                  droid(id: "2000") {
                     name
                   }
                 }
                 """
             result = await graphql(schema=schema, source=source)
-            assert result == ({"human": {"name": "Luke Skywalker"}}, None)
+            assert result == (
+                {"human": {"name": "Luke Skywalker"}, "droid": {"name": "C-3PO"}},
+                None,
+            )
 
         @mark.asyncio
         async def allows_creating_a_generic_query_to_fetch_luke_using_his_id():

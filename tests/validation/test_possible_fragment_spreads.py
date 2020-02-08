@@ -104,6 +104,13 @@ def describe_validate_possible_fragment_spreads():
             """
         )
 
+    def ignores_unknown_fragments_caught_by_known_fragment_names():
+        assert_valid(
+            """
+            fragment petFragment on Pet { ...UnknownFragment }
+            """
+        )
+
     def different_object_into_object():
         assert_errors(
             """

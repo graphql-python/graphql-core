@@ -97,14 +97,26 @@ def describe_known_directives():
     def with_well_placed_directives():
         assert_valid(
             """
-            query Foo($var: Boolean) @onQuery {
+            query ($var: Boolean) @onQuery {
               name @include(if: $var)
               ...Frag @include(if: true)
               skippedField @skip(if: true)
               ...SkippedFrag @skip(if: true)
+
+              ... @skip(if: true) {
+                skippedField
+              }
             }
 
-            mutation Bar @onMutation {
+            mutation @onMutation {
+              someField
+            }
+
+            subscription @onSubscription {
+              someField
+            }
+
+            fragment Frag on SomeType @onFragmentDefinition {
               someField
             }
             """

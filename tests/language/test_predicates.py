@@ -1,25 +1,9 @@
+from operator import attrgetter
+from typing import Callable
+
 from graphql.language import (
-    DefinitionNode,
-    DocumentNode,
-    ExecutableDefinitionNode,
-    FieldDefinitionNode,
-    FieldNode,
-    InlineFragmentNode,
-    IntValueNode,
+    ast,
     Node,
-    NonNullTypeNode,
-    ObjectValueNode,
-    ScalarTypeDefinitionNode,
-    ScalarTypeExtensionNode,
-    SchemaDefinitionNode,
-    SchemaExtensionNode,
-    SelectionNode,
-    SelectionSetNode,
-    TypeDefinitionNode,
-    TypeExtensionNode,
-    TypeNode,
-    TypeSystemDefinitionNode,
-    ValueNode,
     is_definition_node,
     is_executable_definition_node,
     is_selection_node,
@@ -31,79 +15,143 @@ from graphql.language import (
     is_type_extension_node,
 )
 
+all_ast_nodes = sorted(
+    [
+        node_type()
+        for node_type in vars(ast).values()
+        if type(node_type) is type and issubclass(node_type, Node)
+    ],
+    key=attrgetter("kind"),
+)
 
-def describe_predicates():
+
+def filter_nodes(predicate: Callable[[Node], bool]):
+    return [node.kind for node in all_ast_nodes if predicate(node)]
+
+
+def describe_ast_node_predicates():
     def check_definition_node():
-        assert not is_definition_node(Node())
-        assert not is_definition_node(DocumentNode())
-        assert is_definition_node(DefinitionNode())
-        assert is_definition_node(ExecutableDefinitionNode())
-        assert is_definition_node(TypeSystemDefinitionNode())
+        assert filter_nodes(is_definition_node) == [
+            "definition",
+            "directive_definition",
+            "enum_type_definition",
+            "enum_type_extension",
+            "enum_value_definition",
+            "executable_definition",
+            "field_definition",
+            "fragment_definition",
+            "input_object_type_definition",
+            "input_object_type_extension",
+            "input_value_definition",
+            "interface_type_definition",
+            "interface_type_extension",
+            "object_type_definition",
+            "object_type_extension",
+            "operation_definition",
+            "scalar_type_definition",
+            "scalar_type_extension",
+            "schema_definition",
+            "type_definition",
+            "type_extension",
+            "type_system_definition",
+            "union_type_definition",
+            "union_type_extension",
+        ]
 
-    def check_exectuable_definition_node():
-        assert not is_executable_definition_node(Node())
-        assert not is_executable_definition_node(DocumentNode())
-        assert not is_executable_definition_node(DefinitionNode())
-        assert is_executable_definition_node(ExecutableDefinitionNode())
-        assert not is_executable_definition_node(TypeSystemDefinitionNode())
+    def check_executable_definition_node():
+        assert filter_nodes(is_executable_definition_node) == [
+            "executable_definition",
+            "fragment_definition",
+            "operation_definition",
+        ]
 
     def check_selection_node():
-        assert not is_selection_node(Node())
-        assert not is_selection_node(DocumentNode())
-        assert is_selection_node(SelectionNode())
-        assert is_selection_node(FieldNode())
-        assert is_selection_node(InlineFragmentNode())
-        assert not is_selection_node(SelectionSetNode())
+        assert filter_nodes(is_selection_node) == [
+            "field",
+            "fragment_spread",
+            "inline_fragment",
+            "selection",
+        ]
 
     def check_value_node():
-        assert not is_value_node(Node())
-        assert not is_value_node(DocumentNode())
-        assert is_value_node(ValueNode())
-        assert is_value_node(IntValueNode())
-        assert is_value_node(ObjectValueNode())
-        assert not is_value_node(TypeNode())
+        assert filter_nodes(is_value_node) == [
+            "boolean_value",
+            "enum_value",
+            "float_value",
+            "int_value",
+            "list_value",
+            "null_value",
+            "object_value",
+            "string_value",
+            "value",
+            "variable",
+        ]
 
     def check_type_node():
-        assert not is_type_node(Node())
-        assert not is_type_node(DocumentNode())
-        assert not is_type_node(ValueNode())
-        assert is_type_node(TypeNode())
-        assert is_type_node(NonNullTypeNode())
+        assert filter_nodes(is_type_node) == [
+            "list_type",
+            "named_type",
+            "non_null_type",
+            "type",
+        ]
 
     def check_type_system_definition_node():
-        assert not is_type_system_definition_node(Node())
-        assert not is_type_system_definition_node(DocumentNode())
-        assert is_type_system_definition_node(TypeSystemDefinitionNode())
-        assert not is_type_system_definition_node(TypeNode())
-        assert not is_type_system_definition_node(DefinitionNode())
-        assert is_type_system_definition_node(TypeDefinitionNode())
-        assert is_type_system_definition_node(SchemaDefinitionNode())
-        assert is_type_system_definition_node(ScalarTypeDefinitionNode())
-        assert is_type_system_definition_node(FieldDefinitionNode())
+        assert filter_nodes(is_type_system_definition_node) == [
+            "directive_definition",
+            "enum_type_definition",
+            "enum_type_extension",
+            "enum_value_definition",
+            "field_definition",
+            "input_object_type_definition",
+            "input_object_type_extension",
+            "input_value_definition",
+            "interface_type_definition",
+            "interface_type_extension",
+            "object_type_definition",
+            "object_type_extension",
+            "scalar_type_definition",
+            "scalar_type_extension",
+            "schema_definition",
+            "type_definition",
+            "type_extension",
+            "type_system_definition",
+            "union_type_definition",
+            "union_type_extension",
+        ]
 
     def check_type_definition_node():
-        assert not is_type_definition_node(Node())
-        assert not is_type_definition_node(DocumentNode())
-        assert is_type_definition_node(TypeDefinitionNode())
-        assert is_type_definition_node(ScalarTypeDefinitionNode())
-        assert not is_type_definition_node(TypeSystemDefinitionNode())
-        assert not is_type_definition_node(DefinitionNode())
-        assert not is_type_definition_node(TypeNode())
+        assert filter_nodes(is_type_definition_node) == [
+            "enum_type_definition",
+            "enum_value_definition",
+            "field_definition",
+            "input_object_type_definition",
+            "input_value_definition",
+            "interface_type_definition",
+            "object_type_definition",
+            "scalar_type_definition",
+            "type_definition",
+            "union_type_definition",
+        ]
 
     def check_type_system_extension_node():
-        assert not is_type_system_extension_node(Node())
-        assert not is_type_system_extension_node(DocumentNode())
-        assert is_type_system_extension_node(SchemaExtensionNode())
-        assert is_type_system_extension_node(TypeExtensionNode())
-        assert not is_type_system_extension_node(TypeSystemDefinitionNode())
-        assert not is_type_system_extension_node(DefinitionNode())
-        assert not is_type_system_extension_node(TypeNode())
+        assert filter_nodes(is_type_system_extension_node) == [
+            "enum_type_extension",
+            "input_object_type_extension",
+            "interface_type_extension",
+            "object_type_extension",
+            "scalar_type_extension",
+            "schema_extension",
+            "type_extension",
+            "union_type_extension",
+        ]
 
     def check_type_extension_node():
-        assert not is_type_extension_node(Node())
-        assert not is_type_extension_node(DocumentNode())
-        assert is_type_extension_node(TypeExtensionNode())
-        assert not is_type_extension_node(ScalarTypeDefinitionNode())
-        assert is_type_extension_node(ScalarTypeExtensionNode())
-        assert not is_type_extension_node(DefinitionNode())
-        assert not is_type_extension_node(TypeNode())
+        assert filter_nodes(is_type_extension_node) == [
+            "enum_type_extension",
+            "input_object_type_extension",
+            "interface_type_extension",
+            "object_type_extension",
+            "scalar_type_extension",
+            "type_extension",
+            "union_type_extension",
+        ]

@@ -87,12 +87,12 @@ def describe_description():
             Description.bases = str
 
     def can_only_register_types():
-        with raises(TypeError, match="Only types can be registered."):
+        with raises(TypeError, match="Only types can be registered\\."):
             # noinspection PyTypeChecker
             register_description("foo")  # type: ignore
 
     def can_only_unregister_types():
-        with raises(TypeError, match="Only types can be unregistered."):
+        with raises(TypeError, match="Only types can be unregistered\\."):
             # noinspection PyTypeChecker
             unregister_description("foo")  # type: ignore
 
@@ -101,15 +101,15 @@ def describe_description():
             named_type = GraphQLNamedType(name="Foo", description="not lazy")
             assert named_type.name == "Foo"
             assert named_type.description == "not lazy"
-            with raises(TypeError, match="The name must be a string."):
+            with raises(TypeError, match="The name must be a string\\."):
                 GraphQLNamedType(name=lazy_string)
-            with raises(TypeError, match="The description must be a string."):
+            with raises(TypeError, match="The description must be a string\\."):
                 GraphQLNamedType(name="Foo", description=lazy_string)
             with registered(LazyString):
                 named_type = GraphQLNamedType(name="Foo", description=lazy_string)
                 assert named_type.description is lazy_string
                 assert str(named_type.description).endswith("lazy?")
-                with raises(TypeError, match="The name must be a string."):
+                with raises(TypeError, match="The name must be a string\\."):
                     GraphQLNamedType(name=lazy_string)
 
         def graphql_field():
@@ -117,9 +117,9 @@ def describe_description():
             assert field.description == "not lazy"
             field = GraphQLField(GraphQLString, deprecation_reason="not lazy")
             assert field.deprecation_reason == "not lazy"
-            with raises(TypeError, match="The description must be a string."):
+            with raises(TypeError, match="The description must be a string\\."):
                 GraphQLField(GraphQLString, description=lazy_string)
-            with raises(TypeError, match="The deprecation reason must be a string."):
+            with raises(TypeError, match="The deprecation reason must be a string\\."):
                 GraphQLField(GraphQLString, deprecation_reason=lazy_string)
             with registered(LazyString):
                 field = GraphQLField(
@@ -135,7 +135,7 @@ def describe_description():
         def graphql_argument():
             arg = GraphQLArgument(GraphQLString, description="not lazy")
             assert arg.description == "not lazy"
-            with raises(TypeError, match="Argument description must be a string."):
+            with raises(TypeError, match="Argument description must be a string\\."):
                 GraphQLArgument(GraphQLString, description=lazy_string)
             with registered(LazyString):
                 arg = GraphQLArgument(GraphQLString, description=lazy_string)
@@ -148,12 +148,12 @@ def describe_description():
             value = GraphQLEnumValue(deprecation_reason="not lazy")
             assert value.deprecation_reason == "not lazy"
             with raises(
-                TypeError, match="The description of the enum value must be a string."
+                TypeError, match="The description of the enum value must be a string\\."
             ):
                 GraphQLEnumValue(description=lazy_string)
             with raises(
                 TypeError,
-                match="The deprecation reason for the enum value must be a string.",
+                match="The deprecation reason for the enum value must be a string\\.",
             ):
                 GraphQLEnumValue(deprecation_reason=lazy_string)
             with registered(LazyString):
@@ -168,7 +168,7 @@ def describe_description():
         def graphql_input_field():
             field = GraphQLInputField(GraphQLString, description="not lazy")
             assert field.description == "not lazy"
-            with raises(TypeError, match="Input field description must be a string."):
+            with raises(TypeError, match="Input field description must be a string\\."):
                 GraphQLInputField(GraphQLString, description=lazy_string)
             with registered(LazyString):
                 field = GraphQLInputField(GraphQLString, description=lazy_string)
@@ -179,15 +179,15 @@ def describe_description():
             directive = GraphQLDirective("Foo", [], description="not lazy")
             assert directive.name == "Foo"
             assert directive.description == "not lazy"
-            with raises(TypeError, match="The directive name must be a string."):
+            with raises(TypeError, match="The directive name must be a string\\."):
                 GraphQLDirective(lazy_string, [])
-            with raises(TypeError, match="Foo description must be a string."):
+            with raises(TypeError, match="Foo description must be a string\\."):
                 GraphQLDirective("Foo", [], description=lazy_string)
             with registered(LazyString):
                 directive = GraphQLDirective("Foo", [], description=lazy_string)
                 assert directive.description is lazy_string
                 assert str(directive.description).endswith("lazy?")
-                with raises(TypeError, match="The directive name must be a string."):
+                with raises(TypeError, match="The directive name must be a string\\."):
                     GraphQLDirective(lazy_string, [])
 
     def introspection():

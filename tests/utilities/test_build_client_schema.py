@@ -561,6 +561,14 @@ def describe_type_system_build_schema_from_introspection():
 
         assert result.data == {"foo": "bar"}
 
+    def can_build_invalid_schema():
+        schema = build_schema("type Query", assume_valid=True)
+
+        introspection = introspection_from_schema(schema)
+        client_schema = build_client_schema(introspection, assume_valid=True)
+
+        assert client_schema.to_kwargs()["assume_valid"] is True
+
     def describe_throws_when_given_invalid_introspection():
         dummy_schema = build_schema(
             """

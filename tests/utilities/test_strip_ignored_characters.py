@@ -83,12 +83,14 @@ def describe_strip_ignored_characters():
         ):
             # noinspection PyArgumentList
             strip_ignored_characters()  # type: ignore
-        with raises(TypeError, match="Must provide string or Source. Received: None."):
+        with raises(
+            TypeError, match="Must provide string or Source. Received: None\\."
+        ):
             # noinspection PyTypeChecker
             strip_ignored_characters(None)  # type: ignore
 
     def asserts_that_a_valid_source_was_provided():
-        with raises(TypeError, match="Must provide string or Source. Received: {}."):
+        with raises(TypeError, match="Must provide string or Source. Received: {}\\."):
             # noinspection PyTypeChecker
             strip_ignored_characters({})  # type: ignore
 

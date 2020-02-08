@@ -3,9 +3,13 @@ from typing import cast, List, Union
 
 from pytest import mark, raises  # type: ignore
 
-from graphql.language import parse
-from graphql.pyutils import FrozenList
+from graphql.language import parse, DirectiveLocation
+from graphql.pyutils import dedent, FrozenList
 from graphql.type import (
+    assert_valid_schema,
+    validate_schema,
+    GraphQLArgument,
+    GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -23,9 +27,6 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
-    validate_schema,
-    GraphQLArgument,
-    GraphQLDirective,
 )
 from graphql.utilities import build_schema, extend_schema
 
@@ -1244,7 +1245,7 @@ def describe_type_system_interface_fields_must_have_output_types():
         assert validate_schema(schema) == []
 
 
-def describe_type_system_field_arguments_must_have_input_types():
+def describe_type_system_arguments_must_have_input_types():
     def _schema_with_arg_of_type(arg_type: GraphQLInputType):
         BadObjectType = GraphQLObjectType(
             "BadObject",
@@ -1255,7 +1256,14 @@ def describe_type_system_field_arguments_must_have_input_types():
             },
         )
         return GraphQLSchema(
-            GraphQLObjectType("Query", {"f": GraphQLField(BadObjectType)})
+            GraphQLObjectType("Query", {"f": GraphQLField(BadObjectType)}),
+            directives=[
+                GraphQLDirective(
+                    "BadDirective",
+                    [DirectiveLocation.QUERY],
+                    {"badArg": GraphQLArgument(arg_type)},
+                )
+            ],
         )
 
     @parametrize_type(input_types)
@@ -1955,6 +1963,29 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
         )
         assert validate_schema(schema) == []
 
+    def rejects_an_interface_implementing_a_non_interface_type():
+        # invalid schema cannot be built with Python
+        with raises(TypeError) as exc_info:
+            build_schema(
+                """
+                type Query {
+                  field: String
+                }
+
+                input SomeInputObject {
+                  field: String
+                }
+
+                interface BadInterface implements SomeInputObject {
+                  field: String
+                }
+                """
+            )
+        assert str(exc_info.value) == (
+            "BadInterface interfaces must be specified as a collection"
+            " of GraphQLInterfaceType instances."
+        )
+
     def rejects_an_interface_missing_an_interface_argument():
         schema = build_schema(
             """
@@ -2246,3 +2277,32 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
                 "locations": [(6, 47), (10, 47)],
             },
         ]
+
+
+def describe_assert_valid_schema():
+    def do_not_throw_on_valid_schemas():
+        schema = build_schema(
+            (
+                """
+             type Query {
+               foo: String
+             }
+            """
+            )
+        )
+        assert_valid_schema(schema)
+
+    def include_multiple_errors_into_a_description():
+        schema = build_schema("type SomeType")
+        with raises(TypeError) as exc_info:
+            assert_valid_schema(schema)
+        assert (
+            str(exc_info.value)
+            == dedent(
+                """
+            Query root type must be provided.
+
+            Type SomeType must define one or more fields.
+            """
+            ).rstrip()
+        )

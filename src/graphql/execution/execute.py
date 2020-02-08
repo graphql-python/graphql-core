@@ -1048,9 +1048,9 @@ def assert_valid_execution_arguments(
     # Variables, if provided, must be a dictionary.
     if not (raw_variable_values is None or isinstance(raw_variable_values, dict)):
         raise TypeError(
-            "Variables must be provided as a dictionary where each property is a"
-            " variable value. Perhaps look to see if an unparsed JSON string was"
-            " provided."
+            "Variable values must be provided as a dictionary"
+            " with variable names as keys. Perhaps look to see"
+            " if an unparsed JSON string was provided."
         )
 
 

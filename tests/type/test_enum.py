@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 from graphql import graphql_sync
@@ -25,8 +26,8 @@ class ColorTypeEnumValues(Enum):
 
 class Complex1:
     # noinspection PyMethodMayBeStatic
-    def some_random_function(self):
-        return None
+    def some_random_object(self):
+        return datetime.now()
 
 
 class Complex2:
@@ -60,8 +61,7 @@ QueryType = GraphQLObjectType(
                 "fromEnum": GraphQLArgument(ColorType),
                 "fromInt": GraphQLArgument(GraphQLInt),
             },
-            resolve=lambda _source, info, **args: args.get("fromInt")
-            or args.get("fromEnum"),
+            resolve=lambda _source, info, **args: args.get("fromEnum"),
         ),
         "complexEnum": GraphQLField(
             ComplexEnum,

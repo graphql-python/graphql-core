@@ -372,6 +372,42 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             ],
         )
 
+    def missing_both_resolve_type_and_is_type_of_yields_useful_error():
+        foo_interface = GraphQLInterfaceType(
+            "FooInterface", {"bar": GraphQLField(GraphQLString)}
+        )
+
+        foo_object = GraphQLObjectType(
+            "FooObject",
+            {"bar": GraphQLField(GraphQLString)},
+            interfaces=[foo_interface],
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {"foo": GraphQLField(foo_interface, resolve=lambda *_args: "dummy")},
+            ),
+            types=[foo_object],
+        )
+
+        result = graphql_sync(schema, "{ foo { bar } }")
+
+        assert result == (
+            {"foo": None},
+            [
+                {
+                    "message": "Abstract type 'FooInterface' must resolve to an"
+                    " Object type at runtime for field 'Query.foo' with value 'dummy',"
+                    " received 'None'. Either the 'FooInterface' type should provide"
+                    " a 'resolve_type' function or each possible type"
+                    " should provide an 'is_type_of' function.",
+                    "locations": [(1, 3)],
+                    "path": ["foo"],
+                }
+            ],
+        )
+
     def resolve_type_allows_resolving_with_type_name():
         PetType = GraphQLInterfaceType(
             "Pet",

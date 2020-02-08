@@ -3,6 +3,7 @@ from typing import (
     Any,
     Callable,
     Collection,
+    Dict,
     List,
     NamedTuple,
     Optional,
@@ -23,6 +24,7 @@ __all__ = [
     "SKIP",
     "REMOVE",
     "IDLE",
+    "QUERY_DOCUMENT_KEYS",
 ]
 
 
@@ -32,7 +34,7 @@ __all__ = [
 BREAK, SKIP, REMOVE, IDLE = True, False, Ellipsis, None
 
 # Default map from visitor kinds to their traversable node attributes:
-QUERY_DOCUMENT_KEYS = {
+QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
     "name": (),
     "document": ("definitions",),
     "operation_definition": (

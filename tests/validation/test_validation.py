@@ -1,11 +1,18 @@
+from pytest import raises  # type: ignore
+
 from graphql.language import parse
 from graphql.utilities import TypeInfo
-from graphql.validation import validate
+from graphql.validation import ASTValidationRule, validate
 
 from .harness import test_schema
 
 
 def describe_validate_supports_full_validation():
+    def rejects_invalid_documents():
+        with raises(TypeError) as exc_info:
+            assert validate(test_schema, None)  # type: ignore
+        assert str(exc_info.value) == "Must provide document."
+
     def validates_queries():
         doc = parse(
             """
@@ -111,3 +118,11 @@ def describe_validate_limit_maximum_number_of_validation_errors():
                 " Validation aborted."
             },
         ]
+
+    def pass_through_exceptions_from_rules():
+        class CustomRule(ASTValidationRule):
+            def enter_field(self, *_args):
+                raise RuntimeError("Error from custom rule!")
+
+        with raises(RuntimeError, match="^Error from custom rule!$"):
+            validate(test_schema, doc, [CustomRule], max_errors=1)

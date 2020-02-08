@@ -175,7 +175,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             ],
         )
 
-    def conflicting_args():
+    def conflicting_arg_values():
         assert_errors(
             """
             fragment conflictingArgs on Dog {
@@ -186,6 +186,25 @@ def describe_validate_overlapping_fields_can_be_merged():
             [
                 {
                     "message": "Fields 'doesKnowCommand' conflict"
+                    " because they have differing arguments."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
+        )
+
+    def conflicting_arg_names():
+        assert_errors(
+            """
+            fragment conflictingArgs on Dog {
+              isAtLocation(x: 0)
+              isAtLocation(y: 0)
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'isAtLocation' conflict"
                     " because they have differing arguments."
                     " Use different aliases on the fields"
                     " to fetch both if this was intentional.",

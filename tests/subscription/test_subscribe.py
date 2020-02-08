@@ -352,6 +352,11 @@ def describe_subscription_initialization_phase():
         )
 
     @mark.asyncio
+    async def should_pass_through_unexpected_errors_thrown_in_subscribe():
+        with raises(TypeError, match="Must provide document\\."):
+            await subscribe(schema=email_schema, document={})  # type: ignore
+
+    @mark.asyncio
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
         invalid_email_schema = GraphQLSchema(
             query=QueryType,

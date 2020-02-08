@@ -20,15 +20,16 @@ from graphql.type import (
     GraphQLString,
 )
 
+
+def parse_serialized_value(value: str) -> str:
+    assert value == "SerializedValue"
+    return "DeserializedValue"
+
+
 TestComplexScalar = GraphQLScalarType(
     name="ComplexScalar",
-    serialize=lambda value: "SerializedValue" if value == "DeserializedValue" else None,
-    parse_value=lambda value: "DeserializedValue"
-    if value == "SerializedValue"
-    else None,
-    parse_literal=lambda ast, _variables=None: "DeserializedValue"
-    if ast.value == "SerializedValue"
-    else None,
+    parse_value=lambda value: parse_serialized_value(value),
+    parse_literal=lambda ast, _variables=None: parse_serialized_value(ast.value),
 )
 
 

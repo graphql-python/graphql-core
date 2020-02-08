@@ -1,11 +1,12 @@
 from copy import copy
 from functools import partial
-from typing import List
+from typing import cast, Dict, List, Optional, Tuple
 
 from graphql.language import (
     Node,
     FieldNode,
     NameNode,
+    SelectionNode,
     SelectionSetNode,
     parse,
     visit,
@@ -15,6 +16,7 @@ from graphql.language import (
     ParallelVisitor,
     Visitor,
 )
+from graphql.language.visitor import QUERY_DOCUMENT_KEYS
 from graphql.pyutils import FrozenList
 
 # noinspection PyUnresolvedReferences
@@ -131,6 +133,23 @@ def describe_visitor():
                 visited_nodes.pop()
 
         visit(ast, TestVisitor())
+
+    def allows_visiting_only_specified_nodes():
+        ast = parse("{ a }", no_location=True)
+        visited = []
+
+        # noinspection PyMethodMayBeStatic
+        class TestVisitor(Visitor):
+            selection_set = None
+
+            def enter_field(self, node, *_args):
+                visited.append(["enter", node.kind])
+
+            def leave_field(self, node, *_args):
+                visited.append(["leave", node.kind])
+
+        visit(ast, TestVisitor())
+        assert visited == [["enter", "field"], ["leave", "field"]]
 
     def allows_editing_a_node_both_on_enter_and_on_leave():
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
@@ -793,6 +812,93 @@ def describe_visitor():
         ]
 
 
+def describe_support_for_custom_ast_nodes():
+    custom_ast = parse("{ a }")
+
+    class CustomFieldNode(SelectionNode):
+        __slots__ = "name", "selection_set"
+
+        name: NameNode
+        selection_set: Optional[SelectionSetNode]
+
+    custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
+    assert custom_selection_set is not None
+    custom_selection_set.selections = custom_selection_set.selections + [
+        CustomFieldNode(
+            name=NameNode(value="b"),
+            selection_set=SelectionSetNode(
+                selections=CustomFieldNode(name=NameNode(value="c"))
+            ),
+        )
+    ]
+
+    def does_not_traverse_unknown_node_kinds():
+        visited = []
+
+        # noinspection PyMethodMayBeStatic
+        class TestVisitor(Visitor):
+            def enter(self, node, *_args):
+                visited.append(["enter", node.kind, get_value(node)])
+
+            def leave(self, node, *_args):
+                visited.append(["leave", node.kind, get_value(node)])
+
+        visit(custom_ast, TestVisitor())
+        assert visited == [
+            ["enter", "document", None],
+            ["enter", "operation_definition", None],
+            ["enter", "selection_set", None],
+            ["enter", "field", None],
+            ["enter", "name", "a"],
+            ["leave", "name", "a"],
+            ["leave", "field", None],
+            ["enter", "custom_field", None],
+            ["leave", "custom_field", None],
+            ["leave", "selection_set", None],
+            ["leave", "operation_definition", None],
+            ["leave", "document", None],
+        ]
+
+    def does_traverse_unknown_node_with_visitor_keys():
+        custom_query_document_keys: Dict[str, Tuple[str, ...]] = {
+            **QUERY_DOCUMENT_KEYS,
+            "custom_field": ("name", "selection_set"),
+        }
+        visited = []
+
+        # noinspection PyMethodMayBeStatic
+        class TestVisitor(Visitor):
+            def enter(self, node, *_args):
+                visited.append(["enter", node.kind, get_value(node)])
+
+            def leave(self, node, *_args):
+                visited.append(["leave", node.kind, get_value(node)])
+
+        visit(custom_ast, TestVisitor(), custom_query_document_keys)
+        assert visited == [
+            ["enter", "document", None],
+            ["enter", "operation_definition", None],
+            ["enter", "selection_set", None],
+            ["enter", "field", None],
+            ["enter", "name", "a"],
+            ["leave", "name", "a"],
+            ["leave", "field", None],
+            ["enter", "custom_field", None],
+            ["enter", "name", "b"],
+            ["leave", "name", "b"],
+            ["enter", "selection_set", None],
+            ["enter", "custom_field", None],
+            ["enter", "name", "c"],
+            ["leave", "name", "c"],
+            ["leave", "custom_field", None],
+            ["leave", "selection_set", None],
+            ["leave", "custom_field", None],
+            ["leave", "selection_set", None],
+            ["leave", "operation_definition", None],
+            ["leave", "document", None],
+        ]
+
+
 def describe_visit_in_parallel():
     def allows_skipping_a_sub_tree():
         # Note: nearly identical to the above test but using ParallelVisitor
@@ -952,6 +1058,7 @@ def describe_visit_in_parallel():
                     return BREAK
 
             def leave(self, *args):
+                assert self.name == "b"
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)

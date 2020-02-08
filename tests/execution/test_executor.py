@@ -24,7 +24,6 @@ from graphql.type import (
 
 
 def describe_execute_handles_basic_execution_tasks():
-
     # noinspection PyTypeChecker
     def throws_if_no_document_is_provided():
         schema = GraphQLSchema(
@@ -45,6 +44,39 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert str(exc_info.value) == "Expected None to be a GraphQL schema."
 
+    def throws_on_invalid_variables():
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Type",
+                {
+                    "fieldA": GraphQLField(
+                        GraphQLString, args={"argA": GraphQLArgument(GraphQLInt)}
+                    )
+                },
+            )
+        )
+        document = parse(
+            """
+            query ($a: Int) {
+              fieldA(argA: $a)
+            }
+            """
+        )
+        variable_values = "{'a': 1}"
+
+        with raises(TypeError) as exc_info:
+            assert execute(
+                schema=schema,
+                document=document,
+                variable_values=variable_values,  # type: ignore
+            )
+
+        assert str(exc_info.value) == (
+            "Variable values must be provided as a dictionary"
+            " with variable names as keys. Perhaps look to see"
+            " if an unparsed JSON string was provided."
+        )
+
     def accepts_positional_arguments():
         schema = GraphQLSchema(
             GraphQLObjectType(
@@ -59,7 +91,6 @@ def describe_execute_handles_basic_execution_tasks():
 
     @mark.asyncio
     async def executes_arbitrary_code():
-
         # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class Data:
             def a(self, _info):
@@ -80,7 +111,7 @@ def describe_execute_handles_basic_execution_tasks():
             f = "Fish"
 
             # Called only by DataType::pic static resolver
-            def pic(self, _info, size=50):
+            def pic(self, _info, size):
                 return f"Pic of size: {size}"
 
             def deep(self, _info):
@@ -766,6 +797,17 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert result == ({"a": "b"}, None)
 
+    def ignores_missing_sub_selections_on_fields():
+        some_type = GraphQLObjectType("SomeType", {"b": GraphQLField(GraphQLString)})
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"a": GraphQLField(some_type)})
+        )
+        document = parse("{ a }")
+        root_value = {"a": {"b": "c"}}
+
+        result = execute(schema, document, root_value)
+        assert result == ({"a": {}}, None)
+
     def does_not_include_illegal_fields_in_output():
         schema = GraphQLSchema(
             GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)})
@@ -804,7 +846,8 @@ def describe_execute_handles_basic_execution_tasks():
             None,
         )
 
-    def fails_when_an_is_type_of_check_is_not_met():
+    @mark.asyncio
+    async def fails_when_is_type_of_check_is_not_met():
         class Special:
             value: str
 
@@ -817,10 +860,20 @@ def describe_execute_handles_basic_execution_tasks():
             def __init__(self, value):
                 self.value = value
 
+        def is_type_of_special(obj, _info):
+            is_special = isinstance(obj, Special)
+            if not _info.context["async"]:
+                return is_special
+
+            async def async_is_special():
+                return is_special
+
+            return async_is_special()
+
         SpecialType = GraphQLObjectType(
             "SpecialType",
             {"value": GraphQLField(GraphQLString)},
-            is_type_of=lambda obj, _info: isinstance(obj, Special),
+            is_type_of=is_type_of_special,
         )
 
         schema = GraphQLSchema(
@@ -832,7 +885,8 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("{ specials { value } }")
         root_value = {"specials": [Special("foo"), NotSpecial("bar")]}
 
-        result = execute(schema, document, root_value)
+        result = execute(schema, document, root_value, {"async": False})
+        assert not isinstance(result, Awaitable)
         assert result == (
             {"specials": [{"value": "foo"}, None]},
             [
@@ -844,6 +898,11 @@ def describe_execute_handles_basic_execution_tasks():
                 }
             ],
         )
+
+        async_result = execute(schema, document, root_value, {"async": True})
+        assert isinstance(async_result, Awaitable)
+        awaited_result = await async_result
+        assert awaited_result == result
 
     def executes_ignoring_invalid_non_executable_definitions():
         schema = GraphQLSchema(
