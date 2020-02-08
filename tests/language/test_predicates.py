@@ -40,7 +40,7 @@ def describe_predicates():
         assert is_definition_node(ExecutableDefinitionNode())
         assert is_definition_node(TypeSystemDefinitionNode())
 
-    def check_exectuable_definition_node():
+    def check_executable_definition_node():
         assert not is_executable_definition_node(Node())
         assert not is_executable_definition_node(DocumentNode())
         assert not is_executable_definition_node(DefinitionNode())
