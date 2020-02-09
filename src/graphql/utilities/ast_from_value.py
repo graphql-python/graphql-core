@@ -1,5 +1,5 @@
 import re
-from typing import Any, Iterable, List, Mapping, Optional, cast
+from typing import Any, Iterable, Mapping, Optional, cast
 
 from ..language import (
     BooleanValueNode,
@@ -76,8 +76,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
         if isinstance(value, Iterable) and not isinstance(value, str):
-            value_nodes = [ast_from_value(item, item_type) for item in value]
-            value_nodes = [item_node for item_node in value_nodes if item_node]
+            maybe_value_nodes = (ast_from_value(item, item_type) for item in value)
+            value_nodes = filter(None, maybe_value_nodes)
             return ListValueNode(values=FrozenList(value_nodes))
         return ast_from_value(value, item_type)
 
@@ -87,17 +87,16 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         if value is None or not isinstance(value, Mapping):
             return None
         type_ = cast(GraphQLInputObjectType, type_)
-        field_nodes: List[ObjectFieldNode] = []
-        append_node = field_nodes.append
-        for field_name, field in type_.fields.items():
-            if field_name in value:
-                field_value = ast_from_value(value[field_name], field.type)
-                if field_value:
-                    append_node(
-                        ObjectFieldNode(
-                            name=NameNode(value=field_name), value=field_value
-                        )
-                    )
+        field_items = (
+            (field_name, ast_from_value(value[field_name], field.type))
+            for field_name, field in type_.fields.items()
+            if field_name in value
+        )
+        field_nodes = (
+            ObjectFieldNode(name=NameNode(value=field_name), value=field_value)
+            for field_name, field_value in field_items
+            if field_value
+        )
         return ObjectValueNode(fields=FrozenList(field_nodes))
 
     if is_leaf_type(type_):
