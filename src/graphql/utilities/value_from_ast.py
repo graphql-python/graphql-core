@@ -52,15 +52,6 @@ def value_from_ast(
         # Importantly, this is different from returning the value null.
         return Undefined
 
-    if is_non_null_type(type_):
-        if isinstance(value_node, NullValueNode):
-            return Undefined
-        type_ = cast(GraphQLNonNull, type_)
-        return value_from_ast(value_node, type_.of_type, variables)
-
-    if isinstance(value_node, NullValueNode):
-        return None  # This is explicitly returning the value None.
-
     if isinstance(value_node, VariableNode):
         variable_name = value_node.name.value
         if not variables:
@@ -74,6 +65,15 @@ def value_from_ast(
         # This assumes that this query has been validated and the variable usage here
         # is of the correct type.
         return variable_value
+
+    if is_non_null_type(type_):
+        if isinstance(value_node, NullValueNode):
+            return Undefined
+        type_ = cast(GraphQLNonNull, type_)
+        return value_from_ast(value_node, type_.of_type, variables)
+
+    if isinstance(value_node, NullValueNode):
+        return None  # This is explicitly returning the value None.
 
     if is_list_type(type_):
         type_ = cast(GraphQLList, type_)

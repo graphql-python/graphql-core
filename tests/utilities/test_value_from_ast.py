@@ -66,6 +66,7 @@ def describe_value_from_ast():
         assert _value_from('"BLUE"', test_enum) is Undefined
         assert _value_from("null", test_enum) is None
         assert _value_from("NULL", test_enum) is None
+        assert _value_from("NULL", GraphQLNonNull(test_enum)) is None
         assert isnan(_value_from("NAN", test_enum))
         assert _value_from("NO_CUSTOM_VALUE", test_enum) is Undefined
 
@@ -153,6 +154,7 @@ def describe_value_from_ast():
         assert _value_from("$var", GraphQLBoolean, {}) is Undefined
         assert _value_from("$var", GraphQLBoolean, {"var": True}) is True
         assert _value_from("$var", GraphQLBoolean, {"var": None}) is None
+        assert _value_from("$var", non_null_bool, {"var": None}) is Undefined
 
     def asserts_variables_are_provided_as_items_in_lists():
         assert _value_from("[ $foo ]", list_of_bool, {}) == [None]
