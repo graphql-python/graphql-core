@@ -12,6 +12,7 @@ from graphql.type import (
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLScalarType,
     GraphQLString,
 )
 from graphql.utilities import value_from_ast
@@ -45,6 +46,38 @@ def describe_value_from_ast():
         assert _value_from("123", GraphQLString) is Undefined
         assert _value_from("true", GraphQLString) is Undefined
         assert _value_from("123.456", GraphQLID) is Undefined
+
+    def convert_using_parse_literal_from_a_custom_scalar_type():
+        def pass_through_parse_literal(node, _vars=None):
+            assert node.kind == "string_value"
+            return node.value
+
+        pass_through_scalar = GraphQLScalarType(
+            "PassThroughScalar",
+            parse_literal=pass_through_parse_literal,
+            parse_value=lambda value: value,
+        )
+
+        assert _value_from('"value"', pass_through_scalar) == "value"
+
+        def throw_parse_literal(_node, _vars=None):
+            raise RuntimeError("Test")
+
+        throw_scalar = GraphQLScalarType(
+            "ThrowScalar",
+            parse_literal=throw_parse_literal,
+            parse_value=lambda value: value,
+        )
+
+        assert _value_from("value", throw_scalar) is Undefined
+
+        return_undefined_scalar = GraphQLScalarType(
+            "ReturnUndefinedScalar",
+            parse_literal=lambda _node, _vars=None: Undefined,
+            parse_value=lambda value: value,
+        )
+
+        assert _value_from("value", return_undefined_scalar) is Undefined
 
     def converts_enum_values_according_to_input_coercion_rules():
         test_enum = GraphQLEnumType(
