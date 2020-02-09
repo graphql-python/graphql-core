@@ -14,7 +14,7 @@ from ..language import (
     StringValueNode,
     ValueNode,
 )
-from ..pyutils import inspect, is_nullish, is_invalid
+from ..pyutils import FrozenList, inspect, is_nullish, is_invalid
 from ..type import (
     GraphQLID,
     GraphQLInputType,
@@ -77,7 +77,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         item_type = type_.of_type
         if isinstance(value, Iterable) and not isinstance(value, str):
             value_nodes = [ast_from_value(item, item_type) for item in value]
-            return ListValueNode(values=value_nodes)
+            value_nodes = [item_node for item_node in value_nodes if item_node]
+            return ListValueNode(values=FrozenList(value_nodes))
         return ast_from_value(value, item_type)
 
     # Populate the fields of the input object by creating ASTs from each value in the
@@ -97,7 +98,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
                             name=NameNode(value=field_name), value=field_value
                         )
                     )
-        return ObjectValueNode(fields=field_nodes)
+        return ObjectValueNode(fields=FrozenList(field_nodes))
 
     if is_leaf_type(type_):
         # Since value is an internally represented value, it must be serialized to an
