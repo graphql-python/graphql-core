@@ -13,7 +13,40 @@ async def anext(iterable):
 
 def describe_map_async_iterator():
     @mark.asyncio
-    async def maps_over_async_values():
+    async def maps_over_async_generator():
+        async def source():
+            yield 1
+            yield 2
+            yield 3
+
+        doubles = MapAsyncIterator(source(), lambda x: x + x)
+
+        assert await anext(doubles) == 2
+        assert await anext(doubles) == 4
+        assert await anext(doubles) == 6
+        with raises(StopAsyncIteration):
+            assert await anext(doubles)
+
+    @mark.asyncio
+    async def maps_over_async_iterator():
+        items = [1, 2, 3]
+
+        class Iterator:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    return items.pop(0)
+                except IndexError:
+                    raise StopAsyncIteration
+
+        doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
+
+        assert [value async for value in doubles] == [2, 4, 6]
+
+    @mark.asyncio
+    async def compatible_with_async_for():
         async def source():
             yield 1
             yield 2
@@ -38,13 +71,41 @@ def describe_map_async_iterator():
         assert [value async for value in doubles] == [2, 4, 6]
 
     @mark.asyncio
-    async def allows_returning_early_from_async_values():
+    async def allows_returning_early_from_mapped_async_generator():
         async def source():
             yield 1
             yield 2
-            yield 3
+            yield 3  # pragma: no cover
 
         doubles = MapAsyncIterator(source(), lambda x: x + x)
+
+        assert await anext(doubles) == 2
+        assert await anext(doubles) == 4
+
+        # Early return
+        await doubles.aclose()
+
+        # Subsequent next calls
+        with raises(StopAsyncIteration):
+            await anext(doubles)
+        with raises(StopAsyncIteration):
+            await anext(doubles)
+
+    @mark.asyncio
+    async def allows_returning_early_from_mapped_async_iterator():
+        items = [1, 2, 3]
+
+        class Iterator:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    return items.pop(0)
+                except IndexError:  # pragma: no cover
+                    raise StopAsyncIteration
+
+        doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
 
         assert await anext(doubles) == 2
         assert await anext(doubles) == 4
@@ -64,7 +125,7 @@ def describe_map_async_iterator():
             try:
                 yield 1
                 yield 2
-                yield 3
+                yield 3  # pragma: no cover
             finally:
                 yield "Done"
                 yield "Last"
@@ -83,13 +144,20 @@ def describe_map_async_iterator():
             assert await anext(doubles)
 
     @mark.asyncio
-    async def allows_throwing_errors_through_async_generators():
-        async def source():
-            yield 1
-            yield 2
-            yield 3
+    async def allows_throwing_errors_through_async_iterators():
+        items = [1, 2, 3]
 
-        doubles = MapAsyncIterator(source(), lambda x: x + x)
+        class Iterator:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    return items.pop(0)
+                except IndexError:  # pragma: no cover
+                    raise StopAsyncIteration
+
+        doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
 
         assert await anext(doubles) == 2
         assert await anext(doubles) == 4
@@ -111,7 +179,7 @@ def describe_map_async_iterator():
             try:
                 yield 1
                 yield 2
-                yield 3
+                yield 3  # pragma: no cover
             except Exception as e:
                 yield e
 
@@ -249,8 +317,8 @@ def describe_map_async_iterator():
         async def source():
             yield 1
             await Event().wait()  # Block forever
-            yield 2
-            yield 3
+            yield 2  # pragma: no cover
+            yield 3  # pragma: no cover
 
         singles = source()
         doubles = MapAsyncIterator(singles, lambda x: x * 2)
@@ -271,3 +339,53 @@ def describe_map_async_iterator():
 
         with raises(StopAsyncIteration):
             await anext(singles)
+
+    @mark.asyncio
+    async def can_unset_closed_state_of_async_iterator():
+        items = [1, 2, 3]
+
+        class Iterator:
+            def __init__(self):
+                self.is_closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.is_closed:
+                    raise StopAsyncIteration
+                try:
+                    return items.pop(0)
+                except IndexError:
+                    raise StopAsyncIteration
+
+            async def aclose(self):
+                self.is_closed = True
+
+        iterator = Iterator()
+        doubles = MapAsyncIterator(iterator, lambda x: x + x)
+
+        assert await anext(doubles) == 2
+        assert await anext(doubles) == 4
+        assert not iterator.is_closed
+        await doubles.aclose()
+        assert iterator.is_closed
+        with raises(StopAsyncIteration):
+            await anext(iterator)
+        with raises(StopAsyncIteration):
+            await anext(doubles)
+        assert doubles.is_closed
+
+        iterator.is_closed = False
+        doubles.is_closed = False
+        assert not doubles.is_closed
+
+        assert await anext(doubles) == 6
+        assert not doubles.is_closed
+        assert not iterator.is_closed
+        with raises(StopAsyncIteration):
+            await anext(iterator)
+        with raises(StopAsyncIteration):
+            await anext(doubles)
+        assert not doubles.is_closed
+        assert not iterator.is_closed
