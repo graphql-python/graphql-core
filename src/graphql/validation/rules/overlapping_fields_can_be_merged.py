@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Collection, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Collection, Dict, List, Optional, Tuple, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -181,7 +181,6 @@ def find_conflicts_within_selection_set(
     )
 
     if fragment_names:
-        compared_fragments: Set[str] = set()
         # (B) Then collect conflicts between these fields and those represented by each
         # spread fragment name found.
         for i, fragment_name in enumerate(fragment_names):
@@ -189,7 +188,6 @@ def find_conflicts_within_selection_set(
                 context,
                 conflicts,
                 cached_fields_and_fragment_names,
-                compared_fragments,
                 compared_fragment_pairs,
                 False,
                 field_map,
@@ -217,7 +215,6 @@ def collect_conflicts_between_fields_and_fragment(
     context: ValidationContext,
     conflicts: List[Conflict],
     cached_fields_and_fragment_names: Dict,
-    compared_fragments: Set[str],
     compared_fragment_pairs: "PairSet",
     are_mutually_exclusive: bool,
     field_map: NodeAndDefCollection,
@@ -228,11 +225,6 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
-    # Memoize so a fragment is not compared for conflicts more than once.
-    if fragment_name in compared_fragments:
-        return
-    compared_fragments.add(fragment_name)
-
     fragment = context.get_fragment(fragment_name)
     if not fragment:
         return None
@@ -264,7 +256,6 @@ def collect_conflicts_between_fields_and_fragment(
             context,
             conflicts,
             cached_fields_and_fragment_names,
-            compared_fragments,
             compared_fragment_pairs,
             are_mutually_exclusive,
             field_map,
@@ -388,13 +379,11 @@ def find_conflicts_between_sub_selection_sets(
     # (I) Then collect conflicts between the first collection of fields and those
     # referenced by each fragment name associated with the second.
     if fragment_names2:
-        compared_fragments: Set[str] = set()
         for fragment_name2 in fragment_names2:
             collect_conflicts_between_fields_and_fragment(
                 context,
                 conflicts,
                 cached_fields_and_fragment_names,
-                compared_fragments,
                 compared_fragment_pairs,
                 are_mutually_exclusive,
                 field_map1,
@@ -404,13 +393,11 @@ def find_conflicts_between_sub_selection_sets(
     # (I) Then collect conflicts between the second collection of fields and those
     # referenced by each fragment name associated with the first.
     if fragment_names1:
-        compared_fragments = set()
         for fragment_name1 in fragment_names1:
             collect_conflicts_between_fields_and_fragment(
                 context,
                 conflicts,
                 cached_fields_and_fragment_names,
-                compared_fragments,
                 compared_fragment_pairs,
                 are_mutually_exclusive,
                 field_map2,
