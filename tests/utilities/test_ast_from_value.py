@@ -25,6 +25,7 @@ from graphql.type import (
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLScalarType,
     GraphQLString,
 )
 from graphql.utilities import ast_from_value
@@ -123,6 +124,33 @@ def describe_ast_from_value():
 
         assert ast_from_value(INVALID, GraphQLString) is None
 
+    def converts_using_serialize_from_a_custom_scalar_type():
+        pass_through_scalar = GraphQLScalarType(
+            "PassThroughScalar", serialize=lambda value: value,
+        )
+
+        assert ast_from_value("value", pass_through_scalar) == StringValueNode(
+            value="value"
+        )
+
+        return_null_scalar = GraphQLScalarType(
+            "ReturnNullScalar", serialize=lambda value: None,
+        )
+
+        assert ast_from_value("value", return_null_scalar) is None
+
+        class SomeClass:
+            pass
+
+        return_custom_class_scalar = GraphQLScalarType(
+            "ReturnCustomClassScalar", serialize=lambda value: SomeClass(),
+        )
+
+        with raises(TypeError) as exc_info:
+            ast_from_value("value", return_custom_class_scalar)
+        msg = str(exc_info.value)
+        assert msg == "Cannot convert value to AST: <SomeClass instance>"
+
     def does_not_convert_non_null_values_to_null_value():
         non_null_boolean = GraphQLNonNull(GraphQLBoolean)
         assert ast_from_value(None, non_null_boolean) is None
@@ -162,12 +190,21 @@ def describe_ast_from_value():
             value="FOO"
         )
 
-    def converts_input_objects():
-        input_obj = GraphQLInputObjectType(
-            "MyInputObj",
-            {"foo": GraphQLInputField(GraphQLFloat), "bar": GraphQLInputField(my_enum)},
+    def skips_invalid_list_items():
+        ast = ast_from_value(
+            ["FOO", None, "BAR"], GraphQLList(GraphQLNonNull(GraphQLString))
         )
 
+        assert ast == ListValueNode(
+            values=[StringValueNode(value="FOO"), StringValueNode(value="BAR")]
+        )
+
+    input_obj = GraphQLInputObjectType(
+        "MyInputObj",
+        {"foo": GraphQLInputField(GraphQLFloat), "bar": GraphQLInputField(my_enum)},
+    )
+
+    def converts_input_objects():
         assert ast_from_value({"foo": 3, "bar": "HELLO"}, input_obj) == ObjectValueNode(
             fields=[
                 ObjectFieldNode(
@@ -180,11 +217,6 @@ def describe_ast_from_value():
         )
 
     def converts_input_objects_with_explicit_nulls():
-        input_obj = GraphQLInputObjectType(
-            "MyInputObj",
-            {"foo": GraphQLInputField(GraphQLFloat), "bar": GraphQLInputField(my_enum)},
-        )
-
         assert ast_from_value({"foo": None}, input_obj) == ObjectValueNode(
             fields=[ObjectFieldNode(name=NameNode(value="foo"), value=NullValueNode())]
         )
