@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional, cast
 
 from ..language import (
-    EnumValueNode,
     ListValueNode,
     NullValueNode,
     ObjectValueNode,
@@ -10,17 +9,15 @@ from ..language import (
 )
 from ..pyutils import inspect, is_invalid, Undefined
 from ..type import (
-    GraphQLEnumType,
     GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLScalarType,
-    is_enum_type,
     is_input_object_type,
+    is_leaf_type,
     is_list_type,
     is_non_null_type,
-    is_scalar_type,
 )
 
 __all__ = ["value_from_ast"]
@@ -125,18 +122,7 @@ def value_from_ast(
 
         return type_.out_type(coerced_obj)
 
-    if is_enum_type(type_):
-        if not isinstance(value_node, EnumValueNode):
-            return Undefined
-        type_ = cast(GraphQLEnumType, type_)
-        value_name = value_node.value
-        enum_value = type_.values.get(value_name)
-        if not enum_value:
-            return Undefined
-        value = enum_value.value
-        return value_name if value is Undefined else value
-
-    if is_scalar_type(type_):
+    if is_leaf_type(type_):
         # Scalars fulfill parsing a literal value via `parse_literal()`. Invalid values
         # represent a failure to parse correctly, in which case Undefined is returned.
         type_ = cast(GraphQLScalarType, type_)
@@ -147,8 +133,6 @@ def value_from_ast(
             else:
                 result = type_.parse_literal(value_node)
         except Exception:
-            return Undefined
-        if is_invalid(result):
             return Undefined
         return result
 

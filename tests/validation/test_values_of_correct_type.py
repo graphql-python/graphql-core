@@ -498,7 +498,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'DogCommand', found 2.",
+                        "message": "Enum 'DogCommand' cannot represent non-enum value:"
+                        " 2.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -515,7 +516,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'DogCommand', found 1.0.",
+                        "message": "Enum 'DogCommand' cannot represent non-enum value:"
+                        " 1.0.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -532,7 +534,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'DogCommand', found \"SIT\"."
+                        "message": "Enum 'DogCommand' cannot represent non-enum value:"
+                        ' "SIT".'
                         " Did you mean the enum value 'SIT'?",
                         "locations": [(4, 49)],
                     },
@@ -550,7 +553,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'DogCommand', found true.",
+                        "message": "Enum 'DogCommand' cannot represent non-enum value:"
+                        " true.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -567,7 +571,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'DogCommand', found JUGGLE.",
+                        "message": "Value 'JUGGLE'"
+                        " does not exist in 'DogCommand' enum.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -584,7 +589,7 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'DogCommand', found sit."
+                        "message": "Value 'sit' does not exist in 'DogCommand' enum."
                         " Did you mean the enum value 'SIT'?",
                         "locations": [(4, 49)],
                     },

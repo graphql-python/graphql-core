@@ -3,6 +3,7 @@ from typing import cast
 
 from pytest import mark, raises  # type: ignore
 
+from graphql.error import GraphQLError
 from graphql.language import (
     parse_value,
     EnumValueNode,
@@ -941,33 +942,78 @@ def describe_type_system_enums():
         assert enum_type.values["FOO"].value == "fooValue"
         assert enum_type.values["BAR"].value == ["barValue"]
         assert enum_type.values["BAZ"].value is None
-        assert enum_type.serialize(None) is Undefined
-        assert enum_type.serialize(Undefined) is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.serialize(None)
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent value: None"
+        with raises(GraphQLError) as exc_info:
+            enum_type.serialize(Undefined)
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent value: Undefined"
         assert enum_type.serialize("fooValue") == "FOO"
-        assert enum_type.serialize("FOO") is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.serialize("FOO")
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent value: 'FOO'"
         assert enum_type.serialize(["barValue"]) == "BAR"
-        assert enum_type.serialize("BAR") is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.serialize("BAR")
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent value: 'BAR'"
         assert enum_type.serialize("BAZ") == "BAZ"
-        assert enum_type.serialize("bazValue") is Undefined
-        assert enum_type.serialize(["bazValue"]) is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.serialize("bazValue")
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent value: 'bazValue'"
+        with raises(GraphQLError) as exc_info:
+            enum_type.serialize(["bazValue"])
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent value: ['bazValue']"
 
     def parses_an_enum():
         enum_type = GraphQLEnumType(
             "SomeEnum", {"FOO": "fooValue", "BAR": ["barValue"], "BAZ": None}
         )
         assert enum_type.parse_value("FOO") == "fooValue"
-        assert enum_type.parse_value("fooValue") is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.parse_value("fooValue")
+        msg = exc_info.value.message
+        assert msg == "Value 'fooValue' does not exist in 'SomeEnum' enum."
         assert enum_type.parse_value("BAR") == ["barValue"]
-        # noinspection PyTypeChecker
-        assert enum_type.parse_value(["barValue"]) is Undefined  # type: ignore
-        assert enum_type.parse_value("BAZ") == "BAZ"
+        with raises(GraphQLError) as exc_info:
+            # noinspection PyTypeChecker
+            enum_type.parse_value(["barValue"])  # type: ignore
+        msg = exc_info.value.message
+        assert msg == "Enum 'SomeEnum' cannot represent non-string value: ['barValue']."
+        assert enum_type.parse_value("BAZ") is None
         assert enum_type.parse_literal(EnumValueNode(value="FOO")) == "fooValue"
-        assert enum_type.parse_literal(StringValueNode(value="FOO")) is Undefined
-        assert enum_type.parse_literal(EnumValueNode(value="fooValue")) is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.parse_literal(StringValueNode(value="FOO"))
+        msg = exc_info.value.message
+        assert msg == (
+            "Enum 'SomeEnum' cannot represent non-enum value: \"FOO\"."
+            " Did you mean the enum value 'FOO'?"
+        )
+        with raises(GraphQLError) as exc_info:
+            enum_type.parse_literal(EnumValueNode(value="fooValue"))
+        msg = exc_info.value.message
+        assert msg == "Value 'fooValue' does not exist in 'SomeEnum' enum."
         assert enum_type.parse_literal(EnumValueNode(value="BAR")) == ["barValue"]
-        assert enum_type.parse_literal(StringValueNode(value="BAR")) is Undefined
-        assert enum_type.parse_literal(EnumValueNode(value="BAZ")) == "BAZ"
-        assert enum_type.parse_literal(StringValueNode(value="BAZ")) is Undefined
+        with raises(GraphQLError) as exc_info:
+            enum_type.parse_literal(StringValueNode(value="BAR"))
+        msg = exc_info.value.message
+        assert msg == (
+            "Enum 'SomeEnum' cannot represent non-enum value: \"BAR\"."
+            " Did you mean the enum value 'BAR'?"
+        )
+        assert enum_type.parse_literal(EnumValueNode(value="BAZ")) is None
+        with raises(GraphQLError) as exc_info:
+            enum_type.parse_literal(StringValueNode(value="BAZ"))
+        msg = exc_info.value.message
+        assert msg == (
+            "Enum 'SomeEnum' cannot represent non-enum value: \"BAZ\"."
+            " Did you mean the enum value 'BAZ'?"
+        )
 
     def rejects_an_enum_type_without_a_name():
         with raises(TypeError, match="missing .* required .* 'name'"):

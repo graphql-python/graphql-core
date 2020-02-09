@@ -16,6 +16,7 @@ from typing import (
     overload,
 )
 
+from ..error import GraphQLError
 from ..language import (
     EnumTypeDefinitionNode,
     EnumValueDefinitionNode,
@@ -39,17 +40,19 @@ from ..language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
     ValueNode,
+    print_ast,
 )
 from ..pyutils import (
     AwaitableOrValue,
     FrozenList,
     Path,
     cached_property,
+    did_you_mean,
     inspect,
     is_collection,
     is_description,
+    suggestion_list,
     Undefined,
-    UndefinedType,
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
@@ -1100,40 +1103,56 @@ class GraphQLEnumType(GraphQLNamedType):
                 pass  # ignore unhashable values
         return lookup
 
-    def serialize(self, output_value: Any) -> Union[str, None, UndefinedType]:
+    def serialize(self, output_value: Any) -> str:
         try:
-            return self._value_lookup.get(output_value, Undefined)
-        except TypeError:  # unhashable value
+            return self._value_lookup[output_value]
+        except KeyError:  # hashable value not found
+            pass
+        except TypeError:  # unhashable value, we need to scan all values
             for enum_name, enum_value in self.values.items():
                 if enum_value.value == output_value:
                     return enum_name
-        return Undefined
+        raise GraphQLError(
+            f"Enum '{self.name}' cannot represent value: {inspect(output_value)}"
+        )
 
     def parse_value(self, input_value: str) -> Any:
         if isinstance(input_value, str):
             try:
                 enum_value = self.values[input_value]
             except KeyError:
-                return Undefined
-            if enum_value.value is None or enum_value.value is Undefined:
-                return input_value
+                raise GraphQLError(
+                    f"Value '{input_value}' does not exist in '{self.name}' enum."
+                    + did_you_mean_enum_value(self, input_value)
+                )
             return enum_value.value
-        return Undefined
+        value_str = inspect(input_value)
+        raise GraphQLError(
+            f"Enum '{self.name}' cannot represent non-string value: {value_str}."
+            + did_you_mean_enum_value(self, value_str)
+        )
 
     def parse_literal(
         self, value_node: ValueNode, _variables: Optional[Dict[str, Any]] = None
     ) -> Any:
         # Note: variables will be resolved before calling this method.
         if isinstance(value_node, EnumValueNode):
-            value = value_node.value
             try:
-                enum_value = self.values[value]
+                enum_value = self.values[value_node.value]
             except KeyError:
-                return Undefined
-            if enum_value.value is None or enum_value.value is Undefined:
-                return value
+                value_str = print_ast(value_node)
+                raise GraphQLError(
+                    f"Value '{value_str}' does not exist in '{self.name}' enum."
+                    + did_you_mean_enum_value(self, value_str),
+                    value_node,
+                )
             return enum_value.value
-        return Undefined
+        value_str = print_ast(value_node)
+        raise GraphQLError(
+            f"Enum '{self.name}' cannot represent non-enum value: {value_str}."
+            + did_you_mean_enum_value(self, value_str),
+            value_node,
+        )
 
 
 def is_enum_type(type_: Any) -> bool:
@@ -1144,6 +1163,11 @@ def assert_enum_type(type_: Any) -> GraphQLEnumType:
     if not is_enum_type(type_):
         raise TypeError(f"Expected {type_} to be a GraphQL Enum type.")
     return cast(GraphQLEnumType, type_)
+
+
+def did_you_mean_enum_value(enum_type: GraphQLEnumType, unknown_value_str: str) -> str:
+    suggested_values = suggestion_list(unknown_value_str, enum_type.values)
+    return did_you_mean(suggested_values, "the enum value")
 
 
 class GraphQLEnumValue:

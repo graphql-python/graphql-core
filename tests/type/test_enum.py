@@ -146,7 +146,8 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected value of type 'Color', found \"GREEN\"."
+                    "message": "Enum 'Color' cannot represent non-enum value:"
+                    ' "GREEN".'
                     " Did you mean the enum value 'GREEN'?",
                     "locations": [(1, 23)],
                 }
@@ -160,7 +161,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected value of type 'Color', found GREENISH."
+                    "message": "Value 'GREENISH' does not exist in 'Color' enum."
                     " Did you mean the enum value 'GREEN'?",
                     "locations": [(1, 23)],
                 }
@@ -174,7 +175,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected value of type 'Color', found green."
+                    "message": "Value 'green' does not exist in 'Color' enum."
                     " Did you mean the enum value 'GREEN'?",
                     "locations": [(1, 23)],
                 }
@@ -188,8 +189,7 @@ def describe_type_system_enum_values():
             {"colorEnum": None},
             [
                 {
-                    "message": "Expected a value of type 'Color'"
-                    " but received: 'GREEN'",
+                    "message": "Enum 'Color' cannot represent value: 'GREEN'",
                     "locations": [(1, 3)],
                     "path": ["colorEnum"],
                 }
@@ -203,7 +203,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Expected value of type 'Color', found 1.",
+                    "message": "Enum 'Color' cannot represent non-enum value: 1.",
                     "locations": [(1, 23)],
                 }
             ],
@@ -249,7 +249,7 @@ def describe_type_system_enum_values():
             [
                 {
                     "message": "Variable '$color' got invalid value 2;"
-                    " Expected type 'Color'.",
+                    " Enum 'Color' cannot represent non-string value: 2.",
                     "locations": [(1, 8)],
                 }
             ],
@@ -334,8 +334,8 @@ def describe_type_system_enum_values():
             {"first": "ONE", "second": "TWO", "good": "TWO", "bad": None},
             [
                 {
-                    "message": "Expected a value of type 'Complex'"
-                    " but received: <Complex2 instance>",
+                    "message": "Enum 'Complex' cannot represent value:"
+                    " <Complex2 instance>",
                     "locations": [(6, 15)],
                     "path": ["bad"],
                 }

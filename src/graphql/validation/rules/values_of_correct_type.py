@@ -19,12 +19,11 @@ from ...type import (
     GraphQLScalarType,
     get_named_type,
     get_nullable_type,
-    is_enum_type,
     is_input_object_type,
+    is_leaf_type,
     is_list_type,
     is_non_null_type,
     is_required_input_field,
-    is_scalar_type,
 )
 from . import ValidationRule
 
@@ -116,21 +115,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
         type_ = get_named_type(location_type)
 
-        if is_enum_type(type_):
-            if not isinstance(node, EnumValueNode) or node.value not in type_.values:
-                all_names = list(type_.values)
-                suggested_values = suggestion_list(print_ast(node), all_names)
-                self.report_error(
-                    GraphQLError(
-                        f"Expected value of type '{type_.name}',"
-                        f" found {print_ast(node)}."
-                        + did_you_mean(suggested_values, "the enum value"),
-                        node,
-                    )
-                )
-            return
-
-        if not is_scalar_type(type_):
+        if not is_leaf_type(type_):
             self.report_error(
                 GraphQLError(
                     f"Expected value of type '{location_type}',"

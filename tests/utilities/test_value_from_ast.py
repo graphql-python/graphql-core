@@ -75,7 +75,7 @@ def describe_value_from_ast():
         _test_case(test_enum, "null", None)
         _test_case(test_enum, "NULL", None)
         _test_case(test_enum, "NAN", nan)
-        _test_case(test_enum, "NO_CUSTOM_VALUE", "NO_CUSTOM_VALUE")
+        _test_case(test_enum, "NO_CUSTOM_VALUE", Undefined)
 
     # Boolean!
     non_null_bool = GraphQLNonNull(GraphQLBoolean)

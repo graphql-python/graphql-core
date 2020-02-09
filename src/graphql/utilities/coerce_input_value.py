@@ -11,16 +11,14 @@ from ..pyutils import (
     Undefined,
 )
 from ..type import (
-    GraphQLEnumType,
     GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLList,
     GraphQLScalarType,
-    is_enum_type,
+    is_leaf_type,
     is_input_object_type,
     is_list_type,
     is_non_null_type,
-    is_scalar_type,
     GraphQLNonNull,
 )
 
@@ -130,7 +128,7 @@ def coerce_input_value(
                 )
         return type_.out_type(coerced_dict)
 
-    if is_scalar_type(type_):
+    if is_leaf_type(type_):
         # Scalars determine if a value is valid via `parse_value()`, which can throw to
         # indicate failure. If it throws, maintain a reference to the original error.
         type_ = cast(GraphQLScalarType, type_)
@@ -155,24 +153,6 @@ def coerce_input_value(
                 GraphQLError(f"Expected type '{type_.name}'."),
             )
         return parse_result
-
-    if is_enum_type(type_):
-        type_ = cast(GraphQLEnumType, type_)
-        values = type_.values
-        if isinstance(input_value, str):
-            enum_value = values.get(input_value)
-            if enum_value:
-                return enum_value.value
-        suggestions = suggestion_list(str(input_value), values)
-        on_error(
-            path.as_list() if path else [],
-            input_value,
-            GraphQLError(
-                f"Expected type '{type_.name}'."
-                + did_you_mean(suggestions, "the enum value")
-            ),
-        )
-        return Undefined
 
     # Not reachable. All possible input types have been considered.
     raise TypeError(f"Unexpected input type: {inspect(type_)}.")  # pragma: no cover

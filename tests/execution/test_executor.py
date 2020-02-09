@@ -5,8 +5,8 @@ from pytest import raises, mark  # type: ignore
 
 from graphql.error import GraphQLError
 from graphql.execution import execute
-from graphql.language import parse, OperationDefinitionNode, FieldNode
-from graphql.pyutils import inspect
+from graphql.language import parse, FieldNode, OperationDefinitionNode
+from graphql.pyutils import inspect, Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -18,6 +18,7 @@ from graphql.type import (
     GraphQLObjectType,
     GraphQLResolveInfo,
     GraphQLSchema,
+    GraphQLScalarType,
     GraphQLString,
     ResponsePath,
 )
@@ -903,6 +904,34 @@ def describe_execute_handles_basic_execution_tasks():
         assert isinstance(async_result, Awaitable)
         awaited_result = await async_result
         assert awaited_result == result
+
+    def fails_when_serialize_of_custom_scalar_does_not_return_a_value():
+        custom_scalar = GraphQLScalarType(
+            "CustomScalar", serialize=lambda _value: Undefined  # returns nothing
+        )
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "customScalar": GraphQLField(
+                        custom_scalar, resolve=lambda *_args: "CUSTOM_VALUE"
+                    )
+                },
+            )
+        )
+
+        result = execute(schema, parse("{ customScalar }"))
+        assert result == (
+            {"customScalar": None},
+            [
+                {
+                    "message": "Expected a value of type 'CustomScalar'"
+                    " but received: 'CUSTOM_VALUE'",
+                    "locations": [(1, 3)],
+                    "path": ["customScalar"],
+                }
+            ],
+        )
 
     def executes_ignoring_invalid_non_executable_definitions():
         schema = GraphQLSchema(

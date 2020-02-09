@@ -140,10 +140,17 @@ def describe_ast_from_value():
         assert ast_from_value(complex_value, my_enum) == EnumValueNode(value="COMPLEX")
 
         # Note: case sensitive
-        assert ast_from_value("hello", my_enum) is None
+        with raises(GraphQLError) as exc_info:
+            ast_from_value("hello", my_enum)
+        assert exc_info.value.message == "Enum 'MyEnum' cannot represent value: 'hello'"
 
         # Note: not a valid enum value
-        assert ast_from_value("VALUE", my_enum) is None
+        with raises(GraphQLError) as exc_info:
+            ast_from_value("UNKNOWN_VALUE", my_enum)
+        assert (
+            exc_info.value.message
+            == "Enum 'MyEnum' cannot represent value: 'UNKNOWN_VALUE'"
+        )
 
     def converts_list_values_to_list_asts():
         assert ast_from_value(

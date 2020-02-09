@@ -123,7 +123,8 @@ def describe_coerce_input_value():
             result = _coerce_value("foo", TestEnum)
             assert expect_errors(result) == [
                 (
-                    "Expected type 'TestEnum'. Did you mean the enum value 'FOO'?",
+                    "Value 'foo' does not exist in 'TestEnum' enum."
+                    " Did you mean the enum value 'FOO'?",
                     [],
                     "foo",
                 )
@@ -131,11 +132,18 @@ def describe_coerce_input_value():
 
         def returns_an_error_for_incorrect_value_type():
             result1 = _coerce_value(123, TestEnum)
-            assert expect_errors(result1) == [("Expected type 'TestEnum'.", [], 123)]
+            assert expect_errors(result1) == [
+                ("Enum 'TestEnum' cannot represent non-string value: 123.", [], 123)
+            ]
 
             result2 = _coerce_value({"field": "value"}, TestEnum)
             assert expect_errors(result2) == [
-                ("Expected type 'TestEnum'.", [], {"field": "value"})
+                (
+                    "Enum 'TestEnum' cannot represent non-string value:"
+                    " {'field': 'value'}.",
+                    [],
+                    {"field": "value"},
+                )
             ]
 
     def describe_for_graphql_input_object():
