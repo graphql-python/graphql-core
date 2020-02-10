@@ -141,9 +141,13 @@ def describe_subscription_initialization_phase():
             for value in ():  # type: ignore
                 yield value
 
-        await subscribe(
+        ai = await subscribe(
             email_schema, document, {"importantEmail": empty_async_iterator}
         )
+
+        with raises(StopAsyncIteration):
+            await anext(ai)
+        await ai.aclose()  # type: ignore
 
     @mark.asyncio
     async def accepts_multiple_subscription_fields_defined_in_schema():

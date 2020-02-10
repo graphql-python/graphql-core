@@ -1,8 +1,9 @@
 from pytest import raises  # type: ignore
 
+from graphql.error import GraphQLError
 from graphql.language import parse
-from graphql.utilities import TypeInfo
-from graphql.validation import ASTValidationRule, validate
+from graphql.utilities import TypeInfo, build_schema
+from graphql.validation import ValidationRule, validate
 
 from .harness import test_schema
 
@@ -80,6 +81,36 @@ def describe_validate_supports_full_validation():
             " Did you mean 'isHouseTrained'?",
         ]
 
+    def validates_using_a_custom_rule():
+        schema = build_schema(
+            """
+            directive @custom(arg: String) on FIELD
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        doc = parse(
+            """
+            query {
+              name @custom
+            }
+            """
+        )
+
+        class CustomRule(ValidationRule):
+            def enter_directive(self, node, *_args):
+                directive_def = self.context.get_directive()
+                error = GraphQLError("Reporting directive: " + str(directive_def), node)
+                self.context.report_error(error)
+
+        errors = validate(schema, doc, [CustomRule])
+        assert errors == [
+            {"message": "Reporting directive: @custom", "locations": [(3, 20)]}
+        ]
+
 
 def describe_validate_limit_maximum_number_of_validation_errors():
     query = """
@@ -120,7 +151,7 @@ def describe_validate_limit_maximum_number_of_validation_errors():
         ]
 
     def pass_through_exceptions_from_rules():
-        class CustomRule(ASTValidationRule):
+        class CustomRule(ValidationRule):
             def enter_field(self, *_args):
                 raise RuntimeError("Error from custom rule!")
 

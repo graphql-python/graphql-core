@@ -209,6 +209,19 @@ def describe_visitor():
         assert ast == parse("{ a, b, c { a, b, c } }", no_location=True)
         assert edited_ast == parse("{ a,    c { a,    c } }", no_location=True)
 
+    def ignores_false_returned_on_leave():
+        ast = parse("{ a, b, c { a, b, c } }", no_location=True)
+
+        assert SKIP is False
+
+        # noinspection PyMethodMayBeStatic
+        class TestVisitor(Visitor):
+            def leave(self, *args):
+                return SKIP
+
+        returned_ast = visit(ast, TestVisitor())
+        assert returned_ast == parse("{ a, b, c { a, b, c } }", no_location=True)
+
     def visits_edited_node():
         ast = parse("{ a { x } }", no_location=True)
         added_field = FieldNode(name=NameNode(value="__typename"))

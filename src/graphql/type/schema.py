@@ -260,7 +260,7 @@ class GraphQLSchema:
 
         Deprecated: Use is_sub_type() instead.
         """
-        return self.is_sub_type(abstract_type, possible_type)  # pragma: no cover
+        return self.is_sub_type(abstract_type, possible_type)
 
     def is_sub_type(
         self,
