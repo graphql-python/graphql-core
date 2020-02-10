@@ -453,28 +453,8 @@ def describe_subscription_initialization_phase():
             """
         )
 
-        pubsub = EventEmitter()
-        root_value = {
-            "inbox": {
-                "emails": [
-                    {
-                        "from": "joe@graphql.org",
-                        "subject": "Hello",
-                        "message": "Hello World",
-                        "unread": False,
-                    }
-                ]
-            },
-            "importantEmail": lambda _info: EventEmitterAsyncIterator(
-                pubsub, "importantEmail"
-            ),
-        }
-
         result = await subscribe(
-            schema=email_schema,
-            document=ast,
-            root_value=root_value,
-            variable_values={"priority": "meow"},
+            schema=email_schema, document=ast, variable_values={"priority": "meow"},
         )
 
         assert result == (
@@ -600,6 +580,160 @@ def describe_subscription_publish_phase():
         # Awaiting subscription after closing it results in completed results.
         with raises(StopAsyncIteration):
             assert await anext(subscription)
+
+    @mark.asyncio
+    async def produces_a_payload_when_there_are_multiple_events():
+        pubsub = EventEmitter()
+        send_important_email, subscription = await create_subscription(pubsub)
+        payload = anext(subscription)
+
+        # A new email arrives!
+        assert (
+            send_important_email(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright",
+                    "message": "Tests are good",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        assert await payload == (
+            {
+                "importantEmail": {
+                    "email": {"from": "yuzhi@graphql.org", "subject": "Alright"},
+                    "inbox": {"unread": 1, "total": 2},
+                }
+            },
+            None,
+        )
+
+        payload = anext(subscription)
+
+        # A new email arrives!
+        assert (
+            send_important_email(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright 2",
+                    "message": "Tests are good 2",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        assert await payload == (
+            {
+                "importantEmail": {
+                    "email": {"from": "yuzhi@graphql.org", "subject": "Alright 2"},
+                    "inbox": {"unread": 2, "total": 3},
+                }
+            },
+            None,
+        )
+
+    @mark.asyncio
+    async def should_not_trigger_when_subscription_is_already_done():
+        pubsub = EventEmitter()
+        send_important_email, subscription = await create_subscription(pubsub)
+        payload = anext(subscription)
+
+        # A new email arrives!
+        assert (
+            send_important_email(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright",
+                    "message": "Tests are good",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        assert await payload == (
+            {
+                "importantEmail": {
+                    "email": {"from": "yuzhi@graphql.org", "subject": "Alright"},
+                    "inbox": {"unread": 1, "total": 2},
+                }
+            },
+            None,
+        )
+
+        payload = anext(subscription)
+        await subscription.aclose()
+
+        # A new email arrives!
+        assert (
+            send_important_email(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright 2",
+                    "message": "Tests are good 2",
+                    "unread": True,
+                }
+            )
+            is False
+        )
+
+        with raises(StopAsyncIteration):
+            await payload
+
+    @mark.asyncio
+    async def should_not_trigger_when_subscription_is_thrown():
+        pubsub = EventEmitter()
+        send_important_email, subscription = await create_subscription(pubsub)
+        payload = anext(subscription)
+
+        # A new email arrives!
+        assert (
+            send_important_email(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright",
+                    "message": "Tests are good",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        assert await payload == (
+            {
+                "importantEmail": {
+                    "email": {"from": "yuzhi@graphql.org", "subject": "Alright"},
+                    "inbox": {"unread": 1, "total": 2},
+                }
+            },
+            None,
+        )
+
+        payload = anext(subscription)
+
+        # Throw error
+        with raises(RuntimeError) as exc_info:
+            await subscription.athrow(RuntimeError("ouch"))
+        assert str(exc_info.value) == "ouch"
+
+        # A new email arrives!
+        assert (
+            send_important_email(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright 2",
+                    "message": "Tests are good 2",
+                    "unread": True,
+                }
+            )
+            is False
+        )
+
+        with raises(StopAsyncIteration):
+            await payload
 
     @mark.asyncio
     async def event_order_is_correct_for_multiple_publishes():

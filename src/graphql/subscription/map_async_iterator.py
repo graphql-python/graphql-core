@@ -70,7 +70,7 @@ class MapAsyncIterator:
             if athrow:
                 await athrow(type_, value, traceback)
             else:
-                self.is_closed = True
+                await self.aclose()
                 if value is None:
                     if traceback is None:
                         raise type_
