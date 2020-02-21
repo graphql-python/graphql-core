@@ -153,9 +153,6 @@ def graphql_impl(
         document = parse(source)
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])
-    except Exception as error:
-        error = GraphQLError(str(error), original_error=error)
-        return ExecutionResult(data=None, errors=[error])
 
     # Validate
     from .validation import validate

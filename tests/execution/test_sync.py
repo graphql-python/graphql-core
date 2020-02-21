@@ -92,6 +92,13 @@ def describe_execute_synchronously_when_possible():
                 ],
             )
 
+        def raises_a_type_error_when_no_query_is_passed():
+            with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                assert graphql_sync(schema, None)  # type: ignore
+            msg = str(exc_info.value)
+            assert msg == "Must provide Source. Received: None."
+
         def does_not_return_a_promise_for_sync_execution():
             doc = "query Example { syncField }"
             assert graphql_sync(schema, doc, "rootValue") == (
