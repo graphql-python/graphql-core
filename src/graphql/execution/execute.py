@@ -1092,6 +1092,18 @@ def invalid_return_type_error(
     )
 
 
+def get_typename(value: Any) -> Optional[str]:
+    """Get the `__typename` property of the given value."""
+    if isinstance(value, dict):
+        return value.get("__typename")
+    # need to de-mangle the attribute assumed to be "private" in Python
+    for cls in value.__class__.__mro__:
+        __typename = getattr(value, f"_{cls.__name__}__typename", None)
+        if __typename:
+            return __typename
+    return None
+
+
 def default_type_resolver(
     value: Any, info: GraphQLResolveInfo, abstract_type: GraphQLAbstractType
 ) -> AwaitableOrValue[Optional[Union[GraphQLObjectType, str]]]:
@@ -1107,12 +1119,7 @@ def default_type_resolver(
     for the object being coerced, returning the first type that matches.
     """
     # First, look for `__typename`.
-    type_name = (
-        value.get("__typename")
-        if isinstance(value, dict)
-        # need to de-mangle the attribute assumed to be "private" in Python
-        else getattr(value, f"_{value.__class__.__name__}__typename", None)
-    )
+    type_name = get_typename(value)
     if isinstance(type_name, str):
         return type_name
 

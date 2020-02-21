@@ -517,6 +517,46 @@ def describe_schema_builder():
                 == expected
             )
 
+        def using_inheritance():
+            class Fruit:
+                __typename = "Fruit"
+
+            class Apple(Fruit):
+                __typename = "Apple"
+
+            class Delicious(Apple):
+                color = "golden or red"
+
+            class GoldenDelicious(Delicious):
+                color = "golden"
+
+            class RedDelicious(Delicious):
+                color = "red"
+
+            class GrannySmith(Apple):
+                color = "green"
+
+            class Banana(Fruit):
+                __typename = "Banana"
+                length = 5
+
+            class RootValue:
+                fruits = [GrannySmith(), RedDelicious(), GoldenDelicious(), Banana()]
+
+            assert graphql_sync(
+                schema=schema, source=source, root_value=RootValue()
+            ) == (
+                {
+                    "fruits": [
+                        {"color": "green"},
+                        {"color": "red"},
+                        {"color": "golden"},
+                        {"length": 5},
+                    ]
+                },
+                None,
+            )
+
     def describe_specifying_interface_type_using_typename():
         schema = build_schema(
             """
@@ -594,6 +634,38 @@ def describe_schema_builder():
 
             class RootValue:
                 characters = [Human(), Droid()]
+
+            assert (
+                graphql_sync(schema=schema, source=source, root_value=RootValue())
+                == expected
+            )
+
+        def using_inheritance():
+            class Character:
+                __typename = "Character"
+
+            class Human(Character):
+                __typename = "Human"
+
+            class HanSolo(Human):
+                name = "Han Solo"
+                totalCredits = 10
+
+            class Droid(Character):
+                __typename = "Droid"
+
+            class RemoteControlled:
+                name = "R2"
+
+            class Mobile:
+                name = "D2"
+
+            class R2D2(RemoteControlled, Droid, Mobile):
+                name = "R2-D2"
+                primaryFunction = "Astromech"
+
+            class RootValue:
+                characters = [HanSolo(), R2D2()]
 
             assert (
                 graphql_sync(schema=schema, source=source, root_value=RootValue())
