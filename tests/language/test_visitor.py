@@ -2,6 +2,8 @@ from copy import copy
 from functools import partial
 from typing import cast, Dict, List, Optional, Tuple
 
+from pytest import raises  # type: ignore
+
 from graphql.language import (
     Node,
     FieldNode,
@@ -82,6 +84,24 @@ def get_value(node):
 
 
 def describe_visitor():
+    def visit_with_invalid_node():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            visit("invalid", Visitor())  # type: ignore
+        assert str(exc_info.value) == "Not an AST Node: 'invalid'."
+
+    def visit_with_invalid_visitor():
+        ast = parse("{ a }", no_location=True)
+
+        class TestVisitor:
+            def enter(self, *_args):
+                pass
+
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            visit(ast, TestVisitor())  # type: ignore
+        assert str(exc_info.value) == "Not an AST Visitor: <TestVisitor instance>."
+
     def validates_path_argument():
         ast = parse("{ a }", no_location=True)
         visited = []
@@ -910,6 +930,26 @@ def describe_support_for_custom_ast_nodes():
             ["leave", "operation_definition", None],
             ["leave", "document", None],
         ]
+
+    def cannot_define_visitor_with_unknown_ast_nodes():
+        with raises(TypeError) as exc_info:
+
+            class VisitorWithNonExistingNode(Visitor):
+                def enter_field(self, *_args):
+                    pass
+
+                def leave_garfield(self, *_args):
+                    pass
+
+        assert str(exc_info.value) == "Invalid AST node kind: garfield."
+
+        with raises(TypeError) as exc_info:
+
+            class VisitorWithUnspecificNode(Visitor):
+                def enter_type_system_extension(self, *_args):
+                    pass
+
+        assert str(exc_info.value) == "Invalid AST node kind: type_system_extension."
 
 
 def describe_visit_in_parallel():

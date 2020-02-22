@@ -169,12 +169,13 @@ class Visitor:
             if attr in ("enter", "leave"):
                 if kind:
                     name = snake_to_camel(kind) + "Node"
-                    try:
-                        node_cls = getattr(ast, name)
-                        if not issubclass(node_cls, Node):
-                            raise AttributeError
-                    except AttributeError:
-                        raise AttributeError(f"Invalid AST node kind: {kind}.")
+                    node_cls = getattr(ast, name, None)
+                    if (
+                        not node_cls
+                        or not isinstance(node_cls, type)
+                        or not issubclass(node_cls, Node)
+                    ):
+                        raise TypeError(f"Invalid AST node kind: {kind}.")
 
     @classmethod
     def get_visit_fn(cls, kind, is_leaving=False) -> Callable:
@@ -277,7 +278,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
             else:
                 key = None
                 node = new_root
-            if node is None or node is REMOVE:
+            if node is None:
                 continue
             if parent:
                 path_append(key)

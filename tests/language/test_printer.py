@@ -27,8 +27,11 @@ def describe_printer_query_document():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             print_ast(bad_ast)  # type: ignore
-        msg = str(exc_info.value)
-        assert msg == "Not an AST Node: {'random': 'Data'}."
+        assert str(exc_info.value) == "Not an AST Node: {'random': 'Data'}."
+        corrupt_ast = FieldNode(name="random data")
+        with raises(TypeError) as exc_info:
+            print_ast(corrupt_ast)
+        assert str(exc_info.value) == "Invalid AST Node: 'random data'."
 
     def correctly_prints_query_operation_without_name():
         query_ast_shorthanded = parse("query { id, name }")

@@ -415,9 +415,9 @@ class Parser:
 
     def parse_value_literal(self, is_const: bool) -> ValueNode:
         method_name = self._parse_value_literal_method_names.get(self._lexer.token.kind)
-        if method_name:
+        if method_name:  # pragma: no cover
             return getattr(self, f"parse_{method_name}")(is_const)
-        raise self.unexpected()
+        raise self.unexpected()  # pragma: no cover
 
     def parse_string_literal(self, _is_const: bool = False) -> StringValueNode:
         token = self._lexer.token
@@ -565,7 +565,7 @@ class Parser:
             method_name = self._parse_type_extension_method_names.get(
                 cast(str, keyword_token.value)
             )
-            if method_name:
+            if method_name:  # pragma: no cover
                 return getattr(self, f"parse_{method_name}")()
         raise self.unexpected(keyword_token)
 

@@ -58,6 +58,15 @@ def describe_token_class():
         token5 = Token(TokenKind.NAME, 1, 2, 1, 4, value="test")
         assert token5 != token1
 
+    def can_compare_with_string():
+        token = Token(TokenKind.NAME, 1, 2, 1, 2, value="test")
+        assert token == "Name 'test'"
+        assert token != "Name 'foo'"
+
+    def does_not_equal_incompatible_object():
+        token = Token(TokenKind.NAME, 1, 2, 1, 2, value="test")
+        assert token != {"Name": "test"}
+
     def can_hash():
         token1 = Token(TokenKind.NAME, 1, 2, 1, 2, value="hash")
         token2 = Token(TokenKind.NAME, 1, 2, 1, 2, value="hash")
@@ -114,6 +123,13 @@ def describe_location_class():
         assert not loc != [1, 3]
         assert loc != (1, 2)
         assert loc != [2, 3]
+
+    def does_not_equal_incompatible_object():
+        loc = Location(token1, token2, source)
+        assert not loc == (1, 2, 3)
+        assert loc != (1, 2, 3)
+        assert not loc == {1: 2}
+        assert loc != {1: 2}
 
     def can_hash():
         loc1 = Location(token1, token2, source)
@@ -199,6 +215,12 @@ def describe_node_class():
 
     def provides_snake_cased_kind_as_class_attribute():
         assert SampleTestNode.kind == "sample_test"
+
+    def provides_proper_kind_if_class_does_not_end_with_node():
+        class Foo(Node):
+            pass
+
+        assert Foo.kind == "foo"
 
     def provides_keys_as_class_attribute():
         assert SampleTestNode.keys == ["loc", "alpha", "beta"]
