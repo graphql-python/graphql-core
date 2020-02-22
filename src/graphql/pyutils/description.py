@@ -31,8 +31,7 @@ class Description:
         if base is object:
             cls.bases = object
         elif cls.bases is object:
-            if base is not object:
-                cls.bases = base
+            cls.bases = base
         elif not isinstance(cls.bases, tuple):
             if base is not cls.bases:
                 cls.bases = (cls.bases, base)

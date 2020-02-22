@@ -1,12 +1,11 @@
 [run]
 branch = True
 source = src
+omit =
+    */cached_property.py
 
 [report]
 exclude_lines =
     pragma: no cover
     raise NotImplementedError
 ignore_errors = True
-omit =
-    docs/*
-    tests/*

@@ -21,7 +21,7 @@ install:
   - pip install "poetry>=1,<2"
   - poetry install
 script:
-  - tox -e $TOXENV -- --cov-report=term-missing --cov=graphql
+  - tox -e $TOXENV -- --cov-report=term-missing --cov=graphql --cov=tests
 after_success:
   - codecov
 deploy:

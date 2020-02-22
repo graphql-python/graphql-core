@@ -66,6 +66,10 @@ def describe_description():
     def can_register_and_unregister():
         try:
             assert Description.bases is str
+            register_description(str)
+            assert Description.bases is str
+            register_description(int)
+            assert Description.bases == (str, int)
             register_description(int)
             assert Description.bases == (str, int)
             register_description(float)
@@ -81,6 +85,8 @@ def describe_description():
             register_description(object)
             assert Description.bases is object
             Description.bases = (str,)
+            unregister_description(str)
+            assert Description.bases is object
             unregister_description(str)
             assert Description.bases is object
         finally:

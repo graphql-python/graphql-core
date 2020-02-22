@@ -10,10 +10,10 @@ def describe_event_emitter():
         emitter = EventEmitter()
 
         def listener1(value):
-            pass
+            pass  # pragma: no cover
 
         def listener2(value):
-            pass
+            pass  # pragma: no covers
 
         emitter.add_listener("foo", listener1)
         emitter.add_listener("foo", listener2)
@@ -64,6 +64,10 @@ def describe_event_emitter_async_iterator():
         emitter = EventEmitter()
         iterator = EventEmitterAsyncIterator(emitter, "publish")
 
+        # Make sure it works as an async iterator
+        assert iterator.__aiter__() is iterator
+        assert callable(iterator.__anext__)
+
         # Queue up publishes
         assert emitter.emit("publish", "Apple") is True
         assert emitter.emit("publish", "Banana") is True
@@ -100,3 +104,19 @@ def describe_event_emitter_async_iterator():
         # And next returns empty completion value
         with raises(StopAsyncIteration):
             await iterator.__anext__()
+
+    @mark.asyncio
+    async def aclose_cleans_up():
+        emitter = EventEmitter()
+        assert emitter.listeners["publish"] == []
+        iterator = EventEmitterAsyncIterator(emitter, "publish")
+        assert emitter.listeners["publish"] == [iterator.queue.put]
+        assert not iterator.closed
+        for value in range(3):
+            emitter.emit("publish", value)
+        await sleep(0)
+        assert iterator.queue.qsize() == 3
+        await iterator.aclose()
+        assert emitter.listeners["publish"] == []
+        assert iterator.queue.empty()
+        assert iterator.closed
