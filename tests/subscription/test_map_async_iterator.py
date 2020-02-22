@@ -163,7 +163,7 @@ def describe_map_async_iterator():
         assert await anext(doubles) == 4
 
         # Throw error
-        with raises(RuntimeError) as exc_info:
+        with raises(RuntimeError, match="Ouch") as exc_info:
             await doubles.athrow(RuntimeError("Ouch"))
 
         assert str(exc_info.value) == "Ouch"
@@ -172,6 +172,58 @@ def describe_map_async_iterator():
             await anext(doubles)
         with raises(StopAsyncIteration):
             await anext(doubles)
+
+    @mark.asyncio
+    async def allows_throwing_errors_with_values_through_async_iterators():
+        class Iterator:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                return 1
+
+        one = MapAsyncIterator(Iterator(), lambda x: x)
+
+        assert await anext(one) == 1
+
+        # Throw error with value passed separately
+        try:
+            raise RuntimeError("Ouch")
+        except RuntimeError as error:
+            with raises(RuntimeError, match="Ouch") as exc_info:
+                await one.athrow(error.__class__, error)
+
+            assert exc_info.value is error
+            assert exc_info.tb is error.__traceback__
+
+        with raises(StopAsyncIteration):
+            await anext(one)
+
+    @mark.asyncio
+    async def allows_throwing_errors_with_traceback_through_async_iterators():
+        class Iterator:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                return 1
+
+        one = MapAsyncIterator(Iterator(), lambda x: x)
+
+        assert await anext(one) == 1
+
+        # Throw error with traceback passed separately
+        try:
+            raise RuntimeError("Ouch")
+        except RuntimeError as error:
+            with raises(RuntimeError) as exc_info:
+                await one.athrow(error.__class__, None, error.__traceback__)
+
+            assert exc_info.tb and error.__traceback__
+            assert exc_info.tb.tb_frame is error.__traceback__.tb_frame
+
+        with raises(StopAsyncIteration):
+            await anext(one)
 
     @mark.asyncio
     async def passes_through_caught_errors_through_async_generators():
