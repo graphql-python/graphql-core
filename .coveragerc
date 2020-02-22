@@ -9,4 +9,8 @@ omit =
 exclude_lines =
     pragma: no cover
     raise NotImplementedError
+    raise TypeError\(f?"Unexpected
+    if TYPE_CHECKING:
+    ^\s+...$
+    ^\s+pass$
 ignore_errors = True

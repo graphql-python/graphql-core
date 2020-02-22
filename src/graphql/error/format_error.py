@@ -1,6 +1,6 @@
 from typing import Any, Dict, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from .graphql_error import GraphQLError  # noqa: F401
 
 

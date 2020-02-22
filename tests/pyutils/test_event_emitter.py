@@ -9,11 +9,11 @@ def describe_event_emitter():
     def add_and_remove_listeners():
         emitter = EventEmitter()
 
-        def listener1(value):
-            pass  # pragma: no cover
+        def listener1(_value):
+            pass
 
-        def listener2(value):
-            pass  # pragma: no covers
+        def listener2(_value):
+            pass
 
         emitter.add_listener("foo", listener1)
         emitter.add_listener("foo", listener2)

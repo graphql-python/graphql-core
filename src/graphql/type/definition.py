@@ -56,7 +56,7 @@ from ..pyutils import (
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from .schema import GraphQLSchema  # noqa: F401
 
 __all__ = [
@@ -265,12 +265,12 @@ def assert_named_type(type_: Any) -> GraphQLNamedType:
 
 @overload
 def get_named_type(type_: None) -> None:
-    ...  # pragma: no cover
+    ...
 
 
 @overload
 def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
-    ...  # pragma: no cover
+    ...
 
 
 def get_named_type(type_):
@@ -1539,17 +1539,17 @@ def assert_nullable_type(type_: Any) -> GraphQLNullableType:
 
 @overload
 def get_nullable_type(type_: None) -> None:
-    ...  # pragma: no cover
+    ...
 
 
 @overload
 def get_nullable_type(type_: GraphQLNullableType) -> GraphQLNullableType:
-    ...  # pragma: no cover
+    ...
 
 
 @overload
 def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType:
-    ...  # pragma: no cover
+    ...
 
 
 def get_nullable_type(type_):

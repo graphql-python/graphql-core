@@ -540,7 +540,7 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
         return "an Input type"
 
     # Not reachable. All possible output types have been considered.
-    raise TypeError(f"Unexpected type {inspect(type)}")  # pragma: no cover
+    raise TypeError(f"Unexpected type {inspect(type)}")
 
 
 def stringify_value(value: Any, type_: GraphQLInputType) -> str:

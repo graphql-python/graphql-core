@@ -113,7 +113,7 @@ def resolve_pet_type(value, _info, _type):
         return CatType
 
     # Not reachable. All possible types have been considered.
-    raise TypeError  # pragma: no cover
+    raise TypeError("Unexpected pet type")
 
 
 PetType = GraphQLUnionType("Pet", [DogType, CatType], resolve_type=resolve_pet_type)

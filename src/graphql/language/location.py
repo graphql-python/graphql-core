@@ -1,6 +1,6 @@
 from typing import NamedTuple, TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from .source import Source  # noqa: F401
 
 __all__ = ["get_location", "SourceLocation"]

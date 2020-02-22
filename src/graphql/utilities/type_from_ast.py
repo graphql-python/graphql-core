@@ -17,26 +17,26 @@ __all__ = ["type_from_ast"]
 def type_from_ast(
     schema: GraphQLSchema, type_node: NamedTypeNode
 ) -> Optional[GraphQLNamedType]:
-    ...  # pragma: no cover
+    ...
 
 
 @overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: ListTypeNode
 ) -> Optional[GraphQLList]:
-    ...  # pragma: no cover
+    ...
 
 
 @overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: NonNullTypeNode
 ) -> Optional[GraphQLNonNull]:
-    ...  # pragma: no cover
+    ...
 
 
 @overload
 def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> Optional[GraphQLType]:
-    ...  # pragma: no cover
+    ...
 
 
 def type_from_ast(schema, type_node):

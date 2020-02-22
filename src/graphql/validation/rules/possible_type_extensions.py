@@ -92,7 +92,7 @@ def type_to_ext_kind(type_: Any) -> str:
         return "input_object_type_extension"
 
     # Not reachable. All possible types have been considered.
-    raise TypeError(f"Unexpected type: {inspect(type_)}.")  # pragma: no cover
+    raise TypeError(f"Unexpected type: {inspect(type_)}.")
 
 
 _type_names_for_extension_kinds = {

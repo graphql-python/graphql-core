@@ -3,7 +3,7 @@ from typing import Any, Collection, Dict, List, Optional, Union, TYPE_CHECKING
 
 from .format_error import format_error
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
     from ..language.location import SourceLocation  # noqa: F401
     from ..language.source import Source  # noqa: F401
