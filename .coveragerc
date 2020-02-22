@@ -3,6 +3,7 @@ branch = True
 source = src
 omit =
     */cached_property.py
+    */is_collection.py
 
 [report]
 exclude_lines =

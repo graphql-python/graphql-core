@@ -96,8 +96,7 @@ def inspect_recursive(value: Any, seen_values: List) -> str:
                 return "{...}"
             if isinstance(value, set):
                 return "set(...)"
-            if isinstance(value, frozenset):
-                return "frozenset(...)"
+            return "frozenset(...)"
     if isinstance(value, Exception):
         type_ = "exception"
         value = type(value)

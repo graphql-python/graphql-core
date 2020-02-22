@@ -15,6 +15,7 @@ def describe_frozen_list():
         assert 2 not in fd
         assert fd[1] == 2
         with raises(KeyError):
+            # noinspection PyStatementEffect
             fd[2]
         assert len(fd) == 2
         assert fd.get(1) == 2
@@ -49,6 +50,8 @@ def describe_frozen_list():
             fd.update({1: 2})
         with raises(FrozenError):
             fd.update({4: 5})
+        with raises(FrozenError):
+            fd += {4: 5}
         assert fd == {1: 2, 3: 4}
 
     def can_hash():
