@@ -67,9 +67,9 @@ def describe_format_error():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             format_error(None)  # type: ignore
-        assert str(exc_info.value) == "Received no error object."
+        assert str(exc_info.value) == "Expected a GraphQLError."
 
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             format_error(Undefined)  # type: ignore
-        assert str(exc_info.value) == "Received no error object."
+        assert str(exc_info.value) == "Expected a GraphQLError."

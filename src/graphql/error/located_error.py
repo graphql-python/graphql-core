@@ -15,18 +15,16 @@ def located_error(
 ) -> GraphQLError:
     """Located GraphQL Error
 
-    Given an arbitrary Error, presumably thrown while attempting to execute a GraphQL
-    operation, produce a new GraphQLError aware of the location in the document
-    responsible for the original Error.
+    Given an arbitrary Exception, presumably thrown while attempting to execute a
+    GraphQL operation, produce a new GraphQLError aware of the location in the document
+    responsible for the original Exception.
     """
-    if original_error:
-        # Note: this uses a brand-check to support GraphQL errors originating from
-        # other contexts.
-        try:
-            if isinstance(original_error.path, list):  # type: ignore
-                return original_error  # type: ignore
-        except AttributeError:
-            pass
+    if not isinstance(original_error, Exception):
+        raise TypeError("Expected an Exception.")
+    # Note: this uses a brand-check to support GraphQL errors originating from
+    # other contexts.
+    if isinstance(original_error, GraphQLError) and original_error.path is not None:
+        return original_error
     try:
         message = original_error.message  # type: ignore
     except AttributeError:

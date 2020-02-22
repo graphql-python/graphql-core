@@ -145,6 +145,22 @@ def describe_graphql_error():
         assert isinstance(e.path, list)
         assert e.path == path
 
+    def is_comparable():
+        e1 = GraphQLError("msg,", path=["field", 1])
+        assert e1 == e1
+        assert e1 == e1.formatted
+        assert not (e1 != e1)
+        assert not (e1 != e1.formatted)
+        e2 = GraphQLError("msg,", path=["field", 1])
+        assert e1 == e2
+        assert not (e1 != e2)
+        assert e2.path and e2.path[1] == 1
+        e2.path[1] = 2
+        assert not (e1 == e2)
+        assert e1 != e2
+        assert not e1 == e2.formatted
+        assert e1 != e2.formatted
+
     def is_hashable():
         hash(GraphQLError("msg"))
 

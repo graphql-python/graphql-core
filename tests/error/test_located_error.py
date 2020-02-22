@@ -1,9 +1,15 @@
-from typing import cast, Any
+from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLError, located_error
 
 
 def describe_located_error():
+    def throws_without_an_original_error():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            located_error([], [], [])  # type: ignore
+        assert str(exc_info.value) == "Expected an Exception."
+
     def passes_graphql_error_through():
         path = ["path", 3, "to", "field"]
         # noinspection PyArgumentEqualDefault
@@ -11,15 +17,12 @@ def describe_located_error():
         assert located_error(e, [], []) == e
 
     def passes_graphql_error_ish_through():
-        e = cast(GraphQLError, Exception("I am an ordinary exception"))
-        e.locations = []
+        e = GraphQLError("I am a located GraphQL error")
         e.path = []
-        e.nodes = []
-        e.source = None
-        e.positions = []
-        assert located_error(e, [], []) == e
+        assert located_error(e, [], []) is e
 
     def does_not_pass_through_elasticsearch_like_errors():
-        e = cast(Any, Exception("I am from elasticsearch"))
-        e.path = "/something/feed/_search"
-        assert located_error(e, [], []) != e
+        e = Exception("I am from elasticsearch")
+        # noinspection PyTypeHints
+        e.path = "/something/feed/_search"  # type: ignore
+        assert located_error(e, [], []) is not e
