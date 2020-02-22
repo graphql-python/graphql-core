@@ -431,7 +431,7 @@ def describe_execute_handles_basic_execution_tasks():
                 return "async ok"
 
             async def asyncError(self, _info):
-                raise Exception("Error getting asyncError")
+                raise GraphQLError("Error getting asyncError")
 
             async def asyncRawError(self, _info):
                 raise Exception("Error getting asyncRawError")

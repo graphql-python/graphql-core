@@ -96,7 +96,7 @@ def coerce_variable_values(
                 coerced_values[var_name] = value_from_ast(
                     var_def_node.default_value, var_type
                 )
-            elif is_non_null_type(var_type):
+            elif is_non_null_type(var_type):  # pragma: false coverage
                 var_type_str = inspect(var_type)
                 on_error(
                     GraphQLError(
@@ -169,7 +169,7 @@ def get_argument_values(
                     " was not provided.",
                     node,
                 )
-            continue
+            continue  # pragma: false coverage
 
         value_node = argument_node.value
         is_null = isinstance(argument_node.value, NullValueNode)
@@ -186,7 +186,7 @@ def get_argument_values(
                         " which was not provided a runtime value.",
                         value_node,
                     )
-                continue
+                continue  # pragma: false coverage
             is_null = variable_values[variable_name] is None
 
         if is_null and is_non_null_type(arg_type):

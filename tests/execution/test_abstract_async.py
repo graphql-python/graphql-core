@@ -3,7 +3,6 @@ from typing import NamedTuple
 from pytest import mark  # type: ignore
 
 from graphql import graphql
-from graphql.error import format_error
 from graphql.type import (
     GraphQLBoolean,
     GraphQLField,
@@ -178,19 +177,71 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
         result = await graphql(schema=schema, source=source)
         # Note: we get two errors, because first all types are resolved
         # and only then they are checked sequentially
-        assert result.data == {"pets": [None, None]}
-        assert list(map(format_error, result.errors)) == [  # type: ignore
+        assert result == (
+            {"pets": [None, None]},
+            [
+                {
+                    "message": "We are testing this error",
+                    "locations": [(3, 15)],
+                    "path": ["pets", 0],
+                },
+                {
+                    "message": "We are testing this error",
+                    "locations": [(3, 15)],
+                    "path": ["pets", 1],
+                },
+            ],
+        )
+
+    @mark.asyncio
+    async def is_type_of_with_no_suitable_type():
+        PetType = GraphQLInterfaceType("Pet", {"name": GraphQLField(GraphQLString)})
+
+        DogType = GraphQLObjectType(
+            "Dog",
             {
-                "message": "We are testing this error",
-                "locations": [{"line": 3, "column": 15}],
-                "path": ["pets", 0],
+                "name": GraphQLField(GraphQLString),
+                "woofs": GraphQLField(GraphQLBoolean),
             },
+            interfaces=[PetType],
+            is_type_of=get_is_type_of(Cat),
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "pets": GraphQLField(
+                        GraphQLList(PetType),
+                        resolve=lambda *_args: [Dog("Odie", True)],
+                    )
+                },
+            ),
+            types=[DogType],
+        )
+
+        source = """
             {
-                "message": "We are testing this error",
-                "locations": [{"line": 3, "column": 15}],
-                "path": ["pets", 1],
-            },
-        ]
+              pets {
+                name
+                ... on Dog {
+                  woofs
+                }
+              }
+            }
+            """
+
+        result = await graphql(schema=schema, source=source)
+        msg = (
+            "Abstract type 'Pet' must resolve to an Object type at runtime"
+            " for field 'Query.pets' with value ('Odie', True), received 'None'."
+            " Either the 'Pet' type should provide a 'resolve_type' function"
+            " or each possible type should provide an 'is_type_of' function."
+        )
+        assert result == (
+            {"pets": [None]},
+            [{"message": msg, "locations": [(3, 15)], "path": ["pets", 0]}],
+        )
 
     @mark.asyncio
     async def is_type_of_used_to_resolve_runtime_type_for_union():
@@ -321,22 +372,23 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             """
 
         result = await graphql(schema=schema, source=source)
-        assert result.data == {
-            "pets": [
-                {"name": "Odie", "woofs": True},
-                {"name": "Garfield", "meows": False},
-                None,
-            ]
-        }
-
-        assert result.errors
-        assert len(result.errors) == 1
-        assert format_error(result.errors[0]) == {
-            "message": "Runtime Object type 'Human'"
-            " is not a possible type for 'Pet'.",
-            "locations": [{"line": 3, "column": 15}],
-            "path": ["pets", 2],
-        }
+        assert result == (
+            {
+                "pets": [
+                    {"name": "Odie", "woofs": True},
+                    {"name": "Garfield", "meows": False},
+                    None,
+                ]
+            },
+            [
+                {
+                    "message": "Runtime Object type 'Human'"
+                    " is not a possible type for 'Pet'.",
+                    "locations": [(3, 15)],
+                    "path": ["pets", 2],
+                }
+            ],
+        )
 
     @mark.asyncio
     async def resolve_type_on_union_yields_useful_error():
@@ -398,22 +450,23 @@ def describe_execute_handles_asynchronous_execution_of_abstract_types():
             """
 
         result = await graphql(schema=schema, source=source)
-        assert result.data == {
-            "pets": [
-                {"name": "Odie", "woofs": True},
-                {"name": "Garfield", "meows": False},
-                None,
-            ]
-        }
-
-        assert result.errors
-        assert len(result.errors) == 1
-        assert format_error(result.errors[0]) == {
-            "message": "Runtime Object type 'Human'"
-            " is not a possible type for 'Pet'.",
-            "locations": [{"line": 3, "column": 15}],
-            "path": ["pets", 2],
-        }
+        assert result == (
+            {
+                "pets": [
+                    {"name": "Odie", "woofs": True},
+                    {"name": "Garfield", "meows": False},
+                    None,
+                ]
+            },
+            [
+                {
+                    "message": "Runtime Object type 'Human'"
+                    " is not a possible type for 'Pet'.",
+                    "locations": [(3, 15)],
+                    "path": ["pets", 2],
+                }
+            ],
+        )
 
     @mark.asyncio
     async def resolve_type_allows_resolving_with_type_name():

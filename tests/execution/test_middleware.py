@@ -153,6 +153,19 @@ def describe_middleware():
 
             assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
 
+        def skip_middleware_without_resolve_method():
+            class BadMiddleware:
+                pass  # no resolve method here
+
+            assert execute(
+                GraphQLSchema(
+                    GraphQLObjectType("TestType", {"foo": GraphQLField(GraphQLString)},)
+                ),
+                parse("{ foo }"),
+                {"foo": "bar"},
+                middleware=MiddlewareManager(BadMiddleware()),
+            ) == ({"foo": "bar"}, None)
+
         def with_function_and_object():
             doc = parse("{ field }")
 

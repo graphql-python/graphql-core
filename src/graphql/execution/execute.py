@@ -347,10 +347,6 @@ class ExecutionContext:
         except GraphQLError as error:
             self.errors.append(error)
             return None
-        except Exception as error:
-            error = GraphQLError(str(error), original_error=error)
-            self.errors.append(error)
-            return None
         else:
             if isawaitable(result):
                 # noinspection PyShadowingNames
@@ -358,9 +354,6 @@ class ExecutionContext:
                     try:
                         return await result  # type: ignore
                     except GraphQLError as error:
-                        self.errors.append(error)
-                    except Exception as error:
-                        error = GraphQLError(str(error), original_error=error)
                         self.errors.append(error)
 
                 return await_result()
@@ -494,7 +487,7 @@ class ExecutionContext:
                     fields,
                     visited_fragment_names,
                 )
-            elif isinstance(selection, FragmentSpreadNode):
+            elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover
                 frag_name = selection.name.value
                 if frag_name in visited_fragment_names or not self.should_include_node(
                     selection
