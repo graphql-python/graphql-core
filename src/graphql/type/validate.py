@@ -201,7 +201,7 @@ class SchemaValidationContext:
             # Ensure all provided types are in fact GraphQL type.
             if not is_named_type(type_):
                 self.report_error(
-                    f"Expected GraphQL named type but got: {inspect(type)}.",
+                    f"Expected GraphQL named type but got: {inspect(type_)}.",
                     type_.ast_node if type_ else None,
                 )
                 continue
