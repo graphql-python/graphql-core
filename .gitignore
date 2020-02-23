@@ -1,23 +1,24 @@
 
-.cache
+.cache/
 .coverage
-.env*
-.idea
-.mypy_cache
-.pytest_cache
-.tox
-.venv*
-.vs
+.env*/
+.idea/
+.mypy_cache/
+.pytest_cache/
+.tox/
+.venv*/
+.vs/
 
-build
-dist
-docs/_build
-pip-wheel-metadata
-wheels
+build/
+dist/
+docs/_build/
+htmlcov/
+pip-wheel-metadata/
+wheels/
 
-play
+play/
 
-__pycache__
+__pycache__/
 
 *.cover
 *.egg
