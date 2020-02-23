@@ -57,8 +57,6 @@ def value_from_ast(
         if not variables:
             return Undefined
         variable_value = variables.get(variable_name, Undefined)
-        if is_invalid(variable_value):
-            return Undefined
         if variable_value is None and is_non_null_type(type_):
             return Undefined
         # Note: This does no further checking that this variable is correct.
@@ -112,7 +110,7 @@ def value_from_ast(
                 if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_obj[field.out_name or field_name] = field.default_value
-                elif is_non_null_type(field.type):
+                elif is_non_null_type(field.type):  # pragma: false coverage
                     return Undefined
                 continue
             field_value = value_from_ast(field_node.value, field.type, variables)

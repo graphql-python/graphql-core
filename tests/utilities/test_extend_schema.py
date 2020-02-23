@@ -7,6 +7,8 @@ from graphql.language import (
     parse,
     print_ast,
     DocumentNode,
+    StringValueNode,
+    TypeDefinitionNode,
 )
 from graphql.pyutils import dedent, FrozenList
 from graphql.type import (
@@ -32,7 +34,13 @@ from graphql.type import (
     assert_union_type,
     validate_schema,
 )
-from graphql.utilities import build_schema, concat_ast, extend_schema, print_schema
+from graphql.utilities import (
+    build_schema,
+    concat_ast,
+    extend_schema,
+    get_description,
+    print_schema,
+)
 
 TypeWithAstNode = Union[
     GraphQLArgument,
@@ -1222,10 +1230,12 @@ def describe_extend_schema():
         schema = GraphQLSchema()
 
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             extend_schema(schema, None)  # type: ignore
         assert str(exc_info.value) == "Must provide valid Document AST."
 
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             extend_schema(schema, {})  # type: ignore
         assert str(exc_info.value) == "Must provide valid Document AST."
 
@@ -1423,3 +1433,18 @@ def describe_extend_schema():
                 extend schema @foo
                 """
             )
+
+
+def describe_get_description():
+    def returns_description_of_type_definition_node():
+        assert (
+            get_description(
+                TypeDefinitionNode(
+                    description=StringValueNode(value="This is a type definition")
+                )
+            )
+            == "This is a type definition"
+        )
+
+    def returns_none_for_node_without_description():
+        assert get_description(StringValueNode(value="Just a string value")) is None

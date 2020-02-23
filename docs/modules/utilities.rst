@@ -29,7 +29,6 @@ Build a GraphQLSchema from GraphQL Schema language:
 
 .. autofunction:: build_ast_schema
 .. autofunction:: build_schema
-.. autofunction:: get_description
 
 Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST:
 

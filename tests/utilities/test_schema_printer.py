@@ -7,6 +7,7 @@ from graphql.type import (
     GraphQLBoolean,
     GraphQLEnumType,
     GraphQLField,
+    GraphQLFloat,
     GraphQLInputObjectType,
     GraphQLInt,
     GraphQLInterfaceType,
@@ -23,7 +24,12 @@ from graphql.type import (
     GraphQLDirective,
     assert_object_type,
 )
-from graphql.utilities import build_schema, print_schema, print_introspection_schema
+from graphql.utilities import (
+    build_schema,
+    print_schema,
+    print_introspection_schema,
+    print_value,
+)
 
 
 def print_for_test(schema: GraphQLSchema) -> str:
@@ -806,3 +812,9 @@ def describe_type_system_printer():
             }
             '''  # noqa: E501
         )
+
+
+def describe_print_value():
+    def print_value_convenience_function():
+        assert print_value(1.5, GraphQLFloat) == "1.5"
+        assert print_value("foo", GraphQLString) == '"foo"'

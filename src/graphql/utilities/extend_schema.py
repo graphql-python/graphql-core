@@ -364,13 +364,6 @@ def extend_schema_impl(
         )
 
     # noinspection PyShadowingNames
-    def resolve_type(type_name: str) -> GraphQLNamedType:
-        type_ = type_map.get(type_name)
-        if not type_:
-            raise TypeError(f"Unknown type: '{type_name}'.")
-        return type_
-
-    # noinspection PyShadowingNames
     def get_operation_types(
         nodes: Collection[Union[SchemaDefinitionNode, SchemaExtensionNode]]
     ) -> Dict[OperationType, GraphQLNamedType]:
@@ -386,7 +379,7 @@ def extend_schema_impl(
     # noinspection PyShadowingNames
     def get_named_type(node: NamedTypeNode) -> GraphQLNamedType:
         name = node.name.value
-        type_ = std_type_map.get(name) or resolve_type(name)
+        type_ = std_type_map.get(name) or type_map.get(name)
 
         if not type_:
             raise TypeError(f"Unknown type: '{name}'.")
@@ -621,7 +614,7 @@ def extend_schema_impl(
         try:
             # object_type_definition_node is built with _build_object_type etc.
             build_function = build_type_for_kind[ast_node.kind]
-        except KeyError:
+        except KeyError:  # pragma: no cover
             # Not reachable. All possible type definition nodes have been considered.
             raise TypeError(  # pragma: no cover
                 f"Unexpected type definition node: {inspect(ast_node)}."

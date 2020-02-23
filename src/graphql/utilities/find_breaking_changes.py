@@ -545,7 +545,7 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
 
 def stringify_value(value: Any, type_: GraphQLInputType) -> str:
     ast = ast_from_value(value, type_)
-    if ast is None:
+    if ast is None:  # pragma: no cover
         raise TypeError(f"Invalid value: {inspect(value)}")
 
     # noinspection PyMethodMayBeStatic

@@ -1,4 +1,3 @@
-import re
 from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
@@ -282,37 +281,6 @@ def print_description(
     return prefix + block_string.replace("\n", "\n" + indentation) + "\n"
 
 
-def escape_quote(line: str) -> str:
-    return line.replace('"""', '\\"""')
-
-
-def description_lines(description: str, max_len: int) -> List[str]:
-    lines: List[str] = []
-    append_line, extend_lines = lines.append, lines.extend
-    raw_lines = description.splitlines()
-    for raw_line in raw_lines:
-        if raw_line:
-            # For > 120 character long lines, cut at space boundaries into sublines
-            # of ~80 chars.
-            extend_lines(break_line(raw_line, max_len))
-        else:
-            append_line(raw_line)
-    return lines
-
-
-def break_line(line: str, max_len: int) -> List[str]:
-    if len(line) < max_len + 5:
-        return [line]
-    parts = re.split(f"((?: |^).{{15,{max_len - 40}}}(?= |$))", line)
-    if len(parts) < 4:
-        return [line]
-    sublines = [parts[0] + parts[1] + parts[2]]
-    append_subline = sublines.append
-    for i in range(3, len(parts), 2):
-        append_subline(parts[i][1:] + parts[i + 1])
-    return sublines
-
-
 def print_value(value: Any, type_: GraphQLInputType) -> str:
-    """Convenience function for printing a Python value"""
+    """@deprecated: Convenience function for printing a Python value"""
     return print_ast(ast_from_value(value, type_))  # type: ignore

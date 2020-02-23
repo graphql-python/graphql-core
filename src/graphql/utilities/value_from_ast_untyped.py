@@ -1,7 +1,8 @@
+from math import nan
 from typing import Any, Dict, Optional
 
 from ..language import ValueNode
-from ..pyutils import inspect, is_invalid, Undefined
+from ..pyutils import inspect, Undefined
 
 __all__ = ["value_from_ast_untyped"]
 
@@ -42,14 +43,14 @@ def value_from_int(value_node, _variables):
     try:
         return int(value_node.value)
     except ValueError:
-        return Undefined
+        return nan
 
 
 def value_from_float(value_node, _variables):
     try:
         return float(value_node.value)
     except ValueError:
-        return Undefined
+        return nan
 
 
 def value_from_string(value_node, _variables):
@@ -71,10 +72,7 @@ def value_from_variable(value_node, variables):
     variable_name = value_node.name.value
     if not variables:
         return Undefined
-    value = variables.get(variable_name, Undefined)
-    if is_invalid(value):
-        return Undefined
-    return value
+    return variables.get(variable_name, Undefined)
 
 
 _value_from_kind_functions = {

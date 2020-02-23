@@ -253,7 +253,7 @@ class TypeInfo:
 
     leave_object_field = leave_list_value
 
-    def leave_enum(self):
+    def leave_enum_value(self):
         self._enum_value = None
 
 

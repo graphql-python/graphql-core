@@ -27,7 +27,7 @@ def introspection_from_schema(
     from ..execution.execute import execute, ExecutionResult
 
     result = execute(schema, document)
-    if not isinstance(result, ExecutionResult):
+    if not isinstance(result, ExecutionResult):  # pragma: no cover
         raise RuntimeError("Introspection cannot be executed")
     if result.errors or not result.data:
         raise result.errors[0] if result.errors else GraphQLError(
