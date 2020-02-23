@@ -732,7 +732,7 @@ def describe_type_system_unions():
         union_type = GraphQLUnionType("SomeUnion", [])
         assert union_type.types == []
 
-    def rejects_an_interface_type_with_an_incorrect_type_for_resolve_type():
+    def rejects_a_union_type_with_an_incorrect_type_for_resolve_type():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLUnionType("SomeUnion", [], resolve_type={})  # type: ignore
