@@ -10,7 +10,7 @@ Scope = Dict[str, Any]
 
 def get_snippets(source, indent=4):
     """Get all code snippets from a given documentation source file."""
-    if not source.endswith(".rst"):
+    if not source.endswith(".rst"):  # pragma: no cover
         source += ".rst"
     source_path = Path(__file__).parents[1] / "docs" / source
     lines = open(source_path).readlines()

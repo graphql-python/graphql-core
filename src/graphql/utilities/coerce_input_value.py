@@ -98,7 +98,7 @@ def coerce_input_value(
                 if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_dict[field.out_name or field_name] = field.default_value
-                elif is_non_null_type(field.type):
+                elif is_non_null_type(field.type):  # pragma: no cover else
                     type_str = inspect(field.type)
                     on_error(
                         path.as_list() if path else [],

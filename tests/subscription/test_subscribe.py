@@ -139,7 +139,7 @@ def describe_subscription_initialization_phase():
 
         async def empty_async_iterator(_info):
             for value in ():  # type: ignore
-                yield value
+                yield value  # pragma: no cover
 
         ai = await subscribe(
             email_schema, document, {"importantEmail": empty_async_iterator}
@@ -255,7 +255,7 @@ def describe_subscription_initialization_phase():
             did_resolve["importantEmail"] = True
             return EventEmitterAsyncIterator(EventEmitter(), "event")
 
-        def subscribe_non_important(_inbox, _info):
+        def subscribe_non_important(_inbox, _info):  # pragma: no cover
             did_resolve["nonImportantEmail"] = True
             return EventEmitterAsyncIterator(EventEmitter(), "event")
 

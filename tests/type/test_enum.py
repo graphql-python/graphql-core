@@ -26,8 +26,7 @@ class ColorTypeEnumValues(Enum):
 
 class Complex1:
     # noinspection PyMethodMayBeStatic
-    def some_random_object(self):
-        return datetime.now()
+    some_random_object = datetime.now()
 
 
 class Complex2:

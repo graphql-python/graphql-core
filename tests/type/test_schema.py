@@ -252,9 +252,12 @@ def describe_type_system_schema():
                 assert GraphQLSchema(assume_valid=False).validation_errors is None
 
             def checks_the_configuration_for_mistakes():
+                def query():
+                    pass
+
                 with raises(Exception):
                     # noinspection PyTypeChecker
-                    GraphQLSchema(lambda: None)  # type: ignore
+                    GraphQLSchema(query)  # type: ignore
                 with raises(Exception):
                     GraphQLSchema(types={})
                 with raises(Exception):

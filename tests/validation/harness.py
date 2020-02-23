@@ -96,7 +96,6 @@ Dog = GraphQLObjectType(
         "father": GraphQLField(Dog),  # type: ignore
     },
     interfaces=[Being, Pet, Mammal, Canine],
-    is_type_of=lambda *_args: True,
 )
 
 FurColor: GraphQLEnumType
@@ -111,7 +110,6 @@ Cat = GraphQLObjectType(
         "nickname": GraphQLField(GraphQLString),
     },
     interfaces=[Being, Pet],
-    is_type_of=lambda *_args: True,
 )
 
 CatOrDog = GraphQLUnionType("CatOrDog", [Dog, Cat])
@@ -121,7 +119,6 @@ Intelligent = GraphQLInterfaceType("Intelligent", {"iq": GraphQLField(GraphQLInt
 Human = GraphQLObjectType(
     name="Human",
     interfaces=[Being, Intelligent],
-    is_type_of=lambda *_args: True,
     fields={
         "name": GraphQLField(
             GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
@@ -133,7 +130,6 @@ Human = GraphQLObjectType(
 
 Alien = GraphQLObjectType(
     name="Alien",
-    is_type_of=lambda *_args: True,
     interfaces=[Being, Intelligent],
     fields={
         "iq": GraphQLField(GraphQLInt),

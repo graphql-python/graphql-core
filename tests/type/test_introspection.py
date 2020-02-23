@@ -1321,11 +1321,7 @@ def describe_introspection():
         schema = GraphQLSchema(query_root)
         source = get_introspection_query()
 
-        called_for_fields = set()
-
-        def field_resolver(value, info):
-            called_for_fields.add(f"{info.parent_type.name}::{info.field_name}")
-            return value
+        def field_resolver(_obj, info):
+            assert False, f"Called on {info.parent_type.name}.{info.field_name}"
 
         graphql_sync(schema=schema, source=source, field_resolver=field_resolver)
-        assert not called_for_fields

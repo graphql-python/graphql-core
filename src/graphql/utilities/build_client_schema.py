@@ -122,7 +122,7 @@ def build_client_schema(
     def build_type(type_: Dict) -> GraphQLNamedType:
         if type_ and "name" in type_ and "kind" in type_:
             builder = type_builders.get(cast(str, type_["kind"]))
-            if builder:
+            if builder:  # pragma: no cover else
                 return cast(GraphQLNamedType, builder(type_))
         raise TypeError(
             "Invalid or incomplete introspection result."

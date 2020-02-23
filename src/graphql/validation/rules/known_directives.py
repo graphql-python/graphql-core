@@ -91,17 +91,18 @@ _directive_location = {
 
 def get_directive_location_for_ast_path(ancestors):
     applied_to = ancestors[-1]
-    if isinstance(applied_to, Node):
-        kind = applied_to.kind
-        if kind == "operation_definition":
-            applied_to = cast(OperationDefinitionNode, applied_to)
-            return _operation_location[applied_to.operation.value]
-        elif kind == "input_value_definition":
-            parent_node = ancestors[-3]
-            return (
-                DirectiveLocation.INPUT_FIELD_DEFINITION
-                if parent_node.kind == "input_object_type_definition"
-                else DirectiveLocation.ARGUMENT_DEFINITION
-            )
-        else:
-            return _directive_location.get(kind)
+    if not isinstance(applied_to, Node):  # pragma: no cover
+        raise TypeError("Unexpected error in directive.")
+    kind = applied_to.kind
+    if kind == "operation_definition":
+        applied_to = cast(OperationDefinitionNode, applied_to)
+        return _operation_location[applied_to.operation.value]
+    elif kind == "input_value_definition":
+        parent_node = ancestors[-3]
+        return (
+            DirectiveLocation.INPUT_FIELD_DEFINITION
+            if parent_node.kind == "input_object_type_definition"
+            else DirectiveLocation.ARGUMENT_DEFINITION
+        )
+    else:
+        return _directive_location.get(kind)

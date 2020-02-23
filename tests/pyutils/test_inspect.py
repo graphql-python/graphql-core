@@ -100,10 +100,10 @@ def describe_inspect():
             assert inspect(n) == r
 
     def inspect_function():
-        assert inspect(lambda: 0) == "<function>"
+        assert inspect(lambda: 0) == "<function>"  # pragma: no cover
 
         def test_func():
-            return None
+            pass
 
         assert inspect(test_func) == "<function test_func>"
 
@@ -114,7 +114,7 @@ def describe_inspect():
     def inspect_class_and_method():
         class TestClass:
             def test_method(self):
-                return None
+                pass
 
         assert inspect(TestClass) == "<class TestClass>"
         assert inspect(TestClass()) == "<TestClass instance>"
@@ -132,7 +132,7 @@ def describe_inspect():
 
     def inspect_generator():
         def test_generator():
-            yield None
+            yield None  # pragma: no cover
 
         assert inspect(test_generator) == "<generator function test_generator>"
         assert inspect(test_generator()) == "<generator test_generator>"
@@ -140,7 +140,7 @@ def describe_inspect():
     @mark.asyncio
     async def inspect_coroutine():
         async def test_coroutine():
-            return None
+            pass
 
         assert inspect(test_coroutine) == "<coroutine function test_coroutine>"
         coroutine_object = test_coroutine()
@@ -149,7 +149,7 @@ def describe_inspect():
 
     def inspect_async_generator():
         async def test_async_generator():
-            yield None
+            yield None  # pragma: no cover
 
         assert inspect(test_async_generator) == (
             "<async generator function test_async_generator>"

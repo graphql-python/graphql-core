@@ -8,11 +8,11 @@ omit =
 [report]
 exclude_lines =
     pragma: no cover
-    pragma: false coverage
     raise NotImplementedError
     raise TypeError\(f?"Unexpected
+    assert False,
     if MYPY:
     if TYPE_CHECKING:
-    ^\s+...$
+    ^\s+\.\.\.$
     ^\s+pass$
 ignore_errors = True

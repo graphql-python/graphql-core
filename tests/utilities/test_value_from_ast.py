@@ -55,7 +55,7 @@ def describe_value_from_ast():
         pass_through_scalar = GraphQLScalarType(
             "PassThroughScalar",
             parse_literal=pass_through_parse_literal,
-            parse_value=lambda value: value,
+            parse_value=lambda value: value,  # pragma: no cover
         )
 
         assert _value_from('"value"', pass_through_scalar) == "value"
@@ -66,7 +66,7 @@ def describe_value_from_ast():
         throw_scalar = GraphQLScalarType(
             "ThrowScalar",
             parse_literal=throw_parse_literal,
-            parse_value=lambda value: value,
+            parse_value=lambda value: value,  # pragma: no cover
         )
 
         assert _value_from("value", throw_scalar) is Undefined
@@ -74,7 +74,7 @@ def describe_value_from_ast():
         return_undefined_scalar = GraphQLScalarType(
             "ReturnUndefinedScalar",
             parse_literal=lambda _node, _vars=None: Undefined,
-            parse_value=lambda value: value,
+            parse_value=lambda value: value,  # pragma: no cover
         )
 
         assert _value_from("value", return_undefined_scalar) is Undefined

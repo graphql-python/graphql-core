@@ -487,7 +487,7 @@ class ExecutionContext:
                     fields,
                     visited_fragment_names,
                 )
-            elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover
+            elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover else
                 frag_name = selection.name.value
                 if frag_name in visited_fragment_names or not self.should_include_node(
                     selection

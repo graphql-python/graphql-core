@@ -29,8 +29,8 @@ def introspection_from_schema(
     result = execute(schema, document)
     if not isinstance(result, ExecutionResult):  # pragma: no cover
         raise RuntimeError("Introspection cannot be executed")
-    if result.errors or not result.data:
-        raise result.errors[0] if result.errors else GraphQLError(
-            "Introspection did not return a result"
-        )
+    if result.errors:  # pragma: no cover
+        raise result.errors[0]
+    if not result.data:  # pragma: no cover
+        raise GraphQLError("Introspection did not return a result")
     return result.data

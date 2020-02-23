@@ -690,7 +690,7 @@ def collect_fields_and_fragment_names(
             )
         elif isinstance(selection, FragmentSpreadNode):
             fragment_names[selection.name.value] = True
-        elif isinstance(selection, InlineFragmentNode):
+        elif isinstance(selection, InlineFragmentNode):  # pragma: no cover else
             type_condition = selection.type_condition
             inline_fragment_type = (
                 type_from_ast(context.schema, type_condition)

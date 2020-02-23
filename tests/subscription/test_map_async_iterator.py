@@ -310,15 +310,18 @@ def describe_map_async_iterator():
                     raise StopAsyncIteration
                 return self.counter
 
+        def double(x):
+            return x + x
+
         for iterator in source, Source:
-            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+            doubles = MapAsyncIterator(iterator(), double)
 
             await doubles.aclose()
 
             with raises(StopAsyncIteration):
                 await anext(doubles)
 
-            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+            doubles = MapAsyncIterator(iterator(), double)
 
             assert await anext(doubles) == 2
             assert await anext(doubles) == 4
@@ -327,7 +330,7 @@ def describe_map_async_iterator():
             with raises(StopAsyncIteration):
                 await anext(doubles)
 
-            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+            doubles = MapAsyncIterator(iterator(), double)
 
             assert await anext(doubles) == 2
             assert await anext(doubles) == 4
@@ -350,7 +353,7 @@ def describe_map_async_iterator():
 
             await doubles.aclose()
 
-            doubles = MapAsyncIterator(iterator(), lambda x: x + x)
+            doubles = MapAsyncIterator(iterator(), double)
 
             assert await anext(doubles) == 2
             assert await anext(doubles) == 4

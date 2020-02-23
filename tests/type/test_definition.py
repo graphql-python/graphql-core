@@ -47,7 +47,9 @@ ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})
 InterfaceType = GraphQLInterfaceType("Interface")
 UnionType = GraphQLUnionType(
-    "Union", [ObjectType], resolve_type=lambda _obj, _info, _type: None
+    "Union",
+    [ObjectType],
+    resolve_type=lambda _obj, _info, _type: None,  # pragma: no cover
 )
 EnumType = GraphQLEnumType("Enum", {"foo": GraphQLEnumValue()})
 InputObjectType = GraphQLInputObjectType("InputObject", {})
@@ -76,7 +78,7 @@ def describe_type_system_scalars():
 
     def accepts_a_scalar_type_defining_serialize():
         def serialize(value):
-            return value
+            pass
 
         scalar = GraphQLScalarType("SomeScalar", serialize)
         assert scalar.serialize is serialize
@@ -90,10 +92,10 @@ def describe_type_system_scalars():
 
     def accepts_a_scalar_type_defining_parse_value_and_parse_literal():
         def parse_value(_value):
-            return None
+            pass
 
         def parse_literal(_value_node, _variables):
-            return None
+            pass
 
         scalar = GraphQLScalarType(
             "SomeScalar", parse_value=parse_value, parse_literal=parse_literal
@@ -184,7 +186,9 @@ def describe_type_system_scalars():
 
     def rejects_a_scalar_type_defining_parse_literal_but_not_parse_value():
         with raises(TypeError) as exc_info:
-            GraphQLScalarType("SomeScalar", parse_literal=lambda: None)
+            GraphQLScalarType(
+                "SomeScalar", parse_literal=lambda: None  # pragma: no cover
+            )
         assert str(exc_info.value) == (
             "SomeScalar must provide both"
             " 'parse_value' and 'parse_literal' as functions."
@@ -465,7 +469,11 @@ def describe_type_system_objects():
     def accepts_a_lambda_as_an_object_field_resolver():
         obj_type = GraphQLObjectType(
             "SomeObject",
-            {"f": GraphQLField(ScalarType, resolve=lambda _obj, _info: {})},
+            {
+                "f": GraphQLField(
+                    ScalarType, resolve=lambda _obj, _info: {}  # pragma: no cover
+                )
+            },
         )
         assert obj_type.fields
 
@@ -685,7 +693,7 @@ def describe_type_system_interfaces():
 
     def accepts_an_interface_type_defining_resolve_type():
         def resolve_type(_obj, _info, _type):
-            return None
+            pass
 
         interface = GraphQLInterfaceType(
             "AnotherInterface", {}, resolve_type=resolve_type
@@ -1515,6 +1523,9 @@ def describe_type_system_input_objects():
 
     def describe_input_objects_fields_must_not_have_resolvers():
         def rejects_an_input_object_type_with_resolvers():
+            def resolve():
+                pass
+
             with raises(
                 TypeError, match="got an unexpected keyword argument 'resolve'"
             ):
@@ -1522,14 +1533,18 @@ def describe_type_system_input_objects():
                 GraphQLInputObjectType(
                     "SomeInputObject",
                     {
-                        "f": GraphQLInputField(  # type: ignore
-                            ScalarType, resolve=lambda: None
+                        "f": GraphQLInputField(
+                            ScalarType, resolve=resolve,  # type: ignore
                         )
                     },
                 )
             input_obj_type = GraphQLInputObjectType(
                 "SomeInputObject",
-                {"f": GraphQLField(ScalarType, resolve=lambda: None)},  # type: ignore
+                {
+                    "f": GraphQLField(  # type: ignore
+                        ScalarType, resolve=resolve
+                    )
+                },
             )
             with raises(TypeError) as exc_info:
                 if input_obj_type.fields:

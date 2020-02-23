@@ -96,7 +96,7 @@ def coerce_variable_values(
                 coerced_values[var_name] = value_from_ast(
                     var_def_node.default_value, var_type
                 )
-            elif is_non_null_type(var_type):  # pragma: false coverage
+            elif is_non_null_type(var_type):  # pragma: no cover else
                 var_type_str = inspect(var_type)
                 on_error(
                     GraphQLError(
@@ -163,13 +163,13 @@ def get_argument_values(
         if argument_node is None:
             if arg_def.default_value is not Undefined:
                 coerced_values[arg_def.out_name or name] = arg_def.default_value
-            elif is_non_null_type(arg_type):
+            elif is_non_null_type(arg_type):  # pragma: no cover else
                 raise GraphQLError(
                     f"Argument '{name}' of required type '{arg_type}'"
                     " was not provided.",
                     node,
                 )
-            continue  # pragma: false coverage
+            continue  # pragma: no cover
 
         value_node = argument_node.value
         is_null = isinstance(argument_node.value, NullValueNode)
@@ -179,14 +179,14 @@ def get_argument_values(
             if variable_values is None or variable_name not in variable_values:
                 if arg_def.default_value is not Undefined:
                     coerced_values[arg_def.out_name or name] = arg_def.default_value
-                elif is_non_null_type(arg_type):
+                elif is_non_null_type(arg_type):  # pragma: no cover else
                     raise GraphQLError(
                         f"Argument '{name}' of required type '{arg_type}'"
                         f" was provided the variable '${variable_name}'"
                         " which was not provided a runtime value.",
                         value_node,
                     )
-                continue  # pragma: false coverage
+                continue  # pragma: no cover
             is_null = variable_values[variable_name] is None
 
         if is_null and is_non_null_type(arg_type):
