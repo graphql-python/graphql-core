@@ -1,7 +1,5 @@
 """graphql.validation.rules package"""
 
-from typing import Type
-
 from ...error import GraphQLError
 from ...language.visitor import Visitor
 from ..validation_context import (
@@ -10,7 +8,7 @@ from ..validation_context import (
     ValidationContext,
 )
 
-__all__ = ["ASTValidationRule", "SDLValidationRule", "ValidationRule", "RuleType"]
+__all__ = ["ASTValidationRule", "SDLValidationRule", "ValidationRule"]
 
 
 class ASTValidationRule(Visitor):
@@ -28,7 +26,7 @@ class ASTValidationRule(Visitor):
 class SDLValidationRule(ASTValidationRule):
     """Visitor for validation of an SDL AST."""
 
-    context: ValidationContext
+    context: SDLValidationContext
 
     def __init__(self, context: SDLValidationContext):
         super().__init__(context)
@@ -41,6 +39,3 @@ class ValidationRule(ASTValidationRule):
 
     def __init__(self, context: ValidationContext):
         super().__init__(context)
-
-
-RuleType = Type[ASTValidationRule]

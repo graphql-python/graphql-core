@@ -11,6 +11,7 @@ exclude_lines =
     pragma: false coverage
     raise NotImplementedError
     raise TypeError\(f?"Unexpected
+    if MYPY:
     if TYPE_CHECKING:
     ^\s+...$
     ^\s+pass$

@@ -1,6 +1,8 @@
+from typing import Type
+
 from ..pyutils import FrozenList
 
-from .rules import RuleType
+from .rules import ASTValidationRule
 
 # Spec Section: "Executable Definitions"
 from .rules.executable_definitions import ExecutableDefinitionsRule
@@ -99,7 +101,7 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: FrozenList[RuleType] = FrozenList(
+specified_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
     [
         ExecutableDefinitionsRule,
         UniqueOperationNamesRule,
@@ -136,7 +138,7 @@ specified_rules.__doc__ = """\
     most clear output when encountering multiple validation errors.
     """
 
-specified_sdl_rules: FrozenList[RuleType] = FrozenList(
+specified_sdl_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
     [
         LoneSchemaDefinitionRule,
         UniqueOperationTypesRule,

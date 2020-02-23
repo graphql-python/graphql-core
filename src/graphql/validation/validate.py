@@ -1,11 +1,11 @@
-from typing import Collection, List, Optional
+from typing import Collection, List, Optional, Type
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
 from ..type import GraphQLSchema, assert_valid_schema
-from ..pyutils import inspect
+from ..pyutils import inspect, is_collection
 from ..utilities import TypeInfo, TypeInfoVisitor
-from .rules import RuleType
+from .rules import ASTValidationRule
 from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext
 
@@ -19,7 +19,7 @@ class ValidationAbortedError(RuntimeError):
 def validate(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
-    rules: Optional[Collection[RuleType]] = None,
+    rules: Optional[Collection[Type[ASTValidationRule]]] = None,
     type_info: Optional[TypeInfo] = None,
     max_errors: Optional[int] = None,
 ) -> List[GraphQLError]:
@@ -45,11 +45,15 @@ def validate(
     if type_info is None:
         type_info = TypeInfo(schema)
     elif not isinstance(type_info, TypeInfo):
-        raise TypeError(f"Not a TypeInfo object: {inspect(type_info)}")
+        raise TypeError(f"Not a TypeInfo object: {inspect(type_info)}.")
     if rules is None:
         rules = specified_rules
-    elif not isinstance(rules, (list, tuple)):
-        raise TypeError("Rules must be passed as a list/tuple.")
+    elif not is_collection(rules) or not all(
+        isinstance(rule, type) and issubclass(rule, ASTValidationRule) for rule in rules
+    ):
+        raise TypeError(
+            "Rules must be specified as a collection of ASTValidationRule subclasses."
+        )
     if max_errors is not None and not isinstance(max_errors, int):
         raise TypeError("The maximum number of errors must be passed as an int.")
 
@@ -83,7 +87,7 @@ def validate(
 def validate_sdl(
     document_ast: DocumentNode,
     schema_to_extend: Optional[GraphQLSchema] = None,
-    rules: Optional[Collection[RuleType]] = None,
+    rules: Optional[Collection[Type[ASTValidationRule]]] = None,
 ) -> List[GraphQLError]:
     """Validate an SDL document.
 
