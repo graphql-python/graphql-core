@@ -54,6 +54,8 @@ SomeInputObjectType = GraphQLInputObjectType(
     fields={"val": GraphQLInputField(GraphQLString, default_value="hello")},
 )
 
+SomeDirective = GraphQLDirective("SomeDirective", [DirectiveLocation.QUERY])
+
 
 def with_modifiers(
     types: List[GraphQLNamedType],
@@ -392,22 +394,51 @@ def describe_type_system_a_schema_must_have_object_root_types():
             },
         ]
 
+    def rejects_a_schema_whose_types_are_incorrectly_type():
+        # invalid schema cannot be built with Python
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLSchema(
+                SomeObjectType,
+                types=[{"name": "SomeType"}, SomeDirective],  # type: ignore
+            )
+        assert str(exc_info.value) == (
+            "Schema types must be specified"
+            " as a collection of GraphQLNamedType instances."
+        )
+        # construct invalid schema manually
+        schema = GraphQLSchema(SomeObjectType)
+        schema.type_map = {
+            "SomeType": {"name": "SomeType"},  # type: ignore
+            "SomeDirective": SomeDirective,  # type: ignore
+        }
+        assert validate_schema(schema) == [
+            {"message": "Expected GraphQL named type but got: {'name': 'SomeType'}."},
+            {"message": "Expected GraphQL named type but got: @SomeDirective."},
+        ]
+
     def rejects_a_schema_whose_directives_are_incorrectly_typed():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
             GraphQLSchema(
-                SomeObjectType, directives=[cast(GraphQLDirective, "SomeDirective")]
+                SomeObjectType,
+                directives=[None, "SomeDirective", SomeScalarType],  # type: ignore
             )
         assert str(exc_info.value) == (
             "Schema directives must be specified"
             " as a collection of GraphQLDirective instances."
         )
-
+        # construct invalid schema manually
         schema = GraphQLSchema(SomeObjectType)
-        schema.directives = FrozenList([cast(GraphQLDirective, "SomeDirective")])
-
-        msg = validate_schema(schema)[0].message
-        assert msg == "Expected directive but got: 'SomeDirective'."
+        schema.directives = FrozenList(
+            [None, "SomeDirective", SomeScalarType]  # type: ignore
+        )
+        assert validate_schema(schema) == [
+            {"message": "Expected directive but got: None."},
+            {"message": "Expected directive but got: 'SomeDirective'."},
+            {"message": "Expected directive but got: SomeScalar."},
+        ]
 
 
 def describe_type_system_objects_must_have_fields():
@@ -532,6 +563,7 @@ def describe_type_system_union_types_must_be_valid():
             union BadUnion
             """
         )
+
         schema = extend_schema(
             schema,
             parse(
@@ -542,10 +574,10 @@ def describe_type_system_union_types_must_be_valid():
                 """
             ),
         )
+
         assert validate_schema(schema) == [
             {
-                "message": "Union type BadUnion must define one or more"
-                " member types.",
+                "message": "Union type BadUnion must define one or more member types.",
                 "locations": [(6, 13), (4, 17)],
             }
         ]
@@ -931,12 +963,12 @@ def describe_type_system_object_fields_must_have_output_types():
 
 def describe_type_system_objects_can_only_implement_unique_interfaces():
     def rejects_an_object_implementing_a_non_type_values():
-        schema = GraphQLSchema(
-            query=GraphQLObjectType(
-                "BadObject", {"f": GraphQLField(GraphQLString)}, interfaces=[]
-            )
+        query_type = GraphQLObjectType(
+            "BadObject", {"f": GraphQLField(GraphQLString)}, interfaces=[]
         )
-        schema.query_type.interfaces.append(None)  # type: ignore
+        # noinspection PyTypeChecker
+        query_type.interfaces.append(None)
+        schema = GraphQLSchema(query_type)
 
         assert validate_schema(schema) == [
             {
@@ -1921,6 +1953,24 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
             }
         ]
 
+    def accepts_an_interface_with_a_subtyped_interface_field_interface():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            interface ParentInterface {
+              field: ParentInterface
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: ChildInterface
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
     def accepts_an_interface_with_a_subtyped_interface_field_union():
         schema = build_schema(
             """
@@ -1967,6 +2017,25 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
             "BadInterface interfaces must be specified as a collection"
             " of GraphQLInterfaceType instances."
         )
+        # therefore we construct the invalid schema manually
+        some_input_obj = GraphQLInputObjectType(
+            "SomeInputObject", {"field": GraphQLInputField(GraphQLString)}
+        )
+        bad_interface = GraphQLInterfaceType(
+            "BadInterface", {"field": GraphQLField(GraphQLString)}
+        )
+        # noinspection PyTypeChecker
+        bad_interface.interfaces.append(some_input_obj)
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"field": GraphQLField(GraphQLString)}),
+            types=[bad_interface],
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type BadInterface must only implement Interface types,"
+                " it cannot implement SomeInputObject.",
+            }
+        ]
 
     def rejects_an_interface_missing_an_interface_argument():
         schema = build_schema(

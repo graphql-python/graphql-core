@@ -1,7 +1,13 @@
 from pytest import raises  # type: ignore
 
-from graphql.language import DirectiveLocation, TypeDefinitionNode, TypeExtensionNode
-from graphql.pyutils import dedent
+from graphql.language import (
+    DirectiveLocation,
+    SchemaDefinitionNode,
+    SchemaExtensionNode,
+    TypeDefinitionNode,
+    TypeExtensionNode,
+)
+from graphql.pyutils import dedent, FrozenList
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -312,6 +318,26 @@ def describe_type_system_schema():
                 assert GraphQLSchema(assume_valid=True).validation_errors == []
 
     def describe_ast_nodes():
+        def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
+            ast_node = SchemaDefinitionNode()
+            extension_ast_nodes = [SchemaExtensionNode()]
+            schema = GraphQLSchema(
+                GraphQLObjectType("Query", {}),
+                ast_node=ast_node,
+                extension_ast_nodes=extension_ast_nodes,
+            )
+            assert schema.ast_node is ast_node
+            assert isinstance(schema.extension_ast_nodes, FrozenList)
+            assert schema.extension_ast_nodes == extension_ast_nodes
+            extension_ast_nodes = schema.extension_ast_nodes
+            schema = GraphQLSchema(
+                GraphQLObjectType("Query", {}),
+                ast_node=None,
+                extension_ast_nodes=extension_ast_nodes,
+            )
+            assert schema.ast_node is None
+            assert schema.extension_ast_nodes is extension_ast_nodes
+
         def rejects_a_schema_with_an_incorrect_ast_node():
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker

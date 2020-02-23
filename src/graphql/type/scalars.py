@@ -47,10 +47,7 @@ def serialize_int(output_value: Any) -> int:
             output_value = ""
             raise ValueError
         else:
-            num = int(output_value)
-            float_value = float(output_value)
-            if num != float_value:
-                raise ValueError
+            num = int(output_value)  # raises ValueError if not an integer
     except (OverflowError, ValueError, TypeError):
         raise GraphQLError(
             "Int cannot represent non-integer value: " + inspect(output_value)
@@ -245,11 +242,11 @@ def serialize_id(output_value: Any) -> str:
 
 
 def coerce_id(input_value: Any) -> str:
-    if not isinstance(input_value, str) and not is_integer(input_value):
-        raise GraphQLError("ID cannot represent value: " + inspect(input_value))
-    if isinstance(input_value, float):
-        input_value = int(input_value)
-    return str(input_value)
+    if isinstance(input_value, str):
+        return input_value
+    if is_integer(input_value):
+        return str(input_value)
+    raise GraphQLError("ID cannot represent value: " + inspect(input_value))
 
 
 def parse_id_literal(value_node, _variables=None) -> str:

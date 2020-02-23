@@ -120,10 +120,21 @@ def inspect_recursive(value: Any, seen_values: List) -> str:
         type_ = "generator"
     else:
         # stringify (only) the well-known GraphQL types
-        from ..type import GraphQLNamedType, GraphQLScalarType, GraphQLWrappingType
+        from ..type import (
+            GraphQLDirective,
+            GraphQLNamedType,
+            GraphQLScalarType,
+            GraphQLWrappingType,
+        )
 
         if isinstance(
-            value, (GraphQLNamedType, GraphQLScalarType, GraphQLWrappingType)
+            value,
+            (
+                GraphQLDirective,
+                GraphQLNamedType,
+                GraphQLScalarType,
+                GraphQLWrappingType,
+            ),
         ):
             return str(value)
         try:

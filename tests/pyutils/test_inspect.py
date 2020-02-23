@@ -7,6 +7,7 @@ from pytest import mark  # type: ignore
 
 from graphql.pyutils import inspect, Undefined
 from graphql.type import (
+    GraphQLDirective,
     GraphQLField,
     GraphQLInt,
     GraphQLList,
@@ -328,6 +329,8 @@ def describe_inspect():
             "TestObjectType", {"test": GraphQLField(GraphQLString)}
         )
         assert inspect(test_object_type) == "TestObjectType"
+        test_directive = GraphQLDirective("TestDirective", [])
+        assert inspect(test_directive) == "@TestDirective"
 
     def custom_inspect():
         class TestClass:

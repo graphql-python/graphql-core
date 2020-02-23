@@ -171,7 +171,7 @@ class SchemaValidationContext:
                 name = node.name
             name = cast(str, name)
             ast_node = node.ast_node
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             pass
         else:
             error = is_valid_name_error(name, ast_node)
@@ -185,8 +185,8 @@ class SchemaValidationContext:
             # Ensure all provided types are in fact GraphQL type.
             if not is_named_type(type_):
                 self.report_error(
-                    f"Expected GraphQL named type but got: {inspect(type)}.",
-                    type_.ast_node if type_ else None,
+                    f"Expected GraphQL named type but got: {inspect(type_)}.",
+                    type_.ast_node if is_named_type(type_) else None,
                 )
                 continue
 
@@ -543,7 +543,7 @@ def get_all_sub_nodes(
     result: List[Node] = []
     for ast_node in get_all_nodes(obj):
         sub_nodes = getter(ast_node)
-        if sub_nodes:
+        if sub_nodes:  # pragma: no cover
             result.extend(sub_nodes)
     return result
 
