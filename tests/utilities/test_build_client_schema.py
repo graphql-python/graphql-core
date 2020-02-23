@@ -698,7 +698,7 @@ def describe_type_system_build_schema_from_introspection():
 
             with raises(
                 TypeError,
-                match="^Query interfaces cannot be resolved:"
+                match="^Query interfaces cannot be resolved."
                 " Introspection result missing interfaces:"
                 r" {'kind': 'OBJECT', 'name': 'Query', .*}\.$",
             ):
@@ -731,7 +731,7 @@ def describe_type_system_build_schema_from_introspection():
 
             with raises(
                 TypeError,
-                match="^Query fields cannot be resolved:"
+                match="^Query fields cannot be resolved."
                 " Introspection result missing fields:"
                 r" {'kind': 'OBJECT', 'name': 'Query', .*}\.$",
             ):
@@ -750,7 +750,7 @@ def describe_type_system_build_schema_from_introspection():
 
             with raises(
                 TypeError,
-                match="^Query fields cannot be resolved:"
+                match="^Query fields cannot be resolved."
                 r" Introspection result missing field args: {'name': 'foo', .*}\.$",
             ):
                 build_client_schema(introspection)
@@ -775,7 +775,7 @@ def describe_type_system_build_schema_from_introspection():
                 build_client_schema(introspection)
 
             assert str(exc_info.value).startswith(
-                "Query fields cannot be resolved:"
+                "Query fields cannot be resolved."
                 " Introspection must provide input type for arguments,"
                 " but received: SomeUnion."
             )
@@ -795,7 +795,7 @@ def describe_type_system_build_schema_from_introspection():
                 build_client_schema(introspection)
 
             assert str(exc_info.value).startswith(
-                "Query fields cannot be resolved:"
+                "Query fields cannot be resolved."
                 " Introspection must provide output type for fields,"
                 " but received: SomeInputObject."
             )
@@ -900,7 +900,7 @@ def describe_type_system_build_schema_from_introspection():
                 build_client_schema(introspection)
 
             assert str(exc_info.value) == (
-                "Query fields cannot be resolved:"
+                "Query fields cannot be resolved."
                 " Decorated type deeper than introspection query."
             )
 
@@ -919,7 +919,7 @@ def describe_type_system_build_schema_from_introspection():
                 build_client_schema(introspection)
 
             assert str(exc_info.value) == (
-                "Query fields cannot be resolved:"
+                "Query fields cannot be resolved."
                 " Decorated type deeper than introspection query."
             )
 
@@ -960,8 +960,8 @@ def describe_type_system_build_schema_from_introspection():
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
             assert str(exc_info.value) == (
-                "Foo interfaces cannot be resolved: "
-                "Expected Foo to be a GraphQL Interface type."
+                "Foo interfaces cannot be resolved."
+                " Expected Foo to be a GraphQL Interface type."
             )
 
         def recursive_union():
@@ -987,6 +987,6 @@ def describe_type_system_build_schema_from_introspection():
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
             assert str(exc_info.value) == (
-                "Foo types cannot be resolved:"
+                "Foo types cannot be resolved."
                 " Expected Foo to be a GraphQL Object type."
             )

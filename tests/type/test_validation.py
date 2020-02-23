@@ -398,8 +398,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
             GraphQLSchema(
                 SomeObjectType, directives=[cast(GraphQLDirective, "SomeDirective")]
             )
-        msg = str(exc_info.value)
-        assert msg == (
+        assert str(exc_info.value) == (
             "Schema directives must be specified"
             " as a collection of GraphQLDirective instances."
         )
@@ -802,9 +801,8 @@ def describe_type_system_input_objects_must_have_fields():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == (
-            "SomeInputObject fields cannot be resolved:"
+        assert str(exc_info.value) == (
+            "SomeInputObject fields cannot be resolved."
             " Input field type must be a GraphQL input type."
         )
 
@@ -896,24 +894,21 @@ def describe_type_system_object_fields_must_have_output_types():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             _schema_with_object_field_of_type(None)  # type: ignore
-        msg = str(exc_info.value)
-        assert msg == "Field type must be an output type."
+        assert str(exc_info.value) == "Field type must be an output type."
 
     @parametrize_type(not_output_types)
     def rejects_a_non_output_type_as_an_object_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_object_field_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Field type must be an output type."
+        assert str(exc_info.value) == "Field type must be an output type."
 
     @parametrize_type([int, float, str])
     def rejects_a_non_type_value_as_an_object_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_object_field_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Field type must be an output type."
+        assert str(exc_info.value) == "Field type must be an output type."
 
     def rejects_with_relevant_locations_for_a_non_output_type():
         # invalid schema cannot be built with Python
@@ -929,9 +924,8 @@ def describe_type_system_object_fields_must_have_output_types():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == (
-            "Query fields cannot be resolved: Field type must be an output type."
+        assert str(exc_info.value) == (
+            "Query fields cannot be resolved. Field type must be an output type."
         )
 
 
@@ -1183,24 +1177,21 @@ def describe_type_system_interface_fields_must_have_output_types():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             _schema_with_interface_field_of_type(None)  # type: ignore
-        msg = str(exc_info.value)
-        assert msg == "Field type must be an output type."
+        assert str(exc_info.value) == "Field type must be an output type."
 
     @parametrize_type(not_output_types)
     def rejects_a_non_output_type_as_an_interface_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_interface_field_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Field type must be an output type."
+        assert str(exc_info.value) == "Field type must be an output type."
 
     @parametrize_type([int, float, str])
     def rejects_a_non_type_value_as_an_interface_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_interface_field_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Field type must be an output type."
+        assert str(exc_info.value) == "Field type must be an output type."
 
     def rejects_a_non_output_type_as_an_interface_field_with_locations():
         # invalid schema cannot be built with Python
@@ -1224,9 +1215,8 @@ def describe_type_system_interface_fields_must_have_output_types():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == (
-            "SomeInterface fields cannot be resolved:"
+        assert str(exc_info.value) == (
+            "SomeInterface fields cannot be resolved."
             " Field type must be an output type."
         )
 
@@ -1276,24 +1266,21 @@ def describe_type_system_arguments_must_have_input_types():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             _schema_with_arg_of_type(None)  # type: ignore
-        msg = str(exc_info.value)
-        assert msg == "Argument type must be a GraphQL input type."
+        assert str(exc_info.value) == "Argument type must be a GraphQL input type."
 
     @parametrize_type(not_input_types)
     def rejects_a_non_input_type_as_a_field_arg_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_arg_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Argument type must be a GraphQL input type."
+        assert str(exc_info.value) == "Argument type must be a GraphQL input type."
 
     @parametrize_type([int, float, str])
     def rejects_a_non_type_value_as_a_field_arg_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_arg_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Argument type must be a GraphQL input type."
+        assert str(exc_info.value) == "Argument type must be a GraphQL input type."
 
     def rejects_a_non_input_type_as_a_field_arg_with_locations():
         # invalid schema cannot be built with Python
@@ -1309,9 +1296,8 @@ def describe_type_system_arguments_must_have_input_types():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == (
-            "Query fields cannot be resolved:"
+        assert str(exc_info.value) == (
+            "Query fields cannot be resolved."
             " Argument type must be a GraphQL input type."
         )
 
@@ -1343,24 +1329,21 @@ def describe_type_system_input_object_fields_must_have_input_types():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             _schema_with_input_field_of_type(None)  # type: ignore
-        msg = str(exc_info.value)
-        assert msg == "Input field type must be a GraphQL input type."
+        assert str(exc_info.value) == "Input field type must be a GraphQL input type."
 
     @parametrize_type(not_input_types)
     def rejects_a_non_input_type_as_an_input_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_input_field_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Input field type must be a GraphQL input type."
+        assert str(exc_info.value) == "Input field type must be a GraphQL input type."
 
     @parametrize_type([int, float, str])
     def rejects_a_non_type_value_as_an_input_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
             _schema_with_input_field_of_type(type_)
-        msg = str(exc_info.value)
-        assert msg == "Input field type must be a GraphQL input type."
+        assert str(exc_info.value) == "Input field type must be a GraphQL input type."
 
     def rejects_with_relevant_locations_for_a_non_input_type():
         # invalid schema cannot be built with Python
@@ -1380,9 +1363,8 @@ def describe_type_system_input_object_fields_must_have_input_types():
                 }
                 """
             )
-        msg = str(exc_info.value)
-        assert msg == (
-            "SomeInputObject fields cannot be resolved:"
+        assert str(exc_info.value) == (
+            "SomeInputObject fields cannot be resolved."
             " Input field type must be a GraphQL input type."
         )
 

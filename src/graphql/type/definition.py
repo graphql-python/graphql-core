@@ -733,7 +733,7 @@ class GraphQLObjectType(GraphQLNamedType):
         try:
             fields = resolve_thunk(self._fields)
         except Exception as error:
-            raise TypeError(f"{self.name} fields cannot be resolved: {error}")
+            raise TypeError(f"{self.name} fields cannot be resolved. {error}")
         if not isinstance(fields, dict) or not all(
             isinstance(key, str) for key in fields
         ):
@@ -761,7 +761,7 @@ class GraphQLObjectType(GraphQLNamedType):
                 self._interfaces
             )
         except Exception as error:
-            raise TypeError(f"{self.name} interfaces cannot be resolved: {error}")
+            raise TypeError(f"{self.name} interfaces cannot be resolved. {error}")
         if interfaces is None:
             interfaces = []
         elif not is_collection(interfaces) or not all(
@@ -853,7 +853,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         try:
             fields = resolve_thunk(self._fields)
         except Exception as error:
-            raise TypeError(f"{self.name} fields cannot be resolved: {error}")
+            raise TypeError(f"{self.name} fields cannot be resolved. {error}")
         if not isinstance(fields, dict) or not all(
             isinstance(key, str) for key in fields
         ):
@@ -881,7 +881,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 self._interfaces
             )
         except Exception as error:
-            raise TypeError(f"{self.name} interfaces cannot be resolved: {error}")
+            raise TypeError(f"{self.name} interfaces cannot be resolved. {error}")
         if interfaces is None:
             interfaces = []
         elif not is_collection(interfaces) or not all(
@@ -973,7 +973,7 @@ class GraphQLUnionType(GraphQLNamedType):
         try:
             types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
         except Exception as error:
-            raise TypeError(f"{self.name} types cannot be resolved: {error}")
+            raise TypeError(f"{self.name} types cannot be resolved. {error}")
         if types is None:
             types = []
         elif not is_collection(types) or not all(
@@ -1320,7 +1320,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         try:
             fields = resolve_thunk(self._fields)
         except Exception as error:
-            raise TypeError(f"{self.name} fields cannot be resolved: {error}")
+            raise TypeError(f"{self.name} fields cannot be resolved. {error}")
         if not isinstance(fields, dict) or not all(
             isinstance(key, str) for key in fields
         ):
