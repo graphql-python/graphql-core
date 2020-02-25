@@ -245,7 +245,7 @@ class SchemaValidationContext:
             if not is_output_type(field.type):
                 self.report_error(
                     f"The type of {type_.name}.{field_name}"
-                    " must be Output Type but got: {inspect(field.type)}.",
+                    f" must be Output Type but got: {inspect(field.type)}.",
                     field.ast_node and field.ast_node.type,
                 )
 
@@ -257,8 +257,7 @@ class SchemaValidationContext:
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
                     self.report_error(
-                        "Field argument"
-                        f" {type_.name}.{field_name}({arg_name}:)"
+                        f"The type of {type_.name}.{field_name}({arg_name}:)"
                         f" must be Input Type but got: {inspect(arg.type)}.",
                         arg.ast_node and arg.ast_node.type,
                     )
@@ -399,14 +398,21 @@ class SchemaValidationContext:
 
         included_type_names: Set[str] = set()
         for member_type in member_types:
-            if member_type.name in included_type_names:
+            if is_object_type(member_type):
+                if member_type.name in included_type_names:
+                    self.report_error(
+                        f"Union type {union.name} can only include type"
+                        f" {member_type.name} once.",
+                        get_union_member_type_nodes(union, member_type.name),
+                    )
+                else:
+                    included_type_names.add(member_type.name)
+            else:
                 self.report_error(
-                    f"Union type {union.name} can only include type"
-                    f" {member_type.name} once.",
-                    get_union_member_type_nodes(union, member_type.name),
+                    f"Union type {union.name} can only include Object types,"
+                    f" it cannot include {inspect(member_type)}.",
+                    get_union_member_type_nodes(union, str(member_type)),
                 )
-                continue
-            included_type_names.add(member_type.name)
 
     def validate_enum_values(self, enum_type: GraphQLEnumType) -> None:
         enum_values = enum_type.values

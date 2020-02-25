@@ -84,6 +84,30 @@ def describe_type_system_directive():
         directive = GraphQLDirective("foo", [])
         assert repr(directive) == "<GraphQLDirective(@foo)>"
 
+    def can_compare_with_other_source_directive():
+        locations = [DirectiveLocation.QUERY]
+        directive = GraphQLDirective("Foo", locations)
+        assert directive == directive
+        assert not directive != directive
+        assert not directive == {}
+        assert directive != {}
+        same_directive = GraphQLDirective("Foo", locations)
+        assert directive == same_directive
+        assert not directive != same_directive
+        other_directive = GraphQLDirective("Bar", locations)
+        assert not directive == other_directive
+        assert directive != other_directive
+        other_locations = [DirectiveLocation.MUTATION]
+        other_directive = GraphQLDirective("Foo", other_locations)
+        assert not directive == other_directive
+        assert directive != other_directive
+        other_directive = GraphQLDirective("Foo", locations, is_repeatable=True)
+        assert not directive == other_directive
+        assert directive != other_directive
+        other_directive = GraphQLDirective("Foo", locations, description="other")
+        assert not directive == other_directive
+        assert directive != other_directive
+
     def rejects_an_unnamed_directive():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker

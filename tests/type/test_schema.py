@@ -145,6 +145,15 @@ def describe_type_system_schema():
             """
         )
 
+    def freezes_the_specified_directives():
+        directives = [GraphQLDirective("SomeDirective", [])]
+        schema = GraphQLSchema(directives=directives)
+        assert isinstance(schema.directives, FrozenList)
+        assert schema.directives == directives
+        directives = schema.directives
+        schema = GraphQLSchema(directives=directives)
+        assert schema.directives is directives
+
     def describe_type_map():
         def includes_interface_possible_types_in_the_type_map():
             SomeInterface = GraphQLInterfaceType("SomeInterface", {})
@@ -262,6 +271,25 @@ def describe_type_system_schema():
                     GraphQLSchema(types={})
                 with raises(Exception):
                     GraphQLSchema(directives={})
+
+            def check__that_query_mutation_and_subscription_are_graphql_types():
+                directive = GraphQLDirective("foo", [])
+                with raises(TypeError) as exc_info:
+                    # noinspection PyTypeChecker
+                    GraphQLSchema(query=directive)  # type: ignore
+                assert str(exc_info.value) == ("Expected query to be a GraphQL type.")
+                with raises(TypeError) as exc_info:
+                    # noinspection PyTypeChecker
+                    GraphQLSchema(mutation=directive)  # type: ignore
+                assert str(exc_info.value) == (
+                    "Expected mutation to be a GraphQL type."
+                )
+                with raises(TypeError) as exc_info:
+                    # noinspection PyTypeChecker
+                    GraphQLSchema(subscription=directive)  # type: ignore
+                assert str(exc_info.value) == (
+                    "Expected subscription to be a GraphQL type."
+                )
 
     def describe_a_schema_must_contain_uniquely_named_types():
         def rejects_a_schema_which_redefines_a_built_in_type():

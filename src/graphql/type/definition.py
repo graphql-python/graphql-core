@@ -938,6 +938,10 @@ class GraphQLUnionType(GraphQLNamedType):
         ast_node: Optional[UnionTypeDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[UnionTypeExtensionNode]] = None,
     ) -> None:
+        """
+
+        :rtype: object
+        """
         super().__init__(
             name=name,
             description=description,

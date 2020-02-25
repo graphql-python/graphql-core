@@ -21,6 +21,7 @@ from .definition import (
     GraphQLNamedType,
     GraphQLObjectType,
     GraphQLUnionType,
+    GraphQLType,
     get_named_type,
     is_input_object_type,
     is_interface_type,
@@ -128,6 +129,14 @@ class GraphQLSchema:
         else:
             # Otherwise check for common mistakes during construction to produce clear
             # and early error messages.
+            # The query, mutation and subscription types must actually be GraphQL
+            # object types, but we leave it to the validator to report this error.
+            if query and not isinstance(query, GraphQLType):
+                raise TypeError("Expected query to be a GraphQL type.")
+            if mutation and not isinstance(mutation, GraphQLType):
+                raise TypeError("Expected mutation to be a GraphQL type.")
+            if subscription and not isinstance(subscription, GraphQLType):
+                raise TypeError("Expected subscription to be a GraphQL type.")
             if types is None:
                 types = []
             else:
@@ -304,7 +313,11 @@ class GraphQLSchema:
             return map_
 
         named_type = get_named_type(type_)
-        name = named_type.name
+        try:
+            name = named_type.name
+        except AttributeError:
+            #  this is how GraphQL.js handles the case
+            name = None  # type: ignore
 
         if name in map_:
             if map_[name] is not named_type:
