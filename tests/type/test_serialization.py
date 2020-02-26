@@ -21,6 +21,7 @@ def describe_type_system_scalar_coercion():
         assert GraphQLInt.serialize(1e5) == 100000
         assert GraphQLInt.serialize(False) == 0
         assert GraphQLInt.serialize(True) == 1
+        assert GraphQLInt.serialize(type("Int", (int,), {})(5)) == 5
 
         # The GraphQL specification does not allow serializing non-integer
         # values as Int to avoid accidental data loss.
@@ -87,6 +88,7 @@ def describe_type_system_scalar_coercion():
         assert GraphQLFloat.serialize("-1.1") == -1.1
         assert GraphQLFloat.serialize(False) == 0
         assert GraphQLFloat.serialize(True) == 1
+        assert GraphQLFloat.serialize(type("Float", (float,), {})(5.5)) == 5.5
 
         with raises(GraphQLError) as exc_info:
             GraphQLFloat.serialize(nan)
@@ -143,6 +145,9 @@ def describe_type_system_scalar_coercion():
         assert GraphQLBoolean.serialize(0) is False
         assert GraphQLBoolean.serialize(True) is True
         assert GraphQLBoolean.serialize(False) is False
+        with raises(TypeError, match="not an acceptable base type"):
+            # you can't subclass bool in Python
+            assert GraphQLBoolean.serialize(type("Boolean", (bool,), {})(True)) is True
 
         with raises(GraphQLError) as exc_info:
             GraphQLBoolean.serialize(nan)
