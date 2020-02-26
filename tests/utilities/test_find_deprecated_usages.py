@@ -25,6 +25,21 @@ def describe_find_deprecated_usages():
 
         assert errors == []
 
+    def should_ignore_unknown_stuff():
+        errors = find_deprecated_usages(
+            schema,
+            parse(
+                """
+                {
+                  unknownField(unknownArg: UNKNOWN_VALUE)
+                  normalField(enumArg: UNKNOWN_VALUE)
+                }
+                """
+            ),
+        )
+
+        assert errors == []
+
     def should_report_usage_of_deprecated_fields():
         errors = find_deprecated_usages(
             schema, parse("{ normalField, deprecatedField }")

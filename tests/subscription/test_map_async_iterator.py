@@ -258,8 +258,10 @@ def describe_map_async_iterator():
 
         assert await anext(doubles) == "HelloHello"
 
-        with raises(RuntimeError):
+        with raises(RuntimeError) as exc_info:
             await anext(doubles)
+
+        assert str(exc_info.value) == "Goodbye"
 
     @mark.asyncio
     async def does_not_normally_map_over_externally_thrown_errors():
@@ -270,8 +272,10 @@ def describe_map_async_iterator():
 
         assert await anext(doubles) == "HelloHello"
 
-        with raises(RuntimeError):
+        with raises(RuntimeError) as exc_info:
             await doubles.athrow(RuntimeError("Goodbye"))
+
+        assert str(exc_info.value) == "Goodbye"
 
     @mark.asyncio
     async def maps_over_thrown_errors_if_second_callback_provided():

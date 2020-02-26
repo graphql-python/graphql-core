@@ -1,11 +1,18 @@
 from functools import partial
-from typing import cast, Any, List, Union
+from typing import Any, List, Union
 
 from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse, DirectiveLocation
 from graphql.pyutils import dedent, inspect, FrozenList
 from graphql.type import (
+    assert_directive,
+    assert_enum_type,
+    assert_input_object_type,
+    assert_interface_type,
+    assert_object_type,
+    assert_scalar_type,
+    assert_union_type,
     assert_valid_schema,
     is_input_type,
     is_output_type,
@@ -23,10 +30,8 @@ from graphql.type import (
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
-    GraphQLNullableType,
     GraphQLObjectType,
     GraphQLOutputType,
-    GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
@@ -34,61 +39,68 @@ from graphql.type import (
 from graphql.utilities import build_schema, extend_schema
 
 
-SomeScalarType = GraphQLScalarType(name="SomeScalar")
+SomeSchema = build_schema(
+    """
+    scalar SomeScalar
 
-SomeObjectType: GraphQLObjectType
+    interface SomeInterface { f: SomeObject }
 
-SomeInterfaceType = GraphQLInterfaceType(
-    name="SomeInterface", fields=lambda: {"f": GraphQLField(SomeObjectType)}
+    type SomeObject implements SomeInterface { f: SomeObject }
+
+    union SomeUnion = SomeObject
+
+    enum SomeEnum { ONLY }
+
+    input SomeInputObject { val: String = "hello" }
+
+    directive @SomeDirective on QUERY
+    """
 )
 
-SomeObjectType = GraphQLObjectType(
-    name="SomeObject",
-    fields=lambda: {"f": GraphQLField(SomeObjectType)},
-    interfaces=[SomeInterfaceType],
-)
-
-SomeUnionType = GraphQLUnionType(name="SomeUnion", types=[SomeObjectType])
-
-SomeEnumType = GraphQLEnumType(name="SomeEnum", values={"ONLY": GraphQLEnumValue()})
-
-SomeInputObjectType = GraphQLInputObjectType(
-    name="SomeInputObject",
-    fields={"val": GraphQLInputField(GraphQLString, default_value="hello")},
-)
-
-SomeDirective = GraphQLDirective("SomeDirective", [DirectiveLocation.QUERY])
+get_type = SomeSchema.get_type
+SomeScalarType = assert_scalar_type(get_type("SomeScalar"))
+SomeInterfaceType = assert_interface_type(get_type("SomeInterface"))
+SomeObjectType = assert_object_type(get_type("SomeObject"))
+SomeUnionType = assert_union_type(get_type("SomeUnion"))
+SomeEnumType = assert_enum_type(get_type("SomeEnum"))
+SomeInputObjectType = assert_input_object_type(get_type("SomeInputObject"))
+SomeDirective = assert_directive(SomeSchema.get_directive("SomeDirective"))
 
 
 def with_modifiers(
-    types: List[GraphQLNamedType],
+    type_: GraphQLNamedType,
 ) -> List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]]:
-    return (
-        cast(List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]], types)
-        + [GraphQLList(t) for t in types]
-        + [GraphQLNonNull(cast(GraphQLNullableType, t)) for t in types]
-        + [GraphQLNonNull(GraphQLList(t)) for t in types]
-    )
-
-
-output_types = with_modifiers(
-    [
-        GraphQLString,
-        SomeScalarType,
-        SomeEnumType,
-        SomeObjectType,
-        SomeUnionType,
-        SomeInterfaceType,
+    return [
+        type_,
+        GraphQLList(type_),
+        GraphQLNonNull(type_),
+        GraphQLNonNull(GraphQLList(type_)),
     ]
-)
 
-not_output_types = with_modifiers([SomeInputObjectType])
 
-input_types = with_modifiers(
-    [GraphQLString, SomeScalarType, SomeEnumType, SomeInputObjectType]
-)
+output_types = [
+    *with_modifiers(GraphQLString),
+    *with_modifiers(SomeScalarType),
+    *with_modifiers(SomeEnumType),
+    *with_modifiers(SomeObjectType),
+    *with_modifiers(SomeUnionType),
+    *with_modifiers(SomeInterfaceType),
+]
 
-not_input_types = with_modifiers([SomeObjectType, SomeUnionType, SomeInterfaceType])
+not_output_types = with_modifiers(SomeInputObjectType)
+
+input_types = [
+    *with_modifiers(GraphQLString),
+    *with_modifiers(SomeScalarType),
+    *with_modifiers(SomeEnumType),
+    *with_modifiers(SomeInputObjectType),
+]
+
+not_input_types = [
+    *with_modifiers(SomeObjectType),
+    *with_modifiers(SomeUnionType),
+    *with_modifiers(SomeInterfaceType),
+]
 
 parametrize_type = partial(
     mark.parametrize("type_", ids=lambda type_: type_.__class__.__name__)

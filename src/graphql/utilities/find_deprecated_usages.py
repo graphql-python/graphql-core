@@ -34,7 +34,7 @@ class FindDeprecatedUsages(Visitor):
     def enter_field(self, node, *_args):
         parent_type = self.type_info.get_parent_type()
         field_def = self.type_info.get_field_def()
-        if parent_type and field_def.deprecation_reason is not None:
+        if parent_type and field_def and field_def.deprecation_reason is not None:
             self.errors.append(
                 GraphQLError(
                     f"The field '{parent_type.name}.{node.name.value}'"

@@ -978,6 +978,15 @@ def describe_execute_handles_inputs():
                 "locations": [(2, 20)],
             }
 
+        def return_all_errors_by_default():
+            result = get_variable_values(schema, variable_definitions, input_value)
+
+            assert result == [
+                _invalid_value_error(0, 0),
+                _invalid_value_error(1, 1),
+                _invalid_value_error(2, 2),
+            ]
+
         def when_max_errors_is_equal_to_number_of_errors():
             result = get_variable_values(
                 schema, variable_definitions, input_value, max_errors=3
