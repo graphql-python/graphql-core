@@ -539,10 +539,6 @@ def describe_execute_handles_non_nullable_types():
     def describe_handles_non_null_argument():
 
         # noinspection PyPep8Naming
-        def _resolve(_obj, _info, cannotBeNull):
-            assert isinstance(cannotBeNull, str)
-            return f"Passed: {cannotBeNull}"
-
         schema_with_non_null_arg = GraphQLSchema(
             GraphQLObjectType(
                 "Query",
@@ -554,7 +550,8 @@ def describe_execute_handles_non_nullable_types():
                                 GraphQLNonNull(GraphQLString)
                             )
                         },
-                        resolve=_resolve,
+                        resolve=lambda _obj, _info, cannotBeNull: "Passed: "
+                        + str(cannotBeNull),
                     )
                 },
             )
