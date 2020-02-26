@@ -582,3 +582,5 @@ def describe_subscription():
         assert received_all == [
             ({"subscribeUser": data}, None) for data in expected_data
         ]
+
+        await sleep(0)

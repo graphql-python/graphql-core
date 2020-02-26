@@ -145,14 +145,14 @@ class Lexer:
                 position += 1
                 self.line += 1
                 self.line_start = position
-            elif char == "\r":
+            elif char == "\r":  # pragma: no cover
                 if body[position + 1 : position + 2] == "\n":
                     position += 2
                 else:
                     position += 1
                 self.line += 1
                 self.line_start = position
-            else:
+            else:  # pragma: no cover
                 break
         return position
 

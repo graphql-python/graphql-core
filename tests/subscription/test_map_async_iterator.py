@@ -43,7 +43,10 @@ def describe_map_async_iterator():
 
         doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
 
-        assert [value async for value in doubles] == [2, 4, 6]
+        values = [value async for value in doubles]
+
+        assert not items
+        assert values == [2, 4, 6]
 
     @mark.asyncio
     async def compatible_with_async_for():
@@ -54,7 +57,9 @@ def describe_map_async_iterator():
 
         doubles = MapAsyncIterator(source(), lambda x: x + x)
 
-        assert [value async for value in doubles] == [2, 4, 6]
+        values = [value async for value in doubles]
+
+        assert values == [2, 4, 6]
 
     @mark.asyncio
     async def maps_over_async_values_with_async_function():
@@ -68,7 +73,9 @@ def describe_map_async_iterator():
 
         doubles = MapAsyncIterator(source(), double)
 
-        assert [value async for value in doubles] == [2, 4, 6]
+        values = [value async for value in doubles]
+
+        assert values == [2, 4, 6]
 
     @mark.asyncio
     async def allows_returning_early_from_mapped_async_generator():
@@ -370,6 +377,8 @@ def describe_map_async_iterator():
             # Throw error
             with raises(ValueError):
                 await doubles.athrow(ValueError, None, tb)
+
+        await sleep(0)
 
     @mark.asyncio
     async def stops_async_iteration_on_close():

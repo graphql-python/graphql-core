@@ -61,6 +61,12 @@ def describe_lexer():
     def skips_whitespace_and_comments():
         token = lex_one("\n\n    foo\n\n\n")
         assert token == Token(TokenKind.NAME, 6, 9, 3, 5, None, "foo")
+        token = lex_one("\r\n\r\n  foo\r\n\r\n")
+        assert token == Token(TokenKind.NAME, 6, 9, 3, 3, None, "foo")
+        token = lex_one("\r\r  foo\r\r")
+        assert token == Token(TokenKind.NAME, 4, 7, 3, 3, None, "foo")
+        token = lex_one("\t\t  foo\t\t")
+        assert token == Token(TokenKind.NAME, 4, 7, 1, 5, None, "foo")
         token = lex_one("\n    #comment\n    foo#comment\n")
         assert token == Token(TokenKind.NAME, 18, 21, 3, 5, None, "foo")
         token = lex_one(",,,foo,,,")
