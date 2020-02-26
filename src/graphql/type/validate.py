@@ -256,7 +256,7 @@ class SchemaValidationContext:
             if not is_output_type(field.type):
                 self.report_error(
                     f"The type of {type_.name}.{field_name}"
-                    " must be Output Type but got: {inspect(field.type)}.",
+                    f" must be Output Type but got: {inspect(field.type)}.",
                     field.ast_node and field.ast_node.type,
                 )
 
