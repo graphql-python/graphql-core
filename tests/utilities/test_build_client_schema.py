@@ -669,11 +669,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_kind():
             introspection = introspection_from_schema(dummy_schema)
 
-            query_type_introspection = [
+            query_type_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
-            ][0]
+            )
             assert query_type_introspection["kind"] == "OBJECT"
             del query_type_introspection["kind"]
 
@@ -688,11 +688,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_interfaces():
             introspection = introspection_from_schema(dummy_schema)
 
-            query_type_introspection = [
+            query_type_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
-            ][0]
+            )
             assert query_type_introspection["interfaces"] == []
             del query_type_introspection["interfaces"]
 
@@ -706,11 +706,11 @@ def describe_type_system_build_schema_from_introspection():
 
         def legacy_support_for_interfaces_with_null_as_interfaces_field():
             introspection = introspection_from_schema(dummy_schema)
-            some_interface_introspection = [
+            some_interface_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "SomeInterface"
-            ][0]
+            )
 
             assert some_interface_introspection["interfaces"] == []
             some_interface_introspection["interfaces"] = None
@@ -720,11 +720,11 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_fields():
             introspection = introspection_from_schema(dummy_schema)
-            query_type_introspection = [
+            query_type_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
-            ][0]
+            )
 
             assert query_type_introspection["fields"]
             del query_type_introspection["fields"]
@@ -740,11 +740,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_field_args():
             introspection = introspection_from_schema(dummy_schema)
 
-            query_type_introspection = [
+            query_type_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
-            ][0]
+            )
             assert query_type_introspection["fields"][0]["args"]
             del query_type_introspection["fields"][0]["args"]
 
@@ -758,11 +758,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_output_type_is_used_as_an_arg_type():
             introspection = introspection_from_schema(dummy_schema)
 
-            query_type_introspection = [
+            query_type_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
-            ][0]
+            )
             assert (
                 query_type_introspection["fields"][0]["args"][0]["type"]["name"]
                 == "String"
@@ -780,14 +780,39 @@ def describe_type_system_build_schema_from_introspection():
                 " but received: SomeUnion."
             )
 
+        def throws_when_output_type_is_used_as_an_input_value_type():
+            introspection = introspection_from_schema(dummy_schema)
+
+            input_object_type_introspection = next(  # pragma: no cover
+                type_
+                for type_ in introspection["__schema"]["types"]
+                if type_["name"] == "SomeInputObject"
+            )
+            assert (
+                input_object_type_introspection["inputFields"][0]["type"]["name"]
+                == "String"
+            )
+            input_object_type_introspection["inputFields"][0]["type"][
+                "name"
+            ] = "SomeUnion"
+
+            with raises(TypeError) as exc_info:
+                build_client_schema(introspection)
+
+            assert str(exc_info.value).startswith(
+                "SomeInputObject fields cannot be resolved."
+                " Introspection must provide input type for input fields,"
+                " but received: SomeUnion."
+            )
+
         def throws_when_input_type_is_used_as_a_field_type():
             introspection = introspection_from_schema(dummy_schema)
 
-            query_type_introspection = [
+            query_type_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Query"
-            ][0]
+            )
             assert query_type_introspection["fields"][0]["type"]["name"] == "String"
             query_type_introspection["fields"][0]["type"]["name"] = "SomeInputObject"
 
@@ -803,11 +828,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_possible_types():
             introspection = introspection_from_schema(dummy_schema)
 
-            some_union_introspection = [
+            some_union_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "SomeUnion"
-            ][0]
+            )
             assert some_union_introspection["possibleTypes"]
             del some_union_introspection["possibleTypes"]
 
@@ -821,11 +846,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_enum_values():
             introspection = introspection_from_schema(dummy_schema)
 
-            some_enum_introspection = [
+            some_enum_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "SomeEnum"
-            ][0]
+            )
             assert some_enum_introspection["enumValues"]
             del some_enum_introspection["enumValues"]
 
@@ -839,11 +864,11 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_input_fields():
             introspection = introspection_from_schema(dummy_schema)
 
-            some_input_object_introspection = [
+            some_input_object_introspection = next(  # pragma: no cover
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "SomeInputObject"
-            ][0]
+            )
             assert some_input_object_introspection["inputFields"]
             del some_input_object_introspection["inputFields"]
 
