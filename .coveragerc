@@ -11,6 +11,7 @@ exclude_lines =
     raise NotImplementedError
     raise TypeError\(f?"Unexpected
     assert False,
+    \s+next\($
     if MYPY:
     if TYPE_CHECKING:
     ^\s+\.\.\.$
