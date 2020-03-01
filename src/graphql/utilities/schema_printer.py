@@ -55,15 +55,14 @@ def print_filtered_schema(
     type_filter: Callable[[GraphQLNamedType], bool],
 ) -> str:
     directives = filter(directive_filter, schema.directives)
-    type_map = schema.type_map
-    types = filter(type_filter, map(type_map.get, sorted(type_map)))  # type: ignore
+    types = filter(type_filter, schema.type_map.values())
 
     return (
         "\n\n".join(
             chain(
                 filter(None, [print_schema_definition(schema)]),
                 (print_directive(directive) for directive in directives),
-                (print_type(type_) for type_ in types),  # type: ignore
+                (print_type(type_) for type_ in types),
             )
         )
         + "\n"

@@ -109,6 +109,11 @@ def describe_type_system_schema():
 
         assert print_schema(schema) == dedent(
             """
+            type Query {
+              article(id: String): Article
+              feed: [Article]
+            }
+
             type Article {
               id: String
               isPublished: Boolean
@@ -132,11 +137,6 @@ def describe_type_system_schema():
 
             type Mutation {
               writeArticle: Article
-            }
-
-            type Query {
-              article(id: String): Article
-              feed: [Article]
             }
 
             type Subscription {

@@ -381,12 +381,12 @@ def describe_type_system_printer():
               int: Int
             }
 
-            interface Baz {
-              int: Int
-            }
-
             interface Foo {
               str: String
+            }
+
+            interface Baz {
+              int: Int
             }
             """
         )
@@ -425,12 +425,12 @@ def describe_type_system_printer():
               int: Int
             }
 
-            interface Baz implements Foo {
-              int: Int
+            interface Foo {
               str: String
             }
 
-            interface Foo {
+            interface Baz implements Foo {
+              int: Int
               str: String
             }
 
@@ -459,9 +459,7 @@ def describe_type_system_printer():
         output = print_for_test(schema)
         assert output == dedent(
             """
-            type Bar {
-              str: String
-            }
+            union SingleUnion = Foo
 
             type Foo {
               bool: Boolean
@@ -469,7 +467,9 @@ def describe_type_system_printer():
 
             union MultipleUnion = Foo | Bar
 
-            union SingleUnion = Foo
+            type Bar {
+              str: String
+            }
             """
         )
 
@@ -600,8 +600,7 @@ def describe_type_system_printer():
     def prints_introspection_schema():
         schema = GraphQLSchema()
         output = print_introspection_schema(schema)
-        print("OUTPUT", output)
-        assert output == dedent(
+        introspection_schema = dedent(
             '''
             """
             Directs the executor to include this field or fragment only when the `if` argument is true.
@@ -626,116 +625,6 @@ def describe_type_system_printer():
               """
               reason: String = "No longer supported"
             ) on FIELD_DEFINITION | ENUM_VALUE
-
-            """
-            A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
-
-            In some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.
-            """
-            type __Directive {
-              name: String!
-              description: String
-              locations: [__DirectiveLocation!]!
-              args: [__InputValue!]!
-            }
-
-            """
-            A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.
-            """
-            enum __DirectiveLocation {
-              """Location adjacent to a query operation."""
-              QUERY
-
-              """Location adjacent to a mutation operation."""
-              MUTATION
-
-              """Location adjacent to a subscription operation."""
-              SUBSCRIPTION
-
-              """Location adjacent to a field."""
-              FIELD
-
-              """Location adjacent to a fragment definition."""
-              FRAGMENT_DEFINITION
-
-              """Location adjacent to a fragment spread."""
-              FRAGMENT_SPREAD
-
-              """Location adjacent to an inline fragment."""
-              INLINE_FRAGMENT
-
-              """Location adjacent to a variable definition."""
-              VARIABLE_DEFINITION
-
-              """Location adjacent to a schema definition."""
-              SCHEMA
-
-              """Location adjacent to a scalar definition."""
-              SCALAR
-
-              """Location adjacent to an object type definition."""
-              OBJECT
-
-              """Location adjacent to a field definition."""
-              FIELD_DEFINITION
-
-              """Location adjacent to an argument definition."""
-              ARGUMENT_DEFINITION
-
-              """Location adjacent to an interface definition."""
-              INTERFACE
-
-              """Location adjacent to a union definition."""
-              UNION
-
-              """Location adjacent to an enum definition."""
-              ENUM
-
-              """Location adjacent to an enum value definition."""
-              ENUM_VALUE
-
-              """Location adjacent to an input object type definition."""
-              INPUT_OBJECT
-
-              """Location adjacent to an input object field definition."""
-              INPUT_FIELD_DEFINITION
-            }
-
-            """
-            One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.
-            """
-            type __EnumValue {
-              name: String!
-              description: String
-              isDeprecated: Boolean!
-              deprecationReason: String
-            }
-
-            """
-            Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.
-            """
-            type __Field {
-              name: String!
-              description: String
-              args: [__InputValue!]!
-              type: __Type!
-              isDeprecated: Boolean!
-              deprecationReason: String
-            }
-
-            """
-            Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.
-            """
-            type __InputValue {
-              name: String!
-              description: String
-              type: __Type!
-
-              """
-              A GraphQL-formatted string representing the default value for this input value.
-              """
-              defaultValue: String
-            }
 
             """
             A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.
@@ -810,8 +699,119 @@ def describe_type_system_printer():
               """Indicates this type is a non-null. `ofType` is a valid field."""
               NON_NULL
             }
+
+            """
+            Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.
+            """
+            type __Field {
+              name: String!
+              description: String
+              args: [__InputValue!]!
+              type: __Type!
+              isDeprecated: Boolean!
+              deprecationReason: String
+            }
+
+            """
+            Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.
+            """
+            type __InputValue {
+              name: String!
+              description: String
+              type: __Type!
+
+              """
+              A GraphQL-formatted string representing the default value for this input value.
+              """
+              defaultValue: String
+            }
+
+            """
+            One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.
+            """
+            type __EnumValue {
+              name: String!
+              description: String
+              isDeprecated: Boolean!
+              deprecationReason: String
+            }
+
+            """
+            A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.
+
+            In some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.
+            """
+            type __Directive {
+              name: String!
+              description: String
+              locations: [__DirectiveLocation!]!
+              args: [__InputValue!]!
+            }
+
+            """
+            A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.
+            """
+            enum __DirectiveLocation {
+              """Location adjacent to a query operation."""
+              QUERY
+
+              """Location adjacent to a mutation operation."""
+              MUTATION
+
+              """Location adjacent to a subscription operation."""
+              SUBSCRIPTION
+
+              """Location adjacent to a field."""
+              FIELD
+
+              """Location adjacent to a fragment definition."""
+              FRAGMENT_DEFINITION
+
+              """Location adjacent to a fragment spread."""
+              FRAGMENT_SPREAD
+
+              """Location adjacent to an inline fragment."""
+              INLINE_FRAGMENT
+
+              """Location adjacent to a variable definition."""
+              VARIABLE_DEFINITION
+
+              """Location adjacent to a schema definition."""
+              SCHEMA
+
+              """Location adjacent to a scalar definition."""
+              SCALAR
+
+              """Location adjacent to an object type definition."""
+              OBJECT
+
+              """Location adjacent to a field definition."""
+              FIELD_DEFINITION
+
+              """Location adjacent to an argument definition."""
+              ARGUMENT_DEFINITION
+
+              """Location adjacent to an interface definition."""
+              INTERFACE
+
+              """Location adjacent to a union definition."""
+              UNION
+
+              """Location adjacent to an enum definition."""
+              ENUM
+
+              """Location adjacent to an enum value definition."""
+              ENUM_VALUE
+
+              """Location adjacent to an input object type definition."""
+              INPUT_OBJECT
+
+              """Location adjacent to an input object field definition."""
+              INPUT_FIELD_DEFINITION
+            }
             '''  # noqa: E501
         )
+        assert output == introspection_schema
 
 
 def describe_print_value():

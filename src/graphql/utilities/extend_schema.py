@@ -623,12 +623,11 @@ def extend_schema_impl(
             return build_function(ast_node)
 
     type_map: Dict[str, GraphQLNamedType] = {}
+    for existing_type in schema_kwargs["types"]:
+        type_map[existing_type.name] = extend_named_type(existing_type)
     for type_node in type_defs:
         name = type_node.name.value
         type_map[name] = std_type_map.get(name) or build_type(type_node)
-
-    for existing_type in schema_kwargs["types"]:
-        type_map[existing_type.name] = extend_named_type(existing_type)
 
     # Get the extended root operation types.
     operation_types: Dict[OperationType, GraphQLNamedType] = {}

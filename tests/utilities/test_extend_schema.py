@@ -658,14 +658,14 @@ def describe_extend_schema():
         assert validate_schema(extended_schema) == []
         assert print_schema_changes(schema, extended_schema) == dedent(
             """
+            type SomeObject {
+              newField(arg1: String, arg2: NewInputObj!): String
+            }
+
             input NewInputObj {
               field1: Int
               field2: [Float]
               field3: String!
-            }
-
-            type SomeObject {
-              newField(arg1: String, arg2: NewInputObj!): String
             }
             """
         )
@@ -778,8 +778,7 @@ def describe_extend_schema():
         assert validate_schema(extended_schema) == []
 
         assert print_schema_changes(schema, extended_schema) == dedent(
-            new_types_sdl
-            + """
+            """
             type SomeObject {
               oldField: String
               newObject: NewObject
@@ -788,8 +787,8 @@ def describe_extend_schema():
               newScalar: NewScalar
               newEnum: NewEnum
               newTree: [SomeObject]!
-            }
-            """
+            }\n"""
+            + new_types_sdl
         )
 
     def extends_objects_by_adding_implemented_new_interfaces():
@@ -824,12 +823,12 @@ def describe_extend_schema():
         assert validate_schema(extended_schema) == []
         assert print_schema_changes(schema, extended_schema) == dedent(
             """
-            interface NewInterface {
+            type SomeObject implements OldInterface & NewInterface {
+              oldField: String
               newField: String
             }
 
-            type SomeObject implements OldInterface & NewInterface {
-              oldField: String
+            interface NewInterface {
               newField: String
             }
             """
@@ -917,28 +916,27 @@ def describe_extend_schema():
 
         assert validate_schema(extended_schema) == []
         assert print_schema_changes(schema, extended_schema) == dedent(
-            new_types_sdl
-            + """
-            enum SomeEnum {
-              OLD_VALUE
-              NEW_VALUE
-              ANOTHER_NEW_VALUE
-            }
-
-            input SomeInput {
-              oldField: String
-              newField: String
-              anotherNewField: String
-            }
-
+            """
             type SomeObject implements SomeInterface & NewInterface & AnotherNewInterface {
               oldField: String
               newField: String
               anotherNewField: String
             }
 
+            enum SomeEnum {
+              OLD_VALUE
+              NEW_VALUE
+              ANOTHER_NEW_VALUE
+            }
+
             union SomeUnion = SomeObject | NewObject | AnotherNewObject
-            """  # noqa: E501
+
+            input SomeInput {
+              oldField: String
+              newField: String
+              anotherNewField: String
+            }\n"""  # noqa: E501
+            + new_types_sdl
         )
 
     def extends_interfaces_by_adding_new_fields():
@@ -981,12 +979,12 @@ def describe_extend_schema():
         assert validate_schema(extended_schema) == []
         assert print_schema_changes(schema, extended_schema) == dedent(
             """
-            interface AnotherInterface implements SomeInterface {
+            interface SomeInterface {
               oldField: String
               newField: String
             }
 
-            interface SomeInterface {
+            interface AnotherInterface implements SomeInterface {
               oldField: String
               newField: String
             }
@@ -1043,12 +1041,12 @@ def describe_extend_schema():
               newField: String
             }
 
-            interface NewInterface {
+            type SomeObject implements SomeInterface & AnotherInterface & NewInterface {
+              oldField: String
               newField: String
             }
 
-            type SomeObject implements SomeInterface & AnotherInterface & NewInterface {
-              oldField: String
+            interface NewInterface {
               newField: String
             }
             """
@@ -1162,14 +1160,14 @@ def describe_extend_schema():
         assert print_schema(mutation_schema) == original_print
         assert print_schema(extended_schema) == dedent(
             """
-            type Mutation {
-              mutationField: String
-              newMutationField: Int
-            }
-
             type Query {
               queryField: String
               newQueryField: Int
+            }
+
+            type Mutation {
+              mutationField: String
+              newMutationField: Int
             }
 
             type Subscription {
