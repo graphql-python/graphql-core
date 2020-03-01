@@ -1,9 +1,11 @@
 from collections import defaultdict
 from functools import cmp_to_key
-from typing import Dict, List, cast
+from typing import Dict, List, Set, Union, cast
 
 from ...type import (
     GraphQLAbstractType,
+    GraphQLInterfaceType,
+    GraphQLObjectType,
     GraphQLOutputType,
     GraphQLSchema,
     is_abstract_type,
@@ -70,7 +72,7 @@ def get_suggested_type_names(
         return []
 
     type_ = cast(GraphQLAbstractType, type_)
-    suggested_types = set()
+    suggested_types: Set[Union[GraphQLObjectType, GraphQLInterfaceType]] = set()
     usage_count: Dict[str, int] = defaultdict(int)
     for possible_type in schema.get_possible_types(type_):
         if field_name not in possible_type.fields:
@@ -88,23 +90,29 @@ def get_suggested_type_names(
             suggested_types.add(possible_interface)
             usage_count[possible_interface.name] += 1
 
-    def cmp(type_a, type_b) -> int:
+    def cmp(
+        type_a: Union[GraphQLObjectType, GraphQLInterfaceType],
+        type_b: Union[GraphQLObjectType, GraphQLInterfaceType],
+    ) -> int:  # pragma: no cover
         # Suggest both interface and object types based on how common they are.
         usage_count_diff = usage_count[type_b.name] - usage_count[type_a.name]
         if usage_count_diff:
             return usage_count_diff
 
         # Suggest super types first followed by subtypes
-        if is_abstract_type(type_a) and schema.is_sub_type(type_a, type_b):
+        if is_interface_type(type_a) and schema.is_sub_type(
+            cast(GraphQLInterfaceType, type_a), type_b
+        ):
             return -1
-        if is_abstract_type(type_b) and schema.is_sub_type(type_b, type_a):
+        if is_interface_type(type_b) and schema.is_sub_type(
+            cast(GraphQLInterfaceType, type_b), type_a
+        ):
             return 1
 
         if type_a.name > type_b.name:
             return 1
-        elif type_a.name < type_b.name:
+        if type_a.name < type_b.name:
             return -1
-
         return 0
 
     return [type_.name for type_ in sorted(suggested_types, key=cmp_to_key(cmp))]
