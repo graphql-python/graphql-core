@@ -11,6 +11,21 @@ def describe_source():
         source = Source("", "Custom source name")
         assert str(source) == "<Source name='Custom source name'>"
 
+    def can_be_compared():
+        source = Source("foo")
+        assert source == source
+        assert not source != source
+        assert source == "foo"
+        assert not source != "foo"
+        same_source = Source("foo")
+        assert source == same_source
+        assert not source != same_source
+        different_source = Source("bar")
+        assert not source == different_source
+        assert source != different_source
+        assert not source == "bar"
+        assert source != "bar"
+
     def rejects_invalid_location_offset():
         def create_source(location_offset):
             return Source("", "", location_offset)

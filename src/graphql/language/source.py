@@ -56,3 +56,11 @@ class Source:
 
     def __repr__(self):
         return f"<{self.__class__.__name__} name={self.name!r}>"
+
+    def __eq__(self, other):
+        return (isinstance(other, Source) and other.body == self.body) or (
+            isinstance(other, str) and other == self.body
+        )
+
+    def __ne__(self, other):
+        return not self == other

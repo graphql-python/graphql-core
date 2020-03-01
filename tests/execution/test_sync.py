@@ -7,13 +7,14 @@ from graphql import graphql_sync
 from graphql.execution import execute
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+from graphql.validation import validate
 
 
 def describe_execute_synchronously_when_possible():
-    def _resolve_sync(root_value, info_):
+    def _resolve_sync(root_value, _info):
         return root_value
 
-    async def _resolve_async(root_value, info_):
+    async def _resolve_async(root_value, _info):
         return root_value
 
     schema = GraphQLSchema(
@@ -77,20 +78,9 @@ def describe_execute_synchronously_when_possible():
 
         def does_not_return_a_promise_for_validation_errors():
             doc = "fragment Example on Query { unknownField }"
-            assert graphql_sync(schema, doc) == (
-                None,
-                [
-                    {
-                        "message": "Cannot query field 'unknownField' on type 'Query'."
-                        " Did you mean 'asyncField' or 'syncField'?",
-                        "locations": [(1, 29)],
-                    },
-                    {
-                        "message": "Fragment 'Example' is never used.",
-                        "locations": [(1, 1)],
-                    },
-                ],
-            )
+            validation_errors = validate(schema, parse(doc))
+            result = graphql_sync(schema, doc)
+            assert result == (None, validation_errors)
 
         def raises_a_type_error_when_no_query_is_passed():
             with raises(TypeError) as exc_info:
