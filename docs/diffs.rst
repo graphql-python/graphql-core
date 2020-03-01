@@ -19,8 +19,9 @@ You can access
 
 * the **fields** of GraphQLObjectTypes, GraphQLInterfaceTypes and GraphQLInputObjectTypes,
 * the **interfaces** of GraphQLObjectTypes,
-* the **types** of GraphQLUnionTypes, and
-* the **values** of GraphQLEnumTypes
+* the **types** of GraphQLUnionTypes,
+* the **values** of GraphQLEnumTypes and
+* the **query**, **mutation**, **subscription** and **type_map** of GraphQLSchemas
 
 directly as attributes, instead of using getters.
 
