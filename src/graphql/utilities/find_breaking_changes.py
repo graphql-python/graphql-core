@@ -56,7 +56,8 @@ class BreakingChangeType(Enum):
     DIRECTIVE_REMOVED = 50
     DIRECTIVE_ARG_REMOVED = 51
     REQUIRED_DIRECTIVE_ARG_ADDED = 52
-    DIRECTIVE_LOCATION_REMOVED = 53
+    DIRECTIVE_REPEATABLE_REMOVED = 53
+    DIRECTIVE_LOCATION_REMOVED = 54
 
 
 class DangerousChangeType(Enum):
@@ -151,6 +152,14 @@ def find_directive_changes(
                 BreakingChange(
                     BreakingChangeType.DIRECTIVE_ARG_REMOVED,
                     f"{arg_name} was removed from {new_directive.name}.",
+                )
+            )
+
+        if old_directive.is_repeatable and not new_directive.is_repeatable:
+            schema_changes.append(
+                BreakingChange(
+                    BreakingChangeType.DIRECTIVE_REPEATABLE_REMOVED,
+                    f"Repeatable flag was removed from {old_directive.name}.",
                 )
             )
 

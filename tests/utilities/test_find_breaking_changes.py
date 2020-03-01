@@ -661,6 +661,8 @@ def describe_find_breaking_changes():
 
             directive @NonNullDirectiveAdded on FIELD_DEFINITION
 
+            directive @DirectiveThatWasRepeatable repeatable on FIELD_DEFINITION
+
             directive @DirectiveName on FIELD_DEFINITION | QUERY
 
             type ArgThatChanges {
@@ -696,6 +698,8 @@ def describe_find_breaking_changes():
             directive @DirectiveThatRemovesArg on FIELD_DEFINITION
 
             directive @NonNullDirectiveAdded(arg1: Boolean!) on FIELD_DEFINITION
+
+            directive @DirectiveThatWasRepeatable on FIELD_DEFINITION
 
             directive @DirectiveName on FIELD_DEFINITION
 
@@ -772,6 +776,10 @@ def describe_find_breaking_changes():
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
                 "A required arg arg1 on directive NonNullDirectiveAdded was added.",
+            ),
+            (
+                BreakingChangeType.DIRECTIVE_REPEATABLE_REMOVED,
+                "Repeatable flag was removed from DirectiveThatWasRepeatable.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
@@ -855,6 +863,26 @@ def describe_find_breaking_changes():
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
                 "A required arg newRequiredArg on directive DirectiveName was added.",
+            )
+        ]
+
+    def should_detect_removal_of_repeatable_flag():
+        old_schema = build_schema(
+            """
+            directive @DirectiveName repeatable on OBJECT
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @DirectiveName on OBJECT
+            """
+        )
+
+        assert find_breaking_changes(old_schema, new_schema) == [
+            (
+                BreakingChangeType.DIRECTIVE_REPEATABLE_REMOVED,
+                "Repeatable flag was removed from DirectiveName.",
             )
         ]
 
