@@ -29,16 +29,16 @@ def describe_star_wars_introspection_tests():
             assert data == {
                 "__schema": {
                     "types": [
-                        {"name": "Query"},
-                        {"name": "Episode"},
+                        {"name": "Human"},
                         {"name": "Character"},
                         {"name": "String"},
-                        {"name": "Human"},
+                        {"name": "Episode"},
                         {"name": "Droid"},
+                        {"name": "Query"},
+                        {"name": "Boolean"},
                         {"name": "__Schema"},
                         {"name": "__Type"},
                         {"name": "__TypeKind"},
-                        {"name": "Boolean"},
                         {"name": "__Field"},
                         {"name": "__InputValue"},
                         {"name": "__EnumValue"},

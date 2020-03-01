@@ -227,32 +227,46 @@ def describe_type_system_schema():
             assert "Foo" in schema.type_map
             assert "Bar" in schema.type_map
 
-    def describe_type_map_reducer():
-        def allows_overriding_the_type_map_reducers():
-            foo_type = GraphQLObjectType("Foo", {"bar": GraphQLField(GraphQLString)})
-            query_type = GraphQLObjectType("Query", {"foo": GraphQLField(foo_type)})
-            baz_directive = GraphQLDirective("Baz", [])
+    def preserves_order_of_user_provided_types():
+        a_type = GraphQLObjectType(
+            "A", {"sub": GraphQLField(GraphQLScalarType("ASub"))}
+        )
+        z_type = GraphQLObjectType(
+            "Z", {"sub": GraphQLField(GraphQLScalarType("ZSub"))}
+        )
+        query_type = GraphQLObjectType(
+            "Query",
+            {
+                "a": GraphQLField(a_type),
+                "z": GraphQLField(z_type),
+                "sub": GraphQLField(GraphQLScalarType("QuerySub")),
+            },
+        )
+        schema = GraphQLSchema(query_type, types=[z_type, query_type, a_type])
 
-            log_types = []
-            log_directives = []
+        type_names = list(schema.type_map)
+        assert type_names == [
+            "Z",
+            "ZSub",
+            "Query",
+            "QuerySub",
+            "A",
+            "ASub",
+            "Boolean",
+            "String",
+            "__Schema",
+            "__Type",
+            "__TypeKind",
+            "__Field",
+            "__InputValue",
+            "__EnumValue",
+            "__Directive",
+            "__DirectiveLocation",
+        ]
 
-            class CustomGraphQLSchema(GraphQLSchema):
-                def type_map_reducer(self, map_, type_):
-                    log_types.append(type_)
-                    return super().type_map_reducer(map_, type_)
-
-                def type_map_directive_reducer(self, map_, directive):
-                    log_directives.append(directive)
-                    return super().type_map_directive_reducer(map_, directive)
-
-            schema = CustomGraphQLSchema(query_type, directives=[baz_directive])
-            assert schema.type_map["Query"] == query_type
-            assert schema.type_map["Foo"] == foo_type
-            assert schema.directives == [baz_directive]
-            assert query_type in log_types
-            assert foo_type in log_types
-            assert GraphQLString in log_types
-            assert log_directives == [baz_directive]
+        # Also check that this order is stable
+        copy_schema = GraphQLSchema(**schema.to_kwargs())
+        assert list(copy_schema.type_map) == type_names
 
     def describe_validity():
         def describe_when_not_assumed_valid():
@@ -272,12 +286,12 @@ def describe_type_system_schema():
                 with raises(Exception):
                     GraphQLSchema(directives={})
 
-            def check__that_query_mutation_and_subscription_are_graphql_types():
+            def check_that_query_mutation_and_subscription_are_graphql_types():
                 directive = GraphQLDirective("foo", [])
                 with raises(TypeError) as exc_info:
                     # noinspection PyTypeChecker
                     GraphQLSchema(query=directive)  # type: ignore
-                assert str(exc_info.value) == ("Expected query to be a GraphQL type.")
+                assert str(exc_info.value) == "Expected query to be a GraphQL type."
                 with raises(TypeError) as exc_info:
                     # noinspection PyTypeChecker
                     GraphQLSchema(mutation=directive)  # type: ignore

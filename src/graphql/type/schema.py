@@ -1,4 +1,3 @@
-from functools import reduce
 from typing import (
     Any,
     Collection,
@@ -25,7 +24,6 @@ from .definition import (
     get_named_type,
     is_input_object_type,
     is_interface_type,
-    is_named_type,
     is_object_type,
     is_union_type,
 )
@@ -100,7 +98,7 @@ class GraphQLSchema:
     ast_node: Optional[ast.SchemaDefinitionNode]
     extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
 
-    _implementations: Dict[str, InterfaceImplementations]
+    _implementations_map: Dict[str, InterfaceImplementations]
     _sub_type_map: Dict[str, Set[str]]
     _validation_errors: Optional[List[GraphQLError]]
 
@@ -119,18 +117,12 @@ class GraphQLSchema:
         """Initialize GraphQL schema.
 
         If this schema was built from a source known to be valid, then it may be marked
-        with `assume_valid` to avoid an additional type system validation. Otherwise
-        check for common mistakes during construction to produce clear and early error
-        messages.
+        with `assume_valid` to avoid an additional type system validation.
         """
-        # If this schema was built from a source known to be valid, then it may be
-        # marked with assume_valid to avoid an additional type system validation.
         self._validation_errors = [] if assume_valid else None
 
         # Check for common mistakes during construction to produce clear and early
-        # error messages.
-        # The query, mutation and subscription types must actually be GraphQL
-        # object types, but we leave it to the validator to report this error.
+        # error messages, but we leave the specific tests for the validation.
         if query and not isinstance(query, GraphQLType):
             raise TypeError("Expected query to be a GraphQL type.")
         if mutation and not isinstance(mutation, GraphQLType):
@@ -140,28 +132,16 @@ class GraphQLSchema:
         if types is None:
             types = []
         else:
-            if not is_collection(types) or (
-                # if reducer has been overridden, don't check types
-                getattr(self.type_map_reducer, "__func__", None)
-                is GraphQLSchema.type_map_reducer
-                and not all(is_named_type(type_) for type_ in types)
+            if not is_collection(types) or not all(
+                isinstance(type_, GraphQLType) for type_ in types
             ):
                 raise TypeError(
-                    "Schema types must be specified as a collection"
-                    " of GraphQLNamedType instances."
+                    "Schema types must be specified as a collection of GraphQL types."
                 )
         if directives is not None:
             # noinspection PyUnresolvedReferences
-            if not is_collection(directives) or (
-                # if reducer has been overridden, don't check directive types
-                getattr(self.type_map_directive_reducer, "__func__", None)
-                is GraphQLSchema.type_map_directive_reducer
-                and not all(is_directive(directive) for directive in directives)
-            ):
-                raise TypeError(
-                    "Schema directives must be specified as a collection"
-                    " of GraphQLDirective instances."
-                )
+            if not is_collection(directives):
+                raise TypeError("Schema directives must be a collection.")
             if not isinstance(directives, FrozenList):
                 directives = FrozenList(directives)
         if extensions is not None and (
@@ -201,29 +181,85 @@ class GraphQLSchema:
             else cast(FrozenList[GraphQLDirective], directives)
         )
 
-        # Build type map now to detect any errors within this schema.
-        initial_types: List[Optional[GraphQLNamedType]] = [
-            query,
-            mutation,
-            subscription,
-            introspection_types["__Schema"],
-        ]
+        # To preserve order of user-provided types, we add first to add them to
+        # the set of "collected" types, so `collect_referenced_types` ignore them.
         if types:
-            initial_types.extend(types)
+            all_referenced_types = TypeSet.with_initial_types(types)
+            collect_referenced_types = all_referenced_types.collect_referenced_types
+            for type_ in types:
+                # When we are ready to process this type, we remove it from "collected"
+                # types and then add it together with all dependent types in the correct
+                # position.
+                del all_referenced_types[type_]
+                collect_referenced_types(type_)
+        else:
+            all_referenced_types = TypeSet()
+            collect_referenced_types = all_referenced_types.collect_referenced_types
 
-        # Keep track of all types referenced within the schema.
+        if query:
+            collect_referenced_types(query)
+        if mutation:
+            collect_referenced_types(mutation)
+        if subscription:
+            collect_referenced_types(subscription)
+
+        for directive in self.directives:
+            # Directives are not validated until validate_schema() is called.
+            if is_directive(directive):
+                for arg in directive.args.values():
+                    collect_referenced_types(arg.type)
+        collect_referenced_types(introspection_types["__Schema"])
+
+        # Storing the resulting map for reference by the schema.
         type_map: TypeMap = {}
-        # First by deeply visiting all initial types.
-        type_map = reduce(self.type_map_reducer, initial_types, type_map)
-        # Then by deeply visiting all directive types.
-        type_map = reduce(self.type_map_directive_reducer, self.directives, type_map)
-        # Storing the resulting map for reference by the schema
         self.type_map = type_map
 
         self._sub_type_map = {}
 
         # Keep track of all implementations by interface name.
-        self._implementations = collect_implementations(type_map.values())
+        implementations_map: Dict[str, InterfaceImplementations] = {}
+        self._implementations_map = implementations_map
+
+        for named_type in all_referenced_types:
+            if not named_type:
+                continue
+
+            type_name = getattr(named_type, "name", None)
+            if type_name in type_map:
+                raise TypeError(
+                    "Schema must contain uniquely named types"
+                    f" but contains multiple types named '{type_name}'."
+                )
+            type_map[type_name] = named_type
+
+            if is_interface_type(named_type):
+                named_type = cast(GraphQLInterfaceType, named_type)
+                # Store implementations by interface.
+                for iface in named_type.interfaces:
+                    if is_interface_type(iface):
+                        iface = cast(GraphQLInterfaceType, iface)
+                        if iface.name in implementations_map:
+                            implementations = implementations_map[iface.name]
+                        else:
+                            implementations = implementations_map[
+                                iface.name
+                            ] = InterfaceImplementations(objects=[], interfaces=[])
+
+                        implementations.interfaces.append(named_type)
+            elif is_object_type(named_type):
+                named_type = cast(GraphQLObjectType, named_type)
+                # Store implementations by objects.
+                for iface in named_type.interfaces:
+                    if is_interface_type(iface):
+                        iface = cast(GraphQLInterfaceType, iface)
+                        if iface.name in implementations_map:
+                            implementations = implementations_map[iface.name]
+                        else:
+                            implementations = implementations_map[
+                                iface.name
+                            ] = InterfaceImplementations(objects=[], interfaces=[])
+
+                        implementations.objects.append(named_type)
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
@@ -256,7 +292,9 @@ class GraphQLSchema:
     def get_implementations(
         self, interface_type: GraphQLInterfaceType
     ) -> InterfaceImplementations:
-        return self._implementations[interface_type.name]
+        return self._implementations_map.get(
+            interface_type.name, InterfaceImplementations(objects=[], interfaces=[])
+        )
 
     def is_possible_type(
         self, abstract_type: GraphQLAbstractType, possible_type: GraphQLObjectType
@@ -301,100 +339,43 @@ class GraphQLSchema:
     def validation_errors(self):
         return self._validation_errors
 
-    def type_map_reducer(
-        self, map_: TypeMap, type_: Optional[GraphQLNamedType] = None
-    ) -> TypeMap:
-        """Reducer function for creating the type map from given types."""
-        if not type_:
-            return map_
 
+class TypeSet(Dict[GraphQLNamedType, None]):
+    """An ordered set of types that can be collected starting from initial types."""
+
+    @classmethod
+    def with_initial_types(cls, types: Collection[GraphQLType]) -> "TypeSet":
+        return cast(TypeSet, super().fromkeys(types))
+
+    def collect_referenced_types(self, type_: GraphQLType) -> None:
+        """Recursive function supplementing the type starting from an initial type."""
         named_type = get_named_type(type_)
-        try:
-            name = named_type.name
-        except AttributeError:
-            #  this is how GraphQL.js handles the case
-            name = None  # type: ignore
 
-        if name in map_:
-            if map_[name] is not named_type:
-                raise TypeError(
-                    "Schema must contain uniquely named types but contains multiple"
-                    f" types named {name!r}."
-                )
-            return map_
-        map_[name] = named_type
+        if named_type in self:
+            return
 
+        self[named_type] = None
+
+        collect_referenced_types = self.collect_referenced_types
         if is_union_type(named_type):
             named_type = cast(GraphQLUnionType, named_type)
-            map_ = reduce(self.type_map_reducer, named_type.types, map_)
-
+            for member_type in named_type.types:
+                collect_referenced_types(member_type)
         elif is_object_type(named_type) or is_interface_type(named_type):
             named_type = cast(
                 Union[GraphQLObjectType, GraphQLInterfaceType], named_type
             )
-            map_ = reduce(self.type_map_reducer, named_type.interfaces, map_)
-            for field in cast(GraphQLInterfaceType, named_type).fields.values():
-                types = [arg.type for arg in field.args.values()]
-                map_ = reduce(self.type_map_reducer, types, map_)
-                map_ = self.type_map_reducer(map_, field.type)
+            for interface_type in named_type.interfaces:
+                collect_referenced_types(interface_type)
 
+            for field in named_type.fields.values():
+                collect_referenced_types(field.type)
+                for arg in field.args.values():
+                    collect_referenced_types(arg.type)
         elif is_input_object_type(named_type):
-            for field in cast(GraphQLInputObjectType, named_type).fields.values():
-                map_ = self.type_map_reducer(map_, field.type)
-
-        return map_
-
-    def type_map_directive_reducer(
-        self, map_: TypeMap, directive: Optional[GraphQLDirective] = None
-    ) -> TypeMap:
-        """Reducer function for creating the type map from given directives."""
-        # Directives are not validated until validate_schema() is called.
-        if not is_directive(directive):
-            return map_  # pragma: no cover
-        directive = cast(GraphQLDirective, directive)
-        return reduce(
-            lambda prev_map, arg: self.type_map_reducer(
-                prev_map, cast(GraphQLNamedType, arg.type)
-            ),
-            directive.args.values(),
-            map_,
-        )
-
-
-def collect_implementations(
-    types: Collection[GraphQLNamedType],
-) -> Dict[str, InterfaceImplementations]:
-    implementations_map: Dict[str, InterfaceImplementations] = {}
-    for type_ in types:
-        if is_interface_type(type_):
-            type_ = cast(GraphQLInterfaceType, type_)
-            if type_.name not in implementations_map:
-                implementations_map[type_.name] = InterfaceImplementations(
-                    objects=[], interfaces=[]
-                )
-            # Store implementations by interface.
-            for interface in type_.interfaces:
-                if is_interface_type(interface):
-                    implementations = implementations_map.get(interface.name)
-                    if implementations is None:
-                        implementations_map[interface.name] = InterfaceImplementations(
-                            objects=[], interfaces=[type_]
-                        )
-                    else:
-                        implementations.interfaces.append(type_)
-        elif is_object_type(type_):
-            type_ = cast(GraphQLObjectType, type_)
-            # Store implementations by objects.
-            for interface in type_.interfaces:
-                if is_interface_type(interface):
-                    implementations = implementations_map.get(interface.name)
-                    if implementations is None:
-                        implementations_map[interface.name] = InterfaceImplementations(
-                            objects=[type_], interfaces=[]
-                        )
-                    else:
-                        implementations.objects.append(type_)
-    return implementations_map
+            named_type = cast(GraphQLInputObjectType, named_type)
+            for field in named_type.fields.values():
+                collect_referenced_types(field.type)
 
 
 def is_schema(schema: Any) -> bool:

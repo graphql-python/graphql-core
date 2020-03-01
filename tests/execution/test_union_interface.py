@@ -190,9 +190,9 @@ def describe_execute_union_and_intersection_types():
                     "fields": [{"name": "name"}],
                     "interfaces": [],
                     "possibleTypes": [
-                        {"name": "Person"},
                         {"name": "Dog"},
                         {"name": "Cat"},
+                        {"name": "Person"},
                     ],
                     "enumValues": None,
                     "inputFields": None,
@@ -207,9 +207,9 @@ def describe_execute_union_and_intersection_types():
                     ],
                     "interfaces": [{"name": "Life"}],
                     "possibleTypes": [
-                        {"name": "Person"},
                         {"name": "Dog"},
                         {"name": "Cat"},
+                        {"name": "Person"},
                     ],
                     "enumValues": None,
                     "inputFields": None,

@@ -60,6 +60,15 @@ def describe_introspection():
                         "possibleTypes": None,
                     },
                     {
+                        "kind": "SCALAR",
+                        "name": "Boolean",
+                        "fields": None,
+                        "inputFields": None,
+                        "interfaces": None,
+                        "enumValues": None,
+                        "possibleTypes": None,
+                    },
+                    {
                         "kind": "OBJECT",
                         "name": "__Schema",
                         "fields": [
@@ -373,15 +382,6 @@ def describe_introspection():
                                 "deprecationReason": None,
                             },
                         ],
-                        "possibleTypes": None,
-                    },
-                    {
-                        "kind": "SCALAR",
-                        "name": "Boolean",
-                        "fields": None,
-                        "inputFields": None,
-                        "interfaces": None,
-                        "enumValues": None,
                         "possibleTypes": None,
                     },
                     {

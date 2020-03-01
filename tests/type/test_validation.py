@@ -4,7 +4,7 @@ from typing import Any, List, Union
 from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse, DirectiveLocation
-from graphql.pyutils import dedent, inspect, FrozenList
+from graphql.pyutils import dedent, inspect
 from graphql.type import (
     assert_directive,
     assert_enum_type,
@@ -418,8 +418,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
                 types=[{"name": "SomeType"}, SomeDirective],  # type: ignore
             )
         assert str(exc_info.value) == (
-            "Schema types must be specified"
-            " as a collection of GraphQLNamedType instances."
+            "Schema types must be specified as a collection of GraphQL types."
         )
         # construct invalid schema manually
         schema = GraphQLSchema(SomeObjectType)
@@ -433,21 +432,9 @@ def describe_type_system_a_schema_must_have_object_root_types():
         ]
 
     def rejects_a_schema_whose_directives_are_incorrectly_typed():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            GraphQLSchema(
-                SomeObjectType,
-                directives=[None, "SomeDirective", SomeScalarType],  # type: ignore
-            )
-        assert str(exc_info.value) == (
-            "Schema directives must be specified"
-            " as a collection of GraphQLDirective instances."
-        )
-        # construct invalid schema manually
-        schema = GraphQLSchema(SomeObjectType)
-        schema.directives = FrozenList(
-            [None, "SomeDirective", SomeScalarType]  # type: ignore
+        schema = GraphQLSchema(
+            SomeObjectType,
+            directives=[None, "SomeDirective", SomeScalarType],  # type: ignore
         )
         assert validate_schema(schema) == [
             {"message": "Expected directive but got: None."},
@@ -1362,11 +1349,11 @@ def describe_type_system_interface_fields_must_have_output_types():
         schema = _schema_with_interface_field_of_type(None)  # type: ignore
         assert validate_schema(schema) == [
             {
-                "message": "The type of BadInterface.badField must be Output Type"
+                "message": "The type of BadImplementing.badField must be Output Type"
                 " but got: None.",
             },
             {
-                "message": "The type of BadImplementing.badField must be Output Type"
+                "message": "The type of BadInterface.badField must be Output Type"
                 " but got: None.",
             },
         ]
@@ -1376,11 +1363,11 @@ def describe_type_system_interface_fields_must_have_output_types():
         schema = _schema_with_interface_field_of_type(type_)
         assert validate_schema(schema) == [
             {
-                "message": "The type of BadInterface.badField must be Output Type"
+                "message": "The type of BadImplementing.badField must be Output Type"
                 f" but got: {type_}.",
             },
             {
-                "message": "The type of BadImplementing.badField must be Output Type"
+                "message": "The type of BadInterface.badField must be Output Type"
                 f" but got: {type_}.",
             },
         ]
@@ -1390,14 +1377,14 @@ def describe_type_system_interface_fields_must_have_output_types():
         schema = _schema_with_interface_field_of_type(type_)
         assert validate_schema(schema) == [
             {
+                "message": "The type of BadImplementing.badField must be Output Type"
+                f" but got: {inspect(type_)}.",
+            },
+            {
                 "message": "The type of BadInterface.badField must be Output Type"
                 f" but got: {inspect(type_)}.",
             },
             {"message": f"Expected GraphQL named type but got: {inspect(type_)}."},
-            {
-                "message": "The type of BadImplementing.badField must be Output Type"
-                f" but got: {inspect(type_)}.",
-            },
         ]
 
     def rejects_a_non_output_type_as_an_interface_field_with_locations():

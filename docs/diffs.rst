@@ -78,10 +78,4 @@ Registering special types for descriptions
 Normally, descriptions for GraphQL types must be strings. However, sometimes you may want to use other kinds of objects which are not strings, but are only resolved to strings at runtime. This is possible if you register the classes of such objects with :func:`pyutils.register_description`.
 
 
-Overridable type map reducer
-----------------------------
-
-It is possible to override the :meth:`GraphQLSchema.type_map_reducer` method with a custom implementation. This is used by Graphene to convert its own types to the GraphQL-core types.
-
-
 If you notice any other important differences, please let us know so that they can be either removed or listed here.
