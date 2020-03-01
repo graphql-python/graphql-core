@@ -18,7 +18,11 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
         if distance <= threshold:
             options_by_distance[option] = distance
 
-    return sorted(options_by_distance, key=options_by_distance.get)
+    # noinspection PyShadowingNames
+    return sorted(
+        options_by_distance,
+        key=lambda option: (options_by_distance.get(option, 0), option),
+    )
 
 
 def lexical_distance(a_str: str, b_str: str) -> int:

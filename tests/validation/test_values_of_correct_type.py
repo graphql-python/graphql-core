@@ -1006,7 +1006,7 @@ def describe_validate_values_of_correct_type():
                     {
                         "message": "Field 'unknownField'"
                         " is not defined by type 'ComplexInput'."
-                        " Did you mean 'nonNullField', 'intField', or 'booleanField'?",
+                        " Did you mean 'booleanField', 'intField', or 'nonNullField'?",
                         "locations": [(6, 23)],
                     },
                 ],

@@ -318,34 +318,34 @@ def describe_fields_on_correct_type_error_message():
         schema = build_schema(
             """
             type T {
-              z: String
               y: String
+              z: String
             }
             type Query { t: T }
             """
         )
         assert _error_message(schema, "{ t { f } }") == (
-            "Cannot query field 'f' on type 'T'. Did you mean 'z' or 'y'?"
+            "Cannot query field 'f' on type 'T'. Did you mean 'y' or 'z'?"
         )
 
     def only_shows_one_set_of_suggestions_at_a_time_preferring_types():
         schema = build_schema(
             """
             interface T {
-              z: String
               y: String
+              z: String
             }
             type Query { t: T }
 
             type A implements T {
               f: String
-              z: String
               y: String
+              z: String
             }
             type B implements T {
               f: String
-              z: String
               y: String
+              z: String
             }
             """
         )
@@ -377,17 +377,17 @@ def describe_fields_on_correct_type_error_message():
         schema = build_schema(
             """
             type T {
-              z: String
-              y: String
-              x: String
-              w: String
-              v: String
               u: String
+              v: String
+              w: String
+              x: String
+              y: String
+              z: String
             }
             type Query { t: T }
             """
         )
         assert _error_message(schema, "{ t { f } }") == (
             "Cannot query field 'f' on type 'T'."
-            " Did you mean 'z', 'y', 'x', 'w', or 'v'?"
+            " Did you mean 'u', 'v', 'w', 'x', or 'y'?"
         )

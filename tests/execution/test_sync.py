@@ -82,7 +82,7 @@ def describe_execute_synchronously_when_possible():
                 [
                     {
                         "message": "Cannot query field 'unknownField' on type 'Query'."
-                        " Did you mean 'syncField' or 'asyncField'?",
+                        " Did you mean 'asyncField' or 'syncField'?",
                         "locations": [(1, 29)],
                     },
                     {
