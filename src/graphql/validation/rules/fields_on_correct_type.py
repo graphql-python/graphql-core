@@ -34,21 +34,21 @@ class FieldsOnCorrectTypeRule(ValidationRule):
         # This field doesn't exist, lets look for suggestions.
         schema = self.context.schema
         field_name = node.name.value
+
         # First determine if there are any suggested types to condition on.
-        suggested_type_names = get_suggested_type_names(schema, type_, field_name)
-        # If there are no suggested types, then perhaps this was a typo?
-        suggested_field_names = (
-            [] if suggested_type_names else get_suggested_field_names(type_, field_name)
+        suggestion = did_you_mean(
+            get_suggested_type_names(schema, type_, field_name),
+            "to use an inline fragment on",
         )
+
+        # If there are no suggested types, then perhaps this was a typo?
+        if not suggestion:
+            suggestion = did_you_mean(get_suggested_field_names(type_, field_name))
 
         # Report an error, including helpful suggestions.
         self.report_error(
             GraphQLError(
-                f"Cannot query field '{field_name}' on type '{type_}'."
-                + (
-                    did_you_mean(suggested_type_names, "to use an inline fragment on")
-                    or did_you_mean(suggested_field_names)
-                ),
+                f"Cannot query field '{field_name}' on type '{type_}'." + suggestion,
                 node,
             )
         )
