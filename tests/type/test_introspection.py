@@ -975,6 +975,9 @@ def describe_introspection():
                 "deprecated": GraphQLField(
                     GraphQLString, deprecation_reason="Removed in 1.0"
                 ),
+                "deprecatedWithEmptyReason": GraphQLField(
+                    GraphQLString, deprecation_reason=""
+                ),
             },
         )
 
@@ -1006,6 +1009,11 @@ def describe_introspection():
                             "name": "deprecated",
                             "isDeprecated": True,
                             "deprecationReason": "Removed in 1.0",
+                        },
+                        {
+                            "name": "deprecatedWithEmptyReason",
+                            "isDeprecated": True,
+                            "deprecationReason": "",
                         },
                     ],
                 }
@@ -1112,7 +1120,10 @@ def describe_introspection():
             {
                 "NON_DEPRECATED": GraphQLEnumValue(0),
                 "DEPRECATED": GraphQLEnumValue(1, deprecation_reason="Removed in 1.0"),
-                "ALSO_NON_DEPRECATED": GraphQLEnumValue(2),
+                "DEPRECATED_WITH_EMPTY_REASON": GraphQLEnumValue(
+                    2, deprecation_reason=""
+                ),
+                "ALSO_NON_DEPRECATED": GraphQLEnumValue(3),
             },
         )
 
@@ -1122,7 +1133,6 @@ def describe_introspection():
         source = """
             {
               __type(name: "TestEnum") {
-                  name
                 trueValues: enumValues(includeDeprecated: true) {
                   name
                 }
@@ -1139,10 +1149,10 @@ def describe_introspection():
         assert graphql_sync(schema=schema, source=source) == (
             {
                 "__type": {
-                    "name": "TestEnum",
                     "trueValues": [
                         {"name": "NON_DEPRECATED"},
                         {"name": "DEPRECATED"},
+                        {"name": "DEPRECATED_WITH_EMPTY_REASON"},
                         {"name": "ALSO_NON_DEPRECATED"},
                     ],
                     "falseValues": [

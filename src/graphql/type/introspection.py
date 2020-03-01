@@ -276,7 +276,7 @@ class TypeFieldResolvers:
         if is_object_type(type_) or is_interface_type(type_):
             items = type_.fields.items()
             if not includeDeprecated:
-                return [item for item in items if not item[1].deprecation_reason]
+                return [item for item in items if not item[1].is_deprecated]
             return list(items)
 
     @staticmethod
@@ -295,7 +295,7 @@ class TypeFieldResolvers:
         if is_enum_type(type_):
             items = type_.values.items()
             if not includeDeprecated:
-                return [item for item in items if not item[1].deprecation_reason]
+                return [item for item in items if not item[1].is_deprecated]
             return items
 
     @staticmethod
