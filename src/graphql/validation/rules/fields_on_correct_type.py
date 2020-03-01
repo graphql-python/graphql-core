@@ -1,10 +1,11 @@
 from collections import defaultdict
+from functools import cmp_to_key
 from typing import Dict, List, cast
 
 from ...type import (
     GraphQLAbstractType,
-    GraphQLSchema,
     GraphQLOutputType,
+    GraphQLSchema,
     is_abstract_type,
     is_interface_type,
     is_object_type,
@@ -62,34 +63,51 @@ def get_suggested_type_names(
 
     Go through all of the implementations of type, as well as the interfaces
     that they implement. If any of those types include the provided field,
-    suggest them, sorted by how often the type is referenced, starting with
-    Interfaces.
+    suggest them, sorted by how often the type is referenced.
     """
-    if is_abstract_type(type_):
-        type_ = cast(GraphQLAbstractType, type_)
-        suggested_object_types = []
-        interface_usage_count: Dict[str, int] = defaultdict(int)
-        for possible_type in schema.get_possible_types(type_):
-            if field_name not in possible_type.fields:
+    if not is_abstract_type(type_):
+        # Must be an Object type, which does not have possible fields.
+        return []
+
+    type_ = cast(GraphQLAbstractType, type_)
+    suggested_types = set()
+    usage_count: Dict[str, int] = defaultdict(int)
+    for possible_type in schema.get_possible_types(type_):
+        if field_name not in possible_type.fields:
+            continue
+
+        # This object type defines this field.
+        suggested_types.add(possible_type)
+        usage_count[possible_type.name] = 1
+
+        for possible_interface in possible_type.interfaces:
+            if field_name not in possible_interface.fields:
                 continue
-            # This object type defines this field.
-            suggested_object_types.append(possible_type.name)
-            for possible_interface in possible_type.interfaces:
-                if field_name not in possible_interface.fields:
-                    continue
-                # This interface type defines this field.
-                interface_usage_count[possible_interface.name] += 1
 
-        # Suggest interface types based on how common they are.
-        suggested_interface_types = sorted(
-            interface_usage_count, key=lambda k: -interface_usage_count[k]
-        )
+            # This interface type defines this field.
+            suggested_types.add(possible_interface)
+            usage_count[possible_interface.name] += 1
 
-        # Suggest both interface and object types.
-        return suggested_interface_types + suggested_object_types
+    def cmp(type_a, type_b) -> int:
+        # Suggest both interface and object types based on how common they are.
+        usage_count_diff = usage_count[type_b.name] - usage_count[type_a.name]
+        if usage_count_diff:
+            return usage_count_diff
 
-    # Otherwise, must be an Object type, which does not have possible fields.
-    return []
+        # Suggest super types first followed by subtypes
+        if is_abstract_type(type_a) and schema.is_sub_type(type_a, type_b):
+            return -1
+        if is_abstract_type(type_b) and schema.is_sub_type(type_b, type_a):
+            return 1
+
+        if type_a.name > type_b.name:
+            return 1
+        elif type_a.name < type_b.name:
+            return -1
+
+        return 0
+
+    return [type_.name for type_ in sorted(suggested_types, key=cmp_to_key(cmp))]
 
 
 def get_suggested_field_names(type_: GraphQLOutputType, field_name: str) -> List[str]:

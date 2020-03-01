@@ -218,7 +218,7 @@ def describe_validate_fields_on_correct_type():
             [
                 {
                     "message": "Cannot query field 'nickname' on type 'Pet'."
-                    " Did you mean to use an inline fragment on 'Dog' or 'Cat'?",
+                    " Did you mean to use an inline fragment on 'Cat' or 'Dog'?",
                     "locations": [(3, 15)],
                 },
             ],
@@ -259,7 +259,7 @@ def describe_validate_fields_on_correct_type():
                 {
                     "message": "Cannot query field 'name' on type 'CatOrDog'."
                     " Did you mean to use an inline fragment"
-                    " on 'Being', 'Pet', 'Canine', 'Dog', or 'Cat'?",
+                    " on 'Being', 'Pet', 'Canine', 'Cat', or 'Dog'?",
                     "locations": [(3, 15)],
                 },
             ],
