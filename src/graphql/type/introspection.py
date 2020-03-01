@@ -83,18 +83,19 @@ __Directive: GraphQLObjectType = GraphQLObjectType(
     fields=lambda: {
         # Note: The fields onOperation, onFragment and onField are deprecated
         "name": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=lambda obj, _info: obj.name
+            GraphQLNonNull(GraphQLString),
+            resolve=lambda directive, _info: directive.name,
         ),
         "description": GraphQLField(
-            GraphQLString, resolve=lambda obj, _info: obj.description
+            GraphQLString, resolve=lambda directive, _info: directive.description
         ),
         "isRepeatable": GraphQLField(
             GraphQLNonNull(GraphQLBoolean),
-            resolve=lambda obj, _info: obj.is_repeatable,
+            resolve=lambda directive, _info: directive.is_repeatable,
         ),
         "locations": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__DirectiveLocation))),
-            resolve=lambda obj, _info: obj.locations,
+            resolve=lambda directive, _info: directive.locations,
         ),
         "args": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
