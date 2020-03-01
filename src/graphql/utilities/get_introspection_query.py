@@ -3,8 +3,13 @@ from textwrap import dedent
 __all__ = ["get_introspection_query"]
 
 
-def get_introspection_query(descriptions=True) -> str:
-    """Get a query for introspection, optionally without descriptions."""
+def get_introspection_query(descriptions=True, directive_is_repeatable=False) -> str:
+    """Get a query for introspection.
+
+    Optionally, you can exclude descriptions and include repeatability of directives.
+    """
+    maybe_description = "description" if descriptions else ""
+    maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     return dedent(
         f"""
         query IntrospectionQuery {{
@@ -17,7 +22,8 @@ def get_introspection_query(descriptions=True) -> str:
             }}
             directives {{
               name
-              {'description' if descriptions else ''}
+              {maybe_description}
+              {maybe_directive_is_repeatable}
               locations
               args {{
                 ...InputValue
@@ -29,10 +35,10 @@ def get_introspection_query(descriptions=True) -> str:
         fragment FullType on __Type {{
           kind
           name
-          {'description' if descriptions else ''}
+          {maybe_description}
           fields(includeDeprecated: true) {{
             name
-            {'description' if descriptions else ''}
+            {maybe_description}
             args {{
               ...InputValue
             }}
@@ -50,7 +56,7 @@ def get_introspection_query(descriptions=True) -> str:
           }}
           enumValues(includeDeprecated: true) {{
             name
-            {'description' if descriptions else ''}
+            {maybe_description}
             isDeprecated
             deprecationReason
           }}
@@ -61,7 +67,7 @@ def get_introspection_query(descriptions=True) -> str:
 
         fragment InputValue on __InputValue {{
           name
-          {'description' if descriptions else ''}
+          {maybe_description}
           type {{ ...TypeRef }}
           defaultValue
         }}

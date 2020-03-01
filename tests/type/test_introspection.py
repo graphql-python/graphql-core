@@ -19,7 +19,9 @@ def describe_introspection():
         schema = GraphQLSchema(
             GraphQLObjectType("QueryRoot", {"onlyField": GraphQLField(GraphQLString)})
         )
-        source = get_introspection_query(descriptions=False)
+        source = get_introspection_query(
+            descriptions=False, directive_is_repeatable=True
+        )
 
         result = graphql_sync(schema=schema, source=source)
         assert result.errors is None
@@ -639,6 +641,21 @@ def describe_introspection():
                                 "deprecationReason": None,
                             },
                             {
+                                "name": "isRepeatable",
+                                "args": [],
+                                "type": {
+                                    "kind": "NON_NULL",
+                                    "name": None,
+                                    "ofType": {
+                                        "kind": "SCALAR",
+                                        "name": "Boolean",
+                                        "ofType": None,
+                                    },
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
+                            {
                                 "name": "locations",
                                 "args": [],
                                 "type": {
@@ -799,6 +816,7 @@ def describe_introspection():
                 "directives": [
                     {
                         "name": "include",
+                        "isRepeatable": False,
                         "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
                         "args": [
                             {
@@ -818,6 +836,7 @@ def describe_introspection():
                     },
                     {
                         "name": "skip",
+                        "isRepeatable": False,
                         "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
                         "args": [
                             {
@@ -837,6 +856,7 @@ def describe_introspection():
                     },
                     {
                         "name": "deprecated",
+                        "isRepeatable": False,
                         "locations": ["FIELD_DEFINITION", "ENUM_VALUE"],
                         "args": [
                             {
@@ -1329,7 +1349,7 @@ def describe_introspection():
         )
 
         schema = GraphQLSchema(query_root)
-        source = get_introspection_query()
+        source = get_introspection_query(directive_is_repeatable=True)
 
         def field_resolver(_obj, info):
             assert False, f"Called on {info.parent_type.name}.{info.field_name}"

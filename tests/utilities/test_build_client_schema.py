@@ -31,12 +31,14 @@ def cycle_introspection(sdl_string):
     build in-memory GraphQLSchema from it, produce a client-side representation of the
     schema by using "build_client_schema" and then return that schema printed as SDL.
     """
+    options = dict(directive_is_repeatable=True)
+
     server_schema = build_schema(sdl_string)
-    initial_introspection = introspection_from_schema(server_schema)
+    initial_introspection = introspection_from_schema(server_schema, **options)
     client_schema = build_client_schema(initial_introspection)
     # If the client then runs the introspection query against the client-side schema,
     # it should get a result identical to what was returned by the server
-    second_introspection = introspection_from_schema(client_schema)
+    second_introspection = introspection_from_schema(client_schema, **options)
 
     # If the client then runs the introspection query against the client-side
     # schema, it should get a result identical to what was returned by the server.
@@ -460,7 +462,7 @@ def describe_type_system_build_schema_from_introspection():
         sdl = dedent(
             '''
             """This is a custom directive"""
-            directive @customDirective on FIELD
+            directive @customDirective repeatable on FIELD
 
             type Query {
               string: String

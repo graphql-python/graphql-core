@@ -88,6 +88,10 @@ __Directive: GraphQLObjectType = GraphQLObjectType(
         "description": GraphQLField(
             GraphQLString, resolve=lambda obj, _info: obj.description
         ),
+        "isRepeatable": GraphQLField(
+            GraphQLNonNull(GraphQLBoolean),
+            resolve=lambda obj, _info: obj.is_repeatable,
+        ),
         "locations": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__DirectiveLocation))),
             resolve=lambda obj, _info: obj.locations,

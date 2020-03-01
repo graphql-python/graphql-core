@@ -313,6 +313,7 @@ def build_client_schema(
         return GraphQLDirective(
             name=directive_introspection["name"],
             description=directive_introspection.get("description"),
+            is_repeatable=directive_introspection.get("isRepeatable", False),
             locations=list(
                 cast(
                     Collection[DirectiveLocation],

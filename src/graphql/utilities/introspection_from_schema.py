@@ -12,7 +12,9 @@ IntrospectionSchema = Dict[str, Any]
 
 
 def introspection_from_schema(
-    schema: GraphQLSchema, descriptions: bool = True
+    schema: GraphQLSchema,
+    descriptions: bool = True,
+    directive_is_repeatable: bool = True,
 ) -> IntrospectionSchema:
     """Build an IntrospectionQuery from a GraphQLSchema
 
@@ -22,7 +24,7 @@ def introspection_from_schema(
     This is the inverse of build_client_schema. The primary use case is outside of the
     server context, for instance when doing schema comparisons.
     """
-    document = parse(get_introspection_query(descriptions))
+    document = parse(get_introspection_query(descriptions, directive_is_repeatable))
 
     from ..execution.execute import execute, ExecutionResult
 
