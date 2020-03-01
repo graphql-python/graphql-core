@@ -102,6 +102,7 @@ class GraphQLSchema:
 
     _implementations: Dict[str, InterfaceImplementations]
     _sub_type_map: Dict[str, Set[str]]
+    _validation_errors: Optional[List[GraphQLError]]
 
     def __init__(
         self,
@@ -122,70 +123,65 @@ class GraphQLSchema:
         check for common mistakes during construction to produce clear and early error
         messages.
         """
-        if assume_valid:
-            # If this schema was built from a source known to be valid, then it may be
-            # marked with assume_valid to avoid an additional type system validation.
-            self._validation_errors: Optional[List[GraphQLError]] = []
+        # If this schema was built from a source known to be valid, then it may be
+        # marked with assume_valid to avoid an additional type system validation.
+        self._validation_errors = [] if assume_valid else None
+
+        # Check for common mistakes during construction to produce clear and early
+        # error messages.
+        # The query, mutation and subscription types must actually be GraphQL
+        # object types, but we leave it to the validator to report this error.
+        if query and not isinstance(query, GraphQLType):
+            raise TypeError("Expected query to be a GraphQL type.")
+        if mutation and not isinstance(mutation, GraphQLType):
+            raise TypeError("Expected mutation to be a GraphQL type.")
+        if subscription and not isinstance(subscription, GraphQLType):
+            raise TypeError("Expected subscription to be a GraphQL type.")
+        if types is None:
+            types = []
         else:
-            # Otherwise check for common mistakes during construction to produce clear
-            # and early error messages.
-            # The query, mutation and subscription types must actually be GraphQL
-            # object types, but we leave it to the validator to report this error.
-            if query and not isinstance(query, GraphQLType):
-                raise TypeError("Expected query to be a GraphQL type.")
-            if mutation and not isinstance(mutation, GraphQLType):
-                raise TypeError("Expected mutation to be a GraphQL type.")
-            if subscription and not isinstance(subscription, GraphQLType):
-                raise TypeError("Expected subscription to be a GraphQL type.")
-            if types is None:
-                types = []
-            else:
-                if not is_collection(types) or (
-                    # if reducer has been overridden, don't check types
-                    getattr(self.type_map_reducer, "__func__", None)
-                    is GraphQLSchema.type_map_reducer
-                    and not all(is_named_type(type_) for type_ in types)
-                ):
-                    raise TypeError(
-                        "Schema types must be specified as a collection"
-                        " of GraphQLNamedType instances."
-                    )
-            if directives is not None:
-                # noinspection PyUnresolvedReferences
-                if not is_collection(directives) or (
-                    # if reducer has been overridden, don't check directive types
-                    getattr(self.type_map_directive_reducer, "__func__", None)
-                    is GraphQLSchema.type_map_directive_reducer
-                    and not all(is_directive(directive) for directive in directives)
-                ):
-                    raise TypeError(
-                        "Schema directives must be specified as a collection"
-                        " of GraphQLDirective instances."
-                    )
-                if not isinstance(directives, FrozenList):
-                    directives = FrozenList(directives)
-            if extensions is not None and (
-                not isinstance(extensions, dict)
-                or not all(isinstance(key, str) for key in extensions)
+            if not is_collection(types) or (
+                # if reducer has been overridden, don't check types
+                getattr(self.type_map_reducer, "__func__", None)
+                is GraphQLSchema.type_map_reducer
+                and not all(is_named_type(type_) for type_ in types)
             ):
                 raise TypeError(
-                    "Schema extensions must be a dictionary with string keys."
+                    "Schema types must be specified as a collection"
+                    " of GraphQLNamedType instances."
                 )
-            if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):
-                raise TypeError("Schema AST node must be a SchemaDefinitionNode.")
-            if extension_ast_nodes:
-                if not is_collection(extension_ast_nodes) or not all(
-                    isinstance(node, ast.SchemaExtensionNode)
-                    for node in extension_ast_nodes
-                ):
-                    raise TypeError(
-                        "Schema extension AST nodes must be specified"
-                        " as a collection of SchemaExtensionNode instances."
-                    )
-                if not isinstance(extension_ast_nodes, FrozenList):
-                    extension_ast_nodes = FrozenList(extension_ast_nodes)
-
-            self._validation_errors = None
+        if directives is not None:
+            # noinspection PyUnresolvedReferences
+            if not is_collection(directives) or (
+                # if reducer has been overridden, don't check directive types
+                getattr(self.type_map_directive_reducer, "__func__", None)
+                is GraphQLSchema.type_map_directive_reducer
+                and not all(is_directive(directive) for directive in directives)
+            ):
+                raise TypeError(
+                    "Schema directives must be specified as a collection"
+                    " of GraphQLDirective instances."
+                )
+            if not isinstance(directives, FrozenList):
+                directives = FrozenList(directives)
+        if extensions is not None and (
+            not isinstance(extensions, dict)
+            or not all(isinstance(key, str) for key in extensions)
+        ):
+            raise TypeError("Schema extensions must be a dictionary with string keys.")
+        if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):
+            raise TypeError("Schema AST node must be a SchemaDefinitionNode.")
+        if extension_ast_nodes:
+            if not is_collection(extension_ast_nodes) or not all(
+                isinstance(node, ast.SchemaExtensionNode)
+                for node in extension_ast_nodes
+            ):
+                raise TypeError(
+                    "Schema extension AST nodes must be specified"
+                    " as a collection of SchemaExtensionNode instances."
+                )
+            if not isinstance(extension_ast_nodes, FrozenList):
+                extension_ast_nodes = FrozenList(extension_ast_nodes)
 
         self.extensions = extensions
         self.ast_node = ast_node
