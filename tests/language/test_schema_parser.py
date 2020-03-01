@@ -174,7 +174,7 @@ def describe_schema_parser():
         assert description.block is True
         assert description.loc == (1, 20)
 
-    def reject_description_followed_by_non_type_system_definition():
+    def description_followed_by_something_other_than_type_system_definition_throws():
         assert_syntax_error('"Description" 1', "Unexpected Int '1'.", (1, 15))
 
     def simple_extension():
