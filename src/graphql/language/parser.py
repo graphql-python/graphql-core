@@ -470,12 +470,13 @@ class Parser:
         token = self._lexer.token
         value = token.value
         self._lexer.advance()
-        if value in ("true", "false"):
-            return BooleanValueNode(value=value == "true", loc=self.loc(token))
-        elif value == "null":
+        if value == "true":
+            return BooleanValueNode(value=True, loc=self.loc(token))
+        if value == "false":
+            return BooleanValueNode(value=False, loc=self.loc(token))
+        if value == "null":
             return NullValueNode(loc=self.loc(token))
-        else:
-            return EnumValueNode(value=value, loc=self.loc(token))
+        return EnumValueNode(value=value, loc=self.loc(token))
 
     def parse_variable_value(self, is_const: bool) -> VariableNode:
         if not is_const:
