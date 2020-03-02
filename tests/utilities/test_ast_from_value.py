@@ -1,4 +1,4 @@
-from math import nan
+from math import inf, nan
 
 from pytest import raises  # type: ignore
 
@@ -133,6 +133,11 @@ def describe_ast_from_value():
         assert ast_from_value("value", pass_through_scalar) == StringValueNode(
             value="value"
         )
+
+        assert ast_from_value(nan, pass_through_scalar) is None
+        with raises(TypeError) as exc_info:
+            ast_from_value(inf, pass_through_scalar)
+        assert str(exc_info.value) == "Cannot convert value to AST: inf."
 
         return_null_scalar = GraphQLScalarType(
             "ReturnNullScalar", serialize=lambda value: None,

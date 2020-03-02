@@ -1,3 +1,4 @@
+from math import isfinite
 import re
 from typing import Any, Iterable, Mapping, Optional, cast
 
@@ -113,7 +114,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         # Python ints and floats correspond nicely to Int and Float values.
         if isinstance(serialized, int):
             return IntValueNode(value=f"{serialized:d}")
-        if isinstance(serialized, float):
+        if isinstance(serialized, float) and isfinite(serialized):
             return FloatValueNode(value=f"{serialized:g}")
 
         if isinstance(serialized, str):
