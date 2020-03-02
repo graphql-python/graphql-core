@@ -12,7 +12,7 @@ from typing import (
 
 from ..error import GraphQLError
 from ..language import ast
-from ..pyutils import inspect, is_collection, FrozenList
+from ..pyutils import inspect, is_collection, is_description, FrozenList
 from .definition import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
@@ -94,6 +94,7 @@ class GraphQLSchema:
     subscription_type: Optional[GraphQLObjectType]
     type_map: TypeMap
     directives: FrozenList[GraphQLDirective]
+    description: Optional[str]
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[ast.SchemaDefinitionNode]
     extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
@@ -109,6 +110,7 @@ class GraphQLSchema:
         subscription: Optional[GraphQLObjectType] = None,
         types: Optional[Collection[GraphQLNamedType]] = None,
         directives: Optional[Collection[GraphQLDirective]] = None,
+        description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[ast.SchemaDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[ast.SchemaExtensionNode]] = None,
@@ -144,6 +146,8 @@ class GraphQLSchema:
                 raise TypeError("Schema directives must be a collection.")
             if not isinstance(directives, FrozenList):
                 directives = FrozenList(directives)
+        if description is not None and not is_description(description):
+            raise TypeError("Schema description must be a string.")
         if extensions is not None and (
             not isinstance(extensions, dict)
             or not all(isinstance(key, str) for key in extensions)
@@ -163,6 +167,7 @@ class GraphQLSchema:
             if not isinstance(extension_ast_nodes, FrozenList):
                 extension_ast_nodes = FrozenList(extension_ast_nodes)
 
+        self.description = description
         self.extensions = extensions
         self.ast_node = ast_node
         self.extension_ast_nodes = (
@@ -268,6 +273,7 @@ class GraphQLSchema:
             subscription=self.subscription_type,
             types=FrozenList(self.type_map.values()) or None,
             directives=self.directives[:],
+            description=self.description,
             extensions=self.extensions,
             ast_node=self.ast_node,
             extension_ast_nodes=self.extension_ast_nodes,

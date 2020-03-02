@@ -40,6 +40,9 @@ __Schema: GraphQLObjectType = GraphQLObjectType(
     " on the server, as well as the entry points for query,"
     " mutation, and subscription operations.",
     fields=lambda: {
+        "description": GraphQLField(
+            GraphQLString, resolve=lambda schema, _info: schema.description
+        ),
         "types": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__Type))),
             resolve=lambda schema, _info: schema.type_map.values(),

@@ -24,6 +24,7 @@ from graphql.language import (
     OperationType,
     OperationTypeDefinitionNode,
     ScalarTypeDefinitionNode,
+    SchemaDefinitionNode,
     SchemaExtensionNode,
     StringValueNode,
     UnionTypeDefinitionNode,
@@ -96,6 +97,10 @@ def boolean_value_node(value, loc):
     return BooleanValueNode(value=value, loc=loc)
 
 
+def string_value_node(value, block, loc):
+    return StringValueNode(value=value, block=block, loc=loc)
+
+
 def list_type_node(type_, loc):
     return ListTypeNode(type=type_, loc=loc)
 
@@ -149,10 +154,7 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (20, 25))
         description = definition.description
-        assert isinstance(description, StringValueNode)
-        assert description.value == "Description"
-        assert description.block is False
-        assert description.loc == (1, 14)
+        assert description == string_value_node("Description", False, (1, 14))
 
     def parses_type_with_description_multi_line_string():
         body = dedent(
@@ -169,10 +171,21 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (60, 65))
         description = definition.description
-        assert isinstance(description, StringValueNode)
-        assert description.value == "Description"
-        assert description.block is True
-        assert description.loc == (1, 20)
+        assert description == string_value_node("Description", True, (1, 20))
+
+    def parses_schema_with_description_string():
+        body = dedent(
+            """
+            "Description"
+            schema {
+              query: Foo
+            }
+            """
+        )
+        definition = assert_definitions(body, (0, 39))
+        assert isinstance(definition, SchemaDefinitionNode)
+        description = definition.description
+        assert description == string_value_node("Description", False, (1, 14))
 
     def description_followed_by_something_other_than_type_system_definition_throws():
         assert_syntax_error('"Description" 1', "Unexpected Int '1'.", (1, 15))

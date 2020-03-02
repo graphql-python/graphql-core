@@ -71,7 +71,7 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
     "named_type": ("name",),
     "list_type": ("type",),
     "non_null_type": ("type",),
-    "schema_definition": ("directives", "operation_types"),
+    "schema_definition": ("description", "directives", "operation_types"),
     "operation_type_definition": ("type",),
     "scalar_type_definition": ("description", "name", "directives"),
     "object_type_definition": (

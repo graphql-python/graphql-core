@@ -153,6 +153,7 @@ class PrintAstVisitor(Visitor):
 
     # Type System Definitions
 
+    @add_description
     def leave_schema_definition(self, node, *_args):
         return join(
             ["schema", join(node.directives, " "), block(node.operation_types)], " "

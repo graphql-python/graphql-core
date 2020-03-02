@@ -477,8 +477,9 @@ class TypeSystemDefinitionNode(DefinitionNode):
 
 
 class SchemaDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "directives", "operation_types"
+    __slots__ = "description", "directives", "operation_types"
 
+    description: Optional[StringValueNode]
     directives: Optional[FrozenList[DirectiveNode]]
     operation_types: FrozenList["OperationTypeDefinitionNode"]
 

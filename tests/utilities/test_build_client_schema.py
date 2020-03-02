@@ -50,6 +50,7 @@ def describe_type_system_build_schema_from_introspection():
     def builds_a_simple_schema():
         sdl = dedent(
             '''
+            """Simple schema"""
             schema {
               query: Simple
             }

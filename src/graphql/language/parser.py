@@ -581,13 +581,17 @@ class Parser:
     def parse_schema_definition(self) -> SchemaDefinitionNode:
         """SchemaDefinition"""
         start = self._lexer.token
+        description = self.parse_description()
         self.expect_keyword("schema")
         directives = self.parse_directives(True)
         operation_types = self.many(
             TokenKind.BRACE_L, self.parse_operation_type_definition, TokenKind.BRACE_R
         )
         return SchemaDefinitionNode(
-            directives=directives, operation_types=operation_types, loc=self.loc(start)
+            description=description,
+            directives=directives,
+            operation_types=operation_types,
+            loc=self.loc(start),
         )
 
     def parse_operation_type_definition(self) -> OperationTypeDefinitionNode:

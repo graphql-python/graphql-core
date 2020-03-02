@@ -337,7 +337,6 @@ def build_client_schema(
             type_map[std_type_name] = std_type
 
     # Get the root Query, Mutation, and Subscription types.
-
     query_type_ref = schema_introspection.get("queryType")
     query_type = None if query_type_ref is None else get_object_type(query_type_ref)
     mutation_type_ref = schema_introspection.get("mutationType")
@@ -363,11 +362,13 @@ def build_client_schema(
         else []
     )
 
+    # Then produce and return a Schema with these types.
     return GraphQLSchema(
         query=query_type,
         mutation=mutation_type,
         subscription=subscription_type,
         types=list(type_map.values()),
         directives=directives,
+        description=schema_introspection.get("description"),
         assume_valid=assume_valid,
     )

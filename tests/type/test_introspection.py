@@ -17,7 +17,8 @@ from graphql.utilities import get_introspection_query
 def describe_introspection():
     def executes_an_introspection_query():
         schema = GraphQLSchema(
-            GraphQLObjectType("QueryRoot", {"onlyField": GraphQLField(GraphQLString)})
+            GraphQLObjectType("QueryRoot", {"onlyField": GraphQLField(GraphQLString)}),
+            description="Sample schema",
         )
         source = get_introspection_query(
             descriptions=False, directive_is_repeatable=True
@@ -74,6 +75,17 @@ def describe_introspection():
                         "kind": "OBJECT",
                         "name": "__Schema",
                         "fields": [
+                            {
+                                "name": "description",
+                                "args": [],
+                                "type": {
+                                    "kind": "SCALAR",
+                                    "name": "String",
+                                    "ofType": None,
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
                             {
                                 "name": "types",
                                 "args": [],
@@ -1240,6 +1252,7 @@ def describe_introspection():
                     " directives on the server, as well as the entry points"
                     " for query, mutation, and subscription operations.",
                     "fields": [
+                        {"name": "description", "description": None},
                         {
                             "name": "types",
                             "description": "A list of all types supported"

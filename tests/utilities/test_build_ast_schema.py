@@ -163,6 +163,11 @@ def describe_schema_builder():
     def supports_descriptions():
         sdl = dedent(
             '''
+            """Do you agree that this is the most creative schema ever?"""
+            schema {
+              query: Query
+            }
+
             """This is a directive"""
             directive @foo(
               """It has an argument"""

@@ -91,7 +91,9 @@ def describe_type_system_schema():
             },
         )
 
-        schema = GraphQLSchema(BlogQuery, BlogMutation, BlogSubscription)
+        schema = GraphQLSchema(
+            BlogQuery, BlogMutation, BlogSubscription, description="Sample schema",
+        )
 
         kwargs = schema.to_kwargs()
         types = kwargs.pop("types")
@@ -101,14 +103,22 @@ def describe_type_system_schema():
             "mutation": BlogMutation,
             "subscription": BlogSubscription,
             "directives": specified_directives,
-            "ast_node": None,
+            "description": "Sample schema",
             "extensions": None,
+            "ast_node": None,
             "extension_ast_nodes": None,
             "assume_valid": False,
         }
 
         assert print_schema(schema) == dedent(
-            """
+            '''
+            """Sample schema"""
+            schema {
+              query: Query
+              mutation: Mutation
+              subscription: Subscription
+            }
+
             type Query {
               article(id: String): Article
               feed: [Article]
@@ -142,7 +152,7 @@ def describe_type_system_schema():
             type Subscription {
               articleSubscribe(id: String): Article
             }
-            """
+            '''
         )
 
     def freezes_the_specified_directives():
@@ -153,6 +163,12 @@ def describe_type_system_schema():
         directives = schema.directives
         schema = GraphQLSchema(directives=directives)
         assert schema.directives is directives
+
+    def rejects_a_schema_with_incorrectly_typed_description():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLSchema(description=[])  # type: ignore
+        assert str(exc_info.value) == "Schema description must be a string."
 
     def describe_type_map():
         def includes_interface_possible_types_in_the_type_map():

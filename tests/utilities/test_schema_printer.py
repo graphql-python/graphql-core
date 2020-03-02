@@ -287,6 +287,23 @@ def describe_type_system_printer():
             """  # noqa: E501
         )
 
+    def prints_schema_with_description():
+        schema = GraphQLSchema(
+            description="Schema description.", query=GraphQLObjectType("Query", {})
+        )
+
+        output = print_for_test(schema)
+        assert output == dedent(
+            '''
+            """Schema description."""
+            schema {
+              query: Query
+            }
+
+            type Query
+            '''
+        )
+
     def prints_custom_query_root_types():
         schema = GraphQLSchema(query=GraphQLObjectType("CustomType", {}))
 
@@ -630,6 +647,8 @@ def describe_type_system_printer():
             A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.
             """
             type __Schema {
+              description: String
+
               """A list of all types supported by this server."""
               types: [__Type!]!
 

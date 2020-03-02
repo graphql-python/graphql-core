@@ -70,7 +70,7 @@ def print_filtered_schema(
 
 
 def print_schema_definition(schema: GraphQLSchema) -> Optional[str]:
-    if is_schema_of_common_names(schema):
+    if schema.description is None and is_schema_of_common_names(schema):
         return None
 
     operation_types = []
@@ -87,7 +87,7 @@ def print_schema_definition(schema: GraphQLSchema) -> Optional[str]:
     if subscription_type:
         operation_types.append(f"  subscription: {subscription_type.name}")
 
-    return "schema {\n" + "\n".join(operation_types) + "\n}"
+    return print_description(schema) + "schema {\n" + "\n".join(operation_types) + "\n}"
 
 
 def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
@@ -264,7 +264,13 @@ def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue])
 
 
 def print_description(
-    def_: Union[GraphQLArgument, GraphQLDirective, GraphQLEnumValue, GraphQLNamedType],
+    def_: Union[
+        GraphQLArgument,
+        GraphQLDirective,
+        GraphQLEnumValue,
+        GraphQLNamedType,
+        GraphQLSchema,
+    ],
     indentation="",
     first_in_block=True,
 ) -> str:

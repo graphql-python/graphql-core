@@ -652,6 +652,9 @@ def extend_schema_impl(
             replace_directive(directive) for directive in schema_kwargs["directives"]
         ]
         + [build_directive(directive) for directive in directive_defs],
+        "description": schema_def.description.value
+        if schema_def and schema_def.description
+        else None,
         "extensions": None,
         "ast_node": schema_def or schema_kwargs["ast_node"],
         "extension_ast_nodes": (
