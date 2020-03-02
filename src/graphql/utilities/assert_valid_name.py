@@ -1,7 +1,6 @@
 import re
 from typing import Optional
 
-from ..language import Node
 from ..error import GraphQLError
 
 __all__ = ["assert_valid_name", "is_valid_name_error"]
@@ -18,20 +17,17 @@ def assert_valid_name(name: str) -> str:
     return name
 
 
-def is_valid_name_error(
-    name: str, node: Optional[Node] = None
-) -> Optional[GraphQLError]:
+def is_valid_name_error(name: str) -> Optional[GraphQLError]:
     """Return an Error if a name is invalid."""
     if not isinstance(name, str):
         raise TypeError("Expected name to be a string.")
     if name.startswith("__"):
         return GraphQLError(
             f"Name {name!r} must not begin with '__',"
-            " which is reserved by GraphQL introspection.",
-            node,
+            " which is reserved by GraphQL introspection."
         )
     if not re_name.match(name):
         return GraphQLError(
-            f"Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but {name!r} does not.", node
+            f"Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but {name!r} does not."
         )
     return None

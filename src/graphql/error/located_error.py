@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Collection, Union
+from typing import TYPE_CHECKING, Collection, Optional, Union
 
 from .graphql_error import GraphQLError
 
@@ -10,8 +10,8 @@ __all__ = ["located_error"]
 
 def located_error(
     original_error: Union[Exception, GraphQLError],
-    nodes: Collection["Node"],
-    path: Collection[Union[str, int]],
+    nodes: Optional[Union["None", Collection["Node"]]],
+    path: Optional[Collection[Union[str, int]]] = None,
 ) -> GraphQLError:
     """Located GraphQL Error
 
@@ -26,18 +26,22 @@ def located_error(
     if isinstance(original_error, GraphQLError) and original_error.path is not None:
         return original_error
     try:
+        # noinspection PyUnresolvedReferences
         message = original_error.message  # type: ignore
     except AttributeError:
         message = str(original_error)
     try:
+        # noinspection PyUnresolvedReferences
         source = original_error.source  # type: ignore
     except AttributeError:
         source = None
     try:
+        # noinspection PyUnresolvedReferences
         positions = original_error.positions  # type: ignore
     except AttributeError:
         positions = None
     try:
+        # noinspection PyUnresolvedReferences
         nodes = original_error.nodes or nodes  # type: ignore
     except AttributeError:
         pass

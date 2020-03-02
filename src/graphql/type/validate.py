@@ -12,8 +12,7 @@ from typing import (
     cast,
 )
 
-
-from ..error import GraphQLError
+from ..error import GraphQLError, located_error
 from ..pyutils import inspect
 from ..language import NamedTypeNode, Node, OperationType, OperationTypeDefinitionNode
 from .definition import (
@@ -174,9 +173,9 @@ class SchemaValidationContext:
         except AttributeError:  # pragma: no cover
             pass
         else:
-            error = is_valid_name_error(name, ast_node)
+            error = is_valid_name_error(name)
             if error:
-                self.add_error(error)
+                self.add_error(located_error(error, ast_node))
 
     def validate_types(self) -> None:
         validate_input_object_circular_refs = InputObjectCircularRefsValidator(self)
