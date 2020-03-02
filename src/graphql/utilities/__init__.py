@@ -29,7 +29,7 @@ from .extend_schema import extend_schema, get_description
 from .lexicographic_sort_schema import lexicographic_sort_schema
 
 # Print a GraphQLSchema to GraphQL Schema language.
-from .schema_printer import (
+from .print_schema import (
     print_introspection_schema,
     print_schema,
     print_type,
