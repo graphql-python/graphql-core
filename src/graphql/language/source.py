@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .location import SourceLocation
 
 __all__ = ["Source"]
@@ -13,8 +11,8 @@ class Source:
     def __init__(
         self,
         body: str,
-        name: Optional[str] = None,
-        location_offset: Optional[SourceLocation] = None,
+        name: str = "GraphQL request",
+        location_offset: SourceLocation = SourceLocation(1, 1),
     ) -> None:
         """Initialize source input.
 
@@ -26,13 +24,13 @@ class Source:
 
         line and column in location_offset are 1-indexed
         """
-
+        if not isinstance(body, str):
+            raise TypeError("body must be a string.")
         self.body = body
-        self.name = "GraphQL request" if name is None else name
-        if not location_offset:
-            location_offset = SourceLocation(1, 1)
-        elif not isinstance(location_offset, SourceLocation):
-            # noinspection PyProtectedMember,PyTypeChecker
+        if not isinstance(name, str):
+            raise TypeError("name must be a string.")
+        self.name = name
+        if not isinstance(location_offset, SourceLocation):
             location_offset = SourceLocation._make(location_offset)
         if location_offset.line <= 0:
             raise ValueError(
