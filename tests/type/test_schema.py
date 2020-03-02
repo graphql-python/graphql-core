@@ -106,7 +106,7 @@ def describe_type_system_schema():
             "description": "Sample schema",
             "extensions": None,
             "ast_node": None,
-            "extension_ast_nodes": None,
+            "extension_ast_nodes": [],
             "assume_valid": False,
         }
 

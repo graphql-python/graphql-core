@@ -73,7 +73,7 @@ def describe_type_system_scalars():
             "parse_literal": None,
             "extensions": None,
             "ast_node": None,
-            "extension_ast_nodes": None,
+            "extension_ast_nodes": [],
         }
 
     def accepts_a_scalar_type_defining_serialize():
@@ -688,7 +688,7 @@ def describe_type_system_interfaces():
             "resolve_type": None,
             "extensions": None,
             "ast_node": None,
-            "extension_ast_nodes": None,
+            "extension_ast_nodes": [],
         }
 
     def accepts_an_interface_type_defining_resolve_type():

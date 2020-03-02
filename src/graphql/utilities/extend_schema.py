@@ -40,7 +40,7 @@ from ..language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
 )
-from ..pyutils import inspect, FrozenList
+from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
     GraphQLArgumentMap,
@@ -248,8 +248,7 @@ def extend_schema_impl(
                     },
                     **build_input_field_map(extensions),
                 },
-                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
-                + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -261,8 +260,7 @@ def extend_schema_impl(
             **{
                 **kwargs,
                 "values": {**kwargs["values"], **build_enum_value_map(extensions)},
-                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
-                + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -273,8 +271,7 @@ def extend_schema_impl(
         return GraphQLScalarType(
             **{
                 **kwargs,
-                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
-                + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -298,8 +295,7 @@ def extend_schema_impl(
                     },
                     **build_field_map(extensions),
                 },
-                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
-                + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -323,8 +319,7 @@ def extend_schema_impl(
                     },
                     **build_field_map(extensions),
                 },
-                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
-                + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -340,8 +335,7 @@ def extend_schema_impl(
                     for member_type in kwargs["types"]
                 ]
                 + build_union_types(extensions),
-                "extension_ast_nodes": (kwargs["extension_ast_nodes"] or [])
-                + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
 
@@ -657,14 +651,7 @@ def extend_schema_impl(
         else None,
         "extensions": None,
         "ast_node": schema_def or schema_kwargs["ast_node"],
-        "extension_ast_nodes": (
-            (
-                schema_kwargs["extension_ast_nodes"]
-                or cast(FrozenList[SchemaExtensionNode], FrozenList())
-            )
-            + schema_extensions
-        )
-        or None,
+        "extension_ast_nodes": schema_kwargs["extension_ast_nodes"] + schema_extensions,
         "assume_valid": assume_valid,
     }
 

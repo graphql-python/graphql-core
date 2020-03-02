@@ -276,7 +276,7 @@ class GraphQLSchema:
             description=self.description,
             extensions=self.extensions,
             ast_node=self.ast_node,
-            extension_ast_nodes=self.extension_ast_nodes,
+            extension_ast_nodes=self.extension_ast_nodes or FrozenList(),
             assume_valid=self._validation_errors is not None,
         )
 
