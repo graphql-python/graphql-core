@@ -182,22 +182,12 @@ def describe_validate_directives_are_unique_per_location():
               SCHEMA | SCALAR | OBJECT | INTERFACE | UNION | INPUT_OBJECT
 
             schema @nonRepeatable @nonRepeatable { query: Dummy }
-            extend schema @nonRepeatable @nonRepeatable
 
             scalar TestScalar @nonRepeatable @nonRepeatable
-            extend scalar TestScalar @nonRepeatable @nonRepeatable
-
             type TestObject @nonRepeatable @nonRepeatable
-            extend type TestObject @nonRepeatable @nonRepeatable
-
             interface TestInterface @nonRepeatable @nonRepeatable
-            extend interface TestInterface @nonRepeatable @nonRepeatable
-
             union TestUnion @nonRepeatable @nonRepeatable
-            extend union TestUnion @nonRepeatable @nonRepeatable
-
             input TestInput @nonRepeatable @nonRepeatable
-            extend input TestInput @nonRepeatable @nonRepeatable
             """,
             [
                 {
@@ -208,57 +198,136 @@ def describe_validate_directives_are_unique_per_location():
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(6, 27), (6, 42)],
+                    "locations": [(7, 31), (7, 46)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(8, 31), (8, 46)],
+                    "locations": [(8, 29), (8, 44)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(9, 38), (9, 53)],
+                    "locations": [(9, 37), (9, 52)],
+                },
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(10, 29), (10, 44)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(11, 29), (11, 44)],
                 },
+            ],
+        )
+
+    def duplicate_directives_on_sdl_extensions():
+        assert_sdl_errors(
+            """
+            directive @nonRepeatable on
+              SCHEMA | SCALAR | OBJECT | INTERFACE | UNION | INPUT_OBJECT
+
+            extend schema @nonRepeatable @nonRepeatable
+
+            extend scalar TestScalar @nonRepeatable @nonRepeatable
+            extend type TestObject @nonRepeatable @nonRepeatable
+            extend interface TestInterface @nonRepeatable @nonRepeatable
+            extend union TestUnion @nonRepeatable @nonRepeatable
+            extend input TestInput @nonRepeatable @nonRepeatable
+            """,
+            [
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(12, 36), (12, 51)],
+                    "locations": [(5, 27), (5, 42)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(14, 37), (14, 52)],
+                    "locations": [(7, 38), (7, 53)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(15, 44), (15, 59)],
+                    "locations": [(8, 36), (8, 51)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(17, 29), (17, 44)],
+                    "locations": [(9, 44), (9, 59)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(18, 36), (18, 51)],
+                    "locations": [(10, 36), (10, 51)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(20, 29), (20, 44)],
+                    "locations": [(11, 36), (11, 51)],
+                },
+            ],
+        )
+
+    def duplicate_directives_between_sdl_definitions_and_extensions():
+        assert_sdl_errors(
+            """
+            directive @nonRepeatable on SCHEMA
+
+            schema @nonRepeatable { query: Dummy }
+            extend schema @nonRepeatable
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 20), (5, 27)],
+                },
+            ],
+        )
+
+        assert_sdl_errors(
+            """
+            directive @nonRepeatable on SCALAR
+
+            scalar TestScalar @nonRepeatable
+            extend scalar TestScalar @nonRepeatable
+            scalar TestScalar @nonRepeatable
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 31), (5, 38)],
                 },
                 {
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
-                    "locations": [(21, 36), (21, 51)],
+                    "locations": [(4, 31), (6, 31)],
+                },
+            ],
+        )
+
+        assert_sdl_errors(
+            """
+            directive @nonRepeatable on OBJECT
+
+            extend type TestObject @nonRepeatable
+            type TestObject @nonRepeatable
+            extend type TestObject @nonRepeatable
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 36), (5, 29)],
+                },
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 36), (6, 36)],
                 },
             ],
         )
