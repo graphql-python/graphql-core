@@ -5,6 +5,8 @@ from ..language import (
     DirectiveNode,
     ExecutableDefinitionNode,
     FieldNode,
+    FieldDefinitionNode,
+    InputValueDefinitionNode,
     NullValueNode,
     SchemaDefinitionNode,
     SelectionNode,
@@ -211,6 +213,8 @@ def get_argument_values(
 
 NodeWithDirective = Union[
     ExecutableDefinitionNode,
+    FieldDefinitionNode,
+    InputValueDefinitionNode,
     SelectionNode,
     SchemaDefinitionNode,
     TypeDefinitionNode,

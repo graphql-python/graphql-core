@@ -513,16 +513,22 @@ class ObjectTypeDefinitionNode(TypeDefinitionNode):
     fields: Optional[FrozenList["FieldDefinitionNode"]]
 
 
-class FieldDefinitionNode(TypeDefinitionNode):
-    __slots__ = "arguments", "type"
+class FieldDefinitionNode(DefinitionNode):
+    __slots__ = "description", "name", "directives", "arguments", "type"
 
+    description: Optional[StringValueNode]
+    name: NameNode
+    directives: Optional[FrozenList[DirectiveNode]]
     arguments: Optional[FrozenList["InputValueDefinitionNode"]]
     type: TypeNode
 
 
-class InputValueDefinitionNode(TypeDefinitionNode):
-    __slots__ = "type", "default_value"
+class InputValueDefinitionNode(DefinitionNode):
+    __slots__ = "description", "name", "directives", "type", "default_value"
 
+    description: Optional[StringValueNode]
+    name: NameNode
+    directives: Optional[FrozenList[DirectiveNode]]
     type: TypeNode
     default_value: Optional[ValueNode]
 
