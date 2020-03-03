@@ -40,8 +40,6 @@ def describe_ast_from_value():
 
         assert ast_from_value(Undefined, GraphQLBoolean) is None
 
-        assert ast_from_value(nan, GraphQLInt) is None
-
         assert ast_from_value(None, GraphQLBoolean) == NullValueNode()
 
         assert ast_from_value(0, GraphQLBoolean) == BooleanValueNode(value=False)
@@ -70,6 +68,11 @@ def describe_ast_from_value():
             assert ast_from_value(1e40, GraphQLInt)
         msg = str(exc_info.value)
         assert msg == "Int cannot represent non 32-bit signed integer value: 1e+40"
+
+        with raises(GraphQLError) as exc_info:
+            ast_from_value(nan, GraphQLInt)
+        msg = str(exc_info.value)
+        assert msg == "Int cannot represent non-integer value: nan"
 
     def converts_float_values_to_float_asts():
         # luckily in Python we can discern between float and int
@@ -134,7 +137,10 @@ def describe_ast_from_value():
             value="value"
         )
 
-        assert ast_from_value(nan, pass_through_scalar) is None
+        with raises(TypeError) as exc_info:
+            assert ast_from_value(nan, pass_through_scalar)
+        assert str(exc_info.value) == "Cannot convert value to AST: nan."
+
         with raises(TypeError) as exc_info:
             ast_from_value(inf, pass_through_scalar)
         assert str(exc_info.value) == "Cannot convert value to AST: inf."

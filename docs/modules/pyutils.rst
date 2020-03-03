@@ -20,8 +20,6 @@ PyUtils
 .. autofunction:: inspect
 .. autofunction:: is_finite
 .. autofunction:: is_integer
-.. autofunction:: is_invalid
-.. autofunction:: is_nullish
 .. autoclass:: AwaitableOrValue
    :members:
 .. autofunction:: suggestion_list

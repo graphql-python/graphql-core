@@ -7,7 +7,7 @@ from ..language import (
     ValueNode,
     VariableNode,
 )
-from ..pyutils import inspect, is_invalid, Undefined
+from ..pyutils import inspect, Undefined
 from ..type import (
     GraphQLInputObjectType,
     GraphQLInputType,
@@ -88,12 +88,12 @@ def value_from_ast(
                     append_value(None)
                 else:
                     item_value = value_from_ast(item_node, item_type, variables)
-                    if is_invalid(item_value):
+                    if item_value is Undefined:
                         return Undefined
                     append_value(item_value)
             return coerced_values
         coerced_value = value_from_ast(value_node, item_type, variables)
-        if is_invalid(coerced_value):
+        if coerced_value is Undefined:
             return Undefined
         return [coerced_value]
 
@@ -114,7 +114,7 @@ def value_from_ast(
                     return Undefined
                 continue
             field_value = value_from_ast(field_node.value, field.type, variables)
-            if is_invalid(field_value):
+            if field_value is Undefined:
                 return Undefined
             coerced_obj[field.out_name or field_name] = field_value
 
@@ -143,5 +143,5 @@ def is_missing_variable(
 ) -> bool:
     """Check if `value_node` is a variable not defined in the `variables` dict."""
     return isinstance(value_node, VariableNode) and (
-        not variables or is_invalid(variables.get(value_node.name.value, Undefined))
+        not variables or variables.get(value_node.name.value, Undefined) is Undefined
     )

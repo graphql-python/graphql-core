@@ -28,8 +28,6 @@ from ..language import (
 )
 from ..pyutils import (
     inspect,
-    is_invalid,
-    is_nullish,
     AwaitableOrValue,
     FrozenList,
     Path,
@@ -756,8 +754,8 @@ class ExecutionContext:
                 )
             return completed
 
-        # If result value is null-ish (null, Undefined, or NaN) then return null.
-        if is_nullish(result):
+        # If result value is null or undefined then return null.
+        if result is None or result is Undefined:
             return None
 
         # If field type is List, complete each item in the list with inner type
@@ -852,7 +850,7 @@ class ExecutionContext:
         serialization is not possible.
         """
         serialized_result = return_type.serialize(result)
-        if is_invalid(serialized_result):
+        if serialized_result is Undefined:
             raise TypeError(
                 f"Expected a value of type '{inspect(return_type)}'"
                 f" but received: {inspect(result)}"

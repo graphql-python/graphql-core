@@ -14,7 +14,7 @@ from ...language import (
     ValueNode,
     print_ast,
 )
-from ...pyutils import did_you_mean, is_invalid, suggestion_list
+from ...pyutils import did_you_mean, suggestion_list, Undefined
 from ...type import (
     GraphQLScalarType,
     get_named_type,
@@ -130,7 +130,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         type_ = cast(GraphQLScalarType, type_)
         try:
             parse_result = type_.parse_literal(node)
-            if is_invalid(parse_result):
+            if parse_result is Undefined:
                 self.report_error(
                     GraphQLError(
                         f"Expected value of type '{location_type}',"

@@ -1,5 +1,5 @@
-from math import isfinite
 import re
+from math import isfinite
 from typing import Any, Iterable, Mapping, Optional, cast
 
 from ..language import (
@@ -15,7 +15,7 @@ from ..language import (
     StringValueNode,
     ValueNode,
 )
-from ..pyutils import FrozenList, inspect, is_nullish, is_invalid
+from ..pyutils import inspect, FrozenList, Undefined
 from ..type import (
     GraphQLID,
     GraphQLInputType,
@@ -67,8 +67,8 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     if value is None:
         return NullValueNode()
 
-    # Undefined or NaN
-    if is_invalid(value):
+    # undefined
+    if value is Undefined:
         return None
 
     # Convert Python list to GraphQL list. If the GraphQLType is a list, but the value
@@ -104,7 +104,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
         # Since value is an internally represented value, it must be serialized to an
         # externally represented value before converting into an AST.
         serialized = type_.serialize(value)  # type: ignore
-        if is_nullish(serialized):
+        if serialized is None or serialized is Undefined:
             return None
 
         # Others serialize based on their corresponding Python scalar types.
