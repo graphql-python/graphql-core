@@ -1,4 +1,3 @@
-from array import array
 from typing import Collection, Optional, List
 
 __all__ = ["suggestion_list"]
@@ -38,7 +37,7 @@ class LexicalDistance:
 
     _input: str
     _input_lower_case: str
-    _input_list = List[int]
+    _input_list: List[int]
     _rows: List[List[int]]
 
     def __init__(self, input_: str):
