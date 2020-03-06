@@ -12,9 +12,8 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
     options_by_distance = {}
     lexical_distance = LexicalDistance(input_)
 
-    input_threshold = len(input_) // 2
+    threshold = int(len(input_) * 0.4) + 1
     for option in options:
-        threshold = max(input_threshold, len(option) // 2, 1)
         distance = lexical_distance.measure(option, threshold)
         if distance is not None:
             options_by_distance[option] = distance

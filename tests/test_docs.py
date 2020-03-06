@@ -149,7 +149,7 @@ def describe_usage():
         assert out == expected_result(queries)
 
         bad_query = queries.pop(0)
-        assert "homeTown" in bad_query
+        assert "homePlace" in bad_query
         exec(bad_query, scope)
         out, err = capsys.readouterr()
         assert not err

@@ -38,7 +38,7 @@ def describe_suggestion_list():
         expect_suggestions("214365879", ["123456789"], ["123456789"])
 
     def returns_options_sorted_based_on_lexical_distance():
-        expect_suggestions("abc", ["a", "ab", "abc"], ["abc", "ab"])
+        expect_suggestions("abc", ["a", "ab", "abc"], ["abc", "ab", "a"])
 
         expect_suggestions(
             "GraphQl",

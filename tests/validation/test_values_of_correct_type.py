@@ -997,16 +997,16 @@ def describe_validate_values_of_correct_type():
                   complicatedArgs {
                     complexArgField(complexArg: {
                       requiredField: true,
-                      unknownField: "value"
+                      invalidField: "value"
                     })
                   }
                 }
                 """,
                 [
                     {
-                        "message": "Field 'unknownField'"
+                        "message": "Field 'invalidField'"
                         " is not defined by type 'ComplexInput'."
-                        " Did you mean 'booleanField', 'intField', or 'nonNullField'?",
+                        " Did you mean 'intField'?",
                         "locations": [(6, 23)],
                     },
                 ],

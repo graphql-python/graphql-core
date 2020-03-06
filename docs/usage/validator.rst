@@ -14,7 +14,7 @@ GraphQL specification. You can also run the validation step manually by calling 
         {
           human(id: NEWHOPE) {
             name
-            homeTown
+            homePlace
             friends
           }
         }
@@ -27,7 +27,7 @@ In this case, we will get::
         'String cannot represent a non string value: NEWHOPE',
         locations=[SourceLocation(line=3, column=17)]),
      GraphQLError(
-        "Cannot query field 'homeTown' on type 'Human'."
+        "Cannot query field 'homePlace' on type 'Human'."
          " Did you mean 'homePlanet'?",
          locations=[SourceLocation(line=5, column=9)]),
      GraphQLError(

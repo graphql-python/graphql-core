@@ -175,7 +175,7 @@ def describe_type_system_enum_values():
             [
                 {
                     "message": "Value 'green' does not exist in 'Color' enum."
-                    " Did you mean the enum value 'GREEN'?",
+                    " Did you mean the enum value 'GREEN' or 'RED'?",
                     "locations": [(1, 23)],
                 }
             ],

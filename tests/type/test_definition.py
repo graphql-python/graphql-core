@@ -1154,14 +1154,14 @@ def describe_type_system_enums():
             enum_type.parse_literal(StringValueNode(value="BAR"))
         assert exc_info.value.message == (
             "Enum 'SomeEnum' cannot represent non-enum value: \"BAR\"."
-            " Did you mean the enum value 'BAR'?"
+            " Did you mean the enum value 'BAR' or 'BAZ'?"
         )
         assert enum_type.parse_literal(EnumValueNode(value="BAZ")) is None
         with raises(GraphQLError) as exc_info:
             enum_type.parse_literal(StringValueNode(value="BAZ"))
         assert exc_info.value.message == (
             "Enum 'SomeEnum' cannot represent non-enum value: \"BAZ\"."
-            " Did you mean the enum value 'BAZ'?"
+            " Did you mean the enum value 'BAZ' or 'BAR'?"
         )
 
     def accepts_an_enum_type_with_ast_node_and_extension_ast_nodes():
