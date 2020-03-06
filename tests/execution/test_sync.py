@@ -64,6 +64,11 @@ def describe_execute_synchronously_when_possible():
         )
 
     def describe_graphql_sync():
+        def reports_errors_raised_during_schema_validation():
+            bad_schema = GraphQLSchema()
+            result = graphql_sync(schema=bad_schema, source="{ __typename }")
+            assert result == (None, [{"message": "Query root type must be provided."}])
+
         def does_not_return_a_promise_for_syntax_errors():
             doc = "fragment Example on Query { { { syncField }"
             assert graphql_sync(schema, doc) == (
