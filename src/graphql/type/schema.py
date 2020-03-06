@@ -230,6 +230,11 @@ class GraphQLSchema:
                 continue
 
             type_name = getattr(named_type, "name", None)
+            if not type_name:
+                raise TypeError(
+                    "One of the provided types for building the Schema"
+                    " is missing a name.",
+                )
             if type_name in type_map:
                 raise TypeError(
                     "Schema must contain uniquely named types"

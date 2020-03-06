@@ -23,6 +23,7 @@ from graphql.type import (
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
+    GraphQLType,
     specified_directives,
 )
 from graphql.utilities import print_schema
@@ -243,7 +244,7 @@ def describe_type_system_schema():
             assert "Foo" in schema.type_map
             assert "Bar" in schema.type_map
 
-    def preserves_order_of_user_provided_types():
+    def preserves_the_order_of_user_provided_types():
         a_type = GraphQLObjectType(
             "A", {"sub": GraphQLField(GraphQLScalarType("ASub"))}
         )
@@ -339,6 +340,17 @@ def describe_type_system_schema():
             assert msg == (
                 "Schema must contain uniquely named types"
                 f" but contains multiple types named 'String'."
+            )
+
+        def rejects_a_schema_when_a_provided_type_has_no_name():
+            query = GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)})
+            types = [GraphQLType(), query, GraphQLType()]
+
+            with raises(TypeError) as exc_info:
+                GraphQLSchema(query, types=types)  # type: ignore
+            msg = str(exc_info.value)
+            assert msg == (
+                "One of the provided types for building the Schema is missing a name."
             )
 
         def rejects_a_schema_which_defines_an_object_twice():

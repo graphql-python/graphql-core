@@ -102,6 +102,12 @@ not_input_types = [
     *with_modifiers(SomeInterfaceType),
 ]
 
+not_graphql_types = [
+    type("IntType", (int,), {"name": "IntType"}),
+    type("FloatType", (float,), {"name": "FloatType"}),
+    type("StringType", (str,), {"name": "StringType"}),
+]
+
 parametrize_type = partial(
     mark.parametrize("type_", ids=lambda type_: type_.__class__.__name__)
 )
@@ -1044,7 +1050,7 @@ def describe_type_system_object_fields_must_have_output_types():
             }
         ]
 
-    @parametrize_type([int, float, str])
+    @parametrize_type(not_graphql_types)
     def rejects_a_non_type_value_as_an_object_field_type(type_):
         schema = _schema_with_object_field_of_type(type_)
         assert validate_schema(schema) == [
@@ -1372,7 +1378,7 @@ def describe_type_system_interface_fields_must_have_output_types():
             },
         ]
 
-    @parametrize_type([int, float, str])
+    @parametrize_type(not_graphql_types)
     def rejects_a_non_type_value_as_an_interface_field_type(type_):
         schema = _schema_with_interface_field_of_type(type_)
         assert validate_schema(schema) == [
@@ -1525,7 +1531,7 @@ def describe_type_system_arguments_must_have_input_types():
             },
         ]
 
-    @parametrize_type([int, float, str])
+    @parametrize_type(not_graphql_types)
     def rejects_a_non_type_value_as_a_field_arg_type(type_):
         schema = _schema_with_arg_of_type(type_)
         assert validate_schema(schema) == [
@@ -1635,7 +1641,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
             }
         ]
 
-    @parametrize_type([int, float, str])
+    @parametrize_type(not_graphql_types)
     def rejects_a_non_type_value_as_an_input_field_type(type_):
         schema = _schema_with_input_field_of_type(type_)
         assert validate_schema(schema) == [
