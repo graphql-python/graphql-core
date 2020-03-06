@@ -58,8 +58,11 @@ class LexicalDistance:
 
         a, b = option_lower_case, self._input_lower_case
         a_len, b_len = len(a), len(b)
+        if a_len < b_len:
+            a, b = b, a
+            a_len, b_len = b_len, a_len
 
-        if abs(a_len - b_len) > threshold:
+        if a_len - b_len > threshold:
             return None
 
         rows = self._rows
