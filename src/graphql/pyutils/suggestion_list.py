@@ -10,10 +10,11 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
     of valid options sorted based on their similarity with the input.
     """
     options_by_distance = {}
-    input_threshold = len(input_) // 2
+    lexical_distance = LexicalDistance(input_)
 
+    input_threshold = len(input_) // 2
     for option in options:
-        distance = lexical_distance(input_, option)
+        distance = lexical_distance.measure(option)
         threshold = max(input_threshold, len(option) // 2, 1)
         if distance <= threshold:
             options_by_distance[option] = distance
@@ -25,7 +26,7 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
     )
 
 
-def lexical_distance(a_str: str, b_str: str) -> int:
+class LexicalDistance:
     """Computes the lexical distance between strings A and B.
 
     The "distance" between two strings is given by counting the minimum number of edits
@@ -34,27 +35,41 @@ def lexical_distance(a_str: str, b_str: str) -> int:
 
     This distance can be useful for detecting typos in input or sorting.
     """
-    if a_str == b_str:
-        return 0
 
-    a, b = a_str.lower(), b_str.lower()
-    a_len, b_len = len(a), len(b)
+    _input: str
+    _input_lower_case: str
+    _cells: List[List[int]]
 
-    # Any case change counts as a single edit
-    if a == b:
-        return 1
+    def __init__(self, input_: str):
+        self._input = input_
+        self._input_lower_case = input_.lower()
+        self._cells = []
 
-    d = [[j for j in range(0, b_len + 1)]]
-    for i in range(1, a_len + 1):
-        d.append([i] + [0] * b_len)
+    def measure(self, option: str):
+        if self._input == option:
+            return 0
 
-    for i in range(1, a_len + 1):
-        for j in range(1, b_len + 1):
-            cost = 0 if a[i - 1] == b[j - 1] else 1
+        option_lower_case = option.lower()
 
-            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+        # Any case change counts as a single edit
+        if self._input_lower_case == option_lower_case:
+            return 1
 
-            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
-                d[i][j] = min(d[i][j], d[i - 2][j - 2] + cost)
+        d = self._cells
+        a, b = option_lower_case, self._input_lower_case
+        a_len, b_len = len(a), len(b)
 
-    return d[a_len][b_len]
+        d = [[j for j in range(0, b_len + 1)]]
+        for i in range(1, a_len + 1):
+            d.append([i] + [0] * b_len)
+
+        for i in range(1, a_len + 1):
+            for j in range(1, b_len + 1):
+                cost = 0 if a[i - 1] == b[j - 1] else 1
+
+                d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+
+                if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                    d[i][j] = min(d[i][j], d[i - 2][j - 2] + cost)
+
+        return d[a_len][b_len]
