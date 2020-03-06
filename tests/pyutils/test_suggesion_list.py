@@ -8,6 +8,28 @@ def describe_suggestion_list():
     def returns_empty_array_when_there_are_no_options():
         assert suggestion_list("input", []) == []
 
+    def returns_options_with_small_lexical_distance():
+        assert suggestion_list("greenish", ["green"]) == ["green"]
+        assert suggestion_list("green", ["greenish"]) == ["greenish"]
+
+    def returns_options_with_different_case():
+        assert suggestion_list("verylongstring", ["VERYLONGSTRING"]) == [
+            "VERYLONGSTRING"
+        ]
+
+        assert suggestion_list("VERYLONGSTRING", ["verylongstring"]) == [
+            "verylongstring"
+        ]
+
+        assert suggestion_list("VERYLONGSTRING", ["VeryLongString"]) == [
+            "VeryLongString"
+        ]
+
+    def returns_options_with_transpositions():
+        assert suggestion_list("agr", ["arg"]) == ["arg"]
+
+        assert suggestion_list("214365879", ["123456789"]) == ["123456789"]
+
     def returns_options_sorted_based_on_lexical_distance():
         assert suggestion_list("abc", ["a", "ab", "abc"]) == ["abc", "ab"]
 
