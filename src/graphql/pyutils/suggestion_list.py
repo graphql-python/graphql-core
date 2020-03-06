@@ -1,3 +1,4 @@
+from array import array
 from typing import Collection, Optional, List
 
 __all__ = ["suggestion_list"]
@@ -37,12 +38,15 @@ class LexicalDistance:
 
     _input: str
     _input_lower_case: str
+    _input_list = List[int]
     _rows: List[List[int]]
 
     def __init__(self, input_: str):
         self._input = input_
         self._input_lower_case = input_.lower()
         row_size = len(input_) + 1
+        self._input_list = list(map(ord, self._input_lower_case))
+
         self._rows = [[0] * row_size, [0] * row_size, [0] * row_size]
 
     def measure(self, option: str, threshold: int) -> Optional[int]:
@@ -55,7 +59,7 @@ class LexicalDistance:
         if self._input_lower_case == option_lower_case:
             return 1
 
-        a, b = option_lower_case, self._input_lower_case
+        a, b = list(map(ord, option_lower_case)), self._input_list
         a_len, b_len = len(a), len(b)
         if a_len < b_len:
             a, b = b, a
