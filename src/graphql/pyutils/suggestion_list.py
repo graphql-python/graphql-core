@@ -38,12 +38,13 @@ class LexicalDistance:
 
     _input: str
     _input_lower_case: str
-    _cells: List[List[int]]
+    _rows: List[List[int]]
 
     def __init__(self, input_: str):
         self._input = input_
         self._input_lower_case = input_.lower()
-        self._cells = []
+        row_size = len(input_) + 1
+        self._rows = [[0] * row_size, [0] * row_size, [0] * row_size]
 
     def measure(self, option: str):
         if self._input == option:
@@ -55,28 +56,32 @@ class LexicalDistance:
         if self._input_lower_case == option_lower_case:
             return 1
 
-        d = self._cells
         a, b = option_lower_case, self._input_lower_case
         a_len, b_len = len(a), len(b)
 
-        d = [[j for j in range(0, b_len + 1)]]
-        for i in range(1, a_len + 1):
-            d.append([i] + [0] * b_len)
+        rows = self._rows
+        for j in range(0, b_len + 1):
+            rows[0][j] = j
 
         for i in range(1, a_len + 1):
+            up_row = rows[(i - 1) % 3]
+            current_row = rows[i % 3]
+
+            current_row[0] = i
             for j in range(1, b_len + 1):
                 cost = 0 if a[i - 1] == b[j - 1] else 1
 
                 current_cell = min(
-                    d[i - 1][j] + 1,  # delete
-                    d[i][j - 1] + 1,  # insert
-                    d[i - 1][j - 1] + cost,  # substitute
+                    up_row[j] + 1,  # delete
+                    current_row[j - 1] + 1,  # insert
+                    up_row[j - 1] + cost,  # substitute
                 )
 
                 if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
                     # transposition
-                    current_cell = min(current_cell, d[i - 2][j - 2] + 1)
+                    double_diagonal_cell = rows[(i - 2) % 3][j - 2]
+                    current_cell = min(current_cell, double_diagonal_cell + 1)
 
-                d[i][j] = current_cell
+                current_row[j] = current_cell
 
-        return d[a_len][b_len]
+        return rows[a_len % 3][b_len]
