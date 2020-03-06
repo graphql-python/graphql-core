@@ -1,4 +1,4 @@
-from typing import Collection, List
+from typing import Collection, Optional, List
 
 __all__ = ["suggestion_list"]
 
@@ -14,9 +14,9 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
 
     input_threshold = len(input_) // 2
     for option in options:
-        distance = lexical_distance.measure(option)
         threshold = max(input_threshold, len(option) // 2, 1)
-        if distance <= threshold:
+        distance = lexical_distance.measure(option, threshold)
+        if distance is not None:
             options_by_distance[option] = distance
 
     # noinspection PyShadowingNames
@@ -46,7 +46,7 @@ class LexicalDistance:
         row_size = len(input_) + 1
         self._rows = [[0] * row_size, [0] * row_size, [0] * row_size]
 
-    def measure(self, option: str):
+    def measure(self, option: str, threshold: int) -> Optional[int]:
         if self._input == option:
             return 0
 
@@ -59,6 +59,9 @@ class LexicalDistance:
         a, b = option_lower_case, self._input_lower_case
         a_len, b_len = len(a), len(b)
 
+        if abs(a_len - b_len) > threshold:
+            return None
+
         rows = self._rows
         for j in range(0, b_len + 1):
             rows[0][j] = j
@@ -67,7 +70,7 @@ class LexicalDistance:
             up_row = rows[(i - 1) % 3]
             current_row = rows[i % 3]
 
-            current_row[0] = i
+            smallest_cell = current_row[0] = i
             for j in range(1, b_len + 1):
                 cost = 0 if a[i - 1] == b[j - 1] else 1
 
@@ -82,6 +85,15 @@ class LexicalDistance:
                     double_diagonal_cell = rows[(i - 2) % 3][j - 2]
                     current_cell = min(current_cell, double_diagonal_cell + 1)
 
+                if current_cell < smallest_cell:
+                    smallest_cell = current_cell
+
                 current_row[j] = current_cell
 
-        return rows[a_len % 3][b_len]
+            # Early exit, since distance can't go smaller than smallest element
+            # of the previous row.
+            if smallest_cell > threshold:
+                return None
+
+        distance = rows[a_len % 3][b_len]
+        return distance if distance <= threshold else None

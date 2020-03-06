@@ -18,6 +18,13 @@ def describe_suggestion_list():
         expect_suggestions("greenish", ["green"], ["green"])
         expect_suggestions("green", ["greenish"], ["greenish"])
 
+    def rejects_options_with_distance_that_exceeds_threshold():
+        expect_suggestions("aaaa", ["aaab"], ["aaab"])
+        expect_suggestions("aaaa", ["aabb"], ["aabb"])
+        expect_suggestions("aaaa", ["abbb"], [])
+
+        expect_suggestions("ab", ["ca"], [])
+
     def returns_options_with_different_case():
         expect_suggestions("verylongstring", ["VERYLONGSTRING"], ["VERYLONGSTRING"])
 
