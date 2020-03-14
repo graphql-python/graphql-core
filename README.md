@@ -171,7 +171,7 @@ in Python as closely as possible and to stay up-to-date with the latest developm
 GraphQL.js.
 
 GraphQL-core 3 (formerly known as GraphQL-core-next) has been created as a modern
-alternative to [GraphQL-core 2](https://github.com/graphql-python/graphql-core),
+alternative to [GraphQL-core 2](https://github.com/graphql-python/graphql-core-legacy),
 a prior work by Syrus Akbary, based on an older version of GraphQL.js and also
 targeting older Python versions. Some parts of GraphQL-core 3 have been inspired by
 GraphQL-core 2 or directly taken over with only slight modifications, but most of the
