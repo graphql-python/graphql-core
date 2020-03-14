@@ -15,7 +15,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     keywords="graphql",
-    url="https://github.com/graphql-python/graphql-core-next",
+    url="https://github.com/graphql-python/graphql-core",
     author="Christoph Zwerschke",
     author_email="cito@online.de",
     license="MIT license",

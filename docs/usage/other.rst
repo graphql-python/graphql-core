@@ -22,4 +22,4 @@ GraphQL schemas and queries. We encourage you to explore the contents of the var
 code and tests of `GraphQL-core 3`_ in order to find all the functionality that is
 provided and understand it in detail.
 
-.. _GraphQL-core 3: https://github.com/graphql-python/graphql-core-next
+.. _GraphQL-core 3: https://github.com/graphql-python/graphql-core
