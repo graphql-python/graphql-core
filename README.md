@@ -5,7 +5,7 @@ the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
 [![PyPI version](https://badge.fury.io/py/graphql-core.svg)](https://badge.fury.io/py/graphql-core)
-[![Documentation Status](https://readthedocs.org/projects/graphql-core/badge/)](https://graphql-core.readthedocs.io)
+[![Documentation Status](https://readthedocs.org/projects/graphql-core-3/badge/)](https://graphql-core-3.readthedocs.io)
 [![Build Status](https://travis-ci.com/graphql-python/graphql-core.svg?branch=master)](https://travis-ci.com/graphql-python/graphql-core)
 [![Coverage Status](https://codecov.io/gh/graphql-python/graphql-core/branch/master/graph/badge.svg)](https://codecov.io/gh/graphql-python/graphql-core)
 [![Dependency Updates](https://pyup.io/repos/github/graphql-python/graphql-core/shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core/)
@@ -21,7 +21,7 @@ An extensive test suite with over 2100 unit tests and 100% coverage also replica
 ## Documentation
 
 A more detailed documentation for GraphQL-core 3 can be found at
-[graphql-core.readthedocs.io](https://graphql-core.readthedocs.io/).
+[graphql-core-3.readthedocs.io](https://graphql-core-3.readthedocs.io/).
 
 The documentation for GraphQL.js can be found at [graphql.org/graphql-js/](https://graphql.org/graphql-js/).
 

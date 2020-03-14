@@ -11,7 +11,7 @@ authors = [
 readme = "README.md"
 homepage = "https://github.com/graphql-python/graphql-core"
 repository = "https://github.com/graphql-python/graphql-core"
-documentation = "https://graphql-core.readthedocs.io/"
+documentation = "https://graphql-core-3.readthedocs.io/"
 keywords = ["graphql"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
