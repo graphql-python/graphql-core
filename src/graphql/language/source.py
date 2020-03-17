@@ -6,7 +6,7 @@ __all__ = ["Source"]
 class Source:
     """A representation of source input to GraphQL."""
 
-    __slots__ = "body", "name", "location_offset"
+    __slots__ = "__weakref__", "__dict__", "body", "name", "location_offset"
 
     def __init__(
         self,
