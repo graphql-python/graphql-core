@@ -83,16 +83,6 @@ def describe_token_class():
         assert token2 == token1
         assert token2 is not token1
 
-    def can_weakref():
-        token = Token(TokenKind.NAME, 1, 2, 1, 2, value="test")
-        wr = weakref.ref(token)  # That this works is 90% of the test
-        assert wr() is token
-
-    def can_make_attrs():
-        token = Token(TokenKind.NAME, 1, 2, 1, 2, value="test")
-        token.__new_random_attr = "Hello!"  # That this works is 90% of the test
-        assert token.__new_random_attr == "Hello!"
-
 
 def describe_location_class():
     token1 = Token(TokenKind.NAME, 1, 2, 1, 2)
@@ -154,16 +144,6 @@ def describe_location_class():
         assert loc4 != loc1
         assert hash(loc4) != hash(loc1)
         assert hash(loc4) != hash(loc3)
-
-    def can_weakref():
-        loc = Location(token1, token2, source)
-        wr = weakref.ref(loc)  # That this works is 90% of the test
-        assert wr() is loc
-
-    def can_make_attrs():
-        loc = Location(token1, token2, source)
-        loc.__new_random_attr = "Hello!"  # That this works is 90% of the test
-        assert loc.__new_random_attr == "Hello!"
 
 
 def describe_node_class():
