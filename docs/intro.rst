@@ -84,8 +84,8 @@ in the current development or want to report issues or send pull requests.
 
 .. _GraphQL: https://graphql.org/
 .. _GraphQL.js: https://github.com/graphql/graphql-js
-.. _GraphQL-core-3: https://github.com/graphql-python/graphql-core-next
-.. _GitHub repository of GraphQL-core 3: https://github.com/graphql-python/graphql-core-next
+.. _GraphQL-core-3: https://github.com/graphql-python/graphql-core
+.. _GitHub repository of GraphQL-core 3: https://github.com/graphql-python/graphql-core
 .. _Specification for GraphQL: https://facebook.github.io/graphql/
 .. _Language: https://facebook.github.io/graphql/draft/#sec-Language
 .. _Type System: https://facebook.github.io/graphql/draft/#sec-Type-System

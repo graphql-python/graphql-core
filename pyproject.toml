@@ -9,9 +9,9 @@ authors = [
     "Christoph Zwerschke <cito@online.de>"
 ]
 readme = "README.md"
-homepage = "https://github.com/graphql-python/graphql-core-next"
-repository = "https://github.com/graphql-python/graphql-core-next"
-documentation = "https://graphql-core-next.readthedocs.io/"
+homepage = "https://github.com/graphql-python/graphql-core"
+repository = "https://github.com/graphql-python/graphql-core"
+documentation = "https://graphql-core-3.readthedocs.io/"
 keywords = ["graphql"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
