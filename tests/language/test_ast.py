@@ -187,6 +187,16 @@ def describe_node_class():
         assert node3 != node
         assert hash(node3) != hash(node)
 
+    def can_create_weak_reference():
+        node = SampleTestNode(alpha=1, beta=2)
+        ref = weakref.ref(node)
+        assert ref() is node
+
+    def can_create_custom_attribute():
+        node = SampleTestNode(alpha=1, beta=2)
+        node.gamma = 3  # type: ignore
+        assert node.gamma == 3  # type: ignore
+
     def can_create_shallow_copy():
         node = SampleTestNode(alpha=1, beta=2)
         node2 = copy(node)
@@ -225,13 +235,3 @@ def describe_node_class():
 
     def provides_keys_as_class_attribute():
         assert SampleTestNode.keys == ["loc", "alpha", "beta"]
-
-    def can_weakref():
-        node = SampleTestNode(alpha=1, beta=2)
-        wr = weakref.ref(node)  # That this works is 90% of the test
-        assert wr() is node
-
-    def can_make_attrs():
-        node = SampleTestNode(alpha=1, beta=2)
-        node.__new_random_attr = "Hello!"  # That this works is 90% of the test
-        assert node.__new_random_attr == "Hello!"

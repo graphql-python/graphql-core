@@ -72,7 +72,7 @@ class Token:
     Represents a range of characters represented by a lexical token within a Source.
     """
 
-    __slots__ = ("kind", "start", "end", "line", "column", "prev", "next", "value")
+    __slots__ = "kind", "start", "end", "line", "column", "prev", "next", "value"
 
     kind: TokenKind  # the kind of token
     start: int  # the character offset at which this Node begins
@@ -162,7 +162,13 @@ class Location:
     region of the source from which the AST derived.
     """
 
-    __slots__ = ("start", "end", "start_token", "end_token", "source")
+    __slots__ = (
+        "start",
+        "end",
+        "start_token",
+        "end_token",
+        "source",
+    )
 
     start: int  # character offset at which this Node begins
     end: int  # character offset at which this Node ends
@@ -214,7 +220,8 @@ class OperationType(Enum):
 class Node:
     """AST nodes"""
 
-    __slots__ = ("__dict__", "__weakref__", "loc",)
+    # allow custom attributes and weak references (not used internally)
+    __slots__ = "__dict__", "__weakref__", "loc"
 
     loc: Optional[Location]
 

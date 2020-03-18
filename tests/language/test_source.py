@@ -1,3 +1,5 @@
+import weakref
+
 from pytest import raises  # type: ignore
 
 from graphql.language import Source, SourceLocation
@@ -62,6 +64,16 @@ def describe_source():
         assert source != different_source
         assert not source == "bar"
         assert source != "bar"
+
+    def can_create_weak_reference():
+        source = Source("foo")
+        ref = weakref.ref(source)
+        assert ref() is source
+
+    def can_create_custom_attribute():
+        node = Source("foo")
+        node.custom = "bar"  # type: ignore
+        assert node.custom == "bar"  # type: ignore
 
     def rejects_invalid_body_and_name():
         with raises(TypeError, match="body must be a string\\."):

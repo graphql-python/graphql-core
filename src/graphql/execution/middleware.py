@@ -20,7 +20,8 @@ class MiddlewareManager:
     must be aware of this and check whether values are awaitable before awaiting them.
     """
 
-    __slots__ = "__weakref__", "__dict__", "middlewares", "_middleware_resolvers", "_cached_resolvers"
+    # allow custom attributes (not used internally)
+    __slots__ = "__dict__", "middlewares", "_middleware_resolvers", "_cached_resolvers"
 
     _cached_resolvers: Dict[GraphQLFieldResolver, GraphQLFieldResolver]
     _middleware_resolvers: Optional[List[Callable]]
