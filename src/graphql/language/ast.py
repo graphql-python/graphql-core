@@ -214,7 +214,7 @@ class OperationType(Enum):
 class Node:
     """AST nodes"""
 
-    __slots__ = ("loc",)
+    __slots__ = ("__dict__", "__weakref__", "loc",)
 
     loc: Optional[Location]
 

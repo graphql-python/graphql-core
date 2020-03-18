@@ -1,4 +1,5 @@
 from copy import copy, deepcopy
+import weakref
 
 from graphql.language import Location, Node, Source, Token, TokenKind
 from graphql.pyutils import inspect
@@ -224,3 +225,13 @@ def describe_node_class():
 
     def provides_keys_as_class_attribute():
         assert SampleTestNode.keys == ["loc", "alpha", "beta"]
+
+    def can_weakref():
+        node = SampleTestNode(alpha=1, beta=2)
+        wr = weakref.ref(node)  # That this works is 90% of the test
+        assert wr() is node
+
+    def can_make_attrs():
+        node = SampleTestNode(alpha=1, beta=2)
+        node.__new_random_attr = "Hello!"  # That this works is 90% of the test
+        assert node.__new_random_attr == "Hello!"
