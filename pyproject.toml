@@ -32,14 +32,14 @@ packages = [
 python = "^3.6"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.3"
+pytest = "^5.4"
 pytest-asyncio = ">=0.10,<1"
 pytest-benchmark = "^3.2"
 pytest-cov = "^2.8"
 pytest-describe = ">=0.12,<1"
 black = "19.10b0"
 flake8 = "^3.7"
-mypy = ">=0.761,<0.770"
+mypy = "0.770"
 codecov = "^2"
 sphinx = "^2.4"
 sphinx_rtd_theme = ">=0.4,<1"

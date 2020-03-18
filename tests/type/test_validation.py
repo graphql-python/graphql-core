@@ -1,4 +1,4 @@
-from functools import partial
+from operator import attrgetter
 from typing import cast, List, Union
 
 from pytest import mark, raises  # type: ignore
@@ -84,9 +84,7 @@ input_types = with_modifiers(
 
 not_input_types = with_modifiers([SomeObjectType, SomeUnionType, SomeInterfaceType])
 
-parametrize_type = partial(
-    mark.parametrize("type_", ids=lambda type_: type_.__class__.__name__)
-)
+get_name = attrgetter("__class__.__name__")
 
 
 def schema_with_field_type(type_):
@@ -885,7 +883,7 @@ def describe_type_system_object_fields_must_have_output_types():
             types=[SomeObjectType],
         )
 
-    @parametrize_type(output_types)
+    @mark.parametrize("type_", output_types, ids=get_name)
     def accepts_an_output_type_as_an_object_field_type(type_):
         schema = _schema_with_object_field_of_type(type_)
         assert validate_schema(schema) == []
@@ -898,7 +896,7 @@ def describe_type_system_object_fields_must_have_output_types():
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
-    @parametrize_type(not_output_types)
+    @mark.parametrize("type_", not_output_types, ids=get_name)
     def rejects_a_non_output_type_as_an_object_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -906,7 +904,7 @@ def describe_type_system_object_fields_must_have_output_types():
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
-    @parametrize_type([int, float, str])
+    @mark.parametrize("type_", [int, float, str], ids=get_name)
     def rejects_a_non_type_value_as_an_object_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -1172,7 +1170,7 @@ def describe_type_system_interface_fields_must_have_output_types():
             types=[BadImplementingType, SomeObjectType],
         )
 
-    @parametrize_type(output_types)
+    @mark.parametrize("type_", output_types, ids=get_name)
     def accepts_an_output_type_as_an_interface_field_type(type_):
         schema = _schema_with_interface_field_of_type(type_)
         assert validate_schema(schema) == []
@@ -1185,7 +1183,7 @@ def describe_type_system_interface_fields_must_have_output_types():
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
-    @parametrize_type(not_output_types)
+    @mark.parametrize("type_", not_output_types, ids=get_name)
     def rejects_a_non_output_type_as_an_interface_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -1193,7 +1191,7 @@ def describe_type_system_interface_fields_must_have_output_types():
         msg = str(exc_info.value)
         assert msg == "Field type must be an output type."
 
-    @parametrize_type([int, float, str])
+    @mark.parametrize("type_", [int, float, str], ids=get_name)
     def rejects_a_non_type_value_as_an_interface_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -1258,7 +1256,7 @@ def describe_type_system_field_arguments_must_have_input_types():
             GraphQLObjectType("Query", {"f": GraphQLField(BadObjectType)})
         )
 
-    @parametrize_type(input_types)
+    @mark.parametrize("type_", input_types, ids=get_name)
     def accepts_an_input_type_as_a_field_arg_type(type_):
         schema = _schema_with_arg_of_type(type_)
         assert validate_schema(schema) == []
@@ -1271,7 +1269,7 @@ def describe_type_system_field_arguments_must_have_input_types():
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
 
-    @parametrize_type(not_input_types)
+    @mark.parametrize("type_", not_input_types, ids=get_name)
     def rejects_a_non_input_type_as_a_field_arg_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -1279,7 +1277,7 @@ def describe_type_system_field_arguments_must_have_input_types():
         msg = str(exc_info.value)
         assert msg == "Argument type must be a GraphQL input type."
 
-    @parametrize_type([int, float, str])
+    @mark.parametrize("type_", [int, float, str], ids=get_name)
     def rejects_a_non_type_value_as_a_field_arg_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -1325,8 +1323,8 @@ def describe_type_system_input_object_fields_must_have_input_types():
             )
         )
 
-    @parametrize_type(input_types)
-    def accepts_an_input_type_as_an_input_fieldtype(type_):
+    @mark.parametrize("type_", input_types, ids=get_name)
+    def accepts_an_input_type_as_an_input_field_type(type_):
         schema = _schema_with_input_field_of_type(type_)
         assert validate_schema(schema) == []
 
@@ -1338,7 +1336,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
 
-    @parametrize_type(not_input_types)
+    @mark.parametrize("type_", not_input_types, ids=get_name)
     def rejects_a_non_input_type_as_an_input_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
@@ -1346,7 +1344,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
         msg = str(exc_info.value)
         assert msg == "Input field type must be a GraphQL input type."
 
-    @parametrize_type([int, float, str])
+    @mark.parametrize("type_", [int, float, str], ids=get_name)
     def rejects_a_non_type_value_as_an_input_field_type(type_):
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
