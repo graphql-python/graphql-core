@@ -1533,8 +1533,8 @@ def describe_type_system_input_objects():
                 GraphQLInputObjectType(
                     "SomeInputObject",
                     {
-                        "f": GraphQLInputField(
-                            ScalarType, resolve=resolve,  # type: ignore
+                        "f": GraphQLInputField(  # type: ignore
+                            ScalarType, resolve=resolve,
                         )
                     },
                 )
