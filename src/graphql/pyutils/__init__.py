@@ -21,6 +21,7 @@ from .did_you_mean import did_you_mean
 from .event_emitter import EventEmitter, EventEmitterAsyncIterator
 from .identity_func import identity_func
 from .inspect import inspect
+from .is_awaitable import is_awaitable
 from .is_collection import is_collection
 from .is_finite import is_finite
 from .is_integer import is_integer
@@ -47,6 +48,7 @@ __all__ = [
     "EventEmitterAsyncIterator",
     "identity_func",
     "inspect",
+    "is_awaitable",
     "is_collection",
     "is_finite",
     "is_integer",
