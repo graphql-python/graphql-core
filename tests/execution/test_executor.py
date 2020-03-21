@@ -6,7 +6,7 @@ from pytest import raises, mark  # type: ignore
 from graphql.error import GraphQLError
 from graphql.execution import execute
 from graphql.language import parse, FieldNode, OperationDefinitionNode
-from graphql.pyutils import inspect, Undefined
+from graphql.pyutils import inspect, is_awaitable, Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -308,6 +308,7 @@ def describe_execute_handles_basic_execution_tasks():
             operation=operation,
             variable_values=variable_values,
             context=None,
+            is_awaitable=is_awaitable,
         )
 
     def threads_root_value_context_correctly():

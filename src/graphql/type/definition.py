@@ -557,6 +557,7 @@ class GraphQLResolveInfo(NamedTuple):
     operation: OperationDefinitionNode
     variable_values: Dict[str, Any]
     context: Any
+    is_awaitable: Callable[[Any], bool]
 
 
 # Note: Contrary to the Javascript implementation of GraphQLFieldResolver,

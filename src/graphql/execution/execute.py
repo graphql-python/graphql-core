@@ -1,8 +1,8 @@
 from asyncio import gather
-from inspect import isawaitable
 from typing import (
     Any,
     Awaitable,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -28,6 +28,7 @@ from ..language import (
 )
 from ..pyutils import (
     inspect,
+    is_awaitable as default_is_awaitable,
     AwaitableOrValue,
     FrozenList,
     Path,
@@ -110,64 +111,6 @@ ExecutionResult.__new__.__defaults__ = (None, None)  # type: ignore
 Middleware = Optional[Union[Tuple, List, MiddlewareManager]]
 
 
-def execute(
-    schema: GraphQLSchema,
-    document: DocumentNode,
-    root_value: Any = None,
-    context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type["ExecutionContext"]] = None,
-) -> AwaitableOrValue[ExecutionResult]:
-    """Execute a GraphQL operation.
-
-    Implements the "Evaluating requests" section of the GraphQL specification.
-
-    Returns an ExecutionResult (if all encountered resolvers are synchronous),
-    or a coroutine object eventually yielding an ExecutionResult.
-
-    If the arguments to this function do not result in a legal execution context,
-    a GraphQLError will be thrown immediately explaining the invalid input.
-    """
-    # If arguments are missing or incorrect, throw an error.
-    assert_valid_execution_arguments(schema, document, variable_values)
-
-    if execution_context_class is None:
-        execution_context_class = ExecutionContext
-
-    # If a valid execution context cannot be created due to incorrect arguments,
-    # a "Response" with only errors is returned.
-    exe_context = execution_context_class.build(
-        schema,
-        document,
-        root_value,
-        context_value,
-        variable_values,
-        operation_name,
-        field_resolver,
-        type_resolver,
-        middleware,
-    )
-
-    # Return early errors if execution context failed.
-    if isinstance(exe_context, list):
-        return ExecutionResult(data=None, errors=exe_context)
-
-    # Return a possible coroutine object that will eventually yield the data described
-    # by the "Response" section of the GraphQL specification.
-    #
-    # If errors are encountered while executing a GraphQL field, only that field and
-    # its descendants will be omitted, and sibling fields will still be executed. An
-    # execution which encounters errors will still result in a coroutine object that
-    # can be executed without errors.
-
-    data = exe_context.execute_operation(exe_context.operation, root_value)
-    return exe_context.build_response(data)
-
-
 class ExecutionContext:
     """Data that must be available at all points during query execution.
 
@@ -186,6 +129,8 @@ class ExecutionContext:
     errors: List[GraphQLError]
     middleware_manager: Optional[MiddlewareManager]
 
+    is_awaitable = staticmethod(default_is_awaitable)
+
     def __init__(
         self,
         schema: GraphQLSchema,
@@ -198,6 +143,7 @@ class ExecutionContext:
         type_resolver: GraphQLTypeResolver,
         errors: List[GraphQLError],
         middleware_manager: Optional[MiddlewareManager],
+        is_awaitable: Optional[Callable[[Any], bool]],
     ) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -209,6 +155,8 @@ class ExecutionContext:
         self.type_resolver = type_resolver  # type: ignore
         self.errors = errors
         self.middleware_manager = middleware_manager
+        if is_awaitable:
+            self.is_awaitable = is_awaitable
         self._subfields_cache: Dict[
             Tuple[GraphQLObjectType, int], Dict[str, List[FieldNode]]
         ] = {}
@@ -225,6 +173,7 @@ class ExecutionContext:
         field_resolver: Optional[GraphQLFieldResolver] = None,
         type_resolver: Optional[GraphQLTypeResolver] = None,
         middleware: Optional[Middleware] = None,
+        is_awaitable: Optional[Callable[[Any], bool]] = None,
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
         """Build an execution context
 
@@ -292,6 +241,7 @@ class ExecutionContext:
             type_resolver or default_type_resolver,
             [],
             middleware_manager,
+            is_awaitable,
         )
 
     def build_response(
@@ -302,7 +252,7 @@ class ExecutionContext:
         Given a completed execution context and data, build the (data, errors) response
         defined by the "Response" section of the GraphQL spec.
         """
-        if isawaitable(data):
+        if self.is_awaitable(data):
 
             async def build_response_async():
                 return self.build_response(await data)  # type: ignore
@@ -346,7 +296,7 @@ class ExecutionContext:
             self.errors.append(error)
             return None
         else:
-            if isawaitable(result):
+            if self.is_awaitable(result):
                 # noinspection PyShadowingNames
                 async def await_result():
                     try:
@@ -369,6 +319,7 @@ class ExecutionContext:
         Implements the "Evaluating selection sets" section of the spec for "write" mode.
         """
         results: Dict[str, Any] = {}
+        is_awaitable = self.is_awaitable
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name)
             result = self.resolve_field(
@@ -376,12 +327,12 @@ class ExecutionContext:
             )
             if result is Undefined:
                 continue
-            if isawaitable(results):
+            if is_awaitable(results):
                 # noinspection PyShadowingNames
                 async def await_and_set_result(results, response_name, result):
                     awaited_results = await results
                     awaited_results[response_name] = (
-                        await result if isawaitable(result) else result
+                        await result if is_awaitable(result) else result
                     )
                     return awaited_results
 
@@ -389,7 +340,7 @@ class ExecutionContext:
                 results = await_and_set_result(
                     cast(Awaitable, results), response_name, result
                 )
-            elif isawaitable(result):
+            elif is_awaitable(result):
                 # noinspection PyShadowingNames
                 async def set_result(results, response_name, result):
                     results[response_name] = await result
@@ -399,7 +350,7 @@ class ExecutionContext:
                 results = set_result(results, response_name, result)
             else:
                 results[response_name] = result
-        if isawaitable(results):
+        if is_awaitable(results):
             # noinspection PyShadowingNames
             async def get_results():
                 return await cast(Awaitable, results)
@@ -419,6 +370,7 @@ class ExecutionContext:
         Implements the "Evaluating selection sets" section of the spec for "read" mode.
         """
         results = {}
+        is_awaitable = self.is_awaitable
         awaitable_fields: List[str] = []
         append_awaitable = awaitable_fields.append
         for response_name, field_nodes in fields.items():
@@ -428,7 +380,7 @@ class ExecutionContext:
             )
             if result is not Undefined:
                 results[response_name] = result
-                if isawaitable(result):
+                if is_awaitable(result):
                     append_awaitable(response_name)
 
         #  If there are no coroutines, we can just return the object
@@ -564,6 +516,7 @@ class ExecutionContext:
             self.operation,
             self.variable_values,
             self.context_value,
+            self.is_awaitable,
         )
 
     def resolve_field(
@@ -626,7 +579,7 @@ class ExecutionContext:
             # Note that contrary to the JavaScript implementation, we pass the context
             # value as part of the resolve info.
             result = resolve_fn(source, info, **args)
-            if isawaitable(result):
+            if self.is_awaitable(result):
                 # noinspection PyShadowingNames
                 async def await_result():
                     try:
@@ -657,13 +610,13 @@ class ExecutionContext:
         the execution context.
         """
         try:
-            if isawaitable(result):
+            if self.is_awaitable(result):
 
                 async def await_result():
                     value = self.complete_value(
                         return_type, field_nodes, info, path, await result
                     )
-                    if isawaitable(value):
+                    if self.is_awaitable(value):
                         return await value
                     return value
 
@@ -672,7 +625,7 @@ class ExecutionContext:
                 completed = self.complete_value(
                     return_type, field_nodes, info, path, result
                 )
-            if isawaitable(completed):
+            if self.is_awaitable(completed):
                 # noinspection PyShadowingNames
                 async def await_completed():
                     try:
@@ -810,6 +763,7 @@ class ExecutionContext:
         # the list contains no coroutine objects by avoiding creating another coroutine
         # object.
         item_type = return_type.of_type
+        is_awaitable = self.is_awaitable
         awaitable_indices: List[int] = []
         append_awaitable = awaitable_indices.append
         completed_results: List[Any] = []
@@ -822,7 +776,7 @@ class ExecutionContext:
                 item_type, field_nodes, info, field_path, item
             )
 
-            if isawaitable(completed_item):
+            if is_awaitable(completed_item):
                 append_awaitable(index)
             append_result(completed_item)
 
@@ -873,7 +827,7 @@ class ExecutionContext:
         resolve_type_fn = return_type.resolve_type or self.type_resolver
         runtime_type = resolve_type_fn(result, info, return_type)  # type: ignore
 
-        if isawaitable(runtime_type):
+        if self.is_awaitable(runtime_type):
 
             async def await_complete_object_value():
                 value = self.complete_object_value(
@@ -889,7 +843,7 @@ class ExecutionContext:
                     path,
                     result,
                 )
-                if isawaitable(value):
+                if self.is_awaitable(value):
                     return await value  # type: ignore
                 return value
 
@@ -957,7 +911,7 @@ class ExecutionContext:
         if return_type.is_type_of:
             is_type_of = return_type.is_type_of(result, info)
 
-            if isawaitable(is_type_of):
+            if self.is_awaitable(is_type_of):
 
                 async def collect_and_execute_subfields_async():
                     if not await is_type_of:  # type: ignore
@@ -1016,6 +970,66 @@ class ExecutionContext:
                     )
             self._subfields_cache[cache_key] = sub_field_nodes
         return sub_field_nodes
+
+
+def execute(
+    schema: GraphQLSchema,
+    document: DocumentNode,
+    root_value: Any = None,
+    context_value: Any = None,
+    variable_values: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
+    type_resolver: Optional[GraphQLTypeResolver] = None,
+    middleware: Optional[Middleware] = None,
+    execution_context_class: Optional[Type["ExecutionContext"]] = None,
+    is_awaitable: Optional[Callable[[Any], bool]] = None,
+) -> AwaitableOrValue[ExecutionResult]:
+    """Execute a GraphQL operation.
+
+    Implements the "Evaluating requests" section of the GraphQL specification.
+
+    Returns an ExecutionResult (if all encountered resolvers are synchronous),
+    or a coroutine object eventually yielding an ExecutionResult.
+
+    If the arguments to this function do not result in a legal execution context,
+    a GraphQLError will be thrown immediately explaining the invalid input.
+    """
+    # If arguments are missing or incorrect, throw an error.
+    assert_valid_execution_arguments(schema, document, variable_values)
+
+    if execution_context_class is None:
+        execution_context_class = ExecutionContext
+
+    # If a valid execution context cannot be created due to incorrect arguments,
+    # a "Response" with only errors is returned.
+    exe_context = execution_context_class.build(
+        schema,
+        document,
+        root_value,
+        context_value,
+        variable_values,
+        operation_name,
+        field_resolver,
+        type_resolver,
+        middleware,
+        is_awaitable,
+    )
+
+    # Return early errors if execution context failed.
+    if isinstance(exe_context, list):
+        return ExecutionResult(data=None, errors=exe_context)
+
+    # Return a possible coroutine object that will eventually yield the data described
+    # by the "Response" section of the GraphQL specification.
+    #
+    # If errors are encountered while executing a GraphQL field, only that field and
+    # its descendants will be omitted, and sibling fields will still be executed. An
+    # execution which encounters errors will still result in a coroutine object that
+    # can be executed without errors.
+
+    data = exe_context.execute_operation(exe_context.operation, root_value)
+    return exe_context.build_response(data)
 
 
 def assert_valid_execution_arguments(
@@ -1116,6 +1130,7 @@ def default_type_resolver(
 
     # Otherwise, test each possible type.
     possible_types = info.schema.get_possible_types(abstract_type)
+    is_awaitable = info.is_awaitable
     awaitable_is_type_of_results: List[Awaitable] = []
     append_awaitable_results = awaitable_is_type_of_results.append
     awaitable_types: List[GraphQLObjectType] = []
@@ -1125,7 +1140,7 @@ def default_type_resolver(
         if type_.is_type_of:
             is_type_of_result = type_.is_type_of(value, info)
 
-            if isawaitable(is_type_of_result):
+            if is_awaitable(is_type_of_result):
                 append_awaitable_results(cast(Awaitable, is_type_of_result))
                 append_awaitable_types(type_)
             elif is_type_of_result:

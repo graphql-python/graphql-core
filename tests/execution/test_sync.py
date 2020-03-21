@@ -101,9 +101,24 @@ def describe_execute_synchronously_when_possible():
                 None,
             )
 
-        def throws_if_encountering_async_operation():
+        def throws_if_encountering_async_operation_with_check_sync():
             doc = "query Example { syncField, asyncField }"
             with raises(RuntimeError) as exc_info:
-                graphql_sync(schema, doc, "rootValue")
+                graphql_sync(schema, doc, "rootValue", check_sync=True)
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
+
+        def throws_if_encountering_async_operation_without_check_sync():
+            doc = "query Example { syncField, asyncField }"
+            result = graphql_sync(schema, doc, "rootValue")
+            assert result == (
+                {"syncField": "rootValue", "asyncField": None},
+                [
+                    {
+                        "message": "String cannot represent value:"
+                        " <coroutine _resolve_async>",
+                        "locations": [(1, 28)],
+                        "path": ["asyncField"],
+                    }
+                ],
+            )
