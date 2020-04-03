@@ -4,7 +4,7 @@ from typing import NamedTuple
 __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
 
-version = "3.0.3"
+version = "3.0.4"
 
 version_js = "14.6.0"
 
