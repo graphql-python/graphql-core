@@ -76,7 +76,7 @@ def describe_version():
             assert version_info.micro == int(groups[2])
             if groups[3] is None:  # pragma: no cover
                 assert groups[4] is None
-            else:
+            else:  # pragma: no cover
                 assert version_info.releaselevel[:1] == groups[3]
                 assert version_info.serial == int(groups[4])
 
@@ -102,6 +102,6 @@ def describe_version():
             assert version_info_js.micro == int(groups[2])
             if groups[3] is None:  # pragma: no cover
                 assert groups[4] is None
-            else:
+            else:  # pragma: no cover
                 assert version_info_js.releaselevel[:1] == groups[3]
                 assert version_info_js.serial == int(groups[4])
