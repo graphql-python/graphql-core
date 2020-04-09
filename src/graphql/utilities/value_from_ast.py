@@ -36,15 +36,17 @@ def value_from_ast(
     Returns `Undefined` when the value could not be validly coerced according
     to the provided type.
 
-    | GraphQL Value        | JSON Value    | Python Value |
-    | -------------------- | ------------- | ------------ |
-    | Input Object         | Object        | dict         |
-    | List                 | Array         | list         |
-    | Boolean              | Boolean       | bool         |
-    | String               | String        | str          |
-    | Int / Float          | Number        | int / float  |
-    | Enum Value           | Mixed         | Any          |
-    | NullValue            | null          | None         |
+    =================== ============== ================
+       GraphQL Value      JSON Value     Python Value
+    =================== ============== ================
+       Input Object       Object         dict
+       List               Array          list
+       Boolean            Boolean        bool
+       String             String         str
+       Int / Float        Number         int / float
+       Enum Value         Mixed          Any
+       NullValue          null           None
+    =================== ============== ================
 
     """
     if not value_node:
