@@ -35,6 +35,7 @@ Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST:
 .. autofunction:: extend_schema
 
 Sort a GraphQLSchema:
+
 .. autofunction:: lexicographic_sort_schema
 
 Print a GraphQLSchema to GraphQL Schema language:
