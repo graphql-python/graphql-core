@@ -309,7 +309,7 @@ class GraphQLScalarType(GraphQLNamedType):
     If a type's serialize function does not return a value (i.e. it returns `None`),
     then no error will be included in the response.
 
-    Example:
+    Example::
 
         def serialize_odd(value):
             if value % 2 == 1:
@@ -912,7 +912,7 @@ class GraphQLUnionType(GraphQLNamedType):
     to describe what types are possible as well as providing a function to determine
     which type is actually used when the field is resolved.
 
-    Example:
+    Example::
 
         class PetType(GraphQLUnionType):
             name = 'Pet'
