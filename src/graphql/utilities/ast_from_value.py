@@ -45,15 +45,17 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     A GraphQL type must be provided, which will be used to interpret different Python
     values.
 
-    | JSON Value    | GraphQL Value        |
-    | ------------- | -------------------- |
-    | Object        | Input Object         |
-    | Array         | List                 |
-    | Boolean       | Boolean              |
-    | String        | String / Enum Value  |
-    | Number        | Int / Float          |
-    | Mixed         | Enum Value           |
-    | null          | NullValue            |
+    ================ =======================
+       JSON Value         GraphQL Value
+    ================ =======================
+       Object          Input Object
+       Array           List
+       Boolean         Boolean
+       String          String / Enum Value
+       Number          Int / Float
+       Mixed           Enum Value
+       null            NullValue
+    ================ =======================
 
     """
     if is_non_null_type(type_):

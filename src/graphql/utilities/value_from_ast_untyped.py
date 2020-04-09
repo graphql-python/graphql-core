@@ -15,14 +15,16 @@ def value_from_ast_untyped(
     Unlike `value_from_ast()`, no type is provided. The resulting Python value will
     reflect the provided GraphQL value AST.
 
-    | GraphQL Value        | JSON Value | Python Value |
-    | -------------------- | ---------- | ------------ |
-    | Input Object         | Object     | dict         |
-    | List                 | Array      | list         |
-    | Boolean              | Boolean    | bool         |
-    | String / Enum        | String     | str          |
-    | Int / Float          | Number     | int / float  |
-    | Null                 | null       | None         |
+    =================== ============== ================
+       GraphQL Value      JSON Value     Python Value
+    =================== ============== ================
+       Input Object       Object         dict
+       List               Array          list
+       Boolean            Boolean        bool
+       String / Enum      String         str
+       Int / Float        Number         int / float
+       Null               null           None
+    =================== ============== ================
 
     """
     func = _value_from_kind_functions.get(value_node.kind)
