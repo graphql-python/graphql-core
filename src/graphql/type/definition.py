@@ -306,7 +306,7 @@ class GraphQLScalarType(GraphQLNamedType):
     and are defined with a name and a series of functions used to parse input from ast
     or variables and to ensure validity.
 
-    If a type's serialize function does not return a value (i.e. it returns `None`),
+    If a type's serialize function does not return a value (i.e. it returns ``None``),
     then no error will be included in the response.
 
     Example::
@@ -1245,7 +1245,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     An input object defines a structured collection of fields which may be supplied
     to a field argument.
 
-    Using `NonNull` will ensure that a value must be provided by the query.
+    Using ``NonNull`` will ensure that a value must be provided by the query.
 
     Example::
 
@@ -1261,7 +1261,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
             }
 
     The outbound values will be Python dictionaries by default, but you can have them
-    converted to other types by specifying an `out_type` function or class.
+    converted to other types by specifying an ``out_type`` function or class.
     """
 
     ast_node: Optional[InputObjectTypeDefinitionNode]

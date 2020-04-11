@@ -36,8 +36,8 @@ def build_ast_schema(
     resolve methods, so execution will use default resolvers.
 
     When building a schema from a GraphQL service's introspection result, it might
-    be safe to assume the schema is valid. Set `assume_valid` to True to assume the
-    produced schema is valid. Set `assume_valid_sdl` to True to assume it is already
+    be safe to assume the schema is valid. Set ``assume_valid`` to ``True`` to assume the
+    produced schema is valid. Set ``assume_valid_sdl`` to ``True`` to assume it is already
     a valid SDL document.
     """
     if not isinstance(document_ast, DocumentNode):

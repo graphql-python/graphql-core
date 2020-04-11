@@ -77,14 +77,14 @@ def parse(
     Throws GraphQLError if a syntax error is encountered.
 
     By default, the parser creates AST nodes that know the location in the source that
-    they correspond to. The `no_location` option disables that behavior for performance
+    they correspond to. The ``no_location`` option disables that behavior for performance
     or testing.
 
     Experimental features:
 
-    If `experimental_fragment_variables` is set to True, the parser will understand
+    If ``experimental_fragment_variables`` is set to ``True``, the parser will understand
     and parse variable definitions contained in a fragment definition. They'll be
-    represented in the `variable_definitions` field of the `FragmentDefinitionNode`.
+    represented in the :attr:`~graphql.language.FragmentDefinitionNode.variable_definitions` field of the :class:`~graphql.language.FragmentDefinitionNode`.
 
     The syntax is identical to normal, query-defined variables. For example::
 
@@ -110,7 +110,7 @@ def parse_value(
     This is useful within tools that operate upon GraphQL Values directly and in
     isolation of complete GraphQL documents.
 
-    Consider providing the results to the utility function: `value_from_ast()`.
+    Consider providing the results to the utility function: :func:`~graphql.value_from_ast`.
     """
     parser = Parser(
         source,
@@ -133,7 +133,7 @@ def parse_type(
     This is useful within tools that operate upon GraphQL Types directly and
     in isolation of complete GraphQL documents.
 
-    Consider providing the results to the utility function: `type_from_ast()`.
+    Consider providing the results to the utility function: :func:`~graphql.value_from_ast`.
     """
     parser = Parser(
         source,
@@ -390,7 +390,7 @@ class Parser:
         )
 
     def parse_fragment_name(self) -> NameNode:
-        """FragmentName: Name but not `on`"""
+        """FragmentName: Name but not ``on``"""
         if self._lexer.token.value == "on":
             raise self.unexpected()
         return self.parse_name()
@@ -1042,9 +1042,9 @@ class Parser:
     ) -> List[T]:
         """Fetch any matching nodes, possibly none.
 
-        Returns a possibly empty list of parse nodes, determined by the `parse_fn`.
-        This list begins with a lex token of `open_kind` and ends with a lex token of
-        `close_kind`. Advances the parser to the next lex token after the closing token.
+        Returns a possibly empty list of parse nodes, determined by the ``parse_fn``.
+        This list begins with a lex token of ``open_kind`` and ends with a lex token of
+        ``close_kind``. Advances the parser to the next lex token after the closing token.
         """
         self.expect_token(open_kind)
         nodes: List[T] = []
@@ -1058,10 +1058,10 @@ class Parser:
     ) -> List[T]:
         """Fetch matching nodes, maybe none.
 
-        Returns a list of parse nodes, determined by the `parse_fn`. It can be empty
+        Returns a list of parse nodes, determined by the ``parse_fn``. It can be empty
         only if the open token is missing, otherwise it will always return a non-empty
-        list that begins with a lex token of `open_kind` and ends with a lex token of
-        `close_kind`. Advances the parser to the next lex token after the closing token.
+        list that begins with a lex token of ``open_kind`` and ends with a lex token of
+        ``close_kind``. Advances the parser to the next lex token after the closing token.
         """
         if self.expect_optional_token(open_kind):
             nodes = [parse_fn()]
@@ -1076,9 +1076,9 @@ class Parser:
     ) -> List[T]:
         """Fetch matching nodes, at least one.
 
-        Returns a non-empty list of parse nodes, determined by the `parse_fn`.
-        This list begins with a lex token of `open_kind` and ends with a lex token of
-        `close_kind`. Advances the parser to the next lex token after the closing token.
+        Returns a non-empty list of parse nodes, determined by the ``parse_fn``.
+        This list begins with a lex token of ``open_kind`` and ends with a lex token of
+        ``close_kind``. Advances the parser to the next lex token after the closing token.
         """
         self.expect_token(open_kind)
         nodes = [parse_fn()]

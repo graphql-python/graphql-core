@@ -13,7 +13,7 @@ class MiddlewareManager:
 
     This class helps to wrap resolver functions with the provided middleware functions
     and/or objects. The functions take the next middleware function as first argument.
-    If middleware is provided as an object, it must provide a method `resolve` that is
+    If middleware is provided as an object, it must provide a method ``resolve`` that is
     used as the middleware function.
 
     Note that since resolvers return "AwaitableOrValue"s, all middleware functions

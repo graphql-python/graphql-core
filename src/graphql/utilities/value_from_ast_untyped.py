@@ -12,7 +12,7 @@ def value_from_ast_untyped(
 ) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 
-    Unlike `value_from_ast()`, no type is provided. The resulting Python value will
+    Unlike :func:`~graphql.value_from_ast`, no type is provided. The resulting Python value will
     reflect the provided GraphQL value AST.
 
     =================== ============== ================

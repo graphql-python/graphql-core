@@ -197,7 +197,7 @@ def find_conflicts_within_selection_set(
             # selection set to collect conflicts within fragments spread together.
             # This compares each item in the list of fragment names to every other
             # item in that same list (except for itself).
-            for other_fragment_name in fragment_names[i + 1 :]:
+            for other_fragment_name in fragment_names[i + 1:]:
                 collect_conflicts_between_fragments(
                     context,
                     conflicts,
@@ -440,7 +440,7 @@ def collect_conflicts_within(
         # compared.
         if len(fields) > 1:
             for i, field in enumerate(fields):
-                for other_field in fields[i + 1 :]:
+                for other_field in fields[i + 1:]:
                     conflict = find_conflict(
                         context,
                         cached_fields_and_fragment_names,
@@ -466,8 +466,8 @@ def collect_conflicts_between(
 ) -> None:
     """Collect all Conflicts between two collections of fields.
 
-    This is similar to, but different from the `collectConflictsWithin` function above.
-    This check assumes that `collectConflictsWithin` has already been called on each
+    This is similar to, but different from the :func:`~.collect_conflicts_within` function above.
+    This check assumes that :func:`~.collect_conflicts_within` has already been called on each
     provided collection of fields. This is true because this validator traverses each
     individual selection set.
     """

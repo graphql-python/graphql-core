@@ -33,7 +33,7 @@ def value_from_ast(
     A GraphQL type must be provided, which will be used to interpret different GraphQL
     Value literals.
 
-    Returns `Undefined` when the value could not be validly coerced according
+    Returns ``Undefined`` when the value could not be validly coerced according
     to the provided type.
 
     =================== ============== ================
@@ -143,7 +143,7 @@ def value_from_ast(
 def is_missing_variable(
     value_node: ValueNode, variables: Optional[Dict[str, Any]] = None
 ) -> bool:
-    """Check if `value_node` is a variable not defined in the `variables` dict."""
+    """Check if ``value_node`` is a variable not defined in the ``variables`` dict."""
     return isinstance(value_node, VariableNode) and (
         not variables or variables.get(value_node.name.value, Undefined) is Undefined
     )

@@ -142,12 +142,12 @@ class Visitor:
     :arg parent: the parent immediately above this node, which may be an Array.
     :arg path: The key path to get to this node from the root node.
     :arg ancestors: All nodes and Arrays visited before reaching parent
-        of this node. These correspond to array indices in `path`.
+        of this node. These correspond to array indices in ``path``.
         Note: ancestors includes arrays which contain the parent of visited node.
 
     You can also define node kind specific methods by suffixing them with an underscore
-    followed by the kind of the node to be visited. For instance, to visit `field`
-    nodes, you would defined the methods `enter_field()` and/or `leave_field()`, with
+    followed by the kind of the node to be visited. For instance, to visit ``field``
+    nodes, you would defined the methods ``enter_field()`` and/or ``leave_field()``, with
     the same signature as above. If no kind specific method has been defined for a given
     node, the generic method is called.
     """
@@ -200,16 +200,16 @@ class Stack(NamedTuple):
 def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
     """Visit each node in an AST.
 
-    `visit()` will walk through an AST using a depth first traversal, calling the
+    :func:`~.visit` will walk through an AST using a depth first traversal, calling the
     visitor's enter methods at each node in the traversal, and calling the leave methods
     after visiting that node and all of its child nodes.
 
     By returning different values from the enter and leave methods, the behavior of the
     visitor can be altered, including skipping over a sub-tree of the AST (by returning
     False), editing the AST by returning a value or None to remove the value, or to stop
-    the whole traversal by returning `BREAK`.
+    the whole traversal by returning :data:`~.BREAK`.
 
-    When using `visit()` to edit an AST, the original AST will not be modified, and a
+    When using :func:`~.visit` to edit an AST, the original AST will not be modified, and a
     new version of the AST with the changes applied will be returned from the visit
     function.
 
