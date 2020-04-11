@@ -108,8 +108,9 @@ def extend_schema(
     copy. The original schema remains unaltered.
 
     When extending a schema with a known valid extension, it might be safe to assume the
-    schema is valid. Set ``assume_valid`` to ``True`` to assume the produced schema is valid.
-    Set ``assume_valid_sdl`` to ``True`` to assume it is already a valid SDL document.
+    schema is valid. Set ``assume_valid`` to ``True`` to assume the produced schema is
+    valid. Set ``assume_valid_sdl`` to ``True`` to assume it is already a valid SDL
+    document.
     """
     assert_schema(schema)
 

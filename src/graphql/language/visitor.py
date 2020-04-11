@@ -147,9 +147,9 @@ class Visitor:
 
     You can also define node kind specific methods by suffixing them with an underscore
     followed by the kind of the node to be visited. For instance, to visit ``field``
-    nodes, you would defined the methods ``enter_field()`` and/or ``leave_field()``, with
-    the same signature as above. If no kind specific method has been defined for a given
-    node, the generic method is called.
+    nodes, you would defined the methods ``enter_field()`` and/or ``leave_field()``,
+    with the same signature as above. If no kind specific method has been defined
+    for a given node, the generic method is called.
     """
 
     # Provide special return values as attributes
@@ -209,9 +209,9 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
     False), editing the AST by returning a value or None to remove the value, or to stop
     the whole traversal by returning :data:`~.BREAK`.
 
-    When using :func:`~.visit` to edit an AST, the original AST will not be modified, and a
-    new version of the AST with the changes applied will be returned from the visit
-    function.
+    When using :func:`~.visit` to edit an AST, the original AST will not be modified,
+    and a new version of the AST with the changes applied will be returned from the
+    visit function.
 
     To customize the node attributes to be used for traversal, you can provide a
     dictionary visitor_keys mapping node kinds to node attributes.

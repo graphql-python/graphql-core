@@ -75,11 +75,11 @@ async def subscribe(
         """Map source to response.
 
         For each payload yielded from a subscription, map it over the normal GraphQL
-        :func:`~graphql.execute` function, with ``payload`` as the ``root_value``. This implements the
-        "MapSourceToResponseEvent" algorithm described in the GraphQL specification.
-        The :func:`~graphql.execute` function provides the "ExecuteSubscriptionEvent" algorithm,
-        as it is nearly identical to the "ExecuteQuery" algorithm, for which :func:`~graphql.execute`
-        is also used.
+        :func:`~graphql.execute` function, with ``payload`` as the ``root_value``.
+        This implements the "MapSourceToResponseEvent" algorithm described in the
+        GraphQL specification. The :func:`~graphql.execute` function provides the
+        "ExecuteSubscriptionEvent" algorithm, as it is nearly identical to the
+        "ExecuteQuery" algorithm, for which :func:`~graphql.execute` is also used.
         """
         result = execute(
             schema,

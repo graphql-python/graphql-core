@@ -678,7 +678,8 @@ class ExecutionContext:
         inner type on each item in the list.
 
         If the field type is a Scalar or Enum, ensures the completed value is a legal
-        value of the type by calling the ``serialize`` method of GraphQL type definition.
+        value of the type by calling the ``serialize`` method of GraphQL type
+        definition.
 
         If the field is an abstract type, determine the runtime type of the value and
         then complete based on that type.
@@ -1120,8 +1121,9 @@ def default_type_resolver(
     First, See if the provided value has a ``__typename`` field defined, if so, use that
     value as name of the resolved type.
 
-    Otherwise, test each possible type for the abstract type by calling :meth:`~graphql.type.GraphQLObjectType.is_type_of`
-    for the object being coerced, returning the first type that matches.
+    Otherwise, test each possible type for the abstract type by calling
+    :meth:`~graphql.type.GraphQLObjectType.is_type_of` for the object
+    being coerced, returning the first type that matches.
     """
     # First, look for `__typename`.
     type_name = get_typename(value)
