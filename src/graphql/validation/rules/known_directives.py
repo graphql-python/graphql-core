@@ -17,7 +17,7 @@ __all__ = ["KnownDirectivesRule"]
 class KnownDirectivesRule(ASTValidationRule):
     """Known directives
 
-    A GraphQL document is only valid if all `@directives` are known by the schema and
+    A GraphQL document is only valid if all ``@directives`` are known by the schema and
     legally positioned.
     """
 

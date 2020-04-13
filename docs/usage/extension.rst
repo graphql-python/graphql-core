@@ -17,7 +17,7 @@ follows::
         """))
 
 Note that this function expects the extensions as an AST, which we can get using the
-:func:`graphql.language.parse` function. Also note that the `extend_schema` function
+:func:`graphql.language.parse` function. Also note that the :func:`~graphql.extend_schema` function
 does not alter the original schema, but returns a new schema object.
 
 We also need to attach a resolver function to the new field::

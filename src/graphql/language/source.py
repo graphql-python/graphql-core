@@ -18,10 +18,10 @@ class Source:
         """Initialize source input.
 
 
-        `name` and `location_offset` are optional. They are useful for clients who
+        ``name`` and ``location_offset`` are optional. They are useful for clients who
         store GraphQL documents in source files; for example, if the GraphQL input
         starts at line 40 in a file named Foo.graphql, it might be useful for name
-        to be "Foo.graphql" and location to be `(40, 0)`.
+        to be "Foo.graphql" and location to be ``(40, 0)``.
 
         line and column in location_offset are 1-indexed
         """

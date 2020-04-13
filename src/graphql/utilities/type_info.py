@@ -56,7 +56,8 @@ class TypeInfo:
 
     TypeInfo is a utility class which, given a GraphQL schema, can keep track of the
     current field and type definitions at any point in a GraphQL document AST during
-    a recursive descent by calling `enter(node)` and `leave(node)`.
+    a recursive descent by calling :meth:`enter(node) <.TypeInfo.enter>` and
+    :meth:`leave(node) <.TypeInfo.leave>`.
     """
 
     def __init__(
@@ -262,9 +263,9 @@ def get_field_def(
 ) -> Optional[GraphQLField]:
     """Get field definition.
 
-    Not exactly the same as the executor's definition of `get_field_def()`, in this
-    statically evaluated environment we do not always have an Object type, and need
-    to handle Interface and Union types.
+    Not exactly the same as the executor's definition of
+    :func:`graphql.execution.get_field_def`, in this statically evaluated environment
+    we do not always have an Object type, and need to handle Interface and Union types.
     """
     name = field_node.name.value
     if name == "__schema" and schema.query_type is parent_type:

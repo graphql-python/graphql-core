@@ -466,10 +466,10 @@ def collect_conflicts_between(
 ) -> None:
     """Collect all Conflicts between two collections of fields.
 
-    This is similar to, but different from the `collectConflictsWithin` function above.
-    This check assumes that `collectConflictsWithin` has already been called on each
-    provided collection of fields. This is true because this validator traverses each
-    individual selection set.
+    This is similar to, but different from the :func:`~.collect_conflicts_within`
+    function above. This check assumes that :func:`~.collect_conflicts_within` has
+    already been called on each provided collection of fields. This is true because
+    this validator traverses each individual selection set.
     """
     # A field map is a keyed collection, where each key represents a response name and
     # the value at that key is a list of all fields which provide that response name.

@@ -44,7 +44,7 @@ def type_from_ast(schema, type_node):
 
     Given a Schema and an AST node describing a type, return a GraphQLType definition
     which applies to that type. For example, if provided the parsed AST node for
-    `[User]`, a GraphQLList instance will be returned, containing the type called
+    ``[User]``, a GraphQLList instance will be returned, containing the type called
     "User" found in the schema. If a type called "User" is not found in the schema,
     then None will be returned.
     """

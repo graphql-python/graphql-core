@@ -97,8 +97,8 @@ __all__ = [
 class ExecutionResult(NamedTuple):
     """The result of GraphQL execution.
 
-    - `data` is the result of a successful execution of the query.
-    - `errors` is included when any errors occurred as a non-empty list.
+    - ``data`` is the result of a successful execution of the query.
+    - ``errors`` is included when any errors occurred as a non-empty list.
     """
 
     data: Optional[Dict[str, Any]]
@@ -678,7 +678,8 @@ class ExecutionContext:
         inner type on each item in the list.
 
         If the field type is a Scalar or Enum, ensures the completed value is a legal
-        value of the type by calling the `serialize` method of GraphQL type definition.
+        value of the type by calling the ``serialize`` method of GraphQL type
+        definition.
 
         If the field is an abstract type, determine the runtime type of the value and
         then complete based on that type.
@@ -948,7 +949,7 @@ class ExecutionContext:
         """Collect subfields.
 
         A cached collection of relevant subfields with regard to the return type is
-        kept in the execution context as `_subfields_cache`. This ensures the
+        kept in the execution context as ``_subfields_cache``. This ensures the
         subfields are not repeatedly calculated, which saves overhead when resolving
         lists of values.
         """
@@ -1065,9 +1066,9 @@ def get_field_def(
     """Get field definition.
 
     This method looks up the field on the given type definition. It has special casing
-    for the two introspection fields, `__schema` and `__typename`. `__typename` is
+    for the two introspection fields, ``__schema`` and ``__typename``. ``__typename`` is
     special because it can always be queried as a field, even in situations where no
-    other fields are allowed, like on a Union. `__schema` could get automatically
+    other fields are allowed, like on a Union. ``__schema`` could get automatically
     added to the query type, but that would require mutating type definitions, which
     would cause issues.
 
@@ -1098,7 +1099,7 @@ def invalid_return_type_error(
 
 
 def get_typename(value: Any) -> Optional[str]:
-    """Get the `__typename` property of the given value."""
+    """Get the ``__typename`` property of the given value."""
     if isinstance(value, dict):
         return value.get("__typename")
     # need to de-mangle the attribute assumed to be "private" in Python
@@ -1117,11 +1118,12 @@ def default_type_resolver(
     If a resolve_type function is not given, then a default resolve behavior is used
     which attempts two strategies:
 
-    First, See if the provided value has a `__typename` field defined, if so, use that
+    First, See if the provided value has a ``__typename`` field defined, if so, use that
     value as name of the resolved type.
 
-    Otherwise, test each possible type for the abstract type by calling `is_type_of`
-    for the object being coerced, returning the first type that matches.
+    Otherwise, test each possible type for the abstract type by calling
+    :meth:`~graphql.type.GraphQLObjectType.is_type_of` for the object
+    being coerced, returning the first type that matches.
     """
     # First, look for `__typename`.
     type_name = get_typename(value)

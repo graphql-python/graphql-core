@@ -51,7 +51,7 @@ async def subscribe(
 
     If the source stream could not be created due to faulty subscription resolver logic
     or underlying systems, the coroutine object will yield a single ExecutionResult
-    containing `errors` and no `data`.
+    containing ``errors`` and no ``data``.
 
     If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
     a stream of ExecutionResults representing the response stream.
@@ -75,11 +75,11 @@ async def subscribe(
         """Map source to response.
 
         For each payload yielded from a subscription, map it over the normal GraphQL
-        `execute` function, with `payload` as the `root_value`. This implements the
-        "MapSourceToResponseEvent" algorithm described in the GraphQL specification.
-        The `execute` function provides the "ExecuteSubscriptionEvent" algorithm,
-        as it is nearly identical to the "ExecuteQuery" algorithm, for which `execute`
-        is also used.
+        :func:`~graphql.execute` function, with ``payload`` as the ``root_value``.
+        This implements the "MapSourceToResponseEvent" algorithm described in the
+        GraphQL specification. The :func:`~graphql.execute` function provides the
+        "ExecuteSubscriptionEvent" algorithm, as it is nearly identical to the
+        "ExecuteQuery" algorithm, for which :func:`~graphql.execute` is also used.
         """
         result = execute(
             schema,

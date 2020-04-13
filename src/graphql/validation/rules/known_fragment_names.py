@@ -8,7 +8,7 @@ __all__ = ["KnownFragmentNamesRule"]
 class KnownFragmentNamesRule(ValidationRule):
     """Known fragment names
 
-    A GraphQL document is only valid if all `...Fragment` fragment spreads refer to
+    A GraphQL document is only valid if all ``...Fragment`` fragment spreads refer to
     fragments defined in the same document.
     """
 
