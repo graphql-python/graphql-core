@@ -1161,7 +1161,7 @@ def default_type_resolver(
     return None
 
 
-def default_field_resolver(source, info, **args):
+def default_field_resolver(source: Any, info: GraphQLResolveInfo, **args: Any) -> Any:
     """Default field resolver.
 
     If a resolve function is not given, then a default resolve behavior is used which
