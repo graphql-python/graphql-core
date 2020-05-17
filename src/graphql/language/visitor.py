@@ -127,7 +127,7 @@ class Visitor:
             # any other value: replace this node with the returned value
             return
 
-        def enter(self, node, key, parent, path, ancestors):
+        def leave(self, node, key, parent, path, ancestors):
             # The return value has the following meaning:
             # IDLE (None) or SKIP: no action
             # BREAK: stop visiting altogether
