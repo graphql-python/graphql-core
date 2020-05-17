@@ -339,7 +339,7 @@ def describe_type_system_schema():
             msg = str(exc_info.value)
             assert msg == (
                 "Schema must contain uniquely named types"
-                f" but contains multiple types named 'String'."
+                " but contains multiple types named 'String'."
             )
 
         def rejects_a_schema_when_a_provided_type_has_no_name():
@@ -364,7 +364,7 @@ def describe_type_system_schema():
             msg = str(exc_info.value)
             assert msg == (
                 "Schema must contain uniquely named types"
-                f" but contains multiple types named 'SameName'."
+                " but contains multiple types named 'SameName'."
             )
 
         def rejects_a_schema_which_defines_fields_with_conflicting_types():
@@ -382,7 +382,7 @@ def describe_type_system_schema():
             msg = str(exc_info.value)
             assert msg == (
                 "Schema must contain uniquely named types"
-                f" but contains multiple types named 'SameName'."
+                " but contains multiple types named 'SameName'."
             )
 
         def describe_when_assumed_valid():
