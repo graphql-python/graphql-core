@@ -593,7 +593,7 @@ class GraphQLArgument:
         ast_node: InputValueDefinitionNode = None,
     ) -> None:
         if not is_input_type(type_):
-            raise TypeError(f"Argument type must be a GraphQL input type.")
+            raise TypeError("Argument type must be a GraphQL input type.")
         if description is not None and not is_description(description):
             raise TypeError("Argument description must be a string.")
         if out_name is not None and not isinstance(out_name, str):
@@ -1324,7 +1324,7 @@ class GraphQLInputField:
         ast_node: InputValueDefinitionNode = None,
     ) -> None:
         if not is_input_type(type_):
-            raise TypeError(f"Input field type must be a GraphQL input type.")
+            raise TypeError("Input field type must be a GraphQL input type.")
         if description is not None and not is_description(description):
             raise TypeError("Input field description must be a string.")
         if out_name is not None and not isinstance(out_name, str):
