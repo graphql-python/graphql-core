@@ -157,9 +157,7 @@ class ExecutionContext:
         self.middleware_manager = middleware_manager
         if is_awaitable:
             self.is_awaitable = is_awaitable
-        self._subfields_cache: Dict[
-            Tuple[GraphQLObjectType, int], Dict[str, List[FieldNode]]
-        ] = {}
+        self._subfields_cache: Dict[Tuple, Dict[str, List[FieldNode]]] = {}
 
     @classmethod
     def build(
@@ -953,10 +951,20 @@ class ExecutionContext:
         subfields are not repeatedly calculated, which saves overhead when resolving
         lists of values.
         """
-        # Use id(field_nodes) as key, since a list cannot be hashed and
-        # (after conversion to a tuple) hashing nodes would be too slow:
-        cache_key = return_type, id(field_nodes)
-        sub_field_nodes = self._subfields_cache.get(cache_key)
+        cache = self._subfields_cache
+        # We cannot use the field_nodes themselves as key for the cache, since they
+        # are not hashable as a list. We also do not want to use the field_nodes
+        # themselves (converted to a tuple) as keys, since hashing them is slow.
+        # Therefore we use the ids of the field_nodes as keys. Note that we do not
+        # use the id of the list, since we want to hit the cache for all lists of
+        # the same nodes, not only for the same list of nodes. Also, the list id may
+        # even be reused, in which case we would get wrong results from the cache.
+        key = (
+            (return_type, id(field_nodes[0]))
+            if len(field_nodes) == 1  # optimize most frequent case
+            else tuple((return_type, *map(id, field_nodes)))
+        )
+        sub_field_nodes = cache.get(key)
         if sub_field_nodes is None:
             sub_field_nodes = {}
             visited_fragment_names: Set[str] = set()
@@ -969,7 +977,7 @@ class ExecutionContext:
                         sub_field_nodes,
                         visited_fragment_names,
                     )
-            self._subfields_cache[cache_key] = sub_field_nodes
+            cache[key] = sub_field_nodes
         return sub_field_nodes
 
 
