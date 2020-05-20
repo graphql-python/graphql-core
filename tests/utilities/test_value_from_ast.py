@@ -1,6 +1,6 @@
 from math import isnan, nan
 
-from graphql.language import parse_value
+from graphql.language import parse_value, ValueNode
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
@@ -60,7 +60,7 @@ def describe_value_from_ast():
 
         assert _value_from('"value"', pass_through_scalar) == "value"
 
-        def throw_parse_literal(_node, _vars=None):
+        def throw_parse_literal(_node: ValueNode, _vars=None):
             raise RuntimeError("Test")
 
         throw_scalar = GraphQLScalarType(
@@ -71,9 +71,12 @@ def describe_value_from_ast():
 
         assert _value_from("value", throw_scalar) is Undefined
 
+        def undefined_parse_literal(_node: ValueNode, _vars=None):
+            return Undefined
+
         return_undefined_scalar = GraphQLScalarType(
             "ReturnUndefinedScalar",
-            parse_literal=lambda _node, _vars=None: Undefined,
+            parse_literal=undefined_parse_literal,
             parse_value=lambda value: value,  # pragma: no cover
         )
 

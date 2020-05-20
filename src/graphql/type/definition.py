@@ -293,10 +293,9 @@ def resolve_thunk(thunk: Any) -> Any:
     return thunk() if callable(thunk) else thunk
 
 
-# Unfortunately these types cannot be specified any better in Python:
-GraphQLScalarSerializer = Callable
-GraphQLScalarValueParser = Callable
-GraphQLScalarLiteralParser = Callable
+GraphQLScalarSerializer = Callable[[Any], Any]
+GraphQLScalarValueParser = Callable[[Any], Any]
+GraphQLScalarLiteralParser = Callable[[ValueNode, Optional[Dict[str, Any]]], Any]
 
 
 class GraphQLScalarType(GraphQLNamedType):

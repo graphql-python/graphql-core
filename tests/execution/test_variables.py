@@ -2,7 +2,7 @@ from math import nan
 
 from graphql.execution import execute
 from graphql.execution.values import get_variable_values
-from graphql.language import parse, OperationDefinitionNode
+from graphql.language import parse, OperationDefinitionNode, StringValueNode, ValueNode
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
@@ -26,10 +26,15 @@ def parse_serialized_value(value: str) -> str:
     return "DeserializedValue"
 
 
+def parse_literal_value(ast: ValueNode, _variables=None) -> str:
+    assert isinstance(ast, StringValueNode)
+    return parse_serialized_value(ast.value)
+
+
 TestComplexScalar = GraphQLScalarType(
     name="ComplexScalar",
-    parse_value=lambda value: parse_serialized_value(value),
-    parse_literal=lambda ast, _variables=None: parse_serialized_value(ast.value),
+    parse_value=parse_serialized_value,
+    parse_literal=parse_literal_value,
 )
 
 

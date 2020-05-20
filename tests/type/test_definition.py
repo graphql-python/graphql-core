@@ -22,6 +22,7 @@ from graphql.language import (
     StringValueNode,
     TypeDefinitionNode,
     TypeExtensionNode,
+    ValueNode,
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
 )
@@ -185,10 +186,11 @@ def describe_type_system_scalars():
         )
 
     def rejects_a_scalar_type_defining_parse_literal_but_not_parse_value():
+        def parse_literal(_node: ValueNode, _vars=None):
+            return Undefined  # pragma: no cover
+
         with raises(TypeError) as exc_info:
-            GraphQLScalarType(
-                "SomeScalar", parse_literal=lambda: None  # pragma: no cover
-            )
+            GraphQLScalarType("SomeScalar", parse_literal=parse_literal)
         assert str(exc_info.value) == (
             "SomeScalar must provide both"
             " 'parse_value' and 'parse_literal' as functions."
