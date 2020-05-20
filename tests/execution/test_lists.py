@@ -377,7 +377,7 @@ def describe_execute_handles_list_nullability():
                 )
 
             @mark.asyncio
-            @mark.filterwarnings("ignore::RuntimeWarning")
+            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
             async def contains_null():
                 await check_async(
                     type_,
@@ -396,7 +396,7 @@ def describe_execute_handles_list_nullability():
                 )
 
             @mark.asyncio
-            @mark.filterwarnings("ignore::RuntimeWarning")
+            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
             async def contains_async_error():
                 await check_async(
                     type_,
@@ -520,7 +520,7 @@ def describe_execute_handles_list_nullability():
                 )
 
             @mark.asyncio
-            @mark.filterwarnings("ignore::RuntimeWarning")
+            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
             async def contains_null():
                 await check_async(
                     type_,
@@ -539,7 +539,7 @@ def describe_execute_handles_list_nullability():
                 )
 
             @mark.asyncio
-            @mark.filterwarnings("ignore::RuntimeWarning")
+            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
             async def contains_async_error():
                 await check_async(
                     type_,

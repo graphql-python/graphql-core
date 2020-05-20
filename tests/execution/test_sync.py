@@ -1,3 +1,4 @@
+from gc import collect
 from inspect import isawaitable
 from typing import Awaitable, cast
 
@@ -108,6 +109,7 @@ def describe_execute_synchronously_when_possible():
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
 
+        @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"
             result = graphql_sync(schema, doc, "rootValue")
@@ -122,3 +124,6 @@ def describe_execute_synchronously_when_possible():
                     }
                 ],
             )
+            # garbage collect coroutine in order to swallow warning
+            del result
+            collect()
