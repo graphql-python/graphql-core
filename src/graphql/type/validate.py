@@ -115,7 +115,8 @@ class SchemaValidationContext:
         elif not is_object_type(query_type):
             self.report_error(
                 f"Query root type must be Object type, it cannot be {query_type}.",
-                get_operation_type_node(schema, query_type, OperationType.QUERY),
+                get_operation_type_node(schema, OperationType.QUERY)
+                or query_type.ast_node,
             )
 
         mutation_type = schema.mutation_type
@@ -123,7 +124,8 @@ class SchemaValidationContext:
             self.report_error(
                 "Mutation root type must be Object type if provided,"
                 f" it cannot be {mutation_type}.",
-                get_operation_type_node(schema, mutation_type, OperationType.MUTATION),
+                get_operation_type_node(schema, OperationType.MUTATION)
+                or mutation_type.ast_node,
             )
 
         subscription_type = schema.subscription_type
@@ -131,9 +133,8 @@ class SchemaValidationContext:
             self.report_error(
                 "Subscription root type must be Object type if provided,"
                 f" it cannot be {subscription_type}.",
-                get_operation_type_node(
-                    schema, subscription_type, OperationType.SUBSCRIPTION
-                ),
+                get_operation_type_node(schema, OperationType.SUBSCRIPTION)
+                or subscription_type.ast_node,
             )
 
     def validate_directives(self) -> None:
@@ -458,7 +459,7 @@ class SchemaValidationContext:
 
 
 def get_operation_type_node(
-    schema: GraphQLSchema, type_: GraphQLObjectType, operation: OperationType
+    schema: GraphQLSchema, operation: OperationType
 ) -> Optional[Node]:
     operation_nodes = cast(
         List[OperationTypeDefinitionNode],
@@ -467,7 +468,7 @@ def get_operation_type_node(
     for node in operation_nodes:
         if node.operation == operation:
             return node.type
-    return type_.ast_node
+    return None
 
 
 class InputObjectCircularRefsValidator:
