@@ -14,6 +14,7 @@ __all__ = [
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
     "GraphQLDeprecatedDirective",
+    "GraphQLSpecifiedByDirective",
     "DirectiveLocation",
     "DEFAULT_DEPRECATION_REASON",
 ]
@@ -196,9 +197,27 @@ GraphQLDeprecatedDirective = GraphQLDirective(
     description="Marks an element of a GraphQL schema as no longer supported.",
 )
 
+# Used to provide a URL for specifying the behaviour of custom scalar definitions:
+GraphQLSpecifiedByDirective = GraphQLDirective(
+    name="specifiedBy",
+    locations=[DirectiveLocation.SCALAR],
+    args={
+        "url": GraphQLArgument(
+            GraphQLNonNull(GraphQLString),
+            description="The URL that specifies the behaviour of this scalar.",
+        )
+    },
+    description="Exposes a URL that specifies the behaviour of this scalar.",
+)
+
 
 specified_directives: FrozenList[GraphQLDirective] = FrozenList(
-    [GraphQLIncludeDirective, GraphQLSkipDirective, GraphQLDeprecatedDirective]
+    [
+        GraphQLIncludeDirective,
+        GraphQLSkipDirective,
+        GraphQLDeprecatedDirective,
+        GraphQLSpecifiedByDirective,
+    ]
 )
 specified_directives.__doc__ = """The full list of specified directives."""
 

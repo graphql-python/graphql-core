@@ -70,6 +70,7 @@ from .type import (
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
     GraphQLDeprecatedDirective,
+    GraphQLSpecifiedByDirective,
     # "Enum" of Type Kinds
     TypeKind,
     # Constant Deprecation Reason
@@ -437,6 +438,7 @@ __all__ = [
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
     "GraphQLDeprecatedDirective",
+    "GraphQLSpecifiedByDirective",
     "TypeKind",
     "DEFAULT_DEPRECATION_REASON",
     "introspection_types",

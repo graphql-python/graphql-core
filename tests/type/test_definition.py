@@ -69,6 +69,7 @@ def describe_type_system_scalars():
         assert kwargs == {
             "name": "SomeScalar",
             "description": None,
+            "specified_by_url": None,
             "serialize": None,
             "parse_value": None,
             "parse_literal": None,
@@ -90,6 +91,12 @@ def describe_type_system_scalars():
         scalar = GraphQLScalarType("SomeScalar", description=description)
         assert scalar.description is description
         assert scalar.to_kwargs()["description"] is description
+
+    def accepts_a_scalar_type_defining_specified_by_url():
+        url = "https://example.com/foo_spec"
+        scalar = GraphQLScalarType("SomeScalar", specified_by_url=url)
+        assert scalar.specified_by_url == url
+        assert scalar.to_kwargs()["specified_by_url"] == url
 
     def accepts_a_scalar_type_defining_parse_value_and_parse_literal():
         def parse_value(_value):
@@ -173,6 +180,15 @@ def describe_type_system_scalars():
             # noinspection PyTypeChecker
             GraphQLScalarType("SomeScalar", description=[])  # type: ignore
         assert str(exc_info.value) == "The description must be a string."
+
+    def rejects_a_scalar_type_defining_specified_by_url_with_an_incorrect_type():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLScalarType("SomeScalar", specified_by_url={})  # type: ignore
+        assert (
+            str(exc_info.value)
+            == "SomeScalar must provide 'specified_by_url' as a string, but got: {}."
+        )
 
     def rejects_a_scalar_type_defining_serialize_with_incorrect_type():
         with raises(TypeError) as exc_info:

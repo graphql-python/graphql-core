@@ -516,6 +516,19 @@ def describe_type_system_printer():
             """
         )
 
+    def prints_custom_scalar_with_speicified_by_url():
+        foo_type = GraphQLScalarType(
+            name="Foo", specified_by_url="https://example.com/foo_spec"
+        )
+
+        schema = GraphQLSchema(types=[foo_type])
+        output = print_for_test(schema)
+        assert output == dedent(
+            """
+            scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
+            """
+        )
+
     def prints_enum():
         rgb_type = GraphQLEnumType(
             name="RGB", values=dict.fromkeys(("RED", "GREEN", "BLUE"))
@@ -643,6 +656,12 @@ def describe_type_system_printer():
               reason: String = "No longer supported"
             ) on FIELD_DEFINITION | ENUM_VALUE
 
+            """Exposes a URL that specifies the behaviour of this scalar."""
+            directive @specifiedBy(
+              """The URL that specifies the behaviour of this scalar."""
+              url: String!
+            ) on SCALAR
+
             """
             A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.
             """
@@ -672,12 +691,13 @@ def describe_type_system_printer():
             """
             The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.
 
-            Depending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name and description, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.
+            Depending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name, description and optional `specifiedByUrl`, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.
             """
             type __Type {
               kind: __TypeKind!
               name: String
               description: String
+              specifiedByUrl: String
               fields(includeDeprecated: Boolean = false): [__Field!]
               interfaces: [__Type!]
               possibleTypes: [__Type!]

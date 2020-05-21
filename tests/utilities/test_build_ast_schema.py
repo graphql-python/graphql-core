@@ -9,6 +9,7 @@ from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    GraphQLSpecifiedByDirective,
     GraphQLBoolean,
     GraphQLFloat,
     GraphQLID,
@@ -192,13 +193,14 @@ def describe_schema_builder():
         )
         assert cycle_sdl(sdl) == sdl
 
-    def maintains_skip_and_include_directives():
+    def maintains_include_skip_and_specified_by_url_directives():
         schema = build_schema("type Query")
 
-        assert len(schema.directives) == 3
+        assert len(schema.directives) == 4
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
+        assert schema.get_directive("specifiedBy") is GraphQLSpecifiedByDirective
 
     def overriding_directives_excludes_specified():
         schema = build_schema(
@@ -206,10 +208,11 @@ def describe_schema_builder():
             directive @skip on FIELD
             directive @include on FIELD
             directive @deprecated on FIELD_DEFINITION
+            directive @specifiedBy on FIELD_DEFINITION
             """
         )
 
-        assert len(schema.directives) == 3
+        assert len(schema.directives) == 4
         get_directive = schema.get_directive
         assert get_directive("skip") is not GraphQLSkipDirective
         assert get_directive("skip") is not None
@@ -217,18 +220,21 @@ def describe_schema_builder():
         assert get_directive("include") is not None
         assert get_directive("deprecated") is not GraphQLDeprecatedDirective
         assert get_directive("deprecated") is not None
+        assert get_directive("specifiedBy") is not GraphQLSpecifiedByDirective
+        assert get_directive("specifiedBy") is not None
 
-    def adding_directives_maintains_skip_and_include_directives():
+    def adding_directives_maintains_include_skip_and_specified_by_directives():
         schema = build_schema(
             """
             directive @foo(arg: Int) on FIELD
             """
         )
 
-        assert len(schema.directives) == 4
+        assert len(schema.directives) == 5
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
+        assert schema.get_directive("specifiedBy") is GraphQLSpecifiedByDirective
         assert schema.get_directive("foo") is not None
 
     def type_modifiers():
@@ -867,6 +873,23 @@ def describe_schema_builder():
         field2 = root_fields["field2"]
         assert field2.is_deprecated is True
         assert field2.deprecation_reason == "Because I said so"
+
+    def supports_specified_by_directives():
+        sdl = dedent(
+            """
+            scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
+
+            type Query {
+              foo: Foo @deprecated
+            }
+            """
+        )
+        assert cycle_sdl(sdl) == sdl
+
+        schema = build_schema(sdl)
+
+        foo_scalar = assert_scalar_type(schema.get_type("Foo"))
+        assert foo_scalar.specified_by_url == "https://example.com/foo_spec"
 
     def correctly_extend_scalar_type():
         scalar_sdl = dedent(

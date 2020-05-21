@@ -4,14 +4,19 @@ __all__ = ["get_introspection_query"]
 
 
 def get_introspection_query(
-    descriptions=True, directive_is_repeatable=False, schema_description=False
+    descriptions=True,
+    specified_by_url=False,
+    directive_is_repeatable=False,
+    schema_description=False,
 ) -> str:
     """Get a query for introspection.
 
-    Optionally, you can exclude descriptions, include repeatability of directives,
-    and specify whether to include the schema description as well.
+    Optionally, you can exclude descriptions, include specification URLs,
+    include repeatability of directives, and specify whether to include
+    the schema description as well.
     """
     maybe_description = "description" if descriptions else ""
+    maybe_specified_by_url = "specifiedByUrl" if specified_by_url else ""
     maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     maybe_schema_description = maybe_description if schema_description else ""
     return dedent(
@@ -41,6 +46,7 @@ def get_introspection_query(
           kind
           name
           {maybe_description}
+          {maybe_specified_by_url}
           fields(includeDeprecated: true) {{
             name
             {maybe_description}

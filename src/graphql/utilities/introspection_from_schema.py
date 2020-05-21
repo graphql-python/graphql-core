@@ -14,6 +14,7 @@ IntrospectionSchema = Dict[str, Any]
 def introspection_from_schema(
     schema: GraphQLSchema,
     descriptions: bool = True,
+    specified_by_url: bool = False,
     directive_is_repeatable: bool = True,
     schema_description: bool = True,
 ) -> IntrospectionSchema:
@@ -27,7 +28,7 @@ def introspection_from_schema(
     """
     document = parse(
         get_introspection_query(
-            descriptions, directive_is_repeatable, schema_description
+            descriptions, specified_by_url, directive_is_repeatable, schema_description
         )
     )
 

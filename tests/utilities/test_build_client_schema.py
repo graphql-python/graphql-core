@@ -31,7 +31,7 @@ def cycle_introspection(sdl_string):
     build in-memory GraphQLSchema from it, produce a client-side representation of the
     schema by using "build_client_schema" and then return that schema printed as SDL.
     """
-    options = dict(directive_is_repeatable=True)
+    options = dict(specified_by_url=True, directive_is_repeatable=True)
 
     server_schema = build_schema(sdl_string)
     initial_introspection = introspection_from_schema(server_schema, **options)
@@ -531,6 +531,19 @@ def describe_type_system_build_schema_from_introspection():
 
             enum SomeEnum {
               SOME_VALUE @deprecated(reason: "")
+            }
+            """
+        )
+
+        assert cycle_introspection(sdl) == sdl
+
+    def builds_a_schema_with_specified_by_url():
+        sdl = dedent(
+            """
+            scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
+
+            type Query {
+              foo: Foo
             }
             """
         )

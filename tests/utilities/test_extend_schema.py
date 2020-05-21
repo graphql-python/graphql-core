@@ -21,8 +21,6 @@ from graphql.type import (
     GraphQLInputField,
     GraphQLInt,
     GraphQLNamedType,
-    GraphQLObjectType,
-    GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
     assert_directive,
@@ -341,9 +339,36 @@ def describe_extend_schema():
 
         assert validate_schema(extended_schema) == []
 
-        some_scalar = extended_schema.get_type("SomeScalar")
-        assert isinstance(some_scalar, GraphQLScalarType)
+        some_scalar = assert_scalar_type(extended_schema.get_type("SomeScalar"))
         assert print_extension_nodes(some_scalar) == extension_sdl
+
+    def extends_scalars_by_adding_specified_by_directive():
+        schema = build_schema(
+            """
+            type Query {
+              foo: Foo
+            }
+
+            scalar Foo
+
+            directive @foo on SCALAR
+            """
+        )
+        extension_sdl = dedent(
+            """
+            extend scalar Foo @foo
+
+            extend scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
+            """
+        )
+
+        extended_schema = extend_schema(schema, parse(extension_sdl))
+        foo = assert_scalar_type(extended_schema.get_type("Foo"))
+
+        assert foo.specified_by_url == "https://example.com/foo_spec"
+
+        assert validate_schema(extended_schema) == []
+        assert print_extension_nodes(foo) == extension_sdl
 
     def correctly_assigns_ast_nodes_to_new_and_extended_types():
         schema = build_schema(
@@ -1301,8 +1326,7 @@ def describe_extend_schema():
             )
             extended_schema = extend_schema(schema, parse(extension_sdl))
 
-            query_type = extended_schema.query_type
-            assert isinstance(query_type, GraphQLObjectType)
+            query_type = assert_object_type(extended_schema.query_type)
             assert query_type.name == "Foo"
             assert print_ast_node(extended_schema) + "\n" == extension_sdl
 
@@ -1322,8 +1346,7 @@ def describe_extend_schema():
             )
             extended_schema = extend_schema(schema, parse(extension_sdl))
 
-            mutation_type = extended_schema.mutation_type
-            assert isinstance(mutation_type, GraphQLObjectType)
+            mutation_type = assert_object_type(extended_schema.mutation_type)
             assert mutation_type.name == "MutationRoot"
             assert print_extension_nodes(extended_schema) == extension_sdl
 
@@ -1359,12 +1382,10 @@ def describe_extend_schema():
             )
             extended_schema = extend_schema(schema, extend_ast)
 
-            mutation_type = extended_schema.mutation_type
-            assert isinstance(mutation_type, GraphQLObjectType)
+            mutation_type = assert_object_type(extended_schema.mutation_type)
             assert mutation_type.name == "Mutation"
 
-            subscription_type = extended_schema.subscription_type
-            assert isinstance(subscription_type, GraphQLObjectType)
+            subscription_type = assert_object_type(extended_schema.subscription_type)
             assert subscription_type.name == "Subscription"
 
         def applies_multiple_schema_extensions():
@@ -1384,12 +1405,10 @@ def describe_extend_schema():
             )
             extended_schema = extend_schema(schema, extend_ast)
 
-            mutation_type = extended_schema.mutation_type
-            assert isinstance(mutation_type, GraphQLObjectType)
+            mutation_type = assert_object_type(extended_schema.mutation_type)
             assert mutation_type.name == "Mutation"
 
-            subscription_type = extended_schema.subscription_type
-            assert isinstance(subscription_type, GraphQLObjectType)
+            subscription_type = assert_object_type(extended_schema.subscription_type)
             assert subscription_type.name == "Subscription"
 
         def schema_extension_ast_are_available_from_schema_object():

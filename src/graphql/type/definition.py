@@ -318,6 +318,7 @@ class GraphQLScalarType(GraphQLNamedType):
 
     """
 
+    specified_by_url: Optional[str]
     ast_node: Optional[ScalarTypeDefinitionNode]
     extension_ast_nodes: Optional[FrozenList[ScalarTypeExtensionNode]]
 
@@ -328,6 +329,7 @@ class GraphQLScalarType(GraphQLNamedType):
         parse_value: Optional[GraphQLScalarValueParser] = None,
         parse_literal: Optional[GraphQLScalarLiteralParser] = None,
         description: Optional[str] = None,
+        specified_by_url: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[ScalarTypeDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[ScalarTypeExtensionNode]] = None,
@@ -339,6 +341,11 @@ class GraphQLScalarType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
+        if specified_by_url is not None and not isinstance(specified_by_url, str):
+            raise TypeError(
+                f"{name} must provide 'specified_by_url' as a string,"
+                f" but got: {inspect(specified_by_url)}."
+            )
         if serialize is not None and not callable(serialize):
             raise TypeError(
                 f"{name} must provide 'serialize' as a function."
@@ -369,6 +376,7 @@ class GraphQLScalarType(GraphQLNamedType):
             self.parse_value = parse_value  # type: ignore
         if parse_literal is not None:
             self.parse_literal = parse_literal  # type: ignore
+        self.specified_by_url = specified_by_url
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {self.name!r}>"
@@ -417,6 +425,7 @@ class GraphQLScalarType(GraphQLNamedType):
             if getattr(self.parse_literal, "__func__", None)
             is GraphQLScalarType.parse_literal
             else self.parse_literal,
+            specified_by_url=self.specified_by_url,
         )
 
 

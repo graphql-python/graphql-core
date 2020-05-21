@@ -199,8 +199,8 @@ __Type: GraphQLObjectType = GraphQLObjectType(
     " There are many kinds of types in GraphQL as represented"
     " by the `__TypeKind` enum.\n\nDepending on the kind of a"
     " type, certain fields describe information about that type."
-    " Scalar types provide no information beyond a name and"
-    " description, while Enum types provide their values."
+    " Scalar types provide no information beyond a name, description"
+    " and optional `specifiedByUrl`, while Enum types provide their values."
     " Object and Interface types provide the fields they describe."
     " Abstract types, Union and Interface, provide the Object"
     " types possible at runtime. List and NonNull types compose"
@@ -212,6 +212,9 @@ __Type: GraphQLObjectType = GraphQLObjectType(
         "name": GraphQLField(GraphQLString, resolve=TypeFieldResolvers.name),
         "description": GraphQLField(
             GraphQLString, resolve=TypeFieldResolvers.description
+        ),
+        "specifiedByUrl": GraphQLField(
+            GraphQLString, resolve=TypeFieldResolvers.specified_by_url
         ),
         "fields": GraphQLField(
             GraphQLList(GraphQLNonNull(__Field)),
@@ -277,6 +280,10 @@ class TypeFieldResolvers:
     @staticmethod
     def description(type_, _info):
         return getattr(type_, "description", None)
+
+    @staticmethod
+    def specified_by_url(type_, _info):
+        return getattr(type_, "specified_by_url", None)
 
     # noinspection PyPep8Naming
     @staticmethod

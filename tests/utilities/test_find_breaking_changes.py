@@ -3,6 +3,7 @@ from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    GraphQLSpecifiedByDirective,
 )
 from graphql.utilities import (
     BreakingChangeType,
@@ -812,7 +813,11 @@ def describe_find_breaking_changes():
         old_schema = GraphQLSchema()
 
         new_schema = GraphQLSchema(
-            directives=[GraphQLSkipDirective, GraphQLIncludeDirective]
+            directives=[
+                GraphQLSkipDirective,
+                GraphQLIncludeDirective,
+                GraphQLSpecifiedByDirective,
+            ]
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [

@@ -32,6 +32,7 @@ from ..language import (
     ObjectTypeExtensionNode,
     OperationType,
     ScalarTypeDefinitionNode,
+    ScalarTypeExtensionNode,
     SchemaExtensionNode,
     SchemaDefinitionNode,
     TypeDefinitionNode,
@@ -64,6 +65,7 @@ from ..type import (
     GraphQLOutputType,
     GraphQLScalarType,
     GraphQLSchema,
+    GraphQLSpecifiedByDirective,
     GraphQLType,
     GraphQLUnionType,
     assert_schema,
@@ -269,9 +271,14 @@ def extend_schema_impl(
         kwargs = type_.to_kwargs()
         extensions = type_extensions_map[kwargs["name"]]
 
+        specified_by_url = kwargs["specified_by_url"]
+        for extension_node in extensions:
+            specified_by_url = get_specified_by_url(extension_node) or specified_by_url
+
         return GraphQLScalarType(
             **{
                 **kwargs,
+                "specified_by_url": specified_by_url,
                 "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
             }
         )
@@ -574,6 +581,7 @@ def extend_schema_impl(
         return GraphQLScalarType(
             name=ast_node.name.value,
             description=ast_node.description.value if ast_node.description else None,
+            specified_by_url=get_specified_by_url(ast_node),
             ast_node=ast_node,
             extension_ast_nodes=extension_nodes,
         )
@@ -671,6 +679,16 @@ def get_deprecation_reason(
 
     deprecated = get_directive_values(GraphQLDeprecatedDirective, node)
     return deprecated["reason"] if deprecated else None
+
+
+def get_specified_by_url(
+    node: Union[ScalarTypeDefinitionNode, ScalarTypeExtensionNode]
+) -> Optional[str]:
+    """Given a scalar node, return the string value for the specifiedByUrl."""
+    from ..execution import get_directive_values
+
+    specified_by_url = get_directive_values(GraphQLSpecifiedByDirective, node)
+    return specified_by_url["url"] if specified_by_url else None
 
 
 def get_description(node: Node) -> Optional[str]:

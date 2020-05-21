@@ -41,3 +41,17 @@ def describe_get_introspection_query():
         assert not all_descriptions(
             get_introspection_query(descriptions=False, schema_description=True)
         )
+
+    def includes_specified_by_url_field():
+        all_specified_by_urls = re.compile(r"\bspecifiedByUrl\b").findall
+
+        assert not all_specified_by_urls(get_introspection_query())
+
+        assert not all_specified_by_urls(
+            get_introspection_query(specified_by_url=False)
+        )
+
+        assert (
+            len(all_specified_by_urls(get_introspection_query(specified_by_url=True)))
+            == 1
+        )

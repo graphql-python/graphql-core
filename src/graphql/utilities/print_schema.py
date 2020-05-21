@@ -144,7 +144,11 @@ def print_type(type_: GraphQLNamedType) -> str:
 
 
 def print_scalar(type_: GraphQLScalarType) -> str:
-    return print_description(type_) + f"scalar {type_.name}"
+    return (
+        print_description(type_)
+        + f"scalar {type_.name}"
+        + print_specified_by_url(type_)
+    )
 
 
 def print_implemented_interfaces(
@@ -261,6 +265,18 @@ def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue])
     if not reason_ast or reason == DEFAULT_DEPRECATION_REASON:
         return " @deprecated"
     return f" @deprecated(reason: {print_ast(reason_ast)})"
+
+
+def print_specified_by_url(scalar: GraphQLScalarType) -> str:
+    if scalar.specified_by_url is None:
+        return ""
+    url = scalar.specified_by_url
+    url_ast = ast_from_value(url, GraphQLString)
+    if not url_ast:  # pragma: no cover
+        raise TypeError(
+            "Unexpected null value returned from `ast_from_value` for specifiedByUrl."
+        )
+    return f" @specifiedBy(url: {print_ast(url_ast)})"
 
 
 def print_description(

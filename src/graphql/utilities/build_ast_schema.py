@@ -10,6 +10,7 @@ from ..type import (
     GraphQLIncludeDirective,
     GraphQLSchema,
     GraphQLSkipDirective,
+    GraphQLSpecifiedByDirective,
 )
 from .extend_schema import extend_schema_impl
 
@@ -71,6 +72,8 @@ def build_ast_schema(
         directives.append(GraphQLIncludeDirective)
     if not any(directive.name == "deprecated" for directive in directives):
         directives.append(GraphQLDeprecatedDirective)
+    if not any(directive.name == "specifiedBy" for directive in directives):
+        directives.append(GraphQLSpecifiedByDirective)
 
     return GraphQLSchema(**schema_kwargs)
 
