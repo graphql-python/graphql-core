@@ -7,7 +7,7 @@ MAX_LENGTH = 5
 
 def did_you_mean(suggestions: Sequence[str], sub_message: Optional[str] = None) -> str:
     """Given [ A, B, C ] return ' Did you mean A, B, or C?'"""
-    if not suggestions:
+    if not suggestions or not MAX_LENGTH:
         return ""
     parts = [" Did you mean "]
     if sub_message:
