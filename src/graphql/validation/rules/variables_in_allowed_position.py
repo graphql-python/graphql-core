@@ -22,10 +22,12 @@ class VariablesInAllowedPositionRule(ValidationRule):
         super().__init__(context)
         self.var_def_map: Dict[str, Any] = {}
 
-    def enter_operation_definition(self, *_args):
+    def enter_operation_definition(self, *_args) -> None:
         self.var_def_map.clear()
 
-    def leave_operation_definition(self, operation: OperationDefinitionNode, *_args):
+    def leave_operation_definition(
+        self, operation: OperationDefinitionNode, *_args
+    ) -> None:
         var_def_map = self.var_def_map
         usages = self.context.get_recursive_variable_usages(operation)
 
@@ -53,7 +55,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
                         )
                     )
 
-    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args) -> None:
         self.var_def_map[node.variable.name.value] = node
 
 

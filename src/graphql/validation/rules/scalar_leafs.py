@@ -13,7 +13,7 @@ class ScalarLeafsRule(ValidationRule):
     are of scalar or enum types.
     """
 
-    def enter_field(self, node: FieldNode, *_args):
+    def enter_field(self, node: FieldNode, *_args) -> None:
         type_ = self.context.get_type()
         if type_:
             selection_set = node.selection_set

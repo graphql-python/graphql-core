@@ -14,7 +14,7 @@ class VariablesAreInputTypesRule(ValidationRule):
     (scalar, enum, or input object).
     """
 
-    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args) -> None:
         type_ = type_from_ast(self.context.schema, node.type)
 
         # If the variable type is not an input type, return an error.

@@ -16,14 +16,14 @@ class LoneAnonymousOperationRule(ASTValidationRule):
         super().__init__(context)
         self.operation_count = 0
 
-    def enter_document(self, node: DocumentNode, *_args):
+    def enter_document(self, node: DocumentNode, *_args) -> None:
         self.operation_count = sum(
             1
             for definition in node.definitions
             if isinstance(definition, OperationDefinitionNode)
         )
 
-    def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
+    def enter_operation_definition(self, node: OperationDefinitionNode, *_args) -> None:
         if not node.name and self.operation_count > 1:
             self.report_error(
                 GraphQLError(

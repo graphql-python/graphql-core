@@ -18,10 +18,12 @@ class NoUndefinedVariablesRule(ValidationRule):
         super().__init__(context)
         self.defined_variable_names: Set[str] = set()
 
-    def enter_operation_definition(self, *_args):
+    def enter_operation_definition(self, *_args) -> None:
         self.defined_variable_names.clear()
 
-    def leave_operation_definition(self, operation: OperationDefinitionNode, *_args):
+    def leave_operation_definition(
+        self, operation: OperationDefinitionNode, *_args
+    ) -> None:
         usages = self.context.get_recursive_variable_usages(operation)
         defined_variables = self.defined_variable_names
         for usage in usages:
@@ -38,5 +40,5 @@ class NoUndefinedVariablesRule(ValidationRule):
                     )
                 )
 
-    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args) -> None:
         self.defined_variable_names.add(node.variable.name.value)

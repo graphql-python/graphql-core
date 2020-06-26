@@ -1,7 +1,7 @@
 from typing import Dict
 
 from ...error import GraphQLError
-from ...language import NameNode, FragmentDefinitionNode
+from ...language import NameNode, FragmentDefinitionNode, VisitorAction, SKIP
 from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ["UniqueFragmentNamesRule"]
@@ -17,10 +17,12 @@ class UniqueFragmentNamesRule(ASTValidationRule):
         super().__init__(context)
         self.known_fragment_names: Dict[str, NameNode] = {}
 
-    def enter_operation_definition(self, *_args):
-        return self.SKIP
+    def enter_operation_definition(self, *_args) -> VisitorAction:
+        return SKIP
 
-    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args):
+    def enter_fragment_definition(
+        self, node: FragmentDefinitionNode, *_args
+    ) -> VisitorAction:
         known_fragment_names = self.known_fragment_names
         fragment_name = node.name.value
         if fragment_name in known_fragment_names:
@@ -32,4 +34,4 @@ class UniqueFragmentNamesRule(ASTValidationRule):
             )
         else:
             known_fragment_names[fragment_name] = node.name
-        return self.SKIP
+        return SKIP

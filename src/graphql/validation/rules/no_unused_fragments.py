@@ -1,7 +1,12 @@
 from typing import List
 
 from ...error import GraphQLError
-from ...language import FragmentDefinitionNode, OperationDefinitionNode
+from ...language import (
+    FragmentDefinitionNode,
+    OperationDefinitionNode,
+    VisitorAction,
+    SKIP,
+)
 from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ["NoUnusedFragmentsRule"]
@@ -19,15 +24,19 @@ class NoUnusedFragmentsRule(ASTValidationRule):
         self.operation_defs: List[OperationDefinitionNode] = []
         self.fragment_defs: List[FragmentDefinitionNode] = []
 
-    def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
+    def enter_operation_definition(
+        self, node: OperationDefinitionNode, *_args
+    ) -> VisitorAction:
         self.operation_defs.append(node)
-        return False
+        return SKIP
 
-    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args):
+    def enter_fragment_definition(
+        self, node: FragmentDefinitionNode, *_args
+    ) -> VisitorAction:
         self.fragment_defs.append(node)
-        return False
+        return SKIP
 
-    def leave_document(self, *_args):
+    def leave_document(self, *_args) -> None:
         fragment_names_used = set()
         get_fragments = self.context.get_recursively_referenced_fragments
         for operation in self.operation_defs:

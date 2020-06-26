@@ -1,4 +1,5 @@
 from copy import copy
+from enum import Enum
 from typing import (
     Any,
     Callable,
@@ -19,6 +20,7 @@ from .ast import Node
 __all__ = [
     "Visitor",
     "ParallelVisitor",
+    "VisitorAction",
     "visit",
     "BREAK",
     "SKIP",
@@ -28,10 +30,26 @@ __all__ = [
 ]
 
 
-# Special return values for the visitor methods:
+class VisitorActionEnum(Enum):
+    """Special return values for the visitor methods.
+
+    You can also use the values of this enum directly.
+    """
+
+    BREAK = True
+    SKIP = False
+    REMOVE = Ellipsis
+
+
+VisitorAction = Optional[VisitorActionEnum]
+
 # Note that in GraphQL.js these are defined differently:
 # BREAK = {}, SKIP = false, REMOVE = null, IDLE = undefined
-BREAK, SKIP, REMOVE, IDLE = True, False, Ellipsis, None
+
+BREAK = VisitorActionEnum.BREAK
+SKIP = VisitorActionEnum.SKIP
+REMOVE = VisitorActionEnum.REMOVE
+IDLE = None
 
 # Default map from visitor kinds to their traversable node attributes:
 QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
@@ -253,7 +271,7 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
             for edit_key, edit_value in edits:
                 if in_array:
                     edit_key -= edit_offset
-                if in_array and edit_value is REMOVE:
+                if in_array and (edit_value is REMOVE or edit_value is Ellipsis):
                     node.pop(edit_key)
                     edit_offset += 1
                 else:
@@ -292,10 +310,10 @@ def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
             if visit_fn:
                 result = visit_fn(visitor, node, key, parent, path, ancestors)
 
-                if result is BREAK:
+                if result is BREAK or result is True:
                     break
 
-                if result is SKIP:
+                if result is SKIP or result is False:
                     if not is_leaving:
                         path_pop()
                         continue
@@ -356,9 +374,9 @@ class ParallelVisitor(Visitor):
                 fn = visitor.get_visit_fn(node.kind)
                 if fn:
                     result = fn(visitor, node, *args)
-                    if result is SKIP:
+                    if result is SKIP or result is False:
                         skipping[i] = node
-                    elif result == BREAK:
+                    elif result is BREAK or result is True:
                         skipping[i] = BREAK
                     elif result is not None:
                         return result
@@ -370,9 +388,13 @@ class ParallelVisitor(Visitor):
                 fn = visitor.get_visit_fn(node.kind, is_leaving=True)
                 if fn:
                     result = fn(visitor, node, *args)
-                    if result == BREAK:
+                    if result is BREAK or result is True:
                         skipping[i] = BREAK
-                    elif result is not None and result is not SKIP:
+                    elif (
+                        result is not None
+                        and result is not SKIP
+                        and result is not False
+                    ):
                         return result
             elif skipping[i] is node:
                 skipping[i] = None

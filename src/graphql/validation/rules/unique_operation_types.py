@@ -6,6 +6,8 @@ from ...language import (
     OperationType,
     SchemaDefinitionNode,
     SchemaExtensionNode,
+    VisitorAction,
+    SKIP,
 )
 from ...type import GraphQLObjectType
 from . import SDLValidationContext, SDLValidationRule
@@ -40,7 +42,7 @@ class UniqueOperationTypesRule(SDLValidationRule):
 
     def check_operation_types(
         self, node: Union[SchemaDefinitionNode, SchemaExtensionNode], *_args
-    ):
+    ) -> VisitorAction:
         for operation_type in node.operation_types or []:
             operation = operation_type.operation
             already_defined_operation_type = self.defined_operation_types.get(operation)
@@ -62,6 +64,6 @@ class UniqueOperationTypesRule(SDLValidationRule):
                 )
             else:
                 self.defined_operation_types[operation] = operation_type
-        return self.SKIP
+        return SKIP
 
     enter_schema_definition = enter_schema_extension = check_operation_types

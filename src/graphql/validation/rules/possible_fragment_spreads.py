@@ -15,7 +15,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
     types which pass the type condition.
     """
 
-    def enter_inline_fragment(self, node: InlineFragmentNode, *_args):
+    def enter_inline_fragment(self, node: InlineFragmentNode, *_args) -> None:
         context = self.context
         frag_type = context.get_type()
         parent_type = context.get_parent_type()
@@ -32,7 +32,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                 )
             )
 
-    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args):
+    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args) -> None:
         context = self.context
         frag_name = node.name.value
         frag_type = self.get_fragment_type(frag_name)

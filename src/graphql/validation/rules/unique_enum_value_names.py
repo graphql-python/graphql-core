@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import cast, Dict
 
 from ...error import GraphQLError
-from ...language import NameNode, EnumTypeDefinitionNode
+from ...language import NameNode, EnumTypeDefinitionNode, VisitorAction, SKIP
 from ...type import is_enum_type, GraphQLEnumType
 from . import SDLValidationContext, SDLValidationRule
 
@@ -21,7 +21,9 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
         self.existing_type_map = schema.type_map if schema else {}
         self.known_value_names: Dict[str, Dict[str, NameNode]] = defaultdict(dict)
 
-    def check_value_uniqueness(self, node: EnumTypeDefinitionNode, *_args):
+    def check_value_uniqueness(
+        self, node: EnumTypeDefinitionNode, *_args
+    ) -> VisitorAction:
         existing_type_map = self.existing_type_map
         type_name = node.name.value
         value_names = self.known_value_names[type_name]
@@ -53,7 +55,7 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
             else:
                 value_names[value_name] = value_def.name
 
-        return self.SKIP
+        return SKIP
 
     enter_enum_type_definition = check_value_uniqueness
     enter_enum_type_extension = check_value_uniqueness

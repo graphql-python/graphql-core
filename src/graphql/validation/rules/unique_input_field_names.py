@@ -19,14 +19,14 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
         self.known_names_stack: List[Dict[str, NameNode]] = []
         self.known_names: Dict[str, NameNode] = {}
 
-    def enter_object_value(self, *_args):
+    def enter_object_value(self, *_args) -> None:
         self.known_names_stack.append(self.known_names)
         self.known_names = {}
 
-    def leave_object_value(self, *_args):
+    def leave_object_value(self, *_args) -> None:
         self.known_names = self.known_names_stack.pop()
 
-    def enter_object_field(self, node: ObjectFieldNode, *_args):
+    def enter_object_field(self, node: ObjectFieldNode, *_args) -> None:
         known_names = self.known_names
         field_name = node.name.value
         if field_name in known_names:

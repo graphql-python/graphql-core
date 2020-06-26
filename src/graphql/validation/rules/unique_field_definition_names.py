@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Any, Dict
 
 from ...error import GraphQLError
-from ...language import NameNode, ObjectTypeDefinitionNode
+from ...language import NameNode, ObjectTypeDefinitionNode, VisitorAction, SKIP
 from ...type import is_object_type, is_interface_type, is_input_object_type
 from . import SDLValidationContext, SDLValidationRule
 
@@ -21,7 +21,9 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
         self.existing_type_map = schema.type_map if schema else {}
         self.known_field_names: Dict[str, Dict[str, NameNode]] = defaultdict(dict)
 
-    def check_field_uniqueness(self, node: ObjectTypeDefinitionNode, *_args):
+    def check_field_uniqueness(
+        self, node: ObjectTypeDefinitionNode, *_args
+    ) -> VisitorAction:
         existing_type_map = self.existing_type_map
         type_name = node.name.value
         field_names = self.known_field_names[type_name]
@@ -49,7 +51,7 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
             else:
                 field_names[field_name] = field_def.name
 
-        return self.SKIP
+        return SKIP
 
     enter_input_object_type_definition = check_field_uniqueness
     enter_input_object_type_extension = check_field_uniqueness

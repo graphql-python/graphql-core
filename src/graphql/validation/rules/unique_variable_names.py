@@ -17,10 +17,10 @@ class UniqueVariableNamesRule(ASTValidationRule):
         super().__init__(context)
         self.known_variable_names: Dict[str, NameNode] = {}
 
-    def enter_operation_definition(self, *_args):
+    def enter_operation_definition(self, *_args) -> None:
         self.known_variable_names.clear()
 
-    def enter_variable_definition(self, node: VariableDefinitionNode, *_args):
+    def enter_variable_definition(self, node: VariableDefinitionNode, *_args) -> None:
         known_variable_names = self.known_variable_names
         variable_name = node.variable.name.value
         if variable_name in known_variable_names:

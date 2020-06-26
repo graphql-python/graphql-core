@@ -52,7 +52,7 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
 
     # Many different AST nodes may contain directives. Rather than listing them all,
     # just listen for entering any node, and check to see if it defines any directives.
-    def enter(self, node: Node, *_args):
+    def enter(self, node: Node, *_args) -> None:
         directives: List[DirectiveNode] = getattr(node, "directives", None)
         if not directives:
             return

@@ -12,7 +12,7 @@ class KnownFragmentNamesRule(ValidationRule):
     fragments defined in the same document.
     """
 
-    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args):
+    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args) -> None:
         fragment_name = node.name.value
         fragment = self.context.get_fragment(fragment_name)
         if not fragment:

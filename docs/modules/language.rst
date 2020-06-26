@@ -103,17 +103,17 @@ The module also exports the following special symbols which can be used as
 return values in the :class:`Visitor` methods to signal particular actions:
 
 .. data:: BREAK
-   :annotation: = True
+   :annotation: (same as ``True``)
 
    This return value signals that no further nodes shall be visited.
 
 .. data:: SKIP
-   :annotation: = False
+   :annotation: (same as ``False``)
 
    This return value signals that the current node shall be skipped.
 
 .. data:: REMOVE
-   :annotation: = Ellipsis
+   :annotation: (same as``Ellipsis``)
 
    This return value signals that the current node shall be deleted.
 

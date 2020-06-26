@@ -39,7 +39,7 @@ class KnownTypeNamesRule(ASTValidationRule):
 
     def enter_named_type(
         self, node: NamedTypeNode, _key, parent: Node, _path, ancestors: List[Node]
-    ):
+    ) -> None:
         type_name = node.name.value
         if (
             type_name not in self.existing_types_map

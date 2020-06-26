@@ -1,7 +1,7 @@
 from typing import Dict, List, Set
 
 from ...error import GraphQLError
-from ...language import FragmentDefinitionNode, FragmentSpreadNode
+from ...language import FragmentDefinitionNode, FragmentSpreadNode, VisitorAction, SKIP
 from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ["NoFragmentCyclesRule"]
@@ -20,12 +20,14 @@ class NoFragmentCyclesRule(ASTValidationRule):
         # Position in the spread path
         self.spread_path_index_by_name: Dict[str, int] = {}
 
-    def enter_operation_definition(self, *_args):
-        return self.SKIP
+    def enter_operation_definition(self, *_args) -> VisitorAction:
+        return SKIP
 
-    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args):
+    def enter_fragment_definition(
+        self, node: FragmentDefinitionNode, *_args
+    ) -> VisitorAction:
         self.detect_cycle_recursive(node)
-        return self.SKIP
+        return SKIP
 
     def detect_cycle_recursive(self, fragment: FragmentDefinitionNode):
         # This does a straight-forward DFS to find cycles.

@@ -1,5 +1,9 @@
 from ...error import GraphQLError
-from ...language import FragmentDefinitionNode, InlineFragmentNode, print_ast
+from ...language import (
+    FragmentDefinitionNode,
+    InlineFragmentNode,
+    print_ast,
+)
 from ...type import is_composite_type
 from ...utilities import type_from_ast
 from . import ValidationRule
@@ -15,7 +19,7 @@ class FragmentsOnCompositeTypesRule(ValidationRule):
     must also be a composite type.
     """
 
-    def enter_inline_fragment(self, node: InlineFragmentNode, *_args):
+    def enter_inline_fragment(self, node: InlineFragmentNode, *_args) -> None:
         type_condition = node.type_condition
         if type_condition:
             type_ = type_from_ast(self.context.schema, type_condition)
@@ -29,7 +33,7 @@ class FragmentsOnCompositeTypesRule(ValidationRule):
                     )
                 )
 
-    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args):
+    def enter_fragment_definition(self, node: FragmentDefinitionNode, *_args) -> None:
         type_condition = node.type_condition
         type_ = type_from_ast(self.context.schema, type_condition)
         if type_ and not is_composite_type(type_):

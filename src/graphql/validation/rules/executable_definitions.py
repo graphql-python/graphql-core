@@ -8,6 +8,8 @@ from ...language import (
     SchemaDefinitionNode,
     SchemaExtensionNode,
     TypeDefinitionNode,
+    VisitorAction,
+    SKIP,
 )
 from . import ASTValidationRule
 
@@ -21,7 +23,7 @@ class ExecutableDefinitionsRule(ASTValidationRule):
     operation or fragment definitions.
     """
 
-    def enter_document(self, node: DocumentNode, *_args):
+    def enter_document(self, node: DocumentNode, *_args) -> VisitorAction:
         for definition in node.definitions:
             if not isinstance(definition, ExecutableDefinitionNode):
                 def_name = (
@@ -41,4 +43,4 @@ class ExecutableDefinitionsRule(ASTValidationRule):
                         f"The {def_name} definition is not executable.", definition,
                     )
                 )
-        return self.SKIP
+        return SKIP

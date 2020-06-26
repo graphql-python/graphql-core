@@ -27,7 +27,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
     type, or are an allowed meta field such as ``__typename``.
     """
 
-    def enter_field(self, node: FieldNode, *_args):
+    def enter_field(self, node: FieldNode, *_args) -> None:
         type_ = self.context.get_parent_type()
         if not type_:
             return

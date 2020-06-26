@@ -41,7 +41,9 @@ class KnownDirectivesRule(ASTValidationRule):
                 ]
         self.locations_map = locations_map
 
-    def enter_directive(self, node: DirectiveNode, _key, _parent, _path, ancestors):
+    def enter_directive(
+        self, node: DirectiveNode, _key, _parent, _path, ancestors
+    ) -> None:
         name = node.name.value
         locations = self.locations_map.get(name)
         if locations:

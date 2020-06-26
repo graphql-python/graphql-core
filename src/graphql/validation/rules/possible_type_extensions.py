@@ -33,7 +33,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
             if isinstance(def_, TypeDefinitionNode)
         }
 
-    def check_extension(self, node: TypeExtensionNode, *_args):
+    def check_extension(self, node: TypeExtensionNode, *_args) -> None:
         schema = self.schema
         type_name = node.name.value
         def_node = self.defined_types.get(type_name)

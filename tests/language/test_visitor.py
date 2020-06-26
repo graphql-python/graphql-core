@@ -2,7 +2,7 @@ from copy import copy
 from functools import partial
 from typing import cast, Dict, List, Optional, Tuple
 
-from pytest import raises  # type: ignore
+from pytest import mark, raises  # type: ignore
 
 from graphql.language import (
     Node,
@@ -199,7 +199,8 @@ def describe_visitor():
         assert edited_ast == ast
         assert visited == ["enter", "leave"]
 
-    def allows_for_editing_on_enter():
+    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    def allows_for_editing_on_enter(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
         # noinspection PyMethodMayBeStatic
@@ -208,13 +209,14 @@ def describe_visitor():
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
-                    return REMOVE
+                    return remove_action
 
         edited_ast = visit(ast, TestVisitor())
         assert ast == parse("{ a, b, c { a, b, c } }", no_location=True)
         assert edited_ast == parse("{ a,    c { a,    c } }", no_location=True)
 
-    def allows_for_editing_on_leave():
+    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    def allows_for_editing_on_leave(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
         # noinspection PyMethodMayBeStatic
@@ -223,21 +225,20 @@ def describe_visitor():
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
-                    return REMOVE
+                    return remove_action
 
         edited_ast = visit(ast, TestVisitor())
         assert ast == parse("{ a, b, c { a, b, c } }", no_location=True)
         assert edited_ast == parse("{ a,    c { a,    c } }", no_location=True)
 
-    def ignores_false_returned_on_leave():
+    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    def ignores_false_returned_on_leave(skip_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
-
-        assert SKIP is False
 
         # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
             def leave(self, *args):
-                return SKIP
+                return skip_action
 
         returned_ast = visit(ast, TestVisitor())
         assert returned_ast == parse("{ a, b, c { a, b, c } }", no_location=True)
@@ -266,7 +267,8 @@ def describe_visitor():
         visit(ast, visitor)
         assert visitor.did_visit_added_field
 
-    def allows_skipping_a_sub_tree():
+    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    def allows_skipping_a_sub_tree(skip_action):
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
@@ -278,7 +280,7 @@ def describe_visitor():
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "field" and node.name.value == "b":
-                    return SKIP
+                    return skip_action
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -305,7 +307,8 @@ def describe_visitor():
             ["leave", "document", None],
         ]
 
-    def allows_early_exit_while_visiting():
+    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    def allows_early_exit_while_visiting(break_action):
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
@@ -317,7 +320,7 @@ def describe_visitor():
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "name" and node.value == "x":
-                    return BREAK
+                    return break_action
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -342,7 +345,8 @@ def describe_visitor():
             ["enter", "name", "x"],
         ]
 
-    def allows_early_exit_while_leaving():
+    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    def allows_early_exit_while_leaving(break_action):
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
@@ -360,7 +364,7 @@ def describe_visitor():
                 kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
                 if kind == "name" and node.value == "x":
-                    return BREAK
+                    return break_action
 
         visit(ast, TestVisitor())
         assert visited == [
@@ -953,7 +957,8 @@ def describe_support_for_custom_ast_nodes():
 
 
 def describe_visit_in_parallel():
-    def allows_skipping_a_sub_tree():
+    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    def allows_skipping_a_sub_tree(skip_action):
         # Note: nearly identical to the above test but using ParallelVisitor
         ast = parse("{ a, b { x }, c }")
         visited = []
@@ -966,7 +971,7 @@ def describe_visit_in_parallel():
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "field" and node.name.value == "b":
-                    return SKIP
+                    return skip_action
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -993,7 +998,8 @@ def describe_visit_in_parallel():
             ["leave", "document", None],
         ]
 
-    def allows_skipping_different_sub_trees():
+    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    def allows_skipping_different_sub_trees(skip_action):
         ast = parse("{ a { x }, b { y} }")
         visited = []
 
@@ -1008,7 +1014,7 @@ def describe_visit_in_parallel():
                 name = self.name
                 visited.append([f"no-{name}", "enter", kind, value])
                 if kind == "field" and node.name.value == name:
-                    return SKIP
+                    return skip_action
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -1055,7 +1061,8 @@ def describe_visit_in_parallel():
             ["no-b", "leave", "document", None],
         ]
 
-    def allows_early_exit_while_visiting():
+    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    def allows_early_exit_while_visiting(break_action):
         # Note: nearly identical to the above test but using ParallelVisitor.
         ast = parse("{ a, b { x }, c }")
         visited = []
@@ -1068,7 +1075,7 @@ def describe_visit_in_parallel():
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
                 if kind == "name" and node.value == "x":
-                    return BREAK
+                    return break_action
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -1093,7 +1100,8 @@ def describe_visit_in_parallel():
             ["enter", "name", "x"],
         ]
 
-    def allows_early_exit_from_different_points():
+    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    def allows_early_exit_from_different_points(break_action):
         ast = parse("{ a { y }, b { x } }")
         visited = []
 
@@ -1108,7 +1116,7 @@ def describe_visit_in_parallel():
                 name = self.name
                 visited.append([f"break-{name}", "enter", kind, value])
                 if kind == "name" and node.value == name:
-                    return BREAK
+                    return break_action
 
             def leave(self, *args):
                 assert self.name == "b"
@@ -1142,7 +1150,8 @@ def describe_visit_in_parallel():
             ["break-b", "enter", "name", "b"],
         ]
 
-    def allows_early_exit_while_leaving():
+    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    def allows_early_exit_while_leaving(break_action):
         # Note: nearly identical to the above test but using ParallelVisitor.
         ast = parse("{ a, b { x }, c }")
         visited = []
@@ -1161,7 +1170,7 @@ def describe_visit_in_parallel():
                 kind, value = node.kind, get_value(node)
                 visited.append(["leave", kind, value])
                 if kind == "name" and node.value == "x":
-                    return BREAK
+                    return break_action
 
         visit(ast, ParallelVisitor([TestVisitor()]))
         assert visited == [
@@ -1181,7 +1190,8 @@ def describe_visit_in_parallel():
             ["leave", "name", "x"],
         ]
 
-    def allows_early_exit_from_leaving_different_points():
+    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    def allows_early_exit_from_leaving_different_points(break_action):
         ast = parse("{ a { y }, b { x } }")
         visited = []
 
@@ -1203,7 +1213,7 @@ def describe_visit_in_parallel():
                 name = self.name
                 visited.append([f"break-{name}", "leave", kind, value])
                 if kind == "field" and node.name.value == name:
-                    return BREAK
+                    return break_action
 
         visit(ast, ParallelVisitor([TestVisitor("a"), TestVisitor("b")]))
         assert visited == [
@@ -1245,7 +1255,8 @@ def describe_visit_in_parallel():
             ["break-b", "leave", "field", None],
         ]
 
-    def allows_for_editing_on_enter():
+    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    def allows_for_editing_on_enter(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
         visited = []
 
@@ -1255,7 +1266,7 @@ def describe_visit_in_parallel():
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
-                    return REMOVE
+                    return remove_action
 
         # noinspection PyMethodMayBeStatic
         class TestVisitor2(Visitor):
@@ -1301,7 +1312,8 @@ def describe_visit_in_parallel():
             ["leave", "document", None],
         ]
 
-    def allows_for_editing_on_leave():
+    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    def allows_for_editing_on_leave(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
         visited = []
 
@@ -1311,7 +1323,7 @@ def describe_visit_in_parallel():
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
-                    return REMOVE
+                    return remove_action
 
         # noinspection PyMethodMayBeStatic
         class TestVisitor2(Visitor):

@@ -63,7 +63,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # times, so this improves the performance of this validator.
         self.cached_fields_and_fragment_names: Dict = {}
 
-    def enter_selection_set(self, selection_set: SelectionSetNode, *_args):
+    def enter_selection_set(self, selection_set: SelectionSetNode, *_args) -> None:
         conflicts = find_conflicts_within_selection_set(
             self.context,
             self.cached_fields_and_fragment_names,

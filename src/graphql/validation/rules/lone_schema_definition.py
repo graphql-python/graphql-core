@@ -22,7 +22,7 @@ class LoneSchemaDefinitionRule(SDLValidationRule):
         )
         self.schema_definitions_count = 0
 
-    def enter_schema_definition(self, node: SchemaDefinitionNode, *_args):
+    def enter_schema_definition(self, node: SchemaDefinitionNode, *_args) -> None:
         if self.already_defined:
             self.report_error(
                 GraphQLError(
