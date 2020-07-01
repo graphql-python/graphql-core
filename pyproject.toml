@@ -33,19 +33,19 @@ python = "^3.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4"
-pytest-asyncio = ">=0.12,<1"
+pytest-asyncio = ">=0.14,<1"
 pytest-benchmark = "^3.2"
-pytest-cov = "^2.8"
+pytest-cov = "^2.10"
 pytest-describe = "^1.0"
 black = "19.10b0"
 flake8 = "^3.8"
-mypy = "0.770"
+mypy = "0.782"
 codecov = "^2"
 sphinx = "^2.4"
 sphinx_rtd_theme = ">=0.4,<1"
 check-manifest = "0.40"
 bump2version = ">=1.0,<2"
-tox = "^3.15"
+tox = "^3.16"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
