@@ -863,11 +863,14 @@ def describe_extend_schema():
         schema = build_schema(
             """
             type Query {
+              someScalar: SomeScalar
               someObject(someInput: SomeInput): SomeObject
               someInterface: SomeInterface
               someEnum: SomeEnum
               someUnion: SomeUnion
             }
+
+            scalar SomeScalar
 
             type SomeObject implements SomeInterface {
               oldField: String
@@ -888,9 +891,14 @@ def describe_extend_schema():
             }
             """
         )
-        new_types_sdl = """
-            interface AnotherNewInterface {
-              anotherNewField: String
+        new_types_sdl = dedent(
+            """
+            scalar NewScalar
+
+            scalar AnotherNewScalar
+
+            type NewObject {
+              foo: String
             }
 
             type AnotherNewObject {
@@ -901,13 +909,18 @@ def describe_extend_schema():
               newField: String
             }
 
-            type NewObject {
-              foo: String
+            interface AnotherNewInterface {
+              anotherNewField: String
             }
             """
+        )
+        schema_with_new_types = extend_schema(schema, parse(new_types_sdl))
+        assert print_schema_changes(schema, schema_with_new_types) == new_types_sdl
+
         extend_ast = parse(
-            new_types_sdl
-            + """
+            """
+            extend scalar SomeScalar @specifiedBy(url: "http://example.com/foo_spec")
+
             extend type SomeObject implements NewInterface {
                 newField: String
             }
@@ -937,11 +950,15 @@ def describe_extend_schema():
             }
             """
         )
-        extended_schema = extend_schema(schema, extend_ast)
+        extended_schema = extend_schema(schema_with_new_types, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        assert (
+            print_schema_changes(schema, extended_schema)
+            == dedent(
+                """
+            scalar SomeScalar @specifiedBy(url: "http://example.com/foo_spec")
+
             type SomeObject implements SomeInterface & NewInterface & AnotherNewInterface {
               oldField: String
               newField: String
@@ -960,7 +977,10 @@ def describe_extend_schema():
               oldField: String
               newField: String
               anotherNewField: String
-            }\n"""  # noqa: E501
+            }
+
+            """  # noqa: E501
+            )
             + new_types_sdl
         )
 
