@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import Any, List, Set
 
 from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
@@ -18,11 +18,11 @@ class NoUnusedVariablesRule(ValidationRule):
         super().__init__(context)
         self.variable_defs: List[VariableDefinitionNode] = []
 
-    def enter_operation_definition(self, *_args) -> None:
+    def enter_operation_definition(self, *_args: Any) -> None:
         self.variable_defs.clear()
 
     def leave_operation_definition(
-        self, operation: OperationDefinitionNode, *_args
+        self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
         variable_name_used: Set[str] = set()
         usages = self.context.get_recursive_variable_usages(operation)
@@ -44,6 +44,6 @@ class NoUnusedVariablesRule(ValidationRule):
                 )
 
     def enter_variable_definition(
-        self, definition: VariableDefinitionNode, *_args
+        self, definition: VariableDefinitionNode, *_args: Any
     ) -> None:
         self.variable_defs.append(definition)

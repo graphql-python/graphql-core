@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import DirectiveDefinitionNode, NameNode, VisitorAction, SKIP
@@ -19,7 +19,7 @@ class UniqueDirectiveNamesRule(SDLValidationRule):
         self.schema = context.schema
 
     def enter_directive_definition(
-        self, node: DirectiveDefinitionNode, *_args
+        self, node: DirectiveDefinitionNode, *_args: Any
     ) -> VisitorAction:
         directive_name = node.name.value
 

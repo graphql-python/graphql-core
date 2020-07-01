@@ -37,7 +37,7 @@ def is_punctuator_token_kind(kind: TokenKind) -> bool:
     return kind in _punctuator_token_kinds
 
 
-def print_char(char):
+def print_char(char: str) -> str:
     return repr(char) if char else TokenKind.EOF.value
 
 
@@ -398,7 +398,7 @@ _ESCAPED_CHARS = {
 }
 
 
-def unexpected_character_message(char: str):
+def unexpected_character_message(char: str) -> str:
     """Report a message that an unexpected character was encountered."""
     if char < " " and char not in "\t\n\r":
         return f"Cannot contain the invalid character {print_char(char)}."
@@ -410,7 +410,7 @@ def unexpected_character_message(char: str):
     return f"Cannot parse the unexpected character {print_char(char)}."
 
 
-def uni_char_code(a: str, b: str, c: str, d: str):
+def uni_char_code(a: str, b: str, c: str, d: str) -> int:
     """Convert unicode characters to integers.
 
     Converts four hexadecimal chars to the integer that the string represents.
@@ -425,7 +425,7 @@ def uni_char_code(a: str, b: str, c: str, d: str):
     return char2hex(a) << 12 | char2hex(b) << 8 | char2hex(c) << 4 | char2hex(d)
 
 
-def char2hex(a: str):
+def char2hex(a: str) -> int:
     """Convert a hex character to its integer value.
 
     '0' becomes 0, '9' becomes 9

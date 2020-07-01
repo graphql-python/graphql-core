@@ -4,10 +4,10 @@ __all__ = ["get_introspection_query"]
 
 
 def get_introspection_query(
-    descriptions=True,
-    specified_by_url=False,
-    directive_is_repeatable=False,
-    schema_description=False,
+    descriptions: bool = True,
+    specified_by_url: bool = False,
+    directive_is_repeatable: bool = False,
+    schema_description: bool = False,
 ) -> str:
     """Get a query for introspection.
 

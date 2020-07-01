@@ -1,3 +1,5 @@
+from typing import Any
+
 from ...error import GraphQLError
 from ...language import FieldNode
 from ...type import get_named_type, is_leaf_type
@@ -13,7 +15,7 @@ class ScalarLeafsRule(ValidationRule):
     are of scalar or enum types.
     """
 
-    def enter_field(self, node: FieldNode, *_args) -> None:
+    def enter_field(self, node: FieldNode, *_args: Any) -> None:
         type_ = self.context.get_type()
         if type_:
             selection_set = node.selection_set

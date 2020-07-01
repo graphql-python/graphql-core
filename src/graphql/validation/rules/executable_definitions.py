@@ -1,4 +1,4 @@
-from typing import Union, cast
+from typing import Any, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -23,7 +23,7 @@ class ExecutableDefinitionsRule(ASTValidationRule):
     operation or fragment definitions.
     """
 
-    def enter_document(self, node: DocumentNode, *_args) -> VisitorAction:
+    def enter_document(self, node: DocumentNode, *_args: Any) -> VisitorAction:
         for definition in node.definitions:
             if not isinstance(definition, ExecutableDefinitionNode):
                 def_name = (

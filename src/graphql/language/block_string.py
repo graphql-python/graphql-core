@@ -57,7 +57,7 @@ def get_block_string_indentation(lines: List[str]) -> int:
     return 0 if common_indent is None else common_indent
 
 
-def leading_whitespace(s):
+def leading_whitespace(s: str) -> int:
     i = 0
     n = len(s)
     while i < n and s[i] in " \t":

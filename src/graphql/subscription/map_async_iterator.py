@@ -1,7 +1,8 @@
 from asyncio import Event, ensure_future, Future, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
-from typing import AsyncIterable, Callable, Optional, Set
+from typing import cast, Any, AsyncIterable, Callable, Optional, Set, Type, Union
+from types import TracebackType
 
 __all__ = ["MapAsyncIterator"]
 
@@ -28,10 +29,10 @@ class MapAsyncIterator:
         self.reject_callback = reject_callback
         self._close_event = Event()
 
-    def __aiter__(self):
+    def __aiter__(self) -> "MapAsyncIterator":
         return self
 
-    async def __anext__(self):
+    async def __anext__(self) -> Any:
         if self.is_closed:
             if not isasyncgen(self.iterator):
                 raise StopAsyncIteration
@@ -64,7 +65,12 @@ class MapAsyncIterator:
 
         return await result if isawaitable(result) else result
 
-    async def athrow(self, type_, value=None, traceback=None):
+    async def athrow(
+        self,
+        type_: Union[BaseException, Type[BaseException]],
+        value: Optional[BaseException] = None,
+        traceback: Optional[TracebackType] = None,
+    ) -> None:
         if not self.is_closed:
             athrow = getattr(self.iterator, "athrow", None)
             if athrow:
@@ -74,12 +80,16 @@ class MapAsyncIterator:
                 if value is None:
                     if traceback is None:
                         raise type_
-                    value = type_()
+                    value = (
+                        type_
+                        if isinstance(value, BaseException)
+                        else cast(Type[BaseException], type_)()
+                    )
                 if traceback is not None:
                     value = value.with_traceback(traceback)
                 raise value
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         if not self.is_closed:
             aclose = getattr(self.iterator, "aclose", None)
             if aclose:

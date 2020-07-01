@@ -1,4 +1,4 @@
-from typing import Set
+from typing import Any, Set
 
 from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
@@ -18,11 +18,11 @@ class NoUndefinedVariablesRule(ValidationRule):
         super().__init__(context)
         self.defined_variable_names: Set[str] = set()
 
-    def enter_operation_definition(self, *_args) -> None:
+    def enter_operation_definition(self, *_args: Any) -> None:
         self.defined_variable_names.clear()
 
     def leave_operation_definition(
-        self, operation: OperationDefinitionNode, *_args
+        self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
         usages = self.context.get_recursive_variable_usages(operation)
         defined_variables = self.defined_variable_names
@@ -40,5 +40,7 @@ class NoUndefinedVariablesRule(ValidationRule):
                     )
                 )
 
-    def enter_variable_definition(self, node: VariableDefinitionNode, *_args) -> None:
+    def enter_variable_definition(
+        self, node: VariableDefinitionNode, *_args: Any
+    ) -> None:
         self.defined_variable_names.add(node.variable.name.value)

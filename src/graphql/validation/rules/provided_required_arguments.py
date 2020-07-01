@@ -1,4 +1,4 @@
-from typing import cast, Dict, List, Union
+from typing import cast, Any, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -55,7 +55,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
 
         self.required_args_map = required_args_map
 
-    def leave_directive(self, directive_node: DirectiveNode, *_args) -> None:
+    def leave_directive(self, directive_node: DirectiveNode, *_args: Any) -> None:
         # Validate on leave to allow for deeper errors to appear first.
         directive_name = directive_node.name.value
         required_args = self.required_args_map.get(directive_name)
@@ -93,7 +93,7 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
     def __init__(self, context: ValidationContext):
         super().__init__(context)
 
-    def leave_field(self, field_node: FieldNode, *_args) -> VisitorAction:
+    def leave_field(self, field_node: FieldNode, *_args: Any) -> VisitorAction:
         # Validate on leave to allow for deeper errors to appear first.
         field_def = self.context.get_field_def()
         if not field_def:

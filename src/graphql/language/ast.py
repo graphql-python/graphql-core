@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from .source import Source
 from .token_kind import TokenKind
@@ -103,17 +103,17 @@ class Token:
         self.prev = prev
         self.next = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.desc
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Print a simplified form when appearing in repr() or inspect()."""
         return f"<Token {self.desc} {self.line}:{self.column}>"
 
-    def __inspect__(self):
+    def __inspect__(self) -> str:
         return repr(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Token):
             return (
                 self.kind == other.kind
@@ -127,12 +127,12 @@ class Token:
             return other == self.desc
         return False
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(
             (self.kind, self.start, self.end, self.line, self.column, self.value)
         )
 
-    def __copy__(self):
+    def __copy__(self) -> "Token":
         """Create a shallow copy of the token"""
         return self.__class__(
             self.kind,
@@ -144,7 +144,7 @@ class Token:
             self.value,
         )
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Dict) -> "Token":
         """Allow only shallow copies to avoid recursion."""
         return copy(self)
 
@@ -176,34 +176,34 @@ class Location:
     end_token: Token  # Token at which this Node ends.
     source: Source  # Source document the AST represents
 
-    def __init__(self, start_token: Token, end_token: Token, source: Source):
+    def __init__(self, start_token: Token, end_token: Token, source: Source) -> None:
         self.start = start_token.start
         self.end = end_token.end
         self.start_token = start_token
         self.end_token = end_token
         self.source = source
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.start}:{self.end}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Print a simplified form when appearing in repr() or inspect()."""
         return f"<Location {self.start}:{self.end}>"
 
-    def __inspect__(self):
+    def __inspect__(self) -> str:
         return repr(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, Location):
             return self.start == other.start and self.end == other.end
         elif isinstance(other, (list, tuple)) and len(other) == 2:
             return self.start == other[0] and self.end == other[1]
         return False
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.start, self.end))
 
 
@@ -228,7 +228,7 @@ class Node:
     kind: str = "ast"  # the kind of the node as a snake_case string
     keys = ["loc"]  # the names of the attributes of this node
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """Initialize the node with the given keyword arguments."""
         for key in self.keys:
             value = kwargs.get(key)
@@ -236,12 +236,12 @@ class Node:
                 value = FrozenList(value)
             setattr(self, key, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Get a simple representation of the node."""
         name, loc = self.__class__.__name__, getattr(self, "loc", None)
         return f"{name} at {loc}" if loc else name
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Test whether two nodes are equal (recursively)."""
         return (
             isinstance(other, Node)
@@ -249,21 +249,21 @@ class Node:
             and all(getattr(self, key) == getattr(other, key) for key in self.keys)
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(tuple(getattr(self, key) for key in self.keys))
 
-    def __copy__(self):
+    def __copy__(self) -> "Node":
         """Create a shallow copy of the node."""
         return self.__class__(**{key: getattr(self, key) for key in self.keys})
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Dict) -> "Node":
         """Create a deep copy of the node"""
         # noinspection PyArgumentList
         return self.__class__(
             **{key: deepcopy(getattr(self, key), memo) for key in self.keys}
         )
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         name = cls.__name__
         if name.endswith("Node"):

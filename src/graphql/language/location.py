@@ -1,4 +1,4 @@
-from typing import NamedTuple, TYPE_CHECKING
+from typing import Any, Dict, NamedTuple, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .source import Source  # noqa: F401
@@ -13,15 +13,15 @@ class SourceLocation(NamedTuple):
     column: int
 
     @property
-    def formatted(self):
+    def formatted(self) -> Dict[str, int]:
         return dict(line=self.line, column=self.column)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, dict):
             return self.formatted == other
         return tuple(self) == other
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
 

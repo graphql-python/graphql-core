@@ -252,7 +252,7 @@ class ExecutionContext:
         """
         if self.is_awaitable(data):
 
-            async def build_response_async():
+            async def build_response_async() -> ExecutionResult:
                 return self.build_response(await data)  # type: ignore
 
             return build_response_async()
@@ -285,6 +285,7 @@ class ExecutionContext:
         #
         # Similar to complete_value_catching_error.
         try:
+            # noinspection PyArgumentList
             result = (
                 self.execute_fields_serially
                 if operation.operation == OperationType.MUTATION
@@ -296,7 +297,7 @@ class ExecutionContext:
         else:
             if self.is_awaitable(result):
                 # noinspection PyShadowingNames
-                async def await_result():
+                async def await_result() -> Any:
                     try:
                         return await result  # type: ignore
                     except GraphQLError as error:
@@ -316,7 +317,7 @@ class ExecutionContext:
 
         Implements the "Evaluating selection sets" section of the spec for "write" mode.
         """
-        results: Dict[str, Any] = {}
+        results: AwaitableOrValue[Dict[str, Any]] = {}
         is_awaitable = self.is_awaitable
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name)
@@ -327,30 +328,36 @@ class ExecutionContext:
                 continue
             if is_awaitable(results):
                 # noinspection PyShadowingNames
-                async def await_and_set_result(results, response_name, result):
+                async def await_and_set_result(
+                    results: Awaitable[Dict[str, Any]],
+                    response_name: str,
+                    result: AwaitableOrValue[Any],
+                ) -> Dict[str, Any]:
                     awaited_results = await results
                     awaited_results[response_name] = (
                         await result if is_awaitable(result) else result
                     )
                     return awaited_results
 
-                # noinspection PyTypeChecker
                 results = await_and_set_result(
                     cast(Awaitable, results), response_name, result
                 )
             elif is_awaitable(result):
                 # noinspection PyShadowingNames
-                async def set_result(results, response_name, result):
+                async def set_result(
+                    results: Dict[str, Any], response_name: str, result: Awaitable,
+                ) -> Dict[str, Any]:
                     results[response_name] = await result
                     return results
 
-                # noinspection PyTypeChecker
-                results = set_result(results, response_name, result)
+                results = set_result(
+                    cast(Dict[str, Any], results), response_name, result
+                )
             else:
-                results[response_name] = result
+                cast(Dict[str, Any], results)[response_name] = result
         if is_awaitable(results):
             # noinspection PyShadowingNames
-            async def get_results():
+            async def get_results() -> Any:
                 return await cast(Awaitable, results)
 
             return get_results()
@@ -389,7 +396,7 @@ class ExecutionContext:
         # field, which is possibly a coroutine object. Return a coroutine object that
         # will yield this same map, but with any coroutines awaited in parallel and
         # replaced with the values they yielded.
-        async def get_results():
+        async def get_results() -> Dict[str, Any]:
             results.update(
                 zip(
                     awaitable_fields,
@@ -579,7 +586,7 @@ class ExecutionContext:
             result = resolve_fn(source, info, **args)
             if self.is_awaitable(result):
                 # noinspection PyShadowingNames
-                async def await_result():
+                async def await_result() -> Any:
                     try:
                         return await result
                     except GraphQLError as error:
@@ -607,10 +614,11 @@ class ExecutionContext:
         This is a small wrapper around completeValue which detects and logs errors in
         the execution context.
         """
+        completed: AwaitableOrValue[Any]
         try:
             if self.is_awaitable(result):
 
-                async def await_result():
+                async def await_result() -> Any:
                     value = self.complete_value(
                         return_type, field_nodes, info, path, await result
                     )
@@ -625,7 +633,7 @@ class ExecutionContext:
                 )
             if self.is_awaitable(completed):
                 # noinspection PyShadowingNames
-                async def await_completed():
+                async def await_completed() -> Any:
                     try:
                         return await completed
                     except Exception as error:
@@ -783,7 +791,7 @@ class ExecutionContext:
             return completed_results
 
         # noinspection PyShadowingNames
-        async def get_completed_results():
+        async def get_completed_results() -> Any:
             for index, result in zip(
                 awaitable_indices,
                 await gather(
@@ -828,7 +836,7 @@ class ExecutionContext:
 
         if self.is_awaitable(runtime_type):
 
-            async def await_complete_object_value():
+            async def await_complete_object_value() -> Any:
                 value = self.complete_object_value(
                     self.ensure_valid_runtime_type(
                         await runtime_type,  # type: ignore
@@ -912,14 +920,14 @@ class ExecutionContext:
 
             if self.is_awaitable(is_type_of):
 
-                async def collect_and_execute_subfields_async():
+                async def collect_and_execute_subfields_async() -> Dict[str, Any]:
                     if not await is_type_of:  # type: ignore
                         raise invalid_return_type_error(
                             return_type, result, field_nodes
                         )
                     return self.collect_and_execute_subfields(
                         return_type, field_nodes, path, result
-                    )
+                    )  # type: ignore
 
                 return collect_and_execute_subfields_async()
 
@@ -1158,11 +1166,12 @@ def default_type_resolver(
 
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
-        async def get_type():
+        async def get_type() -> Optional[Union[GraphQLObjectType, str]]:
             is_type_of_results = await gather(*awaitable_is_type_of_results)
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
                     return type_
+            return None
 
         return get_type()
 

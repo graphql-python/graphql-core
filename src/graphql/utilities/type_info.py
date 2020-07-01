@@ -19,10 +19,13 @@ from ..type import (
     GraphQLArgument,
     GraphQLCompositeType,
     GraphQLDirective,
+    GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLInterfaceType,
+    GraphQLList,
     GraphQLObjectType,
     GraphQLOutputType,
     GraphQLSchema,
@@ -93,57 +96,65 @@ class TypeInfo:
             if is_output_type(initial_type):
                 self._type_stack.append(cast(GraphQLOutputType, initial_type))
 
-    def get_type(self):
+    def get_type(self) -> Optional[GraphQLOutputType]:
         if self._type_stack:
             return self._type_stack[-1]
+        return None
 
-    def get_parent_type(self):
+    def get_parent_type(self) -> Optional[GraphQLCompositeType]:
         if self._parent_type_stack:
             return self._parent_type_stack[-1]
+        return None
 
-    def get_input_type(self):
+    def get_input_type(self) -> Optional[GraphQLInputType]:
         if self._input_type_stack:
             return self._input_type_stack[-1]
+        return None
 
-    def get_parent_input_type(self):
+    def get_parent_input_type(self) -> Optional[GraphQLInputType]:
         if len(self._input_type_stack) > 1:
             return self._input_type_stack[-2]
+        return None
 
-    def get_field_def(self):
+    def get_field_def(self) -> Optional[GraphQLField]:
         if self._field_def_stack:
             return self._field_def_stack[-1]
+        return None
 
-    def get_default_value(self):
+    def get_default_value(self) -> Any:
         if self._default_value_stack:
             return self._default_value_stack[-1]
+        return None
 
-    def get_directive(self):
+    def get_directive(self) -> Optional[GraphQLDirective]:
         return self._directive
 
-    def get_argument(self):
+    def get_argument(self) -> Optional[GraphQLArgument]:
         return self._argument
 
-    def get_enum_value(self):
+    def get_enum_value(self) -> Optional[GraphQLEnumValue]:
         return self._enum_value
 
-    def enter(self, node: Node):
+    def enter(self, node: Node) -> None:
         method = getattr(self, "enter_" + node.kind, None)
         if method:
-            return method(node)
+            method(node)
 
-    def leave(self, node: Node):
+    def leave(self, node: Node) -> None:
         method = getattr(self, "leave_" + node.kind, None)
         if method:
-            return method()
+            method()
 
     # noinspection PyUnusedLocal
-    def enter_selection_set(self, node: SelectionSetNode):
+    def enter_selection_set(self, node: SelectionSetNode) -> None:
         named_type = get_named_type(self.get_type())
         self._parent_type_stack.append(
-            named_type if is_composite_type(named_type) else None
+            cast(GraphQLCompositeType, named_type)
+            if is_composite_type(named_type)
+            else None
         )
 
-    def enter_field(self, node: FieldNode):
+    def enter_field(self, node: FieldNode) -> None:
         parent_type = self.get_parent_type()
         if parent_type:
             field_def = self._get_field_def(self._schema, parent_type, node)
@@ -153,14 +164,14 @@ class TypeInfo:
         self._field_def_stack.append(field_def)
         self._type_stack.append(field_type if is_output_type(field_type) else None)
 
-    def enter_directive(self, node: DirectiveNode):
+    def enter_directive(self, node: DirectiveNode) -> None:
         self._directive = self._schema.get_directive(node.name.value)
 
-    def enter_operation_definition(self, node: OperationDefinitionNode):
+    def enter_operation_definition(self, node: OperationDefinitionNode) -> None:
         type_ = getattr(self._schema, f"{node.operation.value}_type")
         self._type_stack.append(type_ if is_object_type(type_) else None)
 
-    def enter_inline_fragment(self, node: InlineFragmentNode):
+    def enter_inline_fragment(self, node: InlineFragmentNode) -> None:
         type_condition_ast = node.type_condition
         output_type = (
             type_from_ast(self._schema, type_condition_ast)
@@ -175,13 +186,13 @@ class TypeInfo:
 
     enter_fragment_definition = enter_inline_fragment
 
-    def enter_variable_definition(self, node: VariableDefinitionNode):
+    def enter_variable_definition(self, node: VariableDefinitionNode) -> None:
         input_type = type_from_ast(self._schema, node.type)
         self._input_type_stack.append(
             cast(GraphQLInputType, input_type) if is_input_type(input_type) else None
         )
 
-    def enter_argument(self, node: ArgumentNode):
+    def enter_argument(self, node: ArgumentNode) -> None:
         field_or_directive = self.get_directive() or self.get_field_def()
         if field_or_directive:
             arg_def = field_or_directive.args.get(node.name.value)
@@ -195,17 +206,23 @@ class TypeInfo:
         self._input_type_stack.append(arg_type if is_input_type(arg_type) else None)
 
     # noinspection PyUnusedLocal
-    def enter_list_value(self, node: ListValueNode):
-        list_type = get_nullable_type(self.get_input_type())
-        item_type = list_type.of_type if is_list_type(list_type) else list_type
+    def enter_list_value(self, node: ListValueNode) -> None:
+        list_type = get_nullable_type(self.get_input_type())  # type: ignore
+        item_type = (
+            cast(GraphQLList, list_type).of_type
+            if is_list_type(list_type)
+            else list_type
+        )
         # List positions never have a default value.
         self._default_value_stack.append(Undefined)
         self._input_type_stack.append(item_type if is_input_type(item_type) else None)
 
-    def enter_object_field(self, node: ObjectFieldNode):
+    def enter_object_field(self, node: ObjectFieldNode) -> None:
         object_type = get_named_type(self.get_input_type())
         if is_input_object_type(object_type):
-            input_field = object_type.fields.get(node.name.value)
+            input_field = cast(GraphQLInputObjectType, object_type).fields.get(
+                node.name.value
+            )
             input_field_type = input_field.type if input_field else None
         else:
             input_field = input_field_type = None
@@ -216,45 +233,45 @@ class TypeInfo:
             input_field_type if is_input_type(input_field_type) else None
         )
 
-    def enter_enum_value(self, node: EnumValueNode):
+    def enter_enum_value(self, node: EnumValueNode) -> None:
         enum_type = get_named_type(self.get_input_type())
         if is_enum_type(enum_type):
-            enum_value = enum_type.values.get(node.value)
+            enum_value = cast(GraphQLEnumType, enum_type).values.get(node.value)
         else:
             enum_value = None
         self._enum_value = enum_value
 
-    def leave_selection_set(self):
+    def leave_selection_set(self) -> None:
         del self._parent_type_stack[-1:]
 
-    def leave_field(self):
+    def leave_field(self) -> None:
         del self._field_def_stack[-1:]
         del self._type_stack[-1:]
 
-    def leave_directive(self):
+    def leave_directive(self) -> None:
         self._directive = None
 
-    def leave_operation_definition(self):
+    def leave_operation_definition(self) -> None:
         del self._type_stack[-1:]
 
     leave_inline_fragment = leave_operation_definition
     leave_fragment_definition = leave_operation_definition
 
-    def leave_variable_definition(self):
+    def leave_variable_definition(self) -> None:
         del self._input_type_stack[-1:]
 
-    def leave_argument(self):
+    def leave_argument(self) -> None:
         self._argument = None
         del self._default_value_stack[-1:]
         del self._input_type_stack[-1:]
 
-    def leave_list_value(self):
+    def leave_list_value(self) -> None:
         del self._default_value_stack[-1:]
         del self._input_type_stack[-1:]
 
     leave_object_field = leave_list_value
 
-    def leave_enum_value(self):
+    def leave_enum_value(self) -> None:
         self._enum_value = None
 
 
@@ -287,7 +304,7 @@ class TypeInfoVisitor(Visitor):
         self.type_info = type_info
         self.visitor = visitor
 
-    def enter(self, node, *args):
+    def enter(self, node: Node, *args: Any) -> Any:
         self.type_info.enter(node)
         fn = self.visitor.get_visit_fn(node.kind)
         if fn:
@@ -298,7 +315,7 @@ class TypeInfoVisitor(Visitor):
                     self.type_info.enter(result)
             return result
 
-    def leave(self, node, *args):
+    def leave(self, node: Node, *args: Any) -> Any:
         fn = self.visitor.get_visit_fn(node.kind, is_leaving=True)
         result = fn(self.visitor, node, *args) if fn else None
         self.type_info.leave(node)

@@ -1,3 +1,5 @@
+from typing import Any
+
 from .location import SourceLocation
 
 __all__ = ["Source"]
@@ -53,13 +55,13 @@ class Source:
             column = 1
         return SourceLocation(line, column)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} name={self.name!r}>"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (isinstance(other, Source) and other.body == self.body) or (
             isinstance(other, str) and other == self.body
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other

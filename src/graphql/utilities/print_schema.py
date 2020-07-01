@@ -214,7 +214,7 @@ def print_block(items: List[str]) -> str:
     return " {\n" + "\n".join(items) + "\n}" if items else ""
 
 
-def print_args(args: Dict[str, GraphQLArgument], indentation="") -> str:
+def print_args(args: Dict[str, GraphQLArgument], indentation: str = "") -> str:
     if not args:
         return ""
 
@@ -287,8 +287,8 @@ def print_description(
         GraphQLNamedType,
         GraphQLSchema,
     ],
-    indentation="",
-    first_in_block=True,
+    indentation: str = "",
+    first_in_block: bool = True,
 ) -> str:
     description = def_.description
     if description is None:

@@ -1,4 +1,4 @@
-from typing import cast, Dict, List, Union
+from typing import cast, Any, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -43,7 +43,9 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
         self.directive_args = directive_args
 
-    def enter_directive(self, directive_node: DirectiveNode, *_args) -> VisitorAction:
+    def enter_directive(
+        self, directive_node: DirectiveNode, *_args: Any
+    ) -> VisitorAction:
         directive_name = directive_node.name.value
         known_args = self.directive_args.get(directive_name)
         if directive_node.arguments and known_args is not None:
@@ -73,7 +75,7 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
     def __init__(self, context: ValidationContext):
         super().__init__(context)
 
-    def enter_argument(self, arg_node: ArgumentNode, *args) -> None:
+    def enter_argument(self, arg_node: ArgumentNode, *args: Any) -> None:
         context = self.context
         arg_def = context.get_argument()
         field_def = context.get_field_def()

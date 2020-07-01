@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import NameNode, OperationDefinitionNode, VisitorAction, SKIP
@@ -18,7 +18,7 @@ class UniqueOperationNamesRule(ASTValidationRule):
         self.known_operation_names: Dict[str, NameNode] = {}
 
     def enter_operation_definition(
-        self, node: OperationDefinitionNode, *_args
+        self, node: OperationDefinitionNode, *_args: Any
     ) -> VisitorAction:
         operation_name = node.name
         if operation_name:
@@ -35,5 +35,6 @@ class UniqueOperationNamesRule(ASTValidationRule):
                 known_operation_names[operation_name.value] = operation_name
         return SKIP
 
-    def enter_fragment_definition(self, *_args) -> VisitorAction:
+    @staticmethod
+    def enter_fragment_definition(*_args: Any) -> VisitorAction:
         return SKIP

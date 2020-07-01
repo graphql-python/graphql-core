@@ -1,6 +1,8 @@
+from typing import cast, Any, Optional
+
 from ...error import GraphQLError
 from ...language import FragmentSpreadNode, InlineFragmentNode
-from ...type import is_composite_type
+from ...type import GraphQLCompositeType, is_composite_type
 from ...utilities import do_types_overlap, type_from_ast
 from . import ValidationRule
 
@@ -15,14 +17,18 @@ class PossibleFragmentSpreadsRule(ValidationRule):
     types which pass the type condition.
     """
 
-    def enter_inline_fragment(self, node: InlineFragmentNode, *_args) -> None:
+    def enter_inline_fragment(self, node: InlineFragmentNode, *_args: Any) -> None:
         context = self.context
         frag_type = context.get_type()
         parent_type = context.get_parent_type()
         if (
             is_composite_type(frag_type)
             and is_composite_type(parent_type)
-            and not do_types_overlap(context.schema, frag_type, parent_type)
+            and not do_types_overlap(
+                context.schema,
+                cast(GraphQLCompositeType, frag_type),
+                cast(GraphQLCompositeType, parent_type),
+            )
         ):
             context.report_error(
                 GraphQLError(
@@ -32,7 +38,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                 )
             )
 
-    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args) -> None:
+    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args: Any) -> None:
         context = self.context
         frag_name = node.name.value
         frag_type = self.get_fragment_type(frag_name)
@@ -50,10 +56,11 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                 )
             )
 
-    def get_fragment_type(self, name: str):
+    def get_fragment_type(self, name: str) -> Optional[GraphQLCompositeType]:
         context = self.context
         frag = context.get_fragment(name)
         if frag:
             type_ = type_from_ast(context.schema, frag.type_condition)
             if is_composite_type(type_):
-                return type_
+                return cast(GraphQLCompositeType, type_)
+        return None

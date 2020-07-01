@@ -957,7 +957,7 @@ def describe_type_system_unions():
             GraphQLUnionType()  # type: ignore
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLUnionType(None, [])
+            GraphQLUnionType(None, [])  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
             GraphQLUnionType("", [])

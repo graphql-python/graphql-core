@@ -1,9 +1,10 @@
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Set
+from typing import Any, DefaultDict, Dict, List, Set
 
 from ..language import (
     DocumentNode,
     FragmentDefinitionNode,
+    FragmentSpreadNode,
     OperationDefinitionNode,
     Visitor,
     visit,
@@ -58,19 +59,23 @@ class SeparateOperations(Visitor):
     dep_graph: DepGraph
     from_name: str
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.operations = []
         self.dep_graph = defaultdict(set)
 
-    def enter_operation_definition(self, node, *_args):
+    def enter_operation_definition(
+        self, node: OperationDefinitionNode, *_args: Any
+    ) -> None:
         self.from_name = op_name(node)
         self.operations.append(node)
 
-    def enter_fragment_definition(self, node, *_args):
+    def enter_fragment_definition(
+        self, node: FragmentDefinitionNode, *_args: Any
+    ) -> None:
         self.from_name = node.name.value
 
-    def enter_fragment_spread(self, node, *_args):
+    def enter_fragment_spread(self, node: FragmentSpreadNode, *_args: Any) -> None:
         self.dep_graph[self.from_name].add(node.name.value)
 
 

@@ -1,4 +1,4 @@
-from typing import cast, Dict, List, Union
+from typing import cast, Any, Dict, List, Optional, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -42,7 +42,12 @@ class KnownDirectivesRule(ASTValidationRule):
         self.locations_map = locations_map
 
     def enter_directive(
-        self, node: DirectiveNode, _key, _parent, _path, ancestors
+        self,
+        node: DirectiveNode,
+        _key: Any,
+        _parent: Any,
+        _path: Any,
+        ancestors: List[Node],
     ) -> None:
         name = node.name.value
         locations = self.locations_map.get(name)
@@ -91,7 +96,9 @@ _directive_location = {
 }
 
 
-def get_directive_location_for_ast_path(ancestors):
+def get_directive_location_for_ast_path(
+    ancestors: List[Node],
+) -> Optional[DirectiveLocation]:
     applied_to = ancestors[-1]
     if not isinstance(applied_to, Node):  # pragma: no cover
         raise TypeError("Unexpected error in directive.")

@@ -1,5 +1,6 @@
-from typing import Dict, List, Tuple, cast
+from typing import Dict, List, Optional, Tuple, Union, cast
 
+from ..language import DirectiveLocation
 from ..pyutils import inspect, FrozenList
 from ..type import (
     GraphQLArgument,
@@ -9,6 +10,7 @@ from ..type import (
     GraphQLField,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
@@ -36,21 +38,24 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
     This function returns a sorted copy of the given GraphQLSchema.
     """
 
-    def replace_type(type_):
+    def replace_type(
+        type_: Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]
+    ) -> Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]:
         if is_list_type(type_):
-            return GraphQLList(replace_type(type_.of_type))
-        elif is_non_null_type(type_):
-            return GraphQLNonNull(replace_type(type_.of_type))
-        else:
-            return replace_named_type(type_)
+            return GraphQLList(replace_type(cast(GraphQLList, type_).of_type))
+        if is_non_null_type(type_):
+            return GraphQLNonNull(replace_type(cast(GraphQLNonNull, type_).of_type))
+        return replace_named_type(cast(GraphQLNamedType, type_))
 
     def replace_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         return type_map[type_.name]
 
-    def replace_maybe_type(maybe_type):
+    def replace_maybe_type(
+        maybe_type: Optional[GraphQLNamedType],
+    ) -> Optional[GraphQLNamedType]:
         return maybe_type and replace_named_type(maybe_type)
 
-    def sort_directive(directive):
+    def sort_directive(directive: GraphQLDirective) -> GraphQLDirective:
         kwargs = directive.to_kwargs()
         kwargs.update(
             locations=sorted(directive.locations, key=sort_by_name_key),
@@ -58,26 +63,33 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         )
         return GraphQLDirective(**kwargs)
 
-    def sort_args(args_map):
+    def sort_args(args_map: Dict[str, GraphQLArgument]) -> Dict[str, GraphQLArgument]:
         args = {}
         for name, arg in sorted(args_map.items()):
             kwargs = arg.to_kwargs()
-            kwargs.update(type_=replace_type(arg.type))
+            kwargs.update(type_=replace_type(cast(GraphQLNamedType, arg.type)))
             args[name] = GraphQLArgument(**kwargs)
         return args
 
-    def sort_fields(fields_map):
+    def sort_fields(fields_map: Dict[str, GraphQLField]) -> Dict[str, GraphQLField]:
         fields = {}
         for name, field in sorted(fields_map.items()):
             kwargs = field.to_kwargs()
-            kwargs.update(type_=replace_type(field.type), args=sort_args(field.args))
+            kwargs.update(
+                type_=replace_type(cast(GraphQLNamedType, field.type)),
+                args=sort_args(field.args),
+            )
             fields[name] = GraphQLField(**kwargs)
         return fields
 
-    def sort_input_fields(fields_map):
+    def sort_input_fields(
+        fields_map: Dict[str, GraphQLInputField]
+    ) -> Dict[str, GraphQLInputField]:
         return {
             name: GraphQLInputField(
-                replace_type(field.type),
+                cast(
+                    GraphQLInputType, replace_type(cast(GraphQLNamedType, field.type))
+                ),
                 description=field.description,
                 default_value=field.default_value,
                 ast_node=field.ast_node,
@@ -149,14 +161,20 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             sort_directive(directive)
             for directive in sorted(schema.directives, key=sort_by_name_key)
         ],
-        query=replace_maybe_type(schema.query_type),
-        mutation=replace_maybe_type(schema.mutation_type),
-        subscription=replace_maybe_type(schema.subscription_type),
+        query=cast(Optional[GraphQLObjectType], replace_maybe_type(schema.query_type)),
+        mutation=cast(
+            Optional[GraphQLObjectType], replace_maybe_type(schema.mutation_type)
+        ),
+        subscription=cast(
+            Optional[GraphQLObjectType], replace_maybe_type(schema.subscription_type)
+        ),
         ast_node=schema.ast_node,
     )
 
 
-def sort_by_name_key(type_) -> Tuple[bool, str]:
+def sort_by_name_key(
+    type_: Union[GraphQLNamedType, GraphQLDirective, DirectiveLocation]
+) -> Tuple[bool, str]:
     name = type_.name
     # GraphQL.JS sorts '_' first using localeCompare
     return not name.startswith("_"), name

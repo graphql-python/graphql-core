@@ -2,6 +2,7 @@ from typing import cast
 
 from ..type import (
     GraphQLAbstractType,
+    GraphQLCompositeType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
@@ -17,7 +18,7 @@ from ..type import (
 __all__ = ["is_equal_type", "is_type_sub_type_of", "do_types_overlap"]
 
 
-def is_equal_type(type_a: GraphQLType, type_b: GraphQLType):
+def is_equal_type(type_a: GraphQLType, type_b: GraphQLType) -> bool:
     """Check whether two types are equal.
 
     Provided two types, return true if the types are equal (invariant)."""
@@ -91,7 +92,9 @@ def is_type_sub_type_of(
     )
 
 
-def do_types_overlap(schema, type_a, type_b):
+def do_types_overlap(
+    schema: GraphQLSchema, type_a: GraphQLCompositeType, type_b: GraphQLCompositeType
+) -> bool:
     """Check whether two types overlap in a given schema.
 
     Provided two composite types, determine if they "overlap". Two composite types
@@ -107,9 +110,11 @@ def do_types_overlap(schema, type_a, type_b):
         return True
 
     if is_abstract_type(type_a):
+        type_a = cast(GraphQLAbstractType, type_a)
         if is_abstract_type(type_b):
             # If both types are abstract, then determine if there is any intersection
             # between possible concrete types of each.
+            type_b = cast(GraphQLAbstractType, type_b)
             return any(
                 schema.is_sub_type(type_b, type_)
                 for type_ in schema.get_possible_types(type_a)
@@ -119,6 +124,7 @@ def do_types_overlap(schema, type_a, type_b):
 
     if is_abstract_type(type_b):
         # Determine if former type is a possible concrete type of the latter.
+        type_b = cast(GraphQLAbstractType, type_b)
         return schema.is_sub_type(type_b, type_a)
 
     # Otherwise the types do not overlap.

@@ -165,14 +165,14 @@ class GraphQLWrappingType(GraphQLType, Generic[GT]):
 
     of_type: GT
 
-    def __init__(self, type_: GT):
+    def __init__(self, type_: GT) -> None:
         if not is_type(type_):
             raise TypeError(
                 f"Can only create a wrapper for a GraphQLType, but got: {type_}."
             )
         self.of_type = type_
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.of_type!r}>"
 
 
@@ -237,10 +237,10 @@ class GraphQLNamedType(GraphQLType):
         self.ast_node = ast_node
         self.extension_ast_nodes = extension_ast_nodes
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.name!r}>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     def to_kwargs(self) -> Dict[str, Any]:
@@ -273,7 +273,7 @@ def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
     ...
 
 
-def get_named_type(type_):
+def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:
     """Unwrap possible wrapping type"""
     if type_:
         unwrapped_type = type_
@@ -378,10 +378,10 @@ class GraphQLScalarType(GraphQLNamedType):
             self.parse_literal = parse_literal  # type: ignore
         self.specified_by_url = specified_by_url
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.name!r}>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     @staticmethod
@@ -510,13 +510,13 @@ class GraphQLField:
         self.extensions = extensions
         self.ast_node = ast_node
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.type!r}>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Field: {self.type}"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self is other or (
             isinstance(other, GraphQLField)
             and self.type == other.type
@@ -629,7 +629,7 @@ class GraphQLArgument:
         self.extensions = extensions
         self.ast_node = ast_node
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self is other or (
             isinstance(other, GraphQLArgument)
             and self.type == other.type
@@ -939,7 +939,7 @@ class GraphQLUnionType(GraphQLNamedType):
 
     def __init__(
         self,
-        name,
+        name: str,
         types: Thunk[Collection[GraphQLObjectType]],
         resolve_type: Optional[GraphQLTypeResolver] = None,
         description: Optional[str] = None,
@@ -1220,7 +1220,7 @@ class GraphQLEnumValue:
         self.extensions = extensions
         self.ast_node = ast_node
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self is other or (
             isinstance(other, GraphQLEnumValue)
             and self.value == other.value
@@ -1408,7 +1408,7 @@ class GraphQLInputField:
         self.extensions = extensions
         self.ast_node = ast_node
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self is other or (
             isinstance(other, GraphQLInputField)
             and self.type == other.type
@@ -1455,10 +1455,10 @@ class GraphQLList(Generic[GT], GraphQLWrappingType[GT]):
                 }
     """
 
-    def __init__(self, type_: GT):
+    def __init__(self, type_: GT) -> None:
         super().__init__(type_=type_)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[{self.of_type}]"
 
 
@@ -1503,7 +1503,7 @@ class GraphQLNonNull(GraphQLWrappingType[GNT], Generic[GNT]):
                 f" {type_}."
             )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.of_type}!"
 
 
@@ -1565,7 +1565,9 @@ def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType:
     ...
 
 
-def get_nullable_type(type_):
+def get_nullable_type(
+    type_: Optional[Union[GraphQLNullableType, GraphQLNonNull]]
+) -> Optional[GraphQLNullableType]:
     """Unwrap possible non-null type"""
     if is_non_null_type(type_):
         type_ = cast(GraphQLNonNull, type_)

@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
 
+from .. import GraphQLDirective
 from ..error import GraphQLError
 from ..language import (
     DocumentNode,
@@ -9,9 +10,17 @@ from ..language import (
     SelectionSetNode,
     VariableNode,
     Visitor,
+    VisitorAction,
     visit,
 )
-from ..type import GraphQLSchema, GraphQLInputType
+from ..type import (
+    GraphQLArgument,
+    GraphQLCompositeType,
+    GraphQLField,
+    GraphQLInputType,
+    GraphQLOutputType,
+    GraphQLSchema,
+)
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 __all__ = [
@@ -41,15 +50,16 @@ class VariableUsageVisitor(Visitor):
         self._append_usage = self.usages.append
         self._type_info = type_info
 
-    def enter_variable_definition(self, *_args):
+    def enter_variable_definition(self, *_args: Any) -> VisitorAction:
         return self.SKIP
 
-    def enter_variable(self, node, *_args):
+    def enter_variable(self, node: VariableNode, *_args: Any) -> VisitorAction:
         type_info = self._type_info
         usage = VariableUsage(
             node, type_info.get_input_type(), type_info.get_default_value()
         )
         self._append_usage(usage)
+        return None
 
 
 class ASTValidationContext:
@@ -77,10 +87,10 @@ class ASTValidationContext:
         self._fragment_spreads = {}
         self._recursively_referenced_fragments = {}
 
-    def on_error(self, error: GraphQLError):
+    def on_error(self, error: GraphQLError) -> None:
         pass
 
-    def report_error(self, error: GraphQLError):
+    def report_error(self, error: GraphQLError) -> None:
         self.on_error(error)
 
     def get_fragment(self, name: str) -> Optional[FragmentDefinitionNode]:
@@ -211,23 +221,23 @@ class ValidationContext(ASTValidationContext):
             self._recursive_variable_usages[operation] = usages
         return usages
 
-    def get_type(self):
+    def get_type(self) -> Optional[GraphQLOutputType]:
         return self._type_info.get_type()
 
-    def get_parent_type(self):
+    def get_parent_type(self) -> Optional[GraphQLCompositeType]:
         return self._type_info.get_parent_type()
 
-    def get_input_type(self):
+    def get_input_type(self) -> Optional[GraphQLInputType]:
         return self._type_info.get_input_type()
 
-    def get_parent_input_type(self):
+    def get_parent_input_type(self) -> Optional[GraphQLInputType]:
         return self._type_info.get_parent_input_type()
 
-    def get_field_def(self):
+    def get_field_def(self) -> Optional[GraphQLField]:
         return self._type_info.get_field_def()
 
-    def get_directive(self):
+    def get_directive(self) -> Optional[GraphQLDirective]:
         return self._type_info.get_directive()
 
-    def get_argument(self):
+    def get_argument(self) -> Optional[GraphQLArgument]:
         return self._type_info.get_argument()

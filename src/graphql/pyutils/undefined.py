@@ -1,24 +1,26 @@
+from typing import Any
+
 __all__ = ["Undefined", "UndefinedType"]
 
 
 class UndefinedType(ValueError):
     """Auxiliary class for creating the Undefined singleton."""
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Undefined"
 
     __str__ = __repr__
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(UndefinedType)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return False
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return other is Undefined
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
 

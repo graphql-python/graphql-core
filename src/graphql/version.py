@@ -36,7 +36,7 @@ class VersionInfo(NamedTuple):
         serial = int(serial) if serial else 0
         return cls(major, minor, micro, level, serial)
 
-    def __str__(self):
+    def __str__(self) -> str:
         v = f"{self.major}.{self.minor}.{self.micro}"
         level = self.releaselevel
         if level and level != "final":

@@ -1,4 +1,4 @@
-from typing import Collection, List, Union, cast
+from typing import Any, Collection, List, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -38,7 +38,12 @@ class KnownTypeNamesRule(ASTValidationRule):
         self.type_names = list(self.existing_types_map) + defined_types
 
     def enter_named_type(
-        self, node: NamedTypeNode, _key, parent: Node, _path, ancestors: List[Node]
+        self,
+        node: NamedTypeNode,
+        _key: Any,
+        parent: Node,
+        _path: Any,
+        ancestors: List[Node],
     ) -> None:
         type_name = node.name.value
         if (

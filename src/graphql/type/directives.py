@@ -100,13 +100,13 @@ class GraphQLDirective:
         self.extensions = extensions
         self.ast_node = ast_node
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"@{self.name}"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.__class__.__name__}({self})>"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self is other or (
             isinstance(other, GraphQLDirective)
             and self.name == other.name

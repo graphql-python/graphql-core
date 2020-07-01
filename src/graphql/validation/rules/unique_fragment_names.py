@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import NameNode, FragmentDefinitionNode, VisitorAction, SKIP
@@ -17,11 +17,12 @@ class UniqueFragmentNamesRule(ASTValidationRule):
         super().__init__(context)
         self.known_fragment_names: Dict[str, NameNode] = {}
 
-    def enter_operation_definition(self, *_args) -> VisitorAction:
+    @staticmethod
+    def enter_operation_definition(*_args: Any) -> VisitorAction:
         return SKIP
 
     def enter_fragment_definition(
-        self, node: FragmentDefinitionNode, *_args
+        self, node: FragmentDefinitionNode, *_args: Any
     ) -> VisitorAction:
         known_fragment_names = self.known_fragment_names
         fragment_name = node.name.value

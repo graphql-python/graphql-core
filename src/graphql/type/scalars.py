@@ -8,6 +8,7 @@ from ..language.ast import (
     FloatValueNode,
     IntValueNode,
     StringValueNode,
+    ValueNode,
 )
 from ..language.printer import print_ast
 from .definition import GraphQLNamedType, GraphQLScalarType
@@ -73,7 +74,7 @@ def coerce_int(input_value: Any) -> int:
     return int(input_value)
 
 
-def parse_int_literal(value_node, _variables=None) -> int:
+def parse_int_literal(value_node: ValueNode, _variables: Any = None) -> int:
     """Parse an integer value node in the AST."""
     if not isinstance(value_node, IntValueNode):
         raise GraphQLError(
@@ -126,7 +127,7 @@ def coerce_float(input_value: Any) -> float:
     return float(input_value)
 
 
-def parse_float_literal(value_node, _variables=None) -> float:
+def parse_float_literal(value_node: ValueNode, _variables: Any = None) -> float:
     """Parse a float value node in the AST."""
     if not isinstance(value_node, (FloatValueNode, IntValueNode)):
         raise GraphQLError(
@@ -170,7 +171,7 @@ def coerce_string(input_value: Any) -> str:
     return input_value
 
 
-def parse_string_literal(value_node, _variables=None) -> str:
+def parse_string_literal(value_node: ValueNode, _variables: Any = None) -> str:
     """Parse a string value node in the AST."""
     if not isinstance(value_node, StringValueNode):
         raise GraphQLError(
@@ -210,7 +211,7 @@ def coerce_boolean(input_value: Any) -> bool:
     return input_value
 
 
-def parse_boolean_literal(value_node, _variables=None) -> bool:
+def parse_boolean_literal(value_node: ValueNode, _variables: Any = None) -> bool:
     """Parse a boolean value node in the AST."""
     if not isinstance(value_node, BooleanValueNode):
         raise GraphQLError(
@@ -249,7 +250,7 @@ def coerce_id(input_value: Any) -> str:
     raise GraphQLError("ID cannot represent value: " + inspect(input_value))
 
 
-def parse_id_literal(value_node, _variables=None) -> str:
+def parse_id_literal(value_node: ValueNode, _variables: Any = None) -> str:
     """Parse an ID value node in the AST."""
     if not isinstance(value_node, (StringValueNode, IntValueNode)):
         raise GraphQLError(

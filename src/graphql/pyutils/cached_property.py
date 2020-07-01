@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     standard_cached_property = None
@@ -20,11 +20,11 @@ else:
         an ordinary attribute. Deleting the attribute resets the property.
         """
 
-        def __init__(self, func):
+        def __init__(self, func: Callable) -> None:
             self.__doc__ = getattr(func, "__doc__")
             self.func = func
 
-        def __get__(self, obj, cls):
+        def __get__(self, obj: object, cls: type) -> Any:
             if obj is None:
                 return self
             value = obj.__dict__[self.func.__name__] = self.func(obj)

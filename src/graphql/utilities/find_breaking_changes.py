@@ -2,8 +2,8 @@ from enum import Enum
 from operator import attrgetter
 from typing import Any, Dict, List, NamedTuple, Union, cast
 
-from ..language import print_ast, visit, Visitor
-from ..pyutils import inspect, Undefined
+from ..language import print_ast, visit, ObjectValueNode, Visitor
+from ..pyutils import inspect, FrozenList, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLField,
@@ -559,11 +559,13 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
 
     # noinspection PyMethodMayBeStatic
     class SortVisitor(Visitor):
-        def enter_object_value(self, object_node, *_args):
-            object_node.fields = sorted(
-                object_node.fields, key=attrgetter("name.value")
+        def enter_object_value(
+            self, object_value_node: ObjectValueNode, *_args: Any
+        ) -> ObjectValueNode:
+            object_value_node.fields = FrozenList(
+                sorted(object_value_node.fields, key=attrgetter("name.value"))
             )
-            return object_node
+            return object_value_node
 
     sorted_ast = visit(ast, SortVisitor())
 

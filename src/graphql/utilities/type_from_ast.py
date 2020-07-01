@@ -1,13 +1,14 @@
-from typing import Optional, overload
+from typing import cast, overload, Optional
 
-from ..language import TypeNode, NamedTypeNode, ListTypeNode, NonNullTypeNode
+from ..language import ListTypeNode, NamedTypeNode, NonNullTypeNode, TypeNode
 from ..pyutils import inspect
 from ..type import (
-    GraphQLType,
     GraphQLSchema,
     GraphQLNamedType,
     GraphQLList,
     GraphQLNonNull,
+    GraphQLNullableType,
+    GraphQLType,
 )
 
 __all__ = ["type_from_ast"]
@@ -39,7 +40,7 @@ def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> Optional[GraphQ
     ...
 
 
-def type_from_ast(schema, type_node):
+def type_from_ast(schema: GraphQLSchema, type_node: TypeNode,) -> Optional[GraphQLType]:
     """Get the GraphQL type definition from an AST node.
 
     Given a Schema and an AST node describing a type, return a GraphQLType definition
@@ -48,11 +49,13 @@ def type_from_ast(schema, type_node):
     "User" found in the schema. If a type called "User" is not found in the schema,
     then None will be returned.
     """
+    inner_type: Optional[GraphQLType]
     if isinstance(type_node, ListTypeNode):
         inner_type = type_from_ast(schema, type_node.type)
         return GraphQLList(inner_type) if inner_type else None
     if isinstance(type_node, NonNullTypeNode):
         inner_type = type_from_ast(schema, type_node.type)
+        inner_type = cast(GraphQLNullableType, inner_type)
         return GraphQLNonNull(inner_type) if inner_type else None
     if isinstance(type_node, NamedTypeNode):
         return schema.get_type(type_node.name.value)

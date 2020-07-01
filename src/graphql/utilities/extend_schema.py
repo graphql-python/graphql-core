@@ -94,8 +94,8 @@ __all__ = [
 def extend_schema(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
-    assume_valid=False,
-    assume_valid_sdl=False,
+    assume_valid: bool = False,
+    assume_valid_sdl: bool = False,
 ) -> GraphQLSchema:
     """Extend the schema with extensions from a given document.
 
@@ -132,7 +132,9 @@ def extend_schema(
 
 
 def extend_schema_impl(
-    schema_kwargs: Dict[str, Any], document_ast: DocumentNode, assume_valid=False
+    schema_kwargs: Dict[str, Any],
+    document_ast: DocumentNode,
+    assume_valid: bool = False,
 ) -> Dict[str, Any]:
     """Extend the given schema arguments with extensions from a given document.
 

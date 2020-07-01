@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Collection, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Collection, Dict, List, Optional, Tuple, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -63,7 +63,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # times, so this improves the performance of this validator.
         self.cached_fields_and_fragment_names: Dict = {}
 
-    def enter_selection_set(self, selection_set: SelectionSetNode, *_args) -> None:
+    def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
         conflicts = find_conflicts_within_selection_set(
             self.context,
             self.cached_fields_and_fragment_names,
@@ -732,10 +732,10 @@ class PairSet:
 
     __slots__ = ("_data",)
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._data: Dict[str, Dict[str, bool]] = {}
 
-    def has(self, a: str, b: str, are_mutually_exclusive: bool):
+    def has(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
         first = self._data.get(a)
         result = first and first.get(b)
         if result is None:
@@ -747,12 +747,12 @@ class PairSet:
             return not result
         return True
 
-    def add(self, a: str, b: str, are_mutually_exclusive: bool):
+    def add(self, a: str, b: str, are_mutually_exclusive: bool) -> "PairSet":
         self._pair_set_add(a, b, are_mutually_exclusive)
         self._pair_set_add(b, a, are_mutually_exclusive)
         return self
 
-    def _pair_set_add(self, a: str, b: str, are_mutually_exclusive: bool):
+    def _pair_set_add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
         a_map = self._data.get(a)
         if not a_map:
             self._data[a] = a_map = {}

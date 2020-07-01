@@ -1,4 +1,4 @@
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 
 from ...error import GraphQLError
 from ...language import FragmentDefinitionNode, FragmentSpreadNode, VisitorAction, SKIP
@@ -20,16 +20,17 @@ class NoFragmentCyclesRule(ASTValidationRule):
         # Position in the spread path
         self.spread_path_index_by_name: Dict[str, int] = {}
 
-    def enter_operation_definition(self, *_args) -> VisitorAction:
+    @staticmethod
+    def enter_operation_definition(*_args: Any) -> VisitorAction:
         return SKIP
 
     def enter_fragment_definition(
-        self, node: FragmentDefinitionNode, *_args
+        self, node: FragmentDefinitionNode, *_args: Any
     ) -> VisitorAction:
         self.detect_cycle_recursive(node)
         return SKIP
 
-    def detect_cycle_recursive(self, fragment: FragmentDefinitionNode):
+    def detect_cycle_recursive(self, fragment: FragmentDefinitionNode) -> None:
         # This does a straight-forward DFS to find cycles.
         # It does not terminate when a cycle was found but continues to explore
         # the graph to find all possible cycles.

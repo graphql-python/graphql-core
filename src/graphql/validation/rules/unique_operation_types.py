@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -41,7 +41,7 @@ class UniqueOperationTypesRule(SDLValidationRule):
         self.schema = schema
 
     def check_operation_types(
-        self, node: Union[SchemaDefinitionNode, SchemaExtensionNode], *_args
+        self, node: Union[SchemaDefinitionNode, SchemaExtensionNode], *_args: Any
     ) -> VisitorAction:
         for operation_type in node.operation_types or []:
             operation = operation_type.operation

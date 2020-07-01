@@ -1,3 +1,5 @@
+from typing import Any
+
 from ...error import GraphQLError
 from ...language import SchemaDefinitionNode
 from . import SDLValidationRule, SDLValidationContext
@@ -22,7 +24,7 @@ class LoneSchemaDefinitionRule(SDLValidationRule):
         )
         self.schema_definitions_count = 0
 
-    def enter_schema_definition(self, node: SchemaDefinitionNode, *_args) -> None:
+    def enter_schema_definition(self, node: SchemaDefinitionNode, *_args: Any) -> None:
         if self.already_defined:
             self.report_error(
                 GraphQLError(

@@ -51,7 +51,7 @@ def get_variable_values(
     """
     errors: List[GraphQLError] = []
 
-    def on_error(error: GraphQLError):
+    def on_error(error: GraphQLError) -> None:
         if max_errors is not None and len(errors) >= max_errors:
             raise GraphQLError(
                 "Too many errors processing variables,"
@@ -74,7 +74,7 @@ def coerce_variable_values(
     var_def_nodes: FrozenList[VariableDefinitionNode],
     inputs: Dict[str, Any],
     on_error: Callable[[GraphQLError], None],
-):
+) -> Dict[str, Any]:
     coerced_values: Dict[str, Any] = {}
     for var_def_node in var_def_nodes:
         var_name = var_def_node.variable.name.value
@@ -123,7 +123,7 @@ def coerce_variable_values(
 
         def on_input_value_error(
             path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
-        ):
+        ) -> None:
             invalid_str = inspect(invalid_value)
             prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
             if path:

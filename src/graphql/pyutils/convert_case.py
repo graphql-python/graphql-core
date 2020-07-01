@@ -8,12 +8,12 @@ _re_camel_to_snake = re.compile(r"([a-z]|[A-Z]+)(?=[A-Z])")
 _re_snake_to_camel = re.compile(r"(_)([a-z\d])")
 
 
-def camel_to_snake(s):
+def camel_to_snake(s: str) -> str:
     """Convert from CamelCase to snake_case"""
     return _re_camel_to_snake.sub(r"\1_", s).lower()
 
 
-def snake_to_camel(s, upper=True):
+def snake_to_camel(s: str, upper: bool = True) -> str:
     """Convert from snake_case to CamelCase
 
     If upper is set, then convert to upper CamelCase, otherwise the first character

@@ -173,7 +173,7 @@ class Visitor:
     # Provide special return values as attributes
     BREAK, SKIP, REMOVE, IDLE = BREAK, SKIP, REMOVE, IDLE
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         """Verify that all defined handlers are valid."""
         super().__init_subclass__()
         for attr, val in cls.__dict__.items():
@@ -196,7 +196,7 @@ class Visitor:
                         raise TypeError(f"Invalid AST node kind: {kind}.")
 
     @classmethod
-    def get_visit_fn(cls, kind, is_leaving=False) -> Callable:
+    def get_visit_fn(cls, kind: str, is_leaving: bool = False) -> Callable:
         """Get the visit function for the given node kind and direction."""
         method = "leave" if is_leaving else "enter"
         visit_fn = getattr(cls, f"{method}_{kind}", None)
@@ -215,7 +215,11 @@ class Stack(NamedTuple):
     prev: Any  # 'Stack' (python/mypy/issues/731)
 
 
-def visit(root: Node, visitor: Visitor, visitor_keys=None) -> Any:
+def visit(
+    root: Node,
+    visitor: Visitor,
+    visitor_keys: Optional[Dict[str, Tuple[str, ...]]] = None,
+) -> Any:
     """Visit each node in an AST.
 
     :func:`~.visit` will walk through an AST using a depth first traversal, calling the
@@ -367,7 +371,7 @@ class ParallelVisitor(Visitor):
         self.visitors = visitors
         self.skipping: List[Any] = [None] * len(visitors)
 
-    def enter(self, node, *args):
+    def enter(self, node: Node, *args: Any) -> Optional[VisitorAction]:
         skipping = self.skipping
         for i, visitor in enumerate(self.visitors):
             if not skipping[i]:
@@ -380,8 +384,9 @@ class ParallelVisitor(Visitor):
                         skipping[i] = BREAK
                     elif result is not None:
                         return result
+        return None
 
-    def leave(self, node, *args):
+    def leave(self, node: Node, *args: Any) -> Optional[VisitorAction]:
         skipping = self.skipping
         for i, visitor in enumerate(self.visitors):
             if not skipping[i]:
@@ -398,3 +403,4 @@ class ParallelVisitor(Visitor):
                         return result
             elif skipping[i] is node:
                 skipping[i] = None
+        return None

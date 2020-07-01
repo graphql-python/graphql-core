@@ -70,7 +70,9 @@ SourceType = Union[Source, str]
 
 
 def parse(
-    source: SourceType, no_location=False, experimental_fragment_variables=False
+    source: SourceType,
+    no_location: bool = False,
+    experimental_fragment_variables: bool = False,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -103,7 +105,9 @@ def parse(
 
 
 def parse_value(
-    source: SourceType, no_location=False, experimental_fragment_variables=False
+    source: SourceType,
+    no_location: bool = False,
+    experimental_fragment_variables: bool = False,
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
 
@@ -127,7 +131,9 @@ def parse_value(
 
 
 def parse_type(
-    source: SourceType, no_location=False, experimental_fragment_variables=False
+    source: SourceType,
+    no_location: bool = False,
+    experimental_fragment_variables: bool = False,
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
 

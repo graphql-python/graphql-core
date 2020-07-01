@@ -22,7 +22,7 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
         self.known_field_names: Dict[str, Dict[str, NameNode]] = defaultdict(dict)
 
     def check_field_uniqueness(
-        self, node: ObjectTypeDefinitionNode, *_args
+        self, node: ObjectTypeDefinitionNode, *_args: Any
     ) -> VisitorAction:
         existing_type_map = self.existing_type_map
         type_name = node.name.value

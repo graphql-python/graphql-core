@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cmp_to_key
-from typing import Dict, List, Set, Union, cast
+from typing import Any, Dict, List, Set, Union, cast
 
 from ...type import (
     GraphQLAbstractType,
@@ -27,7 +27,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
     type, or are an allowed meta field such as ``__typename``.
     """
 
-    def enter_field(self, node: FieldNode, *_args) -> None:
+    def enter_field(self, node: FieldNode, *_args: Any) -> None:
         type_ = self.context.get_parent_type()
         if not type_:
             return

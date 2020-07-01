@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import NameNode, TypeDefinitionNode, VisitorAction, SKIP
@@ -18,7 +18,7 @@ class UniqueTypeNamesRule(SDLValidationRule):
         self.known_type_names: Dict[str, NameNode] = {}
         self.schema = context.schema
 
-    def check_type_name(self, node: TypeDefinitionNode, *_args) -> VisitorAction:
+    def check_type_name(self, node: TypeDefinitionNode, *_args: Any) -> VisitorAction:
         type_name = node.name.value
 
         if self.schema and self.schema.get_type(type_name):

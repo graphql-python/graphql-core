@@ -1,7 +1,7 @@
-from typing import List
+from typing import Any, List
 
 from ..error import GraphQLError
-from ..language import DocumentNode, Visitor, visit
+from ..language import DocumentNode, EnumValueNode, FieldNode, Visitor, visit
 from ..type import GraphQLSchema, get_named_type
 from .type_info import TypeInfo, TypeInfoVisitor
 
@@ -31,7 +31,7 @@ class FindDeprecatedUsages(Visitor):
         self.type_info = type_info
         self.errors = []
 
-    def enter_field(self, node, *_args):
+    def enter_field(self, node: FieldNode, *_args: Any) -> None:
         parent_type = self.type_info.get_parent_type()
         field_def = self.type_info.get_field_def()
         if parent_type and field_def and field_def.deprecation_reason is not None:
@@ -43,7 +43,7 @@ class FindDeprecatedUsages(Visitor):
                 )
             )
 
-    def enter_enum_value(self, node, *_args):
+    def enter_enum_value(self, node: EnumValueNode, *_args: Any) -> None:
         type_ = get_named_type(self.type_info.get_input_type())
         enum_val = self.type_info.get_enum_value()
         if type_ and enum_val and enum_val.deprecation_reason is not None:

@@ -71,7 +71,7 @@ async def subscribe(
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
 
-    async def map_source_to_response(payload) -> ExecutionResult:
+    async def map_source_to_response(payload: Any) -> ExecutionResult:
         """Map source to response.
 
         For each payload yielded from a subscription, map it over the normal GraphQL

@@ -83,10 +83,10 @@ empty_schema_config = GraphQLSchema(directives=[]).to_kwargs()
 
 def build_schema(
     source: Union[str, Source],
-    assume_valid=False,
-    assume_valid_sdl=False,
-    no_location=False,
-    experimental_fragment_variables=False,
+    assume_valid: bool = False,
+    assume_valid_sdl: bool = False,
+    no_location: bool = False,
+    experimental_fragment_variables: bool = False,
 ) -> GraphQLSchema:
     """Build a GraphQLSchema directly from a source document."""
     return build_ast_schema(

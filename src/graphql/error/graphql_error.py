@@ -136,10 +136,10 @@ class GraphQLError(Exception):
         if not self.__traceback__:
             self.__traceback__ = exc_info()[2]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return print_error(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         args = [repr(self.message)]
         if self.locations:
             args.append(f"locations={self.locations!r}")
@@ -149,7 +149,7 @@ class GraphQLError(Exception):
             args.append(f"extensions={self.extensions!r}")
         return f"{self.__class__.__name__}({', '.join(args)})"
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return (
             isinstance(other, GraphQLError)
             and self.__class__ == other.__class__
@@ -165,11 +165,11 @@ class GraphQLError(Exception):
             )
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return not self == other
 
     @property
-    def formatted(self):
+    def formatted(self) -> Dict[str, Any]:
         """Get error formatted according to the specification."""
         return format_error(self)
 
