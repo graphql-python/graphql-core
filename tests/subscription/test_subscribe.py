@@ -361,6 +361,7 @@ def describe_subscription_initialization_phase():
             await subscribe(schema=email_schema, document={})  # type: ignore
 
     @mark.asyncio
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
         invalid_email_schema = GraphQLSchema(
             query=QueryType,

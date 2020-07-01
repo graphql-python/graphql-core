@@ -102,15 +102,18 @@ def describe_execute_synchronously_when_possible():
                 None,
             )
 
-        def throws_if_encountering_async_operation_with_check_sync():
+        @mark.asyncio
+        @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+        async def throws_if_encountering_async_operation_with_check_sync():
             doc = "query Example { syncField, asyncField }"
             with raises(RuntimeError) as exc_info:
                 graphql_sync(schema, doc, "rootValue", check_sync=True)
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
 
+        @mark.asyncio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-        def throws_if_encountering_async_operation_without_check_sync():
+        async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"
             result = graphql_sync(schema, doc, "rootValue")
             assert result == (
@@ -124,6 +127,6 @@ def describe_execute_synchronously_when_possible():
                     }
                 ],
             )
-            # garbage collect coroutine in order to swallow warning
+            # garbage collect coroutine in order to not postpone the warning
             del result
             collect()
