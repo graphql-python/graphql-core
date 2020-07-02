@@ -79,8 +79,12 @@ def print_block_string(
     is_single_line = "\n" not in value
     has_leading_space = value.startswith(" ") or value.startswith("\t")
     has_trailing_quote = value.endswith('"')
+    has_trailing_slash = value.endswith("\\")
     print_as_multiple_lines = (
-        not is_single_line or has_trailing_quote or prefer_multiple_lines
+        not is_single_line
+        or has_trailing_quote
+        or has_trailing_slash
+        or prefer_multiple_lines
     )
 
     # Format a multi-line block quote to account for leading space.

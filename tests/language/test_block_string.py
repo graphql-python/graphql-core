@@ -120,6 +120,12 @@ def describe_print_block_string():
             == '"""    space-led value "quoted string"\n"""'
         )
 
+    def correctly_prints_single_line_with_trailing_backslash():
+        s = "backslash \\"
+
+        assert print_block_string(s) == '"""\nbackslash \\\n"""'
+        assert print_block_string(s, "", True) == '"""\nbackslash \\\n"""'
+
     def correctly_prints_string_with_a_first_line_indentation():
         s = join_lines("    first  ", "  line     ", "indentation", "     string")
 
