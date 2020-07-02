@@ -66,8 +66,9 @@ def describe_is_awaitable():
         assert not isawaitable(some_coroutine)
         assert not is_awaitable(some_coroutine)
 
+    @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-    def recognizes_a_coroutine_object():
+    async def recognizes_a_coroutine_object():
         async def some_coroutine():
             return False  # pragma: no cover
 
@@ -83,8 +84,9 @@ def describe_is_awaitable():
         assert is_awaitable(some_old_style_coroutine())
         assert is_awaitable(some_old_style_coroutine())
 
+    @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-    def recognizes_a_future_object():
+    async def recognizes_a_future_object():
         async def some_coroutine():
             return False  # pragma: no cover
 
@@ -93,6 +95,7 @@ def describe_is_awaitable():
         assert is_awaitable(some_future)
         assert is_awaitable(some_future)
 
+    @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def declines_an_async_generator():
         async def some_async_generator():
