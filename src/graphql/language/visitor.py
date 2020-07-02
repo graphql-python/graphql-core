@@ -195,13 +195,12 @@ class Visitor:
                     ):
                         raise TypeError(f"Invalid AST node kind: {kind}.")
 
-    @classmethod
-    def get_visit_fn(cls, kind: str, is_leaving: bool = False) -> Callable:
+    def get_visit_fn(self, kind: str, is_leaving: bool = False) -> Callable:
         """Get the visit function for the given node kind and direction."""
         method = "leave" if is_leaving else "enter"
-        visit_fn = getattr(cls, f"{method}_{kind}", None)
+        visit_fn = getattr(self, f"{method}_{kind}", None)
         if not visit_fn:
-            visit_fn = getattr(cls, method, None)
+            visit_fn = getattr(self, method, None)
         return visit_fn
 
 
@@ -312,7 +311,7 @@ def visit(
                 raise TypeError(f"Invalid AST Node: {inspect(node)}.")
             visit_fn = visitor.get_visit_fn(node.kind, is_leaving)
             if visit_fn:
-                result = visit_fn(visitor, node, key, parent, path, ancestors)
+                result = visit_fn(node, key, parent, path, ancestors)
 
                 if result is BREAK or result is True:
                     break
@@ -377,7 +376,7 @@ class ParallelVisitor(Visitor):
             if not skipping[i]:
                 fn = visitor.get_visit_fn(node.kind)
                 if fn:
-                    result = fn(visitor, node, *args)
+                    result = fn(node, *args)
                     if result is SKIP or result is False:
                         skipping[i] = node
                     elif result is BREAK or result is True:
@@ -392,7 +391,7 @@ class ParallelVisitor(Visitor):
             if not skipping[i]:
                 fn = visitor.get_visit_fn(node.kind, is_leaving=True)
                 if fn:
-                    result = fn(visitor, node, *args)
+                    result = fn(node, *args)
                     if result is BREAK or result is True:
                         skipping[i] = BREAK
                     elif (

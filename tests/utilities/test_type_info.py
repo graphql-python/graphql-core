@@ -111,9 +111,9 @@ def describe_visit_with_type_info():
 
         ast = parse("{ human(id: 4) { name, pets { ... { name } }, unknown } }")
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 input_type = type_info.get_input_type()
@@ -129,7 +129,8 @@ def describe_visit_with_type_info():
                     )
                 )
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 input_type = type_info.get_input_type()
@@ -196,9 +197,9 @@ def describe_visit_with_type_info():
 
         ast = parse("{ human(id: 4) { name, pets }, alien }")
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 input_type = type_info.get_input_type()
@@ -230,7 +231,8 @@ def describe_visit_with_type_info():
                         ),
                     )
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 input_type = type_info.get_input_type()
@@ -311,9 +313,9 @@ def describe_visit_with_type_info():
 
         ast = parse_value('{ stringListField: ["foo"] }')
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, node: Node, *_args):
+            @staticmethod
+            def enter(node: Node, *_args):
                 type_ = type_info.get_input_type()
                 visited.append(
                     (
@@ -324,7 +326,8 @@ def describe_visit_with_type_info():
                     )
                 )
 
-            def leave(self, node: Node, *_args):
+            @staticmethod
+            def leave(node: Node, *_args):
                 type_ = type_info.get_input_type()
                 visited.append(
                     (
@@ -361,9 +364,9 @@ def describe_visit_with_type_info():
         operation_node = ast.definitions[0]
         assert isinstance(operation_node, OperationDefinitionNode)
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, node: Node, *_args):
+            @staticmethod
+            def enter(node: Node, *_args):
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 visited.append(
@@ -376,7 +379,8 @@ def describe_visit_with_type_info():
                     )
                 )
 
-            def leave(self, node: Node, *_args):
+            @staticmethod
+            def leave(node: Node, *_args):
                 parent_type = type_info.get_parent_type()
                 type_ = type_info.get_type()
                 visited.append(

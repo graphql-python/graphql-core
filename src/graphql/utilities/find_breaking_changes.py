@@ -557,10 +557,10 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
     if ast is None:  # pragma: no cover
         raise TypeError(f"Invalid value: {inspect(value)}")
 
-    # noinspection PyMethodMayBeStatic
     class SortVisitor(Visitor):
+        @staticmethod
         def enter_object_value(
-            self, object_value_node: ObjectValueNode, *_args: Any
+            object_value_node: ObjectValueNode, *_args: Any
         ) -> ObjectValueNode:
             object_value_node.fields = FrozenList(
                 sorted(object_value_node.fields, key=attrgetter("name.value"))

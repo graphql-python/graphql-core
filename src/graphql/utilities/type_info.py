@@ -308,7 +308,7 @@ class TypeInfoVisitor(Visitor):
         self.type_info.enter(node)
         fn = self.visitor.get_visit_fn(node.kind)
         if fn:
-            result = fn(self.visitor, node, *args)
+            result = fn(node, *args)
             if result is not None:
                 self.type_info.leave(node)
                 if isinstance(result, Node):
@@ -317,6 +317,6 @@ class TypeInfoVisitor(Visitor):
 
     def leave(self, node: Node, *args: Any) -> Any:
         fn = self.visitor.get_visit_fn(node.kind, is_leaving=True)
-        result = fn(self.visitor, node, *args) if fn else None
+        result = fn(node, *args) if fn else None
         self.type_info.leave(node)
         return result

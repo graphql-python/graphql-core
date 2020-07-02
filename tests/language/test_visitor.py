@@ -102,17 +102,131 @@ def describe_visitor():
             visit(ast, TestVisitor())  # type: ignore
         assert str(exc_info.value) == "Not an AST Visitor: <TestVisitor instance>."
 
+    def visitors_support_all_method_variants():
+        class TestVisitorWithInstanceMethods(Visitor):
+            def enter(self, node, *args):
+                assert isinstance(self, TestVisitorWithInstanceMethods)
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"enter:{node.kind}")
+                pass
+
+            def leave(self, node, *args):
+                assert isinstance(self, TestVisitorWithInstanceMethods)
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"leave:{node.kind}")
+                pass
+
+            def enter_field(self, node, *args):
+                assert isinstance(self, TestVisitorWithInstanceMethods)
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"enter_field:{node.kind}")
+                pass
+
+            def leave_field(self, node, *args):
+                assert isinstance(self, TestVisitorWithInstanceMethods)
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"leave_field:{node.kind}")
+                pass
+
+        class TestVisitorWithClassMethods(Visitor):
+            @classmethod
+            def enter(cls, node, *args):
+                assert cls is TestVisitorWithClassMethods
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"enter:{node.kind}")
+                pass
+
+            @classmethod
+            def leave(cls, node, *args):
+                assert cls is TestVisitorWithClassMethods
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"leave:{node.kind}")
+                pass
+
+            @classmethod
+            def enter_field(cls, node, *args):
+                assert cls is TestVisitorWithClassMethods
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"enter_field:{node.kind}")
+                pass
+
+            @classmethod
+            def leave_field(cls, node, *args):
+                assert cls is TestVisitorWithClassMethods
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"leave_field:{node.kind}")
+                pass
+
+        class TestVisitorWithStaticMethods(Visitor):
+            @staticmethod
+            def enter(node, *args):
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"enter:{node.kind}")
+                pass
+
+            @staticmethod
+            def leave(node, *args):
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"leave:{node.kind}")
+                pass
+
+            @staticmethod
+            def enter_field(node, *args):
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"enter_field:{node.kind}")
+                pass
+
+            @staticmethod
+            def leave_field(node, *args):
+                assert isinstance(node, Node)
+                assert len(args) == 4
+                visited.append(f"leave_field:{node.kind}")
+                pass
+
+        for visitor_class in (
+            TestVisitorWithInstanceMethods,
+            TestVisitorWithClassMethods,
+            TestVisitorWithStaticMethods,
+        ):
+            ast = parse("{ a }")
+            visited: List[str] = []
+            visit(ast, visitor_class())
+            assert visited == [
+                "enter:document",
+                "enter:operation_definition",
+                "enter:selection_set",
+                "enter_field:field",
+                "enter:name",
+                "leave:name",
+                "leave_field:field",
+                "leave:selection_set",
+                "leave:operation_definition",
+                "leave:document",
+            ]
+
     def validates_path_argument():
         ast = parse("{ a }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 visited.append(["enter", *args[3]])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 visited.append(["leave", *args[3]])
 
@@ -134,9 +248,9 @@ def describe_visitor():
         ast = parse("{ a }", no_location=True)
         visited_nodes = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, node, key, parent, path, ancestors):
+            @staticmethod
+            def enter(node, key, parent, _path, ancestors):
                 in_array = isinstance(key, int)
                 if in_array:
                     visited_nodes.append(parent)
@@ -144,7 +258,8 @@ def describe_visitor():
                 expected_ancestors = visited_nodes[0:-2]
                 assert ancestors == expected_ancestors
 
-            def leave(self, node, key, parent, path, ancestors):
+            @staticmethod
+            def leave(_node, key, _parent, _path, ancestors):
                 expected_ancestors = visited_nodes[0:-2]
                 assert ancestors == expected_ancestors
                 in_array = isinstance(key, int)
@@ -158,14 +273,15 @@ def describe_visitor():
         ast = parse("{ a }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
             selection_set = None
 
-            def enter_field(self, node, *_args):
+            @staticmethod
+            def enter_field(node, *_args):
                 visited.append(["enter", node.kind])
 
-            def leave_field(self, node, *_args):
+            @staticmethod
+            def leave_field(node, *_args):
                 visited.append(["leave", node.kind])
 
         visit(ast, TestVisitor())
@@ -203,9 +319,9 @@ def describe_visitor():
     def allows_for_editing_on_enter(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
@@ -219,9 +335,9 @@ def describe_visitor():
     def allows_for_editing_on_leave(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
@@ -235,9 +351,9 @@ def describe_visitor():
     def ignores_false_returned_on_leave(skip_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 return skip_action
 
         returned_ast = visit(ast, TestVisitor())
@@ -272,9 +388,9 @@ def describe_visitor():
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -282,7 +398,8 @@ def describe_visitor():
                 if kind == "field" and node.name.value == "b":
                     return skip_action
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -312,9 +429,9 @@ def describe_visitor():
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -322,7 +439,8 @@ def describe_visitor():
                 if kind == "name" and node.value == "x":
                     return break_action
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -350,15 +468,16 @@ def describe_visitor():
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -388,21 +507,23 @@ def describe_visitor():
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter_name(self, *args):
+            @staticmethod
+            def enter_name(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def enter_selection_set(self, *args):
+            @staticmethod
+            def enter_selection_set(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def leave_selection_set(self, *args):
+            @staticmethod
+            def leave_selection_set(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -428,15 +549,16 @@ def describe_visitor():
         )
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -483,9 +605,9 @@ def describe_visitor():
         push = arg_stack.append
         pop = arg_stack.pop
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 node, key, parent = args[:3]
                 parent_kind = parent.kind if isinstance(parent, Node) else None
                 record(["enter", node.kind, key, parent_kind])
@@ -493,7 +615,8 @@ def describe_visitor():
                 check_visitor_fn_args(ast, *args)
                 push(args[:])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 node, key, parent = args[:3]
                 parent_kind = parent.kind if isinstance(parent, Node) else None
                 record(["leave", node.kind, key, parent_kind])
@@ -872,12 +995,13 @@ def describe_support_for_custom_ast_nodes():
     def does_not_traverse_unknown_node_kinds():
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, node, *_args):
+            @staticmethod
+            def enter(node, *_args):
                 visited.append(["enter", node.kind, get_value(node)])
 
-            def leave(self, node, *_args):
+            @staticmethod
+            def leave(node, *_args):
                 visited.append(["leave", node.kind, get_value(node)])
 
         visit(custom_ast, TestVisitor())
@@ -903,12 +1027,13 @@ def describe_support_for_custom_ast_nodes():
         }
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, node, *_args):
+            @staticmethod
+            def enter(node, *_args):
                 visited.append(["enter", node.kind, get_value(node)])
 
-            def leave(self, node, *_args):
+            @staticmethod
+            def leave(node, *_args):
                 visited.append(["leave", node.kind, get_value(node)])
 
         visit(custom_ast, TestVisitor(), custom_query_document_keys)
@@ -963,9 +1088,9 @@ def describe_visit_in_parallel():
         ast = parse("{ a, b { x }, c }")
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -973,7 +1098,8 @@ def describe_visit_in_parallel():
                 if kind == "field" and node.name.value == "b":
                     return skip_action
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -1067,9 +1193,9 @@ def describe_visit_in_parallel():
         ast = parse("{ a, b { x }, c }")
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -1077,7 +1203,8 @@ def describe_visit_in_parallel():
                 if kind == "name" and node.value == "x":
                     return break_action
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -1156,15 +1283,16 @@ def describe_visit_in_parallel():
         ast = parse("{ a, b { x }, c }")
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -1260,23 +1388,24 @@ def describe_visit_in_parallel():
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor1(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
                     return remove_action
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor2(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
@@ -1317,23 +1446,24 @@ def describe_visit_in_parallel():
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
         visited = []
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor1(Visitor):
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
                     return remove_action
 
-        # noinspection PyMethodMayBeStatic
         class TestVisitor2(Visitor):
-            def enter(self, *args):
+            @staticmethod
+            def enter(*args):
                 check_visitor_fn_args(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
                 visited.append(["enter", kind, value])
 
-            def leave(self, *args):
+            @staticmethod
+            def leave(*args):
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 kind, value = node.kind, get_value(node)
