@@ -2,8 +2,10 @@
 branch = True
 source = src
 omit =
+    */conftest.py
     */cached_property.py
     */is_collection.py
+    */test_*_fuzz.py
 
 [report]
 exclude_lines =

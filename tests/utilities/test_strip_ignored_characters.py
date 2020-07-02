@@ -8,7 +8,7 @@ from graphql.language import Lexer, Source, TokenKind, parse
 from graphql.utilities import strip_ignored_characters
 
 from ..fixtures import kitchen_sink_query, kitchen_sink_sdl  # noqa: F401
-from ..utils import dedent, gen_fuzz_strings
+from ..utils import dedent
 
 ignored_tokens = [
     # UnicodeBOM
@@ -373,27 +373,6 @@ def describe_strip_ignored_characters():
         expect_stripped_string('"""\na\n b"""').to_stay_the_same()
         expect_stripped_string('"""\n a\n b"""').to_equal('"""a\nb"""')
         expect_stripped_string('"""\na\n b\nc"""').to_equal('"""a\n b\nc"""')
-
-    def strips_ignored_characters_inside_random_block_strings():
-        # Testing with length >5 is taking exponentially more time. However it is
-        # highly recommended to test with increased limit if you make any change.
-        for fuzz_str in gen_fuzz_strings(allowed_chars='\n\t "a\\', max_length=5):
-            test_str = f'"""{fuzz_str}"""'
-
-            try:
-                test_value = lex_value(test_str)
-            except (AssertionError, GraphQLSyntaxError):
-                continue  # skip invalid values
-
-            stripped_value = lex_value(strip_ignored_characters(test_str))
-
-            assert test_value == stripped_value, dedent(
-                f"""
-                Expected lexValue(stripIgnoredCharacters({test_str!r})
-                  to equal {test_value!r}
-                  but got {stripped_value!r}
-                """
-            )
 
     # noinspection PyShadowingNames
     def strips_kitchen_sink_query_but_maintains_the_exact_same_ast(
