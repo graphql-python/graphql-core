@@ -1,4 +1,4 @@
-from ..utils import dedent
+from . import dedent
 
 
 def describe_dedent():

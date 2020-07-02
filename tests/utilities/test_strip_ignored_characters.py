@@ -8,7 +8,7 @@ from graphql.language import Lexer, Source, TokenKind, parse
 from graphql.utilities import strip_ignored_characters
 
 from ..fixtures import kitchen_sink_query, kitchen_sink_sdl  # noqa: F401
-from ..utils import dedent
+from ..utils import dedent, gen_fuzz_strings
 
 ignored_tokens = [
     # UnicodeBOM
@@ -374,39 +374,26 @@ def describe_strip_ignored_characters():
         expect_stripped_string('"""\n a\n b"""').to_equal('"""a\nb"""')
         expect_stripped_string('"""\na\n b\nc"""').to_equal('"""a\n b\nc"""')
 
+    def strips_ignored_characters_inside_random_block_strings():
         # Testing with length >5 is taking exponentially more time. However it is
         # highly recommended to test with increased limit if you make any change.
-        max_combination_length = 5
-        possible_chars = ["\n", " ", '"', "a", "\\"]
-        num_possible_chars = len(possible_chars)
-        num_combinations = 1
-        for length in range(1, max_combination_length):
-            num_combinations *= num_possible_chars
-            for combination in range(num_combinations):
-                test_str = '"""'
+        for fuzz_str in gen_fuzz_strings(allowed_chars='\n\t "a\\', max_length=5):
+            test_str = f'"""{fuzz_str}"""'
 
-                left_over = combination
-                for i in range(length):
-                    reminder = left_over % num_possible_chars
-                    test_str += possible_chars[reminder]
-                    left_over = (left_over - reminder) // num_possible_chars
+            try:
+                test_value = lex_value(test_str)
+            except (AssertionError, GraphQLSyntaxError):
+                continue  # skip invalid values
 
-                test_str += '"""'
+            stripped_value = lex_value(strip_ignored_characters(test_str))
 
-                try:
-                    test_value = lex_value(test_str)
-                except (AssertionError, GraphQLSyntaxError):
-                    continue  # skip invalid values
-
-                stripped_value = lex_value(strip_ignored_characters(test_str))
-
-                assert test_value == stripped_value, dedent(
-                    f"""
-                    Expected lexValue(stripIgnoredCharacters({test_str!r})
-                      to equal {test_value!r}
-                      but got {stripped_value!r}
-                    """
-                )
+            assert test_value == stripped_value, dedent(
+                f"""
+                Expected lexValue(stripIgnoredCharacters({test_str!r})
+                  to equal {test_value!r}
+                  but got {stripped_value!r}
+                """
+            )
 
     # noinspection PyShadowingNames
     def strips_kitchen_sink_query_but_maintains_the_exact_same_ast(
