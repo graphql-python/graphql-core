@@ -1,6 +1,6 @@
 from functools import partial
 
-from graphql.pyutils import Undefined
+from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
@@ -1013,20 +1013,34 @@ def describe_validate_values_of_correct_type():
             )
 
         def reports_original_error_for_custom_scalar_which_throws():
+            def parse_value(value):
+                raise Exception(f"Invalid scalar is always invalid: {inspect(value)}")
+
+            custom_scalar = GraphQLScalarType("Invalid", parse_value=parse_value)
+
+            schema = GraphQLSchema(
+                query=GraphQLObjectType(
+                    "Query",
+                    {
+                        "invalidArg": GraphQLField(
+                            GraphQLString, {"arg": GraphQLArgument(custom_scalar)}
+                        )
+                    },
+                )
+            )
+
             errors = assert_errors(
-                """
-                {
-                  invalidArg(arg: 123)
-                }
-                """,
+                "{ invalidArg(arg: 123) }",
                 [
                     {
                         "message": "Expected value of type 'Invalid', found 123;"
                         " Invalid scalar is always invalid: 123",
-                        "locations": [(3, 35)],
-                    },
+                        "locations": [(1, 19)],
+                    }
                 ],
+                schema=schema,
             )
+
             assert str(errors[0].original_error) == (
                 "Invalid scalar is always invalid: 123"
             )
@@ -1048,21 +1062,29 @@ def describe_validate_values_of_correct_type():
             )
 
             assert_errors(
-                """
-                {
-                  invalidArg(arg: 123)
-                }
-                """,
+                "{ invalidArg(arg: 123) }",
                 [
                     {
                         "message": "Expected value of type 'CustomScalar', found 123.",
-                        "locations": [(3, 35)],
+                        "locations": [(1, 19)],
                     },
                 ],
                 schema=schema,
             )
 
         def allows_custom_scalar_to_accept_complex_literals():
+            custom_scalar = GraphQLScalarType("Any")
+            schema = GraphQLSchema(
+                query=GraphQLObjectType(
+                    "Query",
+                    {
+                        "anyArg": GraphQLField(
+                            GraphQLString, {"arg": GraphQLArgument(custom_scalar)}
+                        )
+                    },
+                )
+            )
+
             assert_valid(
                 """
                 {
@@ -1071,7 +1093,8 @@ def describe_validate_values_of_correct_type():
                   test3: anyArg(arg: [123, "abc"])
                   test4: anyArg(arg: {deep: [123, "abc"]})
                 }
-                """
+                """,
+                schema=schema,
             )
 
     def describe_directive_arguments():

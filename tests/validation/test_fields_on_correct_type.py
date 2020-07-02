@@ -354,6 +354,34 @@ def describe_fields_on_correct_type_error_message():
             " Did you mean to use an inline fragment on 'A' or 'B'?"
         )
 
+    def sort_type_suggestions_based_on_inheritance_order():
+        schema = build_schema(
+            """
+            interface T { bar: String }
+            type Query { t: T }
+
+            interface Z implements T {
+              foo: String
+              bar: String
+            }
+
+            interface Y implements Z & T {
+              foo: String
+              bar: String
+            }
+
+            type X implements Y & Z & T {
+              foo: String
+              bar: String
+            }
+            """
+        )
+
+        assert _error_message(schema, "{ t { foo } }") == (
+            "Cannot query field 'foo' on type 'T'."
+            " Did you mean to use an inline fragment on 'Z', 'Y', or 'X'?"
+        )
+
     def limits_lots_of_type_suggestions():
         schema = build_schema(
             """

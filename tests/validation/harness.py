@@ -2,302 +2,144 @@ from typing import List, Optional, Type
 
 from graphql.error import GraphQLError
 from graphql.language import parse
-from graphql.type import (
-    GraphQLArgument,
-    GraphQLBoolean,
-    GraphQLEnumType,
-    GraphQLEnumValue,
-    GraphQLField,
-    GraphQLFloat,
-    GraphQLID,
-    GraphQLInputField,
-    GraphQLInputObjectType,
-    GraphQLInt,
-    GraphQLInterfaceType,
-    GraphQLList,
-    GraphQLNonNull,
-    GraphQLObjectType,
-    GraphQLSchema,
-    GraphQLString,
-    GraphQLUnionType,
-    GraphQLScalarType,
-)
-from graphql.type.directives import (
-    DirectiveLocation,
-    GraphQLDirective,
-    GraphQLIncludeDirective,
-    GraphQLSkipDirective,
-)
+from graphql.type import GraphQLSchema
+from graphql.utilities import build_schema
 from graphql.validation import ValidationRule, SDLValidationRule
 from graphql.validation.validate import validate, validate_sdl
 
-Being = GraphQLInterfaceType(
-    "Being",
-    {"name": GraphQLField(GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)})},
-)
+test_schema = build_schema(
+    """
+    interface Being {
+      name(surname: Boolean): String
+    }
 
-Mammal = GraphQLInterfaceType(
-    "Mammal",
-    lambda: {
-        "mother": GraphQLField(Mammal),  # type: ignore
-        "father": GraphQLField(Mammal),  # type: ignore
-    },
-    interfaces=[],
-)
+    interface Mammal {
+      mother: Mammal
+      father: Mammal
+    }
 
-Pet = GraphQLInterfaceType(
-    "Pet",
-    {"name": GraphQLField(GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)})},
-    interfaces=[Being],
-)
+    interface Pet implements Being {
+      name(surname: Boolean): String
+    }
 
-Canine = GraphQLInterfaceType(
-    "Canine",
-    lambda: {
-        "name": GraphQLField(
-            GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
-        ),
-        "mother": GraphQLField(Canine),  # type: ignore
-        "father": GraphQLField(Canine),  # type: ignore
-    },
-    interfaces=[Mammal, Being],
-)
+    interface Canine implements Mammal & Being {
+      name(surname: Boolean): String
+      mother: Canine
+      father: Canine
+    }
 
-DogCommand = GraphQLEnumType(
-    "DogCommand",
-    {
-        "SIT": GraphQLEnumValue(0),
-        "HEEL": GraphQLEnumValue(1),
-        "DOWN": GraphQLEnumValue(2),
-    },
-)
+    enum DogCommand {
+      SIT
+      HEEL
+      DOWN
+    }
 
-Dog = GraphQLObjectType(
-    "Dog",
-    lambda: {
-        "name": GraphQLField(
-            GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
-        ),
-        "nickname": GraphQLField(GraphQLString),
-        "barkVolume": GraphQLField(GraphQLInt),
-        "barks": GraphQLField(GraphQLBoolean),
-        "doesKnowCommand": GraphQLField(
-            GraphQLBoolean, {"dogCommand": GraphQLArgument(DogCommand)}
-        ),
-        "isHouseTrained": GraphQLField(
-            GraphQLBoolean,
-            args={"atOtherHomes": GraphQLArgument(GraphQLBoolean, default_value=True)},
-        ),
-        "isAtLocation": GraphQLField(
-            GraphQLBoolean,
-            args={"x": GraphQLArgument(GraphQLInt), "y": GraphQLArgument(GraphQLInt)},
-        ),
-        "mother": GraphQLField(Dog),  # type: ignore
-        "father": GraphQLField(Dog),  # type: ignore
-    },
-    interfaces=[Being, Pet, Mammal, Canine],
-)
+    type Dog implements Being & Pet & Mammal & Canine {
+      name(surname: Boolean): String
+      nickname: String
+      barkVolume: Int
+      barks: Boolean
+      doesKnowCommand(dogCommand: DogCommand): Boolean
+      isHouseTrained(atOtherHomes: Boolean = true): Boolean
+      isAtLocation(x: Int, y: Int): Boolean
+      mother: Dog
+      father: Dog
+    }
 
-FurColor: GraphQLEnumType
+    type Cat implements Being & Pet {
+      name(surname: Boolean): String
+      nickname: String
+      meows: Boolean
+      meowsVolume: Int
+      furColor: FurColor
+    }
 
-Cat = GraphQLObjectType(
-    "Cat",
-    lambda: {
-        "furColor": GraphQLField(FurColor),
-        "name": GraphQLField(
-            GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
-        ),
-        "nickname": GraphQLField(GraphQLString),
-    },
-    interfaces=[Being, Pet],
-)
+    union CatOrDog = Cat | Dog
 
-CatOrDog = GraphQLUnionType("CatOrDog", [Dog, Cat])
+    interface Intelligent {
+      iq: Int
+    }
 
-Intelligent = GraphQLInterfaceType("Intelligent", {"iq": GraphQLField(GraphQLInt)})
+    type Human implements Being & Intelligent {
+      name(surname: Boolean): String
+      pets: [Pet]
+      relatives: [Human]
+      iq: Int
+    }
 
-Human = GraphQLObjectType(
-    name="Human",
-    interfaces=[Being, Intelligent],
-    fields={
-        "name": GraphQLField(
-            GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
-        ),
-        "pets": GraphQLField(GraphQLList(Pet)),
-        "iq": GraphQLField(GraphQLInt),
-    },
-)
+    type Alien implements Being & Intelligent {
+      name(surname: Boolean): String
+      numEyes: Int
+      iq: Int
+    }
 
-Alien = GraphQLObjectType(
-    name="Alien",
-    interfaces=[Being, Intelligent],
-    fields={
-        "iq": GraphQLField(GraphQLInt),
-        "name": GraphQLField(
-            GraphQLString, {"surname": GraphQLArgument(GraphQLBoolean)}
-        ),
-        "numEyes": GraphQLField(GraphQLInt),
-    },
-)
+    union DogOrHuman = Dog | Human
 
-DogOrHuman = GraphQLUnionType("DogOrHuman", [Dog, Human])
+    union HumanOrAlien = Human | Alien
 
-HumanOrAlien = GraphQLUnionType("HumanOrAlien", [Human, Alien])
+    enum FurColor {
+      BROWN
+      BLACK
+      TAN
+      SPOTTED
+      NO_FUR
+      UNKNOWN
+    }
 
-FurColor = GraphQLEnumType(
-    "FurColor",
-    {
-        "BROWN": GraphQLEnumValue(0),
-        "BLACK": GraphQLEnumValue(1),
-        "TAN": GraphQLEnumValue(2),
-        "SPOTTED": GraphQLEnumValue(3),
-        "NO_FUR": GraphQLEnumValue(),
-        "UNKNOWN": None,
-    },
-)
+    input ComplexInput {
+      requiredField: Boolean!
+      nonNullField: Boolean! = false
+      intField: Int
+      stringField: String
+      booleanField: Boolean
+      stringListField: [String]
+    }
 
-ComplexInput = GraphQLInputObjectType(
-    "ComplexInput",
-    {
-        "requiredField": GraphQLInputField(GraphQLNonNull(GraphQLBoolean)),
-        "nonNullField": GraphQLInputField(
-            GraphQLNonNull(GraphQLBoolean), default_value=False
-        ),
-        "intField": GraphQLInputField(GraphQLInt),
-        "stringField": GraphQLInputField(GraphQLString),
-        "booleanField": GraphQLInputField(GraphQLBoolean),
-        "stringListField": GraphQLInputField(GraphQLList(GraphQLString)),
-    },
-)
+    type ComplicatedArgs {
+      # TODO List
+      # TODO Coercion
+      # TODO NotNulls
+      intArgField(intArg: Int): String
+      nonNullIntArgField(nonNullIntArg: Int!): String
+      stringArgField(stringArg: String): String
+      booleanArgField(booleanArg: Boolean): String
+      enumArgField(enumArg: FurColor): String
+      floatArgField(floatArg: Float): String
+      idArgField(idArg: ID): String
+      stringListArgField(stringListArg: [String]): String
+      stringListNonNullArgField(stringListNonNullArg: [String!]): String
+      complexArgField(complexArg: ComplexInput): String
+      multipleReqs(req1: Int!, req2: Int!): String
+      nonNullFieldWithDefault(arg: Int! = 0): String
+      multipleOpts(opt1: Int = 0, opt2: Int = 0): String
+      multipleOptAndReq(req1: Int!, req2: Int!, opt1: Int = 0, opt2: Int = 0): String
+    }
 
-ComplicatedArgs = GraphQLObjectType(
-    "ComplicatedArgs",
-    {
-        "intArgField": GraphQLField(
-            GraphQLString, {"intArg": GraphQLArgument(GraphQLInt)}
-        ),
-        "nonNullIntArgField": GraphQLField(
-            GraphQLString,
-            {"nonNullIntArg": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
-        ),
-        "stringArgField": GraphQLField(
-            GraphQLString, {"stringArg": GraphQLArgument(GraphQLString)}
-        ),
-        "booleanArgField": GraphQLField(
-            GraphQLString, {"booleanArg": GraphQLArgument(GraphQLBoolean)}
-        ),
-        "enumArgField": GraphQLField(
-            GraphQLString, {"enumArg": GraphQLArgument(FurColor)}
-        ),
-        "floatArgField": GraphQLField(
-            GraphQLString, {"floatArg": GraphQLArgument(GraphQLFloat)}
-        ),
-        "idArgField": GraphQLField(
-            GraphQLString, {"idArg": GraphQLArgument(GraphQLID)}
-        ),
-        "stringListArgField": GraphQLField(
-            GraphQLString,
-            {"stringListArg": GraphQLArgument(GraphQLList(GraphQLString))},
-        ),
-        "stringListNonNullArgField": GraphQLField(
-            GraphQLString,
-            args={
-                "stringListNonNullArg": GraphQLArgument(
-                    GraphQLList(GraphQLNonNull(GraphQLString))
-                )
-            },
-        ),
-        "complexArgField": GraphQLField(
-            GraphQLString, {"complexArg": GraphQLArgument(ComplexInput)}
-        ),
-        "multipleReqs": GraphQLField(
-            GraphQLString,
-            {
-                "req1": GraphQLArgument(GraphQLNonNull(GraphQLInt)),
-                "req2": GraphQLArgument(GraphQLNonNull(GraphQLInt)),
-            },
-        ),
-        "nonNullFieldWithDefault": GraphQLField(
-            GraphQLString,
-            {"arg": GraphQLArgument(GraphQLNonNull(GraphQLInt), default_value=0)},
-        ),
-        "multipleOpts": GraphQLField(
-            GraphQLString,
-            {
-                "opt1": GraphQLArgument(GraphQLInt, 0),
-                "opt2": GraphQLArgument(GraphQLInt, 0),
-            },
-        ),
-        "multipleOptsAndReq": GraphQLField(
-            GraphQLString,
-            {
-                "req1": GraphQLArgument(GraphQLNonNull(GraphQLInt)),
-                "req2": GraphQLArgument(GraphQLNonNull(GraphQLInt)),
-                "opt1": GraphQLArgument(GraphQLInt, 0),
-                "opt2": GraphQLArgument(GraphQLInt, 0),
-            },
-        ),
-    },
-)
+    type QueryRoot {
+      human(id: ID): Human
+      alien: Alien
+      dog: Dog
+      cat: Cat
+      pet: Pet
+      catOrDog: CatOrDog
+      dogOrHuman: DogOrHuman
+      humanOrAlien: HumanOrAlien
+      complicatedArgs: ComplicatedArgs
+    }
 
+    schema {
+      query: QueryRoot
+    }
 
-def raise_type_error(message):
-    raise TypeError(message)
-
-
-InvalidScalar = GraphQLScalarType(
-    name="Invalid",
-    parse_value=lambda value: raise_type_error(
-        f"Invalid scalar is always invalid: {value!r}"
-    ),
-)
-
-AnyScalar = GraphQLScalarType(name="Any")
-
-QueryRoot = GraphQLObjectType(
-    "QueryRoot",
-    {
-        "human": GraphQLField(Human, {"id": GraphQLArgument(GraphQLID)}),
-        "dog": GraphQLField(Dog),
-        "pet": GraphQLField(Pet),
-        "alien": GraphQLField(Alien),
-        "catOrDog": GraphQLField(CatOrDog),
-        "humanOrAlien": GraphQLField(HumanOrAlien),
-        "complicatedArgs": GraphQLField(ComplicatedArgs),
-        "invalidArg": GraphQLField(
-            GraphQLString, args={"arg": GraphQLArgument(InvalidScalar)}
-        ),
-        "anyArg": GraphQLField(GraphQLString, args={"arg": GraphQLArgument(AnyScalar)}),
-    },
-)
-
-test_schema = GraphQLSchema(
-    query=QueryRoot,
-    directives=[
-        GraphQLIncludeDirective,
-        GraphQLSkipDirective,
-        GraphQLDirective(name="onQuery", locations=[DirectiveLocation.QUERY]),
-        GraphQLDirective(name="onMutation", locations=[DirectiveLocation.MUTATION]),
-        GraphQLDirective(
-            name="onSubscription", locations=[DirectiveLocation.SUBSCRIPTION]
-        ),
-        GraphQLDirective(name="onField", locations=[DirectiveLocation.FIELD]),
-        GraphQLDirective(
-            name="onFragmentDefinition",
-            locations=[DirectiveLocation.FRAGMENT_DEFINITION],
-        ),
-        GraphQLDirective(
-            name="onFragmentSpread", locations=[DirectiveLocation.FRAGMENT_SPREAD]
-        ),
-        GraphQLDirective(
-            name="onInlineFragment", locations=[DirectiveLocation.INLINE_FRAGMENT]
-        ),
-        GraphQLDirective(
-            name="onVariableDefinition",
-            locations=[DirectiveLocation.VARIABLE_DEFINITION],
-        ),
-    ],
-    types=[Cat, Dog, Human, Alien],
+    directive @onQuery on QUERY
+    directive @onMutation on MUTATION
+    directive @onSubscription on SUBSCRIPTION
+    directive @onField on FIELD
+    directive @onFragmentDefinition on FRAGMENT_DEFINITION
+    directive @onFragmentSpread on FRAGMENT_SPREAD
+    directive @onInlineFragment on INLINE_FRAGMENT
+    directive @onVariableDefinition on VARIABLE_DEFINITION
+    """
 )
 
 

@@ -64,22 +64,18 @@ def describe_validate_supports_full_validation():
         errors = validate(test_schema, doc)
         assert errors == []
 
-    def detects_bad_scalar_parse():
+    def detects_unknown_fields():
         doc = parse(
             """
-            query {
-              invalidArg(arg: "bad value")
+            {
+              unknown
             }
             """
         )
 
         errors = validate(test_schema, doc)
         assert errors == [
-            {
-                "message": "Expected value of type 'Invalid', found \"bad value\";"
-                " Invalid scalar is always invalid: 'bad value'",
-                "locations": [(3, 31)],
-            }
+            {"message": "Cannot query field 'unknown' on type 'QueryRoot'."}
         ]
 
     # NOTE: experimental
