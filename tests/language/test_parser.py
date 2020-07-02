@@ -2,7 +2,6 @@ from typing import cast
 
 from pytest import raises  # type: ignore
 
-from graphql.pyutils import dedent, inspect
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,
@@ -28,9 +27,10 @@ from graphql.language import (
     parse_value,
     Source,
 )
+from graphql.pyutils import inspect
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_query  # noqa: F401
+from ..utils import dedent
 
 
 def assert_syntax_error(text, message, location):

@@ -1,5 +1,6 @@
 from graphql.language import print_source_location, Source, SourceLocation
-from graphql.pyutils import dedent
+
+from ..utils import dedent
 
 
 def describe_print_location():

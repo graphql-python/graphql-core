@@ -10,7 +10,6 @@ These functions are not part of the module interface and are subject to change.
 
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
-from .dedent import dedent
 from .description import (
     Description,
     is_description,
@@ -38,7 +37,6 @@ __all__ = [
     "camel_to_snake",
     "snake_to_camel",
     "cached_property",
-    "dedent",
     "did_you_mean",
     "Description",
     "is_description",

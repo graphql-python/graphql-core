@@ -1,5 +1,6 @@
-from graphql.pyutils import dedent
 from graphql.utilities import build_schema, print_schema, lexicographic_sort_schema
+
+from ..utils import dedent
 
 
 def sort_sdl(sdl):

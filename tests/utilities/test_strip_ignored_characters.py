@@ -5,12 +5,10 @@ from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind, parse
-from graphql.pyutils import dedent
 from graphql.utilities import strip_ignored_characters
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_query, kitchen_sink_sdl  # noqa: F401
-
+from ..utils import dedent
 
 ignored_tokens = [
     # UnicodeBOM

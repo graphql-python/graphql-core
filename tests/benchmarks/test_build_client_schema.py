@@ -1,6 +1,5 @@
 from graphql import build_client_schema, GraphQLSchema
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import big_schema_introspection_result  # noqa: F401
 
 

@@ -4,7 +4,7 @@ from typing import Any, List, Union
 from pytest import mark, raises  # type: ignore
 
 from graphql.language import parse, DirectiveLocation
-from graphql.pyutils import dedent, inspect
+from graphql.pyutils import inspect
 from graphql.type import (
     assert_directive,
     assert_enum_type,
@@ -38,6 +38,7 @@ from graphql.type import (
 )
 from graphql.utilities import build_schema, extend_schema
 
+from ..utils import dedent
 
 SomeSchema = build_schema(
     """

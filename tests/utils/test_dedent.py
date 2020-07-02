@@ -1,4 +1,4 @@
-from graphql.pyutils import dedent
+from ..utils import dedent
 
 
 def describe_dedent():

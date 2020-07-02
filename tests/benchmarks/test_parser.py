@@ -1,6 +1,5 @@
 from graphql import parse, DocumentNode
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
 

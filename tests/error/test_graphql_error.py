@@ -7,7 +7,8 @@ from graphql.language import (
     ObjectTypeDefinitionNode,
     Source,
 )
-from graphql.pyutils import dedent
+
+from ..utils import dedent
 
 
 source = Source(

@@ -1,6 +1,7 @@
 from graphql.language import parse, print_ast, Source
-from graphql.pyutils import dedent
 from graphql.utilities import concat_ast
+
+from ..utils import dedent
 
 
 def describe_concat_ast():

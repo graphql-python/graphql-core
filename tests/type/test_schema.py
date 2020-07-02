@@ -7,7 +7,7 @@ from graphql.language import (
     TypeDefinitionNode,
     TypeExtensionNode,
 )
-from graphql.pyutils import dedent, FrozenList
+from graphql.pyutils import FrozenList
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -27,6 +27,8 @@ from graphql.type import (
     specified_directives,
 )
 from graphql.utilities import print_schema
+
+from ..utils import dedent
 
 
 def describe_type_system_schema():

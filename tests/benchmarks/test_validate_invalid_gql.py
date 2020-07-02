@@ -1,6 +1,5 @@
 from graphql import build_schema, parse, validate
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import big_schema_sdl  # noqa: F401
 
 

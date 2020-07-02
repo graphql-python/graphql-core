@@ -2,11 +2,10 @@ from copy import deepcopy
 
 from pytest import raises  # type: ignore
 
-from graphql.pyutils import dedent
 from graphql.language import FieldNode, NameNode, parse, print_ast
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_query  # noqa: F401
+from ..utils import dedent
 
 
 def describe_printer_query_document():

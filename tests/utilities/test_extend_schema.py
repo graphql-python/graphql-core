@@ -10,7 +10,7 @@ from graphql.language import (
     StringValueNode,
     TypeDefinitionNode,
 )
-from graphql.pyutils import dedent, FrozenList
+from graphql.pyutils import FrozenList
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -39,6 +39,8 @@ from graphql.utilities import (
     get_description,
     print_schema,
 )
+
+from ..utils import dedent
 
 TypeWithAstNode = Union[
     GraphQLArgument,

@@ -1,10 +1,11 @@
-from graphql.pyutils import dedent
 from graphql.type import GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLString
 from graphql.utilities import (
     build_client_schema,
     print_schema,
     introspection_from_schema,
 )
+
+from ..utils import dedent
 
 
 def introspection_to_sdl(introspection):

@@ -1,6 +1,7 @@
 from graphql.language import parse, print_ast
-from graphql.pyutils import dedent
 from graphql.utilities import separate_operations
+
+from ..utils import dedent
 
 
 def describe_separate_operations():

@@ -15,7 +15,6 @@ from graphql.utilities import TypeInfo, TypeInfoVisitor, build_schema
 
 from ..validation.harness import test_schema
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
 

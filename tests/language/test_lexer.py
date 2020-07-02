@@ -5,7 +5,9 @@ from pytest import raises  # type: ignore
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
 from graphql.language.lexer import is_punctuator_token_kind
-from graphql.pyutils import dedent, inspect
+from graphql.pyutils import inspect
+
+from ..utils import dedent
 
 
 def lex_one(s: str) -> Token:

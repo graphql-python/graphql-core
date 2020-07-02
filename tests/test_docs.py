@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Dict, List
 
-from graphql.pyutils import dedent
+from .utils import dedent
 
 Scope = Dict[str, Any]
 

@@ -21,7 +21,6 @@ from graphql.language import (
 from graphql.language.visitor import QUERY_DOCUMENT_KEYS
 from graphql.pyutils import FrozenList
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
 

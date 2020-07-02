@@ -1,7 +1,6 @@
 from pytest import raises  # type: ignore
 
 from graphql import graphql_sync
-from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -22,6 +21,8 @@ from graphql.utilities import (
     introspection_from_schema,
     print_schema,
 )
+
+from ..utils import dedent
 
 
 def cycle_introspection(sdl_string):

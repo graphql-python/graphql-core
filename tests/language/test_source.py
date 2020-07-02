@@ -3,7 +3,8 @@ import weakref
 from pytest import raises  # type: ignore
 
 from graphql.language import Source, SourceLocation
-from graphql.pyutils import dedent
+
+from ..utils import dedent
 
 
 def describe_source():

@@ -1,7 +1,6 @@
 from typing import cast, Any, Dict
 
 from graphql.language import DirectiveLocation
-from graphql.pyutils import dedent
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -27,6 +26,8 @@ from graphql.utilities import (
     print_introspection_schema,
     print_value,
 )
+
+from ..utils import dedent
 
 
 def expect_printed_schema(schema: GraphQLSchema) -> str:

@@ -3,10 +3,9 @@ from copy import deepcopy
 from pytest import raises  # type: ignore
 
 from graphql.language import ScalarTypeDefinitionNode, NameNode, print_ast, parse
-from graphql.pyutils import dedent
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
+from ..utils import dedent
 
 
 def describe_printer_sdl_document():

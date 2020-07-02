@@ -29,8 +29,9 @@ from graphql.type import (
     assert_union_type,
     validate_schema,
 )
-from graphql.pyutils import dedent
 from graphql.utilities import build_ast_schema, build_schema, print_schema, print_type
+
+from ..utils import dedent
 
 
 def cycle_sdl(sdl: str) -> str:

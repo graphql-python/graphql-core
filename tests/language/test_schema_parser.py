@@ -31,7 +31,6 @@ from graphql.language import (
     parse,
 )
 
-# noinspection PyUnresolvedReferences
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
 

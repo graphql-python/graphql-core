@@ -8,7 +8,6 @@ PyUtils
 .. autofunction:: camel_to_snake
 .. autofunction:: snake_to_camel
 .. autofunction:: cached_property
-.. autofunction:: dedent
 .. autofunction:: did_you_mean
 .. autofunction:: register_description
 .. autofunction:: unregister_description
