@@ -49,6 +49,14 @@ def build_ast_schema(
 
         assert_valid_sdl(document_ast)
 
+    empty_schema_config = GraphQLSchema(
+        description=None,
+        types=[],
+        directives=[],
+        extensions=None,
+        extension_ast_nodes=[],
+        assume_valid=False,
+    ).to_kwargs()
     schema_kwargs = extend_schema_impl(empty_schema_config, document_ast, assume_valid)
 
     if not schema_kwargs["ast_node"]:
@@ -76,9 +84,6 @@ def build_ast_schema(
         directives.append(GraphQLSpecifiedByDirective)
 
     return GraphQLSchema(**schema_kwargs)
-
-
-empty_schema_config = GraphQLSchema(directives=[]).to_kwargs()
 
 
 def build_schema(
