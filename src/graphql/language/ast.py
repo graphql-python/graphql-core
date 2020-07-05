@@ -303,7 +303,7 @@ class ExecutableDefinitionNode(DefinitionNode):
     __slots__ = "name", "directives", "variable_definitions", "selection_set"
 
     name: Optional[NameNode]
-    directives: Optional[FrozenList["DirectiveNode"]]
+    directives: FrozenList["DirectiveNode"]
     variable_definitions: FrozenList["VariableDefinitionNode"]
     selection_set: "SelectionSetNode"
 
@@ -320,7 +320,7 @@ class VariableDefinitionNode(Node):
     variable: "VariableNode"
     type: "TypeNode"
     default_value: Optional["ValueNode"]
-    directives: Optional[FrozenList["DirectiveNode"]]
+    directives: FrozenList["DirectiveNode"]
 
 
 class SelectionSetNode(Node):
@@ -332,7 +332,7 @@ class SelectionSetNode(Node):
 class SelectionNode(Node):
     __slots__ = ("directives",)
 
-    directives: Optional[FrozenList["DirectiveNode"]]
+    directives: FrozenList["DirectiveNode"]
 
 
 class FieldNode(SelectionNode):
@@ -340,7 +340,7 @@ class FieldNode(SelectionNode):
 
     alias: Optional[NameNode]
     name: NameNode
-    arguments: Optional[FrozenList["ArgumentNode"]]
+    arguments: FrozenList["ArgumentNode"]
     selection_set: Optional[SelectionSetNode]
 
 
@@ -487,7 +487,7 @@ class SchemaDefinitionNode(TypeSystemDefinitionNode):
     __slots__ = "description", "directives", "operation_types"
 
     description: Optional[StringValueNode]
-    directives: Optional[FrozenList[DirectiveNode]]
+    directives: FrozenList[DirectiveNode]
     operation_types: FrozenList["OperationTypeDefinitionNode"]
 
 
@@ -506,7 +506,7 @@ class TypeDefinitionNode(TypeSystemDefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: Optional[FrozenList[DirectiveNode]]
+    directives: FrozenList[DirectiveNode]
 
 
 class ScalarTypeDefinitionNode(TypeDefinitionNode):
@@ -516,8 +516,8 @@ class ScalarTypeDefinitionNode(TypeDefinitionNode):
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = "interfaces", "fields"
 
-    interfaces: Optional[FrozenList[NamedTypeNode]]
-    fields: Optional[FrozenList["FieldDefinitionNode"]]
+    interfaces: FrozenList[NamedTypeNode]
+    fields: FrozenList["FieldDefinitionNode"]
 
 
 class FieldDefinitionNode(DefinitionNode):
@@ -525,8 +525,8 @@ class FieldDefinitionNode(DefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: Optional[FrozenList[DirectiveNode]]
-    arguments: Optional[FrozenList["InputValueDefinitionNode"]]
+    directives: FrozenList[DirectiveNode]
+    arguments: FrozenList["InputValueDefinitionNode"]
     type: TypeNode
 
 
@@ -535,7 +535,7 @@ class InputValueDefinitionNode(DefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: Optional[FrozenList[DirectiveNode]]
+    directives: FrozenList[DirectiveNode]
     type: TypeNode
     default_value: Optional[ValueNode]
 
@@ -543,20 +543,20 @@ class InputValueDefinitionNode(DefinitionNode):
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = "fields", "interfaces"
 
-    fields: Optional[FrozenList["FieldDefinitionNode"]]
-    interfaces: Optional[FrozenList[NamedTypeNode]]
+    fields: FrozenList["FieldDefinitionNode"]
+    interfaces: FrozenList[NamedTypeNode]
 
 
 class UnionTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("types",)
 
-    types: Optional[FrozenList[NamedTypeNode]]
+    types: FrozenList[NamedTypeNode]
 
 
 class EnumTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("values",)
 
-    values: Optional[FrozenList["EnumValueDefinitionNode"]]
+    values: FrozenList["EnumValueDefinitionNode"]
 
 
 class EnumValueDefinitionNode(TypeDefinitionNode):
@@ -566,7 +566,7 @@ class EnumValueDefinitionNode(TypeDefinitionNode):
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("fields",)
 
-    fields: Optional[FrozenList[InputValueDefinitionNode]]
+    fields: FrozenList[InputValueDefinitionNode]
 
 
 # Directive Definitions
@@ -577,7 +577,7 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    arguments: Optional[FrozenList[InputValueDefinitionNode]]
+    arguments: FrozenList[InputValueDefinitionNode]
     repeatable: bool
     locations: FrozenList[NameNode]
 
@@ -588,8 +588,8 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 class SchemaExtensionNode(Node):
     __slots__ = "directives", "operation_types"
 
-    directives: Optional[FrozenList[DirectiveNode]]
-    operation_types: Optional[FrozenList[OperationTypeDefinitionNode]]
+    directives: FrozenList[DirectiveNode]
+    operation_types: FrozenList[OperationTypeDefinitionNode]
 
 
 # Type Extensions
@@ -599,7 +599,7 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
     __slots__ = "name", "directives"
 
     name: NameNode
-    directives: Optional[FrozenList[DirectiveNode]]
+    directives: FrozenList[DirectiveNode]
 
 
 TypeSystemExtensionNode = Union[SchemaExtensionNode, TypeExtensionNode]
@@ -612,30 +612,30 @@ class ScalarTypeExtensionNode(TypeExtensionNode):
 class ObjectTypeExtensionNode(TypeExtensionNode):
     __slots__ = "interfaces", "fields"
 
-    interfaces: Optional[FrozenList[NamedTypeNode]]
-    fields: Optional[FrozenList[FieldDefinitionNode]]
+    interfaces: FrozenList[NamedTypeNode]
+    fields: FrozenList[FieldDefinitionNode]
 
 
 class InterfaceTypeExtensionNode(TypeExtensionNode):
     __slots__ = "interfaces", "fields"
 
-    interfaces: Optional[FrozenList[NamedTypeNode]]
-    fields: Optional[FrozenList[FieldDefinitionNode]]
+    interfaces: FrozenList[NamedTypeNode]
+    fields: FrozenList[FieldDefinitionNode]
 
 
 class UnionTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("types",)
 
-    types: Optional[FrozenList[NamedTypeNode]]
+    types: FrozenList[NamedTypeNode]
 
 
 class EnumTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("values",)
 
-    values: Optional[FrozenList[EnumValueDefinitionNode]]
+    values: FrozenList[EnumValueDefinitionNode]
 
 
 class InputObjectTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("fields",)
 
-    fields: Optional[FrozenList[InputValueDefinitionNode]]
+    fields: FrozenList[InputValueDefinitionNode]
