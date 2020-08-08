@@ -1,3 +1,5 @@
+from collections import ChainMap
+
 from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,
@@ -25,8 +27,18 @@ def describe_execute_resolve_function():
             root_value=RootValue(),
         ) == ({"test": "testValue"}, None,)
 
-    def default_function_accesses_keys():
+    def default_function_accesses_keys_of_dict():
         root_value = {"test": "testValue"}
+
+        assert graphql_sync(
+            schema=_test_schema(GraphQLField(GraphQLString)),
+            source="{ test }",
+            root_value=root_value,
+        ) == ({"test": "testValue"}, None)
+
+    def default_function_accesses_keys_of_chain_map():
+        # use a mapping that is not a subclass of dict
+        root_value = ChainMap({"test": "testValue"})
 
         assert graphql_sync(
             schema=_test_schema(GraphQLField(GraphQLString)),

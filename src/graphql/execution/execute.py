@@ -1,4 +1,5 @@
 from asyncio import gather
+from collections.abc import Mapping
 from typing import (
     Any,
     Awaitable,
@@ -1116,7 +1117,7 @@ def invalid_return_type_error(
 
 def get_typename(value: Any) -> Optional[str]:
     """Get the ``__typename`` property of the given value."""
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         return value.get("__typename")
     # need to de-mangle the attribute assumed to be "private" in Python
     for cls in value.__class__.__mro__:
@@ -1193,7 +1194,7 @@ def default_field_resolver(source: Any, info: GraphQLResolveInfo, **args: Any) -
     field_name = info.field_name
     value = (
         source.get(field_name)
-        if isinstance(source, dict)
+        if isinstance(source, Mapping)
         else getattr(source, field_name, None)
     )
     if callable(value):
