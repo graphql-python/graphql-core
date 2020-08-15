@@ -12,6 +12,7 @@ from graphql.type import (
     GraphQLBoolean,
     GraphQLID,
 )
+from graphql.type.scalars import coerce_int
 
 
 def describe_type_system_specified_scalar_types():
@@ -27,6 +28,7 @@ def describe_type_system_specified_scalar_types():
             assert _parse_value(1) == 1
             assert _parse_value(0) == 0
             assert _parse_value(-1) == -1
+            assert _parse_value("123") == 123
 
             _parse_value_raises(
                 9876504321,
@@ -44,7 +46,7 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_value_raises(None, "Int cannot represent non-integer value: None")
             _parse_value_raises("", "Int cannot represent non-integer value: ''")
-            _parse_value_raises("123", "Int cannot represent non-integer value: '123'")
+            _parse_value_raises("abc", "Int cannot represent non-integer value: 'abc'")
             _parse_value_raises(False, "Int cannot represent non-integer value: False")
             _parse_value_raises(True, "Int cannot represent non-integer value: True")
             _parse_value_raises([1], "Int cannot represent non-integer value: [1]")

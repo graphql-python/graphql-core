@@ -1,5 +1,5 @@
 from math import isfinite
-from typing import Any
+from typing import Any, Union
 
 from ..error import GraphQLError
 from ..pyutils import inspect, is_finite, is_integer, FrozenDict
@@ -60,8 +60,15 @@ def serialize_int(output_value: Any) -> int:
         )
     return num
 
+def _try_convert_str_to_int(s: str) -> Union[str, int]:
+    try:
+        return int(s)
+    except (ValueError, TypeError):
+        return s
 
 def coerce_int(input_value: Any) -> int:
+    if isinstance(input_value, str):
+        input_value = _try_convert_str_to_int(input_value)
     if not is_integer(input_value):
         raise GraphQLError(
             "Int cannot represent non-integer value: " + inspect(input_value)
