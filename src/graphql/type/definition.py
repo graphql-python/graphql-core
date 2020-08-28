@@ -922,15 +922,13 @@ class GraphQLUnionType(GraphQLNamedType):
 
     Example::
 
-        class PetType(GraphQLUnionType):
-            name = 'Pet'
-            types = [DogType, CatType]
+        def resolve_type(obj, _info, _type):
+            if isinstance(obj, Dog):
+                return DogType()
+            if isinstance(obj, Cat):
+                return CatType()
 
-            def resolve_type(self, value, _type):
-                if isinstance(value, Dog):
-                    return DogType()
-                if isinstance(value, Cat):
-                    return CatType()
+        PetType = GraphQLUnionType('Pet', [DogType, CatType], resolve_type)
     """
 
     resolve_type: Optional[GraphQLTypeResolver]
@@ -947,10 +945,6 @@ class GraphQLUnionType(GraphQLNamedType):
         ast_node: Optional[UnionTypeDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[UnionTypeExtensionNode]] = None,
     ) -> None:
-        """
-
-        :rtype: object
-        """
         super().__init__(
             name=name,
             description=description,
