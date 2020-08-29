@@ -104,7 +104,7 @@ async def create_source_event_stream(
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
-    """Create source even stream
+    """Create source event stream
 
     Implements the "CreateSourceEventStream" algorithm described in the GraphQL
     specification, resolving the subscription source event stream.
