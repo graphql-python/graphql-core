@@ -49,6 +49,8 @@ The following shorthand notations are possible:
 * Where you need to pass a GraphQLEnumValueMap, i.e. a dictionary with names as keys and GraphQLEnumValues as values, you can pass any other Python objects as values. These will be automatically wrapped into GraphQLEnumValues. You can also pass a Python Enum type as GraphQLEnumValueMap.
 
 
+.. currentmodule:: graphql.type
+
 Custom output names of arguments and input fields
 -------------------------------------------------
 
@@ -61,17 +63,21 @@ Custom output types of input object types
 You can also pass a custom ``out_type`` argument to :class:`GraphQLInputObjectType` that allows conversion to any Python type on egress instead of conversion to a dictionary, which is the default. This is used to support the container feature of Graphene InputObjectTypes.
 
 
+.. currentmodule:: graphql.execution
+
 Custom middleware
 -----------------
 
-The :func:`execution.execute` function takes an additional ``middleware`` argument which must be a sequence of middleware functions or a :class:`MiddlewareManager` object. This feature is used by Graphene to affect the evaluation of fields using custom middleware. There has been a `request <https://github.com/graphql/graphql-js/issues/1516>`_ to add this to GraphQL.js as well, but so far this feature only exists in GraphQL-core.
+The :func:`execute` function takes an additional ``middleware`` argument which must be a sequence of middleware functions or a :class:`MiddlewareManager` object. This feature is used by Graphene to affect the evaluation of fields using custom middleware. There has been a `request <https://github.com/graphql/graphql-js/issues/1516>`_ to add this to GraphQL.js as well, but so far this feature only exists in GraphQL-core.
 
 
 Custom execution context
 ------------------------
 
-The :func:`execution.execute` function takes an additional ``execution_context_class`` argument which allows specifying a custom execution context class instead of the default :class:`ExecutionContext` used by GraphQL-core.
+The :func:`execute` function takes an additional ``execution_context_class`` argument which allows specifying a custom execution context class instead of the default :class:`ExecutionContext` used by GraphQL-core.
 
+
+.. currentmodule:: graphql
 
 Registering special types for descriptions
 ------------------------------------------

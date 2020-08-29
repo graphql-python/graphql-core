@@ -4,6 +4,8 @@ Reference
 .. currentmodule:: graphql
 
 .. automodule:: graphql
+   :no-members:
+   :no-inherited-members:
 
 .. _top-level-functions:
 
@@ -19,7 +21,7 @@ Sub-Packages
 ------------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    error
    execution

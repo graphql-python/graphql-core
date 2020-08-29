@@ -4,7 +4,8 @@ Type
 .. currentmodule:: graphql.type
 
 .. automodule:: graphql.type
-
+   :no-members:
+   :no-inherited-members:
 
 Definition
 ----------

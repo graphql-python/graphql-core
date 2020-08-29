@@ -5,12 +5,11 @@ Parsing GraphQL Queries and Schema Notation
 
 When executing GraphQL queries, the first step that happens under the hood is parsing
 the query. But GraphQL-core 3 also exposes the parser for direct usage via the
-:func:`graphql.language.parse` function. When you pass this function a GraphQL source
-code, it will be parsed and returned as a Document, i.e. an abstract syntax tree (AST)
-of :class:`graphql.language.Node` objects. The root node will be a
-:class:`graphql.language.DocumentNode`, with child nodes of different kinds
-corresponding to the GraphQL source. The nodes also carry information on the location in
-the source code that they correspond to.
+:func:`parse` function. When you pass this function a GraphQL source code, it will be
+parsed and returned as a Document, i.e. an abstract syntax tree (AST) of :class:`Node`
+objects. The root node will be a :class:`DocumentNode`, with child nodes of different
+kinds corresponding to the GraphQL source. The nodes also carry information on the
+location in the source code that they correspond to.
 
 Here is an example::
 
@@ -67,7 +66,7 @@ When parsing with ``no_location=False`` (the default), the AST nodes will also h
 to the AST nodes.
 
 When there is a syntax error in the GraphQL source code, then the :func:`parse` function
-will raise a :exc:`graphql.error.GraphQLSyntaxError`.
+will raise a :exc:`~graphql.error.GraphQLSyntaxError`.
 
 The parser can not only be used to parse GraphQL queries, but also to parse the GraphQL
 schema definition language. This will result in another way of representing a GraphQL

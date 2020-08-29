@@ -117,7 +117,7 @@ def parse_value(
     isolation of complete GraphQL documents.
 
     Consider providing the results to the utility function:
-    :func:`~graphql.value_from_ast`.
+    :func:`~graphql.utilities.value_from_ast`.
     """
     parser = Parser(
         source,
@@ -143,7 +143,7 @@ def parse_type(
     in isolation of complete GraphQL documents.
 
     Consider providing the results to the utility function:
-    :func:`~graphql.value_from_ast`.
+    :func:`~graphql.utilities.value_from_ast`.
     """
     parser = Parser(
         source,

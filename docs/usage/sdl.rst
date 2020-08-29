@@ -1,13 +1,15 @@
 Using the Schema Definition Language
 ------------------------------------
 
-Above we defined the GraphQL schema as Python code, using the ``GraphQLSchema`` class
-and other classes representing the various GraphQL types.
+.. currentmodule:: graphql.type
+
+Above we defined the GraphQL schema as Python code, using the :class:`GraphQLSchema`
+class and other classes representing the various GraphQL types.
 
 GraphQL-core 3 also provides a language-agnostic way of defining a GraphQL schema
 using the GraphQL schema definition language (SDL) which is also part of the GraphQL
 specification. To do this, we simply feed the SDL as a string to the
-:func:`graphql.utilities.build_schema` function::
+:func:`~graphql.utilities.build_schema` function in :mod:`graphql.utilities`::
 
     from graphql import build_schema
 
@@ -45,8 +47,8 @@ specification. To do this, we simply feed the SDL as a string to the
         }
         """)
 
-The result is a ``GraphQLSchema`` object just like the one we defined above, except for
-the resolver functions which cannot be defined in the SDL.
+The result is a :class:`GraphQLSchema` object just like the one we defined above, except
+for the resolver functions which cannot be defined in the SDL.
 
 We would need to manually attach these functions to the schema, like so::
 

@@ -85,50 +85,121 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # AutoDoc configuration
-#autoclass_content = "both"
+autoclass_content = "class"
 autodoc_default_options = {
     'members': True,
     'inherited-members': True,
-    'private-members': False,
     'special-members': '__init__',
     'undoc-members': True,
     'show-inheritance': True
 }
 autosummary_generate = True
 
-# ignore certain warnings
-# (references to some of the Python built-in types do not resolve correctly)
+# GraphQL-core top level modules with submodules that can be omitted.
+# Sometimes autodoc cannot find classes since it is looking for the
+# qualified form, but the documentation has the shorter form.
+# We need to give autodoc a little help in this cases.
+graphql_modules = {
+    'error': ['graphql_error'],
+    'execution': ['execute', 'middleware'],
+    'language': ['ast', 'directive_locations', 'location',
+                 'source', 'token_kind', 'visitor'],
+    'pyutils': ['event_emitter', 'frozen_list', 'path'],
+    'type': ['definition', 'directives', 'schema'],
+    'utilities': ['find_breaking_changes', 'type_info'],
+    'validation': ['rules', 'validation_context']}
+
+# GraphQL-core classes that autodoc sometimes cannot find
+# (e.g. where specified as string in type hints).
+# We need to give autodoc a little help in this cases, too:
+graphql_classes = {
+    'GraphQLAbstractType': 'type',
+    'GraphQLObjectType': 'type',
+    'Node': 'language',
+    'Source': 'language',
+    'SourceLocation': 'language'
+}
+
+# ignore the following undocumented or internal references:
+ignore_references = set('''
+GNT GT T
+enum.Enum
+asyncio.events.AbstractEventLoop
+graphql.type.schema.InterfaceImplementations
+graphql.validation.validation_context.VariableUsage
+graphql.validation.rules.known_argument_names.KnownArgumentNamesOnDirectivesRule
+graphql.validation.rules.provided_required_arguments.ProvidedRequiredArgumentsOnDirectivesRule
+'''.split())
+
+ignore_references.update(__builtins__.keys())
+
+
+def on_missing_reference(app, env, node, contnode):
+    """Fix or skip any missing references."""
+    if node.get('refdomain') != 'py':
+        return None
+    target = node.get('reftarget')
+    if not target:
+        return None
+    if target in ignore_references:
+        return contnode
+    typ = node.get('reftype')
+    if typ != 'class':
+        return None
+    if '.' in target:  # maybe too specific
+        base_module, target = target.split('.', 1)
+        if base_module == 'typing':
+            return contnode
+        if base_module == 'graphql':
+            if '.' not in target:
+                return None
+            base_module, target = target.split('.', 1)
+        if '.' not in target:
+            return None
+        sub_modules = graphql_modules.get(base_module)
+        if not sub_modules:
+            return
+        sub_module = target.split('.', 1)[0]
+        if sub_module not in sub_modules:
+            return None
+        target = 'graphql.' + base_module + '.' + target.rsplit('.', 1)[-1]
+    else:  # maybe not specific enough
+        base_module = graphql_classes.get(target)
+        if not base_module:
+            return None
+        target = 'graphql.' + base_module + '.' + target
+    # replace target
+    if contnode.__class__.__name__ == 'Text':
+        contnode = contnode.__class__(target)
+    elif contnode.__class__.__name__ == 'literal':
+        if len(contnode.children) != 1:
+            return None
+        textnode = contnode.children[0]
+        contnode.children[0] = textnode.__class__(target)
+    else:
+        return None
+    node['reftarget'] = target
+    fromdoc = node.get('refdoc')
+    if not fromdoc:
+        doc_module = node.get('py:module')
+        if doc_module:
+            if doc_module.startswith('graphql.'):
+                doc_module = doc_module.split('.', 1)[-1]
+            if doc_module not in graphql_modules:
+                doc_module = None
+        fromdoc = 'modules/' + (doc_module or base_module)
+    # try resolving again with replaced target
+    return env.domains['py'].resolve_xref(
+        env, fromdoc, app.builder, typ, target, node, contnode)
+
+
+def setup(app):
+    app.connect('missing-reference', on_missing_reference)
+
+
+# be nitpicky (handle all possible problems in on_missing_reference)
 nitpicky = True
-nitpick_ignore = [('py:class', t) for t in (
-    'dict', 'list', 'object', 'tuple',
-    'Exception', 'TypeError', 'ValueError',
-    'builtins.str', 'enum.Enum',
-    'typing.Callable', 'typing.Dict', 'typing.Generic', 'typing.List',
-    'graphql.pyutils.cached_property.CachedProperty',
-    'graphql.pyutils.path.Path',
-    'graphql.error.graphql_error.GraphQLError',
-    'graphql.language.ast.DefinitionNode',
-    'graphql.language.ast.ExecutableDefinitionNode',
-    'graphql.language.ast.Node',
-    'graphql.language.ast.ScalarTypeDefinitionNode',
-    'graphql.language.ast.SelectionNode',
-    'graphql.language.ast.TypeDefinitionNode',
-    'graphql.language.ast.TypeExtensionNode',
-    'graphql.language.ast.TypeNode',
-    'graphql.language.ast.TypeSystemDefinitionNode',
-    'graphql.language.ast.ValueNode',
-    'graphql.language.visitor.Visitor',
-    'graphql.type.definition.GraphQLNamedType',
-    'graphql.type.definition.GraphQLType',
-    'graphql.type.definition.GraphQLWrappingType',
-    'graphql.validation.rules.ASTValidationRule',
-    'graphql.validation.rules.SDLValidationRule',
-    'graphql.validation.rules.ValidationRule',
-    'graphql.validation.validation_context.ASTValidationContext',
-    'graphql.validation.rules.known_argument_names'
-    '.KnownArgumentNamesOnDirectivesRule',
-    'graphql.validation.rules.provided_required_arguments'
-    '.ProvidedRequiredArgumentsOnDirectivesRule')]
+
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -172,7 +243,9 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'navigation_depth': 5
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []

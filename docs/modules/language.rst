@@ -1,7 +1,11 @@
 Language
 ========
 
+.. currentmodule:: graphql.language
+
 .. automodule:: graphql.language
+   :no-members:
+   :no-inherited-members:
 
 AST
 ---
@@ -65,6 +69,10 @@ Each kind of AST node has its own class:
 .. autoclass:: VariableDefinitionNode
 .. autoclass:: VariableNode
 
+Directive locations are specified using the following enumeration:
+
+.. autoclass:: DirectiveLocation
+
 Lexer
 -----
 
@@ -99,8 +107,17 @@ Visitor
 .. autoclass:: Visitor
 .. autoclass:: ParallelVisitor
 
-The module also exports the following special symbols which can be used as
-return values in the :class:`Visitor` methods to signal particular actions:
+The module also exports the following enumeration that can be used as the return type
+for :class:`Visitor` methods:
+
+.. currentmodule:: graphql.language.visitor
+
+.. autoclass:: VisitorActionEnum
+
+.. currentmodule:: graphql.language
+
+The module also exports the values of this enumeration directly. These can be used as
+return values of :class:`Visitor` methods to signal particular actions:
 
 .. data:: BREAK
    :annotation: (same as ``True``)

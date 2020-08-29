@@ -1,10 +1,12 @@
 Using resolver methods
 ----------------------
 
+.. currentmodule:: graphql
+
 Above we have attached resolver functions to the schema only. However, it is also
 possible to define resolver methods on the resolved objects, starting with the
-``root_value`` object that you can pass to the :func:`graphql.graphql` function when
-executing a query.
+``root_value`` object that you can pass to the :func:`graphql` function when executing
+a query.
 
 In our case, we could create a ``Root`` class with three methods as root resolvers, like
 so::
@@ -22,9 +24,8 @@ so::
             return droid_data.get(id)
 
 
-Since we have defined synchronous methods only, we will use the
-:func:`graphql.graphql_sync` function to execute a query, passing a ``Root()`` object as
-the ``root_value``::
+Since we have defined synchronous methods only, we will use the :func:`graphql_sync`
+function to execute a query, passing a ``Root()`` object as the ``root_value``::
 
     from graphql import graphql_sync
 
@@ -46,7 +47,7 @@ now still resolve and give the following output::
         errors=None)
 
 Of course you can also define asynchronous methods as resolvers, and execute queries
-asynchronously with :func:`graphql.graphql`.
+asynchronously with :func:`graphql`.
 
 In a similar vein, you can also attach resolvers as methods to the resolved objects on
 deeper levels than the root of the query. In that case, instead of resolving to

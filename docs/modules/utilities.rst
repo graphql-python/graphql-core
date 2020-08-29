@@ -4,6 +4,8 @@ Utilities
 .. currentmodule:: graphql.utilities
 
 .. automodule:: graphql.utilities
+   :no-members:
+   :no-inherited-members:
 
 The GraphQL query recommended for a full schema introspection:
 

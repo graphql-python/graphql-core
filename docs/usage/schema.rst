@@ -192,4 +192,4 @@ Using our query type we can define our schema::
     schema = GraphQLSchema(query_type)
 
 Note that you can also pass a mutation type and a subscription type as additional
-arguments to the ``GraphQLSchema``.
+arguments to the :class:`GraphQLSchema`.

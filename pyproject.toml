@@ -42,11 +42,11 @@ black = "19.10b0"
 flake8 = "^3.8"
 mypy = "0.782"
 codecov = "^2"
-sphinx = "^2.4"
-sphinx_rtd_theme = ">=0.4,<1"
+sphinx = "^3.2"
+sphinx_rtd_theme = ">=0.5,<1"
 check-manifest = "0.40"
 bump2version = ">=1.0,<2"
-tox = "^3.16"
+tox = "^3.19"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']

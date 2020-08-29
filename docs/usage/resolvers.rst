@@ -1,6 +1,8 @@
 Implementing the Resolver Functions
 -----------------------------------
 
+.. currentmodule:: graphql.type
+
 Before we can execute queries against our schema, we also need to define the data (the
 humans and droids appearing in the Star Wars trilogy) and implement resolver functions
 that fetch the data (at the beginning of our schema module, because we are referencing
@@ -80,7 +82,7 @@ them later)::
 Note that the resolver functions get the current object as first argument. For a field
 on the root Query type this is often not used, but a root object can also be defined
 when executing the query. As the second argument, they get an object containing
-execution information, as defined in the :class:`graphql.type.GraphQLResolveInfo` class.
+execution information, as defined in the :class:`~GraphQLResolveInfo` class.
 This object also has a ``context`` attribute that can be used to provide every resolver
 with contextual information like the currently logged in user, or a database session.
 In our simple example we don't authenticate users and use static data instead of a
