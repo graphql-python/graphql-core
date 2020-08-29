@@ -105,6 +105,7 @@ graphql_modules = {
     'language': ['ast', 'directive_locations', 'location',
                  'source', 'token_kind', 'visitor'],
     'pyutils': ['event_emitter', 'frozen_list', 'path'],
+    'subscription': [],
     'type': ['definition', 'directives', 'schema'],
     'utilities': ['find_breaking_changes', 'type_info'],
     'validation': ['rules', 'validation_context']}
@@ -185,7 +186,7 @@ def on_missing_reference(app, env, node, contnode):
         if doc_module:
             if doc_module.startswith('graphql.'):
                 doc_module = doc_module.split('.', 1)[-1]
-            if doc_module not in graphql_modules:
+            if doc_module not in graphql_modules and doc_module != 'graphql':
                 doc_module = None
         fromdoc = 'modules/' + (doc_module or base_module)
     # try resolving again with replaced target
