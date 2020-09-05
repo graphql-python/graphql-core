@@ -1,6 +1,8 @@
 from collections import ChainMap
 
 from graphql import graphql_sync
+from graphql.error import GraphQLError
+from graphql.language import SourceLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
@@ -192,3 +194,29 @@ def describe_execute_resolve_function():
             },
             None,
         )
+
+    def pass_error_from_resolver_wrapped_as_located_graphql_error():
+        def resolve(_obj, _info):
+            raise ValueError("Some error")
+
+        schema = _test_schema(GraphQLField(GraphQLString, resolve=resolve))
+        result = graphql_sync(schema, "{ test }")
+
+        assert result == (
+            {"test": None},
+            [{"message": "Some error", "locations": [(1, 3)], "path": ["test"]}],
+        )
+
+        assert result.errors is not None
+        error = result.errors[0]
+        assert isinstance(error, GraphQLError)
+        assert str(error) == "Some error\n\nGraphQL request:1:3\n1 | { test }\n  |   ^"
+        assert error.positions == [2]
+        locations = error.locations
+        assert locations == [(1, 3)]
+        location = locations[0]
+        assert isinstance(location, SourceLocation)
+        assert location == SourceLocation(1, 3)
+        original_error = error.original_error
+        assert isinstance(original_error, ValueError)
+        assert str(original_error) == "Some error"

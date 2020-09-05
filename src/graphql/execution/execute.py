@@ -590,17 +590,13 @@ class ExecutionContext:
                 async def await_result() -> Any:
                     try:
                         return await result
-                    except GraphQLError as error:
-                        return error
                     except Exception as error:
-                        return GraphQLError(str(error), original_error=error)
+                        return error
 
                 return await_result()
             return result
-        except GraphQLError as error:
-            return error
         except Exception as error:
-            return GraphQLError(str(error), original_error=error)
+            return error
 
     def complete_value_catching_error(
         self,
