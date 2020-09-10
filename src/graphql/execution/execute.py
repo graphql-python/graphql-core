@@ -7,7 +7,6 @@ from typing import (
     Dict,
     Iterable,
     List,
-    NamedTuple,
     Optional,
     Set,
     Union,
@@ -95,19 +94,66 @@ __all__ = [
 # 3) inline fragment "spreads" e.g. "...on Type { a }"
 
 
-class ExecutionResult(NamedTuple):
+class ExecutionResult:
     """The result of GraphQL execution.
 
     - ``data`` is the result of a successful execution of the query.
     - ``errors`` is included when any errors occurred as a non-empty list.
+    - ``extensions`` is reserved for adding non-standard properties.
     """
+
+    __slots__ = "data", "errors", "extensions"
 
     data: Optional[Dict[str, Any]]
     errors: Optional[List[GraphQLError]]
+    extensions: Optional[Dict[str, Any]]
 
+    def __init__(
+        self,
+        data: Optional[Dict[str, Any]] = None,
+        errors: Optional[List[GraphQLError]] = None,
+        extensions: Optional[Dict[str, Any]] = None,
+    ):
+        self.data = data
+        self.errors = errors
+        self.extensions = extensions
 
-# noinspection PyTypeHints
-ExecutionResult.__new__.__defaults__ = (None, None)  # type: ignore
+    def __repr__(self) -> str:
+        name = self.__class__.__name__
+        ext = "" if self.extensions is None else f", extensions={self.extensions}"
+        return f"{name}(data={self.data!r}, errors={self.errors!r}{ext})"
+
+    def __iter__(self) -> Iterable[Any]:
+        return iter((self.data, self.errors))
+
+    @property
+    def formatted(self) -> Dict[str, Any]:
+        """Get execution result formatted according to the specification."""
+        if self.extensions is None:
+            return dict(data=self.data, errors=self.errors)
+        return dict(data=self.data, errors=self.errors, extensions=self.extensions)
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, dict):
+            if "extensions" not in other:
+                return other == dict(data=self.data, errors=self.errors)
+            return other == dict(
+                data=self.data, errors=self.errors, extensions=self.extensions
+            )
+        if isinstance(other, tuple):
+            if len(other) == 2:
+                return other == (self.data, self.errors)
+            return other == (self.data, self.errors, self.extensions)
+        return (
+            isinstance(other, self.__class__)
+            and other.data == self.data
+            and other.errors == self.errors
+            and other.extensions == self.extensions
+        )
+
+    def __ne__(self, other: Any) -> bool:
+        return not self == other
+
 
 Middleware = Optional[Union[Tuple, List, MiddlewareManager]]
 
