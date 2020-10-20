@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import cast, Union
+from typing import Union
 
 from pytest import raises  # type: ignore
 
