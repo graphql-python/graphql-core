@@ -481,7 +481,9 @@ def extend_schema_impl(
                 # Note: While this could make assertions to get the correctly typed
                 # value, that would throw immediately while type system validation
                 # with validate_schema() will produce more actionable results.
-                enum_value_map[value.name.value] = GraphQLEnumValue(
+                value_name = value.name.value
+                enum_value_map[value_name] = GraphQLEnumValue(
+                    value=value_name,
                     description=value.description.value if value.description else None,
                     deprecation_reason=get_deprecation_reason(value),
                     ast_node=value,

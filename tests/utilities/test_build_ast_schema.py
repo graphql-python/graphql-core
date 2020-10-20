@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Union
+from typing import cast, Union
 
 from pytest import raises  # type: ignore
 
@@ -16,6 +16,7 @@ from graphql.type import (
     GraphQLInt,
     GraphQLString,
     GraphQLArgument,
+    GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
     GraphQLInputField,
@@ -402,6 +403,12 @@ def describe_schema_builder():
             """
         )
         assert cycle_sdl(sdl) == sdl
+
+        # check that the internal values are the same as the names
+        schema = build_schema(sdl)
+        enum_type = schema.get_type("Hello")
+        assert isinstance(enum_type, GraphQLEnumType)
+        assert [value.value for value in enum_type.values.values()] == ["WO", "RLD"]
 
     def empty_union():
         sdl = dedent(
