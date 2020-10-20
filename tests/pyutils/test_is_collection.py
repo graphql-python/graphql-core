@@ -1,7 +1,7 @@
 from collections import defaultdict, namedtuple
 from itertools import count
 
-from graphql.pyutils import FrozenDict, FrozenList, is_collection
+from graphql.pyutils import FrozenDict, is_collection
 
 
 def describe_is_collection():
@@ -48,10 +48,6 @@ def describe_is_collection():
 
     def an_infinite_generator_is_not_a_collection():
         assert is_collection(count()) is False
-
-    def a_frozen_list_is_a_collection():
-        assert is_collection(FrozenList()) is True
-        assert is_collection(FrozenList([1, 2, 3])) is True
 
     def a_frozen_dict_is_not_a_collection():
         assert is_collection(FrozenDict()) is False

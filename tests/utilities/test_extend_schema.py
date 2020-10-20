@@ -10,7 +10,6 @@ from graphql.language import (
     StringValueNode,
     TypeDefinitionNode,
 )
-from graphql.pyutils import FrozenList
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -39,7 +38,6 @@ from graphql.utilities import (
     get_description,
     print_schema,
 )
-
 from ..utils import dedent
 
 TypeWithAstNode = Union[
@@ -68,11 +66,11 @@ def print_schema_changes(schema: GraphQLSchema, extended_schema: GraphQLSchema) 
     ast = parse(print_schema(extended_schema))
     return print_ast(
         DocumentNode(
-            definitions=FrozenList(
+            definitions=[
                 node
                 for node in ast.definitions
                 if print_ast(node) not in schema_definitions
-            )
+            ]
         )
     )
 

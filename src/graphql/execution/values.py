@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast, Sequence
 
 from ..error import GraphQLError
 from ..language import (
@@ -16,7 +16,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
-from ..pyutils import inspect, print_path_list, FrozenList, Undefined
+from ..pyutils import inspect, print_path_list, Undefined
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -37,7 +37,7 @@ CoercedVariableValues = Union[List[GraphQLError], Dict[str, Any]]
 
 def get_variable_values(
     schema: GraphQLSchema,
-    var_def_nodes: FrozenList[VariableDefinitionNode],
+    var_def_nodes: Sequence[VariableDefinitionNode],
     inputs: Dict[str, Any],
     max_errors: Optional[int] = None,
 ) -> CoercedVariableValues:
@@ -71,7 +71,7 @@ def get_variable_values(
 
 def coerce_variable_values(
     schema: GraphQLSchema,
-    var_def_nodes: FrozenList[VariableDefinitionNode],
+    var_def_nodes: Sequence[VariableDefinitionNode],
     inputs: Dict[str, Any],
     on_error: Callable[[GraphQLError], None],
 ) -> Dict[str, Any]:

@@ -2,8 +2,9 @@ from enum import Enum
 from operator import attrgetter
 from typing import Any, Dict, List, NamedTuple, Union, cast
 
+from .ast_from_value import ast_from_value
 from ..language import print_ast, visit, ObjectValueNode, Visitor
-from ..pyutils import inspect, FrozenList, Undefined
+from ..pyutils import inspect, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLField,
@@ -29,7 +30,6 @@ from ..type import (
     is_specified_scalar_type,
     is_union_type,
 )
-from .ast_from_value import ast_from_value
 
 __all__ = [
     "BreakingChange",
@@ -562,7 +562,7 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
         def enter_object_value(
             object_value_node: ObjectValueNode, *_args: Any
         ) -> ObjectValueNode:
-            object_value_node.fields = FrozenList(
+            object_value_node.fields = list(
                 sorted(object_value_node.fields, key=attrgetter("name.value"))
             )
             return object_value_node

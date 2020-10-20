@@ -1,3 +1,5 @@
+import collections
+
 from pytest import raises  # type: ignore
 
 from graphql.language import (
@@ -7,7 +9,6 @@ from graphql.language import (
     TypeDefinitionNode,
     TypeExtensionNode,
 )
-from graphql.pyutils import FrozenList
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -27,7 +28,6 @@ from graphql.type import (
     specified_directives,
 )
 from graphql.utilities import print_schema
-
 from ..utils import dedent
 
 
@@ -161,7 +161,7 @@ def describe_type_system_schema():
     def freezes_the_specified_directives():
         directives = [GraphQLDirective("SomeDirective", [])]
         schema = GraphQLSchema(directives=directives)
-        assert isinstance(schema.directives, FrozenList)
+        assert isinstance(schema.directives, collections.abc.Sequence)
         assert schema.directives == directives
         directives = schema.directives
         schema = GraphQLSchema(directives=directives)
@@ -402,7 +402,7 @@ def describe_type_system_schema():
                 extension_ast_nodes=extension_ast_nodes,
             )
             assert schema.ast_node is ast_node
-            assert isinstance(schema.extension_ast_nodes, FrozenList)
+            assert isinstance(schema.extension_ast_nodes, collections.abc.Sequence)
             assert schema.extension_ast_nodes == extension_ast_nodes
             extension_ast_nodes = schema.extension_ast_nodes
             schema = GraphQLSchema(

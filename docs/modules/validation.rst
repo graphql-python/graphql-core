@@ -30,7 +30,7 @@ Rules
 .. currentmodule:: graphql.validation
 
 .. autodata:: specified_rules
-   :annotation: = FrozenList([...])
+   :annotation: = Sequence([...])
 
 **Spec Section: "Executable Definitions"**
 

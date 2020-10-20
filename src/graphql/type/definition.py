@@ -13,7 +13,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    overload,
+    overload, Sequence,
 )
 
 from ..error import GraphQLError
@@ -44,7 +44,6 @@ from ..language import (
 )
 from ..pyutils import (
     AwaitableOrValue,
-    FrozenList,
     Path,
     cached_property,
     did_you_mean,
@@ -196,7 +195,7 @@ class GraphQLNamedType(GraphQLType):
     description: Optional[str]
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[TypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[TypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[TypeExtensionNode]]
 
     def __init__(
         self,
@@ -227,8 +226,8 @@ class GraphQLNamedType(GraphQLType):
                     f"{name} extension AST nodes must be specified"
                     " as a collection of TypeExtensionNode instances."
                 )
-            if not isinstance(extension_ast_nodes, FrozenList):
-                extension_ast_nodes = FrozenList(extension_ast_nodes)
+            if not isinstance(extension_ast_nodes, list):
+                extension_ast_nodes = list(extension_ast_nodes)
         else:
             extension_ast_nodes = None
         self.name = name
@@ -249,7 +248,7 @@ class GraphQLNamedType(GraphQLType):
             description=self.description,
             extensions=self.extensions,
             ast_node=self.ast_node,
-            extension_ast_nodes=self.extension_ast_nodes or FrozenList(),
+            extension_ast_nodes=self.extension_ast_nodes or list(),
         )
 
 
@@ -320,7 +319,7 @@ class GraphQLScalarType(GraphQLNamedType):
 
     specified_by_url: Optional[str]
     ast_node: Optional[ScalarTypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[ScalarTypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[ScalarTypeExtensionNode]]
 
     def __init__(
         self,
@@ -690,7 +689,7 @@ class GraphQLObjectType(GraphQLNamedType):
 
     is_type_of: Optional[GraphQLIsTypeOfFn]
     ast_node: Optional[ObjectTypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[ObjectTypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[ObjectTypeExtensionNode]]
 
     def __init__(
         self,
@@ -810,7 +809,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
 
     resolve_type: Optional[GraphQLTypeResolver]
     ast_node: Optional[InterfaceTypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[InterfaceTypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[InterfaceTypeExtensionNode]]
 
     def __init__(
         self,
@@ -933,7 +932,7 @@ class GraphQLUnionType(GraphQLNamedType):
 
     resolve_type: Optional[GraphQLTypeResolver]
     ast_node: Optional[UnionTypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[UnionTypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[UnionTypeExtensionNode]]
 
     def __init__(
         self,
@@ -1039,7 +1038,7 @@ class GraphQLEnumType(GraphQLNamedType):
 
     values: GraphQLEnumValueMap
     ast_node: Optional[EnumTypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[EnumTypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[EnumTypeExtensionNode]]
 
     def __init__(
         self,
@@ -1267,7 +1266,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     """
 
     ast_node: Optional[InputObjectTypeDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[InputObjectTypeExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[InputObjectTypeExtensionNode]]
 
     def __init__(
         self,

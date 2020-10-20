@@ -15,6 +15,8 @@ from typing import (
     cast,
 )
 
+from .middleware import MiddlewareManager
+from .values import get_argument_values, get_directive_values, get_variable_values
 from ..error import GraphQLError, located_error
 from ..language import (
     DocumentNode,
@@ -30,12 +32,9 @@ from ..pyutils import (
     inspect,
     is_awaitable as default_is_awaitable,
     AwaitableOrValue,
-    FrozenList,
     Path,
     Undefined,
 )
-from ..utilities.get_operation_root_type import get_operation_root_type
-from ..utilities.type_from_ast import type_from_ast
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
@@ -60,8 +59,8 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
-from .middleware import MiddlewareManager
-from .values import get_argument_values, get_directive_values, get_variable_values
+from ..utilities.get_operation_root_type import get_operation_root_type
+from ..utilities.type_from_ast import type_from_ast
 
 __all__ = [
     "assert_valid_execution_arguments",
@@ -267,7 +266,7 @@ class ExecutionContext:
 
         coerced_variable_values = get_variable_values(
             schema,
-            operation.variable_definitions or FrozenList(),
+            operation.variable_definitions or [],
             raw_variable_values or {},
             max_errors=50,
         )

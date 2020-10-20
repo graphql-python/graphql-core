@@ -19,8 +19,6 @@ from graphql.language import (
     Visitor,
 )
 from graphql.language.visitor import QUERY_DOCUMENT_KEYS
-from graphql.pyutils import FrozenList
-
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
 
@@ -372,7 +370,7 @@ def describe_visitor():
                     node = copy(node)
                     assert node.selection_set
                     node.selection_set.selections = (
-                        FrozenList([added_field]) + node.selection_set.selections
+                        [added_field] + node.selection_set.selections
                     )
                     return node
                 if node == added_field:

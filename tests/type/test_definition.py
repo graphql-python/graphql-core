@@ -1,3 +1,4 @@
+import collections
 from math import isnan, nan
 from typing import cast
 
@@ -26,7 +27,7 @@ from graphql.language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
 )
-from graphql.pyutils import FrozenList, Undefined
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumValue,
@@ -148,7 +149,7 @@ def describe_type_system_scalars():
             "SomeScalar", ast_node=ast_node, extension_ast_nodes=extension_ast_nodes
         )
         assert scalar.ast_node is ast_node
-        assert isinstance(scalar.extension_ast_nodes, FrozenList)
+        assert isinstance(scalar.extension_ast_nodes, collections.abc.Sequence)
         assert scalar.extension_ast_nodes == extension_ast_nodes
         extension_ast_nodes = scalar.extension_ast_nodes
         scalar = GraphQLScalarType(
@@ -505,7 +506,7 @@ def describe_type_system_objects():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert object_type.ast_node is ast_node
-        assert isinstance(object_type.extension_ast_nodes, FrozenList)
+        assert isinstance(object_type.extension_ast_nodes, collections.abc.Sequence)
         assert object_type.extension_ast_nodes == extension_ast_nodes
         extension_ast_nodes = object_type.extension_ast_nodes
         object_type = GraphQLObjectType(
@@ -786,7 +787,7 @@ def describe_type_system_interfaces():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert interface_type.ast_node is ast_node
-        assert isinstance(interface_type.extension_ast_nodes, FrozenList)
+        assert isinstance(interface_type.extension_ast_nodes, collections.abc.Sequence)
         assert interface_type.extension_ast_nodes == extension_ast_nodes
         extension_ast_nodes = interface_type.extension_ast_nodes
         interface_type = GraphQLInterfaceType(
@@ -939,7 +940,7 @@ def describe_type_system_unions():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert union_type.ast_node is ast_node
-        assert isinstance(union_type.extension_ast_nodes, FrozenList)
+        assert isinstance(union_type.extension_ast_nodes, collections.abc.Sequence)
         assert union_type.extension_ast_nodes == extension_ast_nodes
         extension_ast_nodes = union_type.extension_ast_nodes
         union_type = GraphQLUnionType(
@@ -1192,7 +1193,7 @@ def describe_type_system_enums():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert enum_type.ast_node is ast_node
-        assert isinstance(enum_type.extension_ast_nodes, FrozenList)
+        assert isinstance(enum_type.extension_ast_nodes, collections.abc.Sequence)
         assert enum_type.extension_ast_nodes == extension_ast_nodes
         extension_ast_nodes = enum_type.extension_ast_nodes
         enum_type = GraphQLEnumType(
@@ -1385,7 +1386,7 @@ def describe_type_system_input_objects():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert input_obj_type.ast_node is ast_node
-        assert isinstance(input_obj_type.extension_ast_nodes, FrozenList)
+        assert isinstance(input_obj_type.extension_ast_nodes, collections.abc.Sequence)
         assert input_obj_type.extension_ast_nodes == extension_ast_nodes
         extension_ast_nodes = input_obj_type.extension_ast_nodes
         input_obj_type = GraphQLInputObjectType(
