@@ -968,9 +968,9 @@ class ExecutionContext:
                         raise invalid_return_type_error(
                             return_type, result, field_nodes
                         )
-                    return self.collect_and_execute_subfields(
+                    return self.collect_and_execute_subfields(  # type: ignore
                         return_type, field_nodes, path, result
-                    )  # type: ignore
+                    )
 
                 return collect_and_execute_subfields_async()
 

@@ -8,6 +8,7 @@ from typing import (
     Set,
     Union,
     cast,
+    Sequence,
 )
 
 from ..error import GraphQLError
@@ -93,11 +94,11 @@ class GraphQLSchema:
     mutation_type: Optional[GraphQLObjectType]
     subscription_type: Optional[GraphQLObjectType]
     type_map: TypeMap
-    directives: FrozenList[GraphQLDirective]
+    directives: Sequence[GraphQLDirective]
     description: Optional[str]
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[ast.SchemaDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
+    extension_ast_nodes: Optional[Sequence[ast.SchemaExtensionNode]]
 
     _implementations_map: Dict[str, InterfaceImplementations]
     _sub_type_map: Dict[str, Set[str]]
@@ -171,7 +172,7 @@ class GraphQLSchema:
         self.extensions = extensions
         self.ast_node = ast_node
         self.extension_ast_nodes = (
-            cast(FrozenList[ast.SchemaExtensionNode], extension_ast_nodes)
+            cast(Sequence[ast.SchemaExtensionNode], extension_ast_nodes)
             if extension_ast_nodes
             else None
         )
@@ -183,7 +184,7 @@ class GraphQLSchema:
         self.directives = (
             specified_directives
             if directives is None
-            else cast(FrozenList[GraphQLDirective], directives)
+            else cast(Sequence[GraphQLDirective], directives)
         )
 
         # To preserve order of user-provided types, we add first to add them to

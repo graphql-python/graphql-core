@@ -26,8 +26,7 @@ class UndefinedType(ValueError):
 
 # Used to indicate undefined or invalid values (like "undefined" in JavaScript):
 Undefined = UndefinedType()
-
-Undefined.__doc__ = """Symbol for undefined values
+"""Symbol for undefined values
 
 This singleton object is used to describe undefined or invalid  values.
 It can be used in places where you would use ``undefined`` in GraphQL.js.

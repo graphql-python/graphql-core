@@ -1,4 +1,4 @@
-from typing import Any, Collection, Dict, List, Optional, cast
+from typing import Any, Collection, Dict, List, Optional, cast, Sequence
 
 from ..language import ast, DirectiveLocation
 from ..pyutils import inspect, is_description, FrozenList
@@ -211,7 +211,7 @@ GraphQLSpecifiedByDirective = GraphQLDirective(
 )
 
 
-specified_directives: FrozenList[GraphQLDirective] = FrozenList(
+specified_directives: Sequence[GraphQLDirective] = FrozenList(
     [
         GraphQLIncludeDirective,
         GraphQLSkipDirective,
@@ -219,7 +219,7 @@ specified_directives: FrozenList[GraphQLDirective] = FrozenList(
         GraphQLSpecifiedByDirective,
     ]
 )
-specified_directives.__doc__ = """The full list of specified directives."""
+"""The full list of specified directives."""
 
 
 def is_specified_directive(directive: GraphQLDirective) -> bool:

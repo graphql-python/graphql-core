@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Sequence
 
 from ..pyutils import FrozenList
 
@@ -101,7 +101,7 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
+specified_rules: Sequence[Type[ASTValidationRule]] = FrozenList(
     [
         ExecutableDefinitionsRule,
         UniqueOperationNamesRule,
@@ -131,14 +131,14 @@ specified_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
         UniqueInputFieldNamesRule,
     ]
 )
-specified_rules.__doc__ = """\
-    This list includes all validation rules defined by the GraphQL spec.
+"""
+This list includes all validation rules defined by the GraphQL spec.
 
-    The order of the rules in this list has been adjusted to lead to the
-    most clear output when encountering multiple validation errors.
-    """
+The order of the rules in this list has been adjusted to lead to the
+most clear output when encountering multiple validation errors.
+"""
 
-specified_sdl_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
+specified_sdl_rules: Sequence[Type[ASTValidationRule]] = FrozenList(
     [
         LoneSchemaDefinitionRule,
         UniqueOperationTypesRule,
@@ -156,8 +156,8 @@ specified_sdl_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
         ProvidedRequiredArgumentsOnDirectivesRule,
     ]
 )
-specified_sdl_rules.__doc__ = """\
-    This list includes all rules for validating SDL.
+"""
+This list includes all rules for validating SDL.
 
-    For internal use only.
-    """
+For internal use only.
+"""

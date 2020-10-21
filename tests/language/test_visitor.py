@@ -982,13 +982,14 @@ def describe_support_for_custom_ast_nodes():
 
     custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
     assert custom_selection_set is not None
-    custom_selection_set.selections = custom_selection_set.selections + [
+    custom_selection_set.selections = [
+        *custom_selection_set.selections,
         CustomFieldNode(
             name=NameNode(value="b"),
             selection_set=SelectionSetNode(
                 selections=CustomFieldNode(name=NameNode(value="c"))
             ),
-        )
+        ),
     ]
 
     def does_not_traverse_unknown_node_kinds():

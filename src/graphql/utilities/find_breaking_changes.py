@@ -1,6 +1,6 @@
 from enum import Enum
 from operator import attrgetter
-from typing import Any, Dict, List, NamedTuple, Union, cast
+from typing import Any, Dict, List, NamedTuple, Union, cast, Sequence
 
 from ..language import print_ast, visit, ObjectValueNode, Visitor
 from ..pyutils import inspect, FrozenList, Undefined
@@ -580,7 +580,7 @@ class ListDiff(NamedTuple):
     persisted: List
 
 
-def list_diff(old_list: List, new_list: List) -> ListDiff:
+def list_diff(old_list: Sequence, new_list: Sequence) -> ListDiff:
     """Get differences between two lists of named items."""
     added = []
     persisted = []
