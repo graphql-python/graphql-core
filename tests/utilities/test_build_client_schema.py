@@ -490,7 +490,7 @@ def describe_type_system_build_schema_from_introspection():
         client_schema = build_client_schema(introspection)
 
         assert schema.directives
-        assert client_schema.directives == []
+        assert client_schema.directives == ()
         assert print_schema(client_schema) == sdl
 
     def builds_a_schema_aware_of_deprecation():

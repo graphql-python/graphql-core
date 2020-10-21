@@ -19,7 +19,7 @@ from graphql.language import (
     Visitor,
 )
 from graphql.language.visitor import QUERY_DOCUMENT_KEYS
-from graphql.pyutils import FrozenList
+from graphql.pyutils import FrozenList, is_collection
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
@@ -39,7 +39,7 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
     assert isinstance(key, (int, str))
 
     if isinstance(key, int):
-        assert isinstance(parent, list)
+        assert is_collection(parent)
         assert 0 <= key <= len(parent)
     else:
         assert isinstance(parent, Node)
@@ -59,7 +59,7 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
             k = path[i]
             assert isinstance(k, (int, str))
             if isinstance(k, int):
-                assert isinstance(current_node, list)
+                assert is_collection(current_node)
                 assert 0 <= k <= len(current_node)
                 current_node = current_node[k]
             else:

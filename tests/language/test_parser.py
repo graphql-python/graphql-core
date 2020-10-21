@@ -27,7 +27,7 @@ from graphql.language import (
     parse_value,
     Source,
 )
-from graphql.pyutils import inspect
+from graphql.pyutils import inspect, is_collection
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
@@ -133,14 +133,14 @@ def describe_parser():
             """
         )
         definitions = doc.definitions
-        assert isinstance(definitions, list)
+        assert is_collection(definitions)
         assert len(definitions) == 1
         selection_set = cast(OperationDefinitionNode, definitions[0]).selection_set
         selections = selection_set.selections
-        assert isinstance(selections, list)
+        assert is_collection(selections)
         assert len(selections) == 1
         arguments = cast(FieldNode, selections[0]).arguments
-        assert isinstance(arguments, list)
+        assert is_collection(arguments)
         assert len(arguments) == 1
         value = arguments[0].value
         assert isinstance(value, StringValueNode)
@@ -227,20 +227,20 @@ def describe_parser():
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 41)
         definitions = doc.definitions
-        assert isinstance(definitions, list)
+        assert is_collection(definitions)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
         assert isinstance(definition, DefinitionNode)
         assert definition.loc == (0, 40)
         assert definition.operation == OperationType.QUERY
         assert definition.name is None
-        assert definition.variable_definitions == []
-        assert definition.directives == []
+        assert definition.variable_definitions == ()
+        assert definition.directives == ()
         selection_set = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (0, 40)
         selections = selection_set.selections
-        assert isinstance(selections, list)
+        assert is_collection(selections)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
@@ -251,7 +251,7 @@ def describe_parser():
         assert name.loc == (4, 8)
         assert name.value == "node"
         arguments = field.arguments
-        assert isinstance(arguments, list)
+        assert is_collection(arguments)
         assert len(arguments) == 1
         argument = arguments[0]
         assert isinstance(argument, ArgumentNode)
@@ -265,11 +265,11 @@ def describe_parser():
         assert value.loc == (13, 14)
         assert value.value == "4"
         assert argument.loc == (9, 14)
-        assert field.directives == []
+        assert field.directives == ()
         selection_set = field.selection_set  # type: ignore
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
-        assert isinstance(selections, list)
+        assert is_collection(selections)
         assert len(selections) == 2
         field = selections[0]
         assert isinstance(field, FieldNode)
@@ -279,8 +279,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (22, 24)
         assert name.value == "id"
-        assert field.arguments == []
-        assert field.directives == []
+        assert field.arguments == ()
+        assert field.directives == ()
         assert field.selection_set is None
         field = selections[0]
         assert isinstance(field, FieldNode)
@@ -290,8 +290,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (22, 24)
         assert name.value == "id"
-        assert field.arguments == []
-        assert field.directives == []
+        assert field.arguments == ()
+        assert field.directives == ()
         assert field.selection_set is None
         field = selections[1]
         assert isinstance(field, FieldNode)
@@ -301,8 +301,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (30, 34)
         assert name.value == "name"
-        assert field.arguments == []
-        assert field.directives == []
+        assert field.arguments == ()
+        assert field.directives == ()
         assert field.selection_set is None
 
     def creates_ast_from_nameless_query_without_variables():
@@ -320,20 +320,20 @@ def describe_parser():
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 30)
         definitions = doc.definitions
-        assert isinstance(definitions, list)
+        assert is_collection(definitions)
         assert len(definitions) == 1
         definition = definitions[0]
         assert isinstance(definition, OperationDefinitionNode)
         assert definition.loc == (0, 29)
         assert definition.operation == OperationType.QUERY
         assert definition.name is None
-        assert definition.variable_definitions == []
-        assert definition.directives == []
+        assert definition.variable_definitions == ()
+        assert definition.directives == ()
         selection_set = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (6, 29)
         selections = selection_set.selections
-        assert isinstance(selections, list)
+        assert is_collection(selections)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
@@ -343,13 +343,13 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (10, 14)
         assert name.value == "node"
-        assert field.arguments == []
-        assert field.directives == []
+        assert field.arguments == ()
+        assert field.directives == ()
         selection_set = field.selection_set  # type: ignore
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (15, 27)
         selections = selection_set.selections
-        assert isinstance(selections, list)
+        assert is_collection(selections)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
@@ -359,8 +359,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (21, 23)
         assert name.value == "id"
-        assert field.arguments == []
-        assert field.directives == []
+        assert field.arguments == ()
+        assert field.directives == ()
         assert field.selection_set is None
 
     def allows_parsing_without_source_location_information():
@@ -430,7 +430,7 @@ def describe_parse_value():
         assert isinstance(result, ListValueNode)
         assert result.loc == (0, 11)
         values = result.values
-        assert isinstance(values, list)
+        assert is_collection(values)
         assert len(values) == 2
         value = values[0]
         assert isinstance(value, IntValueNode)
@@ -446,7 +446,7 @@ def describe_parse_value():
         assert isinstance(result, ListValueNode)
         assert result.loc == (0, 20)
         values = result.values
-        assert isinstance(values, list)
+        assert is_collection(values)
         assert len(values) == 2
         value = values[0]
         assert isinstance(value, StringValueNode)

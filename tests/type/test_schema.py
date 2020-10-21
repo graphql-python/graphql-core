@@ -100,7 +100,7 @@ def describe_type_system_schema():
 
         kwargs = schema.to_kwargs()
         types = kwargs.pop("types")
-        assert types == list(schema.type_map.values())
+        assert types == tuple(schema.type_map.values())
         assert kwargs == {
             "query": BlogQuery,
             "mutation": BlogMutation,
@@ -109,7 +109,7 @@ def describe_type_system_schema():
             "description": "Sample schema",
             "extensions": None,
             "ast_node": None,
-            "extension_ast_nodes": [],
+            "extension_ast_nodes": (),
             "assume_valid": False,
         }
 
@@ -159,7 +159,7 @@ def describe_type_system_schema():
         )
 
     def freezes_the_specified_directives():
-        directives = [GraphQLDirective("SomeDirective", [])]
+        directives = (GraphQLDirective("SomeDirective", []),)
         schema = GraphQLSchema(directives=directives)
         assert isinstance(schema.directives, FrozenList)
         assert schema.directives == directives
@@ -395,7 +395,7 @@ def describe_type_system_schema():
     def describe_ast_nodes():
         def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
             ast_node = SchemaDefinitionNode()
-            extension_ast_nodes = [SchemaExtensionNode()]
+            extension_ast_nodes = (SchemaExtensionNode(),)
             schema = GraphQLSchema(
                 GraphQLObjectType("Query", {}),
                 ast_node=ast_node,

@@ -30,6 +30,7 @@ from graphql.language import (
     UnionTypeDefinitionNode,
     parse,
 )
+from graphql.pyutils import is_collection, FrozenList
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
@@ -48,7 +49,7 @@ def assert_definitions(body, loc, num=1):
     assert isinstance(doc, DocumentNode)
     assert doc.loc == loc
     definitions = doc.definitions
-    assert isinstance(definitions, list)
+    assert is_collection(definitions)
     assert len(definitions) == num
     return definitions[0] if num == 1 else definitions
 
@@ -131,13 +132,13 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("world", (16, 21)), type_node("String", (23, 29)), (16, 29)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 31)
 
     def parses_type_with_description_string():
@@ -200,13 +201,13 @@ def describe_schema_parser():
         extension = assert_definitions(body, (0, 39))
         assert isinstance(extension, ObjectTypeExtensionNode)
         assert extension.name == name_node("Hello", (13, 18))
-        assert extension.interfaces == []
-        assert extension.directives == []
-        assert extension.fields == [
+        assert extension.interfaces == ()
+        assert extension.directives == ()
+        assert extension.fields == (
             field_node(
                 name_node("world", (23, 28)), type_node("String", (30, 36)), (23, 36)
-            )
-        ]
+            ),
+        )
         assert extension.loc == (1, 38)
 
     def object_extension_without_fields():
@@ -214,9 +215,9 @@ def describe_schema_parser():
         extension = assert_definitions(body, (0, 37))
         assert isinstance(extension, ObjectTypeExtensionNode)
         assert extension.name == name_node("Hello", (12, 17))
-        assert extension.interfaces == [type_node("Greeting", (29, 37))]
-        assert extension.directives == []
-        assert extension.fields == []
+        assert extension.interfaces == tuple([type_node("Greeting", (29, 37))])
+        assert extension.directives == ()
+        assert extension.fields == ()
         assert extension.loc == (0, 37)
 
     def interface_extension_without_fields():
@@ -224,9 +225,9 @@ def describe_schema_parser():
         extension = assert_definitions(body, (0, 42))
         assert isinstance(extension, InterfaceTypeExtensionNode)
         assert extension.name == name_node("Hello", (17, 22))
-        assert extension.interfaces == [type_node("Greeting", (34, 42))]
-        assert extension.directives == []
-        assert extension.fields == []
+        assert extension.interfaces == (type_node("Greeting", (34, 42)),)
+        assert extension.directives == ()
+        assert extension.fields == ()
         assert extension.loc == (0, 42)
 
     def object_extension_without_fields_followed_by_extension():
@@ -238,16 +239,16 @@ def describe_schema_parser():
         extension = extensions[0]
         assert isinstance(extension, ObjectTypeExtensionNode)
         assert extension.name == name_node("Hello", (19, 24))
-        assert extension.interfaces == [type_node("Greeting", (36, 44))]
-        assert extension.directives == []
-        assert extension.fields == []
+        assert extension.interfaces == tuple([type_node("Greeting", (36, 44))])
+        assert extension.directives == ()
+        assert extension.fields == ()
         assert extension.loc == (7, 44)
         extension = extensions[1]
         assert isinstance(extension, ObjectTypeExtensionNode)
         assert extension.name == name_node("Hello", (64, 69))
-        assert extension.interfaces == [type_node("SecondGreeting", (81, 95))]
-        assert extension.directives == []
-        assert extension.fields == []
+        assert extension.interfaces == tuple([type_node("SecondGreeting", (81, 95))])
+        assert extension.directives == ()
+        assert extension.fields == ()
         assert extension.loc == (52, 95)
 
     def extension_without_anything_throws():
@@ -267,16 +268,16 @@ def describe_schema_parser():
         extension = extensions[0]
         assert isinstance(extension, InterfaceTypeExtensionNode)
         assert extension.name == name_node("Hello", (24, 29))
-        assert extension.interfaces == [type_node("Greeting", (41, 49))]
-        assert extension.directives == []
-        assert extension.fields == []
+        assert extension.interfaces == tuple([type_node("Greeting", (41, 49))])
+        assert extension.directives == ()
+        assert extension.fields == ()
         assert extension.loc == (7, 49)
         extension = extensions[1]
         assert isinstance(extension, InterfaceTypeExtensionNode)
         assert extension.name == name_node("Hello", (74, 79))
-        assert extension.interfaces == [type_node("SecondGreeting", (91, 105))]
-        assert extension.directives == []
-        assert extension.fields == []
+        assert extension.interfaces == tuple([type_node("SecondGreeting", (91, 105))])
+        assert extension.directives == ()
+        assert extension.fields == ()
         assert extension.loc == (57, 105)
 
     def object_extension_do_not_include_descriptions():
@@ -325,7 +326,7 @@ def describe_schema_parser():
         doc = parse(body)
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 75)
-        assert doc.definitions == [
+        assert doc.definitions == (
             schema_extension_node(
                 [],
                 [
@@ -336,21 +337,21 @@ def describe_schema_parser():
                     )
                 ],
                 (13, 75),
-            )
-        ]
+            ),
+        )
 
     def schema_extension_with_only_directives():
         body = "extend schema @directive"
         doc = parse(body)
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 24)
-        assert doc.definitions == [
+        assert doc.definitions == (
             schema_extension_node(
                 [directive_node(name_node("directive", (15, 24)), [], (14, 24))],
                 [],
                 (0, 24),
-            )
-        ]
+            ),
+        )
 
     def schema_extension_without_anything_throws():
         assert_syntax_error("extend schema", "Unexpected <EOF>.", (1, 14))
@@ -372,15 +373,15 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("world", (16, 21)),
                 non_null_type(type_node("String", (23, 29)), (23, 30)),
                 (16, 30),
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 32)
 
     def simple_interface_inheriting_interface():
@@ -389,13 +390,13 @@ def describe_schema_parser():
         assert isinstance(definition, InterfaceTypeDefinitionNode)
         assert definition.name == name_node("Hello", (10, 15))
         assert definition.description is None
-        assert definition.interfaces == [type_node("World", (27, 32))]
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == tuple([type_node("World", (27, 32))])
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("field", (35, 40)), type_node("String", (42, 48)), (35, 48)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (0, 50)
 
     def simple_type_inheriting_interface():
@@ -404,13 +405,13 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (5, 10))
         assert definition.description is None
-        assert definition.interfaces == [type_node("World", (22, 27))]
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == tuple([type_node("World", (22, 27))])
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("field", (30, 35)), type_node("String", (37, 43)), (30, 43)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (0, 45)
 
     def simple_type_inheriting_multiple_interfaces():
@@ -419,16 +420,16 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (5, 10))
         assert definition.description is None
-        assert definition.interfaces == [
+        assert definition.interfaces == (
             type_node("Wo", (22, 24)),
             type_node("rld", (27, 30)),
-        ]
-        assert definition.directives == []
-        assert definition.fields == [
+        )
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("field", (33, 38)), type_node("String", (40, 46)), (33, 46)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (0, 48)
 
     def simple_interface_inheriting_multiple_interfaces():
@@ -437,16 +438,16 @@ def describe_schema_parser():
         assert isinstance(definition, InterfaceTypeDefinitionNode)
         assert definition.name == name_node("Hello", (10, 15))
         assert definition.description is None
-        assert definition.interfaces == [
+        assert definition.interfaces == (
             type_node("Wo", (27, 29)),
             type_node("rld", (32, 35)),
-        ]
-        assert definition.directives == []
-        assert definition.fields == [
+        )
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("field", (38, 43)), type_node("String", (45, 51)), (38, 51)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (0, 53)
 
     def simple_type_inheriting_multiple_interfaces_with_leading_ampersand():
@@ -455,16 +456,16 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (5, 10))
         assert definition.description is None
-        assert definition.interfaces == [
+        assert definition.interfaces == (
             type_node("Wo", (24, 26)),
             type_node("rld", (29, 32)),
-        ]
-        assert definition.directives == []
-        assert definition.fields == [
+        )
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("field", (35, 40)), type_node("String", (42, 48)), (35, 48)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (0, 50)
 
     def simple_interface_inheriting_multiple_interfaces_with_leading_ampersand():
@@ -473,16 +474,16 @@ def describe_schema_parser():
         assert isinstance(definition, InterfaceTypeDefinitionNode)
         assert definition.name == name_node("Hello", (10, 15))
         assert definition.description is None
-        assert definition.interfaces == [
+        assert definition.interfaces == (
             type_node("Wo", (29, 31)),
             type_node("rld", (34, 37)),
-        ]
-        assert definition.directives == []
-        assert definition.fields == [
+        )
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("field", (40, 45)), type_node("String", (47, 53)), (40, 53)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (0, 55)
 
     def single_value_enum():
@@ -491,8 +492,8 @@ def describe_schema_parser():
         assert isinstance(definition, EnumTypeDefinitionNode)
         assert definition.name == name_node("Hello", (5, 10))
         assert definition.description is None
-        assert definition.directives == []
-        assert definition.values == [enum_value_node("WORLD", (13, 18))]
+        assert definition.directives == ()
+        assert definition.values == tuple([enum_value_node("WORLD", (13, 18))])
         assert definition.loc == (0, 20)
 
     def double_value_enum():
@@ -501,11 +502,11 @@ def describe_schema_parser():
         assert isinstance(definition, EnumTypeDefinitionNode)
         assert definition.name == name_node("Hello", (5, 10))
         assert definition.description is None
-        assert definition.directives == []
-        assert definition.values == [
+        assert definition.directives == ()
+        assert definition.values == (
             enum_value_node("WO", (13, 15)),
             enum_value_node("RLD", (17, 20)),
-        ]
+        )
         assert definition.loc == (0, 22)
 
     def simple_interface():
@@ -520,13 +521,13 @@ def describe_schema_parser():
         assert isinstance(definition, InterfaceTypeDefinitionNode)
         assert definition.name == name_node("Hello", (11, 16))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node(
                 name_node("world", (21, 26)), type_node("String", (28, 34)), (21, 34)
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 36)
 
     def simple_field_with_arg():
@@ -541,9 +542,9 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (38, 44)),
@@ -556,8 +557,8 @@ def describe_schema_parser():
                     )
                 ],
                 (16, 44),
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 46)
 
     def simple_field_with_arg_with_default_value():
@@ -572,9 +573,9 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (45, 51)),
@@ -587,8 +588,8 @@ def describe_schema_parser():
                     )
                 ],
                 (16, 51),
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 53)
 
     def simple_field_with_list_arg():
@@ -603,9 +604,9 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (41, 47)),
@@ -618,8 +619,8 @@ def describe_schema_parser():
                     )
                 ],
                 (16, 47),
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 49)
 
     def simple_field_with_two_args():
@@ -634,9 +635,9 @@ def describe_schema_parser():
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.interfaces == []
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.interfaces == ()
+        assert definition.directives == ()
+        assert definition.fields == (
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (53, 59)),
@@ -655,8 +656,8 @@ def describe_schema_parser():
                     ),
                 ],
                 (16, 59),
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 61)
 
     def simple_union():
@@ -665,8 +666,8 @@ def describe_schema_parser():
         assert isinstance(definition, UnionTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.directives == []
-        assert definition.types == [type_node("World", (14, 19))]
+        assert definition.directives == ()
+        assert definition.types == tuple([type_node("World", (14, 19))])
         assert definition.loc == (0, 19)
 
     def union_with_two_types():
@@ -675,11 +676,11 @@ def describe_schema_parser():
         assert isinstance(definition, UnionTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
         assert definition.description is None
-        assert definition.directives == []
-        assert definition.types == [
+        assert definition.directives == ()
+        assert definition.types == (
             type_node("Wo", (14, 16)),
             type_node("Rld", (19, 22)),
-        ]
+        )
         assert definition.loc == (0, 22)
 
     def union_with_two_types_and_leading_pipe():
@@ -687,11 +688,11 @@ def describe_schema_parser():
         definition = assert_definitions(body, (0, 24))
         assert isinstance(definition, UnionTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
-        assert definition.directives == []
-        assert definition.types == [
+        assert definition.directives == ()
+        assert definition.types == (
             type_node("Wo", (16, 18)),
             type_node("Rld", (21, 24)),
-        ]
+        )
         assert definition.loc == (0, 24)
 
     def union_fails_with_no_types():
@@ -718,7 +719,7 @@ def describe_schema_parser():
         assert isinstance(definition, ScalarTypeDefinitionNode)
         assert definition.name == name_node("Hello", (7, 12))
         assert definition.description is None
-        assert definition.directives == []
+        assert definition.directives == ()
         assert definition.loc == (0, 12)
 
     def simple_input_object():
@@ -727,15 +728,15 @@ def describe_schema_parser():
         assert isinstance(definition, InputObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (7, 12))
         assert definition.description is None
-        assert definition.directives == []
-        assert definition.fields == [
+        assert definition.directives == ()
+        assert definition.fields == (
             input_value_node(
                 name_node("world", (17, 22)),
                 type_node("String", (24, 30)),
                 None,
                 (17, 30),
-            )
-        ]
+            ),
+        )
         assert definition.loc == (1, 32)
 
     def simple_input_object_with_args_should_fail():
@@ -751,12 +752,11 @@ def describe_schema_parser():
         assert isinstance(definition, DirectiveDefinitionNode)
         assert definition.name == name_node("foo", (11, 14))
         assert definition.description is None
-        assert definition.arguments == []
+        assert definition.arguments == ()
         assert definition.repeatable is False
-        assert definition.locations == [
-            name_node("OBJECT", (18, 24)),
-            name_node("INTERFACE", (27, 36)),
-        ]
+        assert definition.locations == tuple(
+            [name_node("OBJECT", (18, 24)), name_node("INTERFACE", (27, 36)),]
+        )
 
     def repeatable_directive_definition():
         body = "directive @foo repeatable on OBJECT | INTERFACE"
@@ -764,12 +764,12 @@ def describe_schema_parser():
         assert isinstance(definition, DirectiveDefinitionNode)
         assert definition.name == name_node("foo", (11, 14))
         assert definition.description is None
-        assert definition.arguments == []
+        assert definition.arguments == ()
         assert definition.repeatable is True
-        assert definition.locations == [
+        assert definition.locations == (
             name_node("OBJECT", (29, 35)),
             name_node("INTERFACE", (38, 47)),
-        ]
+        )
 
     def directive_with_incorrect_locations():
         assert_syntax_error(

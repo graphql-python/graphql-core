@@ -253,7 +253,8 @@ def extend_schema_impl(
                     },
                     **build_input_field_map(extensions),
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"]
+                + tuple(extensions),
             }
         )
 
@@ -265,7 +266,8 @@ def extend_schema_impl(
             **{
                 **kwargs,
                 "values": {**kwargs["values"], **build_enum_value_map(extensions)},
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"]
+                + tuple(extensions),
             }
         )
 
@@ -281,7 +283,8 @@ def extend_schema_impl(
             **{
                 **kwargs,
                 "specified_by_url": specified_by_url,
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"]
+                + tuple(extensions),
             }
         )
 
@@ -305,7 +308,8 @@ def extend_schema_impl(
                     },
                     **build_field_map(extensions),
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"]
+                + tuple(extensions),
             }
         )
 
@@ -329,7 +333,8 @@ def extend_schema_impl(
                     },
                     **build_field_map(extensions),
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"]
+                + tuple(extensions),
             }
         )
 
@@ -345,7 +350,8 @@ def extend_schema_impl(
                     for member_type in kwargs["types"]
                 ]
                 + build_union_types(extensions),
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
+                "extension_ast_nodes": kwargs["extension_ast_nodes"]
+                + tuple(extensions),
             }
         )
 
@@ -662,7 +668,8 @@ def extend_schema_impl(
         else None,
         "extensions": None,
         "ast_node": schema_def or schema_kwargs["ast_node"],
-        "extension_ast_nodes": schema_kwargs["extension_ast_nodes"] + schema_extensions,
+        "extension_ast_nodes": schema_kwargs["extension_ast_nodes"]
+        + tuple(schema_extensions),
         "assume_valid": assume_valid,
     }
 

@@ -312,7 +312,7 @@ def describe_schema_builder():
 
         definition = parse(sdl).definitions[0]
         assert isinstance(definition, InterfaceTypeDefinitionNode)
-        assert definition.interfaces == []
+        assert definition.interfaces == ()
 
         assert cycle_sdl(sdl) == sdl
 
@@ -1130,7 +1130,7 @@ def describe_schema_builder():
         test_scalar = assert_scalar_type(schema.get_type("TestScalar"))
         test_directive = assert_directive(schema.get_directive("test"))
 
-        assert [
+        assert (
             schema.ast_node,
             query.ast_node,
             test_input.ast_node,
@@ -1140,7 +1140,7 @@ def describe_schema_builder():
             test_type.ast_node,
             test_scalar.ast_node,
             test_directive.ast_node,
-        ] == ast.definitions
+        ) == ast.definitions
 
         test_field = query.fields["testField"]
         assert print_ast_node(test_field) == (

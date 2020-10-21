@@ -1,6 +1,8 @@
 from sys import exc_info
 from typing import Any, Collection, Dict, List, Optional, Union, TYPE_CHECKING
 
+from ..pyutils.is_collection import is_collection
+
 if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
     from ..language.location import SourceLocation  # noqa: F401
@@ -92,7 +94,7 @@ class GraphQLError(Exception):
     ) -> None:
         super().__init__(message)
         self.message = message
-        if nodes and not isinstance(nodes, list):
+        if nodes and not is_collection(nodes):
             nodes = [nodes]  # type: ignore
         self.nodes = nodes or None  # type: ignore
         self.source = source

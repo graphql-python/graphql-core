@@ -75,7 +75,7 @@ def describe_type_system_scalars():
             "parse_literal": None,
             "extensions": None,
             "ast_node": None,
-            "extension_ast_nodes": [],
+            "extension_ast_nodes": (),
         }
 
     def accepts_a_scalar_type_defining_serialize():
@@ -143,7 +143,7 @@ def describe_type_system_scalars():
 
     def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
         ast_node = ScalarTypeDefinitionNode()
-        extension_ast_nodes = [ScalarTypeExtensionNode()]
+        extension_ast_nodes = (ScalarTypeExtensionNode(),)
         scalar = GraphQLScalarType(
             "SomeScalar", ast_node=ast_node, extension_ast_nodes=extension_ast_nodes
         )
@@ -497,7 +497,7 @@ def describe_type_system_objects():
 
     def accepts_an_object_type_with_ast_node_and_extension_ast_nodes():
         ast_node = ObjectTypeDefinitionNode()
-        extension_ast_nodes = [ObjectTypeExtensionNode()]
+        extension_ast_nodes = (ObjectTypeExtensionNode(),)
         object_type = GraphQLObjectType(
             "SomeObject",
             {"f": GraphQLField(ScalarType)},
@@ -706,7 +706,7 @@ def describe_type_system_interfaces():
             "resolve_type": None,
             "extensions": None,
             "ast_node": None,
-            "extension_ast_nodes": [],
+            "extension_ast_nodes": (),
         }
 
     def accepts_an_interface_type_defining_resolve_type():
@@ -778,7 +778,7 @@ def describe_type_system_interfaces():
 
     def accepts_an_interface_type_with_ast_node_and_extension_ast_nodes():
         ast_node = InterfaceTypeDefinitionNode()
-        extension_ast_nodes = [InterfaceTypeExtensionNode()]
+        extension_ast_nodes = FrozenList([InterfaceTypeExtensionNode()])
         interface_type = GraphQLInterfaceType(
             "SomeInterface",
             {"f": GraphQLField(ScalarType)},
@@ -931,7 +931,7 @@ def describe_type_system_unions():
 
     def accepts_a_union_type_with_ast_node_and_extension_ast_nodes():
         ast_node = UnionTypeDefinitionNode()
-        extension_ast_nodes = [UnionTypeExtensionNode()]
+        extension_ast_nodes = (UnionTypeExtensionNode(),)
         union_type = GraphQLUnionType(
             "SomeUnion",
             [ObjectType],
@@ -1184,7 +1184,7 @@ def describe_type_system_enums():
 
     def accepts_an_enum_type_with_ast_node_and_extension_ast_nodes():
         ast_node = EnumTypeDefinitionNode()
-        extension_ast_nodes = [EnumTypeExtensionNode()]
+        extension_ast_nodes = (EnumTypeExtensionNode(),)
         enum_type = GraphQLEnumType(
             "SomeEnum",
             {},  # type: ignore
@@ -1377,7 +1377,7 @@ def describe_type_system_input_objects():
 
     def accepts_an_input_object_type_with_ast_node_and_extension_ast_nodes():
         ast_node = InputObjectTypeDefinitionNode()
-        extension_ast_nodes = [InputObjectTypeExtensionNode()]
+        extension_ast_nodes = (InputObjectTypeExtensionNode(),)
         input_obj_type = GraphQLInputObjectType(
             "SomeInputObject",
             {},

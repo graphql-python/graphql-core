@@ -12,7 +12,7 @@ from typing import (
     Union,
 )
 
-from ..pyutils import inspect, snake_to_camel
+from ..pyutils import inspect, snake_to_camel, is_collection
 from . import ast
 
 from .ast import Node
@@ -244,7 +244,7 @@ def visit(
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
-    in_array = isinstance(root, list)
+    in_array = is_collection(root)
     keys: Tuple[Node, ...] = (root,)
     idx = -1
     edits: List[Any] = []
@@ -267,7 +267,7 @@ def visit(
             parent = ancestors_pop() if ancestors else None
             if is_edited:
                 if in_array:
-                    node = node[:]
+                    node = list(node)  # Mutable copy
                 else:
                     node = copy(node)
             edit_offset = 0
@@ -282,7 +282,8 @@ def visit(
                         node[edit_key] = edit_value
                     else:
                         setattr(node, edit_key, edit_value)
-
+            if is_edited and in_array:
+                node = tuple(node)  # Immutable copy
             idx = stack.idx
             keys = stack.keys
             edits = stack.edits
@@ -304,7 +305,7 @@ def visit(
             if parent:
                 path_append(key)
 
-        if isinstance(node, list):
+        if is_collection(node):
             result = None
         else:
             if not isinstance(node, Node):
@@ -340,7 +341,7 @@ def visit(
                 path_pop()
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
-            in_array = isinstance(node, list)
+            in_array = is_collection(node)
             keys = node if in_array else visitor_keys.get(node.kind, ())
             idx = -1
             edits = []
