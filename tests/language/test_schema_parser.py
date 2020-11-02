@@ -30,7 +30,7 @@ from graphql.language import (
     UnionTypeDefinitionNode,
     parse,
 )
-from graphql.pyutils import is_collection, FrozenList
+from graphql.pyutils import is_collection
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
@@ -754,8 +754,9 @@ def describe_schema_parser():
         assert definition.description is None
         assert definition.arguments == ()
         assert definition.repeatable is False
-        assert definition.locations == tuple(
-            [name_node("OBJECT", (18, 24)), name_node("INTERFACE", (27, 36)),]
+        assert definition.locations == (
+            name_node("OBJECT", (18, 24)),
+            name_node("INTERFACE", (27, 36)),
         )
 
     def repeatable_directive_definition():

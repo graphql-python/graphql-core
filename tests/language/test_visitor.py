@@ -1,6 +1,6 @@
 from copy import copy
 from functools import partial
-from typing import cast, Dict, List, Optional, Tuple
+from typing import cast, Dict, List, Optional, Tuple, Sequence
 
 from pytest import mark, raises  # type: ignore
 

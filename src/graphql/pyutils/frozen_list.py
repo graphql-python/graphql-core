@@ -1,7 +1,4 @@
-from copy import deepcopy
-from typing import List, TypeVar, Tuple
-
-from .frozen_error import FrozenError
+from typing import TypeVar, Tuple
 
 __all__ = ["FrozenList"]
 
