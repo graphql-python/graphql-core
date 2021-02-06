@@ -18,7 +18,7 @@ cache:
     - "$HOME/.cache/pip"
     - "$TRAVIS_BUILD_DIR/.tox"
 install:
-  - pip install "poetry>=1,<2"
+  - pip install "poetry>=1.1,<2"
   - poetry install
 script:
   - tox -e $TOXENV

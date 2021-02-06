@@ -26,6 +26,17 @@ packages = [
     { include = "graphql", from = "src" },
     { include = "tests", format = "sdist" },
     { include = "docs", format = "sdist" },
+    { include = '.bumpversion.cfg', format = "sdist" },
+    { include = '.coveragerc', format = "sdist" },
+    { include = '.editorconfig', format = "sdist" },
+    { include = '.flake8', format = "sdist" },
+    { include = '.mypy.ini', format = "sdist" },
+    { include = 'codecov.yml', format = "sdist" },
+    { include = 'poetry.lock', format = "sdist" },
+    { include = 'tox.ini', format = "sdist" },
+    { include = 'setup.cfg', format = "sdist" },
+    { include = 'CODEOWNERS', format = "sdist" },
+    { include = 'MANIFEST.in', format = "sdist" }
 ]
 
 [tool.poetry.dependencies]
@@ -35,7 +46,7 @@ python = "^3.6"
 pytest = "^6.2"
 pytest-asyncio = ">=0.14,<1"
 pytest-benchmark = "^3.2"
-pytest-cov = "^2.11"
+pytest-cov = "^2.10"
 pytest-describe = "^1.0"
 pytest-timeout = "^1.4"
 black = "20.8b1"
@@ -44,7 +55,7 @@ mypy = "0.800"
 codecov = "^2"
 sphinx = "^3.4"
 sphinx_rtd_theme = ">=0.5,<1"
-check-manifest = "0.40"
+check-manifest = ">=0.46,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.19"
 
@@ -52,5 +63,5 @@ tox = "^3.19"
 target-version = ['py36', 'py37', 'py38']
 
 [build-system]
-requires = ["poetry>=1,<2"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry_core>=1,<2"]
+build-backend = "poetry.core.masonry.api"
