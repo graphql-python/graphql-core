@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Dict, Generic, TypeVar
+from typing import Dict, TypeVar
 
 from .frozen_error import FrozenError
 
