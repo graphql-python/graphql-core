@@ -1,15 +1,15 @@
 from copy import deepcopy
-from typing import Dict, TypeVar
+from typing import Dict, Generic, TypeVar
 
 from .frozen_error import FrozenError
 
 __all__ = ["FrozenDict"]
 
-K = TypeVar("K")
-T = TypeVar("T", covariant=True)
+KT = TypeVar("KT")
+VT = TypeVar("VT", covariant=True)
 
 
-class FrozenDict(Dict[K, T]):
+class FrozenDict(Dict[KT, VT]):
     """Dictionary that can only be read, but not changed."""
 
     def __delitem__(self, key):

@@ -95,6 +95,10 @@ autodoc_default_options = {
 }
 autosummary_generate = True
 
+autodoc_type_aliases = {
+    'AwaitableOrValue': 'graphql.pyutils.AwaitableOrValue'
+}
+
 # GraphQL-core top level modules with submodules that can be omitted.
 # Sometimes autodoc cannot find classes since it is looking for the
 # qualified form, but the documentation has the shorter form.
@@ -145,6 +149,14 @@ def on_missing_reference(app, env, node, contnode):
     if target in ignore_references:
         return contnode
     typ = node.get('reftype')
+    if typ == 'obj':
+        # workaround for https://github.com/sphinx-doc/sphinx/issues/8818
+        if target in ('Any', 'Optional', 'Union'):
+            return contnode
+        base_module, target = target.split('.', 1)
+        name = target.rsplit('.', 1)[-1]
+        if name in ('T', 'GT', 'GNT', 'KT', 'VT'):
+            return contnode
     if typ != 'class':
         return None
     if '.' in target:  # maybe too specific
