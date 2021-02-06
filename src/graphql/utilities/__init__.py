@@ -81,7 +81,7 @@ from .find_breaking_changes import (
     find_dangerous_changes,
 )
 
-# Report all deprecated usages within a GraphQL document.
+# Report all deprecated usages within a GraphQL document (deprecated).
 from .find_deprecated_usages import find_deprecated_usages
 
 __all__ = [

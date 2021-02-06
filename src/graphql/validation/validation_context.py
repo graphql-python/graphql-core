@@ -1,6 +1,5 @@
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
 
-from .. import GraphQLDirective
 from ..error import GraphQLError
 from ..language import (
     DocumentNode,
@@ -16,6 +15,8 @@ from ..language import (
 from ..type import (
     GraphQLArgument,
     GraphQLCompositeType,
+    GraphQLDirective,
+    GraphQLEnumValue,
     GraphQLField,
     GraphQLInputType,
     GraphQLOutputType,
@@ -241,3 +242,6 @@ class ValidationContext(ASTValidationContext):
 
     def get_argument(self) -> Optional[GraphQLArgument]:
         return self._type_info.get_argument()
+
+    def get_enum_value(self) -> Optional[GraphQLEnumValue]:
+        return self._type_info.get_enum_value()

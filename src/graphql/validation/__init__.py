@@ -105,6 +105,7 @@ from .rules.unique_directive_names import UniqueDirectiveNamesRule
 from .rules.possible_type_extensions import PossibleTypeExtensionsRule
 
 # Optional rules not defined by the GraphQL Specification
+from .rules.custom.no_deprecated import NoDeprecatedCustomRule
 from .rules.custom.no_schema_introspection import NoSchemaIntrospectionCustomRule
 
 __all__ = [
@@ -149,5 +150,6 @@ __all__ = [
     "UniqueFieldDefinitionNamesRule",
     "UniqueDirectiveNamesRule",
     "PossibleTypeExtensionsRule",
+    "NoDeprecatedCustomRule",
     "NoSchemaIntrospectionCustomRule",
 ]
