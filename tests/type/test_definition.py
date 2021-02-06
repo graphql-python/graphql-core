@@ -1552,17 +1552,14 @@ def describe_type_system_input_objects():
                     "SomeInputObject",
                     {
                         "f": GraphQLInputField(  # type: ignore
-                            ScalarType, resolve=resolve,
+                            ScalarType,
+                            resolve=resolve,
                         )
                     },
                 )
             input_obj_type = GraphQLInputObjectType(
                 "SomeInputObject",
-                {
-                    "f": GraphQLField(  # type: ignore
-                        ScalarType, resolve=resolve
-                    )
-                },
+                {"f": GraphQLField(ScalarType, resolve=resolve)},  # type: ignore
             )
             with raises(TypeError) as exc_info:
                 if input_obj_type.fields:

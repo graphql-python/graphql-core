@@ -459,7 +459,9 @@ def describe_subscription_initialization_phase():
         )
 
         result = await subscribe(
-            schema=email_schema, document=ast, variable_values={"priority": "meow"},
+            schema=email_schema,
+            document=ast,
+            variable_values={"priority": "meow"},
         )
 
         assert result == (

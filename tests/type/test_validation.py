@@ -1338,7 +1338,9 @@ def describe_type_system_interface_fields_must_have_output_types():
             field.type = field_type
         bad_interface_type = GraphQLInterfaceType("BadInterface", {"badField": field})
         bad_implementing_type = GraphQLObjectType(
-            "BadImplementing", {"badField": field}, interfaces=[bad_interface_type],
+            "BadImplementing",
+            {"badField": field},
+            interfaces=[bad_interface_type],
         )
         return GraphQLSchema(
             GraphQLObjectType("Query", {"f": GraphQLField(bad_interface_type)}),
@@ -1493,7 +1495,9 @@ def describe_type_system_arguments_must_have_input_types():
             GraphQLObjectType("Query", {"f": GraphQLField(bad_object_type)}),
             directives=[
                 GraphQLDirective(
-                    "BadDirective", [DirectiveLocation.QUERY], {"badArg": argument},
+                    "BadDirective",
+                    [DirectiveLocation.QUERY],
+                    {"badArg": argument},
                 )
             ],
         )

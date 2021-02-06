@@ -317,7 +317,9 @@ class GraphQLSchema:
         return self.is_sub_type(abstract_type, possible_type)
 
     def is_sub_type(
-        self, abstract_type: GraphQLAbstractType, maybe_sub_type: GraphQLNamedType,
+        self,
+        abstract_type: GraphQLAbstractType,
+        maybe_sub_type: GraphQLNamedType,
     ) -> bool:
         """Check whether a type is a subtype of a given abstract type."""
         types = self._sub_type_map.get(abstract_type.name)

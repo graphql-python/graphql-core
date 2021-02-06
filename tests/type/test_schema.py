@@ -95,7 +95,10 @@ def describe_type_system_schema():
         )
 
         schema = GraphQLSchema(
-            BlogQuery, BlogMutation, BlogSubscription, description="Sample schema",
+            BlogQuery,
+            BlogMutation,
+            BlogSubscription,
+            description="Sample schema",
         )
 
         kwargs = schema.to_kwargs()
@@ -199,7 +202,9 @@ def describe_type_system_schema():
             SomeSubtype = GraphQLObjectType(
                 "SomeSubtype", {}, interfaces=lambda: [SomeInterface]
             )
-            schema = GraphQLSchema(types=[SomeSubtype],)
+            schema = GraphQLSchema(
+                types=[SomeSubtype],
+            )
             assert schema.type_map["SomeInterface"] is SomeInterface
             assert schema.type_map["AnotherInterface"] is AnotherInterface
             assert schema.type_map["SomeSubtype"] is SomeSubtype

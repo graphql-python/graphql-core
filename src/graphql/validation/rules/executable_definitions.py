@@ -40,7 +40,8 @@ class ExecutableDefinitionsRule(ASTValidationRule):
                 )
                 self.report_error(
                     GraphQLError(
-                        f"The {def_name} definition is not executable.", definition,
+                        f"The {def_name} definition is not executable.",
+                        definition,
                     )
                 )
         return SKIP

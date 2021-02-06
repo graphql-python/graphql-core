@@ -668,7 +668,10 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("{ a }")
 
         result = execute(schema, document, operation_name="")
-        assert result == (None, [{"message": "Unknown operation named ''."}],)
+        assert result == (
+            None,
+            [{"message": "Unknown operation named ''."}],
+        )
 
     def uses_the_query_schema_for_queries():
         schema = GraphQLSchema(

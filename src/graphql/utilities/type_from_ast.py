@@ -40,7 +40,10 @@ def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> Optional[GraphQ
     ...
 
 
-def type_from_ast(schema: GraphQLSchema, type_node: TypeNode,) -> Optional[GraphQLType]:
+def type_from_ast(
+    schema: GraphQLSchema,
+    type_node: TypeNode,
+) -> Optional[GraphQLType]:
     """Get the GraphQL type definition from an AST node.
 
     Given a Schema and an AST node describing a type, return a GraphQLType definition

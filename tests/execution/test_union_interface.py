@@ -518,7 +518,10 @@ def describe_execute_union_and_intersection_types():
             document=document,
             root_value=root_value,
             context_value=context_value,
-        ) == ({"name": "John", "friends": [{"name": "Liz"}]}, None,)
+        ) == (
+            {"name": "John", "friends": [{"name": "Liz"}]},
+            None,
+        )
 
         assert encountered == {
             "schema": schema2,

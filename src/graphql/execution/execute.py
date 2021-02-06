@@ -392,7 +392,9 @@ class ExecutionContext:
             elif is_awaitable(result):
                 # noinspection PyShadowingNames
                 async def set_result(
-                    results: Dict[str, Any], response_name: str, result: Awaitable,
+                    results: Dict[str, Any],
+                    response_name: str,
+                    result: Awaitable,
                 ) -> Dict[str, Any]:
                     results[response_name] = await result
                     return results

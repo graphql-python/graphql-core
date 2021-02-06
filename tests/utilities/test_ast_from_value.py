@@ -130,7 +130,8 @@ def describe_ast_from_value():
 
     def converts_using_serialize_from_a_custom_scalar_type():
         pass_through_scalar = GraphQLScalarType(
-            "PassThroughScalar", serialize=lambda value: value,
+            "PassThroughScalar",
+            serialize=lambda value: value,
         )
 
         assert ast_from_value("value", pass_through_scalar) == StringValueNode(
@@ -146,7 +147,8 @@ def describe_ast_from_value():
         assert str(exc_info.value) == "Cannot convert value to AST: inf."
 
         return_null_scalar = GraphQLScalarType(
-            "ReturnNullScalar", serialize=lambda value: None,
+            "ReturnNullScalar",
+            serialize=lambda value: None,
         )
 
         assert ast_from_value("value", return_null_scalar) is None
@@ -155,7 +157,8 @@ def describe_ast_from_value():
             pass
 
         return_custom_class_scalar = GraphQLScalarType(
-            "ReturnCustomClassScalar", serialize=lambda value: SomeClass(),
+            "ReturnCustomClassScalar",
+            serialize=lambda value: SomeClass(),
         )
 
         with raises(TypeError) as exc_info:

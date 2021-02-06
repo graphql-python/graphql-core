@@ -93,7 +93,9 @@ def describe_type_comparators():
                 "Interface", {"field": GraphQLField(GraphQLString)}
             )
             impl = GraphQLObjectType(
-                "Object", {"field": GraphQLField(GraphQLString)}, [iface],
+                "Object",
+                {"field": GraphQLField(GraphQLString)},
+                [iface],
             )
             schema = _test_schema(impl)
             assert is_type_sub_type_of(schema, impl, iface)
@@ -106,7 +108,9 @@ def describe_type_comparators():
                 "Interface2", {"field": GraphQLField(GraphQLString)}, [iface]
             )
             impl = GraphQLObjectType(
-                "Object", {"field": GraphQLField(GraphQLString)}, [iface2, iface],
+                "Object",
+                {"field": GraphQLField(GraphQLString)},
+                [iface2, iface],
             )
             schema = _test_schema(impl)
             assert is_type_sub_type_of(schema, iface2, iface)

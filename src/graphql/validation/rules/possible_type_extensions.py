@@ -21,7 +21,7 @@ __all__ = ["PossibleTypeExtensionsRule"]
 class PossibleTypeExtensionsRule(SDLValidationRule):
     """Possible type extension
 
-     A type extension is only valid if the type is defined and has the same kind.
+    A type extension is only valid if the type is defined and has the same kind.
     """
 
     def __init__(self, context: SDLValidationContext):

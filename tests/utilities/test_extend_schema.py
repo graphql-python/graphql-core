@@ -52,7 +52,8 @@ TypeWithAstNode = Union[
 ]
 
 TypeWithExtensionAstNodes = Union[
-    GraphQLNamedType, GraphQLSchema,
+    GraphQLNamedType,
+    GraphQLSchema,
 ]
 
 

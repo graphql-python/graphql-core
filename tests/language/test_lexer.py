@@ -356,13 +356,17 @@ def describe_lexer():
             "1_1234", "Invalid number, expected digit but got: '_'.", (1, 2)
         )
         assert_syntax_error(
-            "1ß", "Cannot parse the unexpected character 'ß'.", (1, 2),
+            "1ß",
+            "Cannot parse the unexpected character 'ß'.",
+            (1, 2),
         )
         assert_syntax_error(
             "1.23f", "Invalid number, expected digit but got: 'f'.", (1, 5)
         )
         assert_syntax_error(
-            "12ß", "Cannot parse the unexpected character 'ß'.", (1, 3),
+            "12ß",
+            "Cannot parse the unexpected character 'ß'.",
+            (1, 3),
         )
 
     # noinspection PyArgumentEqualDefault

@@ -29,26 +29,35 @@ def describe_execute_resolve_function():
             schema=_test_schema(GraphQLField(GraphQLString)),
             source="{ test }",
             root_value=RootValue(),
-        ) == ({"test": "testValue"}, None,)
+        ) == (
+            {"test": "testValue"},
+            None,
+        )
 
     def default_function_accesses_keys_of_dict():
         root_value = {"test": "testValue"}
 
-        assert graphql_sync(
-            schema=_test_schema(GraphQLField(GraphQLString)),
-            source="{ test }",
-            root_value=root_value,
-        ) == ({"test": "testValue"}, None)
+        assert (
+            graphql_sync(
+                schema=_test_schema(GraphQLField(GraphQLString)),
+                source="{ test }",
+                root_value=root_value,
+            )
+            == ({"test": "testValue"}, None)
+        )
 
     def default_function_accesses_keys_of_chain_map():
         # use a mapping that is not a subclass of dict
         root_value = ChainMap({"test": "testValue"})
 
-        assert graphql_sync(
-            schema=_test_schema(GraphQLField(GraphQLString)),
-            source="{ test }",
-            root_value=root_value,
-        ) == ({"test": "testValue"}, None)
+        assert (
+            graphql_sync(
+                schema=_test_schema(GraphQLField(GraphQLString)),
+                source="{ test }",
+                root_value=root_value,
+            )
+            == ({"test": "testValue"}, None)
+        )
 
     def default_function_calls_methods():
         class RootValue:
@@ -61,7 +70,10 @@ def describe_execute_resolve_function():
             schema=_test_schema(GraphQLField(GraphQLString)),
             source="{ test }",
             root_value=RootValue(),
-        ) == ({"test": "secretValue"}, None,)
+        ) == (
+            {"test": "secretValue"},
+            None,
+        )
 
     def default_function_passes_args_and_context():
         class Adder:
@@ -90,7 +102,10 @@ def describe_execute_resolve_function():
             source=source,
             root_value=root_value,
             context_value=context_value,
-        ) == ({"test": 789}, None,)
+        ) == (
+            {"test": 789},
+            None,
+        )
 
     def uses_provided_resolve_function():
         schema = _test_schema(
@@ -114,7 +129,10 @@ def describe_execute_resolve_function():
 
         assert execute("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert execute("{ test }", "Source!") == ({"test": "['Source!', {}]"}, None,)
+        assert execute("{ test }", "Source!") == (
+            {"test": "['Source!', {}]"},
+            None,
+        )
 
         assert execute('{ test(aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'aStr': 'String!'}]"},
@@ -144,7 +162,10 @@ def describe_execute_resolve_function():
 
         assert execute("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert execute("{ test }", "Source!") == ({"test": "['Source!', {}]"}, None,)
+        assert execute("{ test }", "Source!") == (
+            {"test": "['Source!', {}]"},
+            None,
+        )
 
         assert execute('{ test(aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'a_str': 'String!'}]"},
@@ -177,7 +198,11 @@ def describe_execute_resolve_function():
         )
 
         def execute(source, root_value=None):
-            return graphql_sync(schema=schema, source=source, root_value=root_value,)
+            return graphql_sync(
+                schema=schema,
+                source=source,
+                root_value=root_value,
+            )
 
         assert execute("{ test }") == ({"test": "[None, {}]"}, None)
 
