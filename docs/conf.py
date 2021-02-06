@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'GraphQL-core 3'
-copyright = '2020, Christoph Zwerschke'
+copyright = '2021, Christoph Zwerschke'
 author = 'Christoph Zwerschke'
 
 # The version info for the project you're documenting, acts as replacement for
