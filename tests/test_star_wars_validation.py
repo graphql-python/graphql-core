@@ -1,10 +1,13 @@
+from typing import List
+
+from graphql.error import GraphQLError
 from graphql.language import parse, Source
 from graphql.validation import validate
 
 from .star_wars_schema import star_wars_schema
 
 
-def validation_errors(query):
+def validation_errors(query: str) -> List[GraphQLError]:
     """Helper function to test a query and the expected response."""
     source = Source(query, "StarWars.graphql")
     ast = parse(source)

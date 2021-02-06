@@ -1,5 +1,6 @@
 from collections import namedtuple
 from gc import collect
+from typing import Any
 
 from pytest import mark  # type: ignore
 
@@ -10,6 +11,7 @@ from graphql.type import (
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
+    GraphQLOutputType,
     GraphQLSchema,
     GraphQLString,
 )
@@ -44,18 +46,20 @@ def get_response(test_type, test_data):
     )
 
 
-def check_response(response, expected):
+def check_response(response: Any, expected: Any) -> None:
     if not response.errors:
         response = response.data
     assert response == expected
 
 
-def check(test_type, test_data, expected):
+def check(test_type: GraphQLOutputType, test_data: Any, expected: Any) -> None:
 
     check_response(get_response(test_type, test_data), expected)
 
 
-async def check_async(test_type, test_data, expected):
+async def check_async(
+    test_type: GraphQLOutputType, test_data: Any, expected: Any
+) -> None:
     check_response(await get_response(test_type, test_data), expected)
 
     # Note: When Array values are rejected asynchronously,

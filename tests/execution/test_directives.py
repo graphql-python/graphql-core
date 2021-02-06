@@ -1,7 +1,7 @@
-from graphql import GraphQLSchema
-from graphql.execution import execute
+from graphql.execution import execute, ExecutionResult
 from graphql.language import parse
-from graphql.type import GraphQLObjectType, GraphQLField, GraphQLString
+from graphql.pyutils import AwaitableOrValue
+from graphql.type import GraphQLObjectType, GraphQLField, GraphQLSchema, GraphQLString
 
 schema = GraphQLSchema(
     GraphQLObjectType(
@@ -19,7 +19,7 @@ class RootValue:
         return "b"
 
 
-def execute_test_query(query):
+def execute_test_query(query: str) -> AwaitableOrValue[ExecutionResult]:
     document = parse(query)
     return execute(schema, document, RootValue())
 

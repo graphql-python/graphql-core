@@ -1,10 +1,12 @@
 import re
 from inspect import isawaitable
+from typing import Any, Awaitable, cast
 
 from pytest import mark  # type: ignore
 
-from graphql.execution import execute
+from graphql.execution import execute, ExecutionResult
 from graphql.language import parse
+from graphql.pyutils import AwaitableOrValue
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
@@ -95,22 +97,25 @@ schema = build_schema(
 )
 
 
-def execute_query(query, root_value):
+def execute_query(query: str, root_value: Any) -> AwaitableOrValue[ExecutionResult]:
     return execute(schema=schema, document=parse(query), root_value=root_value)
 
 
 # avoids also doing any nests
-def patch(data):
+def patch(data: str) -> str:
     return re.sub(
         r"\bsyncNonNull\b", "promiseNonNull", re.sub(r"\bsync\b", "promise", data)
     )
 
 
-async def execute_sync_and_async(query, root_value):
+async def execute_sync_and_async(query: str, root_value: Any) -> ExecutionResult:
     sync_result = execute_query(query, root_value)
     if isawaitable(sync_result):
-        sync_result = await sync_result
-    async_result = await execute_query(patch(query), root_value)
+        sync_result = await cast(Awaitable[ExecutionResult], sync_result)
+    sync_result = cast(ExecutionResult, sync_result)
+    async_result = await cast(
+        Awaitable[ExecutionResult], execute_query(patch(query), root_value)
+    )
 
     assert repr(async_result) == patch(repr(sync_result))
     return sync_result
@@ -254,12 +259,16 @@ def describe_execute_handles_non_nullable_types():
 
         @mark.asyncio
         async def returns_null():
-            result = await execute_query(query, NullingData())
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, NullingData())
+            )
             assert result == (data, None)
 
         @mark.asyncio
         async def throws():
-            result = await execute_query(query, ThrowingData())
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+            )
             assert result == (
                 data,
                 [
@@ -384,7 +393,9 @@ def describe_execute_handles_non_nullable_types():
 
         @mark.asyncio
         async def returns_null():
-            result = await execute_query(query, NullingData())
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, NullingData())
+            )
             assert result == (
                 data,
                 [
@@ -445,7 +456,9 @@ def describe_execute_handles_non_nullable_types():
 
         @mark.asyncio
         async def throws():
-            result = await execute_query(query, ThrowingData())
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+            )
             assert result == (
                 data,
                 [

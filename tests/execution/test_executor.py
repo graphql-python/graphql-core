@@ -112,7 +112,7 @@ def describe_execute_handles_basic_execution_tasks():
             f = "Fish"
 
             # Called only by DataType::pic static resolver
-            def pic(self, _info, size):
+            def pic(self, _info, size: int):
                 return f"Pic of size: {size}"
 
             def deep(self, _info):

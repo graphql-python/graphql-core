@@ -1,7 +1,9 @@
 from collections import ChainMap
+from typing import Any, Optional
 
 from graphql import graphql_sync
 from graphql.error import GraphQLError
+from graphql.execution import ExecutionResult
 from graphql.language import SourceLocation
 from graphql.type import (
     GraphQLArgument,
@@ -16,7 +18,7 @@ from graphql.type import (
 
 
 def describe_execute_resolve_function():
-    def _test_schema(test_field):
+    def _test_schema(test_field: GraphQLField) -> GraphQLSchema:
         return GraphQLSchema(GraphQLObjectType("Query", {"test": test_field}))
 
     def default_function_accesses_attributes():
@@ -68,7 +70,7 @@ def describe_execute_resolve_function():
             def __init__(self, num):
                 self._num = num
 
-            def test(self, info, addend1):
+            def test(self, info, addend1: int):
                 return self._num + addend1 + info.context.addend2
 
         root_value = Adder(700)
@@ -137,7 +139,7 @@ def describe_execute_resolve_function():
             )
         )
 
-        def execute(source, root_value=None):
+        def execute(source: str, root_value: Optional[Any] = None) -> ExecutionResult:
             return graphql_sync(schema=schema, source=source, root_value=root_value)
 
         assert execute("{ test }") == ({"test": "[None, {}]"}, None)

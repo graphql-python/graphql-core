@@ -1,9 +1,11 @@
+from typing import Any
+
 from graphql import graphql_sync
 
 from .star_wars_schema import star_wars_schema
 
 
-def query_star_wars(source):
+def query_star_wars(source: str) -> Any:
     result = graphql_sync(star_wars_schema, source)
     assert result.errors is None
     return result.data

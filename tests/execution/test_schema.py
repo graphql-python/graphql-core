@@ -19,7 +19,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
         class Article:
 
             # noinspection PyShadowingBuiltins
-            def __init__(self, id):
+            def __init__(self, id: int):
                 self.id = id
                 self.isPublished = True
                 self.author = JohnSmith()
@@ -77,7 +77,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
                 "article": GraphQLField(
                     BlogArticle,
                     args={"id": GraphQLArgument(GraphQLID)},
-                    resolve=lambda obj, info, id: Article(id),
+                    resolve=lambda _obj, _info, id: Article(id),
                 ),
                 "feed": GraphQLField(
                     GraphQLList(BlogArticle),
@@ -90,11 +90,11 @@ def describe_execute_handles_execution_with_a_complex_schema():
 
         # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Author:
-            def pic(self, info_, width, height):
+            def pic(self, info_, width: int, height: int) -> "Pic":
                 return Pic(123, width, height)
 
             @property
-            def recentArticle(self):
+            def recentArticle(self) -> Article:
                 return Article(1)
 
         class JohnSmith(Author):
@@ -102,7 +102,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
             name = "John Smith"
 
         class Pic:
-            def __init__(self, uid, width, height):
+            def __init__(self, uid: int, width: int, height: int):
                 self.url = f"cdn://{uid}"
                 self.width = f"{width}"
                 self.height = f"{height}"
