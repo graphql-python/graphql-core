@@ -57,7 +57,7 @@ sphinx = "^3.4"
 sphinx_rtd_theme = ">=0.5,<1"
 check-manifest = ">=0.46,<1"
 bump2version = ">=1.0,<2"
-tox = "^3.19"
+tox = "^3.21"
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
