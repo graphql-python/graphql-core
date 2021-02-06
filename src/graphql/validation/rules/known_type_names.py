@@ -9,7 +9,7 @@ from ...language import (
     NamedTypeNode,
     TypeDefinitionNode,
 )
-from ...type import specified_scalar_types
+from ...type import introspection_types, specified_scalar_types
 from ...pyutils import did_you_mean, suggestion_list
 from . import ASTValidationRule, ValidationContext, SDLValidationContext
 
@@ -55,12 +55,12 @@ class KnownTypeNamesRule(ASTValidationRule):
             except IndexError:
                 definition_node = parent
             is_sdl = is_sdl_node(definition_node)
-            if is_sdl and type_name in specified_scalar_types:
+            if is_sdl and type_name in standard_type_names:
                 return
 
             suggested_types = suggestion_list(
                 type_name,
-                list(specified_scalar_types) + self.type_names
+                list(standard_type_names) + self.type_names
                 if is_sdl
                 else self.type_names,
             )
@@ -70,6 +70,9 @@ class KnownTypeNamesRule(ASTValidationRule):
                     node,
                 )
             )
+
+
+standard_type_names = set(specified_scalar_types).union(introspection_types)
 
 
 def is_sdl_node(value: Union[Node, Collection[Node], None]) -> bool:

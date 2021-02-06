@@ -18,11 +18,16 @@ def describe_validate_known_type_names():
     def known_type_names_are_valid():
         assert_valid(
             """
-            query Foo($var: String, $required: [String!]!) {
+            query Foo(
+              $var: String
+              $required: [Int!]!
+              $introspectionType: __EnumValue
+            ) {
               user(id: 4) {
                 pets { ... on Pet { name }, ...PetFields, ... { name } }
               }
             }
+
             fragment PetFields on Pet {
               name
             }
@@ -72,246 +77,262 @@ def describe_validate_known_type_names():
             schema,
         )
 
-    def reference_types_defined_inside_the_same_document():
-        assert_sdl_valid(
-            """
-            union SomeUnion = SomeObject | AnotherObject
+    def describe_within_sdl():
+        def use_standard_types():
+            assert_sdl_valid(
+                """
+                type Query {
+                  string: String
+                  int: Int
+                  float: Float
+                  boolean: Boolean
+                  id: ID
+                  introspectionType: __EnumValue
+                }
+                """
+            )
 
-            type SomeObject implements SomeInterface {
-            someScalar(arg: SomeInputObject): SomeScalar
-            }
+        def reference_types_defined_inside_the_same_document():
+            assert_sdl_valid(
+                """
+                union SomeUnion = SomeObject | AnotherObject
 
-            type AnotherObject {
-            foo(arg: SomeInputObject): String
-            }
+                type SomeObject implements SomeInterface {
+                someScalar(arg: SomeInputObject): SomeScalar
+                }
 
-            type SomeInterface {
-            someScalar(arg: SomeInputObject): SomeScalar
-            }
+                type AnotherObject {
+                foo(arg: SomeInputObject): String
+                }
 
-            input SomeInputObject {
-            someScalar: SomeScalar
-            }
+                type SomeInterface {
+                someScalar(arg: SomeInputObject): SomeScalar
+                }
 
-            scalar SomeScalar
+                input SomeInputObject {
+                someScalar: SomeScalar
+                }
 
-            type RootQuery {
-            someInterface: SomeInterface
-            someUnion: SomeUnion
-            someScalar: SomeScalar
-            someObject: SomeObject
-            }
+                scalar SomeScalar
 
-            schema {
-            query: RootQuery
-            }
-            """
-        )
+                type RootQuery {
+                someInterface: SomeInterface
+                someUnion: SomeUnion
+                someScalar: SomeScalar
+                someObject: SomeObject
+                }
 
-    def unknown_type_references():
-        assert_sdl_errors(
-            """
-            type A
-            type B
+                schema {
+                query: RootQuery
+                }
+                """
+            )
 
-            type SomeObject implements C {
-              e(d: D): E
-            }
+        def unknown_type_references():
+            assert_sdl_errors(
+                """
+                type A
+                type B
 
-            union SomeUnion = F | G
+                type SomeObject implements C {
+                  e(d: D): E
+                }
 
-            interface SomeInterface {
-              i(h: H): I
-            }
+                union SomeUnion = F | G
 
-            input SomeInput {
-              j: J
-            }
+                interface SomeInterface {
+                  i(h: H): I
+                }
 
-            directive @SomeDirective(k: K) on QUERY
+                input SomeInput {
+                  j: J
+                }
 
-            schema {
-              query: L
-              mutation: M
-              subscription: N
-            }
-            """,
-            [
-                {
-                    "message": "Unknown type 'C'. Did you mean 'A' or 'B'?",
-                    "locations": [(5, 40)],
-                },
-                {
-                    "message": "Unknown type 'D'. Did you mean 'A', 'B', or 'ID'?",
-                    "locations": [(6, 20)],
-                },
-                {
-                    "message": "Unknown type 'E'. Did you mean 'A' or 'B'?",
-                    "locations": [(6, 24)],
-                },
-                {
-                    "message": "Unknown type 'F'. Did you mean 'A' or 'B'?",
-                    "locations": [(9, 31)],
-                },
-                {
-                    "message": "Unknown type 'G'. Did you mean 'A' or 'B'?",
-                    "locations": [(9, 35)],
-                },
-                {
-                    "message": "Unknown type 'H'. Did you mean 'A' or 'B'?",
-                    "locations": [(12, 20)],
-                },
-                {
-                    "message": "Unknown type 'I'. Did you mean 'A', 'B', or 'ID'?",
-                    "locations": [(12, 24)],
-                },
-                {
-                    "message": "Unknown type 'J'. Did you mean 'A' or 'B'?",
-                    "locations": [(16, 18)],
-                },
-                {
-                    "message": "Unknown type 'K'. Did you mean 'A' or 'B'?",
-                    "locations": [(19, 41)],
-                },
-                {
-                    "message": "Unknown type 'L'. Did you mean 'A' or 'B'?",
-                    "locations": [(22, 22)],
-                },
-                {
-                    "message": "Unknown type 'M'. Did you mean 'A' or 'B'?",
-                    "locations": [(23, 25)],
-                },
-                {
-                    "message": "Unknown type 'N'. Did you mean 'A' or 'B'?",
-                    "locations": [(24, 29)],
-                },
-            ],
-        )
+                directive @SomeDirective(k: K) on QUERY
 
-    def does_not_consider_non_type_definitions():
-        assert_sdl_errors(
-            """
-            query Foo { __typename }
-            fragment Foo on Query { __typename }
-            directive @Foo on QUERY
+                schema {
+                  query: L
+                  mutation: M
+                  subscription: N
+                }
+                """,
+                [
+                    {
+                        "message": "Unknown type 'C'. Did you mean 'A' or 'B'?",
+                        "locations": [(5, 44)],
+                    },
+                    {
+                        "message": "Unknown type 'D'. Did you mean 'A', 'B', or 'ID'?",
+                        "locations": [(6, 24)],
+                    },
+                    {
+                        "message": "Unknown type 'E'. Did you mean 'A' or 'B'?",
+                        "locations": [(6, 28)],
+                    },
+                    {
+                        "message": "Unknown type 'F'. Did you mean 'A' or 'B'?",
+                        "locations": [(9, 35)],
+                    },
+                    {
+                        "message": "Unknown type 'G'. Did you mean 'A' or 'B'?",
+                        "locations": [(9, 39)],
+                    },
+                    {
+                        "message": "Unknown type 'H'. Did you mean 'A' or 'B'?",
+                        "locations": [(12, 24)],
+                    },
+                    {
+                        "message": "Unknown type 'I'. Did you mean 'A', 'B', or 'ID'?",
+                        "locations": [(12, 28)],
+                    },
+                    {
+                        "message": "Unknown type 'J'. Did you mean 'A' or 'B'?",
+                        "locations": [(16, 22)],
+                    },
+                    {
+                        "message": "Unknown type 'K'. Did you mean 'A' or 'B'?",
+                        "locations": [(19, 45)],
+                    },
+                    {
+                        "message": "Unknown type 'L'. Did you mean 'A' or 'B'?",
+                        "locations": [(22, 26)],
+                    },
+                    {
+                        "message": "Unknown type 'M'. Did you mean 'A' or 'B'?",
+                        "locations": [(23, 29)],
+                    },
+                    {
+                        "message": "Unknown type 'N'. Did you mean 'A' or 'B'?",
+                        "locations": [(24, 33)],
+                    },
+                ],
+            )
 
-            type Query {
-              foo: Foo
-            }
-            """,
-            [{"message": "Unknown type 'Foo'.", "locations": [(7, 20)]}],
-        )
+        def does_not_consider_non_type_definitions():
+            assert_sdl_errors(
+                """
+                query Foo { __typename }
+                fragment Foo on Query { __typename }
+                directive @Foo on QUERY
 
-    def reference_standard_scalars_inside_extension_document():
-        schema = build_schema("type Foo")
-        sdl = """
-            type SomeType {
-              string: String
-              int: Int
-              float: Float
-              boolean: Boolean
-              id: ID
-            }
-            """
+                type Query {
+                  foo: Foo
+                }
+                """,
+                [{"message": "Unknown type 'Foo'.", "locations": [(7, 24)]}],
+            )
 
-        assert_sdl_valid(sdl, schema=schema)
+        def reference_standard_types_inside_extension_document():
+            schema = build_schema("type Foo")
+            sdl = """
+                type SomeType {
+                  string: String
+                  int: Int
+                  float: Float
+                  boolean: Boolean
+                  id: ID
+                  introspectionType: __EnumValue
+                }
+                """
 
-    def reference_types_inside_extension_document():
-        schema = build_schema("type Foo")
-        sdl = """
-            type QueryRoot {
-              foo: Foo
-              bar: Bar
-            }
+            assert_sdl_valid(sdl, schema=schema)
 
-            scalar Bar
+        def reference_types_inside_extension_document():
+            schema = build_schema("type Foo")
+            sdl = """
+                type QueryRoot {
+                  foo: Foo
+                  bar: Bar
+                }
 
-            schema {
-              query: QueryRoot
-            }
-            """
+                scalar Bar
 
-        assert_sdl_valid(sdl, schema=schema)
+                schema {
+                  query: QueryRoot
+                }
+                """
 
-    def unknown_type_references_inside_extension_document():
-        schema = build_schema("type A")
-        sdl = """
-            type B
+            assert_sdl_valid(sdl, schema=schema)
 
-            type SomeObject implements C {
-              e(d: D): E
-            }
+        def unknown_type_references_inside_extension_document():
+            schema = build_schema("type A")
+            sdl = """
+                type B
 
-            union SomeUnion = F | G
+                type SomeObject implements C {
+                  e(d: D): E
+                }
 
-            interface SomeInterface {
-              i(h: H): I
-            }
+                union SomeUnion = F | G
 
-            input SomeInput {
-              j: J
-            }
+                interface SomeInterface {
+                  i(h: H): I
+                }
 
-            directive @SomeDirective(k: K) on QUERY
+                input SomeInput {
+                  j: J
+                }
 
-            schema {
-              query: L
-              mutation: M
-              subscription: N
-            }
-            """
+                directive @SomeDirective(k: K) on QUERY
 
-        assert_sdl_errors(
-            sdl,
-            [
-                {
-                    "message": "Unknown type 'C'. Did you mean 'A' or 'B'?",
-                    "locations": [(4, 40)],
-                },
-                {
-                    "message": "Unknown type 'D'. Did you mean 'A', 'B', or 'ID'?",
-                    "locations": [(5, 20)],
-                },
-                {
-                    "message": "Unknown type 'E'. Did you mean 'A' or 'B'?",
-                    "locations": [(5, 24)],
-                },
-                {
-                    "message": "Unknown type 'F'. Did you mean 'A' or 'B'?",
-                    "locations": [(8, 31)],
-                },
-                {
-                    "message": "Unknown type 'G'. Did you mean 'A' or 'B'?",
-                    "locations": [(8, 35)],
-                },
-                {
-                    "message": "Unknown type 'H'. Did you mean 'A' or 'B'?",
-                    "locations": [(11, 20)],
-                },
-                {
-                    "message": "Unknown type 'I'. Did you mean 'A', 'B', or 'ID'?",
-                    "locations": [(11, 24)],
-                },
-                {
-                    "message": "Unknown type 'J'. Did you mean 'A' or 'B'?",
-                    "locations": [(15, 18)],
-                },
-                {
-                    "message": "Unknown type 'K'. Did you mean 'A' or 'B'?",
-                    "locations": [(18, 41)],
-                },
-                {
-                    "message": "Unknown type 'L'. Did you mean 'A' or 'B'?",
-                    "locations": [(21, 22)],
-                },
-                {
-                    "message": "Unknown type 'M'. Did you mean 'A' or 'B'?",
-                    "locations": [(22, 25)],
-                },
-                {
-                    "message": "Unknown type 'N'. Did you mean 'A' or 'B'?",
-                    "locations": [(23, 29)],
-                },
-            ],
-            schema,
-        )
+                schema {
+                  query: L
+                  mutation: M
+                  subscription: N
+                }
+                """
+
+            assert_sdl_errors(
+                sdl,
+                [
+                    {
+                        "message": "Unknown type 'C'. Did you mean 'A' or 'B'?",
+                        "locations": [(4, 44)],
+                    },
+                    {
+                        "message": "Unknown type 'D'. Did you mean 'A', 'B', or 'ID'?",
+                        "locations": [(5, 24)],
+                    },
+                    {
+                        "message": "Unknown type 'E'. Did you mean 'A' or 'B'?",
+                        "locations": [(5, 28)],
+                    },
+                    {
+                        "message": "Unknown type 'F'. Did you mean 'A' or 'B'?",
+                        "locations": [(8, 35)],
+                    },
+                    {
+                        "message": "Unknown type 'G'. Did you mean 'A' or 'B'?",
+                        "locations": [(8, 39)],
+                    },
+                    {
+                        "message": "Unknown type 'H'. Did you mean 'A' or 'B'?",
+                        "locations": [(11, 24)],
+                    },
+                    {
+                        "message": "Unknown type 'I'. Did you mean 'A', 'B', or 'ID'?",
+                        "locations": [(11, 28)],
+                    },
+                    {
+                        "message": "Unknown type 'J'. Did you mean 'A' or 'B'?",
+                        "locations": [(15, 22)],
+                    },
+                    {
+                        "message": "Unknown type 'K'. Did you mean 'A' or 'B'?",
+                        "locations": [(18, 45)],
+                    },
+                    {
+                        "message": "Unknown type 'L'. Did you mean 'A' or 'B'?",
+                        "locations": [(21, 26)],
+                    },
+                    {
+                        "message": "Unknown type 'M'. Did you mean 'A' or 'B'?",
+                        "locations": [(22, 29)],
+                    },
+                    {
+                        "message": "Unknown type 'N'. Did you mean 'A' or 'B'?",
+                        "locations": [(23, 33)],
+                    },
+                ],
+                schema,
+            )

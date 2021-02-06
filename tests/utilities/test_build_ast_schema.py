@@ -28,6 +28,7 @@ from graphql.type import (
     assert_object_type,
     assert_scalar_type,
     assert_union_type,
+    introspection_types,
     validate_schema,
 )
 from graphql.utilities import build_ast_schema, build_schema, print_schema, print_type
@@ -1207,6 +1208,35 @@ def describe_schema_builder():
         schema = build_schema("type Mutation")
         errors = validate_schema(schema)
         assert errors
+
+    def do_not_override_standard_types():
+        # Note: not sure it's desired behaviour to just silently ignore override
+        # attempts so just documenting it here.
+
+        schema = build_schema(
+            """
+            scalar ID
+
+            scalar __Schema
+            """
+        )
+
+        assert schema.get_type("ID") is GraphQLID
+        assert schema.get_type("__Schema") is introspection_types["__Schema"]
+
+    def allows_to_reference_introspection_types():
+        schema = build_schema(
+            """
+            type Query {
+              introspectionField: __EnumValue
+            }
+            """
+        )
+
+        query_type = assert_object_type(schema.get_type("Query"))
+        __EnumValue = introspection_types["__EnumValue"]
+        assert query_type.fields["introspectionField"].type is __EnumValue
+        assert schema.get_type("__EnumValue") is introspection_types["__EnumValue"]
 
     def rejects_invalid_sdl():
         sdl = """
