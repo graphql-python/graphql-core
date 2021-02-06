@@ -104,6 +104,9 @@ from .rules.unique_field_definition_names import UniqueFieldDefinitionNamesRule
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
 from .rules.possible_type_extensions import PossibleTypeExtensionsRule
 
+# Optional rules not defined by the GraphQL Specification
+from .rules.custom.no_schema_introspection import NoSchemaIntrospectionCustomRule
+
 __all__ = [
     "validate",
     "ASTValidationContext",
@@ -146,4 +149,5 @@ __all__ = [
     "UniqueFieldDefinitionNamesRule",
     "UniqueDirectiveNamesRule",
     "PossibleTypeExtensionsRule",
+    "NoSchemaIntrospectionCustomRule",
 ]

@@ -320,6 +320,8 @@ from .validation import (
     UniqueFieldDefinitionNamesRule,
     UniqueDirectiveNamesRule,
     PossibleTypeExtensionsRule,
+    # Custom validation rules
+    NoSchemaIntrospectionCustomRule,
 )
 
 # Create, format, and print GraphQL errors.
@@ -654,6 +656,7 @@ __all__ = [
     "UniqueFieldDefinitionNamesRule",
     "UniqueDirectiveNamesRule",
     "PossibleTypeExtensionsRule",
+    "NoSchemaIntrospectionCustomRule",
     "GraphQLError",
     "GraphQLSyntaxError",
     "located_error",
