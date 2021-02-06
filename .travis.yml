@@ -5,8 +5,8 @@ matrix:
       env: TOXENV=black,flake8,mypy,docs,manifest
       python: 3.8
     - name: Unit tests with Python 3.9
-      env: TOXENV=py38
-      python: 3.8
+      env: TOXENV=py39
+      python: 3.9
     - name: Unit tests with Python 3.8
       env: TOXENV=py38
       python: 3.8
