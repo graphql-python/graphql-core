@@ -24,12 +24,12 @@ class FrozenDict(Dict[KT, VT]):
     def __hash__(self):
         return hash(tuple(self.items()))
 
-    def __copy__(self):
+    def __copy__(self) -> "FrozenDict":
         return FrozenDict(self)
 
     copy = __copy__
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Dict) -> "FrozenDict":
         return FrozenDict({k: deepcopy(v, memo) for k, v in self.items()})
 
     def clear(self):

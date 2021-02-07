@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, TypeVar
+from typing import Dict, List, TypeVar
 
 from .frozen_error import FrozenError
 
@@ -35,10 +35,10 @@ class FrozenList(List[T]):
     def __hash__(self):
         return hash(tuple(self))
 
-    def __copy__(self):
+    def __copy__(self) -> "FrozenList":
         return FrozenList(self)
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Dict) -> "FrozenList":
         return FrozenList(deepcopy(value, memo) for value in self)
 
     def append(self, x):

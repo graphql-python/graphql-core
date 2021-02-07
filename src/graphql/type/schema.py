@@ -9,6 +9,7 @@ from typing import (
     Union,
     cast,
 )
+from warnings import warn
 
 from ..error import GraphQLError
 from ..language import ast
@@ -284,6 +285,13 @@ class GraphQLSchema:
             extension_ast_nodes=self.extension_ast_nodes or FrozenList(),
             assume_valid=self._validation_errors is not None,
         )
+
+    def __copy__(self) -> "GraphQLSchema":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
+    def __deepcopy__(self, memo_: Dict) -> "GraphQLSchema":  # pragma: no cover
+        warn("Cannot deep copy a schema. Creating a flat copy instead.")
+        return self.__copy__()
 
     def get_type(self, name: str) -> Optional[GraphQLNamedType]:
         return self.type_map.get(name)

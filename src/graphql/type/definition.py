@@ -252,6 +252,9 @@ class GraphQLNamedType(GraphQLType):
             extension_ast_nodes=self.extension_ast_nodes or FrozenList(),
         )
 
+    def __copy__(self) -> "GraphQLNamedType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
 
 def is_named_type(type_: Any) -> bool:
     return isinstance(type_, GraphQLNamedType)
@@ -428,6 +431,9 @@ class GraphQLScalarType(GraphQLNamedType):
             specified_by_url=self.specified_by_url,
         )
 
+    def __copy__(self) -> "GraphQLScalarType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
 
 def is_scalar_type(type_: Any) -> bool:
     return isinstance(type_, GraphQLScalarType)
@@ -539,6 +545,9 @@ class GraphQLField:
             ast_node=self.ast_node,
         )
 
+    def __copy__(self) -> "GraphQLField":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
     @property
     def is_deprecated(self) -> bool:
         return self.deprecation_reason is not None
@@ -649,6 +658,9 @@ class GraphQLArgument:
             ast_node=self.ast_node,
         )
 
+    def __copy__(self) -> "GraphQLArgument":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
 
 def is_required_argument(arg: GraphQLArgument) -> bool:
     return is_non_null_type(arg.type) and arg.default_value is Undefined
@@ -735,6 +747,9 @@ class GraphQLObjectType(GraphQLNamedType):
             interfaces=self.interfaces,
             is_type_of=self.is_type_of,
         )
+
+    def __copy__(self) -> "GraphQLObjectType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
 
     @cached_property
     def fields(self) -> GraphQLFieldMap:
@@ -856,6 +871,9 @@ class GraphQLInterfaceType(GraphQLNamedType):
             resolve_type=self.resolve_type,
         )
 
+    def __copy__(self) -> "GraphQLInterfaceType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
     @cached_property
     def fields(self) -> GraphQLFieldMap:
         """Get provided fields, wrapping them as GraphQLFields if needed."""
@@ -973,6 +991,9 @@ class GraphQLUnionType(GraphQLNamedType):
         return dict(
             **super().to_kwargs(), types=self.types, resolve_type=self.resolve_type
         )
+
+    def __copy__(self) -> "GraphQLUnionType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
 
     @cached_property
     def types(self) -> List[GraphQLObjectType]:
@@ -1094,6 +1115,9 @@ class GraphQLEnumType(GraphQLNamedType):
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(**super().to_kwargs(), values=self.values.copy())
+
+    def __copy__(self) -> "GraphQLEnumType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
 
     @cached_property
     def _value_lookup(self) -> Dict[Any, str]:
@@ -1232,6 +1256,9 @@ class GraphQLEnumValue:
             ast_node=self.ast_node,
         )
 
+    def __copy__(self) -> "GraphQLEnumValue":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
     @property
     def is_deprecated(self) -> bool:
         return self.deprecation_reason is not None
@@ -1320,6 +1347,9 @@ class GraphQLInputObjectType(GraphQLNamedType):
             if self.out_type is GraphQLInputObjectType.out_type
             else self.out_type,
         )
+
+    def __copy__(self) -> "GraphQLInputObjectType":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
 
     @cached_property
     def fields(self) -> GraphQLInputFieldMap:
@@ -1421,6 +1451,9 @@ class GraphQLInputField:
             extensions=self.extensions,
             ast_node=self.ast_node,
         )
+
+    def __copy__(self) -> "GraphQLInputField":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
 
 
 def is_required_input_field(field: GraphQLInputField) -> bool:

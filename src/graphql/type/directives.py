@@ -128,6 +128,9 @@ class GraphQLDirective:
             ast_node=self.ast_node,
         )
 
+    def __copy__(self) -> "GraphQLDirective":  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
 
 def is_directive(directive: Any) -> bool:
     """Test if the given value is a GraphQL directive."""
