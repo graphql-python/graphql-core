@@ -96,7 +96,8 @@ autodoc_default_options = {
 autosummary_generate = True
 
 autodoc_type_aliases = {
-    'AwaitableOrValue': 'graphql.pyutils.AwaitableOrValue'
+    'AwaitableOrValue': 'graphql.pyutils.AwaitableOrValue',
+    'TypeMap': 'graphql.schema.TypeMap'
 }
 
 # GraphQL-core top level modules with submodules that can be omitted.

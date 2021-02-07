@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from pytest import raises  # type: ignore
 
 from graphql.language import (
@@ -26,7 +28,7 @@ from graphql.type import (
     GraphQLType,
     specified_directives,
 )
-from graphql.utilities import print_schema
+from graphql.utilities import build_schema, lexicographic_sort_schema, print_schema
 
 from ..utils import dedent
 
@@ -439,3 +441,52 @@ def describe_type_system_schema():
                 "Schema extension AST nodes must be specified"
                 " as a collection of SchemaExtensionNode instances."
             )
+
+    def can_deep_copy_a_schema():
+        source = """
+            schema {
+              query: Farm
+              mutation: Work
+            }
+
+            type Cow {
+              id: ID
+              name: String
+              moos: Boolean
+            }
+
+            type Pig {
+              id: ID
+              name: String
+              oink: Boolean
+            }
+
+            union Animal = Cow | Pig
+
+            enum Food {
+              CORN
+              FRUIT
+            }
+
+            input Feed {
+              amount: Float
+              type: Food
+            }
+
+            type Farm {
+              animals: [Animal]
+            }
+
+            type Work {
+              feed(feed: Feed): Boolean
+            }
+        """
+        schema = build_schema(source)
+        schema_copy = deepcopy(schema)
+
+        for name in ("Cow", "Pig", "Animal", "Food", "Feed", "Farm", "Work"):
+            assert schema.get_type(name) is not schema_copy.get_type(name)
+
+        assert print_schema(lexicographic_sort_schema(schema)) == print_schema(
+            lexicographic_sort_schema(schema_copy)
+        )
