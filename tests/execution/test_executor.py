@@ -1,5 +1,5 @@
 import asyncio
-from typing import cast, Awaitable
+from typing import cast, Any, Awaitable, Optional
 
 from pytest import raises, mark  # type: ignore
 
@@ -20,6 +20,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLScalarType,
     GraphQLString,
+    GraphQLUnionType,
     ResponsePath,
 )
 
@@ -302,7 +303,7 @@ def describe_execute_handles_basic_execution_tasks():
             field_nodes=[field],
             return_type=GraphQLString,
             parent_type=cast(GraphQLObjectType, schema.query_type),
-            path=ResponsePath(None, "result"),
+            path=ResponsePath(None, "result", "Test"),
             schema=schema,
             fragments={},
             root_value=root_value,
@@ -311,6 +312,58 @@ def describe_execute_handles_basic_execution_tasks():
             context=None,
             is_awaitable=resolved_infos[0].is_awaitable,
         )
+
+    def it_populates_path_correctly_with_complex_types():
+        path: Optional[ResponsePath] = None
+
+        def resolve(_val, info):
+            nonlocal path
+            path = info.path
+
+        def resolve_type(_val, _info, _type):
+            return "SomeObject"
+
+        some_object = GraphQLObjectType(
+            "SomeObject", {"test": GraphQLField(GraphQLString, resolve=resolve)}
+        )
+        some_union = GraphQLUnionType(
+            "SomeUnion", [some_object], resolve_type=resolve_type
+        )
+        test_type = GraphQLObjectType(
+            "SomeQuery",
+            {
+                "test": GraphQLField(
+                    GraphQLNonNull(GraphQLList(GraphQLNonNull(some_union)))
+                )
+            },
+        )
+        schema = GraphQLSchema(test_type)
+        root_value: Any = {"test": [{}]}
+        document = parse(
+            """
+            query {
+              l1: test {
+                ... on SomeObject {
+                  l2: test
+                }
+              }
+            }
+            """
+        )
+
+        execute_sync(schema, document, root_value)
+
+        assert path is not None
+        prev, key, typename = path
+        assert key == "l2"
+        assert typename == "SomeObject"
+        prev, key, typename = prev
+        assert key == 0
+        assert typename is None
+        prev, key, typename = prev
+        assert key == "l1"
+        assert typename == "SomeQuery"
+        assert prev is None
 
     def threads_root_value_context_correctly():
         resolved_values = []

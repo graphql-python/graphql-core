@@ -71,7 +71,7 @@ def coerce_input_value(
             for index, item_value in enumerate(input_value):
                 append_item(
                     coerce_input_value(
-                        item_value, item_type, on_error, Path(path, index)
+                        item_value, item_type, on_error, Path(path, index, None)
                     )
                 )
             return coerced_list
@@ -111,7 +111,7 @@ def coerce_input_value(
                 continue
 
             coerced_dict[field.out_name or field_name] = coerce_input_value(
-                field_value, field.type, on_error, Path(path, field_name)
+                field_value, field.type, on_error, Path(path, field_name, type_.name)
             )
 
         # Ensure every provided field is defined.

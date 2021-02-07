@@ -369,7 +369,7 @@ class ExecutionContext:
         results: AwaitableOrValue[Dict[str, Any]] = {}
         is_awaitable = self.is_awaitable
         for response_name, field_nodes in fields.items():
-            field_path = Path(path, response_name)
+            field_path = Path(path, response_name, parent_type.name)
             result = self.resolve_field(
                 parent_type, source_value, field_nodes, field_path
             )
@@ -430,7 +430,7 @@ class ExecutionContext:
         awaitable_fields: List[str] = []
         append_awaitable = awaitable_fields.append
         for response_name, field_nodes in fields.items():
-            field_path = Path(path, response_name)
+            field_path = Path(path, response_name, parent_type.name)
             result = self.resolve_field(
                 parent_type, source_value, field_nodes, field_path
             )
@@ -825,7 +825,7 @@ class ExecutionContext:
         for index, item in enumerate(result):
             # No need to modify the info object containing the path, since from here on
             # it is not ever accessed by resolver functions.
-            field_path = path.add_key(index)
+            field_path = path.add_key(index, None)
             completed_item = self.complete_value_catching_error(
                 item_type, field_nodes, info, field_path, item
             )

@@ -161,7 +161,7 @@ async def create_source_event_stream(
     # AsyncIterable yielding raw payloads.
     resolve_fn = field_def.subscribe or context.field_resolver
 
-    path = Path(None, response_name)
+    path = Path(None, response_name, type_.name)
 
     info = context.build_resolve_info(field_def, field_nodes, type_, path)
 
