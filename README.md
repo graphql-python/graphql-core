@@ -35,7 +35,7 @@ examples.
 ## Getting started
 
 An overview of GraphQL in general is available in the
-[README](https://github.com/graphql/graphql-spec/blob/master/README.md) for the
+[README](https://github.com/graphql/graphql-spec/blob/main/README.md) for the
 [Specification for GraphQL](https://github.com/graphql/graphql-spec). That overview
 describes a simple set of GraphQL examples that exist as [tests](tests) in this
 repository. A good way to get started with this repository is to walk through that
@@ -245,5 +245,5 @@ and ported to many different programming languages.
 ## License
 
 GraphQL-core 3 is
-[MIT-licensed](https://github.com/graphql-python/graphql-core/blob/master/LICENSE),
+[MIT-licensed](./LICENSE),
 just like GraphQL.js.
