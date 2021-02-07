@@ -1,10 +1,9 @@
 from collections import ChainMap
-from typing import Any, Optional
+from typing import Any
 
-from graphql import graphql_sync
 from graphql.error import GraphQLError
-from graphql.execution import ExecutionResult
-from graphql.language import SourceLocation
+from graphql.execution import execute_sync, ExecutionResult
+from graphql.language import parse, SourceLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
@@ -25,9 +24,9 @@ def describe_execute_resolve_function():
         class RootValue:
             test = "testValue"
 
-        assert graphql_sync(
+        assert execute_sync(
             schema=_test_schema(GraphQLField(GraphQLString)),
-            source="{ test }",
+            document=parse("{ test }"),
             root_value=RootValue(),
         ) == (
             {"test": "testValue"},
@@ -38,9 +37,9 @@ def describe_execute_resolve_function():
         root_value = {"test": "testValue"}
 
         assert (
-            graphql_sync(
+            execute_sync(
                 schema=_test_schema(GraphQLField(GraphQLString)),
-                source="{ test }",
+                document=parse("{ test }"),
                 root_value=root_value,
             )
             == ({"test": "testValue"}, None)
@@ -51,9 +50,9 @@ def describe_execute_resolve_function():
         root_value = ChainMap({"test": "testValue"})
 
         assert (
-            graphql_sync(
+            execute_sync(
                 schema=_test_schema(GraphQLField(GraphQLString)),
-                source="{ test }",
+                document=parse("{ test }"),
                 root_value=root_value,
             )
             == ({"test": "testValue"}, None)
@@ -66,9 +65,9 @@ def describe_execute_resolve_function():
             def test(self, _info):
                 return self._secret
 
-        assert graphql_sync(
+        assert execute_sync(
             schema=_test_schema(GraphQLField(GraphQLString)),
-            source="{ test }",
+            document=parse("{ test }"),
             root_value=RootValue(),
         ) == (
             {"test": "secretValue"},
@@ -95,11 +94,11 @@ def describe_execute_resolve_function():
             addend2 = 9
 
         context_value = ContextValue()
-        source = "{ test(addend1: 80) }"
+        document = parse("{ test(addend1: 80) }")
 
-        assert graphql_sync(
+        assert execute_sync(
             schema=schema,
-            source=source,
+            document=document,
             root_value=root_value,
             context_value=context_value,
         ) == (
@@ -119,27 +118,27 @@ def describe_execute_resolve_function():
             )
         )
 
-        def execute(source, root_value=None, context_value=None):
-            return graphql_sync(
+        def execute_query(query: str, root_value: Any = None) -> ExecutionResult:
+            document = parse(query)
+            return execute_sync(
                 schema=schema,
-                source=source,
+                document=document,
                 root_value=root_value,
-                context_value=context_value,
             )
 
-        assert execute("{ test }") == ({"test": "[None, {}]"}, None)
+        assert execute_query("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert execute("{ test }", "Source!") == (
+        assert execute_query("{ test }", "Source!") == (
             {"test": "['Source!', {}]"},
             None,
         )
 
-        assert execute('{ test(aStr: "String!") }', "Source!") == (
+        assert execute_query('{ test(aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'aStr': 'String!'}]"},
             None,
         )
 
-        assert execute('{ test(aInt: -123, aStr: "String!") }', "Source!") == (
+        assert execute_query('{ test(aInt: -123, aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'aStr': 'String!', 'aInt': -123}]"},
             None,
         )
@@ -157,22 +156,23 @@ def describe_execute_resolve_function():
             )
         )
 
-        def execute(source: str, root_value: Optional[Any] = None) -> ExecutionResult:
-            return graphql_sync(schema=schema, source=source, root_value=root_value)
+        def execute_query(query: str, root_value: Any = None) -> ExecutionResult:
+            document = parse(query)
+            return execute_sync(schema=schema, document=document, root_value=root_value)
 
-        assert execute("{ test }") == ({"test": "[None, {}]"}, None)
+        assert execute_query("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert execute("{ test }", "Source!") == (
+        assert execute_query("{ test }", "Source!") == (
             {"test": "['Source!', {}]"},
             None,
         )
 
-        assert execute('{ test(aStr: "String!") }', "Source!") == (
+        assert execute_query('{ test(aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'a_str': 'String!'}]"},
             None,
         )
 
-        assert execute('{ test(aInt: -123, aStr: "String!") }', "Source!") == (
+        assert execute_query('{ test(aInt: -123, aStr: "String!") }', "Source!") == (
             {"test": "['Source!', {'a_str': 'String!', 'a_int': -123}]"},
             None,
         )
@@ -197,21 +197,18 @@ def describe_execute_resolve_function():
             )
         )
 
-        def execute(source, root_value=None):
-            return graphql_sync(
-                schema=schema,
-                source=source,
-                root_value=root_value,
-            )
+        def execute_query(query: str, root_value: Any = None) -> ExecutionResult:
+            document = parse(query)
+            return execute_sync(schema=schema, document=document, root_value=root_value)
 
-        assert execute("{ test }") == ({"test": "[None, {}]"}, None)
+        assert execute_query("{ test }") == ({"test": "[None, {}]"}, None)
 
-        assert execute('{ test(aInput: {inputOne: "String!"}) }', "Source!") == (
+        assert execute_query('{ test(aInput: {inputOne: "String!"}) }', "Source!") == (
             {"test": "['Source!', {'a_input': {'input_one': 'String!'}}]"},
             None,
         )
 
-        assert execute(
+        assert execute_query(
             '{ test(aInput: {inputRecursive: {inputOne: "SourceRecursive!"}}) }',
             "Source!",
         ) == (
@@ -227,7 +224,7 @@ def describe_execute_resolve_function():
             raise ValueError("Some error")
 
         schema = _test_schema(GraphQLField(GraphQLString, resolve=resolve))
-        result = graphql_sync(schema, "{ test }")
+        result = execute_sync(schema, parse("{ test }"))
 
         assert result == (
             {"test": None},

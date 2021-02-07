@@ -1,10 +1,9 @@
 import re
-from inspect import isawaitable
 from typing import Any, Awaitable, cast
 
 from pytest import mark  # type: ignore
 
-from graphql.execution import execute, ExecutionResult
+from graphql.execution import execute, execute_sync, ExecutionResult
 from graphql.language import parse
 from graphql.pyutils import AwaitableOrValue
 from graphql.type import (
@@ -109,12 +108,9 @@ def patch(data: str) -> str:
 
 
 async def execute_sync_and_async(query: str, root_value: Any) -> ExecutionResult:
-    sync_result = execute_query(query, root_value)
-    if isawaitable(sync_result):
-        sync_result = await cast(Awaitable[ExecutionResult], sync_result)
-    sync_result = cast(ExecutionResult, sync_result)
+    sync_result = execute_sync(schema, parse(query), root_value)
     async_result = await cast(
-        Awaitable[ExecutionResult], execute_query(patch(query), root_value)
+        Awaitable[ExecutionResult], execute(schema, parse(patch(query)), root_value)
     )
 
     assert repr(async_result) == patch(repr(sync_result))
@@ -148,7 +144,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-    def describe_nulls_an_immediate_object_that_contains_a_non_null_field():
+    def describe_nulls_a_returned_object_that_contains_a_non_null_field():
 
         query = """
             {
@@ -159,7 +155,7 @@ def describe_execute_handles_non_nullable_types():
             """
 
         @mark.asyncio
-        async def returns_null():
+        async def that_returns_null():
             result = await execute_sync_and_async(query, NullingData())
             assert result == (
                 {"syncNest": None},
@@ -174,7 +170,7 @@ def describe_execute_handles_non_nullable_types():
             )
 
         @mark.asyncio
-        async def throws():
+        async def that_throws():
             result = await execute_sync_and_async(query, ThrowingData())
             assert result == (
                 {"syncNest": None},
@@ -182,44 +178,6 @@ def describe_execute_handles_non_nullable_types():
                     {
                         "message": str(sync_non_null_error),
                         "path": ["syncNest", "syncNonNull"],
-                        "locations": [(4, 17)],
-                    }
-                ],
-            )
-
-    def describe_nulls_a_promised_object_that_contains_a_non_null_field():
-        query = """
-            {
-              promiseNest {
-                syncNonNull,
-              }
-            }
-            """
-
-        @mark.asyncio
-        async def returns_null():
-            result = await execute_sync_and_async(query, NullingData())
-            assert result == (
-                {"promiseNest": None},
-                [
-                    {
-                        "message": "Cannot return null for non-nullable field"
-                        " DataType.syncNonNull.",
-                        "path": ["promiseNest", "syncNonNull"],
-                        "locations": [(4, 17)],
-                    }
-                ],
-            )
-
-        @mark.asyncio
-        async def throws():
-            result = await execute_sync_and_async(query, ThrowingData())
-            assert result == (
-                {"promiseNest": None},
-                [
-                    {
-                        "message": str(sync_non_null_error),
-                        "path": ["promiseNest", "syncNonNull"],
                         "locations": [(4, 17)],
                     }
                 ],
@@ -571,7 +529,7 @@ def describe_execute_handles_non_nullable_types():
         )
 
         def succeeds_when_passed_non_null_literal_value():
-            result = execute(
+            result = execute_sync(
                 schema_with_non_null_arg,
                 parse(
                     """
@@ -585,7 +543,24 @@ def describe_execute_handles_non_nullable_types():
             assert result == ({"withNonNullArg": "Passed: literal value"}, None)
 
         def succeeds_when_passed_non_null_variable_value():
-            result = execute(
+            result = execute_sync(
+                schema_with_non_null_arg,
+                parse(
+                    """
+                    query ($testVar: String!) {
+                      withNonNullArg (cannotBeNull: $testVar)
+                    }
+                    """
+                ),
+                variable_values={
+                    "testVar": "variable value",
+                },
+            )
+
+            assert result == ({"withNonNullArg": "Passed: variable value"}, None)
+
+        def succeeds_when_missing_variable_has_default_value():
+            result = execute_sync(
                 schema_with_non_null_arg,
                 parse(
                     """
@@ -594,8 +569,8 @@ def describe_execute_handles_non_nullable_types():
                     }
                     """
                 ),
-                variable_values={},
-            )  # intentionally missing variable
+                variable_values={},  # intentionally missing variable
+            )
 
             assert result == ({"withNonNullArg": "Passed: default value"}, None)
 
@@ -603,7 +578,7 @@ def describe_execute_handles_non_nullable_types():
             # Note: validation should identify this issue first
             # (missing args rule) however execution should still
             # protect against this.
-            result = execute(
+            result = execute_sync(
                 schema_with_non_null_arg,
                 parse(
                     """
@@ -630,7 +605,7 @@ def describe_execute_handles_non_nullable_types():
             # Note: validation should identify this issue first
             # (values of correct type rule) however execution
             # should still protect against this.
-            result = execute(
+            result = execute_sync(
                 schema_with_non_null_arg,
                 parse(
                     """
@@ -657,7 +632,7 @@ def describe_execute_handles_non_nullable_types():
             # Note: validation should identify this issue first
             # (variables in allowed position rule) however execution
             # should still protect against this.
-            result = execute(
+            result = execute_sync(
                 schema_with_non_null_arg,
                 parse(
                     """
@@ -684,7 +659,7 @@ def describe_execute_handles_non_nullable_types():
             )
 
         def field_error_when_non_null_arg_provided_explicit_null_variable():
-            result = execute(
+            result = execute_sync(
                 schema_with_non_null_arg,
                 parse(
                     """

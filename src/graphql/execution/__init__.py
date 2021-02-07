@@ -6,6 +6,7 @@ fulfilling a GraphQL request.
 
 from .execute import (
     execute,
+    execute_sync,
     default_field_resolver,
     default_type_resolver,
     ExecutionContext,
@@ -19,6 +20,7 @@ from .values import get_directive_values
 
 __all__ = [
     "execute",
+    "execute_sync",
     "default_field_resolver",
     "default_type_resolver",
     "ExecutionContext",

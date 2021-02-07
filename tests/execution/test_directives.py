@@ -1,6 +1,5 @@
-from graphql.execution import execute, ExecutionResult
+from graphql.execution import execute_sync, ExecutionResult
 from graphql.language import parse
-from graphql.pyutils import AwaitableOrValue
 from graphql.type import GraphQLObjectType, GraphQLField, GraphQLSchema, GraphQLString
 
 schema = GraphQLSchema(
@@ -19,9 +18,9 @@ class RootValue:
         return "b"
 
 
-def execute_test_query(query: str) -> AwaitableOrValue[ExecutionResult]:
+def execute_test_query(query: str) -> ExecutionResult:
     document = parse(query)
-    return execute(schema, document, RootValue())
+    return execute_sync(schema, document, RootValue())
 
 
 def describe_execute_handles_directives():

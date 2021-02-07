@@ -1,6 +1,7 @@
 from math import nan
+from typing import Any, Dict, Optional
 
-from graphql.execution import execute
+from graphql.execution import execute_sync, ExecutionResult
 from graphql.execution.values import get_variable_values
 from graphql.language import parse, OperationDefinitionNode, StringValueNode, ValueNode
 from graphql.pyutils import Undefined
@@ -129,9 +130,11 @@ TestType = GraphQLObjectType(
 schema = GraphQLSchema(TestType)
 
 
-def execute_query(query, variable_values=None):
+def execute_query(
+    query: str, variable_values: Optional[Dict[str, Any]] = None
+) -> ExecutionResult:
     document = parse(query)
-    return execute(schema, document, variable_values=variable_values)
+    return execute_sync(schema, document, variable_values=variable_values)
 
 
 def describe_execute_handles_inputs():
@@ -671,7 +674,9 @@ def describe_execute_handles_inputs():
                 ],
             )
 
-            assert result.errors[0].original_error is None
+            errors = result.errors
+            assert errors is not None
+            assert errors[0].original_error is None
 
         def reports_error_for_non_provided_variables_for_non_nullable_inputs():
             # Note: this test would typically fail validation before

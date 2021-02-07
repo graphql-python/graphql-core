@@ -4,9 +4,9 @@ from typing import cast, Awaitable
 from pytest import raises, mark  # type: ignore
 
 from graphql.error import GraphQLError
-from graphql.execution import execute
+from graphql.execution import execute, execute_sync
 from graphql.language import parse, FieldNode, OperationDefinitionNode
-from graphql.pyutils import inspect, is_awaitable, Undefined
+from graphql.pyutils import inspect, Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -32,7 +32,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         with raises(TypeError) as exc_info:
-            assert execute(schema=schema, document=None)  # type: ignore
+            assert execute_sync(schema=schema, document=None)  # type: ignore
 
         assert str(exc_info.value) == "Must provide document."
 
@@ -41,7 +41,7 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("{ field }")
 
         with raises(TypeError) as exc_info:
-            assert execute(schema=None, document=document)  # type: ignore
+            assert execute_sync(schema=None, document=document)  # type: ignore
 
         assert str(exc_info.value) == "Expected None to be a GraphQL schema."
 
@@ -66,7 +66,7 @@ def describe_execute_handles_basic_execution_tasks():
         variable_values = "{'a': 1}"
 
         with raises(TypeError) as exc_info:
-            assert execute(
+            assert execute_sync(
                 schema=schema,
                 document=document,
                 variable_values=variable_values,  # type: ignore
@@ -86,7 +86,7 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        result = execute(schema, parse("{ a }"), "rootValue")
+        result = execute_sync(schema, parse("{ a }"), "rootValue")
 
         assert result == ({"a": "rootValue"}, None)
 
@@ -260,7 +260,7 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        result = execute(schema, ast)
+        result = execute_sync(schema, ast)
         assert result == (
             {
                 "a": "Apple",
@@ -290,12 +290,13 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("query ($var: String) { result: test }")
         root_value = {"root": "val"}
         variable_values = {"var": "abc"}
-        execute(schema, document, root_value, variable_values=variable_values)
+        execute_sync(schema, document, root_value, variable_values=variable_values)
 
         assert len(resolved_infos) == 1
         operation = cast(OperationDefinitionNode, document.definitions[0])
         assert operation and operation.kind == "operation_definition"
         field = cast(FieldNode, operation.selection_set.selections[0])
+
         assert resolved_infos[0] == GraphQLResolveInfo(
             field_name="test",
             field_nodes=[field],
@@ -308,7 +309,7 @@ def describe_execute_handles_basic_execution_tasks():
             operation=operation,
             variable_values=variable_values,
             context=None,
-            is_awaitable=is_awaitable,
+            is_awaitable=resolved_infos[0].is_awaitable,
         )
 
     def threads_root_value_context_correctly():
@@ -328,7 +329,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         document = parse("query Example { a }")
         root_value = Data()
-        execute(schema, document, root_value)
+        execute_sync(schema, document, root_value)
 
         assert len(resolved_values) == 1
         assert resolved_values[0] is root_value
@@ -363,7 +364,7 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        execute(schema, document)
+        execute_sync(schema, document)
 
         assert len(resolved_args) == 1
         assert resolved_args[0] == {"numArg": 123, "stringArg": "foo"}
@@ -551,7 +552,7 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        assert execute(schema, document) == (
+        assert execute_sync(schema, document) == (
             {"nullableA": {"aliasedA": None}},
             [
                 {
@@ -572,7 +573,7 @@ def describe_execute_handles_basic_execution_tasks():
         class Data:
             a = "b"
 
-        result = execute(schema, document, Data())
+        result = execute_sync(schema, document, Data())
         assert result == ({"a": "b"}, None)
 
     def uses_the_only_operation_if_no_operation_name_is_provided():
@@ -585,7 +586,7 @@ def describe_execute_handles_basic_execution_tasks():
         class Data:
             a = "b"
 
-        result = execute(schema, document, Data())
+        result = execute_sync(schema, document, Data())
         assert result == ({"a": "b"}, None)
 
     def uses_the_named_operation_if_operation_name_is_provided():
@@ -603,7 +604,7 @@ def describe_execute_handles_basic_execution_tasks():
         class Data:
             a = "b"
 
-        result = execute(schema, document, Data(), operation_name="OtherExample")
+        result = execute_sync(schema, document, Data(), operation_name="OtherExample")
         assert result == ({"second": "b"}, None)
 
     def provides_error_if_no_operation_is_provided():
@@ -616,7 +617,7 @@ def describe_execute_handles_basic_execution_tasks():
         class Data:
             a = "b"
 
-        result = execute(schema, document, Data())
+        result = execute_sync(schema, document, Data())
         assert result == (None, [{"message": "Must provide an operation."}])
 
     def errors_if_no_operation_name_is_provided_with_multiple_operations():
@@ -631,7 +632,7 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        result = execute(schema, document)
+        result = execute_sync(schema, document)
         assert result == (
             None,
             [
@@ -654,7 +655,7 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        result = execute(schema, document, operation_name="UnknownExample")
+        result = execute_sync(schema, document, operation_name="UnknownExample")
         assert result == (
             None,
             [{"message": "Unknown operation named 'UnknownExample'."}],
@@ -667,7 +668,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         document = parse("{ a }")
 
-        result = execute(schema, document, operation_name="")
+        result = execute_sync(schema, document, operation_name="")
         assert result == (
             None,
             [{"message": "Unknown operation named ''."}],
@@ -692,7 +693,7 @@ def describe_execute_handles_basic_execution_tasks():
             a = "b"
             c = "d"
 
-        result = execute(schema, document, Data(), operation_name="Q")
+        result = execute_sync(schema, document, Data(), operation_name="Q")
         assert result == ({"a": "b"}, None)
 
     def uses_the_mutation_schema_for_mutations():
@@ -712,7 +713,7 @@ def describe_execute_handles_basic_execution_tasks():
             a = "b"
             c = "d"
 
-        result = execute(schema, document, Data(), operation_name="M")
+        result = execute_sync(schema, document, Data(), operation_name="M")
         assert result == ({"c": "d"}, None)
 
     def uses_the_subscription_schema_for_subscriptions():
@@ -732,7 +733,7 @@ def describe_execute_handles_basic_execution_tasks():
             a = "b"
             c = "d"
 
-        result = execute(schema, document, Data(), operation_name="S")
+        result = execute_sync(schema, document, Data(), operation_name="S")
         assert result == ({"a": "b"}, None)
 
     @mark.asyncio
@@ -798,7 +799,7 @@ def describe_execute_handles_basic_execution_tasks():
         class Data:
             a = "b"
 
-        result = execute(schema, document, Data(), operation_name="Q")
+        result = execute_sync(schema, document, Data(), operation_name="Q")
 
         assert result == ({"a": "b"}, None)
 
@@ -810,7 +811,7 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("{ a }")
         root_value = {"a": {"b": "c"}}
 
-        result = execute(schema, document, root_value)
+        result = execute_sync(schema, document, root_value)
         assert result == ({"a": {}}, None)
 
     def does_not_include_illegal_fields_in_output():
@@ -820,7 +821,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         document = parse("{ thisIsIllegalDoNotIncludeMe }")
 
-        result = execute(schema, document)
+        result = execute_sync(schema, document)
 
         assert result == ({}, None)
 
@@ -846,7 +847,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         document = parse("{ field(a: true, c: false, e: 0) }")
 
-        assert execute(schema, document) == (
+        assert execute_sync(schema, document) == (
             {"field": "{'a': True, 'c': False, 'e': 0}"},
             None,
         )
@@ -890,7 +891,7 @@ def describe_execute_handles_basic_execution_tasks():
         document = parse("{ specials { value } }")
         root_value = {"specials": [Special("foo"), NotSpecial("bar")]}
 
-        result = execute(schema, document, root_value, {"async": False})
+        result = execute_sync(schema, document, root_value, {"async": False})
         assert not isinstance(result, Awaitable)
         assert result == (
             {"specials": [{"value": "foo"}, None]},
@@ -924,7 +925,7 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        result = execute(schema, parse("{ customScalar }"))
+        result = execute_sync(schema, parse("{ customScalar }"))
         assert result == (
             {"customScalar": None},
             [
@@ -950,7 +951,7 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        result = execute(schema, document)
+        result = execute_sync(schema, document)
         assert result == ({"foo": None}, None)
 
     def uses_a_custom_field_resolver():
@@ -963,7 +964,7 @@ def describe_execute_handles_basic_execution_tasks():
             # For the purposes of test, just return the name of the field!
             return info.field_name
 
-        result = execute(schema, document, field_resolver=field_resolver)
+        result = execute_sync(schema, document, field_resolver=field_resolver)
         assert result == ({"foo": "foo"}, None)
 
     def uses_a_custom_type_resolver():
@@ -991,7 +992,7 @@ def describe_execute_handles_basic_execution_tasks():
             return "FooObject"
 
         root_value = {"foo": {"bar": "bar"}}
-        result = execute(schema, document, root_value, type_resolver=type_resolver)
+        result = execute_sync(schema, document, root_value, type_resolver=type_resolver)
 
         assert result == ({"foo": {"bar": "bar"}}, None)
         assert possible_types == [foo_object]

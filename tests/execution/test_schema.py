@@ -1,4 +1,4 @@
-from graphql.execution import execute
+from graphql.execution import execute_sync
 from graphql.language import parse
 from graphql.type import (
     GraphQLArgument,
@@ -145,7 +145,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
 
         # Note: this is intentionally not validating to ensure appropriate
         # behavior occurs when executing an invalid query.
-        assert execute(schema=BlogSchema, document=document) == (
+        assert execute_sync(schema=BlogSchema, document=document) == (
             {
                 "feed": [
                     {"id": "1", "title": "My Article 1"},

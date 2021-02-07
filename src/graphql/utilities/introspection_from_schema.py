@@ -32,9 +32,9 @@ def introspection_from_schema(
         )
     )
 
-    from ..execution.execute import execute, ExecutionResult
+    from ..execution.execute import execute_sync, ExecutionResult
 
-    result = execute(schema, document)
+    result = execute_sync(schema, document)
     if not isinstance(result, ExecutionResult):  # pragma: no cover
         raise RuntimeError("Introspection cannot be executed")
     if result.errors:  # pragma: no cover

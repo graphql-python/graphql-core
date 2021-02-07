@@ -262,6 +262,7 @@ from .language import (
 # Execute GraphQL documents.
 from .execution import (
     execute,
+    execute_sync,
     default_field_resolver,
     default_type_resolver,
     get_directive_values,
@@ -611,6 +612,7 @@ __all__ = [
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
     "execute",
+    "execute_sync",
     "default_field_resolver",
     "default_type_resolver",
     "get_directive_values",

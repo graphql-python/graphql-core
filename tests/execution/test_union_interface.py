@@ -1,6 +1,6 @@
 from typing import Optional, Union, List
 
-from graphql.execution import execute
+from graphql.execution import execute_sync
 from graphql.language import parse
 from graphql.type import (
     GraphQLBoolean,
@@ -182,7 +182,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document) == (
+        assert execute_sync(schema=schema, document=document) == (
             {
                 "Named": {
                     "kind": "INTERFACE",
@@ -244,7 +244,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document, root_value=john) == (
+        assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -278,7 +278,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document, root_value=john) == (
+        assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -307,7 +307,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document, root_value=john) == (
+        assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -354,7 +354,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document, root_value=john) == (
+        assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -399,7 +399,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document, root_value=john) == (
+        assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -459,7 +459,7 @@ def describe_execute_union_and_intersection_types():
             """
         )
 
-        assert execute(schema=schema, document=document, root_value=john) == (
+        assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
                 "__typename": "Person",
                 "name": "John",
@@ -513,7 +513,7 @@ def describe_execute_union_and_intersection_types():
         root_value = Person("John", [], [liz])
         context_value = {"authToken": "123abc"}
 
-        assert execute(
+        assert execute_sync(
             schema=schema2,
             document=document,
             root_value=root_value,

@@ -3,7 +3,7 @@ from typing import Awaitable
 
 from pytest import mark  # type: ignore
 
-from graphql.execution import execute
+from graphql.execution import execute, execute_sync
 from graphql.language import parse
 from graphql.type import (
     GraphQLArgument,
@@ -136,7 +136,7 @@ def describe_execute_handles_mutation_execution_ordering():
     def does_not_include_illegal_mutation_fields_in_output():
         document = parse("mutation { thisIsIllegalDoNotIncludeMe }")
 
-        result = execute(schema=schema, document=document)
+        result = execute_sync(schema=schema, document=document)
         assert result == ({}, None)
 
     @mark.asyncio

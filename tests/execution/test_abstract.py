@@ -1,7 +1,8 @@
 from typing import NamedTuple
 
-from graphql import graphql_sync
 from graphql.error import format_error
+from graphql.execution import execute_sync
+from graphql.language import parse
 from graphql.type import (
     GraphQLBoolean,
     GraphQLField,
@@ -89,7 +90,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
+        document = parse(
+            """
             {
               pets {
                 name
@@ -102,8 +104,9 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
+        )
 
-        result = graphql_sync(schema, query)
+        result = execute_sync(schema, document)
         assert result == (
             {
                 "pets": [
@@ -150,7 +153,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             )
         )
 
-        query = """
+        document = parse(
+            """
             {
               pets {
                 ... on Dog {
@@ -164,8 +168,9 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
+        )
 
-        result = graphql_sync(schema, query)
+        result = execute_sync(schema, document)
         assert result == (
             {
                 "pets": [
@@ -226,7 +231,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
+        document = parse(
+            """
             {
               pets {
                 name
@@ -239,8 +245,9 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
+        )
 
-        result = graphql_sync(schema, query)
+        result = execute_sync(schema, document)
         assert result.data == {
             "pets": [
                 {"name": "Odie", "woofs": True},
@@ -301,7 +308,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             )
         )
 
-        query = """
+        document = parse(
+            """
             {
               pets {
                 ... on Dog {
@@ -315,8 +323,9 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
+        )
 
-        result = graphql_sync(schema, query)
+        result = execute_sync(schema, document)
         assert result.data == {
             "pets": [
                 {"name": "Odie", "woofs": True},
@@ -355,7 +364,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             types=[foo_object],
         )
 
-        result = graphql_sync(schema, "{ foo { bar } }")
+        document = parse("{ foo { bar } }")
+        result = execute_sync(schema, document)
 
         assert result == (
             {"foo": None},
@@ -391,7 +401,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             types=[foo_object],
         )
 
-        result = graphql_sync(schema, "{ foo { bar } }")
+        document = parse("{ foo { bar } }")
+        result = execute_sync(schema, document)
 
         assert result == (
             {"foo": None},
@@ -446,7 +457,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             types=[CatType, DogType],
         )
 
-        query = """
+        document = parse(
+            """
             {
               pets {
                 name
@@ -458,8 +470,9 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 }
               }
             }"""
+        )
 
-        result = graphql_sync(schema, query)
+        result = execute_sync(schema, document)
         assert result == (
             {
                 "pets": [
