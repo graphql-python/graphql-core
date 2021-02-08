@@ -6,8 +6,8 @@ a query language for APIs created by Facebook.
 
 [![PyPI version](https://badge.fury.io/py/graphql-core.svg)](https://badge.fury.io/py/graphql-core)
 [![Documentation Status](https://readthedocs.org/projects/graphql-core-3/badge/)](https://graphql-core-3.readthedocs.io)
-[![Build Status](https://travis-ci.com/graphql-python/graphql-core.svg?branch=master)](https://travis-ci.com/graphql-python/graphql-core)
-[![Coverage Status](https://codecov.io/gh/graphql-python/graphql-core/branch/master/graph/badge.svg)](https://codecov.io/gh/graphql-python/graphql-core)
+[![Build Status](https://travis-ci.com/graphql-python/graphql-core.svg?branch=main)](https://travis-ci.com/graphql-python/graphql-core)
+[![Coverage Status](https://codecov.io/gh/graphql-python/graphql-core/branch/main/graph/badge.svg)](https://codecov.io/gh/graphql-python/graphql-core)
 [![Dependency Updates](https://pyup.io/repos/github/graphql-python/graphql-core/shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core/)
 [![Python 3 Status](https://pyup.io/repos/github/graphql-python/graphql-core/python-3-shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)

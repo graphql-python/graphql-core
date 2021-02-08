@@ -31,7 +31,7 @@ deploy:
   provider: pypi
   distributions: sdist bdist_wheel
   on:
-    branch: master
+    branch: main
     tags: true
     python: 3.8
   skip_existing: true
