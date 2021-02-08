@@ -450,13 +450,13 @@ def describe_type_system_schema():
             }
 
             type Cow {
-              id: ID
+              id: ID!
               name: String
               moos: Boolean
             }
 
             type Pig {
-              id: ID
+              id: ID!
               name: String
               oink: Boolean
             }
@@ -474,7 +474,7 @@ def describe_type_system_schema():
             }
 
             type Farm {
-              animals: [Animal]
+              animals: [Animal!]!
             }
 
             type Work {

@@ -291,23 +291,21 @@ class GraphQLSchema:
     def __copy__(self) -> "GraphQLSchema":  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
-    def __deepcopy__(self, memo: Dict) -> "GraphQLSchema":
+    def __deepcopy__(self, memo_: Dict) -> "GraphQLSchema":
         from ..type import (
             is_introspection_type,
             is_specified_scalar_type,
             is_specified_directive,
         )
 
-        type_map = {
+        type_map: TypeMap = {
             name: copy(type_)
             for name, type_ in self.type_map.items()
             if not is_introspection_type(type_) and not is_specified_scalar_type(type_)
         }
-        remapped: Set[str] = set()
-        types = [
-            cast(GraphQLNamedType, remap_type(type_, type_map, remapped))
-            for type_ in type_map.values()
-        ]
+        types = type_map.values()
+        for type_ in types:
+            remap_named_type(type_, type_map)
         directives = [
             directive if is_specified_directive(directive) else copy(directive)
             for directive in self.directives
@@ -321,9 +319,9 @@ class GraphQLSchema:
             types,
             directives,
             self.description,
-            extensions=deepcopy(self.extensions, memo),
-            ast_node=deepcopy(self.ast_node, memo),
-            extension_ast_nodes=deepcopy(self.extension_ast_nodes, memo),
+            extensions=deepcopy(self.extensions),
+            ast_node=deepcopy(self.ast_node),
+            extension_ast_nodes=deepcopy(self.extension_ast_nodes),
             assume_valid=True,
         )
 
@@ -442,50 +440,42 @@ def assert_schema(schema: Any) -> GraphQLSchema:
     return cast(GraphQLSchema, schema)
 
 
-def remap_type(
-    type_: GraphQLType, type_map: TypeMap, remapped: Set[str]
-) -> GraphQLType:
-    """Change all references in the given type for a new type map."""
+def remapped_type(type_: GraphQLType, type_map: TypeMap) -> GraphQLType:
+    """Get a copy of the given type that uses this type map."""
     if is_wrapping_type(type_):
-        wrapping_type = cast(GraphQLWrappingType, type_)
-        return wrapping_type.__class__(
-            remap_type(wrapping_type.of_type, type_map, remapped)
-        )
-    named_type = cast(GraphQLNamedType, type_)
-    name = named_type.name
-    remapped_type = type_map.get(name)
-    if not remapped_type:
-        return named_type
-    if name in remapped:
-        return remapped_type
-    remapped.add(name)
-    if is_union_type(remapped_type):
-        named_type = cast(GraphQLUnionType, named_type)
-        named_type.types = [
-            remap_type(member_type, type_map, remapped)
-            for member_type in named_type.types
+        type_ = cast(GraphQLWrappingType, type_)
+        return type_.__class__(remapped_type(type_.of_type, type_map))
+    type_ = cast(GraphQLNamedType, type_)
+    return type_map.get(type_.name, type_)
+
+
+def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
+    """Change all references in the given named type to use this type map."""
+    if is_union_type(type_):
+        type_ = cast(GraphQLUnionType, type_)
+        type_.types = [
+            type_map.get(member_type.name, member_type) for member_type in type_.types
         ]
-    elif is_object_type(remapped_type) or is_interface_type(remapped_type):
-        named_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], named_type)
-        named_type.interfaces = [
-            remap_type(interface_type, type_map, remapped)
-            for interface_type in named_type.interfaces
+    elif is_object_type(type_) or is_interface_type(type_):
+        type_ = cast(Union[GraphQLObjectType, GraphQLInterfaceType], type_)
+        type_.interfaces = [
+            type_map.get(interface_type.name, interface_type)
+            for interface_type in type_.interfaces
         ]
-        fields = named_type.fields
+        fields = type_.fields
         for field_name, field in fields.items():
             field = copy(field)
-            field.type = remap_type(field.type, type_map, remapped)
+            field.type = remapped_type(field.type, type_map)
             args = field.args
             for arg_name, arg in args.items():
                 arg = copy(arg)
-                arg.type = remap_type(arg.type, type_map, remapped)
+                arg.type = remapped_type(arg.type, type_map)
                 args[arg_name] = arg
             fields[field_name] = field
-    elif is_input_object_type(remapped_type):
-        named_type = cast(GraphQLInputObjectType, named_type)
-        fields = named_type.fields
+    elif is_input_object_type(type_):
+        type_ = cast(GraphQLInputObjectType, type_)
+        fields = type_.fields
         for field_name, field in fields.items():
             field = copy(field)
-            field.type = remap_type(field.type, type_map, remapped)
+            field.type = remapped_type(field.type, type_map)
             fields[field_name] = field
-    return named_type
