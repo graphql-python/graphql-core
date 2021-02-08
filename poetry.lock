@@ -72,7 +72,7 @@ d = ["aiohttp (>=3.3.2)", "aiohttp-cors"]
 
 [[package]]
 name = "build"
-version = "0.1.0"
+version = "0.2.0"
 description = "A simple, correct PEP517 package builder"
 category = "dev"
 optional = false
@@ -85,9 +85,10 @@ pep517 = ">=0.9"
 toml = "*"
 
 [package.extras]
-doc = ["furo", "sphinx", "sphinx-autodoc-typehints", "sphinxcontrib-autoprogram"]
-test = ["filelock", "pytest", "pytest-cov", "pytest-mock", "pytest-xdist (>=1.34)"]
-typing = ["mypy (==0.790)", "typing-extensions (>=3.7.4.3)"]
+docs = ["furo (>=2020.11.19b18)", "sphinx (>=3.0,<4.0)", "sphinx-autodoc-typehints (>=1.10)", "sphinxcontrib-autoprogram (>=0.1)"]
+test = ["filelock (>=3)", "pytest (>=4)", "pytest-cov (>=2)", "pytest-mock (>=2)", "pytest-xdist (>=1.34)"]
+typing = ["mypy (==0.800)", "typing-extensions (>=3.7.4.3)"]
+virtualenv = ["virtualenv (>=20.0.35)"]
 
 [[package]]
 name = "bump2version"
@@ -794,8 +795,8 @@ black = [
     {file = "black-20.8b1.tar.gz", hash = "sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea"},
 ]
 build = [
-    {file = "build-0.1.0-py2.py3-none-any.whl", hash = "sha256:2390c690a53bc22a09cbd35f70ece69d40cc8553e267ece046db4a5a1d32d856"},
-    {file = "build-0.1.0.tar.gz", hash = "sha256:08b2b58098ff617d1154056c79f8a70beed18f7cfa710bca23a072196910d5b4"},
+    {file = "build-0.2.0-py2.py3-none-any.whl", hash = "sha256:c74247808c8ec2cca59e6f754f6ddc39601e1cd378278e5c223e4c0dd493c358"},
+    {file = "build-0.2.0.tar.gz", hash = "sha256:5279e61e5e07bd9b4ba46d18bca00e95d725f2a070cd8151385b2d8bf4194ae6"},
 ]
 bump2version = [
     {file = "bump2version-1.0.1-py2.py3-none-any.whl", hash = "sha256:37f927ea17cde7ae2d7baf832f8e80ce3777624554a653006c9144f8017fe410"},
