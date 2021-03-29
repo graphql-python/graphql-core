@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Union, cast
 from ..error import GraphQLError
 from ..language import (
     DirectiveNode,
+    EnumValueDefinitionNode,
     ExecutableDefinitionNode,
     FieldNode,
     FieldDefinitionNode,
@@ -212,6 +213,7 @@ def get_argument_values(
 
 
 NodeWithDirective = Union[
+    EnumValueDefinitionNode,
     ExecutableDefinitionNode,
     FieldDefinitionNode,
     InputValueDefinitionNode,

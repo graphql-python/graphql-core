@@ -559,8 +559,12 @@ class EnumTypeDefinitionNode(TypeDefinitionNode):
     values: FrozenList["EnumValueDefinitionNode"]
 
 
-class EnumValueDefinitionNode(TypeDefinitionNode):
-    __slots__ = ()
+class EnumValueDefinitionNode(DefinitionNode):
+    __slots__ = "description", "name", "directives"
+
+    description: Optional[StringValueNode]
+    name: NameNode
+    directives: FrozenList[DirectiveNode]
 
 
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):

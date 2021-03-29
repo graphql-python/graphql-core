@@ -100,7 +100,6 @@ def describe_ast_node_predicates():
             "directive_definition",
             "enum_type_definition",
             "enum_type_extension",
-            "enum_value_definition",
             "input_object_type_definition",
             "input_object_type_extension",
             "interface_type_definition",
@@ -120,7 +119,6 @@ def describe_ast_node_predicates():
     def check_type_definition_node():
         assert filter_nodes(is_type_definition_node) == [
             "enum_type_definition",
-            "enum_value_definition",
             "input_object_type_definition",
             "interface_type_definition",
             "object_type_definition",
