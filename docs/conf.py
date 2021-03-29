@@ -89,7 +89,6 @@ autoclass_content = "class"
 autodoc_default_options = {
     'members': True,
     'inherited-members': True,
-    'special-members': '__init__',
     'undoc-members': True,
     'show-inheritance': True
 }
@@ -207,8 +206,17 @@ def on_missing_reference(app, env, node, contnode):
         env, fromdoc, app.builder, typ, target, node, contnode)
 
 
+def on_skip_member(_app, what, name, _obj, skip, _options):
+    if what == 'class' and name == "__init__":
+        # we could set "special-members" to "__init__",
+        # but this gives an error when documenting modules
+        return False
+    return skip
+
+
 def setup(app):
     app.connect('missing-reference', on_missing_reference)
+    app.connect("autodoc-skip-member", on_skip_member)
 
 
 # be nitpicky (handle all possible problems in on_missing_reference)
