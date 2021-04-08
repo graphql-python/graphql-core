@@ -34,7 +34,7 @@ examples.
 
 ## Getting started
 
-An overview of GraphQL in general is available in the
+A general overview of GraphQL is available in the
 [README](https://github.com/graphql/graphql-spec/blob/main/README.md) for the
 [Specification for GraphQL](https://github.com/graphql/graphql-spec). That overview
 describes a simple set of GraphQL examples that exist as [tests](tests) in this
@@ -46,20 +46,20 @@ README and the corresponding tests in parallel.
 
 GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
-    python -m pip install "graphql-core>=3"
+    python -m pip install graphql-core
 
-Alternatively, you can also use [pipenv](https://docs.pipenv.org/) for installation in a
+You can also use [pipenv](https://docs.pipenv.org/) for installation in a
 virtual environment:
 
-    pipenv install "graphql-core>=3"
+    pipenv install graphql-core
 
 
 ## Usage
 
-GraphQL-core provides two important capabilities: building a type schema, and
+GraphQL-core provides two important capabilities: building a type schema and
 serving queries against that type schema.
 
-First, build a GraphQL type schema which maps to your code base:
+First, build a GraphQL type schema which maps to your codebase:
 
 ```python
 from graphql import (
@@ -75,7 +75,7 @@ schema = GraphQLSchema(
         }))
 ```
 
-This defines a simple schema with one type and one field, that resolves to a fixed
+This defines a simple schema, with one type and one field, that resolves to a fixed
 value. The `resolve` function can return a value, a co-routine object or a list of
 these. It takes two positional arguments; the first one provides the root or the
 resolved parent field, the second one provides a `GraphQLResolveInfo` object which
@@ -89,7 +89,7 @@ where the context is passed separately and arguments are passed as a single obje
 Also note that GraphQL fields must be passed as a `GraphQLField` object explicitly.
 Similarly, GraphQL arguments must be passed as `GraphQLArgument` objects.
 
-A more complex example is included in the top level [tests](tests) directory.
+A more complex example is included in the top-level [tests](tests) directory.
 
 Then, serve the result of a query against that type schema.
 

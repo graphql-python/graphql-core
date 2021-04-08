@@ -221,7 +221,7 @@ def visit(
 ) -> Any:
     """Visit each node in an AST.
 
-    :func:`~.visit` will walk through an AST using a depth first traversal, calling the
+    :func:`~.visit` will walk through an AST using a depth-first traversal, calling the
     visitor's enter methods at each node in the traversal, and calling the leave methods
     after visiting that node and all of its child nodes.
 
