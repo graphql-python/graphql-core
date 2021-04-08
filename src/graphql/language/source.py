@@ -19,12 +19,12 @@ class Source:
     ) -> None:
         """Initialize source input.
 
-        ``name`` and ``location_offset`` are optional. They are useful for clients who
-        store GraphQL documents in source files; for example, if the GraphQL input
-        starts at line 40 in a file named Foo.graphql, it might be useful for ``name``
-        to be "Foo.graphql" and location to be ``(40, 0)``.
+        The ``name`` and ``location_offset`` parameters are optional, but they are
+        useful for clients who store GraphQL documents in source files. For example,
+        if the GraphQL input starts at line 40 in a file named ``Foo.graphql``, it might
+        be useful for ``name`` to be ``"Foo.graphql"`` and location to be ``(40, 0)``.
 
-        line and column in location_offset are 1-indexed
+        The ``line`` and ``column`` attributes in ``location_offset`` are 1-indexed.
         """
         if not isinstance(body, str):
             raise TypeError("body must be a string.")
