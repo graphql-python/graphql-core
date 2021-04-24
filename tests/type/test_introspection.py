@@ -1322,7 +1322,7 @@ def describe_introspection():
             None,
         )
 
-    def executes_introspection_query_without_calling_global_field_resolver():
+    def executes_introspection_query_without_calling_global_resolvers():
         schema = build_schema(
             """
             type Query {
@@ -1331,9 +1331,19 @@ def describe_introspection():
             """
         )
 
-        source = get_introspection_query(directive_is_repeatable=True)
+        source = get_introspection_query(
+            specified_by_url=True, directive_is_repeatable=True, schema_description=True
+        )
 
         def field_resolver(_obj, info):
             assert False, f"Called on {info.parent_type.name}.{info.field_name}"
 
-        graphql_sync(schema=schema, source=source, field_resolver=field_resolver)
+        def type_resolver(_obj, info, _abstract_type):
+            assert False, f"Called on {info.parent_type.name}.{info.field_name}"
+
+        graphql_sync(
+            schema=schema,
+            source=source,
+            field_resolver=field_resolver,
+            type_resolver=type_resolver,
+        )
