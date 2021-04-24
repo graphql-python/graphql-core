@@ -140,6 +140,10 @@ def describe_type_system_scalars():
             scalar.parse_literal(parse_value('{foo: "bar"}'))
             == "parse_value: {'foo': 'bar'}"
         )
+        assert (
+            scalar.parse_literal(parse_value("{foo: { bar: $var } }"), {"var": "baz"})
+            == "parse_value: {'foo': {'bar': 'baz'}}"
+        )
 
     def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
         ast_node = ScalarTypeDefinitionNode()

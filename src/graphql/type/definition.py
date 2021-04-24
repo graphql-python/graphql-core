@@ -406,14 +406,14 @@ class GraphQLScalarType(GraphQLNamedType):
         return value
 
     def parse_literal(
-        self, node: ValueNode, _variables: Optional[Dict[str, Any]] = None
+        self, node: ValueNode, variables: Optional[Dict[str, Any]] = None
     ) -> Any:
         """Parses an externally provided literal value to use as an input.
 
         This default method uses the parse_value method and should be replaced
         with a more specific version when creating a scalar type.
         """
-        return self.parse_value(value_from_ast_untyped(node))
+        return self.parse_value(value_from_ast_untyped(node, variables))
 
     def to_kwargs(self) -> Dict[str, Any]:
         return dict(
