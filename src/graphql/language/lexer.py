@@ -102,59 +102,57 @@ class Lexer:
         body = source.body
         body_length = len(body)
 
-        pos = self.position_after_whitespace(body, prev.end)
+        pos = prev.end
+        while pos < body_length:
+            char = body[pos]  # SourceCharacter
+
+            if char in " \t,\ufeff":
+                pos += 1
+                continue
+            elif char == "\n":
+                pos += 1
+                self.line += 1
+                self.line_start = pos
+                continue
+            elif char == "\r":
+                if body[pos + 1 : pos + 2] == "\n":
+                    pos += 2
+                else:
+                    pos += 1
+                self.line += 1
+                self.line_start = pos
+                continue
+
+            line = self.line
+            col = 1 + pos - self.line_start
+
+            kind = _KIND_FOR_PUNCT.get(char)
+            if kind:
+                return Token(kind, pos, pos + 1, line, col, prev)
+
+            if "A" <= char <= "Z" or "a" <= char <= "z" or char == "_":
+                return self.read_name(pos, line, col, prev)
+
+            if "0" <= char <= "9" or char == "-":
+                return self.read_number(pos, char, line, col, prev)
+
+            if char == "#":
+                return self.read_comment(pos, line, col, prev)
+
+            if char == '"':
+                if body[pos + 1 : pos + 3] == '""':
+                    return self.read_block_string(pos, line, col, prev)
+                return self.read_string(pos, line, col, prev)
+
+            if char == ".":
+                if body[pos + 1 : pos + 3] == "..":
+                    return Token(TokenKind.SPREAD, pos, pos + 3, line, col, prev)
+
+            raise GraphQLSyntaxError(source, pos, unexpected_character_message(char))
+
         line = self.line
         col = 1 + pos - self.line_start
-
-        if pos >= body_length:
-            return Token(TokenKind.EOF, body_length, body_length, line, col, prev)
-
-        char = body[pos]
-        kind = _KIND_FOR_PUNCT.get(char)
-        if kind:
-            return Token(kind, pos, pos + 1, line, col, prev)
-        if char == "#":
-            return self.read_comment(pos, line, col, prev)
-        elif char == ".":
-            if body[pos + 1 : pos + 3] == "..":
-                return Token(TokenKind.SPREAD, pos, pos + 3, line, col, prev)
-        elif "A" <= char <= "Z" or "a" <= char <= "z" or char == "_":
-            return self.read_name(pos, line, col, prev)
-        elif "0" <= char <= "9" or char == "-":
-            return self.read_number(pos, char, line, col, prev)
-        elif char == '"':
-            if body[pos + 1 : pos + 3] == '""':
-                return self.read_block_string(pos, line, col, prev)
-            return self.read_string(pos, line, col, prev)
-
-        raise GraphQLSyntaxError(source, pos, unexpected_character_message(char))
-
-    def position_after_whitespace(self, body: str, start_position: int) -> int:
-        """Go to next position after a whitespace.
-
-        Reads from body starting at start_position until it finds a non-whitespace
-        character, then returns the position of that character for lexing.
-        """
-        body_length = len(body)
-        position = start_position
-        while position < body_length:
-            char = body[position]
-            if char in " \t,\ufeff":
-                position += 1
-            elif char == "\n":
-                position += 1
-                self.line += 1
-                self.line_start = position
-            elif char == "\r":  # pragma: no cover
-                if body[position + 1 : position + 2] == "\n":
-                    position += 2
-                else:
-                    position += 1
-                self.line += 1
-                self.line_start = position
-            else:  # pragma: no cover
-                break
-        return position
+        return Token(TokenKind.EOF, body_length, body_length, line, col, prev)
 
     def read_comment(self, start: int, line: int, col: int, prev: Token) -> Token:
         """Read a comment token from the source file."""
