@@ -1,4 +1,5 @@
 from math import isnan, nan
+from typing import Any, Dict, Optional
 
 from graphql.language import parse_value, ValueNode
 from graphql.pyutils import Undefined
@@ -9,6 +10,7 @@ from graphql.type import (
     GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInputType,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
@@ -19,7 +21,11 @@ from graphql.utilities import value_from_ast
 
 
 def describe_value_from_ast():
-    def _value_from(value_text, type_, variables=None):
+    def _value_from(
+        value_text: str,
+        type_: GraphQLInputType,
+        variables: Optional[Dict[str, Any]] = None,
+    ):
         ast = parse_value(value_text)
         return value_from_ast(ast, type_, variables)
 
