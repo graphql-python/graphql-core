@@ -1253,85 +1253,42 @@ def describe_introspection():
             ],
         )
 
-    def exposes_descriptions_on_types_and_fields():
+    def exposes_descriptions():
         schema = build_schema(
-            """
-            type Query {
-              someField: String
+            '''
+            """Enum description"""
+            enum SomeEnum {
+              """Value description"""
+              VALUE
             }
-            """
+
+            """Object description"""
+            type SomeObject {
+              """Field description"""
+              someField(arg: SomeEnum): String
+            }
+
+            """Schema description"""
+            schema {
+              query: SomeObject
+            }
+            '''
         )
 
         source = """
             {
-              schemaType: __type(name: "__Schema") {
-                name,
+              Schema: __schema { description }
+              SomeObject: __type(name: "SomeObject") {
                 description,
                 fields {
-                  name,
+                  name
                   description
                 }
               }
-            }
-            """
-
-        assert graphql_sync(schema=schema, source=source) == (
-            {
-                "schemaType": {
-                    "name": "__Schema",
-                    "description": "A GraphQL Schema defines the capabilities of a"
-                    " GraphQL server. It exposes all available types and"
-                    " directives on the server, as well as the entry points"
-                    " for query, mutation, and subscription operations.",
-                    "fields": [
-                        {"name": "description", "description": None},
-                        {
-                            "name": "types",
-                            "description": "A list of all types supported"
-                            " by this server.",
-                        },
-                        {
-                            "name": "queryType",
-                            "description": "The type that query operations"
-                            " will be rooted at.",
-                        },
-                        {
-                            "name": "mutationType",
-                            "description": "If this server supports mutation, the type"
-                            " that mutation operations will be rooted at.",
-                        },
-                        {
-                            "name": "subscriptionType",
-                            "description": "If this server support subscription,"
-                            " the type that subscription operations will be rooted at.",
-                        },
-                        {
-                            "name": "directives",
-                            "description": "A list of all directives supported"
-                            " by this server.",
-                        },
-                    ],
-                }
-            },
-            None,
-        )
-
-    def exposes_descriptions_on_enums():
-        schema = build_schema(
-            """
-            type Query {
-              someField: String
-            }
-            """
-        )
-
-        source = """
-            {
-              typeKindType: __type(name: "__TypeKind") {
-                name,
-                description,
+              SomeEnum: __type(name: "SomeEnum") {
+                description
                 enumValues {
-                  name,
+                  name
                   description
                 }
               }
@@ -1340,53 +1297,27 @@ def describe_introspection():
 
         assert graphql_sync(schema=schema, source=source) == (
             {
-                "typeKindType": {
-                    "name": "__TypeKind",
-                    "description": "An enum describing what kind of type"
-                    " a given `__Type` is.",
+                "Schema": {
+                    "description": "Schema description",
+                },
+                "SomeEnum": {
+                    "description": "Enum description",
                     "enumValues": [
                         {
-                            "name": "SCALAR",
-                            "description": "Indicates this type is a scalar.",
-                        },
-                        {
-                            "name": "OBJECT",
-                            "description": "Indicates this type is an object."
-                            + " `fields` and `interfaces` are valid fields.",
-                        },
-                        {
-                            "name": "INTERFACE",
-                            "description": "Indicates this type is an interface."
-                            " `fields`, `interfaces`, and `possibleTypes`"
-                            " are valid fields.",
-                        },
-                        {
-                            "name": "UNION",
-                            "description": "Indicates this type is a union."
-                            " `possibleTypes` is a valid field.",
-                        },
-                        {
-                            "name": "ENUM",
-                            "description": "Indicates this type is an enum."
-                            " `enumValues` is a valid field.",
-                        },
-                        {
-                            "name": "INPUT_OBJECT",
-                            "description": "Indicates this type is an input object."
-                            " `inputFields` is a valid field.",
-                        },
-                        {
-                            "name": "LIST",
-                            "description": "Indicates this type is a list."
-                            " `ofType` is a valid field.",
-                        },
-                        {
-                            "name": "NON_NULL",
-                            "description": "Indicates this type is a non-null."
-                            " `ofType` is a valid field.",
+                            "name": "VALUE",
+                            "description": "Value description",
                         },
                     ],
-                }
+                },
+                "SomeObject": {
+                    "description": "Object description",
+                    "fields": [
+                        {
+                            "name": "someField",
+                            "description": "Field description",
+                        },
+                    ],
+                },
             },
             None,
         )
