@@ -258,11 +258,11 @@ def print_directive(directive: GraphQLDirective) -> str:
 
 
 def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue]) -> str:
-    if not field_or_enum_value.is_deprecated:
+    deprecation_reason = field_or_enum_value.deprecation_reason
+    if deprecation_reason is None:
         return ""
-    reason = field_or_enum_value.deprecation_reason
-    reason_ast = ast_from_value(reason, GraphQLString)
-    if not reason_ast or reason == DEFAULT_DEPRECATION_REASON:
+    reason_ast = ast_from_value(deprecation_reason, GraphQLString)
+    if not reason_ast or deprecation_reason == DEFAULT_DEPRECATION_REASON:
         return " @deprecated"
     return f" @deprecated(reason: {print_ast(reason_ast)})"
 
