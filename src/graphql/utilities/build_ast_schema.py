@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Any, Dict, Union
 
 from ..language import DocumentNode, Source, parse
 from ..type import GraphQLSchema, specified_directives
@@ -39,15 +39,19 @@ def build_ast_schema(
 
         assert_valid_sdl(document_ast)
 
-    empty_schema_config = GraphQLSchema(
+    empty_schema_kwargs: Dict[str, Any] = dict(
+        query=None,
+        mutation=None,
+        subscription=None,
         description=None,
         types=[],
         directives=[],
         extensions=None,
+        ast_node=None,
         extension_ast_nodes=[],
         assume_valid=False,
-    ).to_kwargs()
-    schema_kwargs = extend_schema_impl(empty_schema_config, document_ast, assume_valid)
+    )
+    schema_kwargs = extend_schema_impl(empty_schema_kwargs, document_ast, assume_valid)
 
     if not schema_kwargs["ast_node"]:
         for type_ in schema_kwargs["types"]:
