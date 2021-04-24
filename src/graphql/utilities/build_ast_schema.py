@@ -1,17 +1,7 @@
 from typing import Union
 
-from ..language import (
-    DocumentNode,
-    Source,
-    parse,
-)
-from ..type import (
-    GraphQLDeprecatedDirective,
-    GraphQLIncludeDirective,
-    GraphQLSchema,
-    GraphQLSkipDirective,
-    GraphQLSpecifiedByDirective,
-)
+from ..language import DocumentNode, Source, parse
+from ..type import GraphQLSchema, specified_directives
 from .extend_schema import extend_schema_impl
 
 __all__ = [
@@ -74,14 +64,9 @@ def build_ast_schema(
 
     directives = schema_kwargs["directives"]
     # If specified directives were not explicitly declared, add them.
-    if not any(directive.name == "skip" for directive in directives):
-        directives.append(GraphQLSkipDirective)
-    if not any(directive.name == "include" for directive in directives):
-        directives.append(GraphQLIncludeDirective)
-    if not any(directive.name == "deprecated" for directive in directives):
-        directives.append(GraphQLDeprecatedDirective)
-    if not any(directive.name == "specifiedBy" for directive in directives):
-        directives.append(GraphQLSpecifiedByDirective)
+    for std_directive in specified_directives:
+        if all(directive.name != std_directive.name for directive in directives):
+            directives.append(std_directive)
 
     return GraphQLSchema(**schema_kwargs)
 

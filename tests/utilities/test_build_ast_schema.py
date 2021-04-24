@@ -8,6 +8,7 @@ from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefini
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
+    GraphQLSchema,
     GraphQLSkipDirective,
     GraphQLSpecifiedByDirective,
     GraphQLBoolean,
@@ -113,6 +114,13 @@ def describe_schema_builder():
             }
             """
         build_schema(sdl)
+
+    def match_order_of_default_types_and_directives():
+        schema = GraphQLSchema()
+        sdl_schema = build_ast_schema(DocumentNode(definitions=[]))
+
+        assert sdl_schema.directives == schema.directives
+        assert sdl_schema.type_map == schema.type_map
 
     def empty_type():
         sdl = dedent(
