@@ -290,9 +290,11 @@ class TypeFieldResolvers:
     def fields(type_, _info, includeDeprecated=False):
         if is_object_type(type_) or is_interface_type(type_):
             items = type_.fields.items()
-            if not includeDeprecated:
-                return [item for item in items if item[1].deprecation_reason is None]
-            return list(items)
+            return (
+                list(items)
+                if includeDeprecated
+                else [item for item in items if item[1].deprecation_reason is None]
+            )
 
     @staticmethod
     def interfaces(type_, _info):
