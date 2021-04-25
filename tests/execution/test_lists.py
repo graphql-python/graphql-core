@@ -1,6 +1,6 @@
 from pytest import mark  # type: ignore
 
-from graphql.execution import execute
+from graphql.execution import execute, ExecutionResult
 from graphql.language import parse
 from graphql.utilities import build_schema
 
@@ -12,10 +12,6 @@ class Data:
 
 async def get_async(value):
     return value
-
-
-async def raise_async(msg):
-    raise RuntimeError(msg)
 
 
 def describe_execute_accepts_any_iterable_as_list_value():
@@ -70,419 +66,116 @@ def describe_execute_accepts_any_iterable_as_list_value():
 
 
 def describe_execute_handles_list_nullability():
-    def describe_list():
-        def _complete(list_field):
-            return execute(
-                build_schema("type Query { listField: [Int] }"),
-                parse("{ listField }"),
-                Data(list_field),
-            )
+    async def _complete(list_field, as_type):
+        schema = build_schema(f"type Query {{ listField: {as_type} }}")
+        document = parse("{ listField }")
 
-        def describe_sync_list():
-            def contains_values():
-                assert _complete([1, 2]) == ({"listField": [1, 2]}, None)
+        def execute_query(list_value):
+            return execute(schema, document, Data(list_value))
 
-            def contains_null():
-                assert _complete([1, None, 2]) == ({"listField": [1, None, 2]}, None)
+        result = execute_query(list_field)
+        assert isinstance(result, ExecutionResult)
+        assert await execute_query(get_async(list_field)) == result
+        if isinstance(list_field, list):
+            assert await execute_query(list(map(get_async, list_field))) == result
+            assert await execute_query(get_async(list_field)) == result
 
-            def returns_null():
-                assert _complete(None) == ({"listField": None}, None)
+        return result
 
-        def describe_async_list():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete(get_async([1, 2])) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
+    @mark.asyncio
+    async def contains_values():
+        list_field = [1, 2]
+        assert await _complete(list_field, "[Int]") == ({"listField": [1, 2]}, None)
+        assert await _complete(list_field, "[Int]!") == ({"listField": [1, 2]}, None)
+        assert await _complete(list_field, "[Int!]") == ({"listField": [1, 2]}, None)
+        assert await _complete(list_field, "[Int!]!") == ({"listField": [1, 2]}, None)
 
-            @mark.asyncio
-            async def contains_null():
-                assert await _complete(get_async([1, None, 2])) == (
-                    {"listField": [1, None, 2]},
-                    None,
-                )
+    @mark.asyncio
+    async def contains_null():
+        list_field = [1, None, 2]
+        errors = [
+            {
+                "message": "Cannot return null for non-nullable field Query.listField.",
+                "locations": [(1, 3)],
+                "path": ["listField", 1],
+            }
+        ]
+        assert await _complete(list_field, "[Int]") == (
+            {"listField": [1, None, 2]},
+            None,
+        )
+        assert await _complete(list_field, "[Int]!") == (
+            {"listField": [1, None, 2]},
+            None,
+        )
+        assert await _complete(list_field, "[Int!]") == ({"listField": None}, errors)
+        assert await _complete(list_field, "[Int!]!") == (None, errors)
 
-            @mark.asyncio
-            async def returns_null():
-                assert await _complete(get_async(None)) == ({"listField": None}, None)
+    @mark.asyncio
+    async def returns_null():
+        list_field = None
+        errors = [
+            {
+                "message": "Cannot return null for non-nullable field Query.listField.",
+                "locations": [(1, 3)],
+                "path": ["listField"],
+            }
+        ]
+        assert await _complete(list_field, "[Int]") == ({"listField": None}, None)
+        assert await _complete(list_field, "[Int]!") == (None, errors)
+        assert await _complete(list_field, "[Int!]") == ({"listField": None}, None)
+        assert await _complete(list_field, "[Int!]!") == (None, errors)
 
-            @mark.asyncio
-            async def returns_error():
-                assert await _complete(raise_async("bad")) == (
-                    {"listField": None},
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
+    @mark.asyncio
+    async def contains_error():
+        list_field = [1, RuntimeError("bad"), 2]
+        errors = [
+            {
+                "message": "bad",
+                "locations": [(1, 3)],
+                "path": ["listField", 1],
+            }
+        ]
+        assert await _complete(list_field, "[Int]") == (
+            {"listField": [1, None, 2]},
+            errors,
+        )
+        assert await _complete(list_field, "[Int]!") == (
+            {"listField": [1, None, 2]},
+            errors,
+        )
+        assert await _complete(list_field, "[Int!]") == (
+            {"listField": None},
+            errors,
+        )
+        assert await _complete(list_field, "[Int!]!") == (
+            None,
+            errors,
+        )
 
-        def describe_list_async():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete([get_async(1), get_async(2)]) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def contains_null():
-                assert await _complete(
-                    [get_async(1), get_async(None), get_async(2)]
-                ) == ({"listField": [1, None, 2]}, None)
-
-            @mark.asyncio
-            async def contains_error():
-                assert await _complete(
-                    [get_async(1), raise_async("bad"), get_async(2)]
-                ) == (
-                    {"listField": [1, None, 2]},
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-    def describe_not_null_list():
-        def _complete(list_field):
-            return execute(
-                build_schema("type Query { listField: [Int]! }"),
-                parse("{ listField }"),
-                Data(list_field),
-            )
-
-        def describe_sync_list():
-            def contains_values():
-                assert _complete([1, 2]) == ({"listField": [1, 2]}, None)
-
-            def contains_null():
-                assert _complete([1, None, 2]) == ({"listField": [1, None, 2]}, None)
-
-            def returns_null():
-                assert _complete(None) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-        def describe_async_list():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete(get_async([1, 2])) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def contains_null():
-                assert await _complete(get_async([1, None, 2])) == (
-                    {"listField": [1, None, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def returns_null():
-                assert await _complete(get_async(None)) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-            @mark.asyncio
-            async def returns_error():
-                assert await _complete(raise_async("bad")) == (
-                    None,
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-        def describe_list_async():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete([get_async(1), get_async(2)]) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def contains_null():
-                assert await _complete(
-                    [get_async(1), get_async(None), get_async(2)]
-                ) == (
-                    {"listField": [1, None, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def contains_error():
-                assert await _complete(
-                    [get_async(1), raise_async("bad"), get_async(2)]
-                ) == (
-                    {"listField": [1, None, 2]},
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-    def describe_list_not_null():
-        def _complete(list_field):
-            return execute(
-                build_schema("type Query { listField: [Int!] }"),
-                parse("{ listField }"),
-                Data(list_field),
-            )
-
-        def describe_sync_list():
-            def contains_values():
-                assert _complete([1, 2]) == ({"listField": [1, 2]}, None)
-
-            def contains_null():
-                assert _complete([1, None, 2]) == (
-                    {"listField": None},
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-            def returns_null():
-                assert _complete(None) == ({"listField": None}, None)
-
-        def describe_async_list():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete(get_async([1, 2])) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def contains_null():
-                assert await _complete(get_async([1, None, 2])) == (
-                    {"listField": None},
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-            @mark.asyncio
-            async def returns_null():
-                assert await _complete(get_async(None)) == ({"listField": None}, None)
-
-            @mark.asyncio
-            async def returns_error():
-                assert await _complete(raise_async("bad")) == (
-                    {"listField": None},
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-        def describe_list_async():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete([get_async(1), get_async(2)]) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-            async def contains_null():
-                assert await _complete(
-                    [get_async(1), get_async(None), get_async(2)]
-                ) == (
-                    {"listField": None},
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-            @mark.asyncio
-            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-            async def contains_error():
-                assert await _complete(
-                    [get_async(1), raise_async("bad"), get_async(2)]
-                ) == (
-                    {"listField": None},
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-    def describe_not_null_list_not_null():
-        def _complete(list_field):
-            return execute(
-                build_schema("type Query { listField: [Int!]! }"),
-                parse("{ listField }"),
-                Data(list_field),
-            )
-
-        def describe_sync_list():
-            def contains_values():
-                assert _complete([1, 2]) == ({"listField": [1, 2]}, None)
-
-            def contains_null():
-                assert _complete([1, None, 2]) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-            def returns_null():
-                assert _complete(None) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-        def describe_async_list():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete(get_async([1, 2])) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            async def contains_null():
-                assert await _complete(get_async([1, None, 2])) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-            @mark.asyncio
-            async def returns_null():
-                assert await _complete(get_async(None)) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-            @mark.asyncio
-            async def returns_error():
-                assert await _complete(raise_async("bad")) == (
-                    None,
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField"],
-                        }
-                    ],
-                )
-
-        def describe_list_async():
-            @mark.asyncio
-            async def contains_values():
-                assert await _complete([get_async(1), get_async(2)]) == (
-                    {"listField": [1, 2]},
-                    None,
-                )
-
-            @mark.asyncio
-            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-            async def contains_null():
-                assert await _complete(
-                    [get_async(1), get_async(None), get_async(2)]
-                ) == (
-                    None,
-                    [
-                        {
-                            "message": "Cannot return null"
-                            " for non-nullable field Query.listField.",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
-
-            @mark.asyncio
-            @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
-            async def contains__error():
-                assert await _complete(
-                    [get_async(1), raise_async("bad"), get_async(2)]
-                ) == (
-                    None,
-                    [
-                        {
-                            "message": "bad",
-                            "locations": [(1, 3)],
-                            "path": ["listField", 1],
-                        }
-                    ],
-                )
+    @mark.asyncio
+    async def results_in_errors():
+        list_field = RuntimeError("bad")
+        errors = [
+            {
+                "message": "bad",
+                "locations": [(1, 3)],
+                "path": ["listField"],
+            }
+        ]
+        assert await _complete(list_field, "[Int]") == (
+            {"listField": None},
+            errors,
+        )
+        assert await _complete(list_field, "[Int]!") == (
+            None,
+            errors,
+        )
+        assert await _complete(list_field, "[Int!]") == (
+            {"listField": None},
+            errors,
+        )
+        assert await _complete(list_field, "[Int!]!") == (
+            None,
+            errors,
+        )

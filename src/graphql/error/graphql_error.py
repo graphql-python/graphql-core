@@ -154,7 +154,9 @@ class GraphQLError(Exception):
             isinstance(other, GraphQLError)
             and self.__class__ == other.__class__
             and all(
-                getattr(self, slot) == getattr(other, slot) for slot in self.__slots__
+                getattr(self, slot) == getattr(other, slot)
+                for slot in self.__slots__
+                if slot != "original_error"
             )
         ) or (
             isinstance(other, dict)
@@ -162,6 +164,7 @@ class GraphQLError(Exception):
             and all(
                 slot in self.__slots__ and getattr(self, slot) == other.get(slot)
                 for slot in other
+                if slot != "original_error"
             )
         )
 
