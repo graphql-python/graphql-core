@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Collection, Optional, Union
 
+from ..pyutils import inspect
 from .graphql_error import GraphQLError
 
 if TYPE_CHECKING:
@@ -9,7 +10,7 @@ __all__ = ["located_error"]
 
 
 def located_error(
-    original_error: Union[Exception, GraphQLError],
+    original_error: Exception,
     nodes: Optional[Union["None", Collection["Node"]]],
     path: Optional[Collection[Union[str, int]]] = None,
 ) -> GraphQLError:
@@ -19,8 +20,9 @@ def located_error(
     GraphQL operation, produce a new GraphQLError aware of the location in the document
     responsible for the original Exception.
     """
+    # Sometimes a non-error is thrown, wrap it as a TypeError to ensure consistency.
     if not isinstance(original_error, Exception):
-        raise TypeError("Expected an Exception.")
+        original_error = TypeError(f"Unexpected error value: {inspect(original_error)}")
     # Note: this uses a brand-check to support GraphQL errors originating from
     # other contexts.
     if isinstance(original_error, GraphQLError) and original_error.path is not None:

@@ -1,16 +1,13 @@
 from typing import cast, Any
 
-from pytest import raises  # type: ignore
-
 from graphql.error import GraphQLError, located_error
 
 
 def describe_located_error():
     def throws_without_an_original_error():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            located_error([], [], [])  # type: ignore
-        assert str(exc_info.value) == "Expected an Exception."
+        e = located_error([], [], []).original_error  # type: ignore
+        assert isinstance(e, TypeError)
+        assert str(e) == "Unexpected error value: []"
 
     def passes_graphql_error_through():
         path = ["path", 3, "to", "field"]

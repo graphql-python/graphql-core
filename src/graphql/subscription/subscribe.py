@@ -3,11 +3,9 @@ from typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
-    Awaitable,
     Dict,
     Optional,
     Union,
-    cast,
 )
 
 from ..error import GraphQLError, located_error
@@ -18,6 +16,7 @@ from ..execution.execute import (
     ExecutionContext,
     ExecutionResult,
 )
+from ..execution.values import get_argument_values
 from ..language import DocumentNode
 from ..pyutils import Path, inspect
 from ..type import GraphQLFieldResolver, GraphQLSchema
@@ -56,18 +55,15 @@ async def subscribe(
     If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
     a stream of ExecutionResults representing the response stream.
     """
-    try:
-        result_or_stream = await create_source_event_stream(
-            schema,
-            document,
-            root_value,
-            context_value,
-            variable_values,
-            operation_name,
-            subscribe_field_resolver,
-        )
-    except GraphQLError as error:
-        return ExecutionResult(data=None, errors=[error])
+    result_or_stream = await create_source_event_stream(
+        schema,
+        document,
+        root_value,
+        context_value,
+        variable_values,
+        operation_name,
+        subscribe_field_resolver,
+    )
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
 
@@ -111,11 +107,15 @@ async def create_source_event_stream(
 
     Returns a coroutine that yields an AsyncIterable.
 
-    If the client provided invalid arguments, the source stream could not be created,
-    or the resolver did not return an AsyncIterable, this function will throw an error,
-    which should be caught and handled by the caller.
+    If the client-provided arguments to this function do not result in a compliant
+    subscription, a GraphQL Response (ExecutionResult) with descriptive errors and no
+    data will be returned.
 
-    A Source Event Stream represents a sequence of events, each of which triggers a
+    If the source stream could not be created due to faulty subscription resolver logic
+    or underlying systems, the coroutine object will yield a single ExecutionResult
+    containing ``errors`` and no ``data``.
+
+    A source event stream represents a sequence of events, each of which triggers a
     GraphQL execution for that event.
 
     This may be useful when hosting the stateful subscription service in a different
@@ -143,6 +143,14 @@ async def create_source_event_stream(
     if isinstance(context, list):
         return ExecutionResult(data=None, errors=context)
 
+    try:
+        return await execute_subscription(context)
+    except GraphQLError as error:
+        return ExecutionResult(data=None, errors=[error])
+
+
+async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
+    schema = context.schema
     type_ = get_operation_root_type(schema, context.operation)
     fields = context.collect_fields(type_, context.operation.selection_set, {}, set())
     response_names = list(fields)
@@ -157,29 +165,35 @@ async def create_source_event_stream(
             f"The subscription field '{field_name}' is not defined.", field_nodes
         )
 
+    path = Path(None, response_name, type_.name)
+    info = context.build_resolve_info(field_def, field_nodes, type_, path)
+
+    # Implements the "ResolveFieldEventStream" algorithm from GraphQL specification.
+    # It differs from "ResolveFieldValue" due to providing a different `resolveFn`.
+
+    # Build a dictionary of arguments from the field.arguments AST, using the
+    # variables scope to fulfill any variable references.
+    args = get_argument_values(field_def, field_nodes[0], context.variable_values)
+
     # Call the `subscribe()` resolver or the default resolver to produce an
     # AsyncIterable yielding raw payloads.
     resolve_fn = field_def.subscribe or context.field_resolver
 
-    path = Path(None, response_name, type_.name)
+    try:
+        event_stream = resolve_fn(context.root_value, info, **args)
+        if context.is_awaitable(event_stream):
+            event_stream = await event_stream
+    except Exception as error:
+        event_stream = error
 
-    info = context.build_resolve_info(field_def, field_nodes, type_, path)
-
-    # `resolve_field_value_or_error` implements the "ResolveFieldEventStream" algorithm
-    # from GraphQL specification. It differs from `resolve_field_value` due to
-    # providing a different `resolve_fn`.
-    result = context.resolve_field_value_or_error(
-        field_def, field_nodes, resolve_fn, root_value, info
-    )
-    event_stream = await cast(Awaitable, result) if isawaitable(result) else result
-    # If `event_stream` is an Error, rethrow a located error.
     if isinstance(event_stream, Exception):
         raise located_error(event_stream, field_nodes, path.as_list())
 
     # Assert field returned an event stream, otherwise yield an error.
-    if isinstance(event_stream, AsyncIterable):
-        return event_stream
-    raise TypeError(
-        "Subscription field must return AsyncIterable."
-        f" Received: {inspect(event_stream)}."
-    )
+    if not isinstance(event_stream, AsyncIterable):
+        raise TypeError(
+            "Subscription field must return AsyncIterable."
+            f" Received: {inspect(event_stream)}."
+        )
+
+    return event_stream
