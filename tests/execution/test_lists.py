@@ -17,7 +17,7 @@ from graphql.type import (
 )
 from graphql.execution import execute
 
-Data = namedtuple("Data", "test")
+Data = namedtuple("Data", "listField")
 
 
 async def get_async(value):
@@ -29,21 +29,18 @@ async def raise_async(msg):
 
 
 def get_response(test_type, test_data):
-    data = Data(test=test_data)
+    data = Data(listField=test_data)
 
-    data_type = GraphQLObjectType(
-        "DataType",
-        lambda: {
-            "test": GraphQLField(test_type),
-            "nest": GraphQLField(data_type, resolve=lambda *_args: data),
-        },
+    schema = GraphQLSchema(
+        GraphQLObjectType(
+            "Query",
+            lambda: {
+                "listField": GraphQLField(test_type),
+            },
+        )
     )
 
-    return execute(
-        schema=GraphQLSchema(data_type),
-        document=parse("{ nest { test } }"),
-        context_value=data,
-    )
+    return execute(schema, parse("{ listField }"), data)
 
 
 def check_response(response: Any, expected: Any) -> None:
@@ -76,7 +73,7 @@ def describe_execute_accepts_any_iterable_as_list_value():
         check(
             GraphQLList(GraphQLString),
             dict.fromkeys(["apple", "banana", "coconut"]),
-            {"nest": {"test": ["apple", "banana", "coconut"]}},
+            {"listField": ["apple", "banana", "coconut"]},
         )
 
     def accepts_a_generator_as_a_list_value():
@@ -88,7 +85,7 @@ def describe_execute_accepts_any_iterable_as_list_value():
         check(
             GraphQLList(GraphQLString),
             yield_items(),
-            {"nest": {"test": ["one", "2", "true"]}},
+            {"listField": ["one", "2", "true"]},
         )
 
     def accepts_function_arguments_as_a_list_value():
@@ -98,7 +95,7 @@ def describe_execute_accepts_any_iterable_as_list_value():
         check(
             GraphQLList(GraphQLString),
             get_args("one", "two"),
-            {"nest": {"test": ["one", "two"]}},
+            {"listField": ["one", "two"]},
         )
 
     def does_not_accept_iterable_string_literal_as_a_list_value():
@@ -106,13 +103,13 @@ def describe_execute_accepts_any_iterable_as_list_value():
             GraphQLList(GraphQLString),
             "Singular",
             (
-                {"nest": {"test": None}},
+                {"listField": None},
                 [
                     {
                         "message": "Expected Iterable,"
-                        " but did not find one for field 'DataType.test'.",
-                        "locations": [(1, 10)],
-                        "path": ["nest", "test"],
+                        " but did not find one for field 'Query.listField'.",
+                        "locations": [(1, 3)],
+                        "path": ["listField"],
                     }
                 ],
             ),
@@ -125,28 +122,28 @@ def describe_execute_handles_list_nullability():
 
         def describe_sync_list():
             def contains_values():
-                check(type_, [1, 2], {"nest": {"test": [1, 2]}})
+                check(type_, [1, 2], {"listField": [1, 2]})
 
             def contains_null():
-                check(type_, [1, None, 2], {"nest": {"test": [1, None, 2]}})
+                check(type_, [1, None, 2], {"listField": [1, None, 2]})
 
             def returns_null():
-                check(type_, None, {"nest": {"test": None}})
+                check(type_, None, {"listField": None})
 
         def describe_async_list():
             @mark.asyncio
             async def contains_values():
-                await check_async(type_, get_async([1, 2]), {"nest": {"test": [1, 2]}})
+                await check_async(type_, get_async([1, 2]), {"listField": [1, 2]})
 
             @mark.asyncio
             async def contains_null():
                 await check_async(
-                    type_, get_async([1, None, 2]), {"nest": {"test": [1, None, 2]}}
+                    type_, get_async([1, None, 2]), {"listField": [1, None, 2]}
                 )
 
             @mark.asyncio
             async def returns_null():
-                await check_async(type_, get_async(None), {"nest": {"test": None}})
+                await check_async(type_, get_async(None), {"listField": None})
 
             @mark.asyncio
             async def async_error():
@@ -154,12 +151,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     raise_async("bad"),
                     (
-                        {"nest": {"test": None}},
+                        {"listField": None},
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -169,7 +166,7 @@ def describe_execute_handles_list_nullability():
             @mark.asyncio
             async def contains_values():
                 await check_async(
-                    type_, [get_async(1), get_async(2)], {"nest": {"test": [1, 2]}}
+                    type_, [get_async(1), get_async(2)], {"listField": [1, 2]}
                 )
 
             @mark.asyncio
@@ -177,7 +174,7 @@ def describe_execute_handles_list_nullability():
                 await check_async(
                     type_,
                     [get_async(1), get_async(None), get_async(2)],
-                    {"nest": {"test": [1, None, 2]}},
+                    {"listField": [1, None, 2]},
                 )
 
             @mark.asyncio
@@ -186,12 +183,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     [get_async(1), raise_async("bad"), get_async(2)],
                     (
-                        {"nest": {"test": [1, None, 2]}},
+                        {"listField": [1, None, 2]},
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -202,23 +199,23 @@ def describe_execute_handles_list_nullability():
 
         def describe_sync_list():
             def contains_values():
-                check(type_, [1, 2], {"nest": {"test": [1, 2]}})
+                check(type_, [1, 2], {"listField": [1, 2]})
 
             def contains_null():
-                check(type_, [1, None, 2], {"nest": {"test": [1, None, 2]}})
+                check(type_, [1, None, 2], {"listField": [1, None, 2]})
 
             def returns_null():
                 check(
                     type_,
                     None,
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -227,12 +224,12 @@ def describe_execute_handles_list_nullability():
         def describe_async_list():
             @mark.asyncio
             async def contains_values():
-                await check_async(type_, get_async([1, 2]), {"nest": {"test": [1, 2]}})
+                await check_async(type_, get_async([1, 2]), {"listField": [1, 2]})
 
             @mark.asyncio
             async def contains_null():
                 await check_async(
-                    type_, get_async([1, None, 2]), {"nest": {"test": [1, None, 2]}}
+                    type_, get_async([1, None, 2]), {"listField": [1, None, 2]}
                 )
 
             @mark.asyncio
@@ -241,13 +238,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     get_async(None),
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -259,12 +256,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     raise_async("bad"),
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -274,7 +271,7 @@ def describe_execute_handles_list_nullability():
             @mark.asyncio
             async def contains_values():
                 await check_async(
-                    type_, [get_async(1), get_async(2)], {"nest": {"test": [1, 2]}}
+                    type_, [get_async(1), get_async(2)], {"listField": [1, 2]}
                 )
 
             @mark.asyncio
@@ -282,7 +279,7 @@ def describe_execute_handles_list_nullability():
                 await check_async(
                     type_,
                     [get_async(1), get_async(None), get_async(2)],
-                    {"nest": {"test": [1, None, 2]}},
+                    {"listField": [1, None, 2]},
                 )
 
             @mark.asyncio
@@ -291,12 +288,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     [get_async(1), raise_async("bad"), get_async(2)],
                     (
-                        {"nest": {"test": [1, None, 2]}},
+                        {"listField": [1, None, 2]},
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -307,32 +304,32 @@ def describe_execute_handles_list_nullability():
 
         def describe_sync_list():
             def contains_values():
-                check(type_, [1, 2], {"nest": {"test": [1, 2]}})
+                check(type_, [1, 2], {"listField": [1, 2]})
 
             def contains_null():
                 check(
                     type_,
                     [1, None, 2],
                     (
-                        {"nest": {"test": None}},
+                        {"listField": None},
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
                 )
 
             def returns_null():
-                check(type_, None, {"nest": {"test": None}})
+                check(type_, None, {"listField": None})
 
         def describe_async_list():
             @mark.asyncio
             async def contains_values():
-                await check_async(type_, get_async([1, 2]), {"nest": {"test": [1, 2]}})
+                await check_async(type_, get_async([1, 2]), {"listField": [1, 2]})
 
             @mark.asyncio
             async def contains_null():
@@ -340,13 +337,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     get_async([1, None, 2]),
                     (
-                        {"nest": {"test": None}},
+                        {"listField": None},
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -354,7 +351,7 @@ def describe_execute_handles_list_nullability():
 
             @mark.asyncio
             async def returns_null():
-                await check_async(type_, get_async(None), {"nest": {"test": None}})
+                await check_async(type_, get_async(None), {"listField": None})
 
             @mark.asyncio
             async def async_error():
@@ -362,12 +359,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     raise_async("bad"),
                     (
-                        {"nest": {"test": None}},
+                        {"listField": None},
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -377,7 +374,7 @@ def describe_execute_handles_list_nullability():
             @mark.asyncio
             async def contains_values():
                 await check_async(
-                    type_, [get_async(1), get_async(2)], {"nest": {"test": [1, 2]}}
+                    type_, [get_async(1), get_async(2)], {"listField": [1, 2]}
                 )
 
             @mark.asyncio
@@ -387,13 +384,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     [get_async(1), get_async(None), get_async(2)],
                     (
-                        {"nest": {"test": None}},
+                        {"listField": None},
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -406,12 +403,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     [get_async(1), raise_async("bad"), get_async(2)],
                     (
-                        {"nest": {"test": None}},
+                        {"listField": None},
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -422,20 +419,20 @@ def describe_execute_handles_list_nullability():
 
         def describe_sync_list():
             def contains_values():
-                check(type_, [1, 2], {"nest": {"test": [1, 2]}})
+                check(type_, [1, 2], {"listField": [1, 2]})
 
             def contains_null():
                 check(
                     type_,
                     [1, None, 2],
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -446,13 +443,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     None,
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -461,7 +458,7 @@ def describe_execute_handles_list_nullability():
         def describe_async_list():
             @mark.asyncio
             async def contains_values():
-                await check_async(type_, get_async([1, 2]), {"nest": {"test": [1, 2]}})
+                await check_async(type_, get_async([1, 2]), {"listField": [1, 2]})
 
             @mark.asyncio
             async def contains_null():
@@ -469,13 +466,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     get_async([1, None, 2]),
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -487,13 +484,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     get_async(None),
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -505,12 +502,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     raise_async("bad"),
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test"],
+                                "locations": [(1, 3)],
+                                "path": ["listField"],
                             }
                         ],
                     ),
@@ -520,7 +517,7 @@ def describe_execute_handles_list_nullability():
             @mark.asyncio
             async def contains_values():
                 await check_async(
-                    type_, [get_async(1), get_async(2)], {"nest": {"test": [1, 2]}}
+                    type_, [get_async(1), get_async(2)], {"listField": [1, 2]}
                 )
 
             @mark.asyncio
@@ -530,13 +527,13 @@ def describe_execute_handles_list_nullability():
                     type_,
                     [get_async(1), get_async(None), get_async(2)],
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "Cannot return null"
-                                " for non-nullable field DataType.test.",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                " for non-nullable field Query.listField.",
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
@@ -549,12 +546,12 @@ def describe_execute_handles_list_nullability():
                     type_,
                     [get_async(1), raise_async("bad"), get_async(2)],
                     (
-                        {"nest": None},
+                        None,
                         [
                             {
                                 "message": "bad",
-                                "locations": [(1, 10)],
-                                "path": ["nest", "test", 1],
+                                "locations": [(1, 3)],
+                                "path": ["listField", 1],
                             }
                         ],
                     ),
