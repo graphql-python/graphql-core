@@ -1,5 +1,3 @@
-from typing import List
-
 __all__ = [
     "dedent_block_string_value",
     "print_block_string",
@@ -21,48 +19,54 @@ def dedent_block_string_value(raw_string: str) -> str:
     lines = raw_string.splitlines()
 
     # Remove common indentation from all lines but first.
-    common_indent = get_block_string_indentation(lines)
+    common_indent = get_block_string_indentation(raw_string)
 
     if common_indent:
         lines[1:] = [line[common_indent:] for line in lines[1:]]
 
     # Remove leading and trailing blank lines.
-    while lines and not lines[0].strip():
-        lines = lines[1:]
-
-    while lines and not lines[-1].strip():
-        lines = lines[:-1]
+    start_line = 0
+    end_line = len(lines)
+    while start_line < end_line and is_blank(lines[start_line]):
+        start_line += 1
+    while end_line > start_line and is_blank(lines[end_line - 1]):
+        end_line -= 1
 
     # Return a string of the lines joined with U+000A.
-    return "\n".join(lines)
+    return "\n".join(lines[start_line:end_line])
 
 
-def get_block_string_indentation(lines: List[str]) -> int:
+def is_blank(s: str) -> bool:
+    """Check whether string contains only space or tab characters."""
+    return all(c == " " or c == "\t" for c in s)
+
+
+def get_block_string_indentation(value: str) -> int:
     """Get the amount of indentation for the given block string.
 
     For internal use only.
     """
+    is_first_line = is_empty_line = True
+    indent = 0
     common_indent = None
 
-    for line in lines[1:]:
-        indent = leading_whitespace(line)
-        if indent == len(line):
-            continue  # skip empty lines
+    for c in value:
+        if c in "\r\n":
+            is_first_line = False
+            is_empty_line = True
+            indent = 0
+        elif c in "\t ":
+            indent += 1
+        else:
+            if (
+                is_empty_line
+                and not is_first_line
+                and (common_indent is None or indent < common_indent)
+            ):
+                common_indent = indent
+            is_empty_line = False
 
-        if common_indent is None or indent < common_indent:
-            common_indent = indent
-            if common_indent == 0:
-                break
-
-    return 0 if common_indent is None else common_indent
-
-
-def leading_whitespace(s: str) -> int:
-    i = 0
-    n = len(s)
-    while i < n and s[i] in " \t":
-        i += 1
-    return i
+    return common_indent or 0
 
 
 def print_block_string(

@@ -75,28 +75,37 @@ def describe_dedent_block_string_value():
 
 def describe_get_block_string_indentation():
     def returns_zero_for_an_empty_list():
-        assert get_block_string_indentation([]) == 0
+        assert get_block_string_indentation("") == 0
 
     def do_not_take_first_line_into_account():
-        assert get_block_string_indentation(["  a"]) == 0
-        assert get_block_string_indentation([" a", "  b"]) == 2
+        assert get_block_string_indentation("  a") == 0
+        assert get_block_string_indentation(" a\n  b") == 2
 
     def returns_minimal_indentation_length():
-        assert get_block_string_indentation(["", " a", "  b"]) == 1
-        assert get_block_string_indentation(["", "  a", " b"]) == 1
-        assert get_block_string_indentation(["", "  a", " b", "c"]) == 0
+        assert get_block_string_indentation("\n a\n  b") == 1
+        assert get_block_string_indentation("\n  a\n b") == 1
+        assert get_block_string_indentation("\n  a\n b\nc") == 0
 
     def count_both_tab_and_space_as_single_character():
-        assert get_block_string_indentation(["", "\ta", "          b"]) == 1
-        assert get_block_string_indentation(["", "\t a", "          b"]) == 2
-        assert get_block_string_indentation(["", " \t a", "          b"]) == 3
+        assert get_block_string_indentation("\n\ta\n          b") == 1
+        assert get_block_string_indentation("\n\t a\n          b") == 2
+        assert get_block_string_indentation("\n \t a\n          b") == 3
 
     def do_not_take_empty_lines_into_account():
-        assert get_block_string_indentation((["a", "\t"])) == 0
-        assert get_block_string_indentation((["a", " "])) == 0
-        assert get_block_string_indentation((["a", " ", "  b"])) == 2
-        assert get_block_string_indentation((["a", " ", "  b"])) == 2
-        assert get_block_string_indentation((["a", "", " b"])) == 1
+        assert get_block_string_indentation("a\n ") == 0
+        assert get_block_string_indentation("a\n\t") == 0
+        assert get_block_string_indentation("a\n\n b") == 1
+        assert get_block_string_indentation("a\n \n  b") == 2
+
+    def treat_carriage_returns_like_newlines():
+        assert get_block_string_indentation(" a\r  b") == 2
+        assert get_block_string_indentation(" a\r\n  b") == 2
+        assert get_block_string_indentation("\r  a\r b") == 1
+        assert get_block_string_indentation("\r\n  a\r\n b") == 1
+        assert get_block_string_indentation("\r \t a\r          b") == 3
+        assert get_block_string_indentation("\r\n \t a\r\n          b") == 3
+        assert get_block_string_indentation("a\r \r  b") == 2
+        assert get_block_string_indentation("a\r\n \r\n  b") == 2
 
 
 def describe_print_block_string():

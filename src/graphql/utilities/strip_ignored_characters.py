@@ -103,8 +103,7 @@ def dedent_block_string(block_str: str) -> str:
     raw_str = block_str[3:-3]
     body = dedent_block_string_value(raw_str)
 
-    lines = body.splitlines()
-    if get_block_string_indentation(lines) > 0:
+    if get_block_string_indentation(body) > 0:
         body = "\n" + body
 
     last_char = body[-1:]
