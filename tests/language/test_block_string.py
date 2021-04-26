@@ -100,6 +100,10 @@ def describe_get_block_string_indentation():
 
 
 def describe_print_block_string():
+    def do_not_escape_characters():
+        s = '" \\ / \b \f \n \r \t'
+        assert print_block_string(s) == f'"""\n{s}\n"""'
+
     def by_default_print_block_strings_as_single_line():
         s = "one liner"
         assert print_block_string(s) == '"""one liner"""'
