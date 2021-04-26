@@ -51,7 +51,7 @@ class MutationEnum(Enum):
 
 
 class UserRegistry:
-    """"Simulation of a user registry with asynchronous database backend access."""
+    """Simulation of a user registry with asynchronous database backend access."""
 
     def __init__(self, **users):
         self._registry: Dict[str, User] = users
