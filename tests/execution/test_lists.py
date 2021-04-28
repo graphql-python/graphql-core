@@ -1,6 +1,6 @@
 from pytest import mark  # type: ignore
 
-from graphql.execution import execute, ExecutionResult
+from graphql.execution import execute, execute_sync, ExecutionResult
 from graphql.language import parse
 from graphql.utilities import build_schema
 
@@ -16,7 +16,7 @@ async def get_async(value):
 
 def describe_execute_accepts_any_iterable_as_list_value():
     def _complete(list_field):
-        return execute(
+        return execute_sync(
             build_schema("type Query { listField: [String] }"),
             parse("{ listField }"),
             Data(list_field),
