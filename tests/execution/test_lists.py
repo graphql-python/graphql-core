@@ -32,12 +32,12 @@ def describe_execute_accepts_any_iterable_as_list_value():
         )
 
     def accepts_a_generator_as_a_list_value():
-        def yield_items():
+        def list_field():
             yield "one"
             yield 2
             yield True
 
-        assert _complete(yield_items()) == (
+        assert _complete(list_field()) == (
             {"listField": ["one", "2", "true"]},
             None,
         )
