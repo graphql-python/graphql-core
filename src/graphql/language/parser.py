@@ -994,8 +994,8 @@ class Parser:
     def expect_token(self, kind: TokenKind) -> Token:
         """Expect the next token to be of the given kind.
 
-        If the next token is of the given kind, return that token after advancing
-        the lexer. Otherwise, do not change the parser state and throw an error.
+        If the next token is of the given kind, return that token after advancing the
+        lexer. Otherwise, do not change the parser state and throw an error.
         """
         token = self._lexer.token
         if token.kind == kind:
@@ -1011,8 +1011,8 @@ class Parser:
     def expect_optional_token(self, kind: TokenKind) -> Optional[Token]:
         """Expect the next token optionally to be of the given kind.
 
-        If the next token is of the given kind, return that token after advancing
-        the lexer. Otherwise, do not change the parser state and return None.
+        If the next token is of the given kind, return that token after advancing the
+        lexer. Otherwise, do not change the parser state and return None.
         """
         token = self._lexer.token
         if token.kind == kind:
