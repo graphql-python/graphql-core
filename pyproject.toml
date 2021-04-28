@@ -51,7 +51,7 @@ pytest-describe = "^1.0"
 pytest-timeout = "^1.4"
 black = [
     {version = "20.8b1", python = "<3.6.2"},
-    {version = "21.4b1", python = ">=3.6.2"}
+    {version = "21.4b2", python = ">=3.6.2"}
 ]
 flake8 = "^3.9"
 mypy = "0.812"
