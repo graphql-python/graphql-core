@@ -303,6 +303,7 @@ class ExecutionContext:
         defined by the "Response" section of the GraphQL spec.
         """
         if self.is_awaitable(data):
+
             async def build_response_async() -> ExecutionResult:
                 return self.build_response(await data)  # type: ignore
 
