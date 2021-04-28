@@ -1,4 +1,5 @@
 from math import inf, nan, pi
+from typing import Any
 
 from pytest import raises  # type: ignore
 
@@ -19,7 +20,7 @@ def describe_type_system_specified_scalar_types():
         def parse_value():
             _parse_value = GraphQLInt.parse_value
 
-            def _parse_value_raises(s, message):
+            def _parse_value_raises(s: Any, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
@@ -53,10 +54,10 @@ def describe_type_system_specified_scalar_types():
             )
 
         def parse_literal():
-            def _parse_literal(s):
+            def _parse_literal(s: str):
                 return GraphQLInt.parse_literal(parse_value_to_ast(s))
 
-            def _parse_literal_raises(s, message):
+            def _parse_literal_raises(s: str, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
@@ -175,7 +176,7 @@ def describe_type_system_specified_scalar_types():
         def parse_value():
             _parse_value = GraphQLFloat.parse_value
 
-            def _parse_value_raises(s, message):
+            def _parse_value_raises(s: Any, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
@@ -208,10 +209,10 @@ def describe_type_system_specified_scalar_types():
             )
 
         def parse_literal():
-            def _parse_literal(s):
+            def _parse_literal(s: str):
                 return GraphQLFloat.parse_literal(parse_value_to_ast(s))
 
-            def _parse_literal_raises(s, message):
+            def _parse_literal_raises(s: str, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
@@ -297,7 +298,7 @@ def describe_type_system_specified_scalar_types():
         def parse_value():
             _parse_value = GraphQLString.parse_value
 
-            def _parse_value_raises(s, message):
+            def _parse_value_raises(s: Any, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
@@ -324,10 +325,10 @@ def describe_type_system_specified_scalar_types():
             )
 
         def parse_literal():
-            def _parse_literal(s):
+            def _parse_literal(s: str):
                 return GraphQLString.parse_literal(parse_value_to_ast(s))
 
-            def _parse_literal_raises(s, message):
+            def _parse_literal_raises(s: str, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
@@ -403,7 +404,7 @@ def describe_type_system_specified_scalar_types():
         def parse_value():
             _parse_value = GraphQLBoolean.parse_value
 
-            def _parse_value_raises(s, message):
+            def _parse_value_raises(s: Any, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
@@ -438,10 +439,10 @@ def describe_type_system_specified_scalar_types():
             )
 
         def parse_literal():
-            def _parse_literal(s):
+            def _parse_literal(s: str):
                 return GraphQLBoolean.parse_literal(parse_value_to_ast(s))
 
-            def _parse_literal_raises(s, message):
+            def _parse_literal_raises(s: str, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
@@ -545,7 +546,7 @@ def describe_type_system_specified_scalar_types():
         def parse_value():
             _parse_value = GraphQLID.parse_value
 
-            def _parse_value_raises(s, message):
+            def _parse_value_raises(s: Any, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
@@ -573,10 +574,10 @@ def describe_type_system_specified_scalar_types():
             )
 
         def parse_literal():
-            def _parse_literal(s):
+            def _parse_literal(s: str):
                 return GraphQLID.parse_literal(parse_value_to_ast(s))
 
-            def _parse_literal_raises(s, message):
+            def _parse_literal_raises(s: str, message: str):
                 with raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")

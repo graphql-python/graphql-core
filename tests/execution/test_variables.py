@@ -980,7 +980,7 @@ def describe_execute_handles_inputs():
 
         input_value = {"input": [0, 1, 2]}
 
-        def _invalid_value_error(value, index):
+        def _invalid_value_error(value: int, index: int) -> Dict[str, Any]:
             return {
                 "message": "Variable '$input' got invalid value"
                 f" {value} at 'input[{index}]';"

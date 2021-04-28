@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from ..error import GraphQLSyntaxError
 from .ast import Token
@@ -154,7 +154,9 @@ class Lexer:
         col = 1 + pos - self.line_start
         return Token(TokenKind.EOF, body_length, body_length, line, col, prev)
 
-    def read_comment(self, start: int, line: int, col: int, prev: Token) -> Token:
+    def read_comment(
+        self, start: int, line: int, col: int, prev: Optional[Token]
+    ) -> Token:
         """Read a comment token from the source file."""
         body = self.source.body
         body_length = len(body)
@@ -178,7 +180,7 @@ class Lexer:
         )
 
     def read_number(
-        self, start: int, char: str, line: int, col: int, prev: Token
+        self, start: int, char: str, line: int, col: int, prev: Optional[Token]
     ) -> Token:
         """Reads a number token from the source file.
 
@@ -253,7 +255,9 @@ class Lexer:
             )
         return position
 
-    def read_string(self, start: int, line: int, col: int, prev: Token) -> Token:
+    def read_string(
+        self, start: int, line: int, col: int, prev: Optional[Token]
+    ) -> Token:
         """Read a string token from the source file."""
         source = self.source
         body = source.body
@@ -316,7 +320,9 @@ class Lexer:
 
         raise GraphQLSyntaxError(source, position, "Unterminated string.")
 
-    def read_block_string(self, start: int, line: int, col: int, prev: Token) -> Token:
+    def read_block_string(
+        self, start: int, line: int, col: int, prev: Optional[Token]
+    ) -> Token:
         source = self.source
         body = source.body
         body_length = len(body)
@@ -364,7 +370,9 @@ class Lexer:
 
         raise GraphQLSyntaxError(source, position, "Unterminated string.")
 
-    def read_name(self, start: int, line: int, col: int, prev: Token) -> Token:
+    def read_name(
+        self, start: int, line: int, col: int, prev: Optional[Token]
+    ) -> Token:
         """Read an alphanumeric + underscore name from the source."""
         body = self.source.body
         body_length = len(body)

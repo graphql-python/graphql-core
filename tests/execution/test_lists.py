@@ -1,3 +1,5 @@
+from typing import Any
+
 from pytest import mark  # type: ignore
 
 from graphql.execution import execute, execute_sync, ExecutionResult
@@ -66,11 +68,11 @@ def describe_execute_accepts_any_iterable_as_list_value():
 
 
 def describe_execute_handles_list_nullability():
-    async def _complete(list_field, as_type):
+    async def _complete(list_field: Any, as_type: str) -> ExecutionResult:
         schema = build_schema(f"type Query {{ listField: {as_type} }}")
         document = parse("{ listField }")
 
-        def execute_query(list_value):
+        def execute_query(list_value: Any) -> Any:
             return execute(schema, document, Data(list_value))
 
         result = execute_query(list_field)

@@ -3,7 +3,7 @@ from graphql.utilities import build_schema, print_schema, lexicographic_sort_sch
 from ..utils import dedent
 
 
-def sort_sdl(sdl):
+def sort_sdl(sdl: str) -> str:
     schema = build_schema(sdl)
     return print_schema(lexicographic_sort_schema(schema))
 

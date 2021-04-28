@@ -1,3 +1,5 @@
+from typing import Any
+
 from pytest import raises  # type: ignore
 
 from graphql.language import DirectiveLocation
@@ -245,7 +247,7 @@ def describe_type_predicates():
                 assert_non_null_type(GraphQLList(GraphQLNonNull(ObjectType)))
 
     def describe_is_input_type():
-        def _assert_input_type(type_):
+        def _assert_input_type(type_: Any):
             assert is_input_type(type_) is True
             assert_input_type(type_)
 
@@ -263,7 +265,7 @@ def describe_type_predicates():
             _assert_input_type(GraphQLNonNull(EnumType))
             _assert_input_type(GraphQLNonNull(InputObjectType))
 
-        def _assert_non_input_type(type_):
+        def _assert_non_input_type(type_: Any):
             assert is_input_type(type_) is False
             with raises(TypeError):
                 assert_input_type(type_)
@@ -283,7 +285,7 @@ def describe_type_predicates():
             _assert_non_input_type(GraphQLNonNull(UnionType))
 
     def describe_is_output_type():
-        def _assert_output_type(type_):
+        def _assert_output_type(type_: Any):
             assert is_output_type(type_) is True
             assert_output_type(type_)
 
@@ -307,7 +309,7 @@ def describe_type_predicates():
             _assert_output_type(GraphQLNonNull(UnionType))
             _assert_output_type(GraphQLNonNull(EnumType))
 
-        def _assert_non_output_type(type_):
+        def _assert_non_output_type(type_: Any):
             assert is_output_type(type_) is False
             with raises(TypeError):
                 assert_output_type(type_)

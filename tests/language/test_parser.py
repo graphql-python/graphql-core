@@ -1,4 +1,4 @@
-from typing import cast
+from typing import cast, Optional, Tuple
 
 from pytest import raises  # type: ignore
 
@@ -32,8 +32,10 @@ from graphql.pyutils import inspect
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
 
+Location = Optional[Tuple[int, int]]
 
-def assert_syntax_error(text, message, location):
+
+def assert_syntax_error(text: str, message: str, location: Location) -> None:
     with raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value

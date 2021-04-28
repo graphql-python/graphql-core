@@ -1,5 +1,7 @@
 import weakref
 
+from typing import cast, Tuple
+
 from pytest import raises  # type: ignore
 
 from graphql.language import Source, SourceLocation
@@ -91,17 +93,17 @@ def describe_source():
             Source("", 1)  # type: ignore
 
     def rejects_invalid_location_offset():
-        def create_source(location_offset):
-            return Source("", "", location_offset)
+        def create_source(location_offset: Tuple[int, int]) -> Source:
+            return Source("", "", cast(SourceLocation, location_offset))
 
         with raises(TypeError):
-            create_source(None)
+            create_source(None)  # type: ignore
         with raises(TypeError):
-            create_source(1)
+            create_source(1)  # type: ignore
         with raises(TypeError):
-            create_source((1,))
+            create_source((1,))  # type: ignore
         with raises(TypeError):
-            create_source((1, 2, 3))
+            create_source((1, 2, 3))  # type: ignore
 
         with raises(
             ValueError,

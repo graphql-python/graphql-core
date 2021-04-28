@@ -108,7 +108,6 @@ class SchemaValidationContext:
 
     def validate_root_types(self) -> None:
         schema = self.schema
-
         query_type = schema.query_type
         if not query_type:
             self.report_error("Query root type must be provided.", schema.ast_node)

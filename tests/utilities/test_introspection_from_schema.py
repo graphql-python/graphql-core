@@ -1,3 +1,5 @@
+from typing import Dict
+
 from graphql.type import GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLString
 from graphql.utilities import (
     build_client_schema,
@@ -8,7 +10,7 @@ from graphql.utilities import (
 from ..utils import dedent
 
 
-def introspection_to_sdl(introspection):
+def introspection_to_sdl(introspection: Dict) -> str:
     return print_schema(build_client_schema(introspection))
 
 

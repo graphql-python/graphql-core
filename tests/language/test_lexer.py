@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from pytest import raises  # type: ignore
 
@@ -8,6 +8,8 @@ from graphql.language.lexer import is_punctuator_token_kind
 from graphql.pyutils import inspect
 
 from ..utils import dedent
+
+Location = Optional[Tuple[int, int]]
 
 
 def lex_one(s: str) -> Token:
@@ -21,7 +23,7 @@ def lex_second(s: str) -> Token:
     return lexer.advance()
 
 
-def assert_syntax_error(text, message, location):
+def assert_syntax_error(text: str, message: str, location: Location) -> None:
     with raises(GraphQLSyntaxError) as exc_info:
         lex_second(text)
     error = exc_info.value

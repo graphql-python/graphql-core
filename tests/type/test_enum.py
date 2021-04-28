@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, Optional
 
 from graphql import graphql_sync
 from graphql.type import (
@@ -109,7 +110,7 @@ schema = GraphQLSchema(
 )
 
 
-def execute_query(source, variable_values=None):
+def execute_query(source: str, variable_values: Optional[Dict[str, Any]] = None):
     return graphql_sync(schema, source, variable_values=variable_values)
 
 

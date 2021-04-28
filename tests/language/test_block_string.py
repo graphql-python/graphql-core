@@ -5,7 +5,7 @@ from graphql.language.block_string import (
 )
 
 
-def join_lines(*args):
+def join_lines(*args: str) -> str:
     return "\n".join(args)
 
 

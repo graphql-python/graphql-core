@@ -1,9 +1,11 @@
 from textwrap import dedent
+from typing import List, Optional, Tuple
 
 from pytest import raises  # type: ignore
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
+    ArgumentNode,
     BooleanValueNode,
     DirectiveDefinitionNode,
     DirectiveNode,
@@ -27,14 +29,18 @@ from graphql.language import (
     SchemaDefinitionNode,
     SchemaExtensionNode,
     StringValueNode,
+    TypeNode,
     UnionTypeDefinitionNode,
+    ValueNode,
     parse,
 )
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
+Location = Optional[Tuple[int, int]]
 
-def assert_syntax_error(text, message, location):
+
+def assert_syntax_error(text: str, message: str, location: Location) -> None:
     with raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value
@@ -43,7 +49,7 @@ def assert_syntax_error(text, message, location):
     assert error.locations == [location]
 
 
-def assert_definitions(body, loc, num=1):
+def assert_definitions(body: str, loc: Location, num=1):
     doc = parse(body)
     assert isinstance(doc, DocumentNode)
     assert doc.loc == loc
@@ -53,35 +59,37 @@ def assert_definitions(body, loc, num=1):
     return definitions[0] if num == 1 else definitions
 
 
-def type_node(name, loc):
+def type_node(name: str, loc: Location):
     return NamedTypeNode(name=name_node(name, loc), loc=loc)
 
 
-def name_node(name, loc):
+def name_node(name: str, loc: Location):
     return NameNode(value=name, loc=loc)
 
 
-def field_node(name, type_, loc):
+def field_node(name: NameNode, type_: TypeNode, loc: Location):
     return field_node_with_args(name, type_, [], loc)
 
 
-def field_node_with_args(name, type_, args, loc):
+def field_node_with_args(name: NameNode, type_: TypeNode, args: List, loc: Location):
     return FieldDefinitionNode(
         name=name, arguments=args, type=type_, directives=[], loc=loc, description=None
     )
 
 
-def non_null_type(type_, loc):
+def non_null_type(type_: TypeNode, loc: Location):
     return NonNullTypeNode(type=type_, loc=loc)
 
 
-def enum_value_node(name, loc):
+def enum_value_node(name: str, loc: Location):
     return EnumValueDefinitionNode(
         name=name_node(name, loc), directives=[], loc=loc, description=None
     )
 
 
-def input_value_node(name, type_, default_value, loc):
+def input_value_node(
+    name: NameNode, type_: TypeNode, default_value: Optional[ValueNode], loc: Location
+):
     return InputValueDefinitionNode(
         name=name,
         type=type_,
@@ -92,29 +100,33 @@ def input_value_node(name, type_, default_value, loc):
     )
 
 
-def boolean_value_node(value, loc):
+def boolean_value_node(value: bool, loc: Location):
     return BooleanValueNode(value=value, loc=loc)
 
 
-def string_value_node(value, block, loc):
+def string_value_node(value: str, block: Optional[bool], loc: Location):
     return StringValueNode(value=value, block=block, loc=loc)
 
 
-def list_type_node(type_, loc):
+def list_type_node(type_: TypeNode, loc: Location):
     return ListTypeNode(type=type_, loc=loc)
 
 
-def schema_extension_node(directives, operation_types, loc):
+def schema_extension_node(
+    directives: List[DirectiveNode],
+    operation_types: List[OperationTypeDefinitionNode],
+    loc: Location,
+):
     return SchemaExtensionNode(
         directives=directives, operation_types=operation_types, loc=loc
     )
 
 
-def operation_type_definition(operation, type_, loc):
+def operation_type_definition(operation: OperationType, type_: TypeNode, loc: Location):
     return OperationTypeDefinitionNode(operation=operation, type=type_, loc=loc)
 
 
-def directive_node(name, arguments, loc):
+def directive_node(name: NameNode, arguments: List[ArgumentNode], loc: Location):
     return DirectiveNode(name=name, arguments=arguments, loc=loc)
 
 

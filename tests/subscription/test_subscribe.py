@@ -1,8 +1,8 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Callable
 
 from pytest import mark, raises  # type: ignore
 
-from graphql.language import parse
+from graphql.language import parse, DocumentNode
 from graphql.pyutils import EventEmitter, EventEmitterAsyncIterator
 from graphql.type import (
     GraphQLArgument,
@@ -54,7 +54,9 @@ async def anext(iterable):
     return await iterable.__anext__()
 
 
-def email_schema_with_resolvers(subscribe_fn=None, resolve_fn=None):
+def email_schema_with_resolvers(
+    subscribe_fn: Optional[Callable] = None, resolve_fn: Optional[Callable] = None
+):
     return GraphQLSchema(
         query=QueryType,
         subscription=GraphQLObjectType(
@@ -92,7 +94,9 @@ default_subscription_ast = parse(
 
 
 async def create_subscription(
-    pubsub, schema: GraphQLSchema = email_schema, document=default_subscription_ast
+    pubsub: EventEmitter,
+    schema: GraphQLSchema = email_schema,
+    document: DocumentNode = default_subscription_ast,
 ):
     data: Dict[str, Any] = {
         "inbox": {
@@ -110,7 +114,7 @@ async def create_subscription(
         ),
     }
 
-    def send_important_email(new_email):
+    def send_important_email(new_email: Any) -> bool:
         data["inbox"]["emails"].append(new_email)
         # Returns True if the event was consumed by a subscriber.
         return pubsub.emit(
@@ -386,7 +390,7 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def resolves_to_an_error_for_subscription_resolver_errors():
-        async def test_reports_error(schema):
+        async def test_reports_error(schema: GraphQLSchema):
             result = await subscribe(
                 schema=schema,
                 document=parse(

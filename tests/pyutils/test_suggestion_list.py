@@ -3,8 +3,8 @@ from typing import List
 from graphql.pyutils import suggestion_list
 
 
-def expect_suggestions(input: str, options: List[str], expected: List[str]) -> None:
-    assert suggestion_list(input, options) == expected
+def expect_suggestions(input_: str, options: List[str], expected: List[str]) -> None:
+    assert suggestion_list(input_, options) == expected
 
 
 def describe_suggestion_list():

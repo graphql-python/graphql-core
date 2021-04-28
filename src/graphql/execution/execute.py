@@ -626,8 +626,9 @@ class ExecutionContext:
                         if self.is_awaitable(completed):
                             return await completed
                         return completed
-                    except Exception as error:
-                        self.handle_field_error(error, field_nodes, path, return_type)
+                    except Exception as raw_error:
+                        error = located_error(raw_error, field_nodes, path.as_list())
+                        self.handle_field_error(error, return_type)
                         return None
 
                 return await_result()
@@ -640,26 +641,24 @@ class ExecutionContext:
                 async def await_completed() -> Any:
                     try:
                         return await completed
-                    except Exception as error:
-                        self.handle_field_error(error, field_nodes, path, return_type)
+                    except Exception as raw_error:
+                        error = located_error(raw_error, field_nodes, path.as_list())
+                        self.handle_field_error(error, return_type)
                         return None
 
                 return await_completed()
 
             return completed
-        except Exception as error:
-            self.handle_field_error(error, field_nodes, path, return_type)
+        except Exception as raw_error:
+            error = located_error(raw_error, field_nodes, path.as_list())
+            self.handle_field_error(error, return_type)
             return None
 
     def handle_field_error(
         self,
-        raw_error: Exception,
-        field_nodes: List[FieldNode],
-        path: Path,
+        error: GraphQLError,
         return_type: GraphQLOutputType,
     ) -> None:
-        error = located_error(raw_error, field_nodes, path.as_list())
-
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
         if is_non_null_type(return_type):
@@ -796,10 +795,11 @@ class ExecutionContext:
                         if is_awaitable(completed):
                             return await completed
                         return completed
-                    except Exception as error:
-                        self.handle_field_error(
-                            error, field_nodes, item_path, item_type
+                    except Exception as raw_error:
+                        error = located_error(
+                            raw_error, field_nodes, item_path.as_list()
                         )
+                        self.handle_field_error(error, item_type)
                         return None
 
                 completed_item = await_completed(item, item_path)
@@ -813,15 +813,17 @@ class ExecutionContext:
                         async def await_completed(item: Any, item_path: Path) -> Any:
                             try:
                                 return await item
-                            except Exception as error:
-                                self.handle_field_error(
-                                    error, field_nodes, item_path, item_type
+                            except Exception as raw_error:
+                                error = located_error(
+                                    raw_error, field_nodes, item_path.as_list()
                                 )
+                                self.handle_field_error(error, item_type)
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)
-                except Exception as error:
-                    self.handle_field_error(error, field_nodes, item_path, item_type)
+                except Exception as raw_error:
+                    error = located_error(raw_error, field_nodes, item_path.as_list())
+                    self.handle_field_error(error, item_type)
                     completed_item = None
 
             if is_awaitable(completed_item):

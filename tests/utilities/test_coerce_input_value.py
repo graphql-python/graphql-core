@@ -10,6 +10,7 @@ from graphql.type import (
     GraphQLFloat,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInputType,
     GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
@@ -39,7 +40,7 @@ def expect_errors(result: CoercedValue) -> List[CoercedValueError]:
 
 
 def describe_coerce_input_value():
-    def _coerce_value(input_value, type_):
+    def _coerce_value(input_value: Any, type_: GraphQLInputType):
         errors: List[CoercedValueError] = []
         append = errors.append
 
