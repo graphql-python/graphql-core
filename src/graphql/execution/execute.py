@@ -131,9 +131,12 @@ class ExecutionResult:
     @property
     def formatted(self) -> Dict[str, Any]:
         """Get execution result formatted according to the specification."""
+        formatted_errors = ([err.formatted for err in self.errors]
+                            if self.errors is not None
+                            else None)
         if self.extensions is None:
-            return dict(data=self.data, errors=self.errors)
-        return dict(data=self.data, errors=self.errors, extensions=self.extensions)
+            return dict(data=self.data, errors=formatted_errors)
+        return dict(data=self.data, errors=formatted_errors, extensions=self.extensions)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, dict):
