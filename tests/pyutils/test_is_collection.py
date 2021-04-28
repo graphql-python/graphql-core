@@ -46,6 +46,9 @@ def describe_is_collection():
     def a_range_is_a_collection():
         assert is_collection(range(10)) is True
 
+    def range_function_itself_is_not_a_collection():
+        assert is_collection(range) is False
+
     def an_infinite_generator_is_not_a_collection():
         assert is_collection(count()) is False
 
