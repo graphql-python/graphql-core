@@ -399,7 +399,7 @@ def block(strings: Optional[Strings]) -> str:
     Given a collection of strings, return a string with each item on its own line,
     wrapped in an indented "{ }" block.
     """
-    return "{\n" + indent(join(strings, "\n")) + "\n}" if strings else ""
+    return wrap("{\n", indent(join(strings, "\n")), "\n}")
 
 
 def wrap(start: str, string: Optional[str], end: str = "") -> str:
@@ -417,7 +417,7 @@ def indent(string: str) -> str:
     If the string is not None or empty, add two spaces at the beginning of every line
     inside the string.
     """
-    return "  " + string.replace("\n", "\n  ") if string else string
+    return wrap("  ", string.replace("\n", "\n  "))
 
 
 def is_multiline(string: str) -> bool:
