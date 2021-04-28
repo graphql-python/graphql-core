@@ -1,3 +1,5 @@
+import asyncio
+
 from typing import Any, Dict, Optional, Callable
 
 from pytest import mark, raises  # type: ignore
@@ -222,6 +224,7 @@ def describe_subscription_initialization_phase():
         pubsub = EventEmitter()
 
         async def subscribe_email(_inbox, _info):
+            await asyncio.sleep(0)
             return EventEmitterAsyncIterator(pubsub, "importantEmail")
 
         schema = GraphQLSchema(
