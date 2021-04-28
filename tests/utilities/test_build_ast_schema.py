@@ -186,6 +186,24 @@ def describe_schema_builder():
               arg: Int
             ) on FIELD
 
+            """Who knows what's inside this scalar?"""
+            scalar MysteryScalar
+
+            """This is an input object type"""
+            input FooInput {
+              """It has a field"""
+              field: Int
+            }
+
+            """This is an interface type"""
+            interface Energy {
+              """It also has a field"""
+              str: String
+            }
+
+            """There is nothing inside!"""
+            union BlackHole
+
             """With an enum"""
             enum Color {
               RED
