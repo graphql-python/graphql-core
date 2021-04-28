@@ -34,11 +34,11 @@ def describe_execution_result():
 
     def formats_properly():
         res = ExecutionResult(data, errors)
-        assert res.formatted == {"data": data, "errors": errors}
+        assert res.formatted == {"data": data, "errors": [{'message': 'Some error', 'locations': None, 'path': None}]}
         res = ExecutionResult(data, errors, extensions)
         assert res.formatted == {
             "data": data,
-            "errors": errors,
+            "errors": [{'message': 'Some error', 'locations': None, 'path': None}],
             "extensions": extensions,
         }
 
