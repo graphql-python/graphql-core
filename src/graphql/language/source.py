@@ -2,7 +2,7 @@ from typing import Any
 
 from .location import SourceLocation
 
-__all__ = ["Source"]
+__all__ = ["Source", "is_source"]
 
 
 class Source:
@@ -26,11 +26,7 @@ class Source:
 
         The ``line`` and ``column`` attributes in ``location_offset`` are 1-indexed.
         """
-        if not isinstance(body, str):
-            raise TypeError("body must be a string.")
         self.body = body
-        if not isinstance(name, str):
-            raise TypeError("name must be a string.")
         self.name = name
         if not isinstance(location_offset, SourceLocation):
             location_offset = SourceLocation._make(location_offset)
@@ -64,3 +60,11 @@ class Source:
 
     def __ne__(self, other: Any) -> bool:
         return not self == other
+
+
+def is_source(source: Any) -> bool:
+    """Test if the given value is a Source object.
+
+    For internal use only.
+    """
+    return isinstance(source, Source)

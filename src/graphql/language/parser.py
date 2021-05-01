@@ -57,10 +57,9 @@ from .ast import (
 from .directive_locations import DirectiveLocation
 from .ast import Token
 from .lexer import Lexer, is_punctuator_token_kind
-from .source import Source
+from .source import Source, is_source
 from .token_kind import TokenKind
 from ..error import GraphQLError, GraphQLSyntaxError
-from ..pyutils import inspect
 
 __all__ = ["parse", "parse_type", "parse_value"]
 
@@ -178,10 +177,10 @@ class Parser:
         no_location: bool = False,
         experimental_fragment_variables: bool = False,
     ):
-        if isinstance(source, str):
-            source = Source(source)
-        elif not isinstance(source, Source):
-            raise TypeError(f"Must provide Source. Received: {inspect(source)}.")
+        source = (
+            cast(Source, source) if is_source(source) else Source(cast(str, source))
+        )
+
         self._lexer = Lexer(source)
         self._no_location = no_location
         self._experimental_fragment_variables = experimental_fragment_variables

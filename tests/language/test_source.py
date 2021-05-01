@@ -78,20 +78,6 @@ def describe_source():
         node.custom = "bar"  # type: ignore
         assert node.custom == "bar"  # type: ignore
 
-    def rejects_invalid_body_and_name():
-        with raises(TypeError, match="body must be a string\\."):
-            # noinspection PyTypeChecker
-            Source(None)  # type: ignore
-        with raises(TypeError, match="body must be a string\\."):
-            # noinspection PyTypeChecker
-            Source(1)  # type: ignore
-        with raises(TypeError, match="name must be a string\\."):
-            # noinspection PyTypeChecker
-            Source("", None)  # type: ignore
-        with raises(TypeError, match="name must be a string\\."):
-            # noinspection PyTypeChecker
-            Source("", 1)  # type: ignore
-
     def rejects_invalid_location_offset():
         def create_source(location_offset: Tuple[int, int]) -> Source:
             return Source("", "", cast(SourceLocation, location_offset))

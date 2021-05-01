@@ -1,12 +1,12 @@
-from typing import Union
+from typing import Union, cast
 
-from ..language import Lexer, Source, TokenKind
+from ..language import Lexer, TokenKind
+from ..language.source import Source, is_source
 from ..language.block_string import (
     dedent_block_string_value,
     get_block_string_indentation,
 )
 from ..language.lexer import is_punctuator_token_kind
-from ..pyutils import inspect
 
 
 def strip_ignored_characters(source: Union[str, Source]) -> str:
@@ -65,14 +65,10 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
 
         """Type description""" type Foo{"""Field description""" bar:String}
     '''
-    source_obj = Source(source) if isinstance(source, str) else source
-    if not isinstance(source_obj, Source):
-        raise TypeError(
-            f"Must provide string or Source. Received: {inspect(source_obj)}."
-        )
+    source = cast(Source, source) if is_source(source) else Source(cast(str, source))
 
-    body = source_obj.body
-    lexer = Lexer(source_obj)
+    body = source.body
+    lexer = Lexer(source)
     stripped_body = ""
     was_last_added_token_non_punctuator = False
     while lexer.advance().kind != TokenKind.EOF:

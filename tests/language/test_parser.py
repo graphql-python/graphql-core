@@ -45,24 +45,6 @@ def assert_syntax_error(text: str, message: str, location: Location) -> None:
 
 
 def describe_parser():
-    def asserts_that_a_source_to_parse_was_provided():
-        with raises(TypeError) as exc_info:
-            # noinspection PyArgumentList
-            assert parse()  # type: ignore
-        msg = str(exc_info.value)
-        assert "missing" in msg
-        assert "source" in msg
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert parse(None)  # type: ignore
-        msg = str(exc_info.value)
-        assert "Must provide Source. Received: None." in msg
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert parse({})  # type: ignore
-        msg = str(exc_info.value)
-        assert "Must provide Source. Received: {}." in msg
-
     def parse_provides_useful_errors():
         with raises(GraphQLSyntaxError) as exc_info:
             parse("{")
