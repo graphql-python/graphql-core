@@ -49,7 +49,7 @@ def describe_validate_no_deprecated():
                 }
 
                 fragment UnknownFragment on UnknownType {
-                  unknownField
+                  deprecatedField
                 }
                 """
             )
@@ -77,6 +77,168 @@ def describe_validate_no_deprecated():
                         "message": message,
                         "locations": [(7, 19)],
                     },
+                ],
+            )
+
+    def describe_no_deprecated_arguments_on_fields():
+        _assert_valid, _assert_errors = build_assertions(
+            """
+            type Query {
+              someField(
+                normalArg: String,
+                deprecatedArg: String @deprecated(reason: "Some arg reason."),
+              ): String
+            }
+            """
+        )
+
+        def ignores_arguments_that_are_not_deprecated():
+            _assert_valid(
+                """
+                {
+                  normalField(normalArg: "")
+                }
+                """
+            )
+
+        def ignores_unknown_arguments():
+            _assert_valid(
+                """
+                {
+                  someField(unknownArg: "")
+                  unknownField(deprecatedArg: "")
+                }
+                """
+            )
+
+        def reports_error_when_a_deprecated_argument_is_used():
+            _assert_errors(
+                """
+                {
+                    someField(deprecatedArg: "")
+                }
+                """,
+                [
+                    {
+                        "message": "Field 'Query.someField' argument 'deprecatedArg'"
+                        " is deprecated. Some arg reason.",
+                        "locations": [(3, 31)],
+                    }
+                ],
+            )
+
+    def describe_no_deprecated_arguments_on_directives():
+        _assert_valid, _assert_errors = build_assertions(
+            """
+            type Query {
+              someField: String
+            }
+
+            directive @someDirective(
+              normalArg: String,
+              deprecatedArg: String @deprecated(reason: "Some arg reason."),
+            ) on FIELD
+            """
+        )
+
+        def ignores_arguments_that_are_not_deprecated():
+            _assert_valid(
+                """
+                {
+                  someField @someDirective(normalArg: "")
+                }
+                """
+            )
+
+        def ignores_unknown_arguments():
+            _assert_valid(
+                """
+                {
+                  someField @someDirective(unknownArg: "")
+                  someField @unknownDirective(deprecatedArg: "")
+                }
+                """
+            )
+
+        def reports_error_when_a_deprecated_argument_is_used():
+            _assert_errors(
+                """
+                {
+                  someField @someDirective(deprecatedArg: "")
+                }
+                """,
+                [
+                    {
+                        "message": "Directive '@someDirective' argument 'deprecatedArg'"
+                        " is deprecated. Some arg reason.",
+                        "locations": [(3, 44)],
+                    }
+                ],
+            )
+
+    def describe_no_deprecated_input_fields():
+        _assert_valid, _assert_errors = build_assertions(
+            """
+            input InputType {
+              normalField: String
+              deprecatedField: String @deprecated(reason: "Some input field reason.")
+            }
+
+            type Query {
+              someField(someArg: InputType): String
+            }
+
+            directive @someDirective(someArg: InputType) on FIELD
+            """
+        )
+
+        def ignores_input_fields_that_are_not_deprecated():
+            _assert_valid(
+                """
+                {
+                  someField(
+                    someArg: { normalField: "" }
+                  ) @someDirective(someArg: { normalField: "" })
+                }
+                """
+            )
+
+        def ignores_unknown_input_fields():
+            _assert_valid(
+                """
+                {
+                  someField(
+                    someArg: { unknownField: "" }
+                  )
+
+                  someField(
+                    unknownArg: { unknownField: "" }
+                  )
+
+                  unknownField(
+                    unknownArg: { unknownField: "" }
+                  )
+                }
+                """
+            )
+
+        def reports_error_when_a_deprecated_input_field_is_used():
+            message = (
+                "The input field InputType.deprecatedField is deprecated."
+                " Some input field reason."
+            )
+
+            _assert_errors(
+                """
+                {
+                  someField(
+                    someArg: { deprecatedField: "" }
+                  ) @someDirective(someArg: { deprecatedField: "" })
+                }
+                """,
+                [
+                    {"message": message, "locations": [(4, 32)]},
+                    {"message": message, "locations": [(5, 47)]},
                 ],
             )
 
@@ -133,10 +295,6 @@ def describe_validate_no_deprecated():
                 ) {
                   someField(enumArg: DEPRECATED_VALUE)
                 }
-
-                fragment QueryFragment on Query {
-                  someField(enumArg: DEPRECATED_VALUE)
-                }
                 """,
                 [
                     {
@@ -146,10 +304,6 @@ def describe_validate_no_deprecated():
                     {
                         "message": message,
                         "locations": [(5, 38)],
-                    },
-                    {
-                        "message": message,
-                        "locations": [(9, 38)],
                     },
                 ],
             )

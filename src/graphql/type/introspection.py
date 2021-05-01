@@ -243,6 +243,11 @@ __Type: GraphQLObjectType = GraphQLObjectType(
         ),
         "inputFields": GraphQLField(
             GraphQLList(GraphQLNonNull(__InputValue)),
+            args={
+                "includeDeprecated": GraphQLArgument(
+                    GraphQLBoolean, default_value=False
+                )
+            },
             resolve=TypeFieldResolvers.input_fields,
         ),
         "ofType": GraphQLField(__Type, resolve=TypeFieldResolvers.of_type),
@@ -311,14 +316,22 @@ class TypeFieldResolvers:
     def enum_values(type_, _info, includeDeprecated=False):
         if is_enum_type(type_):
             items = type_.values.items()
-            if not includeDeprecated:
-                return [item for item in items if item[1].deprecation_reason is None]
-            return items
+            return (
+                items
+                if includeDeprecated
+                else [item for item in items if item[1].deprecation_reason is None]
+            )
 
+    # noinspection PyPep8Naming
     @staticmethod
-    def input_fields(type_, _info):
+    def input_fields(type_, _info, includeDeprecated=False):
         if is_input_object_type(type_):
-            return type_.fields.items()
+            items = type_.fields.items()
+            return (
+                items
+                if includeDeprecated
+                else [item for item in items if item[1].deprecation_reason is None]
+            )
 
     @staticmethod
     def of_type(type_, _info):
@@ -332,27 +345,60 @@ __Field: GraphQLObjectType = GraphQLObjectType(
     " and a return type.",
     fields=lambda: {
         "name": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=lambda item, _info: item[0]
+            GraphQLNonNull(GraphQLString), resolve=FieldResolvers.name
         ),
-        "description": GraphQLField(
-            GraphQLString, resolve=lambda item, _info: item[1].description
-        ),
+        "description": GraphQLField(GraphQLString, resolve=FieldResolvers.description),
         "args": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            resolve=lambda item, _info: item[1].args.items(),
+            args={
+                "includeDeprecated": GraphQLArgument(
+                    GraphQLBoolean, default_value=False
+                )
+            },
+            resolve=FieldResolvers.args,
         ),
-        "type": GraphQLField(
-            GraphQLNonNull(__Type), resolve=lambda item, _info: item[1].type
-        ),
+        "type": GraphQLField(GraphQLNonNull(__Type), resolve=FieldResolvers.type),
         "isDeprecated": GraphQLField(
             GraphQLNonNull(GraphQLBoolean),
-            resolve=lambda item, _info: item[1].deprecation_reason is not None,
+            resolve=FieldResolvers.is_deprecated,
         ),
         "deprecationReason": GraphQLField(
-            GraphQLString, resolve=lambda item, _info: item[1].deprecation_reason
+            GraphQLString, resolve=FieldResolvers.deprecation_reason
         ),
     },
 )
+
+
+class FieldResolvers:
+    @staticmethod
+    def name(item, _info):
+        return item[0]
+
+    @staticmethod
+    def description(item, _info):
+        return item[1].description
+
+    # noinspection PyPep8Naming
+    @staticmethod
+    def args(item, _info, includeDeprecated=False):
+        items = item[1].args.items()
+        return (
+            items
+            if includeDeprecated
+            else [item for item in items if item[1].deprecation_reason is None]
+        )
+
+    @staticmethod
+    def type(item, _info):
+        return item[1].type
+
+    @staticmethod
+    def is_deprecated(item, _info):
+        return item[1].deprecation_reason is not None
+
+    @staticmethod
+    def deprecation_reason(item, _info):
+        return item[1].deprecation_reason
 
 
 __InputValue: GraphQLObjectType = GraphQLObjectType(
@@ -375,6 +421,13 @@ __InputValue: GraphQLObjectType = GraphQLObjectType(
             description="A GraphQL-formatted string representing"
             " the default value for this input value.",
             resolve=InputValueFieldResolvers.default_value,
+        ),
+        "isDeprecated": GraphQLField(
+            GraphQLNonNull(GraphQLBoolean),
+            resolve=InputValueFieldResolvers.is_deprecated,
+        ),
+        "deprecationReason": GraphQLField(
+            GraphQLString, resolve=InputValueFieldResolvers.deprecation_reason
         ),
     },
 )
@@ -400,6 +453,14 @@ class InputValueFieldResolvers:
 
         value_ast = ast_from_value(item[1].default_value, item[1].type)
         return print_ast(value_ast) if value_ast else None
+
+    @staticmethod
+    def is_deprecated(item, _info):
+        return item[1].deprecation_reason is not None
+
+    @staticmethod
+    def deprecation_reason(item, _info):
+        return item[1].deprecation_reason
 
 
 __EnumValue: GraphQLObjectType = GraphQLObjectType(

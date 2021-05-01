@@ -10,7 +10,6 @@ from ..type import (
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
-    GraphQLField,
     GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLInterfaceType,
@@ -184,7 +183,9 @@ def print_union(type_: GraphQLUnionType) -> str:
 
 def print_enum(type_: GraphQLEnumType) -> str:
     values = [
-        print_description(value, "  ", not i) + f"  {name}" + print_deprecated(value)
+        print_description(value, "  ", not i)
+        + f"  {name}"
+        + print_deprecated(value.deprecation_reason)
         for i, (name, value) in enumerate(type_.values.items())
     ]
     return print_description(type_) + f"enum {type_.name}" + print_block(values)
@@ -204,7 +205,7 @@ def print_fields(type_: Union[GraphQLObjectType, GraphQLInterfaceType]) -> str:
         + f"  {name}"
         + print_args(field.args, "  ")
         + f": {field.type}"
-        + print_deprecated(field)
+        + print_deprecated(field.deprecation_reason)
         for i, (name, field) in enumerate(type_.fields.items())
     ]
     return print_block(fields)
@@ -243,7 +244,7 @@ def print_input_value(name: str, arg: GraphQLArgument) -> str:
     arg_decl = f"{name}: {arg.type}"
     if default_ast:
         arg_decl += f" = {print_ast(default_ast)}"
-    return arg_decl
+    return arg_decl + print_deprecated(arg.deprecation_reason)
 
 
 def print_directive(directive: GraphQLDirective) -> str:
@@ -257,14 +258,13 @@ def print_directive(directive: GraphQLDirective) -> str:
     )
 
 
-def print_deprecated(field_or_enum_value: Union[GraphQLField, GraphQLEnumValue]) -> str:
-    deprecation_reason = field_or_enum_value.deprecation_reason
-    if deprecation_reason is None:
+def print_deprecated(reason: Optional[str]) -> str:
+    if reason is None:
         return ""
-    reason_ast = ast_from_value(deprecation_reason, GraphQLString)
-    if not reason_ast or deprecation_reason == DEFAULT_DEPRECATION_REASON:
-        return " @deprecated"
-    return f" @deprecated(reason: {print_ast(reason_ast)})"
+    reason_ast = ast_from_value(reason, GraphQLString)
+    if reason_ast and reason != DEFAULT_DEPRECATION_REASON:
+        return f" @deprecated(reason: {print_ast(reason_ast)})"
+    return " @deprecated"
 
 
 def print_specified_by_url(scalar: GraphQLScalarType) -> str:

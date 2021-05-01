@@ -326,7 +326,17 @@ def describe_introspection():
                             },
                             {
                                 "name": "inputFields",
-                                "args": [],
+                                "args": [
+                                    {
+                                        "name": "includeDeprecated",
+                                        "type": {
+                                            "kind": "SCALAR",
+                                            "name": "Boolean",
+                                            "ofType": None,
+                                        },
+                                        "defaultValue": "false",
+                                    }
+                                ],
                                 "type": {
                                     "kind": "LIST",
                                     "name": None,
@@ -444,7 +454,17 @@ def describe_introspection():
                             },
                             {
                                 "name": "args",
-                                "args": [],
+                                "args": [
+                                    {
+                                        "name": "includeDeprecated",
+                                        "type": {
+                                            "kind": "SCALAR",
+                                            "name": "Boolean",
+                                            "ofType": None,
+                                        },
+                                        "defaultValue": "false",
+                                    }
+                                ],
                                 "type": {
                                     "kind": "NON_NULL",
                                     "name": None,
@@ -560,6 +580,32 @@ def describe_introspection():
                             },
                             {
                                 "name": "defaultValue",
+                                "args": [],
+                                "type": {
+                                    "kind": "SCALAR",
+                                    "name": "String",
+                                    "ofType": None,
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
+                            {
+                                "name": "isDeprecated",
+                                "args": [],
+                                "type": {
+                                    "kind": "NON_NULL",
+                                    "name": None,
+                                    "ofType": {
+                                        "kind": "SCALAR",
+                                        "name": "Boolean",
+                                        "ofType": None,
+                                    },
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
+                            {
+                                "name": "deprecationReason",
                                 "args": [],
                                 "type": {
                                     "kind": "SCALAR",
@@ -887,7 +933,12 @@ def describe_introspection():
                     {
                         "name": "deprecated",
                         "isRepeatable": False,
-                        "locations": ["FIELD_DEFINITION", "ENUM_VALUE"],
+                        "locations": [
+                            "FIELD_DEFINITION",
+                            "ARGUMENT_DEFINITION",
+                            "INPUT_FIELD_DEFINITION",
+                            "ENUM_VALUE",
+                        ],
                         "args": [
                             {
                                 "defaultValue": '"No longer supported"',
@@ -1116,6 +1167,110 @@ def describe_introspection():
                     "falseFields": [{"name": "nonDeprecated"}],
                     "omittedFields": [{"name": "nonDeprecated"}],
                 }
+            },
+            None,
+        )
+
+    def identifies_deprecated_args():
+        schema = build_schema(
+            """
+            type Query {
+              someField(
+                nonDeprecated: String
+                deprecated: String @deprecated(reason: "Removed in 1.0")
+                deprecatedWithEmptyReason: String @deprecated(reason: "")
+              ): String
+            }
+            """
+        )
+
+        source = """
+            {
+              __type(name: "Query") {
+                fields {
+                  args(includeDeprecated: true) {
+                    name
+                    isDeprecated,
+                    deprecationReason
+                  }
+                }
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "__type": {
+                    "fields": [
+                        {
+                            "args": [
+                                {
+                                    "name": "nonDeprecated",
+                                    "isDeprecated": False,
+                                    "deprecationReason": None,
+                                },
+                                {
+                                    "name": "deprecated",
+                                    "isDeprecated": True,
+                                    "deprecationReason": "Removed in 1.0",
+                                },
+                                {
+                                    "name": "deprecatedWithEmptyReason",
+                                    "isDeprecated": True,
+                                    "deprecationReason": "",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            },
+            None,
+        )
+
+    def respects_the_include_deprecated_parameter_for_args():
+        schema = build_schema(
+            """
+            type Query {
+              someField(
+                nonDeprecated: String
+                deprecated: String @deprecated(reason: "Removed in 1.0")
+              ): String
+            }
+            """
+        )
+
+        source = """
+            {
+              __type(name: "Query") {
+                fields {
+                  trueArgs: args(includeDeprecated: true) {
+                    name
+                  }
+                  falseArgs: args(includeDeprecated: false) {
+                    name
+                  }
+                  omittedArgs: args {
+                    name
+                  }
+                }
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "__type": {
+                    "fields": [
+                        {
+                            "trueArgs": [
+                                {"name": "nonDeprecated"},
+                                {"name": "deprecated"},
+                            ],
+                            "falseArgs": [{"name": "nonDeprecated"}],
+                            "omittedArgs": [{"name": "nonDeprecated"}],
+                        },
+                    ],
+                },
             },
             None,
         )

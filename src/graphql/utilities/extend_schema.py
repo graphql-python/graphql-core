@@ -448,6 +448,7 @@ def extend_schema_impl(
                 type_=type_,
                 description=arg.description.value if arg.description else None,
                 default_value=value_from_ast(arg.default_value, type_),
+                deprecation_reason=get_deprecation_reason(arg),
                 ast_node=arg,
             )
         return arg_map
@@ -468,6 +469,7 @@ def extend_schema_impl(
                     type_=type_,
                     description=field.description.value if field.description else None,
                     default_value=value_from_ast(field.default_value, type_),
+                    deprecation_reason=get_deprecation_reason(field),
                     ast_node=field,
                 )
         return input_field_map
@@ -676,7 +678,7 @@ std_type_map: Dict[str, Union[GraphQLNamedType, GraphQLObjectType]] = {
 
 
 def get_deprecation_reason(
-    node: Union[EnumValueDefinitionNode, FieldDefinitionNode]
+    node: Union[EnumValueDefinitionNode, FieldDefinitionNode, InputValueDefinitionNode]
 ) -> Optional[str]:
     """Given a field or enum value node, get deprecation reason as string."""
     from ..execution import get_directive_values

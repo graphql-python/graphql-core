@@ -877,12 +877,21 @@ def describe_schema_builder():
               OTHER_VALUE @deprecated(reason: "Terrible reasons")
             }
 
+            input MyInput {
+              oldInput: String @deprecated
+              otherInput: String @deprecated(reason: "Use newInput")
+              newInput: String
+            }
+
             type Query {
               field1: String @deprecated
               field2: Int @deprecated(reason: "Because I said so")
               enum: MyEnum
+              field3(oldArg: String @deprecated, arg: String): String
+              field4(oldArg: String @deprecated(reason: "Why not?"), arg: String): String
+              field5(arg: MyInput): String
             }
-            """
+            """  # noqa: E501
         )
         assert cycle_sdl(sdl) == sdl
 
@@ -908,6 +917,23 @@ def describe_schema_builder():
         field2 = root_fields["field2"]
         assert field2.is_deprecated is True
         assert field2.deprecation_reason == "Because I said so"
+
+        input_fields = assert_input_object_type(schema.get_type("MyInput")).fields
+
+        new_input = input_fields["newInput"]
+        assert new_input.deprecation_reason is None
+
+        old_input = input_fields["oldInput"]
+        assert old_input.deprecation_reason == "No longer supported"
+
+        other_input = input_fields["otherInput"]
+        assert other_input.deprecation_reason == "Use newInput"
+
+        field3_old_arg = root_fields["field3"].args["oldArg"]
+        assert field3_old_arg.deprecation_reason == "No longer supported"
+
+        field4_old_arg = root_fields["field4"].args["oldArg"]
+        assert field4_old_arg.deprecation_reason == "Why not?"
 
     def supports_specified_by_directives():
         sdl = dedent(

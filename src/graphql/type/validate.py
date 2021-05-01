@@ -14,7 +14,14 @@ from typing import (
 
 from ..error import GraphQLError, located_error
 from ..pyutils import inspect
-from ..language import NamedTypeNode, Node, OperationType, OperationTypeDefinitionNode
+from ..language import (
+    DirectiveNode,
+    InputValueDefinitionNode,
+    NamedTypeNode,
+    Node,
+    OperationType,
+    OperationTypeDefinitionNode,
+)
 from .definition import (
     GraphQLEnumType,
     GraphQLInputField,
@@ -32,10 +39,11 @@ from .definition import (
     is_output_type,
     is_union_type,
     is_required_argument,
+    is_required_input_field,
 )
 from ..utilities.assert_valid_name import is_valid_name_error
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
-from .directives import is_directive, GraphQLDirective
+from .directives import is_directive, GraphQLDirective, GraphQLDeprecatedDirective
 from .introspection import is_introspection_type
 from .schema import GraphQLSchema, assert_schema
 
@@ -163,6 +171,16 @@ class SchemaValidationContext:
                         arg.ast_node,
                     )
 
+                if is_required_argument(arg) and arg.deprecation_reason is not None:
+                    self.report_error(
+                        f"Required argument @{directive.name}({arg_name}:)"
+                        " cannot be deprecated.",
+                        [
+                            get_deprecated_directive_node(arg.ast_node),
+                            arg.ast_node and arg.ast_node.type,
+                        ],
+                    )
+
     def validate_name(self, node: Any, name: Optional[str] = None) -> None:
         # Ensure names are valid, however introspection types opt out.
         try:
@@ -259,6 +277,16 @@ class SchemaValidationContext:
                         f"The type of {type_.name}.{field_name}({arg_name}:)"
                         f" must be Input Type but got: {inspect(arg.type)}.",
                         arg.ast_node and arg.ast_node.type,
+                    )
+
+                if is_required_argument(arg) and arg.deprecation_reason is not None:
+                    self.report_error(
+                        f"Required argument {type_.name}.{field_name}({arg_name}:)"
+                        " cannot be deprecated.",
+                        [
+                            get_deprecated_directive_node(arg.ast_node),
+                            arg.ast_node and arg.ast_node.type,
+                        ],
                     )
 
     def validate_interfaces(
@@ -456,6 +484,16 @@ class SchemaValidationContext:
                     field.ast_node.type if field.ast_node else None,
                 )
 
+            if is_required_input_field(field) and field.deprecation_reason is not None:
+                self.report_error(
+                    f"Required input field {input_obj.name}.{field_name}"
+                    " cannot be deprecated.",
+                    [
+                        get_deprecated_directive_node(field.ast_node),
+                        field.ast_node and field.ast_node.type,
+                    ],
+                )
+
 
 def get_operation_type_node(
     schema: GraphQLSchema, operation: OperationType
@@ -575,3 +613,16 @@ def get_union_member_type_nodes(
     return [
         union_node for union_node in union_nodes if union_node.name.value == type_name
     ]
+
+
+def get_deprecated_directive_node(
+    definition_node: Optional[Union[InputValueDefinitionNode]],
+) -> Optional[DirectiveNode]:
+    directives = definition_node and definition_node.directives
+    if directives:
+        for directive in directives:
+            if (
+                directive.name.value == GraphQLDeprecatedDirective.name
+            ):  # pragma: no cover else
+                return directive
+    return None  # pragma: no cover

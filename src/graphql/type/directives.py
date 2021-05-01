@@ -185,7 +185,12 @@ DEFAULT_DEPRECATION_REASON = "No longer supported"
 # Used to declare element of a GraphQL schema as deprecated:
 GraphQLDeprecatedDirective = GraphQLDirective(
     name="deprecated",
-    locations=[DirectiveLocation.FIELD_DEFINITION, DirectiveLocation.ENUM_VALUE],
+    locations=[
+        DirectiveLocation.FIELD_DEFINITION,
+        DirectiveLocation.ARGUMENT_DEFINITION,
+        DirectiveLocation.INPUT_FIELD_DEFINITION,
+        DirectiveLocation.ENUM_VALUE,
+    ],
     args={
         "reason": GraphQLArgument(
             GraphQLString,

@@ -636,7 +636,7 @@ def describe_type_system_printer():
               Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/).
               """
               reason: String = "No longer supported"
-            ) on FIELD_DEFINITION | ENUM_VALUE
+            ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 
             """Exposes a URL that specifies the behaviour of this scalar."""
             directive @specifiedBy(
@@ -684,7 +684,7 @@ def describe_type_system_printer():
               interfaces: [__Type!]
               possibleTypes: [__Type!]
               enumValues(includeDeprecated: Boolean = false): [__EnumValue!]
-              inputFields: [__InputValue!]
+              inputFields(includeDeprecated: Boolean = false): [__InputValue!]
               ofType: __Type
             }
 
@@ -727,7 +727,7 @@ def describe_type_system_printer():
             type __Field {
               name: String!
               description: String
-              args: [__InputValue!]!
+              args(includeDeprecated: Boolean = false): [__InputValue!]!
               type: __Type!
               isDeprecated: Boolean!
               deprecationReason: String
@@ -745,6 +745,8 @@ def describe_type_system_printer():
               A GraphQL-formatted string representing the default value for this input value.
               """
               defaultValue: String
+              isDeprecated: Boolean!
+              deprecationReason: String
             }
 
             """

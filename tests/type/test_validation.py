@@ -940,6 +940,28 @@ def describe_type_system_input_objects_must_have_fields():
             },
         ]
 
+    def rejects_an_input_object_type_with_required_arguments_that_is_deprecated():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
+              badField: String! @deprecated
+              optionalField: String @deprecated
+              anotherOptionalField: String! = "" @deprecated
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Required input field SomeInputObject.badField"
+                " cannot be deprecated.",
+                "locations": [(7, 33), (7, 25)],
+            }
+        ]
+
 
 def describe_type_system_enum_types_must_be_well_defined():
     def rejects_an_enum_type_without_values():
@@ -1552,6 +1574,37 @@ def describe_type_system_arguments_must_have_input_types():
                 f" but got: {inspect(type_)}."
             },
             {"message": f"Expected GraphQL named type but got: {inspect(type_)}."},
+        ]
+
+    def rejects_a_required_argument_that_is_deprecated():
+        schema = build_schema(
+            """
+            directive @BadDirective(
+              badArg: String! @deprecated
+              optionalArg: String @deprecated
+              anotherOptionalArg: String! = "" @deprecated
+            ) on FIELD
+
+            type Query {
+              test(
+                badArg: String! @deprecated
+                optionalArg: String @deprecated
+                anotherOptionalArg: String! = "" @deprecated
+              ): String
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Required argument @BadDirective(badArg:)"
+                " cannot be deprecated.",
+                "locations": [(3, 31), (3, 23)],
+            },
+            {
+                "message": "Required argument Query.test(badArg:)"
+                " cannot be deprecated.",
+                "locations": [(10, 33), (10, 25)],
+            },
         ]
 
     def rejects_a_non_input_type_as_a_field_arg_with_locations():

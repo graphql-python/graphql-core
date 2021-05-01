@@ -604,6 +604,7 @@ class GraphQLArgument:
     type: "GraphQLInputType"
     default_value: Any
     description: Optional[str]
+    deprecation_reason: Optional[str]
     out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[InputValueDefinitionNode]
@@ -613,6 +614,7 @@ class GraphQLArgument:
         type_: "GraphQLInputType",
         default_value: Any = Undefined,
         description: Optional[str] = None,
+        deprecation_reason: Optional[str] = None,
         out_name: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[InputValueDefinitionNode] = None,
@@ -621,6 +623,8 @@ class GraphQLArgument:
             raise TypeError("Argument type must be a GraphQL input type.")
         if description is not None and not is_description(description):
             raise TypeError("Argument description must be a string.")
+        if deprecation_reason is not None and not is_description(deprecation_reason):
+            raise TypeError("Argument deprecation reason must be a string.")
         if out_name is not None and not isinstance(out_name, str):
             raise TypeError("Argument out name must be a string.")
         if extensions is not None and (
@@ -635,6 +639,7 @@ class GraphQLArgument:
         self.type = type_
         self.default_value = default_value
         self.description = description
+        self.deprecation_reason = deprecation_reason
         self.out_name = out_name
         self.extensions = extensions
         self.ast_node = ast_node
@@ -645,6 +650,7 @@ class GraphQLArgument:
             and self.type == other.type
             and self.default_value == other.default_value
             and self.description == other.description
+            and self.deprecation_reason == other.deprecation_reason
             and self.out_name == other.out_name
             and self.extensions == other.extensions
         )
@@ -654,6 +660,7 @@ class GraphQLArgument:
             type_=self.type,
             default_value=self.default_value,
             description=self.description,
+            deprecation_reason=self.deprecation_reason,
             out_name=self.out_name,
             extensions=self.extensions,
             ast_node=self.ast_node,
@@ -1399,6 +1406,7 @@ class GraphQLInputField:
     type: "GraphQLInputType"
     default_value: Any
     description: Optional[str]
+    deprecation_reason: Optional[str]
     out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[InputValueDefinitionNode]
@@ -1408,6 +1416,7 @@ class GraphQLInputField:
         type_: "GraphQLInputType",
         default_value: Any = Undefined,
         description: Optional[str] = None,
+        deprecation_reason: Optional[str] = None,
         out_name: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[InputValueDefinitionNode] = None,
@@ -1416,6 +1425,8 @@ class GraphQLInputField:
             raise TypeError("Input field type must be a GraphQL input type.")
         if description is not None and not is_description(description):
             raise TypeError("Input field description must be a string.")
+        if deprecation_reason is not None and not is_description(deprecation_reason):
+            raise TypeError("Input field deprecation reason must be a string.")
         if out_name is not None and not isinstance(out_name, str):
             raise TypeError("Input field out name must be a string.")
         if extensions is not None and (
@@ -1430,6 +1441,7 @@ class GraphQLInputField:
         self.type = type_
         self.default_value = default_value
         self.description = description
+        self.deprecation_reason = deprecation_reason
         self.out_name = out_name
         self.extensions = extensions
         self.ast_node = ast_node
@@ -1440,6 +1452,7 @@ class GraphQLInputField:
             and self.type == other.type
             and self.default_value == other.default_value
             and self.description == other.description
+            and self.deprecation_reason == other.deprecation_reason
             and self.extensions == other.extensions
             and self.out_name == other.out_name
         )
@@ -1449,6 +1462,7 @@ class GraphQLInputField:
             type_=self.type,
             default_value=self.default_value,
             description=self.description,
+            deprecation_reason=self.deprecation_reason,
             out_name=self.out_name,
             extensions=self.extensions,
             ast_node=self.ast_node,
