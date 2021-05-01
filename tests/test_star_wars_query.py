@@ -1,4 +1,4 @@
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql import graphql, graphql_sync
 

@@ -1,4 +1,4 @@
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.language import parse

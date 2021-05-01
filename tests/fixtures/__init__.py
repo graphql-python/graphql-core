@@ -2,7 +2,7 @@
 import json
 from os.path import dirname, join
 
-from pytest import fixture  # type: ignore
+from pytest import fixture
 
 __all__ = [
     "kitchen_sink_query",

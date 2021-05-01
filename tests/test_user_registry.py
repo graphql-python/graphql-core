@@ -8,7 +8,7 @@ from asyncio import sleep, wait
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from pytest import fixture, mark  # type: ignore
+from pytest import fixture, mark
 
 from graphql import (
     graphql,

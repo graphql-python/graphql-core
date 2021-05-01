@@ -1,6 +1,6 @@
 # pytest configuration
 
-import pytest  # type: ignore
+import pytest
 
 
 def pytest_addoption(parser):

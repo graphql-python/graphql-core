@@ -1,6 +1,6 @@
 from typing import Any
 
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql.execution import execute, execute_sync, ExecutionResult
 from graphql.language import parse

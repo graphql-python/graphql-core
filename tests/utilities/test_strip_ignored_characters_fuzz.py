@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind

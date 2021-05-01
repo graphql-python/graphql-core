@@ -1,7 +1,7 @@
 from math import inf, nan, pi
 from typing import Any
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast

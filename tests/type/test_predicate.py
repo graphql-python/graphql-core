@@ -1,6 +1,6 @@
 from typing import Any
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.language import DirectiveLocation
 from graphql.type import (

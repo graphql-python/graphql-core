@@ -1,6 +1,6 @@
 from typing import Union
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql import graphql_sync
 from graphql.language import (

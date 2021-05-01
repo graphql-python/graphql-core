@@ -2,7 +2,7 @@ import asyncio
 
 from typing import Any, Dict, Optional, Callable
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql.language import parse, DocumentNode
 from graphql.pyutils import EventEmitter, EventEmitterAsyncIterator

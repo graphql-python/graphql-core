@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.pyutils import FrozenError, FrozenList
 

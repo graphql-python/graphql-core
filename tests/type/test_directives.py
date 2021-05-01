@@ -1,4 +1,4 @@
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.language import DirectiveLocation, DirectiveDefinitionNode, Node
 from graphql.type import GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLString

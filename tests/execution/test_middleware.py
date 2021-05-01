@@ -1,6 +1,6 @@
 from typing import Awaitable
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql.execution import MiddlewareManager, execute
 from graphql.language.parser import parse

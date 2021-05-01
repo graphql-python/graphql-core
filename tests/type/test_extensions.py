@@ -1,6 +1,6 @@
 from typing import Any, Dict, cast
 
-from pytest import mark, param, raises  # type: ignore
+from pytest import mark, param, raises
 
 from graphql.type import (
     GraphQLArgument,

@@ -1,7 +1,7 @@
 from json import dumps
 from typing import Optional
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind, parse

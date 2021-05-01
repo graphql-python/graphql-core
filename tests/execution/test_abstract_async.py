@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql import graphql
 from graphql.type import (

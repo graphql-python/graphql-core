@@ -2,7 +2,7 @@ from copy import copy
 from functools import partial
 from typing import cast, Dict, List, Optional, Tuple
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql.language import (
     Node,

@@ -1,7 +1,7 @@
 from math import nan
 from typing import Any, List, NamedTuple, Union
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.pyutils import Undefined

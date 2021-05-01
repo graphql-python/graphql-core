@@ -1,7 +1,7 @@
 import asyncio
 from typing import Awaitable
 
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql.execution import execute, execute_sync
 from graphql.language import parse

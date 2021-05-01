@@ -2,7 +2,7 @@ import weakref
 
 from typing import cast, Tuple
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.language import Source, SourceLocation
 

@@ -1,6 +1,6 @@
 from typing import cast, Optional, Tuple
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (

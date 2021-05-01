@@ -1,7 +1,7 @@
 from math import isnan, nan
 from typing import cast
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql.error import GraphQLError
 from graphql.language import (

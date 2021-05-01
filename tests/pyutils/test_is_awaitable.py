@@ -1,7 +1,7 @@
 import asyncio
 from inspect import isawaitable
 
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql.pyutils import is_awaitable
 

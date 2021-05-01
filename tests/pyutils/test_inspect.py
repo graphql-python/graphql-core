@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from importlib import import_module
 from typing import Any, Dict, FrozenSet, List, Set, Tuple
 
-from pytest import mark  # type: ignore
+from pytest import mark
 
 from graphql.pyutils import inspect, Undefined
 from graphql.type import (

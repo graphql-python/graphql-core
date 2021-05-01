@@ -1,7 +1,7 @@
 from operator import attrgetter
 from typing import Any, List, Union
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql.language import parse, DirectiveLocation
 from graphql.pyutils import inspect

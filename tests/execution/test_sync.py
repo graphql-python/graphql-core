@@ -2,7 +2,7 @@ from gc import collect
 from inspect import isawaitable
 from typing import Awaitable, cast
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql import graphql_sync
 from graphql.execution import execute, execute_sync

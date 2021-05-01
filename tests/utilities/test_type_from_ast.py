@@ -1,4 +1,4 @@
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql.language import parse_type, TypeNode
 from graphql.type import GraphQLList, GraphQLNonNull, GraphQLObjectType

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from typing import cast
 
-from pytest import raises  # type: ignore
+from pytest import raises
 
 from graphql import graphql_sync
 from graphql.type import (

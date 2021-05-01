@@ -1,6 +1,6 @@
 from asyncio import sleep
 
-from pytest import mark, raises  # type: ignore
+from pytest import mark, raises
 
 from graphql.pyutils import EventEmitter, EventEmitterAsyncIterator
 
