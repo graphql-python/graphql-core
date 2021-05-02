@@ -1,5 +1,5 @@
 import sys
-from asyncio import Event, ensure_future, CancelledError, create_task, sleep, Queue
+from asyncio import Event, ensure_future, CancelledError, sleep, Queue
 
 from pytest import mark, raises  # type: ignore
 
@@ -458,7 +458,6 @@ def describe_map_async_iterator():
         assert not doubles.is_closed
         assert not iterator.is_closed
 
-
     @mark.asyncio
     async def cancel_async_iterator_while_waiting():
         class Iterator:
@@ -473,7 +472,7 @@ def describe_map_async_iterator():
             async def __anext__(self):
                 try:
                     return await self.queue.get()
-                except BaseException as ex:
+                except BaseException:
                     self.cancelled = True
 
         iterator = Iterator()
@@ -489,7 +488,7 @@ def describe_map_async_iterator():
                 # Otherwise it should reach here
                 pass
 
-        task = create_task(iterator_task())
+        task = ensure_future(iterator_task())
         await sleep(0.1)
         await doubles.aclose()
         task.cancel()
