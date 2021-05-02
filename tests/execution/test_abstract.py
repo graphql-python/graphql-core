@@ -1,7 +1,10 @@
+from collections import defaultdict
+from inspect import isawaitable
 from typing import NamedTuple
 
-from graphql.error import format_error
-from graphql.execution import execute_sync
+from pytest import mark
+
+from graphql.execution import execute, execute_sync, ExecutionResult
 from graphql.language import parse
 from graphql.type import (
     GraphQLBoolean,
@@ -13,6 +16,78 @@ from graphql.type import (
     GraphQLString,
     GraphQLUnionType,
 )
+
+
+def sync_and_async(spec):
+    """Decorator for running a test synchronously and asynchronously."""
+    return mark.asyncio(
+        mark.parametrize("sync", (True, False), ids=("sync", "async"))(spec)
+    )
+
+
+async def execute_query(
+    schema: GraphQLSchema, query: str, sync=True
+) -> ExecutionResult:
+    """Execute the query against the given schema synchronously or asynchronously."""
+    assert isinstance(schema, GraphQLSchema)
+    assert isinstance(query, str)
+    assert isinstance(sync, bool)
+    document = parse(query)
+    result = (execute_sync if sync else execute)(schema, document)  # type: ignore
+    if not sync and isawaitable(result):
+        result = await result
+    assert isinstance(result, ExecutionResult)
+    return result
+
+
+def get_is_type_of(type_, sync=True):
+    """Get a sync or async is_type_of function for the given type."""
+    if sync:
+
+        def is_type_of(obj, _info):
+            return isinstance(obj, type_)
+
+    else:
+
+        async def is_type_of(obj, _info):
+            return isinstance(obj, type_)
+
+    return is_type_of
+
+
+def get_is_type_of_error(sync=True):
+    """Get a sync or async is_type_of function that raises an error."""
+    error = RuntimeError("We are testing this error")
+    if sync:
+
+        def is_type_of(*_args):
+            raise error
+
+    else:
+
+        async def is_type_of(*_args):
+            raise error
+
+    return is_type_of
+
+
+def get_type_resolver(types, sync=True):
+    """Get a sync or async type resolver for the given type map."""
+    if sync:
+
+        def resolve(obj, _info, _type):
+            return resolve_thunk(types)[obj.__class__]
+
+    else:
+
+        async def resolve(obj, _info, _type):
+            return resolve_thunk(types)[obj.__class__]
+
+    return resolve
+
+
+def resolve_thunk(thunk):
+    return thunk() if callable(thunk) else thunk
 
 
 class Dog(NamedTuple):
@@ -32,46 +107,29 @@ class Human(NamedTuple):
     name: str
 
 
-def get_is_type_of(type_):
-    def is_type_of(obj, _info):
-        return isinstance(obj, type_)
-
-    return is_type_of
-
-
-def get_type_resolver(types):
-    def resolve(obj, _info, _type):
-        return resolve_thunk(types)[obj.__class__]
-
-    return resolve
-
-
-def resolve_thunk(thunk):
-    return thunk() if callable(thunk) else thunk
-
-
 def describe_execute_handles_synchronous_execution_of_abstract_types():
-    def is_type_of_used_to_resolve_runtime_type_for_interface():
-        PetType = GraphQLInterfaceType("Pet", {"name": GraphQLField(GraphQLString)})
+    @sync_and_async
+    async def is_type_of_used_to_resolve_runtime_type_for_interface(sync):
+        pet_type = GraphQLInterfaceType("Pet", {"name": GraphQLField(GraphQLString)})
 
-        DogType = GraphQLObjectType(
+        dog_type = GraphQLObjectType(
             "Dog",
             {
                 "name": GraphQLField(GraphQLString),
                 "woofs": GraphQLField(GraphQLBoolean),
             },
-            interfaces=[PetType],
-            is_type_of=get_is_type_of(Dog),
+            interfaces=[pet_type],
+            is_type_of=get_is_type_of(Dog, sync),
         )
 
-        CatType = GraphQLObjectType(
+        cat_type = GraphQLObjectType(
             "Cat",
             {
                 "name": GraphQLField(GraphQLString),
                 "meows": GraphQLField(GraphQLBoolean),
             },
-            interfaces=[PetType],
-            is_type_of=get_is_type_of(Cat),
+            interfaces=[pet_type],
+            is_type_of=get_is_type_of(Cat, sync),
         )
 
         schema = GraphQLSchema(
@@ -79,7 +137,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 "Query",
                 {
                     "pets": GraphQLField(
-                        GraphQLList(PetType),
+                        GraphQLList(pet_type),
                         resolve=lambda *_args: [
                             Dog("Odie", True),
                             Cat("Garfield", False),
@@ -87,11 +145,10 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                     )
                 },
             ),
-            types=[CatType, DogType],
+            types=[cat_type, dog_type],
         )
 
-        document = parse(
-            """
+        query = """
             {
               pets {
                 name
@@ -104,10 +161,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
-        )
 
-        result = execute_sync(schema, document)
-        assert result == (
+        assert await execute_query(schema, query, sync) == (
             {
                 "pets": [
                     {"name": "Odie", "woofs": True},
@@ -117,33 +172,153 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             None,
         )
 
-    def is_type_of_used_to_resolve_runtime_type_for_union():
-        DogType = GraphQLObjectType(
+    @sync_and_async
+    async def is_type_of_can_throw(sync):
+        pet_type = GraphQLInterfaceType("Pet", {"name": GraphQLField(GraphQLString)})
+
+        dog_type = GraphQLObjectType(
             "Dog",
             {
                 "name": GraphQLField(GraphQLString),
                 "woofs": GraphQLField(GraphQLBoolean),
             },
-            is_type_of=get_is_type_of(Dog),
+            interfaces=[pet_type],
+            is_type_of=get_is_type_of_error(sync),
         )
 
-        CatType = GraphQLObjectType(
+        cat_type = GraphQLObjectType(
             "Cat",
             {
                 "name": GraphQLField(GraphQLString),
                 "meows": GraphQLField(GraphQLBoolean),
             },
-            is_type_of=get_is_type_of(Cat),
+            interfaces=[pet_type],
+            is_type_of=None,
         )
-
-        PetType = GraphQLUnionType("Pet", [CatType, DogType])
 
         schema = GraphQLSchema(
             GraphQLObjectType(
                 "Query",
                 {
                     "pets": GraphQLField(
-                        GraphQLList(PetType),
+                        GraphQLList(pet_type),
+                        resolve=lambda *_args: [
+                            Dog("Odie", True),
+                            Cat("Garfield", False),
+                        ],
+                    )
+                },
+            ),
+            types=[dog_type, cat_type],
+        )
+
+        query = """
+            {
+              pets {
+                name
+                ... on Dog {
+                  woofs
+                }
+                ... on Cat {
+                  meows
+                }
+              }
+            }
+            """
+
+        assert await execute_query(schema, query, sync) == (
+            {"pets": [None, None]},
+            [
+                {
+                    "message": "We are testing this error",
+                    "locations": [(3, 15)],
+                    "path": ["pets", 0],
+                },
+                {
+                    "message": "We are testing this error",
+                    "locations": [(3, 15)],
+                    "path": ["pets", 1],
+                },
+            ],
+        )
+
+    @sync_and_async
+    async def is_type_of_with_no_suitable_type(sync):
+        pet_type = GraphQLInterfaceType("Pet", {"name": GraphQLField(GraphQLString)})
+
+        dog_type = GraphQLObjectType(
+            "Dog",
+            {
+                "name": GraphQLField(GraphQLString),
+                "woofs": GraphQLField(GraphQLBoolean),
+            },
+            interfaces=[pet_type],
+            is_type_of=get_is_type_of(Cat, sync),
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "pets": GraphQLField(
+                        GraphQLList(pet_type),
+                        resolve=lambda *_args: [Dog("Odie", True)],
+                    )
+                },
+            ),
+            types=[dog_type],
+        )
+
+        query = """
+            {
+              pets {
+                name
+                ... on Dog {
+                  woofs
+                }
+              }
+            }
+            """
+
+        message = (
+            "Abstract type 'Pet' must resolve to an Object type at runtime"
+            " for field 'Query.pets' with value ('Odie', True), received 'None'."
+            " Either the 'Pet' type should provide a 'resolve_type' function"
+            " or each possible type should provide an 'is_type_of' function."
+        )
+        assert await execute_query(schema, query, sync) == (
+            {"pets": [None]},
+            [{"message": message, "locations": [(3, 15)], "path": ["pets", 0]}],
+        )
+
+    @sync_and_async
+    async def is_type_of_used_to_resolve_runtime_type_for_union(sync):
+        dog_type = GraphQLObjectType(
+            "Dog",
+            {
+                "name": GraphQLField(GraphQLString),
+                "woofs": GraphQLField(GraphQLBoolean),
+            },
+            is_type_of=get_is_type_of(Dog, sync),
+        )
+
+        cat_type = GraphQLObjectType(
+            "Cat",
+            {
+                "name": GraphQLField(GraphQLString),
+                "meows": GraphQLField(GraphQLBoolean),
+            },
+            is_type_of=get_is_type_of(Cat, sync),
+        )
+
+        pet_type = GraphQLUnionType("Pet", [cat_type, dog_type])
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "pets": GraphQLField(
+                        GraphQLList(pet_type),
                         resolve=lambda *_args: [
                             Dog("Odie", True),
                             Cat("Garfield", False),
@@ -153,8 +328,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             )
         )
 
-        document = parse(
-            """
+        query = """
             {
               pets {
                 ... on Dog {
@@ -168,10 +342,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
-        )
 
-        result = execute_sync(schema, document)
-        assert result == (
+        assert await execute_query(schema, query, sync) == (
             {
                 "pets": [
                     {"name": "Odie", "woofs": True},
@@ -181,37 +353,38 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             None,
         )
 
-    def resolve_type_on_interface_yields_useful_error():
-        CatType: GraphQLObjectType
-        DogType: GraphQLObjectType
-        HumanType: GraphQLObjectType
+    @sync_and_async
+    async def resolve_type_on_interface_yields_useful_error(sync):
+        cat_type: GraphQLObjectType
+        dog_type: GraphQLObjectType
+        human_type: GraphQLObjectType
 
-        PetType = GraphQLInterfaceType(
+        pet_type = GraphQLInterfaceType(
             "Pet",
             {"name": GraphQLField(GraphQLString)},
             resolve_type=get_type_resolver(
-                lambda: {Dog: DogType, Cat: CatType, Human: HumanType}
+                lambda: {Dog: dog_type, Cat: cat_type, Human: human_type}, sync
             ),
         )
 
-        HumanType = GraphQLObjectType("Human", {"name": GraphQLField(GraphQLString)})
+        human_type = GraphQLObjectType("Human", {"name": GraphQLField(GraphQLString)})
 
-        DogType = GraphQLObjectType(
+        dog_type = GraphQLObjectType(
             "Dog",
             {
                 "name": GraphQLField(GraphQLString),
                 "woofs": GraphQLField(GraphQLBoolean),
             },
-            interfaces=[PetType],
+            interfaces=[pet_type],
         )
 
-        CatType = GraphQLObjectType(
+        cat_type = GraphQLObjectType(
             "Cat",
             {
                 "name": GraphQLField(GraphQLString),
                 "meows": GraphQLField(GraphQLBoolean),
             },
-            interfaces=[PetType],
+            interfaces=[pet_type],
         )
 
         schema = GraphQLSchema(
@@ -219,7 +392,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 "Query",
                 {
                     "pets": GraphQLField(
-                        GraphQLList(PetType),
+                        GraphQLList(pet_type),
                         resolve=lambda *_args: [
                             Dog("Odie", True),
                             Cat("Garfield", False),
@@ -228,11 +401,10 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                     )
                 },
             ),
-            types=[CatType, DogType],
+            types=[cat_type, dog_type],
         )
 
-        document = parse(
-            """
+        query = """
             {
               pets {
                 name
@@ -245,30 +417,30 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
+
+        assert await execute_query(schema, query, sync) == (
+            {
+                "pets": [
+                    {"name": "Odie", "woofs": True},
+                    {"name": "Garfield", "meows": False},
+                    None,
+                ]
+            },
+            [
+                {
+                    "message": "Runtime Object type 'Human'"
+                    " is not a possible type for 'Pet'.",
+                    "locations": [{"line": 3, "column": 15}],
+                    "path": ["pets", 2],
+                }
+            ],
         )
 
-        result = execute_sync(schema, document)
-        assert result.data == {
-            "pets": [
-                {"name": "Odie", "woofs": True},
-                {"name": "Garfield", "meows": False},
-                None,
-            ]
-        }
+    @sync_and_async
+    async def resolve_type_on_union_yields_useful_error(sync):
+        human_type = GraphQLObjectType("Human", {"name": GraphQLField(GraphQLString)})
 
-        assert result.errors
-        assert len(result.errors) == 1
-        assert format_error(result.errors[0]) == {
-            "message": "Runtime Object type 'Human'"
-            " is not a possible type for 'Pet'.",
-            "locations": [{"line": 3, "column": 15}],
-            "path": ["pets", 2],
-        }
-
-    def resolve_type_on_union_yields_useful_error():
-        HumanType = GraphQLObjectType("Human", {"name": GraphQLField(GraphQLString)})
-
-        DogType = GraphQLObjectType(
+        dog_type = GraphQLObjectType(
             "Dog",
             {
                 "name": GraphQLField(GraphQLString),
@@ -276,7 +448,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             },
         )
 
-        CatType = GraphQLObjectType(
+        cat_type = GraphQLObjectType(
             "Cat",
             {
                 "name": GraphQLField(GraphQLString),
@@ -284,11 +456,11 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             },
         )
 
-        PetType = GraphQLUnionType(
+        pet_type = GraphQLUnionType(
             "Pet",
-            [DogType, CatType],
+            [dog_type, cat_type],
             resolve_type=get_type_resolver(
-                {Dog: DogType, Cat: CatType, Human: HumanType}
+                {Dog: dog_type, Cat: cat_type, Human: human_type}, sync
             ),
         )
 
@@ -297,7 +469,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 "Query",
                 {
                     "pets": GraphQLField(
-                        GraphQLList(PetType),
+                        GraphQLList(pet_type),
                         resolve=lambda *_: [
                             Dog("Odie", True),
                             Cat("Garfield", False),
@@ -308,8 +480,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             )
         )
 
-        document = parse(
-            """
+        query = """
             {
               pets {
                 ... on Dog {
@@ -323,31 +494,32 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
               }
             }
             """
+
+        assert await execute_query(schema, query, sync) == (
+            {
+                "pets": [
+                    {"name": "Odie", "woofs": True},
+                    {"name": "Garfield", "meows": False},
+                    None,
+                ]
+            },
+            [
+                {
+                    "message": "Runtime Object type 'Human'"
+                    " is not a possible type for 'Pet'.",
+                    "locations": [{"line": 3, "column": 15}],
+                    "path": ["pets", 2],
+                }
+            ],
         )
 
-        result = execute_sync(schema, document)
-        assert result.data == {
-            "pets": [
-                {"name": "Odie", "woofs": True},
-                {"name": "Garfield", "meows": False},
-                None,
-            ]
-        }
-
-        assert result.errors
-        assert len(result.errors) == 1
-        assert format_error(result.errors[0]) == {
-            "message": "Runtime Object type 'Human'"
-            " is not a possible type for 'Pet'.",
-            "locations": [{"line": 3, "column": 15}],
-            "path": ["pets", 2],
-        }
-
-    def returning_invalid_value_from_resolve_type_yields_useful_error():
+    @sync_and_async
+    async def returning_invalid_value_from_resolve_type_yields_useful_error(sync):
         foo_interface = GraphQLInterfaceType(
             "FooInterface",
             {"bar": GraphQLField(GraphQLString)},
-            resolve_type=lambda *_args: [],  # type: ignore
+            # this type resolver always returns an empty list instead of a type
+            resolve_type=get_type_resolver(defaultdict(list), sync),
         )
 
         foo_object = GraphQLObjectType(
@@ -364,10 +536,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             types=[foo_object],
         )
 
-        document = parse("{ foo { bar } }")
-        result = execute_sync(schema, document)
-
-        assert result == (
+        assert await execute_query(schema, "{ foo { bar } }", sync) == (
             {"foo": None},
             [
                 {
@@ -382,7 +551,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             ],
         )
 
-    def missing_both_resolve_type_and_is_type_of_yields_useful_error():
+    @sync_and_async
+    async def missing_both_resolve_type_and_is_type_of_yields_useful_error(sync):
         foo_interface = GraphQLInterfaceType(
             "FooInterface", {"bar": GraphQLField(GraphQLString)}
         )
@@ -396,15 +566,17 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         schema = GraphQLSchema(
             GraphQLObjectType(
                 "Query",
-                {"foo": GraphQLField(foo_interface, resolve=lambda *_args: "dummy")},
+                {
+                    "foo": GraphQLField(
+                        foo_interface,
+                        resolve=lambda *_: "dummy",
+                    )
+                },
             ),
             types=[foo_object],
         )
 
-        document = parse("{ foo { bar } }")
-        result = execute_sync(schema, document)
-
-        assert result == (
+        assert await execute_query(schema, "{ foo { bar } }", sync) == (
             {"foo": None},
             [
                 {
@@ -419,29 +591,30 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             ],
         )
 
-    def resolve_type_allows_resolving_with_type_name():
-        PetType = GraphQLInterfaceType(
+    @sync_and_async
+    async def resolve_type_allows_resolving_with_type_name(sync):
+        pet_type = GraphQLInterfaceType(
             "Pet",
             {"name": GraphQLField(GraphQLString)},
-            resolve_type=get_type_resolver({Dog: "Dog", Cat: "Cat"}),
+            resolve_type=get_type_resolver({Dog: "Dog", Cat: "Cat"}, sync),
         )
 
-        DogType = GraphQLObjectType(
+        dog_type = GraphQLObjectType(
             "Dog",
             {
                 "name": GraphQLField(GraphQLString),
                 "woofs": GraphQLField(GraphQLBoolean),
             },
-            interfaces=[PetType],
+            interfaces=[pet_type],
         )
 
-        CatType = GraphQLObjectType(
+        cat_type = GraphQLObjectType(
             "Cat",
             {
                 "name": GraphQLField(GraphQLString),
                 "meows": GraphQLField(GraphQLBoolean),
             },
-            interfaces=[PetType],
+            interfaces=[pet_type],
         )
 
         schema = GraphQLSchema(
@@ -449,16 +622,15 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 "Query",
                 {
                     "pets": GraphQLField(
-                        GraphQLList(PetType),
+                        GraphQLList(pet_type),
                         resolve=lambda *_: [Dog("Odie", True), Cat("Garfield", False)],
                     )
                 },
             ),
-            types=[CatType, DogType],
+            types=[cat_type, dog_type],
         )
 
-        document = parse(
-            """
+        query = """
             {
               pets {
                 name
@@ -470,10 +642,8 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 }
               }
             }"""
-        )
 
-        result = execute_sync(schema, document)
-        assert result == (
+        assert await execute_query(schema, query, sync) == (
             {
                 "pets": [
                     {"name": "Odie", "woofs": True},
