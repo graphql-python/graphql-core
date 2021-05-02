@@ -43,17 +43,19 @@ class MapAsyncIterator:
             aclose = ensure_future(self._close_event.wait())
             anext = ensure_future(self.iterator.__anext__())
 
-            # Suppress the StopAsyncIteration exception warning when the iterator is cancelled.
+            # Suppress the StopAsyncIteration exception warning when the
+            # iterator is cancelled.
             anext.add_done_callback(lambda *args: anext.exception())
             try:
                 pending: Set[Future] = (
                     await wait([aclose, anext], return_when=FIRST_COMPLETED)
                 )[1]
-            except CancelledError:
+            except CancelledError as e:  # pragma: no cover
                 # The iterator is cancelled
                 aclose.cancel()
                 anext.cancel()
-                raise StopAsyncIteration
+                self.is_closed = True
+                raise StopAsyncIteration from e
 
             for task in pending:
                 task.cancel()
