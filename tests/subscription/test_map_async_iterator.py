@@ -464,6 +464,7 @@ def describe_map_async_iterator():
         class Iterator:
             def __init__(self):
                 self.queue: Queue[int] = Queue()
+                self.queue.put_nowait(1)  # suppress coverage warning
                 self.cancelled = False
 
             def __aiter__(self):
@@ -484,7 +485,7 @@ def describe_map_async_iterator():
                     pass
                 # If cancellation is handled using StopAsyncIteration, it will reach
                 # here.
-            except CancelledError:
+            except CancelledError:  # pragma: no cover
                 # Otherwise it should reach here
                 pass
 

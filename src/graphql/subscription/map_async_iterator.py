@@ -50,7 +50,7 @@ class MapAsyncIterator:
                 pending: Set[Future] = (
                     await wait([aclose, anext], return_when=FIRST_COMPLETED)
                 )[1]
-            except CancelledError as e:  # pragma: no cover
+            except CancelledError as e:
                 # The iterator is cancelled
                 aclose.cancel()
                 anext.cancel()
