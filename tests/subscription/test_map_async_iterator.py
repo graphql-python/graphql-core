@@ -1,5 +1,5 @@
 import sys
-from asyncio import Event, ensure_future, CancelledError, sleep, Queue
+from asyncio import CancelledError, Event, ensure_future, sleep
 
 from pytest import mark, raises
 
@@ -459,39 +459,47 @@ def describe_map_async_iterator():
         assert not iterator.is_closed
 
     @mark.asyncio
-    async def cancel_async_iterator_while_waiting():
+    async def can_cancel_async_iterator_while_waiting():
         class Iterator:
             def __init__(self):
-                self.queue: Queue[int] = Queue()
-                self.queue.put_nowait(1)  # suppress coverage warning
-                self.cancelled = False
+                self.is_closed = False
+                self.value = 1
 
             def __aiter__(self):
                 return self
 
             async def __anext__(self):
                 try:
-                    return await self.queue.get()
-                except BaseException:
-                    self.cancelled = True
+                    await sleep(0.5)
+                    return self.value  # pragma: no cover
+                except CancelledError:
+                    self.value = -1
+                    raise
+
+            async def aclose(self):
+                self.is_closed = True
 
         iterator = Iterator()
-        doubles = MapAsyncIterator(iterator, lambda x: x + x)
+        doubles = MapAsyncIterator(iterator, lambda x: x + x)  # pragma: no cover exit
+        cancelled = False
 
         async def iterator_task():
+            nonlocal cancelled
             try:
-                async for double in doubles:
-                    pass
-                # If cancellation is handled using StopAsyncIteration, it will reach
-                # here.
-            except CancelledError:  # pragma: no cover
-                # Otherwise it should reach here
-                pass
+                async for _ in doubles:
+                    assert False  # pragma: no cover
+            except CancelledError:
+                cancelled = True
 
         task = ensure_future(iterator_task())
-        await sleep(0.1)
-        await doubles.aclose()
+        await sleep(0.05)
+        assert not cancelled
+        assert not doubles.is_closed
+        assert iterator.value == 1
+        assert not iterator.is_closed
         task.cancel()
-        await sleep(0.1)
-        assert iterator.cancelled
+        await sleep(0.05)
+        assert cancelled
+        assert iterator.value == -1
         assert doubles.is_closed
+        assert iterator.is_closed
