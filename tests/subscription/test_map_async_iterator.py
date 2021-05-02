@@ -1,5 +1,5 @@
 import sys
-from asyncio import Event, ensure_future, sleep
+from asyncio import Event, ensure_future, CancelledError, sleep, Queue
 
 from pytest import mark, raises
 
@@ -457,3 +457,41 @@ def describe_map_async_iterator():
             await anext(doubles)
         assert not doubles.is_closed
         assert not iterator.is_closed
+
+    @mark.asyncio
+    async def cancel_async_iterator_while_waiting():
+        class Iterator:
+            def __init__(self):
+                self.queue: Queue[int] = Queue()
+                self.queue.put_nowait(1)  # suppress coverage warning
+                self.cancelled = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    return await self.queue.get()
+                except BaseException:
+                    self.cancelled = True
+
+        iterator = Iterator()
+        doubles = MapAsyncIterator(iterator, lambda x: x + x)
+
+        async def iterator_task():
+            try:
+                async for double in doubles:
+                    pass
+                # If cancellation is handled using StopAsyncIteration, it will reach
+                # here.
+            except CancelledError:  # pragma: no cover
+                # Otherwise it should reach here
+                pass
+
+        task = ensure_future(iterator_task())
+        await sleep(0.1)
+        await doubles.aclose()
+        task.cancel()
+        await sleep(0.1)
+        assert iterator.cancelled
+        assert doubles.is_closed
