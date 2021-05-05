@@ -834,7 +834,7 @@ class ExecutionContext:
             return completed_results
 
         # noinspection PyShadowingNames
-        async def get_completed_results() -> Any:
+        async def get_completed_results() -> List[Any]:
             for index, result in zip(
                 awaitable_indices,
                 await gather(
