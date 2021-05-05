@@ -786,7 +786,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         path: Path,
         result: Iterable[Any],
-    ) -> AwaitableOrValue[Any]:
+    ) -> AwaitableOrValue[List[Any]]:
         """Complete a list value.
 
         Complete a list value by completing each item in the list with the inner type.
