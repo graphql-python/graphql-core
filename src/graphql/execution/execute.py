@@ -58,6 +58,7 @@ from ..type import (
     is_abstract_type,
     is_leaf_type,
     is_list_type,
+    is_named_type,
     is_non_null_type,
     is_object_type,
 )
@@ -912,29 +913,55 @@ class ExecutionContext:
 
     def ensure_valid_runtime_type(
         self,
-        runtime_type_or_name: Optional[Union[GraphQLObjectType, str]],
+        runtime_type_or_name: Any,
         return_type: GraphQLAbstractType,
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
-        runtime_type = (
-            self.schema.get_type(runtime_type_or_name)
-            if isinstance(runtime_type_or_name, str)
-            else runtime_type_or_name
-        )
-
-        if not is_object_type(runtime_type):
+        if runtime_type_or_name is None:
             raise GraphQLError(
                 f"Abstract type '{return_type.name}' must resolve"
                 " to an Object type at runtime"
-                f" for field '{info.parent_type.name}.{info.field_name}'"
-                f" with value {inspect(result)}, received '{inspect(runtime_type)}'."
+                f" for field '{info.parent_type.name}.{info.field_name}'."
                 f" Either the '{return_type.name}' type should provide"
-                " a 'resolve_type' function or each possible type should"
-                " provide an 'is_type_of' function.",
+                " a 'resolve_type' function or each possible type should provide"
+                " an 'is_type_of' function.",
                 field_nodes,
             )
+
+        # temporary workaround until support for passing object types will be removed
+        runtime_type_name = (
+            runtime_type_or_name.name
+            if is_named_type(runtime_type_or_name)
+            else runtime_type_or_name
+        )
+
+        if not isinstance(runtime_type_name, str):
+            raise GraphQLError(
+                f"Abstract type '{return_type.name}' must resolve"
+                " to an Object type at runtime"
+                f" for field '{info.parent_type.name}.{info.field_name}' with value"
+                f" {inspect(result)}, received '{inspect(runtime_type_name)}'.",
+                field_nodes,
+            )
+
+        runtime_type = self.schema.get_type(runtime_type_name)
+
+        if runtime_type is None:
+            raise GraphQLError(
+                f"Abstract type '{return_type.name}' was resolved to a type"
+                f" '{runtime_type_name}' that does not exist inside the schema.",
+                field_nodes,
+            )
+
+        if not is_object_type(runtime_type):
+            raise GraphQLError(
+                f"Abstract type '{return_type.name}' was resolved"
+                f" to a non-object type '{runtime_type_name}'.",
+                field_nodes,
+            )
+
         runtime_type = cast(GraphQLObjectType, runtime_type)
 
         if not self.schema.is_sub_type(return_type, runtime_type):
@@ -1260,7 +1287,7 @@ def default_type_resolver(
                 append_awaitable_results(cast(Awaitable, is_type_of_result))
                 append_awaitable_types(type_)
             elif is_type_of_result:
-                return type_
+                return type_.name
 
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
@@ -1268,7 +1295,7 @@ def default_type_resolver(
             is_type_of_results = await gather(*awaitable_is_type_of_results)
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
-                    return type_
+                    return type_.name
             return None
 
         return get_type()

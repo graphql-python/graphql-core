@@ -108,9 +108,9 @@ CatType = GraphQLObjectType(
 
 def resolve_pet_type(value, _info, _type):
     if isinstance(value, Dog):
-        return DogType
+        return DogType.name
     if isinstance(value, Cat):
-        return CatType
+        return CatType.name
 
     # Not reachable. All possible types have been considered.
     raise TypeError("Unexpected pet type")
@@ -493,7 +493,7 @@ def describe_execute_union_and_intersection_types():
             encountered["context"] = info.context
             encountered["schema"] = info.schema
             encountered["root_value"] = info.root_value
-            return PersonType2
+            return PersonType2.name
 
         NamedType2 = GraphQLInterfaceType(
             "Named", {"name": GraphQLField(GraphQLString)}, resolve_type=resolve_type
