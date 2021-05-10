@@ -78,6 +78,42 @@ def describe_printer_query_document():
             """
         )
 
+    def keeps_arguments_on_one_line_if_line_has_80_chars_or_less():
+        printed = print_ast(parse("{trip(wheelchair:false arriveBy:false){dateTime}}"))
+
+        assert printed == dedent(
+            """
+            {
+              trip(wheelchair: false, arriveBy: false) {
+                dateTime
+              }
+            }
+            """
+        )
+
+    def puts_arguments_on_multiple_lines_if_line_has_more_than_80_chars():
+        printed = print_ast(
+            parse(
+                "{trip(wheelchair:false arriveBy:false includePlannedCancellations:true"
+                " transitDistanceReluctance:2000){dateTime}}"
+            )
+        )
+
+        assert printed == dedent(
+            """
+            {
+              trip(
+                wheelchair: false
+                arriveBy: false
+                includePlannedCancellations: true
+                transitDistanceReluctance: 2000
+              ) {
+                dateTime
+              }
+            }
+            """
+        )
+
     def experimental_prints_fragment_with_variable_directives():
         query_ast_with_variable_directive = parse(
             "fragment Foo($foo: TestType @test) on TestType @testDirective { id }",
@@ -149,9 +185,13 @@ def describe_printer_query_document():
             }
 
             fragment frag on Friend @onFragmentDefinition {
-              foo(size: $size, bar: $b, obj: {key: "value", block: """
-                block string uses \"""
-              """})
+              foo(
+                size: $size
+                bar: $b
+                obj: {key: "value", block: """
+                  block string uses \"""
+                """}
+              )
             }
 
             {

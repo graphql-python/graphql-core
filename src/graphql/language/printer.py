@@ -9,6 +9,8 @@ from .block_string import print_block_string
 __all__ = ["print_ast"]
 
 
+MAX_LINE_LENGTH = 80
+
 Strings = Collection[str]
 
 
@@ -100,16 +102,13 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_field(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            (
-                wrap("", node.alias, ": ")
-                + node.name
-                + wrap("(", join(node.arguments, ", "), ")"),
-                join(node.directives, " "),
-                node.selection_set,
-            ),
-            " ",
-        )
+        prefix = wrap("", node.alias, ": ") + node.name
+        args_line = prefix + wrap("(", join(node.arguments, ", "), ")")
+
+        if len(args_line) > MAX_LINE_LENGTH:
+            args_line = prefix + wrap("(\n", indent(join(node.arguments, "\n")), "\n)")
+
+        return join((args_line, join(node.directives, " "), node.selection_set), " ")
 
     @staticmethod
     def leave_argument(node: PrintedNode, *_args: Any) -> str:
