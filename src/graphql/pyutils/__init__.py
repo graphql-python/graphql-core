@@ -17,7 +17,6 @@ from .description import (
     unregister_description,
 )
 from .did_you_mean import did_you_mean
-from .event_emitter import EventEmitter, EventEmitterAsyncIterator
 from .identity_func import identity_func
 from .inspect import inspect
 from .is_awaitable import is_awaitable
@@ -31,6 +30,7 @@ from .frozen_list import FrozenList
 from .frozen_dict import FrozenDict
 from .path import Path
 from .print_path_list import print_path_list
+from .simple_pub_sub import SimplePubSub, SimplePubSubIterator
 from .undefined import Undefined, UndefinedType
 
 __all__ = [
@@ -42,8 +42,6 @@ __all__ = [
     "is_description",
     "register_description",
     "unregister_description",
-    "EventEmitter",
-    "EventEmitterAsyncIterator",
     "identity_func",
     "inspect",
     "is_awaitable",
@@ -57,6 +55,8 @@ __all__ = [
     "FrozenDict",
     "Path",
     "print_path_list",
+    "SimplePubSub",
+    "SimplePubSubIterator",
     "Undefined",
     "UndefinedType",
 ]

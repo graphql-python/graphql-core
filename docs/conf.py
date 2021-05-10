@@ -108,7 +108,7 @@ graphql_modules = {
     'execution': ['execute', 'middleware'],
     'language': ['ast', 'directive_locations', 'location',
                  'source', 'token_kind', 'visitor'],
-    'pyutils': ['event_emitter', 'frozen_list', 'path'],
+    'pyutils': ['simple_pub_sub', 'frozen_list', 'path'],
     'subscription': [],
     'type': ['definition', 'directives', 'schema'],
     'utilities': ['find_breaking_changes', 'type_info'],
@@ -129,7 +129,9 @@ graphql_classes = {
 ignore_references = set('''
 GNT GT T
 enum.Enum
+traceback
 asyncio.events.AbstractEventLoop
+graphql.subscription.map_async_iterator.MapAsyncIterator
 graphql.type.schema.InterfaceImplementations
 graphql.validation.validation_context.VariableUsage
 graphql.validation.rules.known_argument_names.KnownArgumentNamesOnDirectivesRule

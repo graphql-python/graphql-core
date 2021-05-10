@@ -5,7 +5,9 @@ operations on a simulated user registry database backend.
 """
 
 from asyncio import sleep, wait
+from collections import defaultdict
 from enum import Enum
+from inspect import isawaitable
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from pytest import fixture, mark
@@ -28,7 +30,7 @@ from graphql import (
     GraphQLString,
 )
 
-from graphql.pyutils import EventEmitter, EventEmitterAsyncIterator
+from graphql.pyutils import SimplePubSub, SimplePubSubIterator
 from graphql.subscription.map_async_iterator import MapAsyncIterator
 
 
@@ -55,7 +57,7 @@ class UserRegistry:
 
     def __init__(self, **users):
         self._registry: Dict[str, User] = users
-        self._emitter = EventEmitter()
+        self._pubsub = defaultdict(SimplePubSub)
 
     async def get(self, id_: str) -> Optional[User]:
         """Get a user object from the registry"""
@@ -63,7 +65,7 @@ class UserRegistry:
         return self._registry.get(id_)
 
     async def create(self, **kwargs) -> User:
-        """Get a user object in the registry"""
+        """Create a user object in the registry"""
         await sleep(0)
         id_ = str(len(self._registry))
         user = User(id=id_, **kwargs)
@@ -81,7 +83,7 @@ class UserRegistry:
         return user
 
     async def delete(self, id_: str) -> User:
-        """Update a user object in the registry"""
+        """Delete a user object in the registry"""
         await sleep(0)
         user = self._registry.pop(id_)
         self.emit_event(MutationEnum.DELETED, user)
@@ -89,14 +91,12 @@ class UserRegistry:
 
     def emit_event(self, mutation: MutationEnum, user: User) -> None:
         """Emit mutation events for the given object and its class"""
-        emit = self._emitter.emit
         payload = {"user": user, "mutation": mutation.value}
-        emit("User", payload)  # notify all user subscriptions
-        emit(f"User_{user.id}", payload)  # notify single user subscriptions
+        self._pubsub[None].emit(payload)  # notify all user subscriptions
+        self._pubsub[user.id].emit(payload)  # notify single user subscriptions
 
-    def event_iterator(self, id_: str) -> EventEmitterAsyncIterator:
-        event_name = "User" if id_ is None else f"User_{id_}"
-        return EventEmitterAsyncIterator(self._emitter, event_name)
+    def event_iterator(self, id_: Optional[str]) -> SimplePubSubIterator:
+        return self._pubsub[id_].get_subscriber()
 
 
 mutation_type = GraphQLEnumType("MutationType", MutationEnum)
@@ -158,8 +158,8 @@ async def resolve_delete_user(_root, info, id):
 async def subscribe_user(_root, info, id=None):
     """Subscribe to mutations of a specific user object or all user objects"""
     async_iterator = info.context["registry"].event_iterator(id)
-    async for msg in async_iterator:
-        yield msg
+    async for event in async_iterator:
+        yield await event if isawaitable(event) else event
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
@@ -258,16 +258,16 @@ def describe_mutation():
     async def create_user(context):
         received = {}
 
-        def receiver(event_name):
+        def subscriber(event_name):
             def receive(msg):
                 received[event_name] = msg
 
             return receive
 
         # noinspection PyProtectedMember
-        add_listener = context["registry"]._emitter.add_listener
-        add_listener("User", receiver("User"))
-        add_listener("User_0", receiver("User_0"))
+        pubsub = context["registry"]._pubsub
+        pubsub[None].subscribers.add(subscriber("User"))
+        pubsub["0"].subscribers.add(subscriber("User 0"))
 
         query = """
             mutation ($userData: UserInputType!) {
@@ -298,23 +298,23 @@ def describe_mutation():
 
         assert received == {
             "User": {"user": user, "mutation": MutationEnum.CREATED.value},
-            "User_0": {"user": user, "mutation": MutationEnum.CREATED.value},
+            "User 0": {"user": user, "mutation": MutationEnum.CREATED.value},
         }
 
     @mark.asyncio
     async def update_user(context):
         received = {}
 
-        def receiver(event_name):
+        def subscriber(event_name):
             def receive(msg):
                 received[event_name] = msg
 
             return receive
 
         # noinspection PyProtectedMember
-        add_listener = context["registry"]._emitter.add_listener
-        add_listener("User", receiver("User"))
-        add_listener("User_0", receiver("User_0"))
+        pubsub = context["registry"]._pubsub
+        pubsub[None].subscribers.add(subscriber("User"))
+        pubsub["0"].subscribers.add(subscriber("User 0"))
 
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
@@ -354,23 +354,23 @@ def describe_mutation():
 
         assert received == {
             "User": {"user": user, "mutation": MutationEnum.UPDATED.value},
-            "User_0": {"user": user, "mutation": MutationEnum.UPDATED.value},
+            "User 0": {"user": user, "mutation": MutationEnum.UPDATED.value},
         }
 
     @mark.asyncio
     async def delete_user(context):
         received = {}
 
-        def receiver(name):
+        def subscriber(name):
             def receive(msg):
                 received[name] = msg
 
             return receive
 
         # noinspection PyProtectedMember
-        add_listener = context["registry"]._emitter.add_listener
-        add_listener("User", receiver("User"))
-        add_listener("User_0", receiver("User_0"))
+        pubsub = context["registry"]._pubsub
+        pubsub[None].subscribers.add(subscriber("User"))
+        pubsub["0"].subscribers.add(subscriber("User 0"))
 
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
@@ -394,7 +394,7 @@ def describe_mutation():
 
         assert received == {
             "User": {"user": user, "mutation": MutationEnum.DELETED.value},
-            "User_0": {"user": user, "mutation": MutationEnum.DELETED.value},
+            "User 0": {"user": user, "mutation": MutationEnum.DELETED.value},
         }
 
 
@@ -414,7 +414,6 @@ def describe_subscription():
         subscription_one = await subscribe(
             schema, parse(query), context_value=context, variable_values=variables
         )
-
         assert isinstance(subscription_one, MapAsyncIterator)
 
         query = """
@@ -427,14 +426,13 @@ def describe_subscription():
             """
 
         subscription_all = await subscribe(schema, parse(query), context_value=context)
-
         assert isinstance(subscription_all, MapAsyncIterator)
 
         received_one = []
         received_all = []
 
         async def mutate_users():
-            await sleep(0)  # make sure receivers are running
+            await sleep(0)  # make sure subscribers are running
             await graphql(
                 schema,
                 """

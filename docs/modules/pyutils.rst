@@ -13,8 +13,8 @@ PyUtils
 .. autofunction:: did_you_mean
 .. autofunction:: register_description
 .. autofunction:: unregister_description
-.. autoclass:: EventEmitter
-.. autoclass:: EventEmitterAsyncIterator
+.. autoclass:: SimplePubSub
+.. autoclass:: SimplePubSubIterator
 .. autofunction:: identity_func
 .. autofunction:: inspect
 .. autofunction:: is_finite

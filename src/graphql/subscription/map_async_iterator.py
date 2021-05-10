@@ -30,9 +30,11 @@ class MapAsyncIterator:
         self._close_event = Event()
 
     def __aiter__(self) -> "MapAsyncIterator":
+        """Get the iterator object."""
         return self
 
     async def __anext__(self) -> Any:
+        """Get the next value of the iterator."""
         if self.is_closed:
             if not isasyncgen(self.iterator):
                 raise StopAsyncIteration
@@ -79,6 +81,7 @@ class MapAsyncIterator:
         value: Optional[BaseException] = None,
         traceback: Optional[TracebackType] = None,
     ) -> None:
+        """Throw an exception into the asynchronous iterator."""
         if not self.is_closed:
             athrow = getattr(self.iterator, "athrow", None)
             if athrow:
@@ -98,6 +101,7 @@ class MapAsyncIterator:
                 raise value
 
     async def aclose(self) -> None:
+        """Close the iterator."""
         if not self.is_closed:
             aclose = getattr(self.iterator, "aclose", None)
             if aclose:
@@ -109,10 +113,12 @@ class MapAsyncIterator:
 
     @property
     def is_closed(self) -> bool:
+        """Check whether the iterator is closed."""
         return self._close_event.is_set()
 
     @is_closed.setter
     def is_closed(self, value: bool) -> None:
+        """Mark the iterator as closed."""
         if value:
             self._close_event.set()
         else:

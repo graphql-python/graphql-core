@@ -274,7 +274,7 @@ from .execution import (
     MiddlewareManager,
 )
 
-from .subscription import subscribe, create_source_event_stream
+from .subscription import subscribe, create_source_event_stream, MapAsyncIterator
 
 
 # Validate GraphQL queries.
@@ -622,6 +622,7 @@ __all__ = [
     "MiddlewareManager",
     "subscribe",
     "create_source_event_stream",
+    "MapAsyncIterator",
     "validate",
     "ValidationContext",
     "ValidationRule",

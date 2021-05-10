@@ -1,11 +1,11 @@
 import asyncio
 
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable
 
 from pytest import mark, raises
 
 from graphql.language import parse, DocumentNode
-from graphql.pyutils import EventEmitter, EventEmitterAsyncIterator
+from graphql.pyutils import SimplePubSub
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -16,7 +16,9 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
-from graphql.subscription import subscribe
+from graphql.subscription import subscribe, MapAsyncIterator
+
+Email = Dict  # should become a TypedDict once we require Python 3.8
 
 EmailType = GraphQLObjectType(
     "Email",
@@ -95,40 +97,31 @@ default_subscription_ast = parse(
 )
 
 
-async def create_subscription(
-    pubsub: EventEmitter,
+def create_subscription(
+    pubsub: SimplePubSub,
     schema: GraphQLSchema = email_schema,
     document: DocumentNode = default_subscription_ast,
 ):
+    emails: List[Email] = [
+        {
+            "from": "joe@graphql.org",
+            "subject": "Hello",
+            "message": "Hello World",
+            "unread": False,
+        }
+    ]
+
+    def transform(new_email):
+        emails.append(new_email)
+
+        return {"importantEmail": {"email": new_email, "inbox": data["inbox"]}}
+
     data: Dict[str, Any] = {
-        "inbox": {
-            "emails": [
-                {
-                    "from": "joe@graphql.org",
-                    "subject": "Hello",
-                    "message": "Hello World",
-                    "unread": False,
-                }
-            ]
-        },
-        "importantEmail": lambda _info, priority=None: EventEmitterAsyncIterator(
-            pubsub, "importantEmail"
-        ),
+        "inbox": {"emails": emails},
+        "importantEmail": pubsub.get_subscriber(transform),
     }
 
-    def send_important_email(new_email: Any) -> bool:
-        data["inbox"]["emails"].append(new_email)
-        # Returns True if the event was consumed by a subscriber.
-        return pubsub.emit(
-            "importantEmail",
-            {"importantEmail": {"email": new_email, "inbox": data["inbox"]}},
-        )
-
-    # `subscribe` yields AsyncIterator or ExecutionResult
-    return (
-        send_important_email,
-        await subscribe(schema=schema, document=document, root_value=data),
-    )
+    return subscribe(schema, document, data)
 
 
 # Check all error cases when initializing the subscription.
@@ -157,8 +150,8 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def accepts_multiple_subscription_fields_defined_in_schema():
-        pubsub = EventEmitter()
-        SubscriptionTypeMultiple = GraphQLObjectType(
+        pubsub = SimplePubSub()
+        subscription_type_multiple = GraphQLObjectType(
             "Subscription",
             {
                 "importantEmail": GraphQLField(EmailEventType),
@@ -167,14 +160,14 @@ def describe_subscription_initialization_phase():
         )
 
         test_schema = GraphQLSchema(
-            query=QueryType, subscription=SubscriptionTypeMultiple
+            query=QueryType, subscription=subscription_type_multiple
         )
 
-        send_important_email, subscription = await create_subscription(
-            pubsub, test_schema
-        )
+        subscription = await create_subscription(pubsub, test_schema)
 
-        send_important_email(
+        assert isinstance(subscription, MapAsyncIterator)
+
+        pubsub.emit(
             {
                 "from": "yuzhi@graphql.org",
                 "subject": "Alright",
@@ -187,10 +180,10 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def accepts_type_definition_with_sync_subscribe_function():
-        pubsub = EventEmitter()
+        pubsub = SimplePubSub()
 
-        def subscribe_email(_inbox, _info):
-            return EventEmitterAsyncIterator(pubsub, "importantEmail")
+        async def get_subscriber(*_args):
+            return pubsub.get_subscriber()
 
         schema = GraphQLSchema(
             query=QueryType,
@@ -198,15 +191,15 @@ def describe_subscription_initialization_phase():
                 "Subscription",
                 {
                     "importantEmail": GraphQLField(
-                        GraphQLString, subscribe=subscribe_email
+                        GraphQLString, subscribe=get_subscriber
                     )
                 },
             ),
         )
 
         subscription = await subscribe(
-            schema=schema,
-            document=parse(
+            schema,
+            parse(
                 """
             subscription {
               importantEmail
@@ -215,17 +208,17 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        pubsub.emit("importantEmail", {"importantEmail": {}})
+        pubsub.emit({"importantEmail": {}})
 
         await anext(subscription)
 
     @mark.asyncio
     async def accepts_type_definition_with_async_subscribe_function():
-        pubsub = EventEmitter()
+        pubsub = SimplePubSub()
 
-        async def subscribe_email(_inbox, _info):
+        async def get_subscriber(*_args):
             await asyncio.sleep(0)
-            return EventEmitterAsyncIterator(pubsub, "importantEmail")
+            return pubsub.get_subscriber()
 
         schema = GraphQLSchema(
             query=QueryType,
@@ -233,15 +226,15 @@ def describe_subscription_initialization_phase():
                 "Subscription",
                 {
                     "importantEmail": GraphQLField(
-                        GraphQLString, subscribe=subscribe_email
+                        GraphQLString, subscribe=get_subscriber
                     )
                 },
             ),
         )
 
         subscription = await subscribe(
-            schema=schema,
-            document=parse(
+            schema,
+            parse(
                 """
             subscription {
               importantEmail
@@ -250,7 +243,7 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        pubsub.emit("importantEmail", {"importantEmail": {}})
+        pubsub.emit({"importantEmail": {}})
 
         await anext(subscription)
 
@@ -258,15 +251,15 @@ def describe_subscription_initialization_phase():
     async def should_only_resolve_the_first_field_of_invalid_multi_field():
         did_resolve = {"importantEmail": False, "nonImportantEmail": False}
 
-        def subscribe_important(_inbox, _info):
+        def subscribe_important(*_args):
             did_resolve["importantEmail"] = True
-            return EventEmitterAsyncIterator(EventEmitter(), "event")
+            return SimplePubSub().get_subscriber()
 
-        def subscribe_non_important(_inbox, _info):  # pragma: no cover
+        def subscribe_non_important(*_args):  # pragma: no cover
             did_resolve["nonImportantEmail"] = True
-            return EventEmitterAsyncIterator(EventEmitter(), "event")
+            return SimplePubSub().get_subscriber()
 
-        SubscriptionTypeMultiple = GraphQLObjectType(
+        subscription_type_multiple = GraphQLObjectType(
             "Subscription",
             {
                 "importantEmail": GraphQLField(
@@ -278,11 +271,11 @@ def describe_subscription_initialization_phase():
             },
         )
 
-        schema = GraphQLSchema(query=QueryType, subscription=SubscriptionTypeMultiple)
+        schema = GraphQLSchema(query=QueryType, subscription=subscription_type_multiple)
 
         subscription = await subscribe(
-            schema=schema,
-            document=parse(
+            schema,
+            parse(
                 """
             subscription {
               importantEmail
@@ -348,9 +341,9 @@ def describe_subscription_initialization_phase():
             """
         )
 
-        pubsub = EventEmitter()
+        pubsub = SimplePubSub()
 
-        subscription = (await create_subscription(pubsub, document=ast))[1]
+        subscription = await create_subscription(pubsub, email_schema, ast)
 
         assert subscription == (
             None,
@@ -382,7 +375,7 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        pubsub = EventEmitter()
+        pubsub = SimplePubSub()
 
         with raises(TypeError) as exc_info:
             await create_subscription(pubsub, invalid_email_schema)
@@ -489,15 +482,19 @@ def describe_subscription_initialization_phase():
 def describe_subscription_publish_phase():
     @mark.asyncio
     async def produces_a_payload_for_multiple_subscribe_in_same_subscription():
-        pubsub = EventEmitter()
-        send_important_email, subscription = await create_subscription(pubsub)
-        second = await create_subscription(pubsub)
+        pubsub = SimplePubSub()
+
+        subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
+
+        second_subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
 
         payload1 = anext(subscription)
-        payload2 = anext(second[1])
+        payload2 = anext(second_subscription)
 
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -520,15 +517,16 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def produces_a_payload_per_subscription_event():
-        pubsub = EventEmitter()
-        send_important_email, subscription = await create_subscription(pubsub)
+        pubsub = SimplePubSub()
+        subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
 
         # Wait for the next subscription payload.
         payload = anext(subscription)
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -552,7 +550,7 @@ def describe_subscription_publish_phase():
 
         # Another new email arrives, before subscription.___anext__ is called.
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "hyo@graphql.org",
                     "subject": "Tools",
@@ -580,7 +578,7 @@ def describe_subscription_publish_phase():
 
         # Which may result in disconnecting upstream services as well.
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "adam@graphql.org",
                     "subject": "Important",
@@ -597,13 +595,15 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def produces_a_payload_when_there_are_multiple_events():
-        pubsub = EventEmitter()
-        send_important_email, subscription = await create_subscription(pubsub)
+        pubsub = SimplePubSub()
+        subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
+
         payload = anext(subscription)
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -628,7 +628,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright 2",
@@ -651,13 +651,15 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_not_trigger_when_subscription_is_already_done():
-        pubsub = EventEmitter()
-        send_important_email, subscription = await create_subscription(pubsub)
+        pubsub = SimplePubSub()
+        subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
+
         payload = anext(subscription)
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -683,7 +685,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright 2",
@@ -699,13 +701,15 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_not_trigger_when_subscription_is_thrown():
-        pubsub = EventEmitter()
-        send_important_email, subscription = await create_subscription(pubsub)
+        pubsub = SimplePubSub()
+        subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
+
         payload = anext(subscription)
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -735,7 +739,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright 2",
@@ -751,14 +755,15 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def event_order_is_correct_for_multiple_publishes():
-        pubsub = EventEmitter()
-        send_important_email, subscription = await create_subscription(pubsub)
+        pubsub = SimplePubSub()
+        subscription = await create_subscription(pubsub)
+        assert isinstance(subscription, MapAsyncIterator)
 
         payload = anext(subscription)
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Message",
@@ -771,7 +776,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            send_important_email(
+            pubsub.emit(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Message 2",

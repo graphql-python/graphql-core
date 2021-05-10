@@ -10,6 +10,8 @@ omit =
 [report]
 exclude_lines =
     pragma: no cover
+    except ImportError:
+    \# Python <
     raise NotImplementedError
     raise TypeError\(f?"Unexpected
     assert False,
