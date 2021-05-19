@@ -285,6 +285,15 @@ def describe_coerce_input_value():
             result = _coerce_value([1, 2, 3], TestList)
             assert expect_value(result) == [1, 2, 3]
 
+        def returns_no_error_for_a_valid_iterable_input():
+            def list_generator():
+                yield 1
+                yield 2
+                yield 3
+
+            result = _coerce_value(list_generator(), TestList)
+            assert expect_value(result) == [1, 2, 3]
+
         def returns_an_error_for_an_invalid_input():
             result = _coerce_value([1, "b", True, 4], TestList)
             assert expect_errors(result) == [

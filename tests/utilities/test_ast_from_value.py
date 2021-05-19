@@ -207,6 +207,21 @@ def describe_ast_from_value():
             values=[EnumValueNode(value="HELLO"), EnumValueNode(value="GOODBYE")]
         )
 
+        def list_generator():
+            yield 1
+            yield 2
+            yield 3
+
+        assert ast_from_value(list_generator(), GraphQLList(GraphQLInt)) == (
+            ListValueNode(
+                values=[
+                    IntValueNode(value="1"),
+                    IntValueNode(value="2"),
+                    IntValueNode(value="3"),
+                ]
+            )
+        )
+
     def converts_list_singletons():
         assert ast_from_value("FOO", GraphQLList(GraphQLString)) == StringValueNode(
             value="FOO"
