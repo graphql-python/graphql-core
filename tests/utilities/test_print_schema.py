@@ -504,7 +504,7 @@ def describe_type_system_printer():
             """
         )
 
-    def prints_custom_scalar_with_speicified_by_url():
+    def prints_custom_scalar_with_specified_by_url():
         foo_type = GraphQLScalarType(
             name="Foo", specified_by_url="https://example.com/foo_spec"
         )

@@ -73,6 +73,18 @@ Directive locations are specified using the following enumeration:
 
 .. autoclass:: DirectiveLocation
 
+You can also check the type of nodes with the following predicates:
+
+.. autofunction:: is_definition_node
+.. autofunction:: is_executable_definition_node
+.. autofunction:: is_selection_node
+.. autofunction:: is_value_node
+.. autofunction:: is_type_node
+.. autofunction:: is_type_system_definition_node
+.. autofunction:: is_type_definition_node
+.. autofunction:: is_type_system_extension_node
+.. autofunction:: is_type_extension_node
+
 Lexer
 -----
 
@@ -93,6 +105,11 @@ Parser
 .. autofunction:: parse
 .. autofunction:: parse_type
 .. autofunction:: parse_value
+
+Printer
+-------
+
+.. autofunction:: print_ast
 
 Source
 ------
