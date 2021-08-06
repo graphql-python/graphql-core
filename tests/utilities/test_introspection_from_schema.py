@@ -25,7 +25,8 @@ def describe_introspection_from_schema():
                 )
             },
             description="This is a simple type",
-        )
+        ),
+        description='This is a simple schema'
     )
 
     def converts_a_simple_schema():
@@ -33,6 +34,7 @@ def describe_introspection_from_schema():
 
         assert introspection_to_sdl(introspection) == dedent(
             '''
+            """This is a simple schema"""
             schema {
               query: Simple
             }
