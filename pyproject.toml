@@ -51,7 +51,7 @@ pytest-describe = "^1.0"
 pytest-timeout = "^1.4"
 black = [
     {version = "20.8b1", python = "<3.6.2"},
-    {version = "21.6b0", python = ">=3.6.2"}
+    {version = "21.7b0", python = ">=3.6.2"}
 ]
 flake8 = "^3.9"
 mypy = "0.812"
@@ -60,10 +60,10 @@ sphinx = "^3.5"
 sphinx_rtd_theme = ">=0.5,<1"
 check-manifest = ">=0.46,<1"
 bump2version = ">=1.0,<2"
-tox = "^3.23"
+tox = "^3.24"
 
 [tool.black]
-target-version = ['py36', 'py37', 'py38']
+target-version = ['py36', 'py37', 'py38', 'py39']
 
 [build-system]
 requires = ["poetry_core>=1,<2"]
