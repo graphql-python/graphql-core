@@ -17,6 +17,7 @@ def introspection_from_schema(
     specified_by_url: bool = True,
     directive_is_repeatable: bool = True,
     schema_description: bool = True,
+    input_value_deprecation: bool = True,
 ) -> IntrospectionSchema:
     """Build an IntrospectionQuery from a GraphQLSchema
 
@@ -28,7 +29,11 @@ def introspection_from_schema(
     """
     document = parse(
         get_introspection_query(
-            descriptions, specified_by_url, directive_is_repeatable, schema_description
+            descriptions,
+            specified_by_url,
+            directive_is_repeatable,
+            schema_description,
+            input_value_deprecation,
         )
     )
 

@@ -1,4 +1,5 @@
 from textwrap import dedent
+from typing import Optional
 
 __all__ = ["get_introspection_query"]
 
@@ -8,6 +9,7 @@ def get_introspection_query(
     specified_by_url: bool = False,
     directive_is_repeatable: bool = False,
     schema_description: bool = False,
+    input_value_deprecation: bool = False,
 ) -> str:
     """Get a query for introspection.
 
@@ -19,6 +21,10 @@ def get_introspection_query(
     maybe_specified_by_url = "specifiedByUrl" if specified_by_url else ""
     maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     maybe_schema_description = maybe_description if schema_description else ""
+
+    def input_deprecation(string: str) -> Optional[str]:
+        return string if input_value_deprecation else ""
+
     return dedent(
         f"""
         query IntrospectionQuery {{
@@ -35,7 +41,7 @@ def get_introspection_query(
               {maybe_description}
               {maybe_directive_is_repeatable}
               locations
-              args {{
+              args{input_deprecation("(includeDeprecated: true)")} {{
                 ...InputValue
               }}
             }}
@@ -50,7 +56,7 @@ def get_introspection_query(
           fields(includeDeprecated: true) {{
             name
             {maybe_description}
-            args {{
+            args{input_deprecation("(includeDeprecated: true)")} {{
               ...InputValue
             }}
             type {{
@@ -59,7 +65,7 @@ def get_introspection_query(
             isDeprecated
             deprecationReason
           }}
-          inputFields {{
+          inputFields{input_deprecation("(includeDeprecated: true)")} {{
             ...InputValue
           }}
           interfaces {{
@@ -81,6 +87,8 @@ def get_introspection_query(
           {maybe_description}
           type {{ ...TypeRef }}
           defaultValue
+          {input_deprecation("isDeprecated")}
+          {input_deprecation("deprecationReason")}
         }}
 
         fragment TypeRef on __Type {{

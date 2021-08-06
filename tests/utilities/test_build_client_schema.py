@@ -494,6 +494,14 @@ def describe_type_system_build_schema_from_introspection():
     def builds_a_schema_aware_of_deprecation():
         sdl = dedent(
             '''
+            directive @someDirective(
+              """This is a shiny new argument"""
+              shinyArg: SomeInputObject
+
+              """This was our design mistake :("""
+              oldArg: String @deprecated(reason: "Use shinyArg")
+            ) on QUERY
+
             enum Color {
               """So rosy"""
               RED
@@ -508,15 +516,34 @@ def describe_type_system_build_schema_from_introspection():
               MAUVE @deprecated(reason: "No longer in fashion")
             }
 
+            input SomeInputObject {
+              """Nothing special about it, just deprecated for some unknown reason"""
+              oldField: String @deprecated(reason: "Don't use it, use newField instead!")
+
+              """Same field but with a new name"""
+              newField: String
+            }
+
             type Query {
               """This is a shiny string field"""
               shinyString: String
 
               """This is a deprecated string field"""
               deprecatedString: String @deprecated(reason: "Use shinyString")
+
+              """Color of a week"""
               color: Color
+
+              """Some random field"""
+              someField(
+                """This is a shiny new argument"""
+                shinyArg: SomeInputObject
+
+                """This was our design mistake :("""
+                oldArg: String @deprecated(reason: "Use shinyArg")
+              ): String
             }
-            '''
+            '''  # noqa: E501
         )
 
         assert cycle_introspection(sdl) == sdl
@@ -524,14 +551,20 @@ def describe_type_system_build_schema_from_introspection():
     def builds_a_schema_with_empty_deprecation_reasons():
         sdl = dedent(
             """
+            directive @someDirective(someArg: SomeInputObject @deprecated(reason: "")) on QUERY
+
             type Query {
-              someField: String @deprecated(reason: "")
+              someField(someArg: SomeInputObject @deprecated(reason: "")): SomeEnum @deprecated(reason: "")
+            }
+
+            input SomeInputObject {
+              someInputField: String @deprecated(reason: "")
             }
 
             enum SomeEnum {
               SOME_VALUE @deprecated(reason: "")
             }
-            """
+            """  # noqa: E501
         )
 
         assert cycle_introspection(sdl) == sdl

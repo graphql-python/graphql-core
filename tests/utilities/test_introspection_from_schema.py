@@ -26,7 +26,7 @@ def describe_introspection_from_schema():
             },
             description="This is a simple type",
         ),
-        description='This is a simple schema'
+        description="This is a simple schema",
     )
 
     def converts_a_simple_schema():

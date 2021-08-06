@@ -47,3 +47,30 @@ def describe_get_introspection_query():
         ExcpectIntrospectionQuery().to_not_match("specifiedByUrl")
         ExcpectIntrospectionQuery(specified_by_url=True).to_match("specifiedByUrl")
         ExcpectIntrospectionQuery(specified_by_url=False).to_not_match("specifiedByUrl")
+
+    def includes_is_deprecated_field_on_input_values():
+        ExcpectIntrospectionQuery().to_match("isDeprecated", 2)
+        ExcpectIntrospectionQuery(input_value_deprecation=True).to_match(
+            "isDeprecated", 3
+        )
+        ExcpectIntrospectionQuery(input_value_deprecation=False).to_match(
+            "isDeprecated", 2
+        )
+
+    def includes_deprecation_reason_field_on_input_values():
+        ExcpectIntrospectionQuery().to_match("deprecationReason", 2)
+        ExcpectIntrospectionQuery(input_value_deprecation=True).to_match(
+            "deprecationReason", 3
+        )
+        ExcpectIntrospectionQuery(input_value_deprecation=False).to_match(
+            "deprecationReason", 2
+        )
+
+    def includes_deprecated_input_field_and_args():
+        ExcpectIntrospectionQuery().to_match("includeDeprecated: true", 2)
+        ExcpectIntrospectionQuery(input_value_deprecation=True).to_match(
+            "includeDeprecated: true", 5
+        )
+        ExcpectIntrospectionQuery(input_value_deprecation=False).to_match(
+            "includeDeprecated: true", 2
+        )

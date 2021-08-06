@@ -267,6 +267,7 @@ def build_client_schema(
             type_,
             default_value=default_value,
             description=argument_introspection.get("description"),
+            deprecation_reason=argument_introspection.get("deprecationReason"),
         )
 
     def build_input_value_def_map(
@@ -298,6 +299,7 @@ def build_client_schema(
             type_,
             default_value=default_value,
             description=input_value_introspection.get("description"),
+            deprecation_reason=input_value_introspection.get("deprecationReason"),
         )
 
     def build_directive(directive_introspection: Dict) -> GraphQLDirective:
