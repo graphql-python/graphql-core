@@ -4,6 +4,10 @@ from graphql.utilities import separate_operations
 from ..utils import dedent
 
 
+def separated_asts(ast):
+    return {name: print_ast(node) for name, node in separate_operations(ast).items()}
+
+
 def describe_separate_operations():
     def separates_one_ast_into_multiple_maintaining_document_order():
         ast = parse(
@@ -46,73 +50,67 @@ def describe_separate_operations():
             """
         )
 
-        separated_asts = {
-            name: print_ast(node) for name, node in separate_operations(ast).items()
-        }
-
-        assert list(separated_asts) == ["", "One", "Two"]
-
-        assert separated_asts == {
+        assert separated_asts(ast) == {
             "": dedent(
                 """
-            {
-              ...Y
-              ...X
-            }
+                {
+                  ...Y
+                  ...X
+                }
 
-            fragment X on T {
-              fieldX
-            }
+                fragment X on T {
+                  fieldX
+                }
 
-            fragment Y on T {
-              fieldY
-            }
-            """
+                fragment Y on T {
+                  fieldY
+                }
+                """
             ),
             "One": dedent(
                 """
-            query One {
-              foo
-              bar
-              ...A
-              ...X
-            }
+                query One {
+                  foo
+                  bar
+                  ...A
+                  ...X
+                }
 
-            fragment A on T {
-              field
-              ...B
-            }
+                fragment A on T {
+                  field
+                  ...B
+                }
 
-            fragment X on T {
-              fieldX
-            }
+                fragment X on T {
+                  fieldX
+                }
 
-            fragment B on T {
-              something
-            }
-            """
+                fragment B on T {
+                  something
+                }
+                """
             ),
             "Two": dedent(
                 """
-            fragment A on T {
-              field
-              ...B
-            }
+                fragment A on T {
+                  field
+                  ...B
+                }
 
-            query Two {
-              ...A
-              ...Y
-              baz
-            }
+                query Two {
+                  ...A
+                  ...Y
+                  baz
+                }
 
-            fragment Y on T {
-              fieldY
-            }
+                fragment Y on T {
+                  fieldY
+                }
 
-            fragment B on T {
-              something
-            }
-            """
+                fragment B on T {
+                  something
+                }
+                """
             ),
         }
 
@@ -137,41 +135,110 @@ def describe_separate_operations():
             """
         )
 
-        separated_asts = {
-            name: print_ast(node) for name, node in separate_operations(ast).items()
-        }
-
-        assert list(separated_asts) == ["One", "Two"]
-
-        assert separated_asts == {
+        assert separated_asts(ast) == {
             "One": dedent(
                 """
-            query One {
-              ...A
-            }
+                query One {
+                  ...A
+                }
 
-            fragment A on T {
-              ...B
-            }
+                fragment A on T {
+                  ...B
+                }
 
-            fragment B on T {
-              ...A
-            }
-            """
+                fragment B on T {
+                  ...A
+                }
+                """
             ),
             "Two": dedent(
                 """
-            fragment A on T {
-              ...B
+                fragment A on T {
+                  ...B
+                }
+
+                fragment B on T {
+                  ...A
+                }
+
+                query Two {
+                  ...B
+                }
+                """
+            ),
+        }
+
+    def distinguishes_query_and_fragment_names():
+        ast = parse(
+            """
+            {
+              ...NameClash
             }
 
-            fragment B on T {
-              ...A
+            fragment NameClash on T {
+              oneField
             }
 
-            query Two {
-              ...B
+            query NameClash {
+              ...ShouldBeSkippedInFirstQuery
+            }
+
+            fragment ShouldBeSkippedInFirstQuery on T {
+              twoField
             }
             """
+        )
+
+        assert separated_asts(ast) == {
+            "": dedent(
+                """
+                {
+                  ...NameClash
+                }
+
+                fragment NameClash on T {
+                  oneField
+                }
+                """
             ),
+            "NameClash": dedent(
+                """
+                query NameClash {
+                  ...ShouldBeSkippedInFirstQuery
+                }
+
+                fragment ShouldBeSkippedInFirstQuery on T {
+                  twoField
+                }
+                """
+            ),
+        }
+
+    def handles_unknown_fragments():
+        ast = parse(
+            """
+            {
+              ...Unknown
+              ...Known
+            }
+
+            fragment Known on T {
+              someField
+            }
+            """
+        )
+
+        assert separated_asts(ast) == {
+            "": dedent(
+                """
+                {
+                  ...Unknown
+                  ...Known
+                }
+
+                fragment Known on T {
+                  someField
+                }
+                """
+            )
         }
