@@ -46,12 +46,15 @@ def describe_separate_operations():
             """
         )
 
-        separated_asts = separate_operations(ast)
+        separated_asts = {
+            name: print_ast(node) for name, node in separate_operations(ast).items()
+        }
 
         assert list(separated_asts) == ["", "One", "Two"]
 
-        assert print_ast(separated_asts[""]) == dedent(
-            """
+        assert separated_asts == {
+            "": dedent(
+                """
             {
               ...Y
               ...X
@@ -65,10 +68,9 @@ def describe_separate_operations():
               fieldY
             }
             """
-        )
-
-        assert print_ast(separated_asts["One"]) == dedent(
-            """
+            ),
+            "One": dedent(
+                """
             query One {
               foo
               bar
@@ -89,10 +91,9 @@ def describe_separate_operations():
               something
             }
             """
-        )
-
-        assert print_ast(separated_asts["Two"]) == dedent(
-            """
+            ),
+            "Two": dedent(
+                """
             fragment A on T {
               field
               ...B
@@ -112,7 +113,8 @@ def describe_separate_operations():
               something
             }
             """
-        )
+            ),
+        }
 
     def survives_circular_dependencies():
         ast = parse(
@@ -135,12 +137,15 @@ def describe_separate_operations():
             """
         )
 
-        separated_asts = separate_operations(ast)
+        separated_asts = {
+            name: print_ast(node) for name, node in separate_operations(ast).items()
+        }
 
         assert list(separated_asts) == ["One", "Two"]
 
-        assert print_ast(separated_asts["One"]) == dedent(
-            """
+        assert separated_asts == {
+            "One": dedent(
+                """
             query One {
               ...A
             }
@@ -153,10 +158,9 @@ def describe_separate_operations():
               ...A
             }
             """
-        )
-
-        assert print_ast(separated_asts["Two"]) == dedent(
-            """
+            ),
+            "Two": dedent(
+                """
             fragment A on T {
               ...B
             }
@@ -169,4 +173,5 @@ def describe_separate_operations():
               ...B
             }
             """
-        )
+            ),
+        }
