@@ -400,8 +400,6 @@ from .utilities import (
     DangerousChangeType,
     find_breaking_changes,
     find_dangerous_changes,
-    # Report all deprecated usages within a GraphQL document (deprecated).
-    find_deprecated_usages,
 )
 
 # Utilities for compatibility with the Python language.
@@ -698,7 +696,6 @@ __all__ = [
     "is_valid_name_error",
     "find_breaking_changes",
     "find_dangerous_changes",
-    "find_deprecated_usages",
     "BreakingChange",
     "BreakingChangeType",
     "DangerousChange",

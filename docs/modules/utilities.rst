@@ -106,7 +106,3 @@ Compare two GraphQLSchemas and detect breaking changes:
 .. autoclass:: BreakingChangeType
 .. autoclass:: DangerousChange
 .. autoclass:: DangerousChangeType
-
-Report all deprecated usages within a GraphQL document:
-
-.. autofunction:: find_deprecated_usages

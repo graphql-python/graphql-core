@@ -81,9 +81,6 @@ from .find_breaking_changes import (
     find_dangerous_changes,
 )
 
-# Report all deprecated usages within a GraphQL document (deprecated).
-from .find_deprecated_usages import find_deprecated_usages
-
 __all__ = [
     "BreakingChange",
     "BreakingChangeType",
@@ -102,7 +99,6 @@ __all__ = [
     "extend_schema",
     "find_breaking_changes",
     "find_dangerous_changes",
-    "find_deprecated_usages",
     "get_description",
     "get_introspection_query",
     "get_operation_ast",
