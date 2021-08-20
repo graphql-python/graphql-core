@@ -46,7 +46,7 @@ python = "^3.6"
 pytest = "^6.2"
 pytest-asyncio = ">=0.15,<1"
 pytest-benchmark = "^3.4"
-pytest-cov = "^2.10"
+pytest-cov = "^2.12"
 pytest-describe = "^2.0"
 pytest-timeout = "^1.4"
 black = [
