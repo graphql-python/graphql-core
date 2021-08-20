@@ -792,13 +792,3 @@ def describe_schema_parser():
 
     def parses_kitchen_sink_schema(kitchen_sink_sdl):  # noqa: F811
         assert parse(kitchen_sink_sdl)
-
-    def disallow_legacy_sdl_empty_fields_supports_type_with_empty_fields():
-        assert_syntax_error("type Hello { }", "Expected Name, found '}'.", (1, 14))
-
-    def disallow_legacy_sdl_implements_interfaces():
-        assert_syntax_error(
-            "type Hello implements Wo rld { field: String }",
-            "Unexpected Name 'rld'.",
-            (1, 26),
-        )

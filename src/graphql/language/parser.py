@@ -658,10 +658,11 @@ class Parser:
 
     def parse_implements_interfaces(self) -> List[NamedTypeNode]:
         """ImplementsInterfaces"""
-        if not self.expect_optional_keyword("implements"):
-            return []
-
-        return self.delimited_many(TokenKind.AMP, self.parse_named_type)
+        return (
+            self.delimited_many(TokenKind.AMP, self.parse_named_type)
+            if self.expect_optional_keyword("implements")
+            else []
+        )
 
     def parse_fields_definition(self) -> List[FieldDefinitionNode]:
         """FieldsDefinition: {FieldDefinition+}"""
