@@ -58,7 +58,6 @@ from ..type import (
     is_abstract_type,
     is_leaf_type,
     is_list_type,
-    is_named_type,
     is_non_null_type,
     is_object_type,
 )
@@ -896,10 +895,10 @@ class ExecutionContext:
                 )
                 if self.is_awaitable(value):
                     return await value  # type: ignore
-                return value
+                return value  # pragma: no cover
 
             return await_complete_object_value()
-        runtime_type = cast(Optional[Union[GraphQLObjectType, str]], runtime_type)
+        runtime_type = cast(Optional[str], runtime_type)
 
         return self.complete_object_value(
             self.ensure_valid_runtime_type(
@@ -913,13 +912,13 @@ class ExecutionContext:
 
     def ensure_valid_runtime_type(
         self,
-        runtime_type_or_name: Any,
+        runtime_type_name: Any,
         return_type: GraphQLAbstractType,
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
-        if runtime_type_or_name is None:
+        if runtime_type_name is None:
             raise GraphQLError(
                 f"Abstract type '{return_type.name}' must resolve"
                 " to an Object type at runtime"
@@ -930,12 +929,11 @@ class ExecutionContext:
                 field_nodes,
             )
 
-        # temporary workaround until support for passing object types will be removed
-        runtime_type_name = (
-            runtime_type_or_name.name
-            if is_named_type(runtime_type_or_name)
-            else runtime_type_or_name
-        )
+        if is_object_type(runtime_type_name):  # pragma: no cover
+            raise GraphQLError(
+                "Support for returning GraphQLObjectType from resolve_type was"
+                " removed in GraphQL-core 3.2, please return type name instead."
+            )
 
         if not isinstance(runtime_type_name, str):
             raise GraphQLError(
@@ -1253,7 +1251,7 @@ def get_typename(value: Any) -> Optional[str]:
 
 def default_type_resolver(
     value: Any, info: GraphQLResolveInfo, abstract_type: GraphQLAbstractType
-) -> AwaitableOrValue[Optional[Union[GraphQLObjectType, str]]]:
+) -> AwaitableOrValue[Optional[str]]:
     """Default type resolver function.
 
     If a resolve_type function is not given, then a default resolve behavior is used
@@ -1291,7 +1289,7 @@ def default_type_resolver(
 
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
-        async def get_type() -> Optional[Union[GraphQLObjectType, str]]:
+        async def get_type() -> Optional[str]:
             is_type_of_results = await gather(*awaitable_is_type_of_results)
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
