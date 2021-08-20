@@ -127,9 +127,10 @@ graphql_classes = {
 
 # ignore the following undocumented or internal references:
 ignore_references = set('''
-GNT GT T
+GNT GT KT T VT
 enum.Enum
 traceback
+types.TracebackType
 asyncio.events.AbstractEventLoop
 graphql.subscription.map_async_iterator.MapAsyncIterator
 graphql.type.schema.InterfaceImplementations
@@ -151,20 +152,17 @@ def on_missing_reference(app, env, node, contnode):
     if target in ignore_references:
         return contnode
     typ = node.get('reftype')
+    name = target.rsplit('.', 1)[-1]
+    if name in ('GT', 'GNT', 'KT', 'T', 'VT'):
+        return contnode
     if typ == 'obj':
-        # workaround for https://github.com/sphinx-doc/sphinx/issues/8818
-        if target in ('Any', 'Optional', 'Union'):
-            return contnode
-        base_module, target = target.split('.', 1)
-        name = target.rsplit('.', 1)[-1]
-        if name in ('T', 'GT', 'GNT', 'KT', 'VT'):
-            return contnode
+        if target.startswith('typing.'):
+            if name in ('Any', 'Optional', 'Union'):
+                return contnode
     if typ != 'class':
         return None
     if '.' in target:  # maybe too specific
         base_module, target = target.split('.', 1)
-        if base_module == 'typing':
-            return contnode
         if base_module == 'graphql':
             if '.' not in target:
                 return None
