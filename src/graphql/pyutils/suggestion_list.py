@@ -1,5 +1,7 @@
 from typing import Collection, Optional, List
 
+from .natural_compare import natural_comparison_key
+
 __all__ = ["suggestion_list"]
 
 
@@ -21,7 +23,10 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
     # noinspection PyShadowingNames
     return sorted(
         options_by_distance,
-        key=lambda option: (options_by_distance.get(option, 0), option),
+        key=lambda option: (
+            options_by_distance.get(option, 0),
+            natural_comparison_key(option),
+        ),
     )
 
 

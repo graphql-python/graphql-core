@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from ..language import DirectiveLocation
-from ..pyutils import inspect, FrozenList
+from ..pyutils import inspect, natural_comparison_key, FrozenList
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -174,7 +174,5 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
 
 def sort_by_name_key(
     type_: Union[GraphQLNamedType, GraphQLDirective, DirectiveLocation]
-) -> Tuple[bool, str]:
-    name = type_.name
-    # GraphQL.JS sorts '_' first using localeCompare
-    return not name.startswith("_"), name
+) -> Tuple:
+    return natural_comparison_key(type_.name)

@@ -14,7 +14,7 @@ from ...type import (
 )
 from ...error import GraphQLError
 from ...language import FieldNode
-from ...pyutils import did_you_mean, suggestion_list
+from ...pyutils import did_you_mean, natural_comparison_key, suggestion_list
 from . import ValidationRule
 
 __all__ = ["FieldsOnCorrectTypeRule"]
@@ -109,9 +109,11 @@ def get_suggested_type_names(
         ):
             return 1
 
-        if type_a.name > type_b.name:
+        name_a = natural_comparison_key(type_a.name)
+        name_b = natural_comparison_key(type_b.name)
+        if name_a > name_b:
             return 1
-        if type_a.name < type_b.name:
+        if name_a < name_b:
             return -1
         return 0
 

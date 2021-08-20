@@ -1,9 +1,8 @@
 from enum import Enum
-from operator import attrgetter
 from typing import Any, Dict, List, NamedTuple, Union, cast
 
 from ..language import print_ast, visit, ObjectValueNode, Visitor
-from ..pyutils import inspect, FrozenList, Undefined
+from ..pyutils import inspect, natural_comparison_key, FrozenList, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLField,
@@ -563,7 +562,10 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
             object_value_node: ObjectValueNode, *_args: Any
         ) -> ObjectValueNode:
             object_value_node.fields = FrozenList(
-                sorted(object_value_node.fields, key=attrgetter("name.value"))
+                sorted(
+                    object_value_node.fields,
+                    key=lambda node: natural_comparison_key(node.name.value),
+                )
             )
             return object_value_node
 

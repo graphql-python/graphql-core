@@ -46,12 +46,14 @@ def describe_suggestion_list():
             ["GraphQL", "graphics"],
         )
 
-    def returns_options_with_the_same_lexical_distance_sorted_lexicographically():
+    def returns_options_with_the_same_lexical_distance_sorted_naturally():
         expect_suggestions("a", ["az", "ax", "ay"], ["ax", "ay", "az"])
 
         expect_suggestions("boo", ["moo", "foo", "zoo"], ["foo", "moo", "zoo"])
 
-    def returns_options_sorted_first_by_lexical_distance_then_lexicographically():
+        expect_suggestions("abc", ["a1", "a12", "a2"], ["a1", "a2", "a12"])
+
+    def returns_options_sorted_first_by_lexical_distance_then_naturally():
         expect_suggestions(
             "csutomer",
             ["store", "customer", "stomer", "some", "more"],
