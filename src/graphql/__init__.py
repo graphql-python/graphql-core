@@ -352,8 +352,6 @@ from .utilities import (
     build_ast_schema,
     # Build a GraphQLSchema from a GraphQL schema language document.
     build_schema,
-    # @deprecated: Get the description from a schema AST node.
-    get_description,
     # Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST.
     extend_schema,
     # Sort a GraphQLSchema.
@@ -674,7 +672,6 @@ __all__ = [
     "build_client_schema",
     "build_ast_schema",
     "build_schema",
-    "get_description",
     "extend_schema",
     "lexicographic_sort_schema",
     "print_schema",

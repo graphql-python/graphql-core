@@ -23,7 +23,7 @@ from .build_client_schema import build_client_schema
 from .build_ast_schema import build_ast_schema, build_schema
 
 # Extend an existing GraphQLSchema from a parsed GraphQL Schema language AST.
-from .extend_schema import extend_schema, get_description
+from .extend_schema import extend_schema
 
 # Sort a GraphQLSchema.
 from .lexicographic_sort_schema import lexicographic_sort_schema
@@ -99,7 +99,6 @@ __all__ = [
     "extend_schema",
     "find_breaking_changes",
     "find_dangerous_changes",
-    "get_description",
     "get_introspection_query",
     "get_operation_ast",
     "get_operation_root_type",

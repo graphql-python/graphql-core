@@ -26,7 +26,6 @@ from ..language import (
     InterfaceTypeExtensionNode,
     ListTypeNode,
     NamedTypeNode,
-    Node,
     NonNullTypeNode,
     ObjectTypeDefinitionNode,
     ObjectTypeExtensionNode,
@@ -87,7 +86,6 @@ from .value_from_ast import value_from_ast
 __all__ = [
     "extend_schema",
     "extend_schema_impl",
-    "get_description",
 ]
 
 
@@ -695,12 +693,3 @@ def get_specified_by_url(
 
     specified_by_url = get_directive_values(GraphQLSpecifiedByDirective, node)
     return specified_by_url["url"] if specified_by_url else None
-
-
-def get_description(node: Node) -> Optional[str]:
-    """@deprecated: Given an ast node, returns its string description."""
-    try:
-        # noinspection PyUnresolvedReferences
-        return node.description.value  # type: ignore
-    except AttributeError:
-        return None
