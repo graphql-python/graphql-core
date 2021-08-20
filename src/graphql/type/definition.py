@@ -548,11 +548,6 @@ class GraphQLField:
     def __copy__(self) -> "GraphQLField":  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
-    @property
-    def is_deprecated(self) -> bool:
-        # this property is officially deprecated, but we still keep it here
-        return self.deprecation_reason is not None
-
 
 class GraphQLResolveInfo(NamedTuple):
     """Collection of information passed to the resolvers.
@@ -1267,11 +1262,6 @@ class GraphQLEnumValue:
 
     def __copy__(self) -> "GraphQLEnumValue":  # pragma: no cover
         return self.__class__(**self.to_kwargs())
-
-    @property
-    def is_deprecated(self) -> bool:
-        # this property is officially deprecated, but we still keep it here
-        return self.deprecation_reason is not None
 
 
 GraphQLInputFieldMap = Dict[str, "GraphQLInputField"]

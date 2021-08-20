@@ -392,12 +392,10 @@ def describe_type_system_objects():
         assert deprecated_field == GraphQLField(
             ScalarType, deprecation_reason="A terrible reason"
         )
-        assert deprecated_field.is_deprecated is True
         assert deprecated_field.deprecation_reason == "A terrible reason"
 
         deprecated_field = TypeWithDeprecatedField.fields["baz"]
         assert deprecated_field == GraphQLField(ScalarType, deprecation_reason="")
-        assert deprecated_field.is_deprecated is True
         assert deprecated_field.deprecation_reason == ""
 
     def accepts_an_object_type_with_output_type_as_field():
@@ -408,7 +406,7 @@ def describe_type_system_objects():
         assert isinstance(field, GraphQLField)
         assert field.type is ScalarType
         assert field.args == {}
-        assert field.is_deprecated is False
+        assert field.deprecation_reason is None
 
     def accepts_an_object_type_with_a_field_function():
         obj_type = GraphQLObjectType(
@@ -422,7 +420,6 @@ def describe_type_system_objects():
         assert field.args == {}
         assert field.resolve is None
         assert field.subscribe is None
-        assert field.is_deprecated is False
         assert field.deprecation_reason is None
         assert field.extensions is None
         assert field.ast_node is None
@@ -462,7 +459,6 @@ def describe_type_system_objects():
         assert arg.ast_node is None
         assert field.resolve is None
         assert field.subscribe is None
-        assert field.is_deprecated is False
         assert field.deprecation_reason is None
         assert field.extensions is None
         assert field.ast_node is None
@@ -587,16 +583,6 @@ def describe_type_system_objects():
             )
         msg = str(exc_info.value)
         assert msg == "Field args must be a dict with argument names as keys."
-
-    def rejects_an_object_with_is_deprecated_instead_of_deprecation_reason_on_field():
-        kwargs = dict(is_deprecated=True)
-        with raises(
-            TypeError, match="got an unexpected keyword argument 'is_deprecated'"
-        ):
-            GraphQLObjectType(
-                "OldObject",
-                {"field": GraphQLField(ScalarType, **kwargs)},  # type: ignore
-            )
 
     def rejects_an_object_type_with_incorrectly_typed_interfaces():
         obj_type = GraphQLObjectType("SomeObject", {}, interfaces={})
@@ -1050,7 +1036,6 @@ def describe_type_system_enums():
 
         deprecated_value = EnumTypeWithDeprecatedValue.values["foo"]
         assert deprecated_value == GraphQLEnumValue(deprecation_reason="Just because")
-        assert deprecated_value.is_deprecated is True
         assert deprecated_value.deprecation_reason == "Just because"
         assert deprecated_value.value is None
         assert deprecated_value.extensions is None
@@ -1070,21 +1055,18 @@ def describe_type_system_enums():
         null_value = EnumTypeWithNullishValue.values["NULL"]
         assert null_value.description is None
         assert null_value.value is None
-        assert null_value.is_deprecated is False
         assert null_value.deprecation_reason is None
         assert null_value.extensions is None
         assert null_value.ast_node is None
         null_value = EnumTypeWithNullishValue.values["NAN"]
         assert null_value.description is None
         assert isnan(null_value.value)
-        assert null_value.is_deprecated is False
         assert null_value.deprecation_reason is None
         assert null_value.extensions is None
         assert null_value.ast_node is None
         no_custom_value = EnumTypeWithNullishValue.values["NO_CUSTOM_VALUE"]
         assert no_custom_value.description is None
         assert no_custom_value.value is Undefined
-        assert no_custom_value.is_deprecated is False
         assert no_custom_value.deprecation_reason is None
         assert no_custom_value.extensions is None
         assert no_custom_value.ast_node is None
@@ -1245,16 +1227,6 @@ def describe_type_system_enums():
         assert str(exc_info.value) == (
             "SomeEnum values must be an Enum or a dict with value names as keys."
         )
-
-    def does_not_allow_is_deprecated_instead_of_deprecation_reason_on_enum():
-        with raises(
-            TypeError, match="got an unexpected keyword argument 'is_deprecated'"
-        ):
-            # noinspection PyArgumentList
-            GraphQLEnumType(
-                "SomeEnum",
-                {"FOO": GraphQLEnumValue(is_deprecated=True)},  # type: ignore
-            )
 
     def rejects_an_enum_type_with_an_incorrectly_typed_description():
         with raises(TypeError) as exc_info:

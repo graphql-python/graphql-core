@@ -680,22 +680,18 @@ def describe_schema_builder():
         my_enum = assert_enum_type(schema.get_type("MyEnum"))
 
         value = my_enum.values["VALUE"]
-        assert value.is_deprecated is False
+        assert value.deprecation_reason is None
 
         old_value = my_enum.values["OLD_VALUE"]
-        assert old_value.is_deprecated is True
         assert old_value.deprecation_reason == "No longer supported"
 
         other_value = my_enum.values["OTHER_VALUE"]
-        assert other_value.is_deprecated is True
         assert other_value.deprecation_reason == "Terrible reasons"
 
         root_fields = assert_object_type(schema.get_type("Query")).fields
         field1 = root_fields["field1"]
-        assert field1.is_deprecated is True
         assert field1.deprecation_reason == "No longer supported"
         field2 = root_fields["field2"]
-        assert field2.is_deprecated is True
         assert field2.deprecation_reason == "Because I said so"
 
         input_fields = assert_input_object_type(schema.get_type("MyInput")).fields

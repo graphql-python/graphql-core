@@ -577,12 +577,10 @@ def describe_extend_schema():
 
         some_type = assert_object_type(extended_schema.get_type("SomeObject"))
         deprecated_field = some_type.fields["deprecatedField"]
-        assert deprecated_field.is_deprecated is True
         assert deprecated_field.deprecation_reason == "not used anymore"
 
         some_enum = assert_enum_type(extended_schema.get_type("SomeEnum"))
         deprecated_enum = some_enum.values["DEPRECATED_VALUE"]
-        assert deprecated_enum.is_deprecated is True
         assert deprecated_enum.deprecation_reason == "do not use"
 
     def extends_objects_with_deprecated_fields():
@@ -598,7 +596,6 @@ def describe_extend_schema():
 
         some_type = assert_object_type(extended_schema.get_type("SomeObject"))
         deprecated_field = some_type.fields["deprecatedField"]
-        assert deprecated_field.is_deprecated is True
         assert deprecated_field.deprecation_reason == "not used anymore"
 
     def extend_enums_with_deprecated_values():
@@ -614,7 +611,6 @@ def describe_extend_schema():
 
         some_enum = assert_enum_type(extended_schema.get_type("SomeEnum"))
         deprecated_value = some_enum.values["DEPRECATED_VALUE"]
-        assert deprecated_value.is_deprecated is True
         assert deprecated_value.deprecation_reason == "do not use"
 
     def adds_new_unused_types():
