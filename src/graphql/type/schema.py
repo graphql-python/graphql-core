@@ -347,15 +347,6 @@ class GraphQLSchema:
             interface_type.name, InterfaceImplementations(objects=[], interfaces=[])
         )
 
-    def is_possible_type(
-        self, abstract_type: GraphQLAbstractType, possible_type: GraphQLObjectType
-    ) -> bool:
-        """Check whether a concrete type is possible for an abstract type.
-
-        Deprecated: Use is_sub_type() instead.
-        """
-        return self.is_sub_type(abstract_type, possible_type)
-
     def is_sub_type(
         self,
         abstract_type: GraphQLAbstractType,

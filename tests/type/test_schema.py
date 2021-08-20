@@ -194,7 +194,6 @@ def describe_type_system_schema():
             assert schema.type_map["SomeSubtype"] is SomeSubtype
 
             assert schema.is_sub_type(SomeInterface, SomeSubtype) is True
-            assert schema.is_possible_type(SomeInterface, SomeSubtype) is True
 
         def includes_interfaces_thunk_subtypes_in_the_type_map():
             AnotherInterface = GraphQLInterfaceType("AnotherInterface", {})
