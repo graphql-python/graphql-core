@@ -4,9 +4,9 @@ from typing import NamedTuple
 __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
 
-version = "3.1.5"
+version = "3.1.6"
 
-version_js = "15.4.0"
+version_js = "15.5.1"
 
 
 _re_version = re.compile(r"(\d+)\.(\d+)\.(\d+)(\D*)(\d*)")
