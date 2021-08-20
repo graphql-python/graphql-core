@@ -28,7 +28,7 @@ Here is one way to use it::
         """)
         print(result)
 
-    asyncio.get_event_loop().run_until_complete(query_artoo())
+    asyncio.run(query_artoo())
 
 In our query, we asked for the droid with the id 2001, which is R2-D2, and its primary
 function, Astromech. When everything has been implemented correctly as shown above, you
