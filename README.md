@@ -18,6 +18,8 @@ An extensive test suite with over 2200 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
 reliable and compatible with GraphQL.js.
 
+Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js. Increases in the major version of GraphQL.js are reflected in the minor version of GraphQL-core instead. This means there can be breaking changes in the API when the minor version changes, and only patch releases are fully backward compatible. Therefore, we recommend something like `=~ 3.1.0` as version specifier when including GraphQL-core as a dependency.
+
 
 ## Documentation
 
