@@ -1,9 +1,10 @@
+from math import isfinite
 from typing import Any, Dict, NamedTuple
 
 from graphql import graphql_sync
 from graphql.error import GraphQLError
 from graphql.language import ValueNode
-from graphql.pyutils import inspect, is_finite
+from graphql.pyutils import inspect
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
@@ -23,6 +24,13 @@ class Money(NamedTuple):
     currency: str
 
 
+def is_finite(value: Any) -> bool:
+    """Return true if a value is a finite number."""
+    return (isinstance(value, int) and not isinstance(value, bool)) or (
+        isinstance(value, float) and isfinite(value)
+    )
+
+
 def serialize_money(output_value: Any) -> Dict[str, float]:
     if not isinstance(output_value, Money):
         raise GraphQLError("Cannot serialize money value: " + inspect(output_value))
@@ -38,7 +46,7 @@ def parse_money_value(input_value: Any) -> Money:
 def parse_money_literal(value_node: ValueNode, variables=None) -> Money:
     money = value_from_ast_untyped(value_node, variables)
     if variables is not None and (
-        # variables are not set when checked with ValuesIOfCorrectTypeRule
+        # variables are not set when checked with ValuesOfCorrectTypeRule
         not money
         or not is_finite(money.get("amount"))
         or not isinstance(money.get("currency"), str)

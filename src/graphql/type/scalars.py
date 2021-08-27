@@ -2,7 +2,7 @@ from math import isfinite
 from typing import Any
 
 from ..error import GraphQLError
-from ..pyutils import inspect, is_finite, is_integer, FrozenDict
+from ..pyutils import inspect, FrozenDict
 from ..language.ast import (
     BooleanValueNode,
     FloatValueNode,
@@ -62,7 +62,13 @@ def serialize_int(output_value: Any) -> int:
 
 
 def coerce_int(input_value: Any) -> int:
-    if not is_integer(input_value):
+    if not (
+        isinstance(input_value, int) and not isinstance(input_value, bool)
+    ) and not (
+        isinstance(input_value, float)
+        and isfinite(input_value)
+        and int(input_value) == input_value
+    ):
         raise GraphQLError(
             "Int cannot represent non-integer value: " + inspect(input_value)
         )
@@ -120,7 +126,9 @@ def serialize_float(output_value: Any) -> float:
 
 
 def coerce_float(input_value: Any) -> float:
-    if not is_finite(input_value):
+    if not (
+        isinstance(input_value, int) and not isinstance(input_value, bool)
+    ) and not (isinstance(input_value, float) and isfinite(input_value)):
         raise GraphQLError(
             "Float cannot represent non numeric value: " + inspect(input_value)
         )
@@ -154,7 +162,9 @@ def serialize_string(output_value: Any) -> str:
         return output_value
     if isinstance(output_value, bool):
         return "true" if output_value else "false"
-    if is_finite(output_value):
+    if isinstance(output_value, int) or (
+        isinstance(output_value, float) and isfinite(output_value)
+    ):
         return str(output_value)
     # do not serialize builtin types as strings, but allow serialization of custom
     # types via their `__str__` method
@@ -196,7 +206,9 @@ GraphQLString = GraphQLScalarType(
 def serialize_boolean(output_value: Any) -> bool:
     if isinstance(output_value, bool):
         return output_value
-    if is_finite(output_value):
+    if isinstance(output_value, int) or (
+        isinstance(output_value, float) and isfinite(output_value)
+    ):
         return bool(output_value)
     raise GraphQLError(
         "Boolean cannot represent a non boolean value: " + inspect(output_value)
@@ -233,7 +245,13 @@ GraphQLBoolean = GraphQLScalarType(
 def serialize_id(output_value: Any) -> str:
     if isinstance(output_value, str):
         return output_value
-    if is_integer(output_value):
+    if isinstance(output_value, int) and not isinstance(output_value, bool):
+        return str(output_value)
+    if (
+        isinstance(output_value, float)
+        and isfinite(output_value)
+        and int(output_value) == output_value
+    ):
         return str(int(output_value))
     # do not serialize builtin types as IDs, but allow serialization of custom types
     # via their `__str__` method
@@ -245,8 +263,14 @@ def serialize_id(output_value: Any) -> str:
 def coerce_id(input_value: Any) -> str:
     if isinstance(input_value, str):
         return input_value
-    if is_integer(input_value):
+    if isinstance(input_value, int) and not isinstance(input_value, bool):
         return str(input_value)
+    if (
+        isinstance(input_value, float)
+        and isfinite(input_value)
+        and int(input_value) == input_value
+    ):
+        return str(int(input_value))
     raise GraphQLError("ID cannot represent value: " + inspect(input_value))
 
 

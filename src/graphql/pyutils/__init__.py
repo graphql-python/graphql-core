@@ -21,8 +21,6 @@ from .identity_func import identity_func
 from .inspect import inspect
 from .is_awaitable import is_awaitable
 from .is_collection import is_collection
-from .is_finite import is_finite
-from .is_integer import is_integer
 from .natural_compare import natural_comparison_key
 from .awaitable_or_value import AwaitableOrValue
 from .suggestion_list import suggestion_list
@@ -47,8 +45,6 @@ __all__ = [
     "inspect",
     "is_awaitable",
     "is_collection",
-    "is_finite",
-    "is_integer",
     "natural_comparison_key",
     "AwaitableOrValue",
     "suggestion_list",

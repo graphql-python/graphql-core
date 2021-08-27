@@ -557,6 +557,7 @@ def describe_type_system_specified_scalar_types():
             assert _parse_value(1) == "1"
             assert _parse_value(0) == "0"
             assert _parse_value(-1) == "-1"
+            assert _parse_value(1.0) == "1"
 
             # Maximum and minimum safe numbers in JS
             assert _parse_value(9007199254740991) == "9007199254740991"
@@ -632,6 +633,7 @@ def describe_type_system_specified_scalar_types():
             assert serialize("false") == "false"
             assert serialize("") == ""
             assert serialize(123) == "123"
+            assert serialize(42.0) == "42"
             assert serialize(0) == "0"
             assert serialize(-1) == "-1"
 

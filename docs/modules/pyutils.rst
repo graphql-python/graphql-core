@@ -17,8 +17,6 @@ PyUtils
 .. autoclass:: SimplePubSubIterator
 .. autofunction:: identity_func
 .. autofunction:: inspect
-.. autofunction:: is_finite
-.. autofunction:: is_integer
 .. autoclass:: AwaitableOrValue
 .. autofunction:: suggestion_list
 .. autoclass:: FrozenError
