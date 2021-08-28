@@ -278,7 +278,7 @@ class PrintAstVisitor(Visitor):
                 "union",
                 node.name,
                 join(node.directives, " "),
-                "= " + join(node.types, " | ") if node.types else "",
+                wrap("= ", join(node.types, " | ")),
             ),
             " ",
         )
@@ -360,7 +360,7 @@ class PrintAstVisitor(Visitor):
                 "extend union",
                 node.name,
                 join(node.directives, " "),
-                "= " + join(node.types, " | ") if node.types else "",
+                wrap("= ", join(node.types, " | ")),
             ),
             " ",
         )
