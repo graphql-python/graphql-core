@@ -213,11 +213,7 @@ class Stack(NamedTuple):
     prev: Any  # 'Stack' (python/mypy/issues/731)
 
 
-def visit(
-    root: Node,
-    visitor: Visitor,
-    visitor_keys: Optional[Dict[str, Tuple[str, ...]]] = None,
-) -> Any:
+def visit(root: Node, visitor: Visitor) -> Any:
     """Visit each node in an AST.
 
     :func:`~.visit` will walk through an AST using a depth-first traversal, calling the
@@ -232,16 +228,11 @@ def visit(
     When using :func:`~.visit` to edit an AST, the original AST will not be modified,
     and a new version of the AST with the changes applied will be returned from the
     visit function.
-
-    To customize the node attributes to be used for traversal, you can provide a
-    dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
         raise TypeError(f"Not an AST Node: {inspect(root)}.")
     if not isinstance(visitor, Visitor):
         raise TypeError(f"Not an AST Visitor: {inspect(visitor)}.")
-    if visitor_keys is None:
-        visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
     in_array = isinstance(root, list)
     keys: Tuple[Node, ...] = (root,)
@@ -340,7 +331,7 @@ def visit(
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
             in_array = isinstance(node, list)
-            keys = node if in_array else visitor_keys.get(node.kind, ())
+            keys = node if in_array else QUERY_DOCUMENT_KEYS.get(node.kind, ())
             idx = -1
             edits = []
             if parent:

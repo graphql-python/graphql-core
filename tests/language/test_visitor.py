@@ -1,6 +1,6 @@
 from copy import copy
 from functools import partial
-from typing import cast, Dict, List, Optional, Tuple
+from typing import cast, List, Optional
 
 from pytest import mark, raises
 
@@ -18,7 +18,6 @@ from graphql.language import (
     ParallelVisitor,
     Visitor,
 )
-from graphql.language.visitor import QUERY_DOCUMENT_KEYS
 from graphql.pyutils import FrozenList
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
@@ -1013,46 +1012,6 @@ def describe_support_for_custom_ast_nodes():
             ["leave", "name", "a"],
             ["leave", "field", None],
             ["enter", "custom_field", None],
-            ["leave", "custom_field", None],
-            ["leave", "selection_set", None],
-            ["leave", "operation_definition", None],
-            ["leave", "document", None],
-        ]
-
-    def does_traverse_unknown_node_with_visitor_keys():
-        custom_query_document_keys: Dict[str, Tuple[str, ...]] = {
-            **QUERY_DOCUMENT_KEYS,
-            "custom_field": ("name", "selection_set"),
-        }
-        visited = []
-
-        class TestVisitor(Visitor):
-            @staticmethod
-            def enter(node, *_args):
-                visited.append(["enter", node.kind, get_value(node)])
-
-            @staticmethod
-            def leave(node, *_args):
-                visited.append(["leave", node.kind, get_value(node)])
-
-        visit(custom_ast, TestVisitor(), custom_query_document_keys)
-        assert visited == [
-            ["enter", "document", None],
-            ["enter", "operation_definition", None],
-            ["enter", "selection_set", None],
-            ["enter", "field", None],
-            ["enter", "name", "a"],
-            ["leave", "name", "a"],
-            ["leave", "field", None],
-            ["enter", "custom_field", None],
-            ["enter", "name", "b"],
-            ["leave", "name", "b"],
-            ["enter", "selection_set", None],
-            ["enter", "custom_field", None],
-            ["enter", "name", "c"],
-            ["leave", "name", "c"],
-            ["leave", "custom_field", None],
-            ["leave", "selection_set", None],
             ["leave", "custom_field", None],
             ["leave", "selection_set", None],
             ["leave", "operation_definition", None],
