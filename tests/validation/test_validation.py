@@ -78,10 +78,9 @@ def describe_validate_supports_full_validation():
             {"message": "Cannot query field 'unknown' on type 'QueryRoot'."}
         ]
 
-    # NOTE: experimental
-    def validates_using_a_custom_type_info():
+    def deprecated_validates_using_a_custom_type_info():
         # This TypeInfo will never return a valid field.
-        type_info = TypeInfo(test_schema, lambda *args: None)
+        type_info = TypeInfo(test_schema, None, lambda *args: None)
 
         doc = parse(
             """
@@ -98,7 +97,7 @@ def describe_validate_supports_full_validation():
             """
         )
 
-        errors = validate(test_schema, doc, None, type_info)
+        errors = validate(test_schema, doc, None, None, type_info)
 
         assert [error.message for error in errors] == [
             "Cannot query field 'catOrDog' on type 'QueryRoot'."

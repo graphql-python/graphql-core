@@ -308,7 +308,7 @@ def describe_visit_with_type_info():
 
         complex_input_type = test_schema.get_type("ComplexInput")
         assert complex_input_type is not None
-        type_info = TypeInfo(test_schema, None, complex_input_type)
+        type_info = TypeInfo(test_schema, complex_input_type)
 
         ast = parse_value('{ stringListField: ["foo"] }')
 
@@ -357,7 +357,7 @@ def describe_visit_with_type_info():
 
         human_type = test_schema.get_type("Human")
         assert human_type is not None
-        type_info = TypeInfo(test_schema, None, human_type)
+        type_info = TypeInfo(test_schema, human_type)
 
         ast = parse("{ name, pets { name } }")
         operation_node = ast.definitions[0]

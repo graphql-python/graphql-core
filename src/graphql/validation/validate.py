@@ -20,8 +20,8 @@ def validate(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
     rules: Optional[Collection[Type[ASTValidationRule]]] = None,
-    type_info: Optional[TypeInfo] = None,
     max_errors: Optional[int] = None,
+    type_info: Optional[TypeInfo] = None,
 ) -> List[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -35,8 +35,7 @@ def validate(
     a ValidationContext (see the language/visitor API). Visitor methods are expected to
     return GraphQLErrors, or lists of GraphQLErrors when invalid.
 
-    Optionally a custom TypeInfo instance may be provided. If not provided, one will be
-    created from the provided schema.
+    Providing a custom TypeInfo instance is deprecated and will be removed in v3.3.
     """
     if not document_ast or not isinstance(document_ast, DocumentNode):
         raise TypeError("Must provide document.")

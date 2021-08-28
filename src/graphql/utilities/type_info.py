@@ -66,17 +66,15 @@ class TypeInfo:
     def __init__(
         self,
         schema: GraphQLSchema,
-        get_field_def_fn: Optional[GetFieldDefType] = None,
         initial_type: Optional[GraphQLType] = None,
+        get_field_def_fn: Optional[GetFieldDefType] = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
-        The experimental optional second parameter is only needed in order to support
-        non-spec-compliant code bases. You should never need to use it. It may disappear
-        in the future.
-
         Initial type may be provided in rare cases to facilitate traversals beginning
         somewhere other than documents.
+
+        The optional last parameter is deprecated and will be removed in v3.3.
         """
         self._schema = schema
         self._type_stack: List[Optional[GraphQLOutputType]] = []
