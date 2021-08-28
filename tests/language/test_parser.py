@@ -351,9 +351,9 @@ def describe_parser():
         result = parse("{ id }", no_location=True)
         assert result.loc is None
 
-    def experimental_allows_parsing_fragment_defined_variables():
+    def legacy_allows_parsing_fragment_defined_variables():
         document = "fragment a($v: Boolean = false) on t { f(v: $v) }"
-        parse(document, experimental_fragment_variables=True)
+        parse(document, allow_legacy_fragment_variables=True)
         with raises(GraphQLSyntaxError):
             parse(document)
 

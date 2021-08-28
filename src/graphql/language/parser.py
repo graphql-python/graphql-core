@@ -71,7 +71,7 @@ SourceType = Union[Source, str]
 def parse(
     source: SourceType,
     no_location: bool = False,
-    experimental_fragment_variables: bool = False,
+    allow_legacy_fragment_variables: bool = False,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -81,9 +81,9 @@ def parse(
     they correspond to. The ``no_location`` option disables that behavior for
     performance or testing.
 
-    Experimental features:
+    Legacy feature (will be removed in v3.3):
 
-    If ``experimental_fragment_variables`` is set to ``True``, the parser will
+    If ``allow_legacy_fragment_variables`` is set to ``True``, the parser will
     understand and parse variable definitions contained in a fragment definition.
     They'll be represented in the
     :attr:`~graphql.language.FragmentDefinitionNode.variable_definitions` field
@@ -98,7 +98,7 @@ def parse(
     parser = Parser(
         source,
         no_location=no_location,
-        experimental_fragment_variables=experimental_fragment_variables,
+        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
     )
     return parser.parse_document()
 
@@ -106,7 +106,7 @@ def parse(
 def parse_value(
     source: SourceType,
     no_location: bool = False,
-    experimental_fragment_variables: bool = False,
+    allow_legacy_fragment_variables: bool = False,
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
 
@@ -121,7 +121,7 @@ def parse_value(
     parser = Parser(
         source,
         no_location=no_location,
-        experimental_fragment_variables=experimental_fragment_variables,
+        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_value_literal(False)
@@ -132,7 +132,7 @@ def parse_value(
 def parse_type(
     source: SourceType,
     no_location: bool = False,
-    experimental_fragment_variables: bool = False,
+    allow_legacy_fragment_variables: bool = False,
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
 
@@ -147,7 +147,7 @@ def parse_type(
     parser = Parser(
         source,
         no_location=no_location,
-        experimental_fragment_variables=experimental_fragment_variables,
+        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
     )
     parser.expect_token(TokenKind.SOF)
     type_ = parser.parse_type_reference()
@@ -169,13 +169,13 @@ class Parser:
 
     _lexer: Lexer
     _no_Location: bool
-    _experimental_fragment_variables: bool
+    _allow_legacy_fragment_variables: bool
 
     def __init__(
         self,
         source: SourceType,
         no_location: bool = False,
-        experimental_fragment_variables: bool = False,
+        allow_legacy_fragment_variables: bool = False,
     ):
         source = (
             cast(Source, source) if is_source(source) else Source(cast(str, source))
@@ -183,7 +183,7 @@ class Parser:
 
         self._lexer = Lexer(source)
         self._no_location = no_location
-        self._experimental_fragment_variables = experimental_fragment_variables
+        self._allow_legacy_fragment_variables = allow_legacy_fragment_variables
 
     def parse_name(self) -> NameNode:
         """Convert a name lex token into a name parse node."""
@@ -389,9 +389,9 @@ class Parser:
         """FragmentDefinition"""
         start = self._lexer.token
         self.expect_keyword("fragment")
-        # Experimental support for defining variables within fragments changes
+        # Legacy support for defining variables within fragments changes
         # the grammar of FragmentDefinition
-        if self._experimental_fragment_variables:
+        if self._allow_legacy_fragment_variables:
             return FragmentDefinitionNode(
                 name=self.parse_fragment_name(),
                 variable_definitions=self.parse_variable_definitions(),

@@ -69,8 +69,7 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
     "fragment_spread": ("name", "directives"),
     "inline_fragment": ("type_condition", "directives", "selection_set"),
     "fragment_definition": (
-        # Note: fragment variable definitions are experimental and may be changed or
-        # removed in the future.
+        # Note: fragment variable definitions are deprecated and will be removed in v3.3
         "name",
         "variable_definitions",
         "type_condition",

@@ -540,11 +540,11 @@ def describe_visitor():
             ["leave", "selection_set", None],
         ]
 
-    def experimental_visits_variables_defined_in_fragments():
+    def legacy_visits_variables_defined_in_fragments():
         ast = parse(
             "fragment a($v: Boolean = false) on t { f }",
             no_location=True,
-            experimental_fragment_variables=True,
+            allow_legacy_fragment_variables=True,
         )
         visited = []
 

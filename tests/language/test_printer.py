@@ -114,10 +114,10 @@ def describe_printer_query_document():
             """
         )
 
-    def experimental_prints_fragment_with_variable_directives():
+    def legacy_prints_fragment_with_variable_directives():
         query_ast_with_variable_directive = parse(
             "fragment Foo($foo: TestType @test) on TestType @testDirective { id }",
-            experimental_fragment_variables=True,
+            allow_legacy_fragment_variables=True,
         )
         assert print_ast(query_ast_with_variable_directive) == dedent(
             """
@@ -127,13 +127,13 @@ def describe_printer_query_document():
             """
         )
 
-    def experimental_correctly_prints_fragment_defined_variables():
+    def legacy_correctly_prints_fragment_defined_variables():
         source = """
             fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
               id
             }
             """
-        fragment_with_variable = parse(source, experimental_fragment_variables=True)
+        fragment_with_variable = parse(source, allow_legacy_fragment_variables=True)
         assert print_ast(fragment_with_variable) == dedent(source)
 
     # noinspection PyShadowingNames

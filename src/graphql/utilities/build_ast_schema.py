@@ -80,14 +80,14 @@ def build_schema(
     assume_valid: bool = False,
     assume_valid_sdl: bool = False,
     no_location: bool = False,
-    experimental_fragment_variables: bool = False,
+    allow_legacy_fragment_variables: bool = False,
 ) -> GraphQLSchema:
     """Build a GraphQLSchema directly from a source document."""
     return build_ast_schema(
         parse(
             source,
             no_location=no_location,
-            experimental_fragment_variables=experimental_fragment_variables,
+            allow_legacy_fragment_variables=allow_legacy_fragment_variables,
         ),
         assume_valid=assume_valid,
         assume_valid_sdl=assume_valid_sdl,

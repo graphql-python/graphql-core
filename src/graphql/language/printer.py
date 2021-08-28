@@ -134,8 +134,7 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_fragment_definition(node: PrintedNode, *_args: Any) -> str:
-        # Note: fragment variable definitions are experimental and may be changed or
-        # removed in the future.
+        # Note: fragment variable definitions are deprecated and will be removed in v3.3
         return (
             f"fragment {node.name}"
             f"{wrap('(', join(node.variable_definitions, ', '), ')')}"
