@@ -41,13 +41,11 @@ def describe_print_block_string():
                 """
             )
 
-            printed_multiline_string = lex_value(
-                print_block_string(test_value, " ", True)
-            )
+            printed_multiline_string = lex_value(print_block_string(test_value, True))
 
             assert test_value == printed_multiline_string, dedent(
                 f"""
-                Expected lex_value(print_block_string({test_value!r}, ' ', True)
+                Expected lex_value(print_block_string({test_value!r}, True)
                   to equal {test_value!r}
                   but got {printed_multiline_string!r}
                 """

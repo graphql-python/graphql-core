@@ -69,9 +69,7 @@ def get_block_string_indentation(value: str) -> int:
     return common_indent or 0
 
 
-def print_block_string(
-    value: str, indentation: str = "", prefer_multiple_lines: bool = False
-) -> str:
+def print_block_string(value: str, prefer_multiple_lines: bool = False) -> str:
     """Print a block string in the indented block form.
 
     Prints a block string in the indented block form by adding a leading and
@@ -92,11 +90,11 @@ def print_block_string(
     )
 
     # Format a multi-line block quote to account for leading space.
-    if print_as_multiple_lines and not (is_single_line and has_leading_space):
-        result = "\n" + indentation
-    else:
-        result = ""
-    result += value.replace("\n", "\n" + indentation) if indentation else value
+    result = (
+        "\n"
+        if print_as_multiple_lines and not (is_single_line and has_leading_space)
+        else ""
+    ) + value
     if print_as_multiple_lines:
         result += "\n"
 

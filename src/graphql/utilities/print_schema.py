@@ -295,7 +295,7 @@ def print_description(
         return ""
 
     prefer_multiple_lines = len(description) > 70
-    block_string = print_block_string(description, "", prefer_multiple_lines)
+    block_string = print_block_string(description, prefer_multiple_lines)
 
     prefix = "\n" + indentation if indentation and not first_in_block else indentation
 

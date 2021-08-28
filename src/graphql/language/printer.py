@@ -154,9 +154,9 @@ class PrintAstVisitor(Visitor):
         return node.value
 
     @staticmethod
-    def leave_string_value(node: PrintedNode, key: str, *_args: Any) -> str:
+    def leave_string_value(node: PrintedNode, *_args: Any) -> str:
         if node.block:
-            return print_block_string(node.value, "" if key == "description" else "  ")
+            return print_block_string(node.value)
         return dumps(node.value)
 
     @staticmethod

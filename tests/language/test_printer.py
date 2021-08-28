@@ -189,7 +189,7 @@ def describe_printer_query_document():
                 size: $size
                 bar: $b
                 obj: {key: "value", block: """
-                  block string uses \"""
+                block string uses \"""
                 """}
               )
             }
