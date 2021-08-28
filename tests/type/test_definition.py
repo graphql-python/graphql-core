@@ -46,7 +46,7 @@ from graphql.type import (
 
 ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})
-InterfaceType = GraphQLInterfaceType("Interface")
+InterfaceType = GraphQLInterfaceType("Interface", {})
 UnionType = GraphQLUnionType(
     "Union",
     [ObjectType],
@@ -556,7 +556,7 @@ def describe_type_system_objects():
             if obj_type.fields:
                 pass
         assert str(exc_info.value) == (
-            "SomeObject fields must be specified as a dict with field names as keys."
+            "SomeObject fields must be specified as a mapping with field names as keys."
         )
 
     def rejects_an_object_type_field_function_that_raises_an_error():
@@ -795,7 +795,8 @@ def describe_type_system_interfaces():
             if interface.fields:
                 pass
         assert str(exc_info.value) == (
-            "SomeInterface fields must be specified as a dict with field names as keys."
+            "SomeInterface fields must be specified"
+            " as a mapping with field names as keys."
         )
         interface = GraphQLInterfaceType(
             "SomeInterface", {"f": InputObjectType}  # type: ignore
@@ -823,10 +824,10 @@ def describe_type_system_interfaces():
             GraphQLInterfaceType()  # type: ignore
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLInterfaceType(None)  # type: ignore
+            GraphQLInterfaceType(None, {})  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
-            GraphQLInterfaceType("")
+            GraphQLInterfaceType("", {})
         assert str(exc_info.value) == "Must provide name."
 
     def rejects_an_interface_type_with_incorrectly_typed_interfaces():
@@ -866,13 +867,13 @@ def describe_type_system_interfaces():
     def rejects_an_interface_type_with_an_incorrect_ast_node():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLInterfaceType("SomeInterface", ast_node=Node())  # type: ignore
+            GraphQLInterfaceType("SomeInterface", {}, ast_node=Node())  # type: ignore
         msg = str(exc_info.value)
         assert msg == "SomeInterface AST node must be a TypeDefinitionNode."
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLInterfaceType(
-                "SomeInterface", ast_node=TypeDefinitionNode()  # type: ignore
+                "SomeInterface", {}, ast_node=TypeDefinitionNode()  # type: ignore
             )
         msg = str(exc_info.value)
         assert msg == "SomeInterface AST node must be an InterfaceTypeDefinitionNode."
@@ -881,7 +882,7 @@ def describe_type_system_interfaces():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLInterfaceType(
-                "SomeInterface", extension_ast_nodes=[Node()]  # type: ignore
+                "SomeInterface", {}, extension_ast_nodes=[Node()]  # type: ignore
             )
         assert str(exc_info.value) == (
             "SomeInterface extension AST nodes must be specified"
@@ -891,6 +892,7 @@ def describe_type_system_interfaces():
             # noinspection PyTypeChecker
             GraphQLInterfaceType(
                 "SomeInterface",
+                {},
                 extension_ast_nodes=[TypeExtensionNode()],  # type: ignore
             )
         assert str(exc_info.value) == (
@@ -1217,7 +1219,7 @@ def describe_type_system_enums():
             # noinspection PyTypeChecker
             GraphQLEnumType("SomeEnum", values=None)  # type: ignore
         assert str(exc_info.value) == (
-            "SomeEnum values must be an Enum or a dict with value names as keys."
+            "SomeEnum values must be an Enum or a mapping with value names as keys."
         )
 
     def rejects_an_enum_type_with_incorrectly_typed_values():
@@ -1225,7 +1227,7 @@ def describe_type_system_enums():
             # noinspection PyTypeChecker
             GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
         assert str(exc_info.value) == (
-            "SomeEnum values must be an Enum or a dict with value names as keys."
+            "SomeEnum values must be an Enum or a mapping with value names as keys."
         )
 
     def rejects_an_enum_type_with_an_incorrectly_typed_description():
@@ -1491,7 +1493,7 @@ def describe_type_system_input_objects():
                     pass
             assert str(exc_info.value) == (
                 "SomeInputObject fields must be specified"
-                " as a dict with field names as keys."
+                " as a mapping with field names as keys."
             )
 
         def rejects_an_input_object_type_with_incorrect_fields_function():
@@ -1503,7 +1505,7 @@ def describe_type_system_input_objects():
                     pass
             assert str(exc_info.value) == (
                 "SomeInputObject fields must be specified"
-                " as a dict with field names as keys."
+                " as a mapping with field names as keys."
             )
 
         def rejects_an_input_object_type_with_unresolvable_fields():

@@ -92,7 +92,8 @@ Types
 .. autoclass:: GraphQLType
 .. autoclass:: GraphQLWrappingType
 
-.. autoclass:: Thunk
+.. autoclass:: ThunkCollection
+.. autoclass:: ThunkMapping
 
 Resolvers
 ^^^^^^^^^

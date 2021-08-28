@@ -6,6 +6,7 @@ from typing import (
     Dict,
     Generic,
     List,
+    Mapping,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -130,7 +131,8 @@ __all__ = [
     "GraphQLTypeResolver",
     "GraphQLUnionType",
     "GraphQLWrappingType",
-    "Thunk",
+    "ThunkCollection",
+    "ThunkMapping",
 ]
 
 
@@ -287,11 +289,26 @@ def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:
     return None
 
 
-def resolve_thunk(thunk: Any) -> Any:
-    """Resolve the given thunk.
+T = TypeVar("T")
+
+ThunkCollection = Union[Callable[[], Collection[T]], Collection[T]]
+ThunkMapping = Union[Callable[[], Mapping[str, T]], Mapping[str, T]]
+
+
+def resolve_thunk_collection(thunk: ThunkCollection[T]) -> Collection[T]:
+    """Resolve the given thunk for a collection.
 
     Used while defining GraphQL types to allow for circular references in otherwise
     immutable type definitions.
+    """
+    return thunk() if callable(thunk) else thunk
+
+
+def resolve_thunk_mapping(thunk: ThunkMapping[T]) -> Mapping[str, T]:
+    """Resolve the given thunk for a mapping.
+
+    Used while defining GraphQL fields to allow for circular references in otherwise
+    immutable field definitions.
     """
     return thunk() if callable(thunk) else thunk
 
@@ -592,6 +609,8 @@ GraphQLTypeResolver = Callable[
 # the context is passed as part of the GraphQLResolveInfo:
 GraphQLIsTypeOfFn = Callable[[Any, GraphQLResolveInfo], AwaitableOrValue[bool]]
 
+GraphQLFieldMap = Dict[str, GraphQLField]
+
 
 class GraphQLArgument:
     """Definition of a GraphQL argument"""
@@ -669,12 +688,6 @@ def is_required_argument(arg: GraphQLArgument) -> bool:
     return is_non_null_type(arg.type) and arg.default_value is Undefined
 
 
-T = TypeVar("T", bound=Collection)
-Thunk = Union[Callable[[], T], T]
-
-GraphQLFieldMap = Dict[str, GraphQLField]
-
-
 class GraphQLObjectType(GraphQLNamedType):
     """Object Type Definition
 
@@ -710,8 +723,8 @@ class GraphQLObjectType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        fields: Thunk[GraphQLFieldMap],
-        interfaces: Optional[Thunk[Collection["GraphQLInterfaceType"]]] = None,
+        fields: ThunkMapping[GraphQLField],
+        interfaces: Optional[ThunkCollection["GraphQLInterfaceType"]] = None,
         is_type_of: Optional[GraphQLIsTypeOfFn] = None,
         extensions: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
@@ -758,15 +771,15 @@ class GraphQLObjectType(GraphQLNamedType):
     def fields(self) -> GraphQLFieldMap:
         """Get provided fields, wrapping them as GraphQLFields if needed."""
         try:
-            fields = resolve_thunk(self._fields)
+            fields = resolve_thunk_mapping(self._fields)
         except Exception as error:
             raise TypeError(f"{self.name} fields cannot be resolved. {error}")
-        if not isinstance(fields, dict) or not all(
+        if not isinstance(fields, Mapping) or not all(
             isinstance(key, str) for key in fields
         ):
             raise TypeError(
                 f"{self.name} fields must be specified"
-                " as a dict with field names as keys."
+                " as a mapping with field names as keys."
             )
         if not all(
             isinstance(value, GraphQLField) or is_output_type(value)
@@ -776,7 +789,9 @@ class GraphQLObjectType(GraphQLNamedType):
                 f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
-            name: value if isinstance(value, GraphQLField) else GraphQLField(value)
+            name: value
+            if isinstance(value, GraphQLField)
+            else GraphQLField(value)  # type: ignore
             for name, value in fields.items()
         }
 
@@ -784,8 +799,8 @@ class GraphQLObjectType(GraphQLNamedType):
     def interfaces(self) -> List["GraphQLInterfaceType"]:
         """Get provided interfaces."""
         try:
-            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
-                self._interfaces
+            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk_collection(
+                self._interfaces  # type: ignore
             )
         except Exception as error:
             raise TypeError(f"{self.name} interfaces cannot be resolved. {error}")
@@ -833,8 +848,8 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        fields: Optional[Thunk[GraphQLFieldMap]] = None,
-        interfaces: Optional[Thunk[Collection["GraphQLInterfaceType"]]] = None,
+        fields: ThunkMapping[GraphQLField],
+        interfaces: Optional[ThunkCollection["GraphQLInterfaceType"]] = None,
         resolve_type: Optional[GraphQLTypeResolver] = None,
         description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
@@ -881,15 +896,15 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def fields(self) -> GraphQLFieldMap:
         """Get provided fields, wrapping them as GraphQLFields if needed."""
         try:
-            fields = resolve_thunk(self._fields)
+            fields = resolve_thunk_mapping(self._fields)
         except Exception as error:
             raise TypeError(f"{self.name} fields cannot be resolved. {error}")
-        if not isinstance(fields, dict) or not all(
+        if not isinstance(fields, Mapping) or not all(
             isinstance(key, str) for key in fields
         ):
             raise TypeError(
                 f"{self.name} fields must be specified"
-                " as a dict with field names as keys."
+                " as a mapping with field names as keys."
             )
         if not all(
             isinstance(value, GraphQLField) or is_output_type(value)
@@ -899,7 +914,9 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
-            name: value if isinstance(value, GraphQLField) else GraphQLField(value)
+            name: value
+            if isinstance(value, GraphQLField)
+            else GraphQLField(value)  # type: ignore
             for name, value in fields.items()
         }
 
@@ -907,8 +924,8 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def interfaces(self) -> List["GraphQLInterfaceType"]:
         """Get provided interfaces."""
         try:
-            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
-                self._interfaces
+            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk_collection(
+                self._interfaces  # type: ignore
             )
         except Exception as error:
             raise TypeError(f"{self.name} interfaces cannot be resolved. {error}")
@@ -959,7 +976,7 @@ class GraphQLUnionType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        types: Thunk[Collection[GraphQLObjectType]],
+        types: ThunkCollection[GraphQLObjectType],
         resolve_type: Optional[GraphQLTypeResolver] = None,
         description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
@@ -1002,7 +1019,7 @@ class GraphQLUnionType(GraphQLNamedType):
     def types(self) -> List[GraphQLObjectType]:
         """Get provided types."""
         try:
-            types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
+            types: Collection[GraphQLObjectType] = resolve_thunk_collection(self._types)
         except Exception as error:
             raise TypeError(f"{self.name} types cannot be resolved. {error}")
         if types is None:
@@ -1068,7 +1085,7 @@ class GraphQLEnumType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        values: Union[GraphQLEnumValueMap, Dict[str, Any], Type[Enum]],
+        values: Union[GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]],
         description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[EnumTypeDefinitionNode] = None,
@@ -1084,7 +1101,7 @@ class GraphQLEnumType(GraphQLNamedType):
         try:  # check for enum
             values = cast(Enum, values).__members__  # type: ignore
         except AttributeError:
-            if not isinstance(values, dict) or not all(
+            if not isinstance(values, Mapping) or not all(
                 isinstance(name, str) for name in values
             ):
                 try:
@@ -1092,7 +1109,7 @@ class GraphQLEnumType(GraphQLNamedType):
                     values = dict(values)  # type: ignore
                 except (TypeError, ValueError):
                     raise TypeError(
-                        f"{name} values must be an Enum or a dict"
+                        f"{name} values must be an Enum or a mapping"
                         " with value names as keys."
                     )
             values = cast(Dict, values)
@@ -1298,7 +1315,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        fields: Thunk[GraphQLInputFieldMap],
+        fields: ThunkMapping["GraphQLInputField"],
         description: Optional[str] = None,
         out_type: Optional[GraphQLInputFieldOutType] = None,
         extensions: Optional[Dict[str, Any]] = None,
@@ -1354,15 +1371,15 @@ class GraphQLInputObjectType(GraphQLNamedType):
     def fields(self) -> GraphQLInputFieldMap:
         """Get provided fields, wrap them as GraphQLInputField if needed."""
         try:
-            fields = resolve_thunk(self._fields)
+            fields = resolve_thunk_mapping(self._fields)
         except Exception as error:
             raise TypeError(f"{self.name} fields cannot be resolved. {error}")
-        if not isinstance(fields, dict) or not all(
+        if not isinstance(fields, Mapping) or not all(
             isinstance(key, str) for key in fields
         ):
             raise TypeError(
                 f"{self.name} fields must be specified"
-                " as a dict with field names as keys."
+                " as a mapping with field names as keys."
             )
         if not all(
             isinstance(value, GraphQLInputField) or is_input_type(value)
@@ -1375,7 +1392,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         return {
             name: value
             if isinstance(value, GraphQLInputField)
-            else GraphQLInputField(value)
+            else GraphQLInputField(value)  # type: ignore
             for name, value in fields.items()
         }
 
