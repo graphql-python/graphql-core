@@ -669,7 +669,7 @@ def is_required_argument(arg: GraphQLArgument) -> bool:
     return is_non_null_type(arg.type) and arg.default_value is Undefined
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Collection)
 Thunk = Union[Callable[[], T], T]
 
 GraphQLFieldMap = Dict[str, GraphQLField]
