@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 
 from ..error import GraphQLError
@@ -6,6 +6,7 @@ from ..pyutils import (
     Path,
     did_you_mean,
     inspect,
+    is_iterable,
     print_path_list,
     suggestion_list,
     Undefined,
@@ -65,7 +66,7 @@ def coerce_input_value(
     if is_list_type(type_):
         type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
-        if isinstance(input_value, Iterable) and not isinstance(input_value, str):
+        if is_iterable(input_value):
             coerced_list: List[Any] = []
             append_item = coerced_list.append
             for index, item_value in enumerate(input_value):
@@ -84,7 +85,7 @@ def coerce_input_value(
             on_error(
                 path.as_list() if path else [],
                 input_value,
-                GraphQLError(f"Expected type '{type_.name}' to be a dict."),
+                GraphQLError(f"Expected type '{type_.name}' to be a mapping."),
             )
             return Undefined
 

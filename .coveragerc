@@ -4,7 +4,7 @@ source = src
 omit =
     */conftest.py
     */cached_property.py
-    */is_collection.py
+    */is_iterable.py
     */test_*_fuzz.py
 
 [report]

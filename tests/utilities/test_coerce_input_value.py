@@ -163,7 +163,7 @@ def describe_coerce_input_value():
         def returns_an_error_for_a_non_dict_value():
             result = _coerce_value(123, TestInputObject)
             assert expect_errors(result) == [
-                ("Expected type 'TestInputObject' to be a dict.", [], 123)
+                ("Expected type 'TestInputObject' to be a mapping.", [], 123)
             ]
 
         def returns_an_error_for_an_invalid_field():
@@ -312,6 +312,16 @@ def describe_coerce_input_value():
         def returns_a_list_for_a_non_list_value():
             result = _coerce_value(42, TestList)
             assert expect_value(result) == [42]
+
+        def returns_a_list_for_a_dictionary():
+            test_list_of_objects = GraphQLList(
+                GraphQLInputObjectType(
+                    "TestObject", {"length": GraphQLInputField(GraphQLInt)}
+                )
+            )
+
+            result = _coerce_value({"length": 100500}, test_list_of_objects)
+            assert expect_value(result) == [{"length": 100500}]
 
         def returns_a_list_for_a_non_list_invalid_value():
             result = _coerce_value("Undefined", TestList)

@@ -25,13 +25,14 @@ def describe_execute_accepts_any_iterable_as_list_value():
         )
 
     def accepts_a_set_as_a_list_value():
-        # We need to use a dict instead of a set,
-        # since sets are not ordered in Python.
-        list_field = dict.fromkeys(["apple", "banana", "coconut"])
-        assert _complete(list_field) == (
-            {"listField": ["apple", "banana", "coconut"]},
-            None,
-        )
+        # Note that sets are not ordered in Python.
+        list_field = {"apple", "banana", "coconut"}
+        result = _complete(list_field)
+        assert result.errors is None
+        assert isinstance(result.data, dict)
+        assert list(result.data) == ["listField"]
+        assert isinstance(result.data["listField"], list)
+        assert set(result.data["listField"]) == list_field
 
     def accepts_a_generator_as_a_list_value():
         def list_field():
@@ -51,6 +52,19 @@ def describe_execute_accepts_any_iterable_as_list_value():
         assert _complete(get_args("one", "two")) == (
             {"listField": ["one", "two"]},
             None,
+        )
+
+    def does_not_accept_a_dict_as_a_list_value():
+        assert _complete({1: "one", 2: "two"}) == (
+            {"listField": None},
+            [
+                {
+                    "message": "Expected Iterable,"
+                    " but did not find one for field 'Query.listField'.",
+                    "locations": [(1, 3)],
+                    "path": ["listField"],
+                }
+            ],
         )
 
     def does_not_accept_iterable_string_literal_as_a_list_value():

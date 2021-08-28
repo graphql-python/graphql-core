@@ -20,7 +20,7 @@ from .did_you_mean import did_you_mean
 from .identity_func import identity_func
 from .inspect import inspect
 from .is_awaitable import is_awaitable
-from .is_collection import is_collection
+from .is_iterable import is_collection, is_iterable
 from .natural_compare import natural_comparison_key
 from .awaitable_or_value import AwaitableOrValue
 from .suggestion_list import suggestion_list
@@ -45,6 +45,7 @@ __all__ = [
     "inspect",
     "is_awaitable",
     "is_collection",
+    "is_iterable",
     "natural_comparison_key",
     "AwaitableOrValue",
     "suggestion_list",

@@ -1,6 +1,6 @@
 import re
 from math import isfinite
-from typing import Any, Iterable, Mapping, Optional, cast
+from typing import Any, Mapping, Optional, cast
 
 from ..language import (
     BooleanValueNode,
@@ -15,7 +15,7 @@ from ..language import (
     StringValueNode,
     ValueNode,
 )
-from ..pyutils import inspect, FrozenList, Undefined
+from ..pyutils import inspect, is_iterable, FrozenList, Undefined
 from ..type import (
     GraphQLID,
     GraphQLInputType,
@@ -78,7 +78,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     if is_list_type(type_):
         type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
-        if isinstance(value, Iterable) and not isinstance(value, str):
+        if is_iterable(value):
             maybe_value_nodes = (ast_from_value(item, item_type) for item in value)
             value_nodes = filter(None, maybe_value_nodes)
             return ListValueNode(values=FrozenList(value_nodes))

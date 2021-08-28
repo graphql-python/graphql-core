@@ -388,7 +388,7 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value 'foo bar';"
-                            " Expected type 'TestInputObject' to be a dict.",
+                            " Expected type 'TestInputObject' to be a mapping.",
                             "locations": [(2, 24)],
                             "path": None,
                         }
