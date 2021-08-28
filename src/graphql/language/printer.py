@@ -1,6 +1,5 @@
-from functools import wraps
 from json import dumps
-from typing import Any, Callable, Collection, Optional
+from typing import Any, Collection, Optional
 
 from ..language.ast import Node, OperationType
 from .visitor import visit, Visitor
@@ -48,16 +47,6 @@ def print_ast(ast: Node) -> str:
     The conversion is done using a set of reasonable formatting rules.
     """
     return visit(ast, PrintAstVisitor())
-
-
-def add_description(method: Callable[..., str]) -> Callable:
-    """Decorator adding the description to the output of a static visitor method."""
-
-    @wraps(method)
-    def wrapped(node: PrintedNode, *args: Any) -> str:
-        return join((node.description, method(node, *args)), "\n")
-
-    return wrapped
 
 
 class PrintAstVisitor(Visitor):
@@ -206,10 +195,14 @@ class PrintAstVisitor(Visitor):
     # Type System Definitions
 
     @staticmethod
-    @add_description
     def leave_schema_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            ("schema", join(node.directives, " "), block(node.operation_types)), " "
+        return wrap("", node.description, "\n") + join(
+            (
+                "schema",
+                join(node.directives, " "),
+                block(node.operation_types),
+            ),
+            " ",
         )
 
     @staticmethod
@@ -217,14 +210,19 @@ class PrintAstVisitor(Visitor):
         return f"{node.operation.value}: {node.type}"
 
     @staticmethod
-    @add_description
     def leave_scalar_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(("scalar", node.name, join(node.directives, " ")), " ")
+        return wrap("", node.description, "\n") + join(
+            (
+                "scalar",
+                node.name,
+                join(node.directives, " "),
+            ),
+            " ",
+        )
 
     @staticmethod
-    @add_description
     def leave_object_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
+        return wrap("", node.description, "\n") + join(
             (
                 "type",
                 node.name,
@@ -236,7 +234,6 @@ class PrintAstVisitor(Visitor):
         )
 
     @staticmethod
-    @add_description
     def leave_field_definition(node: PrintedNode, *_args: Any) -> str:
         args = node.arguments
         args = (
@@ -245,12 +242,14 @@ class PrintAstVisitor(Visitor):
             else wrap("(", join(args, ", "), ")")
         )
         directives = wrap(" ", join(node.directives, " "))
-        return f"{node.name}{args}: {node.type}{directives}"
+        return (
+            wrap("", node.description, "\n")
+            + f"{node.name}{args}: {node.type}{directives}"
+        )
 
     @staticmethod
-    @add_description
     def leave_input_value_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
+        return wrap("", node.description, "\n") + join(
             (
                 f"{node.name}: {node.type}",
                 wrap("= ", node.default_value),
@@ -260,9 +259,8 @@ class PrintAstVisitor(Visitor):
         )
 
     @staticmethod
-    @add_description
     def leave_interface_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
+        return wrap("", node.description, "\n") + join(
             (
                 "interface",
                 node.name,
@@ -274,9 +272,8 @@ class PrintAstVisitor(Visitor):
         )
 
     @staticmethod
-    @add_description
     def leave_union_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
+        return wrap("", node.description, "\n") + join(
             (
                 "union",
                 node.name,
@@ -287,26 +284,24 @@ class PrintAstVisitor(Visitor):
         )
 
     @staticmethod
-    @add_description
     def leave_enum_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
+        return wrap("", node.description, "\n") + join(
             ("enum", node.name, join(node.directives, " "), block(node.values)), " "
         )
 
     @staticmethod
-    @add_description
     def leave_enum_value_definition(node: PrintedNode, *_args: Any) -> str:
-        return join((node.name, join(node.directives, " ")), " ")
+        return wrap("", node.description, "\n") + join(
+            (node.name, join(node.directives, " ")), " "
+        )
 
     @staticmethod
-    @add_description
     def leave_input_object_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return join(
+        return wrap("", node.description, "\n") + join(
             ("input", node.name, join(node.directives, " "), block(node.fields)), " "
         )
 
     @staticmethod
-    @add_description
     def leave_directive_definition(node: PrintedNode, *_args: Any) -> str:
         args = node.arguments
         args = (
@@ -316,7 +311,10 @@ class PrintAstVisitor(Visitor):
         )
         repeatable = " repeatable" if node.repeatable else ""
         locations = join(node.locations, " | ")
-        return f"directive @{node.name}{args}{repeatable} on {locations}"
+        return (
+            wrap("", node.description, "\n")
+            + f"directive @{node.name}{args}{repeatable} on {locations}"
+        )
 
     @staticmethod
     def leave_schema_extension(node: PrintedNode, *_args: Any) -> str:
