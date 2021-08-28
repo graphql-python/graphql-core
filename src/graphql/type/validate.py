@@ -1,7 +1,6 @@
 from operator import attrgetter, itemgetter
 from typing import (
     Any,
-    Callable,
     Collection,
     Dict,
     List,
@@ -17,10 +16,13 @@ from ..pyutils import inspect
 from ..language import (
     DirectiveNode,
     InputValueDefinitionNode,
+    InterfaceTypeExtensionNode,
     NamedTypeNode,
     Node,
+    ObjectTypeExtensionNode,
     OperationType,
-    OperationTypeDefinitionNode,
+    SchemaExtensionNode,
+    UnionTypeExtensionNode,
 )
 from .definition import (
     GraphQLEnumType,
@@ -498,13 +500,12 @@ class SchemaValidationContext:
 def get_operation_type_node(
     schema: GraphQLSchema, operation: OperationType
 ) -> Optional[Node]:
-    operation_nodes = cast(
-        List[OperationTypeDefinitionNode],
-        get_all_sub_nodes(schema, attrgetter("operation_types")),
-    )
-    for node in operation_nodes:
-        if node.operation == operation:
-            return node.type
+    for extension_node in get_all_nodes(schema):
+        operation_types = cast(SchemaExtensionNode, extension_node).operation_types
+        if operation_types:  # pragma: no cover else
+            for operation_type in operation_types:
+                if operation_type.operation == operation:
+                    return operation_type.type
     return None
 
 
@@ -580,39 +581,36 @@ def get_all_nodes(obj: SDLDefinedObject) -> List[Node]:
     return nodes
 
 
-def get_all_sub_nodes(
-    obj: SDLDefinedObject, getter: Callable[[Node], List[Node]]
-) -> List[Node]:
-    result: List[Node] = []
-    for ast_node in get_all_nodes(obj):
-        sub_nodes = getter(ast_node)
-        if sub_nodes:  # pragma: no cover
-            result.extend(sub_nodes)
-    return result
-
-
 def get_all_implements_interface_nodes(
     type_: Union[GraphQLObjectType, GraphQLInterfaceType], iface: GraphQLInterfaceType
 ) -> List[NamedTypeNode]:
-    implements_nodes = cast(
-        List[NamedTypeNode], get_all_sub_nodes(type_, attrgetter("interfaces"))
-    )
-    return [
-        iface_node
-        for iface_node in implements_nodes
-        if iface_node.name.value == iface.name
-    ]
+    implements_nodes: List[NamedTypeNode] = []
+    for extension_node in get_all_nodes(type_):
+        iface_nodes = cast(
+            Union[ObjectTypeExtensionNode, InterfaceTypeExtensionNode], extension_node
+        ).interfaces
+        if iface_nodes:  # pragma: no cover else
+            implements_nodes.extend(
+                iface_node
+                for iface_node in iface_nodes
+                if iface_node.name.value == iface.name
+            )
+    return implements_nodes
 
 
 def get_union_member_type_nodes(
     union: GraphQLUnionType, type_name: str
 ) -> Optional[List[NamedTypeNode]]:
-    union_nodes = cast(
-        List[NamedTypeNode], get_all_sub_nodes(union, attrgetter("types"))
-    )
-    return [
-        union_node for union_node in union_nodes if union_node.name.value == type_name
-    ]
+    member_type_nodes: List[NamedTypeNode] = []
+    for extension_node in get_all_nodes(union):
+        type_nodes = cast(UnionTypeExtensionNode, extension_node).types
+        if type_nodes:  # pragma: no cover else
+            member_type_nodes.extend(
+                type_node
+                for type_node in type_nodes
+                if type_node.name.value == type_name
+            )
+    return member_type_nodes
 
 
 def get_deprecated_directive_node(
