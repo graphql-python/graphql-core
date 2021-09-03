@@ -175,6 +175,7 @@ def build_client_schema(
             description=enum_introspection.get("description"),
             values={
                 value_introspect["name"]: GraphQLEnumValue(
+                    value=value_introspect["name"],
                     description=value_introspect.get("description"),
                     deprecation_reason=value_introspect.get("deprecationReason"),
                 )
