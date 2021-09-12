@@ -382,9 +382,8 @@ def describe_type_system_build_schema_from_introspection():
         # It's also an Enum type on the client.
         client_food_enum = assert_enum_type(client_schema.get_type("Food"))
 
-        # Client types do not get server-only values, so they are set to the
-        # names of the enum values rather than using the integers defined in
-        # the "server" schema.
+        # Client types do not get server-only values, so the values mirror the names,
+        # rather than using the integers defined in the "server" schema.
         values = {
             name: value.to_kwargs() for name, value in client_food_enum.values.items()
         }
