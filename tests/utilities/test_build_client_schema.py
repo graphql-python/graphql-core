@@ -382,28 +382,28 @@ def describe_type_system_build_schema_from_introspection():
         # It's also an Enum type on the client.
         client_food_enum = assert_enum_type(client_schema.get_type("Food"))
 
-        # Client types do not get server-only values, so they are set to None
+        # Client types do not get server-only values, so the values mirror the names,
         # rather than using the integers defined in the "server" schema.
         values = {
             name: value.to_kwargs() for name, value in client_food_enum.values.items()
         }
         assert values == {
             "VEGETABLES": {
-                "value": None,
+                "value": "VEGETABLES",
                 "description": "Foods that are vegetables.",
                 "deprecation_reason": None,
                 "extensions": None,
                 "ast_node": None,
             },
             "FRUITS": {
-                "value": None,
+                "value": "FRUITS",
                 "description": None,
                 "deprecation_reason": None,
                 "extensions": None,
                 "ast_node": None,
             },
             "OILS": {
-                "value": None,
+                "value": "OILS",
                 "description": None,
                 "deprecation_reason": "Too fatty.",
                 "extensions": None,
