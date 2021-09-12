@@ -527,10 +527,11 @@ class Parser:
     def parse_type_reference(self) -> TypeNode:
         """Type: NamedType or ListType or NonNullType"""
         start = self._lexer.token
+        type_: TypeNode
         if self.expect_optional_token(TokenKind.BRACKET_L):
-            type_ = self.parse_type_reference()
+            inner_type = self.parse_type_reference()
             self.expect_token(TokenKind.BRACKET_R)
-            type_ = ListTypeNode(type=type_, loc=self.loc(start))
+            type_ = ListTypeNode(type=inner_type, loc=self.loc(start))
         else:
             type_ = self.parse_named_type()
         if self.expect_optional_token(TokenKind.BANG):
