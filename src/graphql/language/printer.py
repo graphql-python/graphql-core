@@ -66,16 +66,18 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_operation_definition(node: PrintedNode, *_args: Any) -> str:
-        name, op, selection_set = node.name, node.operation, node.selection_set
         var_defs = wrap("(", join(node.variable_definitions, ", "), ")")
-        directives = join(node.directives, " ")
+        prefix = join(
+            (
+                node.operation.value,
+                join((node.name, var_defs)),
+                join(node.directives, " "),
+            ),
+            " ",
+        )
         # Anonymous queries with no directives or variable definitions can use the
         # query short form.
-        return (
-            join((op.value, join((name, var_defs)), directives, selection_set), " ")
-            if (name or directives or var_defs or op != OperationType.QUERY)
-            else selection_set
-        )
+        return ("" if prefix == "query" else prefix + " ") + node.selection_set
 
     @staticmethod
     def leave_variable_definition(node: PrintedNode, *_args: Any) -> str:
