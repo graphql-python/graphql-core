@@ -56,7 +56,6 @@ black = [
 ]
 flake8 = "^3.9"
 mypy = "0.910"
-codecov = "^2"
 sphinx = "^4.2"
 sphinx_rtd_theme = ">=0.5,<1"
 check-manifest = ">=0.46,<1"

@@ -10,7 +10,6 @@ include .editorconfig
 include .flake8
 include .mypy.ini
 
-include codecov.yml
 include tox.ini
 
 include poetry.lock
