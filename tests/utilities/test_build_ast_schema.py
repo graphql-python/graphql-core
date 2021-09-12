@@ -62,7 +62,7 @@ def print_ast_node(obj: TypeWithAstNode) -> str:
 
 
 def print_all_ast_nodes(obj: TypeWithExtensionAstNodes) -> str:
-    assert obj is not None and obj.extension_ast_nodes is not None
+    assert obj is not None and obj.ast_node is not None
     return print_ast(DocumentNode(definitions=[obj.ast_node, *obj.extension_ast_nodes]))
 
 

@@ -100,7 +100,7 @@ class GraphQLSchema:
     description: Optional[str]
     extensions: Optional[Dict[str, Any]]
     ast_node: Optional[ast.SchemaDefinitionNode]
-    extension_ast_nodes: Optional[FrozenList[ast.SchemaExtensionNode]]
+    extension_ast_nodes: FrozenList[ast.SchemaExtensionNode]
 
     _implementations_map: Dict[str, InterfaceImplementations]
     _sub_type_map: Dict[str, Set[str]]
@@ -169,16 +169,13 @@ class GraphQLSchema:
                 )
             if not isinstance(extension_ast_nodes, FrozenList):
                 extension_ast_nodes = FrozenList(extension_ast_nodes)
+        else:
+            extension_ast_nodes = FrozenList()
 
         self.description = description
         self.extensions = extensions
         self.ast_node = ast_node
-        self.extension_ast_nodes = (
-            cast(FrozenList[ast.SchemaExtensionNode], extension_ast_nodes)
-            if extension_ast_nodes
-            else None
-        )
-
+        self.extension_ast_nodes = extension_ast_nodes
         self.query_type = query
         self.mutation_type = mutation
         self.subscription_type = subscription

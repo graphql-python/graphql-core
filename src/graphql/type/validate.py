@@ -16,17 +16,11 @@ from ..pyutils import inspect
 from ..language import (
     DirectiveNode,
     InputValueDefinitionNode,
-    InterfaceTypeDefinitionNode,
-    InterfaceTypeExtensionNode,
     NamedTypeNode,
     Node,
-    ObjectTypeDefinitionNode,
-    ObjectTypeExtensionNode,
     OperationType,
     SchemaDefinitionNode,
     SchemaExtensionNode,
-    UnionTypeDefinitionNode,
-    UnionTypeExtensionNode,
 )
 from .definition import (
     GraphQLEnumType,
@@ -256,7 +250,7 @@ class SchemaValidationContext:
         if not fields:
             self.report_error(
                 f"Type {type_.name} must define one or more fields.",
-                [type_.ast_node, *(type_.extension_ast_nodes or ())],
+                [type_.ast_node, *type_.extension_ast_nodes],
             )
 
         for field_name, field in fields.items():
@@ -346,7 +340,7 @@ class SchemaValidationContext:
                     [
                         iface_field.ast_node,
                         type_.ast_node,
-                        *(type_.extension_ast_nodes or ()),
+                        *type_.extension_ast_nodes,
                     ],
                 )
                 continue
@@ -430,7 +424,7 @@ class SchemaValidationContext:
         if not member_types:
             self.report_error(
                 f"Union type {union.name} must define one or more member types.",
-                [union.ast_node, *(union.extension_ast_nodes or ())],
+                [union.ast_node, *union.extension_ast_nodes],
             )
 
         included_type_names: Set[str] = set()
@@ -457,7 +451,7 @@ class SchemaValidationContext:
         if not enum_values:
             self.report_error(
                 f"Enum type {enum_type.name} must define one or more values.",
-                [enum_type.ast_node, *(enum_type.extension_ast_nodes or ())],
+                [enum_type.ast_node, *enum_type.extension_ast_nodes],
             )
 
         for value_name, enum_value in enum_values.items():
@@ -477,7 +471,7 @@ class SchemaValidationContext:
             self.report_error(
                 f"Input Object type {input_obj.name}"
                 " must define one or more fields.",
-                [input_obj.ast_node, *(input_obj.extension_ast_nodes or ())],
+                [input_obj.ast_node, *input_obj.extension_ast_nodes],
             )
 
         # Ensure the arguments are valid
@@ -574,41 +568,38 @@ class InputObjectCircularRefsValidator:
 def get_all_implements_interface_nodes(
     type_: Union[GraphQLObjectType, GraphQLInterfaceType], iface: GraphQLInterfaceType
 ) -> List[NamedTypeNode]:
+    ast_node = type_.ast_node
+    nodes = type_.extension_ast_nodes
+    if ast_node is not None:
+        nodes = [ast_node, *nodes]  # type: ignore
     implements_nodes: List[NamedTypeNode] = []
-    ast_node: Optional[
-        Union[
-            ObjectTypeDefinitionNode,
-            ObjectTypeExtensionNode,
-            InterfaceTypeDefinitionNode,
-            InterfaceTypeExtensionNode,
-        ]
-    ]
-    for ast_node in [type_.ast_node, *(type_.extension_ast_nodes or ())]:
-        if ast_node:
-            iface_nodes = ast_node.interfaces
-            if iface_nodes:  # pragma: no cover else
-                implements_nodes.extend(
-                    iface_node
-                    for iface_node in iface_nodes
-                    if iface_node.name.value == iface.name
-                )
+    for node in nodes:
+        iface_nodes = node.interfaces
+        if iface_nodes:  # pragma: no cover else
+            implements_nodes.extend(
+                iface_node
+                for iface_node in iface_nodes
+                if iface_node.name.value == iface.name
+            )
     return implements_nodes
 
 
 def get_union_member_type_nodes(
     union: GraphQLUnionType, type_name: str
-) -> Optional[List[NamedTypeNode]]:
+) -> List[NamedTypeNode]:
+    ast_node = union.ast_node
+    nodes = union.extension_ast_nodes
+    if ast_node is not None:
+        nodes = [ast_node, *nodes]  # type: ignore
     member_type_nodes: List[NamedTypeNode] = []
-    ast_node: Optional[Union[UnionTypeDefinitionNode, UnionTypeExtensionNode]]
-    for ast_node in [union.ast_node, *(union.extension_ast_nodes or ())]:
-        if ast_node:
-            type_nodes = ast_node.types
-            if type_nodes:  # pragma: no cover else
-                member_type_nodes.extend(
-                    type_node
-                    for type_node in type_nodes
-                    if type_node.name.value == type_name
-                )
+    for node in nodes:
+        type_nodes = node.types
+        if type_nodes:  # pragma: no cover else
+            member_type_nodes.extend(
+                type_node
+                for type_node in type_nodes
+                if type_node.name.value == type_name
+            )
     return member_type_nodes
 
 

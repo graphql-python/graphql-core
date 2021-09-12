@@ -55,7 +55,7 @@ TypeWithExtensionAstNodes = Union[
 
 
 def print_extension_nodes(obj: TypeWithExtensionAstNodes) -> str:
-    assert obj is not None and obj.extension_ast_nodes is not None
+    assert obj is not None
     return print_ast(DocumentNode(definitions=obj.extension_ast_nodes))
 
 
@@ -484,11 +484,11 @@ def describe_extend_schema():
         )
         test_directive = assert_directive(extended_twice_schema.get_directive("test"))
 
-        assert test_type.extension_ast_nodes is None
-        assert test_enum.extension_ast_nodes is None
-        assert test_union.extension_ast_nodes is None
-        assert test_input.extension_ast_nodes is None
-        assert test_interface.extension_ast_nodes is None
+        assert test_type.extension_ast_nodes == []
+        assert test_enum.extension_ast_nodes == []
+        assert test_union.extension_ast_nodes == []
+        assert test_input.extension_ast_nodes == []
+        assert test_interface.extension_ast_nodes == []
 
         assert query.extension_ast_nodes
         assert len(query.extension_ast_nodes) == 2
