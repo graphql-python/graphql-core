@@ -1496,9 +1496,11 @@ def describe_introspection():
         def type_resolver(_obj, info, _abstract_type):
             assert False, f"Called on {info.parent_type.name}.{info.field_name}"
 
-        graphql_sync(
+        result = graphql_sync(
             schema=schema,
             source=source,
             field_resolver=field_resolver,
             type_resolver=type_resolver,
         )
+
+        assert result.errors is None
