@@ -22,7 +22,7 @@ _re_newline = re.compile(r"\r\n|[\n\r]")
 def print_source_location(source: Source, source_location: SourceLocation) -> str:
     """Render a helpful description of the location in the GraphQL Source document."""
     first_line_column_offset = source.location_offset.column - 1
-    body = " " * first_line_column_offset + source.body
+    body = "".rjust(first_line_column_offset) + source.body
 
     line_index = source_location.line - 1
     line_offset = source.location_offset.line - 1
@@ -43,11 +43,11 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
         ]
 
         return location_str + print_prefixed_lines(
-            (str(line_num), sub_lines[0]),
-            *[("", sub_line) for sub_line in sub_lines[1 : sub_line_index + 1]],
-            (" ", " " * (sub_line_column_num - 1) + "^"),
+            (f"{line_num} |", sub_lines[0]),
+            *[("|", sub_line) for sub_line in sub_lines[1 : sub_line_index + 1]],
+            ("|", "^".rjust(sub_line_column_num)),
             (
-                "",
+                "|",
                 sub_lines[sub_line_index + 1]
                 if sub_line_index < len(sub_lines) - 1
                 else None,
@@ -55,11 +55,11 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
         )
 
     return location_str + print_prefixed_lines(
-        (f"{line_num - 1}", lines[line_index - 1] if line_index > 0 else None),
-        (f"{line_num}", location_line),
-        ("", " " * (column_num - 1) + "^"),
+        (f"{line_num - 1} |", lines[line_index - 1] if line_index > 0 else None),
+        (f"{line_num} |", location_line),
+        ("|", "^".rjust(column_num)),
         (
-            f"{line_num + 1}",
+            f"{line_num + 1} |",
             lines[line_index + 1] if line_index < len(lines) - 1 else None,
         ),
     )
@@ -72,9 +72,6 @@ def print_prefixed_lines(*lines: Tuple[str, Optional[str]]) -> str:
     ]
     pad_len = max(len(line[0]) for line in existing_lines)
     return "\n".join(
-        map(
-            lambda line: line[0].rjust(pad_len)
-            + (" | " + line[1] if line[1] else " |"),
-            existing_lines,
-        )
+        prefix.rjust(pad_len) + (" " + line if line else "")
+        for prefix, line in existing_lines
     )
