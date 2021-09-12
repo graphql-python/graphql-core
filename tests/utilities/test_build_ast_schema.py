@@ -740,6 +740,7 @@ def describe_schema_builder():
         )
         schema = build_schema(
             scalar_sdl
+            + "\n\n"
             + dedent(
                 """
                 directive @foo on SCALAR
@@ -749,7 +750,7 @@ def describe_schema_builder():
         )
 
         some_scalar = assert_scalar_type(schema.get_type("SomeScalar"))
-        assert print_type(some_scalar) + "\n" == dedent(
+        assert print_type(some_scalar) == dedent(
             """
             scalar SomeScalar
             """
@@ -775,6 +776,7 @@ def describe_schema_builder():
         )
         schema = build_schema(
             object_sdl
+            + "\n\n"
             + dedent(
                 """
                 interface Foo
@@ -785,7 +787,7 @@ def describe_schema_builder():
         )
 
         some_object = assert_object_type(schema.get_type("SomeObject"))
-        assert print_type(some_object) + "\n" == dedent(
+        assert print_type(some_object) == dedent(
             """
             type SomeObject implements Foo & Bar & Baz {
               first: String
@@ -816,7 +818,7 @@ def describe_schema_builder():
         schema = build_schema(interface_sdl)
 
         some_interface = assert_interface_type(schema.get_type("SomeInterface"))
-        assert print_type(some_interface) + "\n" == dedent(
+        assert print_type(some_interface) == dedent(
             """
             interface SomeInterface {
               first: String
@@ -840,6 +842,7 @@ def describe_schema_builder():
         )
         schema = build_schema(
             union_sdl
+            + "\n\n"
             + dedent(
                 """
                 type FirstType
@@ -850,7 +853,7 @@ def describe_schema_builder():
         )
 
         some_union = assert_union_type(schema.get_type("SomeUnion"))
-        assert print_type(some_union) + "\n" == dedent(
+        assert print_type(some_union) == dedent(
             """
             union SomeUnion = FirstType | SecondType | ThirdType
             """
@@ -877,7 +880,7 @@ def describe_schema_builder():
         schema = build_schema(enum_sdl)
 
         some_enum = assert_enum_type(schema.get_type("SomeEnum"))
-        assert print_type(some_enum) + "\n" == dedent(
+        assert print_type(some_enum) == dedent(
             """
             enum SomeEnum {
               FIRST
@@ -908,7 +911,7 @@ def describe_schema_builder():
         schema = build_schema(input_sdl)
 
         some_input = assert_input_object_type(schema.get_type("SomeInput"))
-        assert print_type(some_input) + "\n" == dedent(
+        assert print_type(some_input) == dedent(
             """
             input SomeInput {
               first: String

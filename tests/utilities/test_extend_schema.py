@@ -977,6 +977,7 @@ def describe_extend_schema():
 
             """  # noqa: E501
             )
+            + "\n\n"
             + new_types_sdl
         )
 
@@ -1344,7 +1345,7 @@ def describe_extend_schema():
 
             query_type = assert_object_type(extended_schema.query_type)
             assert query_type.name == "Foo"
-            assert print_ast_node(extended_schema) + "\n" == extension_sdl
+            assert print_ast_node(extended_schema) == extension_sdl
 
         def adds_new_root_types_via_schema_extension():
             schema = build_schema(

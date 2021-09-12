@@ -34,11 +34,11 @@ def describe_printer_query_document():
 
     def correctly_prints_query_operation_without_name():
         query_ast_shorthanded = parse("query { id, name }")
-        assert print_ast(query_ast_shorthanded) == "{\n  id\n  name\n}\n"
+        assert print_ast(query_ast_shorthanded) == "{\n  id\n  name\n}"
 
     def correctly_prints_mutation_operation_without_name():
         mutation_ast = parse("mutation { id, name }")
-        assert print_ast(mutation_ast) == "mutation {\n  id\n  name\n}\n"
+        assert print_ast(mutation_ast) == "mutation {\n  id\n  name\n}"
 
     def correctly_prints_query_operation_with_artifacts():
         query_ast_with_artifacts = parse(

@@ -17,7 +17,7 @@ def describe_dedent():
                 """
             )
             == "type Query {\n  me: User\n}\n\n"
-            "type User {\n  id: ID\n  name: String\n}\n"
+            "type User {\n  id: ID\n  name: String\n}"
         )
 
     def removes_only_the_first_level_of_indentation():
@@ -30,7 +30,7 @@ def describe_dedent():
                       fourth
                 """
             )
-            == "first\n  second\n    third\n      fourth\n"
+            == "first\n  second\n    third\n      fourth"
         )
 
     def does_not_escape_special_characters():
@@ -43,7 +43,7 @@ def describe_dedent():
                 """
             )
             == "type Root {\n"
-            '  field(arg: String = "wi\th de\fault"): String\n}\n'
+            '  field(arg: String = "wi\th de\fault"): String\n}'
         )
 
     def also_removes_indentation_using_tabs():
@@ -55,10 +55,10 @@ def describe_dedent():
                 \t\t    }
                 """
             )
-            == "type Query {\n  me: User\n}\n"
+            == "type Query {\n  me: User\n}"
         )
 
-    def removes_leading_newlines():
+    def removes_leading_and_trailing_newlines():
         assert (
             dedent(
                 """
@@ -66,22 +66,12 @@ def describe_dedent():
 
                  type Query {
                    me: User
-                 }"""
+                 }
+
+
+                 """
             )
             == "type Query {\n  me: User\n}"
-        )
-
-    def does_not_remove_trailing_newlines():
-        assert (
-            dedent(
-                """
-                type Query {
-                  me: User
-                }
-
-                """
-            )
-            == "type Query {\n  me: User\n}\n\n"
         )
 
     def removes_all_trailing_spaces_and_tabs():
@@ -93,7 +83,7 @@ def describe_dedent():
                 }
                     \t\t  \t """
             )
-            == "type Query {\n  me: User\n}\n"
+            == "type Query {\n  me: User\n}"
         )
 
     def works_on_text_without_leading_newline():
@@ -101,7 +91,8 @@ def describe_dedent():
             dedent(
                 """                type Query {
                   me: User
-                }"""
+                }
+                """
             )
             == "type Query {\n  me: User\n}"
         )

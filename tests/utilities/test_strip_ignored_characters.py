@@ -118,7 +118,7 @@ def describe_strip_ignored_characters():
         with raises(GraphQLSyntaxError) as exc_info:
             strip_ignored_characters('{ foo(arg: "\n"')
 
-        assert str(exc_info.value) + "\n" == dedent(
+        assert str(exc_info.value) == dedent(
             """
             Syntax Error: Unterminated string.
 

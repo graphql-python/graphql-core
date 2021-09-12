@@ -184,7 +184,7 @@ def describe_usage():
         build_schema_sdl = dedent(
             build_schema.partition('build_schema("""\n')[2].partition('""")')[0]
         )
-        assert build_schema_sdl == sdl
+        assert build_schema_sdl == sdl.rstrip()
 
         scope: Scope = {}
         exec(build_schema, scope)

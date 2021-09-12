@@ -62,7 +62,7 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_document(node: PrintedNode, *_args: Any) -> str:
-        return join(node.definitions, "\n\n") + "\n"
+        return join(node.definitions, "\n\n")
 
     @staticmethod
     def leave_operation_definition(node: PrintedNode, *_args: Any) -> str:

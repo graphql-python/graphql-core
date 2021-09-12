@@ -16,7 +16,7 @@ def describe_print_location():
             minified_source,
             SourceLocation(1, minified_source.body.index("FIRST_ERROR_HERE") + 1),
         )
-        assert first_location + "\n" == dedent(
+        assert first_location == dedent(
             """
             GraphQL request:1:53
             1 | query SomeMinifiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
@@ -29,7 +29,7 @@ def describe_print_location():
             minified_source,
             SourceLocation(1, minified_source.body.index("SECOND_ERROR_HERE") + 1),
         )
-        assert second_location + "\n" == dedent(
+        assert second_location == dedent(
             """
             GraphQL request:1:114
             1 | query SomeMinifiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
@@ -43,7 +43,7 @@ def describe_print_location():
             minified_source,
             SourceLocation(1, minified_source.body.index("THIRD_ERROR_HERE") + 1),
         )
-        assert third_location + "\n" == dedent(
+        assert third_location == dedent(
             """
             GraphQL request:1:166
             1 | query SomeMinifiedQueryWithErrorInside($foo:String!=FIRST_ERROR_HERE$bar:String)
@@ -58,7 +58,7 @@ def describe_print_location():
             Source("*", "Test", SourceLocation(9, 1)), SourceLocation(1, 1)
         )
 
-        assert result + "\n" == dedent(
+        assert result == dedent(
             """
             Test:9:1
             9 | *
@@ -71,7 +71,7 @@ def describe_print_location():
             Source("*\n", "Test", SourceLocation(9, 1)), SourceLocation(1, 1)
         )
 
-        assert result + "\n" == dedent(
+        assert result == dedent(
             """
             Test:9:1
              9 | *

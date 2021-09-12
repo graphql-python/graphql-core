@@ -56,15 +56,12 @@ def print_filtered_schema(
     directives = filter(directive_filter, schema.directives)
     types = filter(type_filter, schema.type_map.values())
 
-    return (
-        "\n\n".join(
-            chain(
-                filter(None, [print_schema_definition(schema)]),
-                (print_directive(directive) for directive in directives),
-                (print_type(type_) for type_ in types),
-            )
+    return "\n\n".join(
+        chain(
+            filter(None, [print_schema_definition(schema)]),
+            (print_directive(directive) for directive in directives),
+            (print_type(type_) for type_ in types),
         )
-        + "\n"
     )
 
 

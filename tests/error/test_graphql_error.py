@@ -222,7 +222,7 @@ def describe_print_error():
         )
 
         printed_error = print_error(error)
-        assert printed_error + "\n" == dedent(
+        assert printed_error == dedent(
             """
             Example error with two nodes
 
