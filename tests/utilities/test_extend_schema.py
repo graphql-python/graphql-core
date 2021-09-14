@@ -3,12 +3,7 @@ from typing import Union
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.language import (
-    parse,
-    print_ast,
-    DocumentNode,
-)
-from graphql.pyutils import FrozenList
+from graphql.language import parse, print_ast
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -54,30 +49,33 @@ TypeWithExtensionAstNodes = Union[
 ]
 
 
-def print_extension_nodes(obj: TypeWithExtensionAstNodes) -> str:
-    assert obj is not None
-    return print_ast(DocumentNode(definitions=obj.extension_ast_nodes))
+def expect_extension_ast_nodes(obj: TypeWithExtensionAstNodes, expected: str) -> None:
+    assert obj is not None and obj.extension_ast_nodes is not None
+    assert "\n\n".join(print_ast(node) for node in obj.extension_ast_nodes) == expected
 
 
-def print_schema_changes(schema: GraphQLSchema, extended_schema: GraphQLSchema) -> str:
-    schema_definitions = [
-        print_ast(definition) for definition in parse(print_schema(schema)).definitions
-    ]
-    ast = parse(print_schema(extended_schema))
-    return print_ast(
-        DocumentNode(
-            definitions=FrozenList(
-                node
-                for node in ast.definitions
-                if print_ast(node) not in schema_definitions
-            )
-        )
-    )
-
-
-def print_ast_node(obj: TypeWithAstNode) -> str:
+def expect_ast_node(obj: TypeWithAstNode, expected: str) -> None:
     assert obj is not None and obj.ast_node is not None
-    return print_ast(obj.ast_node)
+    assert print_ast(obj.ast_node) == expected
+
+
+def expect_schema_changes(
+    schema: GraphQLSchema, extended_schema: GraphQLSchema, expected: str
+) -> None:
+    schema_definitions = {
+        print_ast(node) for node in parse(print_schema(schema)).definitions
+    }
+    assert (
+        "\n\n".join(
+            schema_def
+            for schema_def in (
+                print_ast(node)
+                for node in parse(print_schema(extended_schema)).definitions
+            )
+            if schema_def not in schema_definitions
+        )
+        == expected
+    )
 
 
 def describe_extend_schema():
@@ -136,8 +134,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, parse(extension_sdl))
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            '''
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                '''
             type SomeObject implements AnotherInterface & SomeInterface {
               self: SomeObject
               tree: [SomeObject]!
@@ -147,6 +148,7 @@ def describe_extend_schema():
               newField(arg: Boolean): String
             }
             '''
+            ),
         )
 
     def extends_objects_with_standard_type_fields():
@@ -219,8 +221,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            '''
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                '''
             enum SomeEnum {
               """Old value description."""
               OLD_VALUE
@@ -228,6 +233,7 @@ def describe_extend_schema():
               NEW_VALUE
             }
             '''
+            ),
         )
 
     def extends_unions_by_adding_new_types():
@@ -252,10 +258,14 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             union SomeUnion = Foo | Biz | Bar
             """
+            ),
         )
 
     def allows_extension_of_union_by_adding_itself():
@@ -303,8 +313,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            '''
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                '''
             input SomeInput {
               """Old field description."""
               oldField: String
@@ -312,6 +325,7 @@ def describe_extend_schema():
               newField: String
             }
             '''
+            ),
         )
 
     def extends_scalars_by_adding_new_directives():
@@ -336,11 +350,10 @@ def describe_extend_schema():
             """
         )
         extended_schema = extend_schema(schema, parse(extension_sdl))
+        some_scalar = assert_scalar_type(extended_schema.get_type("SomeScalar"))
 
         assert validate_schema(extended_schema) == []
-
-        some_scalar = assert_scalar_type(extended_schema.get_type("SomeScalar"))
-        assert print_extension_nodes(some_scalar) == extension_sdl
+        expect_extension_ast_nodes(some_scalar, extension_sdl)
 
     def extends_scalars_by_adding_specified_by_directive():
         schema = build_schema(
@@ -368,7 +381,7 @@ def describe_extend_schema():
         assert foo.specified_by_url == "https://example.com/foo_spec"
 
         assert validate_schema(extended_schema) == []
-        assert print_extension_nodes(foo) == extension_sdl
+        expect_extension_ast_nodes(foo, extension_sdl)
 
     def correctly_assigns_ast_nodes_to_new_and_extended_types():
         schema = build_schema(
@@ -519,46 +532,30 @@ def describe_extend_schema():
         } == {*first_extension_ast.definitions, *second_extension_ast.definitions}
 
         new_field = query.fields["newField"]
-        assert print_ast_node(new_field) == "newField(testArg: TestInput): TestEnum"
-        assert print_ast_node(new_field.args["testArg"]) == "testArg: TestInput"
-        assert (
-            print_ast_node(query.fields["oneMoreNewField"])
-            == "oneMoreNewField: TestUnion"
-        )
+        expect_ast_node(new_field, "newField(testArg: TestInput): TestEnum")
+        expect_ast_node(new_field.args["testArg"], "testArg: TestInput")
+        expect_ast_node(query.fields["oneMoreNewField"], "oneMoreNewField: TestUnion")
 
-        new_value = some_enum.values["NEW_VALUE"]
-        assert print_ast_node(new_value) == "NEW_VALUE"
+        expect_ast_node(some_enum.values["NEW_VALUE"], "NEW_VALUE")
 
         one_more_new_value = some_enum.values["ONE_MORE_NEW_VALUE"]
-        assert print_ast_node(one_more_new_value) == "ONE_MORE_NEW_VALUE"
-        assert print_ast_node(some_input.fields["newField"]) == "newField: String"
-        assert (
-            print_ast_node(some_input.fields["oneMoreNewField"])
-            == "oneMoreNewField: String"
-        )
-        assert print_ast_node(some_interface.fields["newField"]) == "newField: String"
-        assert (
-            print_ast_node(some_interface.fields["oneMoreNewField"])
-            == "oneMoreNewField: String"
+        expect_ast_node(one_more_new_value, "ONE_MORE_NEW_VALUE")
+        expect_ast_node(some_input.fields["newField"], "newField: String")
+        expect_ast_node(some_input.fields["oneMoreNewField"], "oneMoreNewField: String")
+        expect_ast_node(some_interface.fields["newField"], "newField: String")
+        expect_ast_node(
+            some_interface.fields["oneMoreNewField"], "oneMoreNewField: String"
         )
 
-        assert (
-            print_ast_node(test_input.fields["testInputField"])
-            == "testInputField: TestEnum"
-        )
+        expect_ast_node(test_input.fields["testInputField"], "testInputField: TestEnum")
 
-        test_value = test_enum.values["TEST_VALUE"]
-        assert print_ast_node(test_value) == "TEST_VALUE"
+        expect_ast_node(test_enum.values["TEST_VALUE"], "TEST_VALUE")
 
-        assert (
-            print_ast_node(test_interface.fields["interfaceField"])
-            == "interfaceField: String"
+        expect_ast_node(
+            test_interface.fields["interfaceField"], "interfaceField: String"
         )
-        assert (
-            print_ast_node(test_type.fields["interfaceField"])
-            == "interfaceField: String"
-        )
-        assert print_ast_node(test_directive.args["arg"]) == "arg: Int"
+        expect_ast_node(test_type.fields["interfaceField"], "interfaceField: String")
+        expect_ast_node(test_directive.args["arg"], "arg: Int")
 
     def builds_types_with_deprecated_fields_and_values():
         schema = GraphQLSchema()
@@ -649,7 +646,7 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, parse(extension_sdl))
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == extension_sdl
+        expect_schema_changes(schema, extended_schema, extension_sdl)
 
     def extends_objects_by_adding_new_fields_with_arguments():
         schema = build_schema(
@@ -677,8 +674,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             type SomeObject {
               newField(arg1: String, arg2: NewInputObj!): String
             }
@@ -689,6 +689,7 @@ def describe_extend_schema():
               field3: String!
             }
             """
+            ),
         )
 
     def extends_objects_by_adding_new_fields_with_existing_types():
@@ -712,12 +713,16 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             type SomeObject {
               newField(arg1: SomeEnum!): SomeEnum
             }
             """
+            ),
         )
 
     def extends_objects_by_adding_implemented_interfaces():
@@ -744,12 +749,16 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             type SomeObject implements SomeInterface {
               foo: String
             }
             """
+            ),
         )
 
     def extends_objects_by_including_new_types():
@@ -797,9 +806,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             type SomeObject {
               oldField: String
               newObject: NewObject
@@ -809,7 +820,8 @@ def describe_extend_schema():
               newEnum: NewEnum
               newTree: [SomeObject]!
             }\n"""
-            + new_types_sdl
+                + new_types_sdl
+            ),
         )
 
     def extends_objects_by_adding_implemented_new_interfaces():
@@ -842,8 +854,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             type SomeObject implements OldInterface & NewInterface {
               oldField: String
               newField: String
@@ -853,6 +868,7 @@ def describe_extend_schema():
               newField: String
             }
             """
+            ),
         )
 
     def extends_different_types_multiple_times():
@@ -911,7 +927,7 @@ def describe_extend_schema():
             """
         )
         schema_with_new_types = extend_schema(schema, parse(new_types_sdl))
-        assert print_schema_changes(schema, schema_with_new_types) == new_types_sdl
+        expect_schema_changes(schema, schema_with_new_types, new_types_sdl)
 
         extend_ast = parse(
             """
@@ -949,9 +965,10 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema_with_new_types, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert (
-            print_schema_changes(schema, extended_schema)
-            == dedent(
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
                 """
             scalar SomeScalar @specifiedBy(url: "http://example.com/foo_spec")
 
@@ -978,7 +995,7 @@ def describe_extend_schema():
             """  # noqa: E501
             )
             + "\n\n"
-            + new_types_sdl
+            + new_types_sdl,
         )
 
     def extends_interfaces_by_adding_new_fields():
@@ -1019,8 +1036,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             interface SomeInterface {
               oldField: String
               newField: String
@@ -1036,6 +1056,7 @@ def describe_extend_schema():
               newField: String
             }
             """
+            ),
         )
 
     def extends_interfaces_by_adding_new_implemented_interfaces():
@@ -1076,8 +1097,11 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             interface AnotherInterface implements SomeInterface & NewInterface {
               oldField: String
               newField: String
@@ -1092,6 +1116,7 @@ def describe_extend_schema():
               newField: String
             }
             """
+            ),
         )
 
     def allows_extension_of_interface_with_missing_object_fields():
@@ -1120,13 +1145,17 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema)
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             interface SomeInterface {
               oldField: SomeInterface
               newField: String
             }
             """
+            ),
         )
 
     def extends_interfaces_multiple_times():
@@ -1155,14 +1184,18 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, extend_ast)
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == dedent(
-            """
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
             interface SomeInterface {
               some: SomeInterface
               newFieldA: Int
               newFieldB(test: Boolean): String
             }
             """
+            ),
         )
 
     def may_extend_mutations_and_subscriptions():
@@ -1236,7 +1269,7 @@ def describe_extend_schema():
         extended_schema = extend_schema(schema, parse(extension_sdl))
 
         assert validate_schema(extended_schema) == []
-        assert print_schema_changes(schema, extended_schema) == extension_sdl
+        expect_schema_changes(schema, extended_schema, extension_sdl)
 
     def rejects_invalid_sdl():
         schema = GraphQLSchema()
@@ -1345,7 +1378,7 @@ def describe_extend_schema():
 
             query_type = assert_object_type(extended_schema.query_type)
             assert query_type.name == "Foo"
-            assert print_ast_node(extended_schema) == extension_sdl
+            expect_ast_node(extended_schema, extension_sdl)
 
         def adds_new_root_types_via_schema_extension():
             schema = build_schema(
@@ -1365,7 +1398,7 @@ def describe_extend_schema():
 
             mutation_type = assert_object_type(extended_schema.mutation_type)
             assert mutation_type.name == "MutationRoot"
-            assert print_extension_nodes(extended_schema) == extension_sdl
+            expect_extension_ast_nodes(extended_schema, extension_sdl)
 
         def adds_directive_via_schema_extension():
             schema = build_schema(
@@ -1382,7 +1415,7 @@ def describe_extend_schema():
             )
             extended_schema = extend_schema(schema, parse(extension_sdl))
 
-            assert print_extension_nodes(extended_schema) == extension_sdl
+            expect_extension_ast_nodes(extended_schema, extension_sdl)
 
         def adds_multiple_new_root_types_via_schema_extension():
             schema = build_schema("type Query")
@@ -1454,8 +1487,10 @@ def describe_extend_schema():
             second_extend_ast = parse("extend schema @foo")
             extended_twice_schema = extend_schema(extended_schema, second_extend_ast)
 
-            assert print_extension_nodes(extended_twice_schema) == dedent(
-                """
+            expect_extension_ast_nodes(
+                extended_twice_schema,
+                dedent(
+                    """
                 extend schema {
                   mutation: Mutation
                 }
@@ -1466,4 +1501,5 @@ def describe_extend_schema():
 
                 extend schema @foo
                 """
+                ),
             )
