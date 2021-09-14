@@ -22,16 +22,15 @@ def describe_printer_sdl_document():
         assert msg == "Not an AST Node: {'random': 'Data'}."
 
     # noinspection PyShadowingNames
-    def does_not_alter_ast(kitchen_sink_sdl):  # noqa: F811
-        ast = parse(kitchen_sink_sdl)
-        ast_copy = deepcopy(ast)
-        print_ast(ast)
-        assert ast == ast_copy
+    def prints_kitchen_sink_without_altering_ast(kitchen_sink_sdl):  # noqa: F811
+        ast = parse(kitchen_sink_sdl, no_location=True)
 
-    # noinspection PyShadowingNames
-    def prints_kitchen_sink(kitchen_sink_sdl):  # noqa: F811
-        ast = parse(kitchen_sink_sdl)
+        ast_before_print_call = deepcopy(ast)
         printed = print_ast(ast)
+        printed_ast = parse(printed, no_location=True)
+
+        assert printed_ast == ast
+        assert deepcopy(ast) == ast_before_print_call
 
         assert printed == dedent(
             '''

@@ -9,14 +9,6 @@ from ..utils import dedent
 
 
 def describe_printer_query_document():
-
-    # noinspection PyShadowingNames
-    def does_not_alter_ast(kitchen_sink_query):  # noqa: F811
-        ast = parse(kitchen_sink_query)
-        ast_before = deepcopy(ast)
-        print_ast(ast)
-        assert ast == ast_before
-
     def prints_minimal_ast():
         ast = FieldNode(name=NameNode(value="foo"))
         assert print_ast(ast) == "foo"
@@ -136,10 +128,15 @@ def describe_printer_query_document():
         fragment_with_variable = parse(source, allow_legacy_fragment_variables=True)
         assert print_ast(fragment_with_variable) == dedent(source)
 
-    # noinspection PyShadowingNames
-    def prints_kitchen_sink(kitchen_sink_query):  # noqa: F811
-        ast = parse(kitchen_sink_query)
+    def prints_kitchen_sink_without_altering_ast(kitchen_sink_query):  # noqa: F811
+        ast = parse(kitchen_sink_query, no_location=True)
+
+        ast_before_print_call = deepcopy(ast)
         printed = print_ast(ast)
+        printed_ast = parse(printed, no_location=True)
+        assert printed_ast == ast
+        assert deepcopy(ast) == ast_before_print_call
+
         assert printed == dedent(
             r'''
             query queryName($foo: ComplexType, $site: Site = MOBILE) @onQuery {
