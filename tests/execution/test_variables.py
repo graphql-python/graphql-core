@@ -29,6 +29,7 @@ def parse_serialized_value(value: str) -> str:
 
 def parse_literal_value(ast: ValueNode, _variables=None) -> str:
     assert isinstance(ast, StringValueNode)
+    assert ast.value == "SerializedValue"
     return parse_serialized_value(ast.value)
 
 
