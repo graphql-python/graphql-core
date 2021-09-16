@@ -18,15 +18,9 @@ class MapAsyncIterator:
     be closed.
     """
 
-    def __init__(
-        self,
-        iterable: AsyncIterable,
-        callback: Callable,
-        reject_callback: Optional[Callable] = None,
-    ) -> None:
+    def __init__(self, iterable: AsyncIterable, callback: Callable) -> None:
         self.iterator = iterable.__aiter__()
         self.callback = callback
-        self.reject_callback = reject_callback
         self._close_event = Event()
 
     def __aiter__(self) -> "MapAsyncIterator":
@@ -64,14 +58,10 @@ class MapAsyncIterator:
 
             error = anext.exception()
             if error:
-                if not self.reject_callback or isinstance(
-                    error, (StopAsyncIteration, GeneratorExit)
-                ):
-                    raise error
-                result = self.reject_callback(error)
-            else:
-                value = anext.result()
-                result = self.callback(value)
+                raise error
+
+            value = anext.result()
+            result = self.callback(value)
 
         return await result if isawaitable(result) else result
 

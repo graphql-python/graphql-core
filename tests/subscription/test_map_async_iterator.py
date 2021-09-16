@@ -285,23 +285,6 @@ def describe_map_async_iterator():
         assert str(exc_info.value) == "Goodbye"
 
     @mark.asyncio
-    async def maps_over_thrown_errors_if_second_callback_provided():
-        async def source():
-            yield "Hello"
-            raise RuntimeError("Goodbye")
-
-        doubles = MapAsyncIterator(source(), lambda x: x + x, lambda error: error)
-
-        assert await anext(doubles) == "HelloHello"
-
-        result = await anext(doubles)
-        assert isinstance(result, RuntimeError)
-        assert str(result) == "Goodbye"
-
-        with raises(StopAsyncIteration):
-            await anext(doubles)
-
-    @mark.asyncio
     async def can_use_simple_iterator_instead_of_generator():
         async def source():
             yield 1
