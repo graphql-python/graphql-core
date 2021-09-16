@@ -164,11 +164,8 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
     schema = context.schema
     type_ = get_operation_root_type(schema, context.operation)
     fields = context.collect_fields(type_, context.operation.selection_set, {}, set())
-    response_names = list(fields)
-    response_name = response_names[0]
-    field_nodes = fields[response_name]
-    field_node = field_nodes[0]
-    field_name = field_node.name.value
+    response_name, field_nodes = next(iter(fields.items()))
+    field_name = field_nodes[0].name.value
     field_def = get_field_def(schema, type_, field_name)
 
     if not field_def:
