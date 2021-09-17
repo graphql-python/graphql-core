@@ -1,4 +1,3 @@
-from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast
@@ -57,10 +56,10 @@ def print_filtered_schema(
     types = filter(type_filter, schema.type_map.values())
 
     return "\n\n".join(
-        chain(
-            filter(None, [print_schema_definition(schema)]),
-            (print_directive(directive) for directive in directives),
-            (print_type(type_) for type_ in types),
+        (
+            *filter(None, (print_schema_definition(schema),)),
+            *map(print_directive, directives),
+            *map(print_type, types),
         )
     )
 
@@ -96,6 +95,7 @@ def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
     schema {
       query: Query
       mutation: Mutation
+      subscription: Subscription
     }
 
     When using this naming convention, the schema description can be omitted.
