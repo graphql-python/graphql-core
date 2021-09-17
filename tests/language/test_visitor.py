@@ -539,6 +539,75 @@ def describe_visitor():
             ["leave", "selection_set", None],
         ]
 
+    def visit_nodes_with_unknown_kinds_but_does_not_traverse_deeper():
+        custom_ast = parse("{ a }")
+
+        class CustomFieldNode(SelectionNode):
+            __slots__ = "name", "selection_set"
+
+            name: NameNode
+            selection_set: Optional[SelectionSetNode]
+
+        custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
+        assert custom_selection_set is not None
+        custom_selection_set.selections = custom_selection_set.selections + [
+            CustomFieldNode(
+                name=NameNode(value="NameNodeToBeSkipped"),
+                selection_set=SelectionSetNode(
+                    selections=CustomFieldNode(
+                        name=NameNode(value="NameNodeToBeSkipped")
+                    )
+                ),
+            )
+        ]
+
+        visited = []
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(node, *_args):
+                visited.append(["enter", node.kind, get_value(node)])
+
+            @staticmethod
+            def leave(node, *_args):
+                visited.append(["leave", node.kind, get_value(node)])
+
+        visit(custom_ast, TestVisitor())
+        assert visited == [
+            ["enter", "document", None],
+            ["enter", "operation_definition", None],
+            ["enter", "selection_set", None],
+            ["enter", "field", None],
+            ["enter", "name", "a"],
+            ["leave", "name", "a"],
+            ["leave", "field", None],
+            ["enter", "custom_field", None],
+            ["leave", "custom_field", None],
+            ["leave", "selection_set", None],
+            ["leave", "operation_definition", None],
+            ["leave", "document", None],
+        ]
+
+    def cannot_define_visitor_with_unknown_ast_nodes():
+        with raises(TypeError) as exc_info:
+
+            class VisitorWithNonExistingNode(Visitor):
+                def enter_field(self, *_args):
+                    pass
+
+                def leave_garfield(self, *_args):
+                    pass
+
+        assert str(exc_info.value) == "Invalid AST node kind: garfield."
+
+        with raises(TypeError) as exc_info:
+
+            class VisitorWithUnspecificNode(Visitor):
+                def enter_type_system_extension(self, *_args):
+                    pass
+
+        assert str(exc_info.value) == "Invalid AST node kind: type_system_extension."
+
     def legacy_visits_variables_defined_in_fragments():
         ast = parse(
             "fragment a($v: Boolean = false) on t { f }",
@@ -968,75 +1037,6 @@ def describe_visitor():
             ["leave", "operation_definition", 5, None],
             ["leave", "document", None, None],
         ]
-
-
-def describe_support_for_custom_ast_nodes():
-    custom_ast = parse("{ a }")
-
-    class CustomFieldNode(SelectionNode):
-        __slots__ = "name", "selection_set"
-
-        name: NameNode
-        selection_set: Optional[SelectionSetNode]
-
-    custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
-    assert custom_selection_set is not None
-    custom_selection_set.selections = custom_selection_set.selections + [
-        CustomFieldNode(
-            name=NameNode(value="b"),
-            selection_set=SelectionSetNode(
-                selections=CustomFieldNode(name=NameNode(value="c"))
-            ),
-        )
-    ]
-
-    def does_not_traverse_unknown_node_kinds():
-        visited = []
-
-        class TestVisitor(Visitor):
-            @staticmethod
-            def enter(node, *_args):
-                visited.append(["enter", node.kind, get_value(node)])
-
-            @staticmethod
-            def leave(node, *_args):
-                visited.append(["leave", node.kind, get_value(node)])
-
-        visit(custom_ast, TestVisitor())
-        assert visited == [
-            ["enter", "document", None],
-            ["enter", "operation_definition", None],
-            ["enter", "selection_set", None],
-            ["enter", "field", None],
-            ["enter", "name", "a"],
-            ["leave", "name", "a"],
-            ["leave", "field", None],
-            ["enter", "custom_field", None],
-            ["leave", "custom_field", None],
-            ["leave", "selection_set", None],
-            ["leave", "operation_definition", None],
-            ["leave", "document", None],
-        ]
-
-    def cannot_define_visitor_with_unknown_ast_nodes():
-        with raises(TypeError) as exc_info:
-
-            class VisitorWithNonExistingNode(Visitor):
-                def enter_field(self, *_args):
-                    pass
-
-                def leave_garfield(self, *_args):
-                    pass
-
-        assert str(exc_info.value) == "Invalid AST node kind: garfield."
-
-        with raises(TypeError) as exc_info:
-
-            class VisitorWithUnspecificNode(Visitor):
-                def enter_type_system_extension(self, *_args):
-                    pass
-
-        assert str(exc_info.value) == "Invalid AST node kind: type_system_extension."
 
 
 def describe_visit_in_parallel():
