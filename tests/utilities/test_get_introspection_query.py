@@ -44,9 +44,9 @@ def describe_get_introspection_query():
         ).to_not_match("description")
 
     def includes_specified_by_url_field():
-        ExcpectIntrospectionQuery().to_not_match("specifiedByUrl")
-        ExcpectIntrospectionQuery(specified_by_url=True).to_match("specifiedByUrl")
-        ExcpectIntrospectionQuery(specified_by_url=False).to_not_match("specifiedByUrl")
+        ExcpectIntrospectionQuery().to_not_match("specifiedByURL")
+        ExcpectIntrospectionQuery(specified_by_url=True).to_match("specifiedByURL")
+        ExcpectIntrospectionQuery(specified_by_url=False).to_not_match("specifiedByURL")
 
     def includes_is_deprecated_field_on_input_values():
         ExcpectIntrospectionQuery().to_match("isDeprecated", 2)

@@ -271,7 +271,7 @@ def print_specified_by_url(scalar: GraphQLScalarType) -> str:
     url_ast = ast_from_value(url, GraphQLString)
     if not url_ast:  # pragma: no cover
         raise TypeError(
-            "Unexpected null value returned from `ast_from_value` for specifiedByUrl."
+            "Unexpected null value returned from `ast_from_value` for specifiedByURL."
         )
     return f" @specifiedBy(url: {print_ast(url_ast)})"
 

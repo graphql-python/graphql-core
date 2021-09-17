@@ -31,7 +31,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "SomeObject",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "someField",
@@ -53,7 +53,7 @@ def describe_introspection():
                     {
                         "kind": "SCALAR",
                         "name": "String",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": None,
                         "inputFields": None,
                         "interfaces": None,
@@ -63,7 +63,7 @@ def describe_introspection():
                     {
                         "kind": "SCALAR",
                         "name": "Boolean",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": None,
                         "inputFields": None,
                         "interfaces": None,
@@ -73,7 +73,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "__Schema",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "description",
@@ -178,7 +178,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "__Type",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "kind",
@@ -218,7 +218,7 @@ def describe_introspection():
                                 "deprecationReason": None,
                             },
                             {
-                                "name": "specifiedByUrl",
+                                "name": "specifiedByURL",
                                 "args": [],
                                 "type": {
                                     "kind": "SCALAR",
@@ -373,7 +373,7 @@ def describe_introspection():
                     {
                         "kind": "ENUM",
                         "name": "__TypeKind",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": None,
                         "inputFields": None,
                         "interfaces": None,
@@ -424,7 +424,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "__Field",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "name",
@@ -535,7 +535,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "__InputValue",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "name",
@@ -624,7 +624,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "__EnumValue",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "name",
@@ -687,7 +687,7 @@ def describe_introspection():
                     {
                         "kind": "OBJECT",
                         "name": "__Directive",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": [
                             {
                                 "name": "name",
@@ -785,7 +785,7 @@ def describe_introspection():
                     {
                         "kind": "ENUM",
                         "name": "__DirectiveLocation",
-                        "specifiedByUrl": None,
+                        "specifiedByURL": None,
                         "fields": None,
                         "inputFields": None,
                         "interfaces": None,

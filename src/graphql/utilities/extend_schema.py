@@ -688,7 +688,7 @@ def get_deprecation_reason(
 def get_specified_by_url(
     node: Union[ScalarTypeDefinitionNode, ScalarTypeExtensionNode]
 ) -> Optional[str]:
-    """Given a scalar node, return the string value for the specifiedByUrl."""
+    """Given a scalar node, return the string value for the specifiedByURL."""
     from ..execution import get_directive_values
 
     specified_by_url = get_directive_values(GraphQLSpecifiedByDirective, node)

@@ -115,7 +115,7 @@ def build_client_schema(
         return GraphQLScalarType(
             name=scalar_introspection["name"],
             description=scalar_introspection.get("description"),
-            specified_by_url=scalar_introspection.get("specifiedByUrl"),
+            specified_by_url=scalar_introspection.get("specifiedByURL"),
         )
 
     def build_implementations_list(

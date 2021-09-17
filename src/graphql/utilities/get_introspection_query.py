@@ -18,7 +18,7 @@ def get_introspection_query(
     the schema description as well.
     """
     maybe_description = "description" if descriptions else ""
-    maybe_specified_by_url = "specifiedByUrl" if specified_by_url else ""
+    maybe_specified_by_url = "specifiedByURL" if specified_by_url else ""
     maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     maybe_schema_description = maybe_description if schema_description else ""
 
