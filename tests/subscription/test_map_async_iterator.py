@@ -28,10 +28,10 @@ def describe_map_async_iterator():
             assert await anext(doubles)
 
     @mark.asyncio
-    async def maps_over_async_iterator():
+    async def maps_over_async_iterable():
         items = [1, 2, 3]
 
-        class Iterator:
+        class Iterable:
             def __aiter__(self):
                 return self
 
@@ -41,7 +41,7 @@ def describe_map_async_iterator():
                 except IndexError:
                     raise StopAsyncIteration
 
-        doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
+        doubles = MapAsyncIterator(Iterable(), lambda x: x + x)
 
         values = [value async for value in doubles]
 
@@ -99,10 +99,10 @@ def describe_map_async_iterator():
             await anext(doubles)
 
     @mark.asyncio
-    async def allows_returning_early_from_mapped_async_iterator():
+    async def allows_returning_early_from_mapped_async_iterable():
         items = [1, 2, 3]
 
-        class Iterator:
+        class Iterable:
             def __aiter__(self):
                 return self
 
@@ -112,7 +112,7 @@ def describe_map_async_iterator():
                 except IndexError:  # pragma: no cover
                     raise StopAsyncIteration
 
-        doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
+        doubles = MapAsyncIterator(Iterable(), lambda x: x + x)
 
         assert await anext(doubles) == 2
         assert await anext(doubles) == 4
@@ -151,10 +151,10 @@ def describe_map_async_iterator():
             assert await anext(doubles)
 
     @mark.asyncio
-    async def allows_throwing_errors_through_async_iterators():
+    async def allows_throwing_errors_through_async_iterable():
         items = [1, 2, 3]
 
-        class Iterator:
+        class Iterable:
             def __aiter__(self):
                 return self
 
@@ -164,7 +164,7 @@ def describe_map_async_iterator():
                 except IndexError:  # pragma: no cover
                     raise StopAsyncIteration
 
-        doubles = MapAsyncIterator(Iterator(), lambda x: x + x)
+        doubles = MapAsyncIterator(Iterable(), lambda x: x + x)
 
         assert await anext(doubles) == 2
         assert await anext(doubles) == 4
