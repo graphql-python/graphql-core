@@ -6,9 +6,13 @@ from pytest import mark, raises
 from graphql.subscription.map_async_iterator import MapAsyncIterator
 
 
-async def anext(iterable):
-    """Return the next item from an async iterator."""
-    return await iterable.__anext__()
+try:  # pragma: nocover
+    anext
+except NameError:  # pragma: nocover (Python < 3.10)
+    # noinspection PyShadowingBuiltins
+    async def anext(iterator):
+        """Return the next item from an async iterator."""
+        return await iterator.__anext__()
 
 
 def describe_map_async_iterator():

@@ -1,10 +1,10 @@
 import asyncio
 
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Callable
 
 from pytest import mark, raises
 
-from graphql.language import parse, DocumentNode
+from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
     GraphQLArgument,
@@ -16,7 +16,16 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
-from graphql.subscription import subscribe, MapAsyncIterator
+from graphql.subscription import create_source_event_stream, subscribe, MapAsyncIterator
+
+try:  # pragma: nocover
+    anext
+except NameError:  # pragma: nocover (Python < 3.10)
+    # noinspection PyShadowingBuiltins
+    async def anext(iterator):
+        """Return the next item from an async iterator."""
+        return await iterator.__anext__()
+
 
 Email = Dict  # should become a TypedDict once we require Python 3.8
 
@@ -53,55 +62,38 @@ EmailEventType = GraphQLObjectType(
 )
 
 
-async def anext(iterable):
-    """Return the next item from an async iterator."""
-    return await iterable.__anext__()
-
-
-def email_schema_with_resolvers(
-    subscribe_fn: Optional[Callable] = None, resolve_fn: Optional[Callable] = None
-):
-    return GraphQLSchema(
-        query=QueryType,
-        subscription=GraphQLObjectType(
-            "Subscription",
-            {
-                "importantEmail": GraphQLField(
-                    EmailEventType,
-                    args={"priority": GraphQLArgument(GraphQLInt)},
-                    resolve=resolve_fn,
-                    subscribe=subscribe_fn,
-                )
-            },
-        ),
-    )
-
-
-email_schema = email_schema_with_resolvers()
-
-default_subscription_ast = parse(
-    """
-    subscription ($priority: Int = 0) {
-      importantEmail(priority: $priority) {
-        email {
-          from
-          subject
-        }
-        inbox {
-          unread
-          total
-        }
-      }
-    }
-    """
+email_schema = GraphQLSchema(
+    query=QueryType,
+    subscription=GraphQLObjectType(
+        "Subscription",
+        {
+            "importantEmail": GraphQLField(
+                EmailEventType,
+                args={"priority": GraphQLArgument(GraphQLInt)},
+            )
+        },
+    ),
 )
 
 
-def create_subscription(
-    pubsub: SimplePubSub,
-    schema: GraphQLSchema = email_schema,
-    document: DocumentNode = default_subscription_ast,
-):
+def create_subscription(pubsub: SimplePubSub):
+    document = parse(
+        """
+        subscription ($priority: Int = 0) {
+          importantEmail(priority: $priority) {
+            email {
+              from
+              subject
+            }
+            inbox {
+              unread
+              total
+            }
+          }
+        }
+        """
+    )
+
     emails: List[Email] = [
         {
             "from": "joe@graphql.org",
@@ -121,7 +113,7 @@ def create_subscription(
         "importantEmail": pubsub.get_subscriber(transform),
     }
 
-    return subscribe(schema, document, data)
+    return subscribe(email_schema, document, data)
 
 
 # Check all error cases when initializing the subscription.
@@ -150,235 +142,179 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def accepts_multiple_subscription_fields_defined_in_schema():
-        pubsub = SimplePubSub()
-        subscription_type_multiple = GraphQLObjectType(
-            "Subscription",
-            {
-                "importantEmail": GraphQLField(EmailEventType),
-                "nonImportantEmail": GraphQLField(EmailEventType),
-            },
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "foo": GraphQLField(GraphQLString),
+                    "bar": GraphQLField(GraphQLString),
+                },
+            ),
         )
 
-        test_schema = GraphQLSchema(
-            query=QueryType, subscription=subscription_type_multiple
+        async def foo_gen(_info):
+            yield {"foo": "FooValue"}
+
+        subscription = await subscribe(
+            schema, parse("subscription { foo }"), {"foo": foo_gen}
         )
-
-        subscription = await create_subscription(pubsub, test_schema)
-
         assert isinstance(subscription, MapAsyncIterator)
 
-        pubsub.emit(
-            {
-                "from": "yuzhi@graphql.org",
-                "subject": "Alright",
-                "message": "Tests are good",
-                "unread": True,
-            }
-        )
+        assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
-        await anext(subscription)
+        await subscription.aclose()
 
     @mark.asyncio
     async def accepts_type_definition_with_sync_subscribe_function():
-        pubsub = SimplePubSub()
-
-        async def get_subscriber(*_args):
-            return pubsub.get_subscriber()
+        async def foo_generator(_obj, _info):
+            yield {"foo": "FooValue"}
 
         schema = GraphQLSchema(
             query=QueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
-                {
-                    "importantEmail": GraphQLField(
-                        GraphQLString, subscribe=get_subscriber
-                    )
-                },
+                {"foo": GraphQLField(GraphQLString, subscribe=foo_generator)},
             ),
         )
 
-        subscription = await subscribe(
-            schema,
-            parse(
-                """
-            subscription {
-              importantEmail
-            }
-            """
-            ),
-        )
+        subscription = await subscribe(schema, parse("subscription { foo }"))
+        assert isinstance(subscription, MapAsyncIterator)
 
-        pubsub.emit({"importantEmail": {}})
+        assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
-        await anext(subscription)
+        await subscription.aclose()
 
     @mark.asyncio
     async def accepts_type_definition_with_async_subscribe_function():
-        pubsub = SimplePubSub()
-
-        async def get_subscriber(*_args):
+        async def foo_generator(_obj, _info):
             await asyncio.sleep(0)
-            return pubsub.get_subscriber()
+            yield {"foo": "FooValue"}
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {"foo": GraphQLField(GraphQLString, subscribe=foo_generator)},
+            ),
+        )
+
+        subscription = await subscribe(schema, parse("subscription { foo }"))
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == ({"foo": "FooValue"}, None)
+
+        await subscription.aclose()
+
+    @mark.asyncio
+    async def should_only_resolve_the_first_field_of_invalid_multi_field():
+        did_resolve = {"foo": False, "bar": False}
+
+        async def subscribe_foo(_obj, _info):
+            did_resolve["foo"] = True
+            yield {"foo": "FooValue"}
+
+        async def subscribe_bar(_obj, _info):  # pragma: no cover
+            did_resolve["bar"] = True
+            yield {"bar": "BarValue"}
 
         schema = GraphQLSchema(
             query=QueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
-                    "importantEmail": GraphQLField(
-                        GraphQLString, subscribe=get_subscriber
-                    )
+                    "foo": GraphQLField(GraphQLString, subscribe=subscribe_foo),
+                    "bar": GraphQLField(GraphQLString, subscribe=subscribe_bar),
                 },
             ),
         )
 
-        subscription = await subscribe(
-            schema,
-            parse(
-                """
-            subscription {
-              importantEmail
-            }
-            """
+        subscription = await subscribe(schema, parse("subscription { foo bar }"))
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == (
+            {"foo": "FooValue", "bar": None},
+            None,
+        )
+
+        assert did_resolve == {"foo": True, "bar": False}
+
+        await subscription.aclose()
+
+    @mark.asyncio
+    async def throws_an_error_if_some_of_required_arguments_are_missing():
+        document = parse("subscription { foo }")
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription", {"foo": GraphQLField(GraphQLString)}
             ),
         )
 
-        pubsub.emit({"importantEmail": {}})
-
-        await anext(subscription)
-
-    @mark.asyncio
-    async def should_only_resolve_the_first_field_of_invalid_multi_field():
-        did_resolve = {"importantEmail": False, "nonImportantEmail": False}
-
-        def subscribe_important(*_args):
-            did_resolve["importantEmail"] = True
-            return SimplePubSub().get_subscriber()
-
-        def subscribe_non_important(*_args):  # pragma: no cover
-            did_resolve["nonImportantEmail"] = True
-            return SimplePubSub().get_subscriber()
-
-        subscription_type_multiple = GraphQLObjectType(
-            "Subscription",
-            {
-                "importantEmail": GraphQLField(
-                    EmailEventType, subscribe=subscribe_important
-                ),
-                "nonImportantEmail": GraphQLField(
-                    EmailEventType, subscribe=subscribe_non_important
-                ),
-            },
-        )
-
-        schema = GraphQLSchema(query=QueryType, subscription=subscription_type_multiple)
-
-        subscription = await subscribe(
-            schema,
-            parse(
-                """
-            subscription {
-              importantEmail
-              nonImportantEmail
-            }
-            """
-            ),
-        )
-
-        ignored = anext(subscription)  # Ask for a result, but ignore it.
-
-        assert did_resolve["importantEmail"] is True
-        assert did_resolve["nonImportantEmail"] is False
-
-        # Close subscription
-        # noinspection PyUnresolvedReferences
-        await subscription.aclose()  # type: ignore
-
-        with raises(StopAsyncIteration):
-            await ignored
-
-    # noinspection PyArgumentList
-    @mark.asyncio
-    async def throws_an_error_if_schema_is_missing():
-        document = parse(
-            """
-            subscription {
-              importantEmail
-            }
-            """
-        )
-
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
+        with raises(TypeError, match="^Expected None to be a GraphQL schema\\.$"):
             await subscribe(None, document)  # type: ignore
 
-        assert str(exc_info.value) == "Expected None to be a GraphQL schema."
-
         with raises(TypeError, match="missing .* positional argument: 'schema'"):
-            # noinspection PyTypeChecker
             await subscribe(document=document)  # type: ignore
 
-    # noinspection PyArgumentList
-    @mark.asyncio
-    async def throws_an_error_if_document_is_missing():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            await subscribe(email_schema, None)  # type: ignore
-
-        assert str(exc_info.value) == "Must provide document."
+        with raises(TypeError, match="^Must provide document\\.$"):
+            await subscribe(schema, None)  # type: ignore
 
         with raises(TypeError, match="missing .* positional argument: 'document'"):
-            # noinspection PyTypeChecker
-            await subscribe(schema=email_schema)  # type: ignore
+            await subscribe(schema=schema)  # type: ignore
 
     @mark.asyncio
     async def resolves_to_an_error_for_unknown_subscription_field():
-        ast = parse(
-            """
-            subscription {
-              unknownField
-            }
-            """
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription", {"foo": GraphQLField(GraphQLString)}
+            ),
         )
+        document = parse("subscription { unknownField }")
 
-        pubsub = SimplePubSub()
-
-        subscription = await create_subscription(pubsub, email_schema, ast)
-
-        assert subscription == (
+        result = await subscribe(schema, document)
+        assert result == (
             None,
             [
                 {
                     "message": "The subscription field 'unknownField' is not defined.",
-                    "locations": [(3, 15)],
+                    "locations": [(1, 16)],
                 }
             ],
         )
 
     @mark.asyncio
     async def should_pass_through_unexpected_errors_thrown_in_subscribe():
-        with raises(TypeError, match="Must provide document\\."):
-            await subscribe(schema=email_schema, document={})  # type: ignore
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription", {"foo": GraphQLField(GraphQLString)}
+            ),
+        )
+        with raises(TypeError, match="^Must provide document\\.$"):
+            await subscribe(schema=schema, document={})  # type: ignore
 
     @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
-        invalid_email_schema = GraphQLSchema(
+        schema = GraphQLSchema(
             query=QueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
-                    "importantEmail": GraphQLField(
-                        GraphQLString, subscribe=lambda _inbox, _info: "test"
+                    "foo": GraphQLField(
+                        GraphQLString, subscribe=lambda _obj, _info: "test"
                     )
                 },
             ),
         )
 
-        pubsub = SimplePubSub()
+        document = parse("subscription { foo }")
 
         with raises(TypeError) as exc_info:
-            await create_subscription(pubsub, invalid_email_schema)
+            await subscribe(schema, document)
 
         assert str(exc_info.value) == (
             "Subscription field must return AsyncIterable. Received: 'test'."
@@ -386,89 +322,87 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def resolves_to_an_error_for_subscription_resolver_errors():
-        async def test_reports_error(schema: GraphQLSchema):
-            result = await subscribe(
-                schema=schema,
-                document=parse(
-                    """
-                    subscription {
-                      importantEmail
-                    }
-                    """
+        async def subscribe_with_fn(subscribe_fn: Callable):
+            schema = GraphQLSchema(
+                query=QueryType,
+                subscription=GraphQLObjectType(
+                    "Subscription",
+                    {"foo": GraphQLField(GraphQLString, subscribe=subscribe_fn)},
                 ),
             )
+            document = parse("subscription { foo }")
+            result = await subscribe(schema, document)
 
-            assert result == (
-                None,
-                [
-                    {
-                        "message": "test error",
-                        "locations": [(3, 23)],
-                        "path": ["importantEmail"],
-                    }
-                ],
-            )
+            assert await create_source_event_stream(schema, document) == result
+            return result
+
+        expected_result = (
+            None,
+            [
+                {
+                    "message": "test error",
+                    "locations": [(1, 16)],
+                    "path": ["foo"],
+                }
+            ],
+        )
 
         # Returning an error
-        def return_error(*_args):
+        def return_error(_obj, _info):
             return TypeError("test error")
 
-        subscription_returning_error_schema = email_schema_with_resolvers(return_error)
-        await test_reports_error(subscription_returning_error_schema)
+        assert await subscribe_with_fn(return_error) == expected_result
 
         # Throwing an error
         def throw_error(*_args):
             raise TypeError("test error")
 
-        subscription_throwing_error_schema = email_schema_with_resolvers(throw_error)
-        await test_reports_error(subscription_throwing_error_schema)
+        assert await subscribe_with_fn(throw_error) == expected_result
 
         # Resolving to an error
         async def resolve_error(*_args):
             return TypeError("test error")
 
-        subscription_resolving_error_schema = email_schema_with_resolvers(resolve_error)
-        await test_reports_error(subscription_resolving_error_schema)
+        assert await subscribe_with_fn(resolve_error) == expected_result
 
         # Rejecting with an error
         async def reject_error(*_args):
             return TypeError("test error")
 
-        subscription_rejecting_error_schema = email_schema_with_resolvers(reject_error)
-        await test_reports_error(subscription_rejecting_error_schema)
+        assert await subscribe_with_fn(reject_error) == expected_result
 
     @mark.asyncio
     async def resolves_to_an_error_if_variables_were_wrong_type():
-        # If we receive variables that cannot be coerced correctly, subscribe() will
-        # resolve to an ExecutionResult that contains an informative error description.
-        ast = parse(
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "foo": GraphQLField(
+                        GraphQLString, {"arg": GraphQLArgument(GraphQLInt)}
+                    )
+                },
+            ),
+        )
+
+        variable_values = {"arg": "meow"}
+        document = parse(
             """
-            subscription ($priority: Int) {
-              importantEmail(priority: $priority) {
-                email {
-                  from
-                  subject
-                }
-                inbox {
-                  unread
-                  total
-                }
-              }
+            subscription ($arg: Int) {
+              foo(arg: $arg)
             }
             """
         )
 
-        result = await subscribe(
-            schema=email_schema,
-            document=ast,
-            variable_values={"priority": "meow"},
-        )
+        # If we receive variables that cannot be coerced correctly, subscribe() will
+        # resolve to an ExecutionResult that contains an informative error description.
+        result = await subscribe(schema, document, variable_values=variable_values)
 
         assert result == (
             None,
             [
                 {
-                    "message": "Variable '$priority' got invalid value 'meow';"
+                    "message": "Variable '$arg' got invalid value 'meow';"
                     " Int cannot represent non-integer value: 'meow'",
                     "locations": [(2, 27)],
                 }
@@ -548,7 +482,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-        # Another new email arrives, before subscription.___anext__ is called.
+        # Another new email arrives, before anext(subscription) is called.
         assert (
             pubsub.emit(
                 {
@@ -737,19 +671,6 @@ def describe_subscription_publish_phase():
             await subscription.athrow(RuntimeError("ouch"))
         assert str(exc_info.value) == "ouch"
 
-        # A new email arrives!
-        assert (
-            pubsub.emit(
-                {
-                    "from": "yuzhi@graphql.org",
-                    "subject": "Alright 2",
-                    "message": "Tests are good 2",
-                    "unread": True,
-                }
-            )
-            is False
-        )
-
         with raises(StopAsyncIteration):
             await payload
 
@@ -797,7 +718,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-        payload = subscription.__anext__()
+        payload = anext(subscription)
 
         assert await payload == (
             {
@@ -811,82 +732,80 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_handle_error_during_execution_of_source_event():
-        async def subscribe_fn(_data, _info):
-            yield {"email": {"subject": "Hello"}}
-            yield {"email": {"subject": "Goodbye"}}
-            yield {"email": {"subject": "Bonjour"}}
+        async def generate_messages(_obj, _info):
+            yield "Hello"
+            yield "Goodbye"
+            yield "Bonjour"
 
-        def resolve_fn(event, _info):
-            if event["email"]["subject"] == "Goodbye":
-                raise RuntimeError("Never leave")
-            return event
+        def resolve_message(message, _info):
+            if message == "Goodbye":
+                raise RuntimeError("Never leave.")
+            return message
 
-        erroring_email_schema = email_schema_with_resolvers(subscribe_fn, resolve_fn)
-
-        subscription = await subscribe(
-            erroring_email_schema,
-            parse(
-                """
-                subscription {
-                  importantEmail {
-                    email {
-                      subject
-                    }
-                  }
-                }
-                """
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        subscribe=generate_messages,
+                        resolve=resolve_message,
+                    )
+                },
             ),
         )
 
-        payload1 = await anext(subscription)
-        assert payload1 == ({"importantEmail": {"email": {"subject": "Hello"}}}, None)
+        document = parse("subscription { newMessage }")
+        subscription = await subscribe(schema, document)
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
         # An error in execution is presented as such.
-        payload2 = await anext(subscription)
-        assert payload2 == (
-            {"importantEmail": None},
+        assert await anext(subscription) == (
+            {"newMessage": None},
             [
                 {
-                    "message": "Never leave",
-                    "locations": [(3, 19)],
-                    "path": ["importantEmail"],
+                    "message": "Never leave.",
+                    "locations": [(1, 16)],
+                    "path": ["newMessage"],
                 }
             ],
         )
 
-        # However that does not close the response event stream. Subsequent events are
-        # still executed.
-        payload3 = await anext(subscription)
-        assert payload3 == ({"importantEmail": {"email": {"subject": "Bonjour"}}}, None)
+        # However that does not close the response event stream.
+        # Subsequent events are still executed.
+        assert await anext(subscription) == ({"newMessage": "Bonjour"}, None)
 
     @mark.asyncio
     async def should_pass_through_error_thrown_in_source_event_stream():
-        async def subscribe_fn(_data, _info):
-            yield {"email": {"subject": "Hello"}}
+        async def generate_messages(_obj, _info):
+            yield "Hello"
             raise RuntimeError("test error")
 
-        def resolve_fn(event, _info):
-            return event
+        def resolve_message(message, _info):
+            return message
 
-        erroring_email_schema = email_schema_with_resolvers(subscribe_fn, resolve_fn)
-
-        subscription = await subscribe(
-            schema=erroring_email_schema,
-            document=parse(
-                """
-                subscription {
-                  importantEmail {
-                    email {
-                      subject
-                    }
-                  }
-                }
-                """
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=resolve_message,
+                        subscribe=generate_messages,
+                    )
+                },
             ),
         )
 
-        payload1 = await anext(subscription)
-        assert payload1 == ({"importantEmail": {"email": {"subject": "Hello"}}}, None)
+        document = parse("subscription { newMessage }")
+        subscription = await subscribe(schema, document)
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await (anext(subscription)) == ({"newMessage": "Hello"}, None)
 
         with raises(RuntimeError) as exc_info:
             await anext(subscription)
@@ -898,28 +817,28 @@ def describe_subscription_publish_phase():
 
     @mark.asyncio
     async def should_work_with_async_resolve_function():
-        async def subscribe_fn(_data, _info):
-            yield {"email": {"subject": "Hello"}}
+        async def generate_messages(_obj, _info):
+            yield "Hello"
 
-        async def resolve_fn(event, _info):
-            return event
+        def resolve_message(message, _info):
+            return message
 
-        async_email_schema = email_schema_with_resolvers(subscribe_fn, resolve_fn)
-
-        subscription = await subscribe(
-            schema=async_email_schema,
-            document=parse(
-                """
-                subscription {
-                  importantEmail {
-                    email {
-                      subject
-                    }
-                  }
-                }
-                """
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=resolve_message,
+                        subscribe=generate_messages,
+                    )
+                },
             ),
         )
 
-        payload = await anext(subscription)
-        assert payload == ({"importantEmail": {"email": {"subject": "Hello"}}}, None)
+        document = parse("subscription { newMessage }")
+        subscription = await subscribe(schema, document)
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == ({"newMessage": "Hello"}, None)
