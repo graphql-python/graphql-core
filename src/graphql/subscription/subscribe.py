@@ -165,10 +165,10 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
     type_ = get_operation_root_type(schema, context.operation)
     fields = context.collect_fields(type_, context.operation.selection_set, {}, set())
     response_name, field_nodes = next(iter(fields.items()))
-    field_name = field_nodes[0].name.value
-    field_def = get_field_def(schema, type_, field_name)
+    field_def = get_field_def(schema, type_, field_nodes[0])
 
     if not field_def:
+        field_name = field_nodes[0].name.value
         raise GraphQLError(
             f"The subscription field '{field_name}' is not defined.", field_nodes
         )

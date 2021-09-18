@@ -590,10 +590,7 @@ class ExecutionContext:
         resolve function, then calls complete_value to await coroutine objects,
         serialize scalars, or execute the sub-selection-set for objects.
         """
-        field_node = field_nodes[0]
-        field_name = field_node.name.value
-
-        field_def = get_field_def(self.schema, parent_type, field_name)
+        field_def = get_field_def(self.schema, parent_type, field_nodes[0])
         if not field_def:
             return Undefined
 
@@ -1191,7 +1188,7 @@ def assert_valid_execution_arguments(
 
 
 def get_field_def(
-    schema: GraphQLSchema, parent_type: GraphQLObjectType, field_name: str
+    schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode
 ) -> GraphQLField:
     """Get field definition.
 
@@ -1204,6 +1201,8 @@ def get_field_def(
 
     For internal use only.
     """
+    field_name = field_node.name.value
+
     if field_name == "__schema" and schema.query_type == parent_type:
         return SchemaMetaFieldDef
     elif field_name == "__type" and schema.query_type == parent_type:
