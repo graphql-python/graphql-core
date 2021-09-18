@@ -981,6 +981,9 @@ class ExecutionContext:
         result: Any,
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Complete an Object value by executing all sub-selections."""
+        # Collect sub-fields to execute to complete this value.
+        sub_field_nodes = self.collect_subfields(return_type, field_nodes)
+
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
         #  continuing execution.
@@ -989,33 +992,20 @@ class ExecutionContext:
 
             if self.is_awaitable(is_type_of):
 
-                async def collect_and_execute_subfields_async() -> Dict[str, Any]:
+                async def execute_subfields_async() -> Dict[str, Any]:
                     if not await is_type_of:  # type: ignore
                         raise invalid_return_type_error(
                             return_type, result, field_nodes
                         )
-                    return self.collect_and_execute_subfields(
-                        return_type, field_nodes, path, result
+                    return self.execute_fields(
+                        return_type, result, path, sub_field_nodes
                     )  # type: ignore
 
-                return collect_and_execute_subfields_async()
+                return execute_subfields_async()
 
             if not is_type_of:
                 raise invalid_return_type_error(return_type, result, field_nodes)
 
-        return self.collect_and_execute_subfields(
-            return_type, field_nodes, path, result
-        )
-
-    def collect_and_execute_subfields(
-        self,
-        return_type: GraphQLObjectType,
-        field_nodes: List[FieldNode],
-        path: Path,
-        result: Any,
-    ) -> AwaitableOrValue[Dict[str, Any]]:
-        """Collect sub-fields to execute to complete this value."""
-        sub_field_nodes = self.collect_subfields(return_type, field_nodes)
         return self.execute_fields(return_type, result, path, sub_field_nodes)
 
     def collect_subfields(
