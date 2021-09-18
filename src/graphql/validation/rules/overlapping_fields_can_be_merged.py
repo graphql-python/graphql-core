@@ -726,8 +726,7 @@ def subfield_conflicts(
 class PairSet:
     """Pair set
 
-    A way to keep track of pairs of things when the ordering of the pair does not
-    matter. We do this by maintaining a sort of double adjacency sets.
+    A way to keep track of pairs of things when the ordering of the pair doesn't matter.
     """
 
     __slots__ = ("_data",)
@@ -746,12 +745,11 @@ class PairSet:
         result = map_.get(key2)
         if result is None:
             return False
-        # `are_mutually_exclusive` being False is a superset of being True, hence if we
-        # want to know if this PairSet "has" these two with no exclusivity, we have to
-        # ensure it was added as such.
-        if not are_mutually_exclusive:
-            return not result
-        return True
+
+        # are_mutually_exclusive being False is a superset of being True,
+        # hence if we want to know if this PairSet "has" these two with no exclusivity,
+        # we have to ensure it was added as such.
+        return True if are_mutually_exclusive else are_mutually_exclusive == result
 
     def add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
         key1, key2 = (a, b) if a < b else (b, a)
