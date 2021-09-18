@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-from ..language import print_ast
+from ..language import print_ast, StringValueNode
 from ..language.block_string import print_block_string
 from ..pyutils import inspect
 from ..type import (
@@ -16,7 +16,6 @@ from ..type import (
     GraphQLObjectType,
     GraphQLScalarType,
     GraphQLSchema,
-    GraphQLString,
     GraphQLUnionType,
     is_enum_type,
     is_input_object_type,
@@ -258,22 +257,17 @@ def print_directive(directive: GraphQLDirective) -> str:
 def print_deprecated(reason: Optional[str]) -> str:
     if reason is None:
         return ""
-    reason_ast = ast_from_value(reason, GraphQLString)
-    if reason_ast and reason != DEFAULT_DEPRECATION_REASON:
-        return f" @deprecated(reason: {print_ast(reason_ast)})"
+    if reason != DEFAULT_DEPRECATION_REASON:
+        ast_value = print_ast(StringValueNode(value=reason))
+        return f" @deprecated(reason: {ast_value})"
     return " @deprecated"
 
 
 def print_specified_by_url(scalar: GraphQLScalarType) -> str:
     if scalar.specified_by_url is None:
         return ""
-    url = scalar.specified_by_url
-    url_ast = ast_from_value(url, GraphQLString)
-    if not url_ast:  # pragma: no cover
-        raise TypeError(
-            "Unexpected null value returned from `ast_from_value` for specifiedByURL."
-        )
-    return f" @specifiedBy(url: {print_ast(url_ast)})"
+    ast_value = print_ast(StringValueNode(value=scalar.specified_by_url))
+    return f" @specifiedBy(url: {ast_value})"
 
 
 def print_description(
