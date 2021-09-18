@@ -97,9 +97,9 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             for name, field in sorted(fields_map.items())
         }
 
-    def sort_types(arr: FrozenList[GraphQLNamedType]) -> List[GraphQLNamedType]:
+    def sort_types(array: FrozenList[GraphQLNamedType]) -> List[GraphQLNamedType]:
         return [
-            replace_named_type(type_) for type_ in sorted(arr, key=sort_by_name_key)
+            replace_named_type(type_) for type_ in sorted(array, key=sort_by_name_key)
         ]
 
     def sort_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
