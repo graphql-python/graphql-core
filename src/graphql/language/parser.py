@@ -519,17 +519,16 @@ class Parser:
 
     def parse_variable_value(self, is_const: bool) -> VariableNode:
         if is_const:
+            variable_token = self.expect_token(TokenKind.DOLLAR)
             token = self._lexer.token
-            self.expect_token(TokenKind.DOLLAR)
-            var_token = self.expect_optional_token(TokenKind.NAME)
-            var_name = None if var_token is None else var_token.value
-            if var_name is not None:
+            if token.kind is TokenKind.NAME:
+                var_name = token.value
                 raise GraphQLSyntaxError(
                     self._lexer.source,
-                    token.start,
+                    variable_token.start,
                     f"Unexpected variable '${var_name}' in constant value.",
                 )
-            raise self.unexpected(token)
+            raise self.unexpected(variable_token)
         return self.parse_variable()
 
     def parse_const_value_literal(self) -> ConstValueNode:
@@ -1026,18 +1025,18 @@ class Parser:
             f"Expected {get_token_kind_desc(kind)}, found {get_token_desc(token)}.",
         )
 
-    def expect_optional_token(self, kind: TokenKind) -> Optional[Token]:
+    def expect_optional_token(self, kind: TokenKind) -> bool:
         """Expect the next token optionally to be of the given kind.
 
-        If the next token is of the given kind, return that token after advancing the
-        lexer. Otherwise, do not change the parser state and return None.
+        If the next token is of the given kind, return True after advancing the lexer.
+        Otherwise, do not change the parser state and return False.
         """
         token = self._lexer.token
         if token.kind == kind:
             self._lexer.advance()
-            return token
+            return True
 
-        return None
+        return False
 
     def expect_keyword(self, value: str) -> None:
         """Expect the next token to be a given keyword.

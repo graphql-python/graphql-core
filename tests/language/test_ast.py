@@ -14,27 +14,20 @@ class SampleTestNode(Node):
 
 def describe_token_class():
     def initializes():
-        prev = Token(TokenKind.EQUALS, 10, 11, 1, 2)
         token = Token(
             kind=TokenKind.NAME,
             start=11,
             end=12,
             line=1,
             column=3,
-            prev=prev,
             value="n",
         )
-        assert prev.kind == TokenKind.EQUALS
-        assert prev.start == 10
-        assert prev.end == 11
-        assert prev.line == 1
-        assert prev.column == 2
         assert token.kind == TokenKind.NAME
         assert token.start == 11
         assert token.end == 12
         assert token.line == 1
         assert token.column == 3
-        assert token.prev is prev
+        assert token.prev is None
         assert token.value == "n"
 
     def can_stringify():

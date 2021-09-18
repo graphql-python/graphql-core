@@ -132,6 +132,7 @@ enum.Enum
 traceback
 types.TracebackType
 asyncio.events.AbstractEventLoop
+graphql.language.lexer.EscapeSequence
 graphql.subscription.map_async_iterator.MapAsyncIterator
 graphql.type.schema.InterfaceImplementations
 graphql.validation.validation_context.VariableUsage

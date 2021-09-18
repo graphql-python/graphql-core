@@ -99,15 +99,13 @@ class Token:
         end: int,
         line: int,
         column: int,
-        prev: Optional["Token"] = None,
         value: Optional[str] = None,
     ) -> None:
         self.kind = kind
         self.start, self.end = start, end
         self.line, self.column = line, column
         self.value = value
-        self.prev = prev
-        self.next = None
+        self.prev = self.next = None
 
     def __str__(self) -> str:
         return self.desc
@@ -140,15 +138,16 @@ class Token:
 
     def __copy__(self) -> "Token":
         """Create a shallow copy of the token"""
-        return self.__class__(
+        token = self.__class__(
             self.kind,
             self.start,
             self.end,
             self.line,
             self.column,
-            self.prev,
             self.value,
         )
+        token.prev = self.prev
+        return token
 
     def __deepcopy__(self, memo: Dict) -> "Token":
         """Allow only shallow copies to avoid recursion."""
