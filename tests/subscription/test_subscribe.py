@@ -116,6 +116,9 @@ def create_subscription(pubsub: SimplePubSub):
     return subscribe(email_schema, document, data)
 
 
+DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)})
+
+
 # Check all error cases when initializing the subscription.
 def describe_subscription_initialization_phase():
     @mark.asyncio
@@ -143,7 +146,7 @@ def describe_subscription_initialization_phase():
     @mark.asyncio
     async def accepts_multiple_subscription_fields_defined_in_schema():
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
@@ -171,7 +174,7 @@ def describe_subscription_initialization_phase():
             yield {"foo": "FooValue"}
 
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {"foo": GraphQLField(GraphQLString, subscribe=foo_generator)},
@@ -192,7 +195,7 @@ def describe_subscription_initialization_phase():
             yield {"foo": "FooValue"}
 
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {"foo": GraphQLField(GraphQLString, subscribe=foo_generator)},
@@ -219,7 +222,7 @@ def describe_subscription_initialization_phase():
             yield {"bar": "BarValue"}
 
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
@@ -246,7 +249,7 @@ def describe_subscription_initialization_phase():
         document = parse("subscription { foo }")
 
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription", {"foo": GraphQLField(GraphQLString)}
             ),
@@ -267,7 +270,7 @@ def describe_subscription_initialization_phase():
     @mark.asyncio
     async def resolves_to_an_error_for_unknown_subscription_field():
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription", {"foo": GraphQLField(GraphQLString)}
             ),
@@ -288,7 +291,7 @@ def describe_subscription_initialization_phase():
     @mark.asyncio
     async def should_pass_through_unexpected_errors_thrown_in_subscribe():
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription", {"foo": GraphQLField(GraphQLString)}
             ),
@@ -300,7 +303,7 @@ def describe_subscription_initialization_phase():
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
@@ -324,7 +327,7 @@ def describe_subscription_initialization_phase():
     async def resolves_to_an_error_for_subscription_resolver_errors():
         async def subscribe_with_fn(subscribe_fn: Callable):
             schema = GraphQLSchema(
-                query=QueryType,
+                query=DummyQueryType,
                 subscription=GraphQLObjectType(
                     "Subscription",
                     {"foo": GraphQLField(GraphQLString, subscribe=subscribe_fn)},
@@ -374,7 +377,7 @@ def describe_subscription_initialization_phase():
     @mark.asyncio
     async def resolves_to_an_error_if_variables_were_wrong_type():
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
@@ -743,7 +746,7 @@ def describe_subscription_publish_phase():
             return message
 
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
@@ -788,7 +791,7 @@ def describe_subscription_publish_phase():
             return message
 
         schema = GraphQLSchema(
-            query=QueryType,
+            query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
                 {
