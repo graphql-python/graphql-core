@@ -118,6 +118,8 @@ __all__ = [
     "GraphQLLeafType",
     "GraphQLList",
     "GraphQLNamedType",
+    "GraphQLNamedInputType",
+    "GraphQLNamedOutputType",
     "GraphQLNullableType",
     "GraphQLNonNull",
     "GraphQLResolveInfo",
@@ -188,9 +190,6 @@ def assert_wrapping_type(type_: Any) -> GraphQLWrappingType:
     return cast(GraphQLWrappingType, type_)
 
 
-# These named types do not include modifiers like List or NonNull.
-
-
 class GraphQLNamedType(GraphQLType):
     """Base class for all GraphQL named types"""
 
@@ -256,37 +255,6 @@ class GraphQLNamedType(GraphQLType):
 
     def __copy__(self) -> "GraphQLNamedType":  # pragma: no cover
         return self.__class__(**self.to_kwargs())
-
-
-def is_named_type(type_: Any) -> bool:
-    return isinstance(type_, GraphQLNamedType)
-
-
-def assert_named_type(type_: Any) -> GraphQLNamedType:
-    if not is_named_type(type_):
-        raise TypeError(f"Expected {type_} to be a GraphQL named type.")
-    return cast(GraphQLNamedType, type_)
-
-
-@overload
-def get_named_type(type_: None) -> None:
-    ...
-
-
-@overload
-def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
-    ...
-
-
-def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:
-    """Unwrap possible wrapping type"""
-    if type_:
-        unwrapped_type = type_
-        while is_wrapping_type(unwrapped_type):
-            unwrapped_type = cast(GraphQLWrappingType, unwrapped_type)
-            unwrapped_type = unwrapped_type.of_type
-        return cast(GraphQLNamedType, unwrapped_type)
-    return None
 
 
 T = TypeVar("T")
@@ -1676,6 +1644,52 @@ def assert_output_type(type_: Any) -> GraphQLOutputType:
     if not is_output_type(type_):
         raise TypeError(f"Expected {type_} to be a GraphQL output type.")
     return cast(GraphQLOutputType, type_)
+
+
+# These named types do not include modifiers like List or NonNull.
+
+GraphQLNamedInputType = Union[
+    GraphQLScalarType, GraphQLEnumType, GraphQLInputObjectType
+]
+
+GraphQLNamedOutputType = Union[
+    GraphQLScalarType,
+    GraphQLObjectType,
+    GraphQLInterfaceType,
+    GraphQLUnionType,
+    GraphQLEnumType,
+]
+
+
+def is_named_type(type_: Any) -> bool:
+    return isinstance(type_, GraphQLNamedType)
+
+
+def assert_named_type(type_: Any) -> GraphQLNamedType:
+    if not is_named_type(type_):
+        raise TypeError(f"Expected {type_} to be a GraphQL named type.")
+    return cast(GraphQLNamedType, type_)
+
+
+@overload
+def get_named_type(type_: None) -> None:
+    ...
+
+
+@overload
+def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
+    ...
+
+
+def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:
+    """Unwrap possible wrapping type"""
+    if type_:
+        unwrapped_type = type_
+        while is_wrapping_type(unwrapped_type):
+            unwrapped_type = cast(GraphQLWrappingType, unwrapped_type)
+            unwrapped_type = unwrapped_type.of_type
+        return cast(GraphQLNamedType, unwrapped_type)
+    return None
 
 
 # These types may describe types which may be leaf values.
