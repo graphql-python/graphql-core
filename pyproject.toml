@@ -57,7 +57,7 @@ black = [
 flake8 = "^3.9"
 mypy = "0.910"
 sphinx = "^4.2"
-sphinx_rtd_theme = ">=0.5,<1"
+sphinx_rtd_theme = ">=1,<2"
 check-manifest = ">=0.46,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.24"
