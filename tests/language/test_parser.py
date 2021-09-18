@@ -15,16 +15,20 @@ from graphql.language import (
     NamedTypeNode,
     NonNullTypeNode,
     NullValueNode,
+    ObjectFieldNode,
+    ObjectValueNode,
     OperationDefinitionNode,
     OperationType,
     SelectionSetNode,
     StringValueNode,
     ValueNode,
+    VariableNode,
     Token,
     TokenKind,
     parse,
     parse_type,
     parse_value,
+    parse_const_value,
     Source,
 )
 from graphql.pyutils import inspect
@@ -93,7 +97,7 @@ def describe_parser():
     def parses_constant_default_values():
         assert_syntax_error(
             "query Foo($x: Complex = { a: { b: [ $var ] } }) { field }",
-            "Unexpected '$'.",
+            "Unexpected variable '$var' in constant value.",
             (1, 37),
         )
 
@@ -442,6 +446,77 @@ def describe_parse_value():
         assert value.loc == (12, 19)
         assert value.value == "short"
         assert value.block is False
+
+    def allows_variables():
+        result = parse_value("{ field: $var }")
+        assert isinstance(result, ObjectValueNode)
+        assert result.loc == (0, 15)
+        fields = result.fields
+        assert len(fields) == 1
+        field = fields[0]
+        assert isinstance(field, ObjectFieldNode)
+        assert field.loc == (2, 13)
+        name = field.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (2, 7)
+        assert name.value == "field"
+        value = field.value
+        assert isinstance(value, VariableNode)
+        assert value.loc == (9, 13)
+        name = value.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (10, 13)
+        assert name.value == "var"
+
+    def correct_message_for_incomplete_variable():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_value("$")
+        assert exc_info.value == {
+            "message": "Syntax Error: Expected Name, found <EOF>.",
+            "locations": [(1, 2)],
+        }
+
+    def correct_message_for_unexpected_token():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_value(":")
+        assert exc_info.value == {
+            "message": "Syntax Error: Unexpected ':'.",
+            "locations": [(1, 1)],
+        }
+
+
+def describe_parse_const_value():
+    def parses_values():
+        result = parse_const_value('[123 "abc"]')
+        assert isinstance(result, ListValueNode)
+        assert result.loc == (0, 11)
+        values = result.values
+        assert len(values) == 2
+        value = values[0]
+        assert isinstance(value, IntValueNode)
+        assert value.loc == (1, 4)
+        assert value.value == "123"
+        value = values[1]
+        assert isinstance(value, StringValueNode)
+        assert value.loc == (5, 10)
+        assert value.value == "abc"
+        assert value.block is False
+
+    def does_not_allow_variables():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_const_value("{ field: $var }")
+        assert exc_info.value == {
+            "message": "Syntax Error: Unexpected variable '$var' in constant value.",
+            "locations": [(1, 10)],
+        }
+
+    def correct_message_for_unexpected_token():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_const_value("$$")
+        assert exc_info.value == {
+            "message": "Syntax Error: Unexpected '$'.",
+            "locations": [(1, 1)],
+        }
 
 
 def describe_parse_type():

@@ -2,6 +2,8 @@ from .ast import (
     Node,
     DefinitionNode,
     ExecutableDefinitionNode,
+    ListValueNode,
+    ObjectValueNode,
     SchemaExtensionNode,
     SelectionNode,
     TypeDefinitionNode,
@@ -9,6 +11,7 @@ from .ast import (
     TypeNode,
     TypeSystemDefinitionNode,
     ValueNode,
+    VariableNode,
 )
 
 __all__ = [
@@ -16,6 +19,7 @@ __all__ = [
     "is_executable_definition_node",
     "is_selection_node",
     "is_value_node",
+    "is_const_value_node",
     "is_type_node",
     "is_type_system_definition_node",
     "is_type_definition_node",
@@ -42,6 +46,17 @@ def is_selection_node(node: Node) -> bool:
 def is_value_node(node: Node) -> bool:
     """Check whether the given node represents a value."""
     return isinstance(node, ValueNode)
+
+
+def is_const_value_node(node: Node) -> bool:
+    """Check whether the given node represents a constant value."""
+    return is_value_node(node) and (
+        any(is_const_value_node(value) for value in node.values)
+        if isinstance(node, ListValueNode)
+        else any(is_const_value_node(field.value) for field in node.fields)
+        if isinstance(node, ObjectValueNode)
+        else not isinstance(node, VariableNode)
+    )
 
 
 def is_type_node(node: Node) -> bool:

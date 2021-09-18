@@ -4,6 +4,9 @@ from functools import partial
 from .ast import (
     ArgumentNode,
     BooleanValueNode,
+    ConstArgumentNode,
+    ConstDirectiveNode,
+    ConstValueNode,
     DefinitionNode,
     DirectiveDefinitionNode,
     DirectiveNode,
@@ -61,7 +64,7 @@ from .source import Source, is_source
 from .token_kind import TokenKind
 from ..error import GraphQLError, GraphQLSyntaxError
 
-__all__ = ["parse", "parse_type", "parse_value"]
+__all__ = ["parse", "parse_type", "parse_value", "parse_const_value"]
 
 T = TypeVar("T")
 
@@ -125,6 +128,27 @@ def parse_value(
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_value_literal(False)
+    parser.expect_token(TokenKind.EOF)
+    return value
+
+
+def parse_const_value(
+    source: SourceType,
+    no_location: bool = False,
+    allow_legacy_fragment_variables: bool = False,
+) -> ConstValueNode:
+    """Parse the AST for a given string containing a GraphQL constant value.
+
+    Similar to parse_value, but raises a arse error if it encounters a variable.
+    The return type will be a constant value.
+    """
+    parser = Parser(
+        source,
+        no_location=no_location,
+        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+    )
+    parser.expect_token(TokenKind.SOF)
+    value = parser.parse_const_value_literal()
     parser.expect_token(TokenKind.EOF)
     return value
 
@@ -286,10 +310,10 @@ class Parser:
         return VariableDefinitionNode(
             variable=self.parse_variable(),
             type=self.expect_token(TokenKind.COLON) and self.parse_type_reference(),
-            default_value=self.parse_value_literal(True)
+            default_value=self.parse_const_value_literal()
             if self.expect_optional_token(TokenKind.EQUALS)
             else None,
-            directives=self.parse_directives(True),
+            directives=self.parse_const_directives(),
             loc=self.loc(start),
         )
 
@@ -339,26 +363,22 @@ class Parser:
     def parse_arguments(self, is_const: bool) -> List[ArgumentNode]:
         """Arguments[Const]: (Argument[?Const]+)"""
         item = self.parse_const_argument if is_const else self.parse_argument
+        item = cast(Callable[[], ArgumentNode], item)
         return self.optional_many(TokenKind.PAREN_L, item, TokenKind.PAREN_R)
 
-    def parse_argument(self) -> ArgumentNode:
-        """Argument: Name : Value"""
+    def parse_argument(self, is_const: bool = False) -> ArgumentNode:
+        """Argument[Const]: Name : Value[?Const]"""
         start = self._lexer.token
         name = self.parse_name()
 
         self.expect_token(TokenKind.COLON)
         return ArgumentNode(
-            name=name, value=self.parse_value_literal(False), loc=self.loc(start)
+            name=name, value=self.parse_value_literal(is_const), loc=self.loc(start)
         )
 
-    def parse_const_argument(self) -> ArgumentNode:
-        """Argument[Const]: Name : Value[?Const]"""
-        start = self._lexer.token
-        return ArgumentNode(
-            name=self.parse_name(),
-            value=self.expect_token(TokenKind.COLON) and self.parse_value_literal(True),
-            loc=self.loc(start),
-        )
+    def parse_const_argument(self) -> ConstArgumentNode:
+        """Argument[Const]: Name : Value[Const]"""
+        return cast(ConstArgumentNode, self.parse_argument(True))
 
     # Implement the parsing rules in the Fragments section.
 
@@ -498,9 +518,22 @@ class Parser:
         return EnumValueNode(value=value, loc=self.loc(token))
 
     def parse_variable_value(self, is_const: bool) -> VariableNode:
-        if not is_const:
-            return self.parse_variable()
-        raise self.unexpected()
+        if is_const:
+            token = self._lexer.token
+            self.expect_token(TokenKind.DOLLAR)
+            var_token = self.expect_optional_token(TokenKind.NAME)
+            var_name = None if var_token is None else var_token.value
+            if var_name is not None:
+                raise GraphQLSyntaxError(
+                    self._lexer.source,
+                    token.start,
+                    f"Unexpected variable '${var_name}' in constant value.",
+                )
+            raise self.unexpected(token)
+        return self.parse_variable()
+
+    def parse_const_value_literal(self) -> ConstValueNode:
+        return cast(ConstValueNode, self.parse_value_literal(True))
 
     # Implement the parsing rules in the Directives section.
 
@@ -511,6 +544,9 @@ class Parser:
         while self.peek(TokenKind.AT):
             append(self.parse_directive(is_const))
         return directives
+
+    def parse_const_directives(self) -> List[ConstDirectiveNode]:
+        return cast(List[ConstDirectiveNode], self.parse_directives(True))
 
     def parse_directive(self, is_const: bool) -> DirectiveNode:
         """Directive[Const]: @ Name Arguments[?Const]?"""
@@ -604,7 +640,7 @@ class Parser:
         start = self._lexer.token
         description = self.parse_description()
         self.expect_keyword("schema")
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         operation_types = self.many(
             TokenKind.BRACE_L, self.parse_operation_type_definition, TokenKind.BRACE_R
         )
@@ -631,7 +667,7 @@ class Parser:
         description = self.parse_description()
         self.expect_keyword("scalar")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         return ScalarTypeDefinitionNode(
             description=description,
             name=name,
@@ -646,7 +682,7 @@ class Parser:
         self.expect_keyword("type")
         name = self.parse_name()
         interfaces = self.parse_implements_interfaces()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         fields = self.parse_fields_definition()
         return ObjectTypeDefinitionNode(
             description=description,
@@ -679,7 +715,7 @@ class Parser:
         args = self.parse_argument_defs()
         self.expect_token(TokenKind.COLON)
         type_ = self.parse_type_reference()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         return FieldDefinitionNode(
             description=description,
             name=name,
@@ -703,11 +739,11 @@ class Parser:
         self.expect_token(TokenKind.COLON)
         type_ = self.parse_type_reference()
         default_value = (
-            self.parse_value_literal(True)
+            self.parse_const_value_literal()
             if self.expect_optional_token(TokenKind.EQUALS)
             else None
         )
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         return InputValueDefinitionNode(
             description=description,
             name=name,
@@ -724,7 +760,7 @@ class Parser:
         self.expect_keyword("interface")
         name = self.parse_name()
         interfaces = self.parse_implements_interfaces()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         fields = self.parse_fields_definition()
         return InterfaceTypeDefinitionNode(
             description=description,
@@ -741,7 +777,7 @@ class Parser:
         description = self.parse_description()
         self.expect_keyword("union")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         types = self.parse_union_member_types()
         return UnionTypeDefinitionNode(
             description=description,
@@ -765,7 +801,7 @@ class Parser:
         description = self.parse_description()
         self.expect_keyword("enum")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         values = self.parse_enum_values_definition()
         return EnumTypeDefinitionNode(
             description=description,
@@ -786,7 +822,7 @@ class Parser:
         start = self._lexer.token
         description = self.parse_description()
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         return EnumValueDefinitionNode(
             description=description,
             name=name,
@@ -800,7 +836,7 @@ class Parser:
         description = self.parse_description()
         self.expect_keyword("input")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         fields = self.parse_input_fields_definition()
         return InputObjectTypeDefinitionNode(
             description=description,
@@ -821,7 +857,7 @@ class Parser:
         start = self._lexer.token
         self.expect_keyword("extend")
         self.expect_keyword("schema")
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         operation_types = self.optional_many(
             TokenKind.BRACE_L, self.parse_operation_type_definition, TokenKind.BRACE_R
         )
@@ -837,7 +873,7 @@ class Parser:
         self.expect_keyword("extend")
         self.expect_keyword("scalar")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         if not directives:
             raise self.unexpected()
         return ScalarTypeExtensionNode(
@@ -851,7 +887,7 @@ class Parser:
         self.expect_keyword("type")
         name = self.parse_name()
         interfaces = self.parse_implements_interfaces()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         fields = self.parse_fields_definition()
         if not (interfaces or directives or fields):
             raise self.unexpected()
@@ -870,7 +906,7 @@ class Parser:
         self.expect_keyword("interface")
         name = self.parse_name()
         interfaces = self.parse_implements_interfaces()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         fields = self.parse_fields_definition()
         if not (interfaces or directives or fields):
             raise self.unexpected()
@@ -888,7 +924,7 @@ class Parser:
         self.expect_keyword("extend")
         self.expect_keyword("union")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         types = self.parse_union_member_types()
         if not (directives or types):
             raise self.unexpected()
@@ -902,7 +938,7 @@ class Parser:
         self.expect_keyword("extend")
         self.expect_keyword("enum")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         values = self.parse_enum_values_definition()
         if not (directives or values):
             raise self.unexpected()
@@ -916,7 +952,7 @@ class Parser:
         self.expect_keyword("extend")
         self.expect_keyword("input")
         name = self.parse_name()
-        directives = self.parse_directives(True)
+        directives = self.parse_const_directives()
         fields = self.parse_input_fields_definition()
         if not (directives or fields):
             raise self.unexpected()

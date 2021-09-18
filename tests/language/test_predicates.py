@@ -4,10 +4,12 @@ from typing import Callable
 from graphql.language import (
     ast,
     Node,
+    parse_value,
     is_definition_node,
     is_executable_definition_node,
     is_selection_node,
     is_value_node,
+    is_const_value_node,
     is_type_node,
     is_type_system_definition_node,
     is_type_definition_node,
@@ -19,7 +21,9 @@ all_ast_nodes = sorted(
     [
         node_type()
         for node_type in vars(ast).values()
-        if type(node_type) is type and issubclass(node_type, Node)
+        if type(node_type) is type
+        and issubclass(node_type, Node)
+        and not node_type.__name__.startswith("Const")
     ],
     key=attrgetter("kind"),
 )
@@ -86,6 +90,16 @@ def describe_ast_node_predicates():
             "value",
             "variable",
         ]
+
+    def check_const_value_node():
+        assert is_const_value_node(parse_value('"value"')) is True
+        assert is_const_value_node(parse_value("$var")) is False
+
+        assert is_const_value_node(parse_value('{ field: "value" }')) is True
+        assert is_const_value_node(parse_value("{ field: $var }")) is False
+
+        assert is_const_value_node(parse_value('[ "value" ]')) is True
+        assert is_const_value_node(parse_value("[ $var ]")) is False
 
     def check_type_node():
         assert filter_nodes(is_type_node) == [

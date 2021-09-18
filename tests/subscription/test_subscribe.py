@@ -18,9 +18,9 @@ from graphql.type import (
 )
 from graphql.subscription import create_source_event_stream, subscribe, MapAsyncIterator
 
-try:  # pragma: nocover
+try:
     anext
-except NameError:  # pragma: nocover (Python < 3.10)
+except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
     async def anext(iterator):
         """Return the next item from an async iterator."""

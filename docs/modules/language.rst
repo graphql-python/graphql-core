@@ -17,6 +17,12 @@ Each kind of AST node has its own class:
 
 .. autoclass:: ArgumentNode
 .. autoclass:: BooleanValueNode
+.. autoclass:: ConstArgumentNode
+.. autoclass:: ConstDirectiveNode
+.. autoclass:: ConstListValueNode
+.. autoclass:: ConstObjectFieldNode
+.. autoclass:: ConstObjectValueNode
+.. autoclass:: ConstValueNode
 .. autoclass:: DefinitionNode
 .. autoclass:: DirectiveDefinitionNode
 .. autoclass:: DirectiveNode
@@ -79,6 +85,7 @@ You can also check the type of nodes with the following predicates:
 .. autofunction:: is_executable_definition_node
 .. autofunction:: is_selection_node
 .. autofunction:: is_value_node
+.. autofunction:: is_const_value_node
 .. autofunction:: is_type_node
 .. autofunction:: is_type_system_definition_node
 .. autofunction:: is_type_definition_node
@@ -105,6 +112,7 @@ Parser
 .. autofunction:: parse
 .. autofunction:: parse_type
 .. autofunction:: parse_value
+.. autofunction:: parse_const_value
 
 Printer
 -------
