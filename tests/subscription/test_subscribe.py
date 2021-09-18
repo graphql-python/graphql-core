@@ -156,11 +156,11 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        async def foo_gen(_info):
+        async def foo_generator(_info):
             yield {"foo": "FooValue"}
 
         subscription = await subscribe(
-            schema, parse("subscription { foo }"), {"foo": foo_gen}
+            schema, parse("subscription { foo }"), {"foo": foo_generator}
         )
         assert isinstance(subscription, MapAsyncIterator)
 
