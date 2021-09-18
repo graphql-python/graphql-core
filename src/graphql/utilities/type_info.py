@@ -49,7 +49,7 @@ from .type_from_ast import type_from_ast
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
-GetFieldDefType = Callable[
+GetFieldDefFn = Callable[
     [GraphQLSchema, GraphQLType, FieldNode], Optional[GraphQLField]
 ]
 
@@ -67,7 +67,7 @@ class TypeInfo:
         self,
         schema: GraphQLSchema,
         initial_type: Optional[GraphQLType] = None,
-        get_field_def_fn: Optional[GetFieldDefType] = None,
+        get_field_def_fn: Optional[GetFieldDefFn] = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
@@ -85,7 +85,7 @@ class TypeInfo:
         self._directive: Optional[GraphQLDirective] = None
         self._argument: Optional[GraphQLArgument] = None
         self._enum_value: Optional[GraphQLEnumValue] = None
-        self._get_field_def = get_field_def_fn or get_field_def
+        self._get_field_def: GetFieldDefFn = get_field_def_fn or get_field_def
         if initial_type:
             if is_input_type(initial_type):
                 self._input_type_stack.append(cast(GraphQLInputType, initial_type))
