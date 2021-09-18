@@ -732,12 +732,18 @@ class PairSet:
 
     __slots__ = ("_data",)
 
+    _data: Dict[str, Dict[str, bool]]
+
     def __init__(self) -> None:
-        self._data: Dict[str, Dict[str, bool]] = {}
+        self._data = {}
 
     def has(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
-        first = self._data.get(a)
-        result = first and first.get(b)
+        key1, key2 = (a, b) if a < b else (b, a)
+
+        map_ = self._data.get(key1)
+        if map_ is None:
+            return False
+        result = map_.get(key2)
         if result is None:
             return False
         # `are_mutually_exclusive` being False is a superset of being True, hence if we
@@ -747,13 +753,11 @@ class PairSet:
             return not result
         return True
 
-    def add(self, a: str, b: str, are_mutually_exclusive: bool) -> "PairSet":
-        self._pair_set_add(a, b, are_mutually_exclusive)
-        self._pair_set_add(b, a, are_mutually_exclusive)
-        return self
+    def add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
+        key1, key2 = (a, b) if a < b else (b, a)
 
-    def _pair_set_add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
-        a_map = self._data.get(a)
-        if not a_map:
-            self._data[a] = a_map = {}
-        a_map[b] = are_mutually_exclusive
+        map_ = self._data.get(key1)
+        if map_ is None:
+            self._data[key1] = {key2: are_mutually_exclusive}
+        else:
+            map_[key2] = are_mutually_exclusive
