@@ -49,12 +49,14 @@ def describe_validate_supports_full_validation():
         doc = parse(
             """
             query {
-              catOrDog {
-                ... on Cat {
-                  furColor
-                }
-                ... on Dog {
-                  isHouseTrained
+              human {
+                pets {
+                  ... on Cat {
+                    meowsVolume
+                  }
+                  ... on Dog {
+                    barkVolume
+                  }
                 }
               }
             }
@@ -85,12 +87,14 @@ def describe_validate_supports_full_validation():
         doc = parse(
             """
             query {
-              catOrDog {
-                ... on Cat {
-                  furColor
-                }
-                ... on Dog {
-                  isHouseTrained
+              human {
+                pets {
+                  ... on Cat {
+                    meowsVolume
+                  }
+                  ... on Dog {
+                    barkVolume
+                  }
                 }
               }
             }
@@ -100,11 +104,11 @@ def describe_validate_supports_full_validation():
         errors = validate(test_schema, doc, None, None, type_info)
 
         assert [error.message for error in errors] == [
-            "Cannot query field 'catOrDog' on type 'QueryRoot'."
-            " Did you mean 'catOrDog'?",
-            "Cannot query field 'furColor' on type 'Cat'. Did you mean 'furColor'?",
-            "Cannot query field 'isHouseTrained' on type 'Dog'."
-            " Did you mean 'isHouseTrained'?",
+            "Cannot query field 'human' on type 'QueryRoot'. Did you mean 'human'?",
+            "Cannot query field 'meowsVolume' on type 'Cat'."
+            " Did you mean 'meowsVolume'?",
+            "Cannot query field 'barkVolume' on type 'Dog'."
+            " Did you mean 'barkVolume'?",
         ]
 
     def validates_using_a_custom_rule():

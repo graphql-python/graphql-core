@@ -7,7 +7,41 @@ from graphql.validation import validate, FieldsOnCorrectTypeRule
 
 from .harness import assert_validation_errors
 
-assert_errors = partial(assert_validation_errors, FieldsOnCorrectTypeRule)
+test_schema = build_schema(
+    """
+    interface Pet {
+      name: String
+    }
+
+    type Dog implements Pet {
+      name: String
+      nickname: String
+      barkVolume: Int
+    }
+
+    type Cat implements Pet {
+      name: String
+      nickname: String
+      meowVolume: Int
+    }
+
+    union CatOrDog = Cat | Dog
+
+    type Human {
+      name: String
+      pets: [Pet]
+    }
+
+    type Query {
+      human: Human
+    }
+    """
+)
+
+
+assert_errors = partial(
+    assert_validation_errors, FieldsOnCorrectTypeRule, schema=test_schema
+)
 
 assert_valid = partial(assert_errors, errors=[])
 
@@ -259,7 +293,7 @@ def describe_validate_fields_on_correct_type():
                 {
                     "message": "Cannot query field 'name' on type 'CatOrDog'."
                     " Did you mean to use an inline fragment"
-                    " on 'Being', 'Pet', 'Canine', 'Cat', or 'Dog'?",
+                    " on 'Pet', 'Cat', or 'Dog'?",
                     "locations": [(3, 15)],
                 },
             ],
@@ -355,7 +389,7 @@ def describe_fields_on_correct_type_error_message():
         )
 
     def sort_type_suggestions_based_on_inheritance_order():
-        schema = build_schema(
+        interface_schema = build_schema(
             """
             interface T { bar: String }
             type Query { t: T }
@@ -377,9 +411,31 @@ def describe_fields_on_correct_type_error_message():
             """
         )
 
-        assert _error_message(schema, "{ t { foo } }") == (
+        assert _error_message(interface_schema, "{ t { foo } }") == (
             "Cannot query field 'foo' on type 'T'."
             " Did you mean to use an inline fragment on 'Z', 'Y', or 'X'?"
+        )
+
+        union_schema = build_schema(
+            """
+            interface Animal { name: String }
+            interface Mammal implements Animal { name: String }
+
+            interface Canine implements Animal & Mammal { name: String }
+            type Dog implements Animal & Mammal & Canine { name: String }
+
+            interface Feline implements Animal & Mammal { name: String }
+            type Cat implements Animal & Mammal & Feline { name: String }
+
+            union CatOrDog = Cat | Dog
+            type Query { catOrDog: CatOrDog }
+            """
+        )
+
+        assert _error_message(union_schema, "{ catOrDog { name } }") == (
+            "Cannot query field 'name' on type 'CatOrDog'."
+            " Did you mean to use an inline fragment"
+            " on 'Animal', 'Mammal', 'Canine', 'Dog', or 'Feline'?"
         )
 
     def limits_lots_of_type_suggestions():

@@ -15,20 +15,16 @@ __all__ = [
 
 test_schema = build_schema(
     """
-    interface Being {
-      name(surname: Boolean): String
-    }
-
-    interface Mammal {
+   interface Mammal {
       mother: Mammal
       father: Mammal
     }
 
-    interface Pet implements Being {
+    interface Pet {
       name(surname: Boolean): String
     }
 
-    interface Canine implements Mammal & Being {
+    interface Canine implements Mammal {
       name(surname: Boolean): String
       mother: Canine
       father: Canine
@@ -40,7 +36,7 @@ test_schema = build_schema(
       DOWN
     }
 
-    type Dog implements Being & Pet & Mammal & Canine {
+    type Dog implements Pet & Mammal & Canine {
       name(surname: Boolean): String
       nickname: String
       barkVolume: Int
@@ -52,7 +48,7 @@ test_schema = build_schema(
       father: Dog
     }
 
-    type Cat implements Being & Pet {
+    type Cat implements Pet {
       name(surname: Boolean): String
       nickname: String
       meows: Boolean
@@ -62,26 +58,11 @@ test_schema = build_schema(
 
     union CatOrDog = Cat | Dog
 
-    interface Intelligent {
-      iq: Int
-    }
-
-    type Human implements Being & Intelligent {
+    type Human {
       name(surname: Boolean): String
       pets: [Pet]
       relatives: [Human]
-      iq: Int
     }
-
-    type Alien implements Being & Intelligent {
-      name(surname: Boolean): String
-      numEyes: Int
-      iq: Int
-    }
-
-    union DogOrHuman = Dog | Human
-
-    union HumanOrAlien = Human | Alien
 
     enum FurColor {
       BROWN
@@ -123,13 +104,10 @@ test_schema = build_schema(
 
     type QueryRoot {
       human(id: ID): Human
-      alien: Alien
       dog: Dog
       cat: Cat
       pet: Pet
       catOrDog: CatOrDog
-      dogOrHuman: DogOrHuman
-      humanOrAlien: HumanOrAlien
       complicatedArgs: ComplicatedArgs
     }
 

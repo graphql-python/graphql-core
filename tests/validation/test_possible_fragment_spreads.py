@@ -1,10 +1,63 @@
 from functools import partial
 
+from graphql.utilities import build_schema
 from graphql.validation import PossibleFragmentSpreadsRule
 
 from .harness import assert_validation_errors
 
-assert_errors = partial(assert_validation_errors, PossibleFragmentSpreadsRule)
+test_schema = build_schema(
+    """
+    interface Being {
+      name: String
+    }
+
+    interface Pet implements Being {
+      name: String
+    }
+
+    type Dog implements Being & Pet {
+      name: String
+      barkVolume: Int
+    }
+
+    type Cat implements Being & Pet {
+      name: String
+      meowVolume: Int
+    }
+
+    union CatOrDog = Cat | Dog
+
+    interface Intelligent {
+      iq: Int
+    }
+
+    type Human implements Being & Intelligent {
+      name: String
+      pets: [Pet]
+      iq: Int
+    }
+
+    type Alien implements Being & Intelligent {
+      name: String
+      iq: Int
+    }
+
+    union DogOrHuman = Dog | Human
+
+    union HumanOrAlien = Human | Alien
+
+    type Query {
+      catOrDog: CatOrDog
+      dogOrHuman: DogOrHuman
+      humanOrAlien: HumanOrAlien
+    }
+    """
+)
+
+
+assert_errors = partial(
+    assert_validation_errors, PossibleFragmentSpreadsRule, schema=test_schema
+)
 
 assert_valid = partial(assert_errors, errors=[])
 
