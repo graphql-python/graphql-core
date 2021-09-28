@@ -9,7 +9,6 @@ from graphql.validation.validate import validate, validate_sdl
 
 __all__ = [
     "test_schema",
-    "empty_schema",
     "assert_validation_errors",
     "assert_sdl_validation_errors",
 ]
@@ -134,23 +133,8 @@ test_schema = build_schema(
       complicatedArgs: ComplicatedArgs
     }
 
-    type Message {
-      body: String
-      sender: String
-    }
-
-    type SubscriptionRoot {
-      importantEmails: [String]
-      notImportantEmails: [String]
-      moreImportantEmails: [String]
-      spamEmails: [String]
-      deletedEmails: [String]
-      newMessage: Message
-    }
-
     schema {
       query: QueryRoot
-      subscription: SubscriptionRoot
     }
 
     directive @onQuery on QUERY
@@ -161,18 +145,6 @@ test_schema = build_schema(
     directive @onFragmentSpread on FRAGMENT_SPREAD
     directive @onInlineFragment on INLINE_FRAGMENT
     directive @onVariableDefinition on VARIABLE_DEFINITION
-    """
-)
-
-empty_schema = build_schema(
-    """
-    type QueryRoot {
-      empty: Boolean
-    }
-
-    schema {
-      query: QueryRoot
-    }
     """
 )
 

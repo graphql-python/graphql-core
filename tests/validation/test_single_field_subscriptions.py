@@ -1,10 +1,40 @@
 from functools import partial
 
+from graphql.utilities import build_schema
 from graphql.validation import SingleFieldSubscriptionsRule
 
-from .harness import assert_validation_errors, empty_schema
+from .harness import assert_validation_errors
 
-assert_errors = partial(assert_validation_errors, SingleFieldSubscriptionsRule)
+schema = build_schema(
+    """
+    type Message {
+      body: String
+      sender: String
+    }
+
+    type SubscriptionRoot {
+      importantEmails: [String]
+      notImportantEmails: [String]
+      moreImportantEmails: [String]
+      spamEmails: [String]
+      deletedEmails: [String]
+      newMessage: Message
+    }
+
+    type QueryRoot {
+      dummy: String
+    }
+
+    schema {
+      query: QueryRoot
+      subscription: SubscriptionRoot
+    }
+    """
+)
+
+assert_errors = partial(
+    assert_validation_errors, SingleFieldSubscriptionsRule, schema=schema
+)
 
 assert_valid = partial(assert_errors, errors=[])
 
@@ -262,6 +292,13 @@ def describe_validate_subscriptions_with_single_field():
         )
 
     def skips_if_not_subscription_type():
+        empty_schema = build_schema(
+            """
+            type Query {
+              dummy: String
+            }
+            """
+        )
         assert_errors(
             """
             subscription {
