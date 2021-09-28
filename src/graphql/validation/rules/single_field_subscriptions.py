@@ -1,7 +1,7 @@
 from typing import Any, Dict, cast
 
 from ...error import GraphQLError
-from ...execution import ExecutionContext, default_field_resolver, default_type_resolver
+from ...execution.collect_fields import collect_fields
 from ...language import (
     FieldNode,
     FragmentDefinitionNode,
@@ -35,21 +35,14 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                     for definition in document.definitions
                     if isinstance(definition, FragmentDefinitionNode)
                 }
-                fake_execution_context = ExecutionContext(
+                fields = collect_fields(
                     schema,
                     fragments,
-                    root_value=None,
-                    context_value=None,
-                    operation=node,
-                    variable_values=variable_values,
-                    field_resolver=default_field_resolver,
-                    type_resolver=default_type_resolver,
-                    errors=[],
-                    middleware_manager=None,
-                    is_awaitable=None,
-                )
-                fields = fake_execution_context.collect_fields(
-                    subscription_type, node.selection_set, {}, set()
+                    variable_values,
+                    subscription_type,
+                    node.selection_set,
+                    {},
+                    set(),
                 )
                 if len(fields) > 1:
                     field_selection_lists = list(fields.values())

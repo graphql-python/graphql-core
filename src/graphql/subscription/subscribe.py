@@ -9,6 +9,7 @@ from typing import (
 )
 
 from ..error import GraphQLError, located_error
+from ..execution.collect_fields import collect_fields
 from ..execution.execute import (
     assert_valid_execution_arguments,
     execute,
@@ -163,7 +164,15 @@ async def create_source_event_stream(
 async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
     schema = context.schema
     type_ = get_operation_root_type(schema, context.operation)
-    fields = context.collect_fields(type_, context.operation.selection_set, {}, set())
+    fields = collect_fields(
+        schema,
+        context.fragments,
+        context.variable_values,
+        type_,
+        context.operation.selection_set,
+        {},
+        set(),
+    )
     response_name, field_nodes = next(iter(fields.items()))
     field_def = get_field_def(schema, type_, field_nodes[0])
 
