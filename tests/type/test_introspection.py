@@ -1064,6 +1064,48 @@ def describe_introspection():
             None,
         )
 
+    def introspects_any_default_value():
+        schema = build_schema(
+            """
+            input InputObjectWithDefaultValues {
+              a: String = "Emoji: \\u{1F600}"
+              b: Complex = {x: ["abc"], y: 123}
+            }
+
+            input Complex {
+              x: [String]
+              y: Int
+            }
+
+            type Query {
+              someField(someArg: InputObjectWithDefaultValues): String
+            }
+            """
+        )
+
+        source = """
+            {
+              __type(name: "InputObjectWithDefaultValues") {
+                inputFields {
+                  name
+                  defaultValue
+                }
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "__type": {
+                    "inputFields": [
+                        {"name": "a", "defaultValue": '"Emoji: \U0001f600"'},
+                        {"name": "b", "defaultValue": '{x: ["abc"], y: 123}'},
+                    ]
+                }
+            },
+            None,
+        )
+
     def supports_the_type_root_field():
         schema = build_schema(
             """

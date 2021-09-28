@@ -1,9 +1,9 @@
-from json import dumps
 from typing import Any, Collection, Optional
 
 from ..language.ast import Node, OperationType
-from .visitor import visit, Visitor
 from .block_string import print_block_string
+from .print_string import print_string
+from .visitor import visit, Visitor
 
 __all__ = ["print_ast"]
 
@@ -148,7 +148,7 @@ class PrintAstVisitor(Visitor):
     def leave_string_value(node: PrintedNode, *_args: Any) -> str:
         if node.block:
             return print_block_string(node.value)
-        return dumps(node.value)
+        return print_string(node.value)
 
     @staticmethod
     def leave_boolean_value(node: PrintedNode, *_args: Any) -> str:

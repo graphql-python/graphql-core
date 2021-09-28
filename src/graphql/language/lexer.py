@@ -67,12 +67,16 @@ class Lexer:
         if location >= len(body):
             return TokenKind.EOF.value
         char = body[location]
-        code = ord(char)
         # Printable ASCII
-        if 0x20 <= code <= 0x7E:
+        if "\x20" <= char <= "\x7E":
             return "'\"'" if char == '"' else f"'{char}'"
         # Unicode code point
-        return f"U+{code:04X}"
+        point = (
+            decode_surrogate_pair(ord(char), ord(body[location + 1]))
+            if is_supplementary_code_point(body, location)
+            else ord(char)
+        )
+        return f"U+{point:04X}"
 
     def create_token(
         self, kind: TokenKind, start: int, end: int, value: Optional[str] = None
@@ -141,7 +145,8 @@ class Lexer:
                 if char == "'"
                 else (
                     f"Unexpected character: {self.print_code_point_at(position)}."
-                    if is_source_character(char)
+                    if is_unicode_scalar_value(char)
+                    or is_supplementary_code_point(body, position)
                     else f"Invalid character: {self.print_code_point_at(position)}."
                 )
             )
@@ -158,10 +163,14 @@ class Lexer:
         position = start + 1
         while position < body_length:
             char = body[position]
-
-            if char in "\r\n" or not is_source_character(char):
+            if char in "\r\n":
                 break
-            position += 1
+            if is_unicode_scalar_value(char):
+                position += 1
+            elif is_supplementary_code_point(body, position):
+                position += 2
+            else:
+                break  # pragma: no cover
 
         return self.create_token(
             TokenKind.COMMENT,
@@ -270,7 +279,11 @@ class Lexer:
             if char == "\\":
                 append(body[chunk_start:position])
                 escape = (
-                    self.read_escaped_unicode(position)
+                    (
+                        self.read_escaped_unicode_variable_width(position)
+                        if body[position + 2 : position + 3] == "{"
+                        else self.read_escaped_unicode_fixed_width(position)
+                    )
                     if body[position + 1 : position + 2] == "u"
                     else self.read_escaped_character(position)
                 )
@@ -282,8 +295,10 @@ class Lexer:
             if char in "\r\n":
                 break
 
-            if is_source_character(char):
+            if is_unicode_scalar_value(char):
                 position += 1
+            elif is_supplementary_code_point(body, position):
+                position += 2
             else:
                 raise GraphQLSyntaxError(
                     self.source,
@@ -294,11 +309,50 @@ class Lexer:
 
         raise GraphQLSyntaxError(self.source, position, "Unterminated string.")
 
-    def read_escaped_unicode(self, position: int) -> EscapeSequence:
+    def read_escaped_unicode_variable_width(self, position: int) -> EscapeSequence:
+        body = self.source.body
+        point = 0
+        size = 3
+        max_size = min(12, len(body) - position)
+        # Cannot be larger than 12 chars (\u{00000000}).
+        while size < max_size:
+            char = body[position + size]
+            size += 1
+            if char == "}":
+                # Must be at least 5 chars (\u{0}) and encode a Unicode scalar value.
+                if size < 5 or not (
+                    0 <= point <= 0xD7FF or 0xE000 <= point <= 0x10FFFF
+                ):
+                    break
+                return EscapeSequence(chr(point), size)
+            # Append this hex digit to the code point.
+            point = (point << 4) | read_hex_digit(char)
+            if point < 0:
+                break
+
+        raise GraphQLSyntaxError(
+            self.source,
+            position,
+            f"Invalid Unicode escape sequence: '{body[position: position + size]}'.",
+        )
+
+    def read_escaped_unicode_fixed_width(self, position: int) -> EscapeSequence:
         body = self.source.body
         code = read_16_bit_hex_code(body, position + 2)
-        if code >= 0:
+
+        if 0 <= code <= 0xD7FF or 0xE000 <= code <= 0x10FFFF:
             return EscapeSequence(chr(code), 6)
+
+        # GraphQL allows JSON-style surrogate pair escape sequences, but only when
+        # a valid pair is formed.
+        if 0xD800 <= code <= 0xDBFF:
+            if body[position + 6 : position + 8] == "\\u":
+                trailing_code = read_16_bit_hex_code(body, position + 8)
+                if 0xDC00 <= trailing_code <= 0xDFFF:
+                    return EscapeSequence(
+                        chr(decode_surrogate_pair(code, trailing_code)), 12
+                    )
+
         raise GraphQLSyntaxError(
             self.source,
             position,
@@ -351,8 +405,10 @@ class Lexer:
                 self.line_start = position
                 continue
 
-            if is_source_character(char):
+            if is_unicode_scalar_value(char):
                 position += 1
+            elif is_supplementary_code_point(body, position):
+                position += 2
             else:
                 raise GraphQLSyntaxError(
                     self.source,
@@ -477,9 +533,31 @@ def read_hex_digit(char: str) -> int:
     return -1
 
 
-def is_source_character(char: str) -> bool:
-    """Check whether this is a SourceCharacter"""
-    return char >= " " or char in "\t\r\n"
+def is_unicode_scalar_value(char: str) -> bool:
+    """Check whether this is a Unicode scalar value.
+
+    A Unicode scalar value is any Unicode code point except surrogate code
+    points. In other words, the inclusive ranges of values 0x0000 to 0xD7FF and
+    0xE000 to 0x10FFFF.
+    """
+    return "\x00" <= char <= "\ud7ff" or "\ue000" <= char <= "\U0010ffff"
+
+
+def is_supplementary_code_point(body: str, location: int) -> bool:
+    """
+    Check whether the current location is a supplementary code point.
+
+    The GraphQL specification defines source text as a sequence of unicode scalar
+    values (which Unicode defines to exclude surrogate code points).
+    """
+    return (
+        "\ud800" <= body[location] <= "\udbff"
+        and "\udc00" <= body[location + 1] <= "\udfff"
+    )
+
+
+def decode_surrogate_pair(leading: int, trailing: int) -> int:
+    return 0x10000 + (((leading & 0x03FF) << 10) | (trailing & 0x03FF))
 
 
 def is_name_start(char: str) -> bool:
