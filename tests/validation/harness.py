@@ -137,14 +137,7 @@ test_schema = build_schema(
       query: QueryRoot
     }
 
-    directive @onQuery on QUERY
-    directive @onMutation on MUTATION
-    directive @onSubscription on SUBSCRIPTION
     directive @onField on FIELD
-    directive @onFragmentDefinition on FRAGMENT_DEFINITION
-    directive @onFragmentSpread on FRAGMENT_SPREAD
-    directive @onInlineFragment on INLINE_FRAGMENT
-    directive @onVariableDefinition on VARIABLE_DEFINITION
     """
 )
 

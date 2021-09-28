@@ -5,14 +5,22 @@ from graphql.validation import KnownDirectivesRule
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors
 
-assert_errors = partial(assert_validation_errors, KnownDirectivesRule)
+schema_with_directives = build_schema(
+    """
+    type Query {
+      dummy: String
+    }
 
-assert_valid = partial(assert_errors, errors=[])
-
-assert_sdl_errors = partial(assert_sdl_validation_errors, KnownDirectivesRule)
-
-assert_sdl_valid = partial(assert_sdl_errors, errors=[])
-
+    directive @onQuery on QUERY
+    directive @onMutation on MUTATION
+    directive @onSubscription on SUBSCRIPTION
+    directive @onField on FIELD
+    directive @onFragmentDefinition on FRAGMENT_DEFINITION
+    directive @onFragmentSpread on FRAGMENT_SPREAD
+    directive @onInlineFragment on INLINE_FRAGMENT
+    directive @onVariableDefinition on VARIABLE_DEFINITION
+    """
+)
 
 schema_with_sdl_directives = build_schema(
     """
@@ -29,6 +37,16 @@ schema_with_sdl_directives = build_schema(
     directive @onInputFieldDefinition on INPUT_FIELD_DEFINITION
     """
 )
+
+assert_errors = partial(
+    assert_validation_errors, KnownDirectivesRule, schema=schema_with_directives
+)
+
+assert_valid = partial(assert_errors, errors=[])
+
+assert_sdl_errors = partial(assert_sdl_validation_errors, KnownDirectivesRule)
+
+assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 
 def describe_known_directives():
