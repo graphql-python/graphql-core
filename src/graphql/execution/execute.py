@@ -325,7 +325,7 @@ class ExecutionContext:
     ) -> Optional[AwaitableOrValue[Any]]:
         """Execute an operation.
 
-        Implements the "Evaluating operations" section of the spec.
+        Implements the "Executing operations" section of the spec.
         """
         type_ = get_operation_root_type(self.schema, operation)
         fields = self.collect_fields(type_, operation.selection_set, {}, set())
@@ -366,13 +366,14 @@ class ExecutionContext:
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Execute the given fields serially.
 
-        Implements the "Evaluating selection sets" section of the spec for "write" mode.
+        Implements the "Executing selection sets" section of the spec
+        for fields that must be executed serially.
         """
         results: AwaitableOrValue[Dict[str, Any]] = {}
         is_awaitable = self.is_awaitable
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name, parent_type.name)
-            result = self.resolve_field(
+            result = self.execute_field(
                 parent_type, source_value, field_nodes, field_path
             )
             if result is Undefined:
@@ -425,7 +426,8 @@ class ExecutionContext:
     ) -> AwaitableOrValue[Dict[str, Any]]:
         """Execute the given fields concurrently.
 
-        Implements the "Evaluating selection sets" section of the spec for "read" mode.
+        Implements the "Executing selection sets" section of the spec
+        for fields that may be executed in parallel.
         """
         results = {}
         is_awaitable = self.is_awaitable
@@ -433,7 +435,7 @@ class ExecutionContext:
         append_awaitable = awaitable_fields.append
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name, parent_type.name)
-            result = self.resolve_field(
+            result = self.execute_field(
                 parent_type, source_value, field_nodes, field_path
             )
             if result is not Undefined:
@@ -577,7 +579,7 @@ class ExecutionContext:
             self.is_awaitable,
         )
 
-    def resolve_field(
+    def execute_field(
         self,
         parent_type: GraphQLObjectType,
         source: Any,
@@ -586,9 +588,11 @@ class ExecutionContext:
     ) -> AwaitableOrValue[Any]:
         """Resolve the field on the given source object.
 
-        In particular, this figures out the value that the field returns by calling its
-        resolve function, then calls complete_value to await coroutine objects,
-        serialize scalars, or execute the sub-selection-set for objects.
+        Implements the "Executing field" section of the spec.
+
+        In particular, this method figures out the value that the field returns by
+        calling its resolve function, then calls complete_value to await coroutine
+        objects, serialize scalars, or execute the sub-selection-set for objects.
         """
         field_def = get_field_def(self.schema, parent_type, field_nodes[0])
         if not field_def:
@@ -1060,7 +1064,7 @@ def execute(
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
 
-    Implements the "Evaluating requests" section of the GraphQL specification.
+    Implements the "Executing requests" section of the GraphQL specification.
 
     Returns an ExecutionResult (if all encountered resolvers are synchronous),
     or a coroutine object eventually yielding an ExecutionResult.
@@ -1125,7 +1129,7 @@ def execute_sync(
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
-    Also implements the "Evaluating requests" section of the GraphQL specification.
+    Also implements the "Executing requests" section of the GraphQL specification.
 
     However, it guarantees to complete synchronously (or throw an error) assuming
     that all field resolvers are also synchronous.

@@ -31,8 +31,8 @@ def describe_customize_execution():
         )
 
         class TestExecutionContext(ExecutionContext):
-            def resolve_field(self, parent_type, source, field_nodes, path):
-                result = super().resolve_field(parent_type, source, field_nodes, path)
+            def execute_field(self, parent_type, source, field_nodes, path):
+                result = super().execute_field(parent_type, source, field_nodes, path)
                 return result * 2  # type: ignore
 
         assert execute(schema, query, execution_context_class=TestExecutionContext) == (
