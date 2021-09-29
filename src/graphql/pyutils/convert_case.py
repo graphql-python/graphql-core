@@ -4,7 +4,7 @@ import re
 
 __all__ = ["camel_to_snake", "snake_to_camel"]
 
-_re_camel_to_snake = re.compile(r"([a-z]|[A-Z]+)(?=[A-Z])")
+_re_camel_to_snake = re.compile(r"([a-z]|[A-Z0-9]+)(?=[A-Z])")
 _re_snake_to_camel = re.compile(r"(_)([a-z\d])")
 
 
