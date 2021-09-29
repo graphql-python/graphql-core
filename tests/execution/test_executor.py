@@ -983,8 +983,8 @@ def describe_execute_handles_basic_execution_tasks():
             {"customScalar": None},
             [
                 {
-                    "message": "Expected a value of type 'CustomScalar'"
-                    " but received: 'CUSTOM_VALUE'",
+                    "message": "Expected `CustomScalar.serialize('CUSTOM_VALUE')`"
+                    " to return non-nullable value, returned: Undefined",
                     "locations": [(1, 3)],
                     "path": ["customScalar"],
                 }

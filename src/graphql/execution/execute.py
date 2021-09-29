@@ -769,10 +769,10 @@ class ExecutionContext:
         serialization is not possible.
         """
         serialized_result = return_type.serialize(result)
-        if serialized_result is Undefined:
+        if serialized_result is Undefined or serialized_result is None:
             raise TypeError(
-                f"Expected a value of type '{inspect(return_type)}'"
-                f" but received: {inspect(result)}"
+                f"Expected `{inspect(return_type)}.serialize({inspect(result)})`"
+                f" to return non-nullable value, returned: {inspect(serialized_result)}"
             )
         return serialized_result
 
