@@ -820,7 +820,7 @@ class Parser:
         """EnumValueDefinition: Description? EnumValue Directives[Const]?"""
         start = self._lexer.token
         description = self.parse_description()
-        name = self.parse_name()
+        name = self.parse_enum_value_name()
         directives = self.parse_const_directives()
         return EnumValueDefinitionNode(
             description=description,
@@ -828,6 +828,17 @@ class Parser:
             directives=directives,
             loc=self.loc(start),
         )
+
+    def parse_enum_value_name(self) -> NameNode:
+        """EnumValue: Name but not ``true``, ``false`` or ``null``"""
+        if self._lexer.token.value in ("true", "false", "null"):
+            raise GraphQLSyntaxError(
+                self._lexer.source,
+                self._lexer.token.start,
+                f"{get_token_desc(self._lexer.token)} is reserved"
+                " and cannot be used for an enum value.",
+            )
+        return self.parse_name()
 
     def parse_input_object_type_definition(self) -> InputObjectTypeDefinitionNode:
         """InputObjectTypeDefinition"""

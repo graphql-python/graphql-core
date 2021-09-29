@@ -112,6 +112,23 @@ def describe_parser():
     def does_not_accept_fragments_spread_of_on():
         assert_syntax_error("{ ...on }", "Expected Name, found '}'.", (1, 9))
 
+    def does_not_allow_true_false_or_null_as_enum_value():
+        assert_syntax_error(
+            "enum Test { VALID, true }",
+            "Name 'true' is reserved and cannot be used for an enum value.",
+            (1, 20),
+        )
+        assert_syntax_error(
+            "enum Test { VALID, false }",
+            "Name 'false' is reserved and cannot be used for an enum value.",
+            (1, 20),
+        )
+        assert_syntax_error(
+            "enum Test { VALID, null }",
+            "Name 'null' is reserved and cannot be used for an enum value.",
+            (1, 20),
+        )
+
     def parses_multi_byte_characters():
         # Note: \u0A0A could be naively interpreted as two line-feed chars.
         doc = parse(
