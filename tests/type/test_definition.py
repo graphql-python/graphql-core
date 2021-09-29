@@ -1586,6 +1586,20 @@ def describe_type_system_input_objects():
                     {"f": GraphQLInputField(ScalarType, resolve={})},  # type: ignore
                 )
 
+        def deprecation_reason_is_preserved_on_fields():
+            input_obj_type = GraphQLInputObjectType(
+                "SomeInputObject",
+                {
+                    "deprecatedField": GraphQLInputField(
+                        ScalarType, deprecation_reason="not used anymore"
+                    )
+                },
+            )
+            assert (
+                input_obj_type.fields["deprecatedField"].deprecation_reason
+                == "not used anymore"
+            )
+
 
 def describe_type_system_arguments():
     def accepts_an_argument_with_a_description():
