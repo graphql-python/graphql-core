@@ -9,7 +9,7 @@ from graphql.version import (
     version_info_js,
 )
 
-_re_version = re.compile(r"(\d+)\.(\d+)\.(\d+)(?:(a|b|c)(\d+))?$")
+_re_version = re.compile(r"(\d+)\.(\d+)\.(\d+)(?:(a|b|r?c)(\d+))?$")
 
 
 def describe_version():
@@ -77,7 +77,7 @@ def describe_version():
             if groups[3] is None:  # pragma: no cover
                 assert groups[4] is None
             else:  # pragma: no cover
-                assert version_info.releaselevel[:1] == groups[3]
+                assert version_info.releaselevel[:1] == groups[3].lstrip("r")
                 assert version_info.serial == int(groups[4])
 
     def describe_graphql_js_version():
@@ -103,5 +103,5 @@ def describe_version():
             if groups[3] is None:  # pragma: no cover
                 assert groups[4] is None
             else:  # pragma: no cover
-                assert version_info_js.releaselevel[:1] == groups[3]
+                assert version_info_js.releaselevel[:1] == groups[3].lstrip("r")
                 assert version_info_js.serial == int(groups[4])
