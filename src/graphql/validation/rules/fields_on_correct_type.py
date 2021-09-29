@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import cmp_to_key
-from typing import Any, Dict, List, Set, Union, cast
+from typing import Any, Dict, List, Union, cast
 
 from ...type import (
     GraphQLAbstractType,
@@ -72,14 +72,15 @@ def get_suggested_type_names(
         return []
 
     type_ = cast(GraphQLAbstractType, type_)
-    suggested_types: Set[Union[GraphQLObjectType, GraphQLInterfaceType]] = set()
+    # Use a dict instead of a set for stable sorting when usage counts are the same
+    suggested_types: Dict[Union[GraphQLObjectType, GraphQLInterfaceType], None] = {}
     usage_count: Dict[str, int] = defaultdict(int)
     for possible_type in schema.get_possible_types(type_):
         if field_name not in possible_type.fields:
             continue
 
         # This object type defines this field.
-        suggested_types.add(possible_type)
+        suggested_types[possible_type] = None
         usage_count[possible_type.name] = 1
 
         for possible_interface in possible_type.interfaces:
@@ -87,7 +88,7 @@ def get_suggested_type_names(
                 continue
 
             # This interface type defines this field.
-            suggested_types.add(possible_interface)
+            suggested_types[possible_interface] = None
             usage_count[possible_interface.name] += 1
 
     def cmp(
