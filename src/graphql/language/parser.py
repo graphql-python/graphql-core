@@ -49,7 +49,6 @@ from .ast import (
     SelectionSetNode,
     StringValueNode,
     TypeNode,
-    TypeSystemDefinitionNode,
     TypeSystemExtensionNode,
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
@@ -224,22 +223,20 @@ class Parser:
             loc=self.loc(start),
         )
 
-    _parse_definition_method_names: Dict[str, str] = {
+    _parse_type_system_definition_method_names: Dict[str, str] = {
+        "schema": "schema_definition",
+        "scalar": "scalar_type_definition",
+        "type": "object_type_definition",
+        "interface": "interface_type_definition",
+        "union": "union_type_definition",
+        "enum": "enum_type_definition",
+        "input": "input_object_type_definition",
+        "directive": "directive_definition",
+    }
+
+    _parse_other_definition_method_names: Dict[str, str] = {
         **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
         "fragment": "fragment_definition",
-        **dict.fromkeys(
-            (
-                "schema",
-                "scalar",
-                "type",
-                "interface",
-                "union",
-                "enum",
-                "input",
-                "directive",
-            ),
-            "type_system_definition",
-        ),
         "extend": "type_system_extension",
     }
 
@@ -247,23 +244,43 @@ class Parser:
         """Definition: ExecutableDefinition or TypeSystemDefinition/Extension
 
         ExecutableDefinition: OperationDefinition or FragmentDefinition
+
+        TypeSystemDefinition: SchemaDefinition, TypeDefinition or DirectiveDefinition
+
+        TypeDefinition: ScalarTypeDefinition, ObjectTypeDefinition,
+            InterfaceTypeDefinition, UnionTypeDefinition,
+            EnumTypeDefinition or InputObjectTypeDefinition
         """
-        if self.peek(TokenKind.NAME):
-            method_name = self._parse_definition_method_names.get(
-                cast(str, self._lexer.token.value)
+        if self.peek(TokenKind.BRACE_L):
+            return self.parse_operation_definition()
+
+        # Many definitions begin with a description and require a lookahead.
+        has_description = self.peek_description()
+        keyword_token = (
+            self._lexer.lookahead() if has_description else self._lexer.token
+        )
+
+        if keyword_token.kind is TokenKind.NAME:
+            token_name = cast(str, keyword_token.value)
+            method_name = self._parse_type_system_definition_method_names.get(
+                token_name
             )
             if method_name:
                 return getattr(self, f"parse_{method_name}")()
-        elif self.peek(TokenKind.BRACE_L):
-            return self.parse_operation_definition()
-        elif self.peek_description():
-            return self.parse_type_system_definition()
-        raise self.unexpected()
 
-    _parse_executable_definition_method_names: Dict[str, str] = {
-        **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
-        **dict.fromkeys(("fragment",), "fragment_definition"),
-    }
+            if has_description:
+                raise GraphQLSyntaxError(
+                    self._lexer.source,
+                    self._lexer.token.start,
+                    "Unexpected description,"
+                    " descriptions are supported only on type definitions.",
+                )
+
+            method_name = self._parse_other_definition_method_names.get(token_name)
+            if method_name:
+                return getattr(self, f"parse_{method_name}")()
+
+        raise self.unexpected(keyword_token)
 
     # Implement the parsing rules in the Operations section.
 
@@ -579,30 +596,6 @@ class Parser:
         return NamedTypeNode(name=self.parse_name(), loc=self.loc(start))
 
     # Implement the parsing rules in the Type Definition section.
-
-    _parse_type_system_definition_method_names: Dict[str, str] = {
-        "schema": "schema_definition",
-        "scalar": "scalar_type_definition",
-        "type": "object_type_definition",
-        "interface": "interface_type_definition",
-        "union": "union_type_definition",
-        "enum": "enum_type_definition",
-        "input": "input_object_type_definition",
-        "directive": "directive_definition",
-    }
-
-    def parse_type_system_definition(self) -> TypeSystemDefinitionNode:
-        """TypeSystemDefinition"""
-        # Many definitions begin with a description and require a lookahead.
-        keyword_token = (
-            self._lexer.lookahead() if self.peek_description() else self._lexer.token
-        )
-        method_name = self._parse_type_system_definition_method_names.get(
-            cast(str, keyword_token.value)
-        )
-        if method_name:
-            return getattr(self, f"parse_{method_name}")()
-        raise self.unexpected(keyword_token)
 
     _parse_type_extension_method_names: Dict[str, str] = {
         "schema": "schema_extension",

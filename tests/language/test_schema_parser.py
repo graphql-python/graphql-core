@@ -298,8 +298,9 @@ def describe_schema_parser():
             extend type Hello {
               world: String
             }""",
-            "Unexpected Name 'extend'.",
-            (3, 13),
+            "Unexpected description,"
+            " descriptions are supported only on type definitions.",
+            (2, 13),
         )
         assert_syntax_error(
             """
@@ -317,8 +318,9 @@ def describe_schema_parser():
             extend interface Hello {
               world: String
             }""",
-            "Unexpected Name 'extend'.",
-            (3, 13),
+            "Unexpected description,"
+            " descriptions are supported only on type definitions.",
+            (2, 13),
         )
         assert_syntax_error(
             """
