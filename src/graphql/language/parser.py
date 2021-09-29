@@ -236,11 +236,6 @@ class Parser:
             return self.parse_type_system_definition()
         raise self.unexpected()
 
-    _parse_executable_definition_method_names: Dict[str, str] = {
-        **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
-        **dict.fromkeys(("fragment",), "fragment_definition"),
-    }
-
     # Implement the parsing rules in the Operations section.
 
     def parse_operation_definition(self) -> OperationDefinitionNode:
