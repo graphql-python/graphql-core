@@ -133,6 +133,7 @@ __all__ = [
     "GraphQLTypeResolver",
     "GraphQLUnionType",
     "GraphQLWrappingType",
+    "Thunk",
     "ThunkCollection",
     "ThunkMapping",
 ]
@@ -261,22 +262,14 @@ T = TypeVar("T")
 
 ThunkCollection = Union[Callable[[], Collection[T]], Collection[T]]
 ThunkMapping = Union[Callable[[], Mapping[str, T]], Mapping[str, T]]
+Thunk = Union[Callable[[], T], T]
 
 
-def resolve_thunk_collection(thunk: ThunkCollection[T]) -> Collection[T]:
-    """Resolve the given thunk for a collection.
+def resolve_thunk(thunk: Thunk[T]) -> T:
+    """Resolve the given thunk.
 
     Used while defining GraphQL types to allow for circular references in otherwise
     immutable type definitions.
-    """
-    return thunk() if callable(thunk) else thunk
-
-
-def resolve_thunk_mapping(thunk: ThunkMapping[T]) -> Mapping[str, T]:
-    """Resolve the given thunk for a mapping.
-
-    Used while defining GraphQL fields to allow for circular references in otherwise
-    immutable field definitions.
     """
     return thunk() if callable(thunk) else thunk
 
@@ -739,7 +732,7 @@ class GraphQLObjectType(GraphQLNamedType):
     def fields(self) -> GraphQLFieldMap:
         """Get provided fields, wrapping them as GraphQLFields if needed."""
         try:
-            fields = resolve_thunk_mapping(self._fields)
+            fields = resolve_thunk(self._fields)
         except Exception as error:
             raise TypeError(f"{self.name} fields cannot be resolved. {error}")
         if not isinstance(fields, Mapping) or not all(
@@ -767,7 +760,7 @@ class GraphQLObjectType(GraphQLNamedType):
     def interfaces(self) -> List["GraphQLInterfaceType"]:
         """Get provided interfaces."""
         try:
-            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk_collection(
+            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
                 self._interfaces  # type: ignore
             )
         except Exception as error:
@@ -864,7 +857,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def fields(self) -> GraphQLFieldMap:
         """Get provided fields, wrapping them as GraphQLFields if needed."""
         try:
-            fields = resolve_thunk_mapping(self._fields)
+            fields = resolve_thunk(self._fields)
         except Exception as error:
             raise TypeError(f"{self.name} fields cannot be resolved. {error}")
         if not isinstance(fields, Mapping) or not all(
@@ -892,7 +885,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def interfaces(self) -> List["GraphQLInterfaceType"]:
         """Get provided interfaces."""
         try:
-            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk_collection(
+            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
                 self._interfaces  # type: ignore
             )
         except Exception as error:
@@ -987,7 +980,7 @@ class GraphQLUnionType(GraphQLNamedType):
     def types(self) -> List[GraphQLObjectType]:
         """Get provided types."""
         try:
-            types: Collection[GraphQLObjectType] = resolve_thunk_collection(self._types)
+            types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
         except Exception as error:
             raise TypeError(f"{self.name} types cannot be resolved. {error}")
         if types is None:
@@ -1339,7 +1332,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     def fields(self) -> GraphQLInputFieldMap:
         """Get provided fields, wrap them as GraphQLInputField if needed."""
         try:
-            fields = resolve_thunk_mapping(self._fields)
+            fields = resolve_thunk(self._fields)
         except Exception as error:
             raise TypeError(f"{self.name} fields cannot be resolved. {error}")
         if not isinstance(fields, Mapping) or not all(
