@@ -31,40 +31,7 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
     Warning: It is guaranteed that this function will always produce stable results.
     However, it's not guaranteed that it will stay the same between different
     releases due to bugfixes or changes in the GraphQL specification.
-    """ '''
-
-    Query example::
-
-        query SomeQuery($foo: String!, $bar: String) {
-          someField(foo: $foo, bar: $bar) {
-            a
-            b {
-              c
-              d
-            }
-          }
-        }
-
-    Becomes::
-
-        query SomeQuery($foo:String!$bar:String){someField(foo:$foo bar:$bar){a b{c d}}}
-
-    SDL example::
-
-        """
-        Type description
-        """
-        type Foo {
-          """
-          Field description
-          """
-          bar: String
-        }
-
-    Becomes::
-
-        """Type description""" type Foo{"""Field description""" bar:String}
-    '''
+    """
     source = cast(Source, source) if is_source(source) else Source(cast(str, source))
 
     body = source.body
@@ -79,9 +46,10 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
         # Also prevent case of non-punctuator token following by spread resulting
         # in invalid token (e.g.`1...` is invalid Float token).
         is_non_punctuator = not is_punctuator_token_kind(current_token.kind)
-        if was_last_added_token_non_punctuator:
-            if is_non_punctuator or current_token.kind == TokenKind.SPREAD:
-                stripped_body += " "
+        if was_last_added_token_non_punctuator and (
+            is_non_punctuator or current_token.kind == TokenKind.SPREAD
+        ):
+            stripped_body += " "
 
         token_body = body[current_token.start : current_token.end]
         if token_kind == TokenKind.BLOCK_STRING:

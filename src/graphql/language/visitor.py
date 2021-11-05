@@ -183,16 +183,15 @@ class Visitor:
                 kind: Optional[str] = None
             else:
                 attr, kind = attr_kind
-            if attr in ("enter", "leave"):
-                if kind:
-                    name = snake_to_camel(kind) + "Node"
-                    node_cls = getattr(ast, name, None)
-                    if (
-                        not node_cls
-                        or not isinstance(node_cls, type)
-                        or not issubclass(node_cls, Node)
-                    ):
-                        raise TypeError(f"Invalid AST node kind: {kind}.")
+            if attr in ("enter", "leave") and kind:
+                name = snake_to_camel(kind) + "Node"
+                node_cls = getattr(ast, name, None)
+                if (
+                    not node_cls
+                    or not isinstance(node_cls, type)
+                    or not issubclass(node_cls, Node)
+                ):
+                    raise TypeError(f"Invalid AST node kind: {kind}.")
 
     def get_visit_fn(self, kind: str, is_leaving: bool = False) -> Callable:
         """Get the visit function for the given node kind and direction."""
@@ -256,10 +255,7 @@ def visit(root: Node, visitor: Visitor) -> Any:
             node: Any = parent
             parent = ancestors_pop() if ancestors else None
             if is_edited:
-                if in_array:
-                    node = node[:]
-                else:
-                    node = copy(node)
+                node = node[:] if in_array else copy(node)
             edit_offset = 0
             for edit_key, edit_value in edits:
                 if in_array:
@@ -267,11 +263,10 @@ def visit(root: Node, visitor: Visitor) -> Any:
                 if in_array and (edit_value is REMOVE or edit_value is Ellipsis):
                     node.pop(edit_key)
                     edit_offset += 1
+                elif isinstance(node, list):
+                    node[edit_key] = edit_value
                 else:
-                    if isinstance(node, list):
-                        node[edit_key] = edit_value
-                    else:
-                        setattr(node, edit_key, edit_value)
+                    setattr(node, edit_key, edit_value)
 
             idx = stack.idx
             keys = stack.keys

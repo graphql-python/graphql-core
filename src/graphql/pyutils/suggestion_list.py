@@ -73,7 +73,7 @@ class LexicalDistance:
             return None
 
         rows = self._rows
-        for j in range(0, b_len + 1):
+        for j in range(b_len + 1):
             rows[0][j] = j
 
         for i in range(1, a_len + 1):

@@ -38,7 +38,7 @@ def dedent_block_string_value(raw_string: str) -> str:
 
 def is_blank(s: str) -> bool:
     """Check whether string contains only space or tab characters."""
-    return all(c == " " or c == "\t" for c in s)
+    return all(c in [" ", "\t"] for c in s)
 
 
 def get_block_string_indentation(value: str) -> int:
