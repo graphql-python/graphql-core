@@ -31,7 +31,40 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
     Warning: It is guaranteed that this function will always produce stable results.
     However, it's not guaranteed that it will stay the same between different
     releases due to bugfixes or changes in the GraphQL specification.
-    """
+    """ '''
+
+    Query example::
+
+        query SomeQuery($foo: String!, $bar: String) {
+          someField(foo: $foo, bar: $bar) {
+            a
+            b {
+              c
+              d
+            }
+          }
+        }
+
+    Becomes::
+
+        query SomeQuery($foo:String!$bar:String){someField(foo:$foo bar:$bar){a b{c d}}}
+
+    SDL example::
+
+        """
+        Type description
+        """
+        type Foo {
+          """
+          Field description
+          """
+          bar: String
+        }
+
+    Becomes::
+
+        """Type description""" type Foo{"""Field description""" bar:String}
+    '''
     source = cast(Source, source) if is_source(source) else Source(cast(str, source))
 
     body = source.body
