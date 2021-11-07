@@ -1,3 +1,5 @@
+import re
+
 __all__ = [
     "dedent_block_string_value",
     "print_block_string",
@@ -36,9 +38,12 @@ def dedent_block_string_value(raw_string: str) -> str:
     return "\n".join(lines[start_line:end_line])
 
 
+_re_blank = re.compile("[ \\t]*")
+
+
 def is_blank(s: str) -> bool:
     """Check whether string contains only space or tab characters."""
-    return all(c == " " or c == "\t" for c in s)
+    return _re_blank.fullmatch(s) is not None
 
 
 def get_block_string_indentation(value: str) -> int:
