@@ -11,6 +11,7 @@ from .execute import (
     default_type_resolver,
     ExecutionContext,
     ExecutionResult,
+    FormattedExecutionResult,
     Middleware,
 )
 
@@ -25,6 +26,7 @@ __all__ = [
     "default_type_resolver",
     "ExecutionContext",
     "ExecutionResult",
+    "FormattedExecutionResult",
     "Middleware",
     "MiddlewareManager",
     "get_directive_values",

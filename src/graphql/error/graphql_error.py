@@ -1,12 +1,39 @@
 from sys import exc_info
 from typing import Any, Collection, Dict, List, Optional, Union, TYPE_CHECKING
 
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+
 if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
-    from ..language.location import SourceLocation  # noqa: F401
+    from ..language.location import (
+        SourceLocation,
+        FormattedSourceLocation,
+    )  # noqa: F401
     from ..language.source import Source  # noqa: F401
 
-__all__ = ["GraphQLError"]
+__all__ = ["GraphQLError", "GraphQLFormattedError"]
+
+
+class GraphQLFormattedError(TypedDict, total=False):
+    """Formatted GraphQL error"""
+
+    # A short, human-readable summary of the problem that **SHOULD NOT** change
+    # from occurrence to occurrence of the problem, except for purposes of localization.
+    message: str
+    # If an error can be associated to a particular point in the requested
+    # GraphQL document, it should contain a list of locations.
+    locations: List["FormattedSourceLocation"]
+    # If an error can be associated to a particular field in the GraphQL result,
+    # it _must_ contain an entry with the key `path` that details the path of
+    # the response field which experienced the error. This allows clients to
+    # identify whether a null result is intentional or caused by a runtime error.
+    path: List[Union[str, int]]
+    # Reserved for implementors to extend the protocol however they see fit,
+    # and hence there are no additional restrictions on its contents.
+    extensions: Dict[str, Any]
 
 
 class GraphQLError(Exception):
@@ -186,23 +213,21 @@ class GraphQLError(Exception):
         return not self == other
 
     @property
-    def formatted(self) -> Dict[str, Any]:
+    def formatted(self) -> GraphQLFormattedError:
         """Get error formatted according to the specification.
 
         Given a GraphQLError, format it according to the rules described by the
         "Response Format, Errors" section of the GraphQL Specification.
         """
-        formatted: Dict[str, Any] = dict(  # noqa: E701 (pycqa/flake8#394)
-            message=self.message or "An unknown error occurred.",
-            locations=(
-                [location.formatted for location in self.locations]
-                if self.locations is not None
-                else None
-            ),
-            path=self.path,
-        )
+        formatted: GraphQLFormattedError = {
+            "message": self.message or "An unknown error occurred.",
+        }
+        if self.locations is not None:
+            formatted["locations"] = [location.formatted for location in self.locations]
+        if self.path is not None:
+            formatted["path"] = self.path
         if self.extensions:
-            formatted.update(extensions=self.extensions)
+            formatted["extensions"] = self.extensions
         return formatted
 
 
@@ -219,7 +244,7 @@ def print_error(error: GraphQLError) -> str:
     return str(error)
 
 
-def format_error(error: GraphQLError) -> Dict[str, Any]:
+def format_error(error: GraphQLError) -> GraphQLFormattedError:
     """Format a GraphQL error.
 
     Given a GraphQLError, format it according to the rules described by the "Response

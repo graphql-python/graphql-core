@@ -105,6 +105,9 @@ Location
 .. autofunction:: get_location
 .. autoclass:: SourceLocation
 .. autofunction:: print_location
+.. autoclass:: FormattedSourceLocation
+   :no-inherited-members:
+
 
 Parser
 ------

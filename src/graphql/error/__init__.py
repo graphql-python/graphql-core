@@ -4,7 +4,7 @@ The :mod:`graphql.error` package is responsible for creating and formatting Grap
 errors.
 """
 
-from .graphql_error import GraphQLError, format_error
+from .graphql_error import GraphQLError, GraphQLFormattedError
 
 from .syntax_error import GraphQLSyntaxError
 
@@ -12,7 +12,7 @@ from .located_error import located_error
 
 __all__ = [
     "GraphQLError",
+    "GraphQLFormattedError",
     "GraphQLSyntaxError",
-    "format_error",
-    "located_error"
+    "located_error",
 ]

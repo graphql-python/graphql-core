@@ -6,7 +6,7 @@ GraphQL language.
 
 from .source import Source
 
-from .location import get_location, SourceLocation
+from .location import get_location, SourceLocation, FormattedSourceLocation
 
 from .print_location import print_location, print_source_location
 
@@ -111,6 +111,7 @@ from .directive_locations import DirectiveLocation
 __all__ = [
     "get_location",
     "SourceLocation",
+    "FormattedSourceLocation",
     "print_location",
     "print_source_location",
     "TokenKind",

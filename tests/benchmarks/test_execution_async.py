@@ -38,9 +38,12 @@ schema = GraphQLSchema(
 
 
 def test_execute_basic_async(benchmark):
-    result = benchmark(
-        lambda: asyncio.run(graphql(schema, "query { user { id, name }}"))
-    )
+    try:
+        run = asyncio.run
+    except AttributeError:  # Python < 3.7
+        loop = asyncio.get_event_loop()
+        run = loop.run_until_complete  # type: ignore
+    result = benchmark(lambda: run(graphql(schema, "query { user { id, name }}")))
     assert not result.errors
     assert result.data == {
         "user": {

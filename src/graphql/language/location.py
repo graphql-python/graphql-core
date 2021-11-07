@@ -1,9 +1,21 @@
-from typing import Any, Dict, NamedTuple, TYPE_CHECKING
+from typing import Any, NamedTuple, TYPE_CHECKING
+
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
     from .source import Source  # noqa: F401
 
-__all__ = ["get_location", "SourceLocation"]
+__all__ = ["get_location", "SourceLocation", "FormattedSourceLocation"]
+
+
+class FormattedSourceLocation(TypedDict):
+    """Formatted source location"""
+
+    line: int
+    column: int
 
 
 class SourceLocation(NamedTuple):
@@ -13,7 +25,7 @@ class SourceLocation(NamedTuple):
     column: int
 
     @property
-    def formatted(self) -> Dict[str, int]:
+    def formatted(self) -> FormattedSourceLocation:
         return dict(line=self.line, column=self.column)
 
     def __eq__(self, other: Any) -> bool:
