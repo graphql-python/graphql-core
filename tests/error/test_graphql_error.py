@@ -1,6 +1,8 @@
 from typing import cast, List, Union
 
-from graphql.error import GraphQLError, print_error
+from pytest import raises
+
+from graphql.error import GraphQLError
 from graphql.language import (
     parse,
     OperationDefinitionNode,
@@ -129,16 +131,26 @@ def describe_graphql_error():
         assert repr(e) == (
             "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)])"
         )
+        assert e.formatted == {
+            "locations": [{"column": 3, "line": 2}],
+            "message": "msg",
+            "path": None,
+        }
 
     def repr_includes_extensions():
         e = GraphQLError("msg", extensions={"foo": "bar"})
-        assert repr(e) == ("GraphQLError('msg', extensions={'foo': 'bar'})")
+        assert repr(e) == "GraphQLError('msg', extensions={'foo': 'bar'})"
 
     def serializes_to_include_path():
         path: List[Union[int, str]] = ["path", 3, "to", "field"]
         e = GraphQLError("msg", path=path)
         assert e.path is path
         assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
+        assert e.formatted == {
+            "locations": None,
+            "message": "msg",
+            "path": ["path", 3, "to", "field"],
+        }
 
     def always_stores_path_as_list():
         path: List[Union[int, str]] = ["path", 3, "to", "field"]
@@ -171,17 +183,27 @@ def describe_graphql_error():
         assert hash(e1) != hash(e2)
 
 
-def describe_print_error():
+def describe_to_string():
+    def deprecated_prints_an_error_using_print_error():
+        # noinspection PyProtectedMember
+        from graphql.error.graphql_error import print_error
+        error = GraphQLError("Error")
+        assert print_error(error) == "Error"
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            print_error(Exception)  # type: ignore
+        assert str(exc_info.value) == "Expected a GraphQLError."
+
     def prints_an_error_without_location():
         error = GraphQLError("Error without location")
-        assert print_error(error) == "Error without location"
+        assert str(error) == "Error without location"
 
     def prints_an_error_using_node_without_location():
         error = GraphQLError(
             "Error attached to node without location",
             parse("{ foo }", no_location=True),
         )
-        assert print_error(error) == "Error attached to node without location"
+        assert str(error) == "Error attached to node without location"
 
     def prints_an_error_with_nodes_from_different_sources():
         doc_a = parse(
@@ -221,8 +243,7 @@ def describe_print_error():
             "Example error with two nodes", [field_a.type, field_b.type]
         )
 
-        printed_error = print_error(error)
-        assert printed_error == dedent(
+        assert str(error) == dedent(
             """
             Example error with two nodes
 
@@ -239,4 +260,3 @@ def describe_print_error():
             3 | }
             """
         )
-        assert str(error) == printed_error

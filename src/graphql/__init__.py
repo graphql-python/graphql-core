@@ -343,8 +343,7 @@ from .error import (
     GraphQLError,
     GraphQLSyntaxError,
     located_error,
-    format_error,
-    print_error,
+    format_error
 )
 
 # Utilities for operating on GraphQL type schema and parsed sources.
@@ -688,7 +687,6 @@ __all__ = [
     "GraphQLSyntaxError",
     "located_error",
     "format_error",
-    "print_error",
     "get_introspection_query",
     "get_operation_ast",
     "get_operation_root_type",

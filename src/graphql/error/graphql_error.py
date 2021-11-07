@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from ..language.location import SourceLocation  # noqa: F401
     from ..language.source import Source  # noqa: F401
 
-__all__ = ["GraphQLError", "format_error", "print_error"]
+__all__ = ["GraphQLError"]
 
 
 class GraphQLError(Exception):
@@ -137,7 +137,21 @@ class GraphQLError(Exception):
             self.__traceback__ = exc_info()[2]
 
     def __str__(self) -> str:
-        return print_error(self)
+        # Lazy import to avoid a cyclic dependency between error and language
+        from ..language.print_location import print_location, print_source_location
+
+        output = [self.message]
+
+        if self.nodes:
+            for node in self.nodes:
+                if node.loc:
+                    output.append(print_location(node.loc))
+        elif self.source and self.locations:
+            source = self.source
+            for location in self.locations:
+                output.append(print_source_location(source, location))
+
+        return "\n\n".join(output)
 
     def __repr__(self) -> str:
         args = [repr(self.message)]
@@ -173,30 +187,36 @@ class GraphQLError(Exception):
 
     @property
     def formatted(self) -> Dict[str, Any]:
-        """Get error formatted according to the specification."""
-        return format_error(self)
+        """Get error formatted according to the specification.
+
+        Given a GraphQLError, format it according to the rules described by the
+        "Response Format, Errors" section of the GraphQL Specification.
+        """
+        formatted: Dict[str, Any] = dict(  # noqa: E701 (pycqa/flake8#394)
+            message=self.message or "An unknown error occurred.",
+            locations=(
+                [location.formatted for location in self.locations]
+                if self.locations is not None
+                else None
+            ),
+            path=self.path,
+        )
+        if self.extensions:
+            formatted.update(extensions=self.extensions)
+        return formatted
 
 
 def print_error(error: GraphQLError) -> str:
     """Print a GraphQLError to a string.
 
     Represents useful location information about the error's position in the source.
+
+    .. deprecated:: 3.2
+       Please use ``str(error)`` instead. Will be removed in v3.3.
     """
-    # Lazy import to avoid a cyclic dependency between error and language
-    from ..language.print_location import print_location, print_source_location
-
-    output = [error.message]
-
-    if error.nodes:
-        for node in error.nodes:
-            if node.loc:
-                output.append(print_location(node.loc))
-    elif error.source and error.locations:
-        source = error.source
-        for location in error.locations:
-            output.append(print_source_location(source, location))
-
-    return "\n\n".join(output)
+    if not isinstance(error, GraphQLError):
+        raise TypeError("Expected a GraphQLError.")
+    return str(error)
 
 
 def format_error(error: GraphQLError) -> Dict[str, Any]:
@@ -204,18 +224,10 @@ def format_error(error: GraphQLError) -> Dict[str, Any]:
 
     Given a GraphQLError, format it according to the rules described by the "Response
     Format, Errors" section of the GraphQL Specification.
+
+    .. deprecated:: 3.2
+       Please use ``error.formatted`` instead. Will be removed in v3.3.
     """
     if not isinstance(error, GraphQLError):
         raise TypeError("Expected a GraphQLError.")
-    formatted: Dict[str, Any] = dict(  # noqa: E701 (pycqa/flake8#394)
-        message=error.message or "An unknown error occurred.",
-        locations=(
-            [location.formatted for location in error.locations]
-            if error.locations is not None
-            else None
-        ),
-        path=error.path,
-    )
-    if error.extensions:
-        formatted.update(extensions=error.extensions)
-    return formatted
+    return error.formatted
