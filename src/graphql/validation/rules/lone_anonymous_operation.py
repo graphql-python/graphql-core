@@ -20,9 +20,8 @@ class LoneAnonymousOperationRule(ASTValidationRule):
 
     def enter_document(self, node: DocumentNode, *_args: Any) -> None:
         self.operation_count = sum(
-            1
+            isinstance(definition, OperationDefinitionNode)
             for definition in node.definitions
-            if isinstance(definition, OperationDefinitionNode)
         )
 
     def enter_operation_definition(
