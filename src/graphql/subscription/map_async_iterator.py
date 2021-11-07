@@ -59,6 +59,7 @@ class MapAsyncIterator:
                 raise error
 
             value = anext.result()
+
         result = self.callback(value)
 
         return await result if isawaitable(result) else result
