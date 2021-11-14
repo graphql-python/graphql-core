@@ -1690,6 +1690,23 @@ def describe_type_system_input_fields():
         msg = str(exc_info.value)
         assert msg == "Input field AST node must be an InputValueDefinitionNode."
 
+    def deprecation_reason_is_preserved_on_fields():
+        input_obj_type = GraphQLInputObjectType(
+            "someInputObject",
+            {
+                "deprecatedField": GraphQLInputField(
+                    ScalarType, deprecation_reason="not used anymore"
+                )
+            },
+        )
+        deprecated_field = input_obj_type.fields["deprecatedField"]
+        assert (
+            input_obj_type.to_kwargs()["fields"]["deprecatedField"] is deprecated_field
+        )
+        deprecation_reason = deprecated_field.deprecation_reason
+        assert deprecation_reason == "not used anymore"
+        assert deprecated_field.to_kwargs()["deprecation_reason"] is deprecation_reason
+
 
 def describe_type_system_list():
     types = [
