@@ -21,6 +21,7 @@ __all__ = [
     "Visitor",
     "ParallelVisitor",
     "VisitorAction",
+    "VisitorKeyMap",
     "visit",
     "BREAK",
     "SKIP",
@@ -51,8 +52,10 @@ SKIP = VisitorActionEnum.SKIP
 REMOVE = VisitorActionEnum.REMOVE
 IDLE = None
 
+VisitorKeyMap = Dict[str, Tuple[str, ...]]
+
 # Default map from visitor kinds to their traversable node attributes:
-QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
+QUERY_DOCUMENT_KEYS: VisitorKeyMap = {
     "name": (),
     "document": ("definitions",),
     "operation_definition": (
@@ -76,11 +79,6 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
         "directives",
         "selection_set",
     ),
-    "int_value": (),
-    "float_value": (),
-    "string_value": (),
-    "boolean_value": (),
-    "enum_value": (),
     "list_value": ("values",),
     "object_value": ("fields",),
     "object_field": ("name", "value"),
@@ -212,7 +210,9 @@ class Stack(NamedTuple):
     prev: Any  # 'Stack' (python/mypy/issues/731)
 
 
-def visit(root: Node, visitor: Visitor) -> Any:
+def visit(
+    root: Node, visitor: Visitor, visitor_keys: Optional[VisitorKeyMap] = None
+) -> Any:
     """Visit each node in an AST.
 
     :func:`~.visit` will walk through an AST using a depth-first traversal, calling the
@@ -227,11 +227,16 @@ def visit(root: Node, visitor: Visitor) -> Any:
     When using :func:`~.visit` to edit an AST, the original AST will not be modified,
     and a new version of the AST with the changes applied will be returned from the
     visit function.
+
+    To customize the node attributes to be used for traversal, you can provide a
+    dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
         raise TypeError(f"Not an AST Node: {inspect(root)}.")
     if not isinstance(visitor, Visitor):
         raise TypeError(f"Not an AST Visitor: {inspect(visitor)}.")
+    if visitor_keys is None:
+        visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
     in_array = isinstance(root, list)
     keys: Tuple[Node, ...] = (root,)
@@ -326,7 +331,7 @@ def visit(root: Node, visitor: Visitor) -> Any:
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
             in_array = isinstance(node, list)
-            keys = node if in_array else QUERY_DOCUMENT_KEYS.get(node.kind, ())
+            keys = node if in_array else visitor_keys.get(node.kind, ())
             idx = -1
             edits = []
             if parent:
