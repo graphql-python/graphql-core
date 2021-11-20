@@ -13,6 +13,11 @@ def dedent_block_string_value(raw_string: str) -> str:
 
     This implements the GraphQL spec's BlockStringValue() static algorithm.
 
+    Note that this is very similar to Python's inspect.cleandoc() function.
+    The differences is that the latter also expands tabs to spaces and
+    removes whitespace at the beginning of the first line. Python also has
+    textwrap.dedent() which uses a completely different algorithm.
+
     For internal use only.
     """
     # Expand a block string's raw value into independent lines.
