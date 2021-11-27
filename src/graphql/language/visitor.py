@@ -126,6 +126,13 @@ QUERY_DOCUMENT_KEYS: VisitorKeyMap = {
 }
 
 
+class EnterLeaveVisitor(NamedTuple):
+    """Visitor with functions for entering and leaving."""
+
+    enter: Optional[Callable[..., Optional[VisitorAction]]]
+    leave: Optional[Callable[..., Optional[VisitorAction]]]
+
+
 class Visitor:
     """Visitor that walks through an AST.
 
@@ -170,6 +177,8 @@ class Visitor:
     # Provide special return values as attributes
     BREAK, SKIP, REMOVE, IDLE = BREAK, SKIP, REMOVE, IDLE
 
+    enter_leave_map: Dict[str, EnterLeaveVisitor]
+
     def __init_subclass__(cls) -> None:
         """Verify that all defined handlers are valid."""
         super().__init_subclass__()
@@ -191,13 +200,34 @@ class Visitor:
                 ):
                     raise TypeError(f"Invalid AST node kind: {kind}.")
 
-    def get_visit_fn(self, kind: str, is_leaving: bool = False) -> Callable:
-        """Get the visit function for the given node kind and direction."""
-        method = "leave" if is_leaving else "enter"
-        visit_fn = getattr(self, f"{method}_{kind}", None)
-        if not visit_fn:
-            visit_fn = getattr(self, method, None)
-        return visit_fn
+    def __init__(self) -> None:
+        self.enter_leave_map = {}
+
+    def get_enter_leave_for_kind(self, kind: str) -> EnterLeaveVisitor:
+        """Given a node kind, return the EnterLeaveVisitor for that kind."""
+        try:
+            return self.enter_leave_map[kind]
+        except KeyError:
+            enter_fn = getattr(self, f"enter_{kind}", None)
+            if not enter_fn:
+                enter_fn = getattr(self, "enter", None)
+            leave_fn = getattr(self, f"leave_{kind}", None)
+            if not leave_fn:
+                leave_fn = getattr(self, "leave", None)
+            enter_leave = EnterLeaveVisitor(enter_fn, leave_fn)
+            self.enter_leave_map[kind] = enter_leave
+            return enter_leave
+
+    def get_visit_fn(
+        self, kind: str, is_leaving: bool = False
+    ) -> Optional[Callable[..., Optional[VisitorAction]]]:
+        """Get the visit function for the given node kind and direction.
+
+        .. deprecated:: 3.2
+           Please use ``get_enter_leave_for_kind`` instead. Will be removed in v3.3.
+        """
+        enter_leave = self.get_enter_leave_for_kind(kind)
+        return enter_leave.leave if is_leaving else enter_leave.enter
 
 
 class Stack(NamedTuple):
@@ -237,6 +267,7 @@ def visit(
         raise TypeError(f"Not an AST Visitor: {inspect(visitor)}.")
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
+
     stack: Any = None
     in_array = isinstance(root, list)
     keys: Tuple[Node, ...] = (root,)
@@ -299,7 +330,8 @@ def visit(
         else:
             if not isinstance(node, Node):
                 raise TypeError(f"Invalid AST Node: {inspect(node)}.")
-            visit_fn = visitor.get_visit_fn(node.kind, is_leaving)
+            enter_leave = visitor.get_enter_leave_for_kind(node.kind)
+            visit_fn = enter_leave.leave if is_leaving else enter_leave.enter
             if visit_fn:
                 result = visit_fn(node, key, parent, path, ancestors)
 
@@ -357,39 +389,63 @@ class ParallelVisitor(Visitor):
 
     def __init__(self, visitors: Collection[Visitor]):
         """Create a new visitor from the given list of parallel visitors."""
+        super().__init__()
         self.visitors = visitors
         self.skipping: List[Any] = [None] * len(visitors)
 
-    def enter(self, node: Node, *args: Any) -> Optional[VisitorAction]:
-        skipping = self.skipping
-        for i, visitor in enumerate(self.visitors):
-            if not skipping[i]:
-                fn = visitor.get_visit_fn(node.kind)
-                if fn:
-                    result = fn(node, *args)
-                    if result is SKIP or result is False:
-                        skipping[i] = node
-                    elif result is BREAK or result is True:
-                        skipping[i] = BREAK
-                    elif result is not None:
-                        return result
-        return None
+    def get_enter_leave_for_kind(self, kind: str) -> EnterLeaveVisitor:
+        """Given a node kind, return the EnterLeaveVisitor for that kind."""
+        try:
+            return self.enter_leave_map[kind]
+        except KeyError:
+            has_visitor = False
+            enter_list: List[Optional[Callable[..., Optional[VisitorAction]]]] = []
+            leave_list: List[Optional[Callable[..., Optional[VisitorAction]]]] = []
+            for visitor in self.visitors:
+                enter, leave = visitor.get_enter_leave_for_kind(kind)
+                if not has_visitor and (enter or leave):
+                    has_visitor = True
+                enter_list.append(enter)
+                leave_list.append(leave)
 
-    def leave(self, node: Node, *args: Any) -> Optional[VisitorAction]:
-        skipping = self.skipping
-        for i, visitor in enumerate(self.visitors):
-            if not skipping[i]:
-                fn = visitor.get_visit_fn(node.kind, is_leaving=True)
-                if fn:
-                    result = fn(node, *args)
-                    if result is BREAK or result is True:
-                        skipping[i] = BREAK
-                    elif (
-                        result is not None
-                        and result is not SKIP
-                        and result is not False
-                    ):
-                        return result
-            elif skipping[i] is node:
-                skipping[i] = None
-        return None
+            if has_visitor:
+
+                def enter(node: Node, *args: Any) -> Optional[VisitorAction]:
+                    skipping = self.skipping
+                    for i, fn in enumerate(enter_list):
+                        if not skipping[i]:
+                            if fn:
+                                result = fn(node, *args)
+                                if result is SKIP or result is False:
+                                    skipping[i] = node
+                                elif result is BREAK or result is True:
+                                    skipping[i] = BREAK
+                                elif result is not None:
+                                    return result
+                    return None
+
+                def leave(node: Node, *args: Any) -> Optional[VisitorAction]:
+                    skipping = self.skipping
+                    for i, fn in enumerate(leave_list):
+                        if not skipping[i]:
+                            if fn:
+                                result = fn(node, *args)
+                                if result is BREAK or result is True:
+                                    skipping[i] = BREAK
+                                elif (
+                                    result is not None
+                                    and result is not SKIP
+                                    and result is not False
+                                ):
+                                    return result
+                        elif skipping[i] is node:
+                            skipping[i] = None
+                    return None
+
+            else:
+
+                enter = leave = None
+
+            enter_leave = EnterLeaveVisitor(enter, leave)
+            self.enter_leave_map[kind] = enter_leave
+            return enter_leave

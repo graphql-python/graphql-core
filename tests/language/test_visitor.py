@@ -214,6 +214,41 @@ def describe_visitor():
                 "leave:document",
             ]
 
+    def has_get_enter_leave_for_kind_method():
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(*args):
+                pass
+
+            @staticmethod
+            def enter_document(*args):
+                pass
+
+            @staticmethod
+            def leave(*args):
+                pass
+
+            @staticmethod
+            def leave_document(*args):
+                pass
+
+        visitor = TestVisitor()
+
+        assert visitor.get_enter_leave_for_kind("document") == (
+            visitor.enter_document,
+            visitor.leave_document,
+        )
+        assert visitor.get_enter_leave_for_kind("field") == (
+            visitor.enter,
+            visitor.leave,
+        )
+
+        # also test deprecated method
+        assert visitor.get_visit_fn("document") == visitor.enter_document
+        assert visitor.get_visit_fn("field") == visitor.enter
+        assert visitor.get_visit_fn("document", True) == visitor.leave_document
+        assert visitor.get_visit_fn("field", True) == visitor.leave
+
     def validates_path_argument():
         ast = parse("{ a }", no_location=True)
         visited = []
@@ -540,7 +575,10 @@ def describe_visitor():
             ["leave", "selection_set", None],
         ]
 
-    def visit_nodes_with_unknown_kinds_but_does_not_traverse_deeper():
+    def visit_nodes_with_custom_kinds_but_does_not_traverse_deeper():
+        # GraphQL.js removed support for unknown node types,
+        # but it is easy for us to add and support custom node types,
+        # so we keep allowing this and test this feature here.
         custom_ast = parse("{ a }")
 
         class CustomFieldNode(SelectionNode):
@@ -1129,6 +1167,7 @@ def describe_visit_in_parallel():
 
         class TestVisitor(Visitor):
             def __init__(self, name):
+                super().__init__()
                 self.name = name
 
             def enter(self, *args):
@@ -1232,6 +1271,7 @@ def describe_visit_in_parallel():
 
         class TestVisitor(Visitor):
             def __init__(self, name):
+                super().__init__()
                 self.name = name
 
             def enter(self, *args):
@@ -1323,6 +1363,7 @@ def describe_visit_in_parallel():
 
         class TestVisitor(Visitor):
             def __init__(self, name):
+                super().__init__()
                 self.name = name
 
             def enter(self, *args):

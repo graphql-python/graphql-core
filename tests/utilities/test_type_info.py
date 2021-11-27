@@ -101,6 +101,7 @@ def describe_visit_with_type_info():
 
         class TestVisitor(Visitor):
             def __init__(self):
+                super().__init__()
                 self.root_types = {}
 
             def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
@@ -121,6 +122,7 @@ def describe_visit_with_type_info():
 
         class TestVisitor(Visitor):
             def __init__(self):
+                super().__init__()
                 self.args = []
 
             def enter(self, *args):

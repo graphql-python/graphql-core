@@ -299,12 +299,13 @@ class TypeInfoVisitor(Visitor):
     """A visitor which maintains a provided TypeInfo."""
 
     def __init__(self, type_info: "TypeInfo", visitor: Visitor):
+        super().__init__()
         self.type_info = type_info
         self.visitor = visitor
 
     def enter(self, node: Node, *args: Any) -> Any:
         self.type_info.enter(node)
-        fn = self.visitor.get_visit_fn(node.kind)
+        fn = self.visitor.get_enter_leave_for_kind(node.kind).enter
         if fn:
             result = fn(node, *args)
             if result is not None:
@@ -314,7 +315,7 @@ class TypeInfoVisitor(Visitor):
             return result
 
     def leave(self, node: Node, *args: Any) -> Any:
-        fn = self.visitor.get_visit_fn(node.kind, is_leaving=True)
+        fn = self.visitor.get_enter_leave_for_kind(node.kind).leave
         result = fn(node, *args) if fn else None
         self.type_info.leave(node)
         return result

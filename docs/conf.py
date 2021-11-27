@@ -133,9 +133,11 @@ GNT GT KT T VT
 enum.Enum
 traceback
 types.TracebackType
+EnterLeaveVisitor
 FormattedSourceLocation
 asyncio.events.AbstractEventLoop
 graphql.language.lexer.EscapeSequence
+graphql.language.visitor.EnterLeaveVisitor
 graphql.subscription.map_async_iterator.MapAsyncIterator
 graphql.type.schema.InterfaceImplementations
 graphql.validation.validation_context.VariableUsage
