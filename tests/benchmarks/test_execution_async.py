@@ -38,6 +38,8 @@ schema = GraphQLSchema(
 
 
 def test_execute_basic_async(benchmark):
+    # Note: we are creating the async loop outside of the benchmark code so that
+    # the setup is not included in the benchmark timings
     loop = asyncio.events.new_event_loop()
     asyncio.events.set_event_loop(loop)
     result = benchmark(
