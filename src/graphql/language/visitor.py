@@ -21,6 +21,7 @@ __all__ = [
     "Visitor",
     "ParallelVisitor",
     "VisitorAction",
+    "VisitorKeyMap",
     "visit",
     "BREAK",
     "SKIP",
@@ -51,8 +52,10 @@ SKIP = VisitorActionEnum.SKIP
 REMOVE = VisitorActionEnum.REMOVE
 IDLE = None
 
+VisitorKeyMap = Dict[str, Tuple[str, ...]]
+
 # Default map from visitor kinds to their traversable node attributes:
-QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
+QUERY_DOCUMENT_KEYS: VisitorKeyMap = {
     "name": (),
     "document": ("definitions",),
     "operation_definition": (
@@ -76,11 +79,6 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
         "directives",
         "selection_set",
     ),
-    "int_value": (),
-    "float_value": (),
-    "string_value": (),
-    "boolean_value": (),
-    "enum_value": (),
     "list_value": ("values",),
     "object_value": ("fields",),
     "object_field": ("name", "value"),
@@ -183,16 +181,15 @@ class Visitor:
                 kind: Optional[str] = None
             else:
                 attr, kind = attr_kind
-            if attr in ("enter", "leave"):
-                if kind:
-                    name = snake_to_camel(kind) + "Node"
-                    node_cls = getattr(ast, name, None)
-                    if (
-                        not node_cls
-                        or not isinstance(node_cls, type)
-                        or not issubclass(node_cls, Node)
-                    ):
-                        raise TypeError(f"Invalid AST node kind: {kind}.")
+            if attr in ("enter", "leave") and kind:
+                name = snake_to_camel(kind) + "Node"
+                node_cls = getattr(ast, name, None)
+                if (
+                    not node_cls
+                    or not isinstance(node_cls, type)
+                    or not issubclass(node_cls, Node)
+                ):
+                    raise TypeError(f"Invalid AST node kind: {kind}.")
 
     def get_visit_fn(self, kind: str, is_leaving: bool = False) -> Callable:
         """Get the visit function for the given node kind and direction."""
@@ -213,7 +210,9 @@ class Stack(NamedTuple):
     prev: Any  # 'Stack' (python/mypy/issues/731)
 
 
-def visit(root: Node, visitor: Visitor) -> Any:
+def visit(
+    root: Node, visitor: Visitor, visitor_keys: Optional[VisitorKeyMap] = None
+) -> Any:
     """Visit each node in an AST.
 
     :func:`~.visit` will walk through an AST using a depth-first traversal, calling the
@@ -228,11 +227,16 @@ def visit(root: Node, visitor: Visitor) -> Any:
     When using :func:`~.visit` to edit an AST, the original AST will not be modified,
     and a new version of the AST with the changes applied will be returned from the
     visit function.
+
+    To customize the node attributes to be used for traversal, you can provide a
+    dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
         raise TypeError(f"Not an AST Node: {inspect(root)}.")
     if not isinstance(visitor, Visitor):
         raise TypeError(f"Not an AST Visitor: {inspect(visitor)}.")
+    if visitor_keys is None:
+        visitor_keys = QUERY_DOCUMENT_KEYS
     stack: Any = None
     in_array = isinstance(root, list)
     keys: Tuple[Node, ...] = (root,)
@@ -256,10 +260,7 @@ def visit(root: Node, visitor: Visitor) -> Any:
             node: Any = parent
             parent = ancestors_pop() if ancestors else None
             if is_edited:
-                if in_array:
-                    node = node[:]
-                else:
-                    node = copy(node)
+                node = node[:] if in_array else copy(node)
             edit_offset = 0
             for edit_key, edit_value in edits:
                 if in_array:
@@ -267,11 +268,10 @@ def visit(root: Node, visitor: Visitor) -> Any:
                 if in_array and (edit_value is REMOVE or edit_value is Ellipsis):
                     node.pop(edit_key)
                     edit_offset += 1
+                elif isinstance(node, list):
+                    node[edit_key] = edit_value
                 else:
-                    if isinstance(node, list):
-                        node[edit_key] = edit_value
-                    else:
-                        setattr(node, edit_key, edit_value)
+                    setattr(node, edit_key, edit_value)
 
             idx = stack.idx
             keys = stack.keys
@@ -331,7 +331,7 @@ def visit(root: Node, visitor: Visitor) -> Any:
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
             in_array = isinstance(node, list)
-            keys = node if in_array else QUERY_DOCUMENT_KEYS.get(node.kind, ())
+            keys = node if in_array else visitor_keys.get(node.kind, ())
             idx = -1
             edits = []
             if parent:

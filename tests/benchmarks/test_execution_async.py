@@ -45,10 +45,8 @@ def test_execute_basic_async(benchmark):
     result = benchmark(
         lambda: loop.run_until_complete(graphql(schema, "query { user { id, name }}"))
     )
-
     asyncio.events.set_event_loop(None)
     loop.close()
-
     assert not result.errors
     assert result.data == {
         "user": {

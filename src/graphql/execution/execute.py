@@ -16,7 +16,12 @@ from typing import (
     cast,
 )
 
-from ..error import GraphQLError, located_error
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+
+from ..error import GraphQLError, GraphQLFormattedError, located_error
 from ..language import (
     DocumentNode,
     FieldNode,
@@ -69,6 +74,7 @@ __all__ = [
     "get_field_def",
     "ExecutionResult",
     "ExecutionContext",
+    "FormattedExecutionResult",
     "Middleware",
 ]
 
@@ -90,6 +96,14 @@ __all__ = [
 # 1) field references e.g "a"
 # 2) fragment "spreads" e.g. "...c"
 # 3) inline fragment "spreads" e.g. "...on Type { a }"
+
+
+class FormattedExecutionResult(TypedDict, total=False):
+    """Formatted execution result"""
+
+    errors: List[GraphQLFormattedError]
+    data: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
 
 
 class ExecutionResult:
@@ -125,14 +139,14 @@ class ExecutionResult:
         return iter((self.data, self.errors))
 
     @property
-    def formatted(self) -> Dict[str, Any]:
+    def formatted(self) -> FormattedExecutionResult:
         """Get execution result formatted according to the specification."""
-        errors = (
-            None if self.errors is None else [error.formatted for error in self.errors]
-        )
-        if self.extensions is None:
-            return dict(data=self.data, errors=errors)
-        return dict(data=self.data, errors=errors, extensions=self.extensions)
+        formatted: FormattedExecutionResult = {"data": self.data}
+        if self.errors is not None:
+            formatted["errors"] = [error.formatted for error in self.errors]
+        if self.extensions is not None:
+            formatted["extensions"] = self.extensions
+        return formatted
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, dict):

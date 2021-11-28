@@ -500,13 +500,13 @@ def describe_subscription():
         async def receive_one():
             async for result in subscription_one:  # type: ignore
                 received_one.append(result)
-                if len(received_one) == 3:
+                if len(received_one) == 3:  # pragma: no cover else
                     break
 
         async def receive_all():
             async for result in subscription_all:  # type: ignore
                 received_all.append(result)
-                if len(received_all) == 6:
+                if len(received_all) == 6:  # pragma: no cover else
                     break
 
         tasks = [

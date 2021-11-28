@@ -108,10 +108,7 @@ def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
         return False
 
     subscription_type = schema.subscription_type
-    if subscription_type and subscription_type.name != "Subscription":
-        return False
-
-    return True
+    return not subscription_type or subscription_type.name == "Subscription"
 
 
 def print_type(type_: GraphQLNamedType) -> str:

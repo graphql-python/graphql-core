@@ -17,6 +17,7 @@ from graphql.language import (
     SKIP,
     ParallelVisitor,
     Visitor,
+    VisitorKeyMap,
 )
 from graphql.pyutils import FrozenList
 
@@ -584,6 +585,41 @@ def describe_visitor():
             ["enter", "custom_field", None],
             ["leave", "custom_field", None],
             ["leave", "selection_set", None],
+            ["leave", "operation_definition", None],
+            ["leave", "document", None],
+        ]
+
+    def visits_only_the_specified_kind_in_visitor_key_map():
+        visited = []
+
+        visitor_key_map: VisitorKeyMap = {
+            "document": ("definitions",),
+            "operation_definition": ("name",),
+        }
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(node, *_args):
+                visited.append(["enter", node.kind, get_value(node)])
+
+            @staticmethod
+            def leave(node, *_args):
+                visited.append(["leave", node.kind, get_value(node)])
+
+        example_document_ast = parse(
+            """
+            query ExampleOperation {
+              someField
+            }
+            """
+        )
+
+        visit(example_document_ast, TestVisitor(), visitor_key_map)
+        assert visited == [
+            ["enter", "document", None],
+            ["enter", "operation_definition", None],
+            ["enter", "name", "ExampleOperation"],
+            ["leave", "name", "ExampleOperation"],
             ["leave", "operation_definition", None],
             ["leave", "document", None],
         ]

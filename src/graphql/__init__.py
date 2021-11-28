@@ -187,6 +187,7 @@ from .language import (
     ParallelVisitor,
     Visitor,
     VisitorAction,
+    VisitorKeyMap,
     BREAK,
     SKIP,
     REMOVE,
@@ -281,6 +282,7 @@ from .execution import (
     # Types
     ExecutionContext,
     ExecutionResult,
+    FormattedExecutionResult,
     # Middleware
     Middleware,
     MiddlewareManager,
@@ -341,10 +343,9 @@ from .validation import (
 # Create, format, and print GraphQL errors.
 from .error import (
     GraphQLError,
+    GraphQLFormattedError,
     GraphQLSyntaxError,
     located_error,
-    format_error,
-    print_error,
 )
 
 # Utilities for operating on GraphQL type schema and parsed sources.
@@ -553,6 +554,7 @@ __all__ = [
     "TypeInfoVisitor",
     "Visitor",
     "VisitorAction",
+    "VisitorKeyMap",
     "BREAK",
     "SKIP",
     "REMOVE",
@@ -638,6 +640,7 @@ __all__ = [
     "get_directive_values",
     "ExecutionContext",
     "ExecutionResult",
+    "FormattedExecutionResult",
     "Middleware",
     "MiddlewareManager",
     "subscribe",
@@ -685,10 +688,9 @@ __all__ = [
     "NoDeprecatedCustomRule",
     "NoSchemaIntrospectionCustomRule",
     "GraphQLError",
+    "GraphQLFormattedError",
     "GraphQLSyntaxError",
     "located_error",
-    "format_error",
-    "print_error",
     "get_introspection_query",
     "get_operation_ast",
     "get_operation_root_type",

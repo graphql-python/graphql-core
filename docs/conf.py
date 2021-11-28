@@ -96,6 +96,8 @@ autosummary_generate = True
 
 autodoc_type_aliases = {
     'AwaitableOrValue': 'graphql.pyutils.AwaitableOrValue',
+    'FormattedSourceLocation': 'graphql.language.FormattedSourceLocation',
+    'Middleware': 'graphql.execution.Middleware',
     'TypeMap': 'graphql.schema.TypeMap'
 }
 
@@ -131,6 +133,7 @@ GNT GT KT T VT
 enum.Enum
 traceback
 types.TracebackType
+FormattedSourceLocation
 asyncio.events.AbstractEventLoop
 graphql.language.lexer.EscapeSequence
 graphql.subscription.map_async_iterator.MapAsyncIterator

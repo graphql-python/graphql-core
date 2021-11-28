@@ -33,8 +33,6 @@ class MapAsyncIterator:
             if not isasyncgen(self.iterator):
                 raise StopAsyncIteration
             value = await self.iterator.__anext__()
-            result = self.callback(value)
-
         else:
             aclose = ensure_future(self._close_event.wait())
             anext = ensure_future(self.iterator.__anext__())
@@ -61,7 +59,8 @@ class MapAsyncIterator:
                 raise error
 
             value = anext.result()
-            result = self.callback(value)
+
+        result = self.callback(value)
 
         return await result if isawaitable(result) else result
 
@@ -72,23 +71,24 @@ class MapAsyncIterator:
         traceback: Optional[TracebackType] = None,
     ) -> None:
         """Throw an exception into the asynchronous iterator."""
-        if not self.is_closed:
-            athrow = getattr(self.iterator, "athrow", None)
-            if athrow:
-                await athrow(type_, value, traceback)
-            else:
-                await self.aclose()
-                if value is None:
-                    if traceback is None:
-                        raise type_
-                    value = (
-                        type_
-                        if isinstance(value, BaseException)
-                        else cast(Type[BaseException], type_)()
-                    )
-                if traceback is not None:
-                    value = value.with_traceback(traceback)
-                raise value
+        if self.is_closed:
+            return
+        athrow = getattr(self.iterator, "athrow", None)
+        if athrow:
+            await athrow(type_, value, traceback)
+        else:
+            await self.aclose()
+            if value is None:
+                if traceback is None:
+                    raise type_
+                value = (
+                    type_
+                    if isinstance(value, BaseException)
+                    else cast(Type[BaseException], type_)()
+                )
+            if traceback is not None:
+                value = value.with_traceback(traceback)
+            raise value
 
     async def aclose(self) -> None:
         """Close the iterator."""
