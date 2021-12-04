@@ -33,6 +33,7 @@ packages = [
     { include = '.editorconfig', format = "sdist" },
     { include = '.flake8', format = "sdist" },
     { include = '.mypy.ini', format = "sdist" },
+    { include = '.readthedocs.yaml', format = "sdist" },
     { include = 'poetry.lock', format = "sdist" },
     { include = 'tox.ini', format = "sdist" },
     { include = 'setup.cfg', format = "sdist" },

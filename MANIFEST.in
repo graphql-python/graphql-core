@@ -9,6 +9,7 @@ include .coveragerc
 include .editorconfig
 include .flake8
 include .mypy.ini
+include .readthedocs.yaml
 
 include tox.ini
 
