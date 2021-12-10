@@ -226,7 +226,7 @@ class Node:
     """AST nodes"""
 
     # allow custom attributes and weak references (not used internally)
-    __slots__ = "__dict__", "__weakref__", "loc"
+    __slots__ = "__dict__", "__weakref__", "loc", "_hash"
 
     loc: Optional[Location]
 
@@ -255,7 +255,9 @@ class Node:
         )
 
     def __hash__(self) -> int:
-        return hash(tuple(getattr(self, key) for key in self.keys))
+        if getattr(self, "_hash", None) is None:
+            self._hash = hash(tuple(getattr(self, key) for key in self.keys))
+        return self._hash
 
     def __copy__(self) -> "Node":
         """Create a shallow copy of the node."""
