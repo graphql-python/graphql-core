@@ -259,6 +259,10 @@ class Node:
             self._hash = hash(tuple(getattr(self, key) for key in self.keys))
         return self._hash
 
+    def __setattr__(self, key, value):
+        object.__setattr__(self, "_hash", None)
+        super().__setattr__(key, value)
+
     def __copy__(self) -> "Node":
         """Create a shallow copy of the node."""
         return self.__class__(**{key: getattr(self, key) for key in self.keys})
