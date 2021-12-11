@@ -37,7 +37,7 @@ def describe_validate_known_type_names():
     def unknown_type_names_are_invalid():
         assert_errors(
             """
-            query Foo($var: JumbledUpLetters) {
+            query Foo($var: [JumbledUpLetters!]!) {
               user(id: 4) {
                 name
                 pets { ... on Badger { name }, ...PetFields, ... { name } }
@@ -50,7 +50,7 @@ def describe_validate_known_type_names():
             [
                 {
                     "message": "Unknown type 'JumbledUpLetters'.",
-                    "locations": [(2, 29)],
+                    "locations": [(2, 30)],
                 },
                 {"message": "Unknown type 'Badger'.", "locations": [(5, 31)]},
                 {

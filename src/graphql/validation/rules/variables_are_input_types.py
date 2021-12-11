@@ -22,7 +22,7 @@ class VariablesAreInputTypesRule(ValidationRule):
         type_ = type_from_ast(self.context.schema, node.type)
 
         # If the variable type is not an input type, return an error.
-        if type_ and not is_input_type(type_):
+        if type_ is not None and not is_input_type(type_):
             variable_name = node.variable.name.value
             type_name = print_ast(node.type)
             self.report_error(

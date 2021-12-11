@@ -10,6 +10,15 @@ assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_variables_are_input_types():
+    def unknown_types_are_ignored():
+        assert_valid(
+            """
+            query Foo($a: Unknown, $b: [[Unknown!]]!) {
+              field(a: $a, b: $b)
+            }
+            """
+        )
+
     def input_types_are_valid():
         assert_valid(
             """
