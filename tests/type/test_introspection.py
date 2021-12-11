@@ -755,7 +755,17 @@ def describe_introspection():
                             },
                             {
                                 "name": "args",
-                                "args": [],
+                                "args": [
+                                    {
+                                        "name": "includeDeprecated",
+                                        "type": {
+                                            "kind": "SCALAR",
+                                            "name": "Boolean",
+                                            "ofType": None,
+                                        },
+                                        "defaultValue": "false",
+                                    }
+                                ],
                                 "type": {
                                     "kind": "NON_NULL",
                                     "name": None,

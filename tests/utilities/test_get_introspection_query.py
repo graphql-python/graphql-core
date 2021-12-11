@@ -2,12 +2,25 @@ import re
 
 from typing import Pattern
 
-from graphql.utilities import get_introspection_query
+from graphql.language import parse
+from graphql.utilities import build_schema, get_introspection_query
+from graphql.validation import validate
+
+dummy_schema = build_schema(
+    """
+  type Query {
+    dummy: String
+  }
+  """
+)
 
 
 class ExcpectIntrospectionQuery:
     def __init__(self, **options):
-        self.query = get_introspection_query(**options)
+        query = get_introspection_query(**options)
+        validation_errors = validate(dummy_schema, parse(query))
+        assert validation_errors == []
+        self.query = query
 
     def to_match(self, name: str, times: int = 1) -> None:
         pattern = self.to_reg_exp(name)

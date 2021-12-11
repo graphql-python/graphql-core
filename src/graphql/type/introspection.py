@@ -87,25 +87,59 @@ __Directive: GraphQLObjectType = GraphQLObjectType(
         # Note: The fields onOperation, onFragment and onField are deprecated
         "name": GraphQLField(
             GraphQLNonNull(GraphQLString),
-            resolve=lambda directive, _info: directive.name,
+            resolve=DirectiveResolvers.name,
         ),
         "description": GraphQLField(
-            GraphQLString, resolve=lambda directive, _info: directive.description
+            GraphQLString,
+            resolve=DirectiveResolvers.description,
         ),
         "isRepeatable": GraphQLField(
             GraphQLNonNull(GraphQLBoolean),
-            resolve=lambda directive, _info: directive.is_repeatable,
+            resolve=DirectiveResolvers.is_repeatable,
         ),
         "locations": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__DirectiveLocation))),
-            resolve=lambda directive, _info: directive.locations,
+            resolve=DirectiveResolvers.locations,
         ),
         "args": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            resolve=lambda directive, _info: directive.args.items(),
+            args={
+                "includeDeprecated": GraphQLArgument(
+                    GraphQLBoolean, default_value=False
+                )
+            },
+            resolve=DirectiveResolvers.args,
         ),
     },
 )
+
+
+class DirectiveResolvers:
+    @staticmethod
+    def name(directive, _info):
+        return directive.name
+
+    @staticmethod
+    def description(directive, _info):
+        return directive.description
+
+    @staticmethod
+    def is_repeatable(directive, _info):
+        return directive.is_repeatable
+
+    @staticmethod
+    def locations(directive, _info):
+        return directive.locations
+
+    # noinspection PyPep8Naming
+    @staticmethod
+    def args(directive, _info, includeDeprecated=False):
+        items = directive.args.items()
+        return (
+            list(items)
+            if includeDeprecated
+            else [item for item in items if item[1].deprecation_reason is None]
+        )
 
 
 __DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
@@ -206,15 +240,11 @@ __Type: GraphQLObjectType = GraphQLObjectType(
     " types possible at runtime. List and NonNull types compose"
     " other types.",
     fields=lambda: {
-        "kind": GraphQLField(
-            GraphQLNonNull(__TypeKind), resolve=TypeFieldResolvers.kind
-        ),
-        "name": GraphQLField(GraphQLString, resolve=TypeFieldResolvers.name),
-        "description": GraphQLField(
-            GraphQLString, resolve=TypeFieldResolvers.description
-        ),
+        "kind": GraphQLField(GraphQLNonNull(__TypeKind), resolve=TypeResolvers.kind),
+        "name": GraphQLField(GraphQLString, resolve=TypeResolvers.name),
+        "description": GraphQLField(GraphQLString, resolve=TypeResolvers.description),
         "specifiedByURL": GraphQLField(
-            GraphQLString, resolve=TypeFieldResolvers.specified_by_url
+            GraphQLString, resolve=TypeResolvers.specified_by_url
         ),
         "fields": GraphQLField(
             GraphQLList(GraphQLNonNull(__Field)),
@@ -223,14 +253,14 @@ __Type: GraphQLObjectType = GraphQLObjectType(
                     GraphQLBoolean, default_value=False
                 )
             },
-            resolve=TypeFieldResolvers.fields,
+            resolve=TypeResolvers.fields,
         ),
         "interfaces": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Type)), resolve=TypeFieldResolvers.interfaces
+            GraphQLList(GraphQLNonNull(__Type)), resolve=TypeResolvers.interfaces
         ),
         "possibleTypes": GraphQLField(
             GraphQLList(GraphQLNonNull(__Type)),
-            resolve=TypeFieldResolvers.possible_types,
+            resolve=TypeResolvers.possible_types,
         ),
         "enumValues": GraphQLField(
             GraphQLList(GraphQLNonNull(__EnumValue)),
@@ -239,7 +269,7 @@ __Type: GraphQLObjectType = GraphQLObjectType(
                     GraphQLBoolean, default_value=False
                 )
             },
-            resolve=TypeFieldResolvers.enum_values,
+            resolve=TypeResolvers.enum_values,
         ),
         "inputFields": GraphQLField(
             GraphQLList(GraphQLNonNull(__InputValue)),
@@ -248,14 +278,14 @@ __Type: GraphQLObjectType = GraphQLObjectType(
                     GraphQLBoolean, default_value=False
                 )
             },
-            resolve=TypeFieldResolvers.input_fields,
+            resolve=TypeResolvers.input_fields,
         ),
-        "ofType": GraphQLField(__Type, resolve=TypeFieldResolvers.of_type),
+        "ofType": GraphQLField(__Type, resolve=TypeResolvers.of_type),
     },
 )
 
 
-class TypeFieldResolvers:
+class TypeResolvers:
     @staticmethod
     def kind(type_, _info):
         if is_scalar_type(type_):
