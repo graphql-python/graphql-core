@@ -68,6 +68,9 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
     """Known argument names
 
     A GraphQL field is only valid if all supplied arguments are defined by that field.
+
+    See https://spec.graphql.org/draft/#sec-Argument-Names
+    See https://spec.graphql.org/draft/#sec-Directives-Are-In-Valid-Locations
     """
 
     context: ValidationContext

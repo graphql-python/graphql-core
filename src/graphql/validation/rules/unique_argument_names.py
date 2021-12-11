@@ -12,6 +12,8 @@ class UniqueArgumentNamesRule(ASTValidationRule):
 
     A GraphQL field or directive is only valid if all supplied arguments are uniquely
     named.
+
+    See https://spec.graphql.org/draft/#sec-Argument-Names
     """
 
     def __init__(self, context: ASTValidationContext):

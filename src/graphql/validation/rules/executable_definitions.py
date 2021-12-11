@@ -21,6 +21,8 @@ class ExecutableDefinitionsRule(ASTValidationRule):
 
     A GraphQL document is only valid for execution if all definitions are either
     operation or fragment definitions.
+
+    See https://spec.graphql.org/draft/#sec-Executable-Definitions
     """
 
     def enter_document(self, node: DocumentNode, *_args: Any) -> VisitorAction:

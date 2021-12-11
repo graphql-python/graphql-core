@@ -49,6 +49,8 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
 
     A selection set is only valid if all fields (including spreading any fragments)
     either correspond to distinct response names or can be merged without ambiguity.
+
+    See https://spec.graphql.org/draft/#sec-Field-Selection-Mergin
     """
 
     def __init__(self, context: ValidationContext):

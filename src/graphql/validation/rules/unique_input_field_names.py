@@ -12,6 +12,8 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
 
     A GraphQL input object value is only valid if all supplied fields are uniquely
     named.
+
+    See https://spec.graphql.org/draft/#sec-Input-Object-Field-Uniqueness
     """
 
     def __init__(self, context: ASTValidationContext):

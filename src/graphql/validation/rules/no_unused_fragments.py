@@ -17,6 +17,8 @@ class NoUnusedFragmentsRule(ASTValidationRule):
 
     A GraphQL document is only valid if all fragment definitions are spread within
     operations, or spread within other fragments spread within operations.
+
+    See https://spec.graphql.org/draft/#sec-Fragments-Must-Be-Used
     """
 
     def __init__(self, context: ASTValidationContext):

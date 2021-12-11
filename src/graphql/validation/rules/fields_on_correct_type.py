@@ -25,6 +25,8 @@ class FieldsOnCorrectTypeRule(ValidationRule):
 
     A GraphQL document is only valid if all fields selected are defined by the parent
     type, or are an allowed meta field such as ``__typename``.
+
+    See https://spec.graphql.org/draft/#sec-Field-Selections
     """
 
     def enter_field(self, node: FieldNode, *_args: Any) -> None:

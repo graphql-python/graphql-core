@@ -8,7 +8,14 @@ __all__ = ["NoFragmentCyclesRule"]
 
 
 class NoFragmentCyclesRule(ASTValidationRule):
-    """No fragment cycles"""
+    """No fragment cycles
+
+    The graph of fragment spreads must not form any cycles including spreading itself.
+    Otherwise an operation could infinitely spread or infinitely execute on cycles in
+    the underlying data.
+
+    See https://spec.graphql.org/draft/#sec-Fragment-spreads-must-not-form-cycles
+    """
 
     def __init__(self, context: ASTValidationContext):
         super().__init__(context)

@@ -11,6 +11,8 @@ class UniqueFragmentNamesRule(ASTValidationRule):
     """Unique fragment names
 
     A GraphQL document is only valid if all defined fragments have unique names.
+
+    See https://spec.graphql.org/draft/#sec-Fragment-Name-Uniqueness
     """
 
     def __init__(self, context: ASTValidationContext):

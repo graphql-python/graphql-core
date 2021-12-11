@@ -18,6 +18,8 @@ class SingleFieldSubscriptionsRule(ValidationRule):
 
     A GraphQL subscription is valid only if it contains a single root field and
     that root field is not an introspection field.
+
+    See https://spec.graphql.org/draft/#sec-Single-root-field
     """
 
     def enter_operation_definition(

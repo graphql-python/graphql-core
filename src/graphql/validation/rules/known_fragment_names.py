@@ -12,6 +12,8 @@ class KnownFragmentNamesRule(ValidationRule):
 
     A GraphQL document is only valid if all ``...Fragment`` fragment spreads refer to
     fragments defined in the same document.
+
+    See https://spec.graphql.org/draft/#sec-Fragment-spread-target-defined
     """
 
     def enter_fragment_spread(self, node: FragmentSpreadNode, *_args: Any) -> None:
