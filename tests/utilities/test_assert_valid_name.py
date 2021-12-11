@@ -24,6 +24,22 @@ def describe_assert_valid_name():
         msg = str(exc_info.value)
         assert msg == "Expected name to be a string."
 
+    def throws_on_empty_strings():
+        with raises(GraphQLError) as exc_info:
+            assert_valid_name("")
+        msg = str(exc_info.value)
+        assert msg == "Expected name to be a non-empty string."
+
     def throws_for_names_with_invalid_characters():
-        with raises(GraphQLError, match="Names must match"):
+        with raises(GraphQLError) as exc_info:
             assert_valid_name(">--()-->")
+        msg = str(exc_info.value)
+        assert msg == "Names must only contain [_a-zA-Z0-9] but '>--()-->' does not."
+
+    def throws_for_names_starting_with_invalid_characters():
+        with raises(GraphQLError) as exc_info:
+            assert_valid_name("42MeaningsOfLife")
+        msg = str(exc_info.value)
+        assert msg == (
+            "Names must start with [_a-zA-Z] but '42MeaningsOfLife' does not."
+        )

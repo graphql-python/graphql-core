@@ -3,6 +3,7 @@ from typing import List, NamedTuple, Optional
 from ..error import GraphQLSyntaxError
 from .ast import Token
 from .block_string import dedent_block_string_value
+from .character_classes import is_digit, is_name_start, is_name_continue
 from .source import Source
 from .token_kind import TokenKind
 
@@ -129,10 +130,10 @@ class Lexer:
             if kind:
                 return self.create_token(kind, position, position + 1)
 
-            if "0" <= char <= "9" or char == "-":
+            if is_digit(char) or char == "-":
                 return self.read_number(position, char)
 
-            if "A" <= char <= "Z" or "a" <= char <= "z" or char == "_":
+            if is_name_start(char):
                 return self.read_name(position)
 
             if char == ".":
@@ -196,7 +197,7 @@ class Lexer:
         if char == "0":
             position += 1
             char = body[position : position + 1]
-            if "0" <= char <= "9":
+            if is_digit(char):
                 raise GraphQLSyntaxError(
                     self.source,
                     position,
@@ -240,7 +241,7 @@ class Lexer:
 
     def read_digits(self, start: int, first_char: str) -> int:
         """Return the new position in the source after reading one or more digits."""
-        if not "0" <= first_char <= "9":
+        if not is_digit(first_char):
             raise GraphQLSyntaxError(
                 self.source,
                 start,
@@ -251,7 +252,7 @@ class Lexer:
         body = self.source.body
         body_length = len(body)
         position = start + 1
-        while position < body_length and "0" <= body[position] <= "9":
+        while position < body_length and is_digit(body[position]):
             position += 1
         return position
 
@@ -427,12 +428,7 @@ class Lexer:
 
         while position < body_length:
             char = body[position]
-            if not (
-                "A" <= char <= "Z"
-                or "a" <= char <= "z"
-                or "0" <= char <= "9"
-                or char == "_"
-            ):
+            if not is_name_continue(char):
                 break
             position += 1
 
@@ -558,8 +554,3 @@ def is_supplementary_code_point(body: str, location: int) -> bool:
 
 def decode_surrogate_pair(leading: int, trailing: int) -> int:
     return 0x10000 + (((leading & 0x03FF) << 10) | (trailing & 0x03FF))
-
-
-def is_name_start(char: str) -> bool:
-    """Check whether char is an underscore or a plain ASCII letter"""
-    return char == "_" or "A" <= char <= "Z" or "a" <= char <= "z"

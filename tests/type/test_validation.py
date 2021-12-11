@@ -500,7 +500,7 @@ def describe_type_system_objects_must_have_fields():
         )
         msg = validate_schema(schema)[0].message
         assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/"
+            "Names must only contain [_a-zA-Z0-9]"
             " but 'bad-name-with-dashes' does not."
         )
 
@@ -534,7 +534,7 @@ def describe_type_system_field_args_must_be_properly_named():
 
         msg = validate_schema(schema)[0].message
         assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/"
+            "Names must only contain [_a-zA-Z0-9]"
             " but 'bad-name-with-dashes' does not."
         )
 
@@ -1001,20 +1001,16 @@ def describe_type_system_enum_types_must_be_well_defined():
 
         schema1 = schema_with_enum("#value")
         msg = validate_schema(schema1)[0].message
-        assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but '#value' does not."
-        )
+        assert msg == ("Names must start with [_a-zA-Z] but '#value' does not.")
 
         schema2 = schema_with_enum("1value")
         msg = validate_schema(schema2)[0].message
-        assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but '1value' does not."
-        )
+        assert msg == ("Names must start with [_a-zA-Z] but '1value' does not.")
 
         schema3 = schema_with_enum("KEBAB-CASE")
         msg = validate_schema(schema3)[0].message
         assert msg == (
-            "Names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/ but 'KEBAB-CASE' does not."
+            "Names must only contain [_a-zA-Z0-9] but 'KEBAB-CASE' does not."
         )
 
         schema4 = schema_with_enum("true")
