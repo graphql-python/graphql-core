@@ -9,7 +9,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Set,
     Union,
     Tuple,
     Type,
@@ -61,7 +60,7 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
-from .collect_fields import collect_fields
+from .collect_fields import collect_fields, collect_sub_fields
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_variable_values
 
@@ -343,8 +342,6 @@ class ExecutionContext:
             self.variable_values,
             type_,
             operation.selection_set,
-            {},
-            set(),
         )
 
         path = None
@@ -961,20 +958,13 @@ class ExecutionContext:
         )
         sub_field_nodes = cache.get(key)
         if sub_field_nodes is None:
-            sub_field_nodes = {}
-            visited_fragment_names: Set[str] = set()
-            for field_node in field_nodes:
-                selection_set = field_node.selection_set
-                if selection_set:
-                    sub_field_nodes = collect_fields(
-                        self.schema,
-                        self.fragments,
-                        self.variable_values,
-                        return_type,
-                        selection_set,
-                        sub_field_nodes,
-                        visited_fragment_names,
-                    )
+            sub_field_nodes = collect_sub_fields(
+                self.schema,
+                self.fragments,
+                self.variable_values,
+                return_type,
+                field_nodes,
+            )
             cache[key] = sub_field_nodes
         return sub_field_nodes
 

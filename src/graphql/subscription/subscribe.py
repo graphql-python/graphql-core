@@ -170,8 +170,6 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
         context.variable_values,
         type_,
         context.operation.selection_set,
-        {},
-        set(),
     )
     response_name, field_nodes = next(iter(fields.items()))
     field_def = get_field_def(schema, type_, field_nodes[0])

@@ -18,7 +18,7 @@ from ..type import (
 from ..utilities.type_from_ast import type_from_ast
 from .values import get_directive_values
 
-__all__ = ["collect_fields"]
+__all__ = ["collect_fields", "collect_sub_fields"]
 
 
 def collect_fields(
@@ -27,20 +27,68 @@ def collect_fields(
     variable_values: Dict[str, Any],
     runtime_type: GraphQLObjectType,
     selection_set: SelectionSetNode,
-    fields: Dict[str, List[FieldNode]],
-    visited_fragment_names: Set[str],
 ) -> Dict[str, List[FieldNode]]:
     """Collect fields.
 
-    Given a selection_set, adds all of the fields in that selection to the passed in
-    map of fields, and returns it at the end.
+    Given a selection_set, collects all of the fields returns them at the end.
 
-    collect_fields requires the "runtime type" of an object. For a field which
+    collect_fields requires the "runtime type" of an object. For a field that
     returns an Interface or Union type, the "runtime type" will be the actual
-    Object type returned by that field.
+    object type returned by that field.
 
     For internal use only.
     """
+    fields: Dict[str, List[FieldNode]] = {}
+    collect_fields_impl(
+        schema, fragments, variable_values, runtime_type, selection_set, fields, set()
+    )
+    return fields
+
+
+def collect_sub_fields(
+    schema: GraphQLSchema,
+    fragments: Dict[str, FragmentDefinitionNode],
+    variable_values: Dict[str, Any],
+    return_type: GraphQLObjectType,
+    field_nodes: List[FieldNode],
+) -> Dict[str, List[FieldNode]]:
+    """Collect sub fields.
+
+    Given a list of field nodes, collects all of the subfields of the passed
+    in fields, and returns them at the end.
+
+    collect_sub_fields requires the "return type" of an object. For a field that
+    returns an Interface or Union type, the "return type" will be the actual
+    object type returned by that field.
+
+    For internal use only.
+    """
+    sub_field_nodes: Dict[str, List[FieldNode]] = {}
+    visited_fragment_names: Set[str] = set()
+    for node in field_nodes:
+        if node.selection_set:
+            collect_fields_impl(
+                schema,
+                fragments,
+                variable_values,
+                return_type,
+                node.selection_set,
+                sub_field_nodes,
+                visited_fragment_names,
+            )
+    return sub_field_nodes
+
+
+def collect_fields_impl(
+    schema: GraphQLSchema,
+    fragments: Dict[str, FragmentDefinitionNode],
+    variable_values: Dict[str, Any],
+    runtime_type: GraphQLObjectType,
+    selection_set: SelectionSetNode,
+    fields: Dict[str, List[FieldNode]],
+    visited_fragment_names: Set[str],
+) -> None:
+    """Collect fields (internal implementation)."""
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
             if not should_include_node(variable_values, selection):
@@ -52,7 +100,7 @@ def collect_fields(
                 variable_values, selection
             ) or not does_fragment_condition_match(schema, selection, runtime_type):
                 continue
-            collect_fields(
+            collect_fields_impl(
                 schema,
                 fragments,
                 variable_values,
@@ -73,7 +121,7 @@ def collect_fields(
                 schema, fragment, runtime_type
             ):
                 continue
-            collect_fields(
+            collect_fields_impl(
                 schema,
                 fragments,
                 variable_values,
@@ -82,7 +130,6 @@ def collect_fields(
                 fields,
                 visited_fragment_names,
             )
-    return fields
 
 
 def should_include_node(
