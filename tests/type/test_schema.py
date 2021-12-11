@@ -112,7 +112,7 @@ def describe_type_system_schema():
             "subscription": BlogSubscription,
             "directives": specified_directives,
             "description": "Sample schema",
-            "extensions": None,
+            "extensions": {},
             "ast_node": None,
             "extension_ast_nodes": [],
             "assume_valid": False,

@@ -46,7 +46,7 @@ def build_ast_schema(
         description=None,
         types=[],
         directives=[],
-        extensions=None,
+        extensions={},
         ast_node=None,
         extension_ast_nodes=[],
         assume_valid=False,

@@ -30,8 +30,8 @@ def describe_type_system_extensions():
     def describe_graphql_scalar_type():
         def without_extensions():
             some_scalar = GraphQLScalarType("SomeScalar")
-            assert some_scalar.extensions is None
-            assert some_scalar.to_kwargs()["extensions"] is None
+            assert some_scalar.extensions == {}
+            assert some_scalar.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             scalar_extensions = {"SomeScalarExt": "scalar"}
@@ -57,15 +57,15 @@ def describe_type_system_extensions():
                 },
             )
 
-            assert some_object.extensions is None
+            assert some_object.extensions == {}
             some_field = some_object.fields["someField"]
-            assert some_field.extensions is None
+            assert some_field.extensions == {}
             some_arg = some_field.args["someArg"]
-            assert some_arg.extensions is None
+            assert some_arg.extensions == {}
 
-            assert some_object.to_kwargs()["extensions"] is None
-            assert some_field.to_kwargs()["extensions"] is None
-            assert some_arg.to_kwargs()["extensions"] is None
+            assert some_object.to_kwargs()["extensions"] == {}
+            assert some_field.to_kwargs()["extensions"] == {}
+            assert some_arg.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             object_extensions = {"SomeObjectExt": "object"}
@@ -121,15 +121,15 @@ def describe_type_system_extensions():
                 },
             )
 
-            assert some_interface.extensions is None
+            assert some_interface.extensions == {}
             some_field = some_interface.fields["someField"]
-            assert some_field.extensions is None
+            assert some_field.extensions == {}
             some_arg = some_field.args["someArg"]
-            assert some_arg.extensions is None
+            assert some_arg.extensions == {}
 
-            assert some_interface.to_kwargs()["extensions"] is None
-            assert some_field.to_kwargs()["extensions"] is None
-            assert some_arg.to_kwargs()["extensions"] is None
+            assert some_interface.to_kwargs()["extensions"] == {}
+            assert some_field.to_kwargs()["extensions"] == {}
+            assert some_arg.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             interface_extensions = {"SomeInterfaceExt": "interface"}
@@ -172,9 +172,9 @@ def describe_type_system_extensions():
         def without_extensions():
             some_union = GraphQLUnionType("SomeUnion", [])
 
-            assert some_union.extensions is None
+            assert some_union.extensions == {}
 
-            assert some_union.to_kwargs()["extensions"] is None
+            assert some_union.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             union_extensions = {"SomeUnionExt": "union"}
@@ -195,12 +195,12 @@ def describe_type_system_extensions():
         def without_extensions():
             some_enum = GraphQLEnumType("SomeEnum", {"SOME_VALUE": None})
 
-            assert some_enum.extensions is None
+            assert some_enum.extensions == {}
             some_value = some_enum.values["SOME_VALUE"]
-            assert some_value.extensions is None
+            assert some_value.extensions == {}
 
-            assert some_enum.to_kwargs()["extensions"] is None
-            assert some_value.to_kwargs()["extensions"] is None
+            assert some_enum.to_kwargs()["extensions"] == {}
+            assert some_value.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             enum_extensions = {"SomeEnumExt": "enum"}
@@ -236,12 +236,12 @@ def describe_type_system_extensions():
                 "SomeInputObject", {"someInputField": GraphQLInputField(dummy_type)}
             )
 
-            assert some_input_object.extensions is None
+            assert some_input_object.extensions == {}
             some_input_field = some_input_object.fields["someInputField"]
-            assert some_input_field.extensions is None
+            assert some_input_field.extensions == {}
 
-            assert some_input_object.to_kwargs()["extensions"] is None
-            assert some_input_field.to_kwargs()["extensions"] is None
+            assert some_input_object.to_kwargs()["extensions"] == {}
+            assert some_input_field.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             input_object_extensions = {"SomeInputObjectExt": "inputObject"}
@@ -281,12 +281,12 @@ def describe_type_system_extensions():
                 "SomeDirective", [], {"someArg": GraphQLArgument(dummy_type)}
             )
 
-            assert some_directive.extensions is None
+            assert some_directive.extensions == {}
             some_arg = some_directive.args["someArg"]
-            assert some_arg.extensions is None
+            assert some_arg.extensions == {}
 
-            assert some_directive.to_kwargs()["extensions"] is None
-            assert some_arg.to_kwargs()["extensions"] is None
+            assert some_directive.to_kwargs()["extensions"] == {}
+            assert some_arg.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             directive_extensions = {"SomeDirectiveExt": "directive"}
@@ -316,8 +316,8 @@ def describe_type_system_extensions():
         def without_extensions():
             schema = GraphQLSchema()
 
-            assert schema.extensions is None
-            assert schema.to_kwargs()["extensions"] is None
+            assert schema.extensions == {}
+            assert schema.to_kwargs()["extensions"] == {}
 
         def with_extensions():
             schema_extensions = {"schemaExtension": "schema"}

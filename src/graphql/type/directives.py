@@ -32,7 +32,7 @@ class GraphQLDirective:
     is_repeatable: bool
     args: Dict[str, GraphQLArgument]
     description: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[ast.DirectiveDefinitionNode]
 
     def __init__(
@@ -87,9 +87,10 @@ class GraphQLDirective:
             raise TypeError(f"{name} AST node must be a DirectiveDefinitionNode.")
         if description is not None and not is_description(description):
             raise TypeError(f"{name} description must be a string.")
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError(f"{name} extensions must be a dictionary with string keys.")
         self.name = name

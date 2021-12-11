@@ -196,7 +196,7 @@ class GraphQLNamedType(GraphQLType):
 
     name: str
     description: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[TypeDefinitionNode]
     extension_ast_nodes: FrozenList[TypeExtensionNode]
 
@@ -214,9 +214,10 @@ class GraphQLNamedType(GraphQLType):
             raise TypeError("The name must be a string.")
         if description is not None and not is_description(description):
             raise TypeError("The description must be a string.")
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError(f"{name} extensions must be a dictionary with string keys.")
         if ast_node and not isinstance(ast_node, TypeDefinitionNode):
@@ -435,7 +436,7 @@ class GraphQLField:
     subscribe: Optional["GraphQLFieldResolver"]
     description: Optional[str]
     deprecation_reason: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[FieldDefinitionNode]
 
     def __init__(
@@ -478,9 +479,10 @@ class GraphQLField:
             raise TypeError("The description must be a string.")
         if deprecation_reason is not None and not is_description(deprecation_reason):
             raise TypeError("The deprecation reason must be a string.")
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError("Field extensions must be a dictionary with string keys.")
         if ast_node and not isinstance(ast_node, FieldDefinitionNode):
@@ -581,7 +583,7 @@ class GraphQLArgument:
     description: Optional[str]
     deprecation_reason: Optional[str]
     out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[InputValueDefinitionNode]
 
     def __init__(
@@ -602,9 +604,10 @@ class GraphQLArgument:
             raise TypeError("Argument deprecation reason must be a string.")
         if out_name is not None and not isinstance(out_name, str):
             raise TypeError("Argument out name must be a string.")
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError(
                 "Argument extensions must be a dictionary with string keys."
@@ -1187,7 +1190,7 @@ class GraphQLEnumValue:
     value: Any
     description: Optional[str]
     deprecation_reason: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[EnumValueDefinitionNode]
 
     def __init__(
@@ -1204,9 +1207,10 @@ class GraphQLEnumValue:
             raise TypeError(
                 "The deprecation reason for the enum value must be a string."
             )
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError(
                 "Enum value extensions must be a dictionary with string keys."
@@ -1376,7 +1380,7 @@ class GraphQLInputField:
     description: Optional[str]
     deprecation_reason: Optional[str]
     out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[InputValueDefinitionNode]
 
     def __init__(
@@ -1397,9 +1401,10 @@ class GraphQLInputField:
             raise TypeError("Input field deprecation reason must be a string.")
         if out_name is not None and not isinstance(out_name, str):
             raise TypeError("Input field out name must be a string.")
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError(
                 "Input field extensions must be a dictionary with string keys."

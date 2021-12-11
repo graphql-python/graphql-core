@@ -98,7 +98,7 @@ class GraphQLSchema:
     type_map: TypeMap
     directives: FrozenList[GraphQLDirective]
     description: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    extensions: Dict[str, Any]
     ast_node: Optional[ast.SchemaDefinitionNode]
     extension_ast_nodes: FrozenList[ast.SchemaExtensionNode]
 
@@ -151,9 +151,10 @@ class GraphQLSchema:
                 directives = FrozenList(directives)
         if description is not None and not is_description(description):
             raise TypeError("Schema description must be a string.")
-        if extensions is not None and (
-            not isinstance(extensions, dict)
-            or not all(isinstance(key, str) for key in extensions)
+        if extensions is None:
+            extensions = {}
+        elif not isinstance(extensions, dict) or not all(
+            isinstance(key, str) for key in extensions
         ):
             raise TypeError("Schema extensions must be a dictionary with string keys.")
         if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):

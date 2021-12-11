@@ -662,7 +662,7 @@ def extend_schema_impl(
         "description": schema_def.description.value
         if schema_def and schema_def.description
         else None,
-        "extensions": None,
+        "extensions": {},
         "ast_node": schema_def or schema_kwargs["ast_node"],
         "extension_ast_nodes": schema_kwargs["extension_ast_nodes"] + schema_extensions,
         "assume_valid": assume_valid,
