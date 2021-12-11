@@ -229,7 +229,7 @@ def collect_conflicts_between_fields_and_fragment(
     if not fragment:
         return None
 
-    field_map2, fragment_names2 = get_referenced_fields_and_fragment_names(
+    field_map2, referenced_fragment_names = get_referenced_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, fragment
     )
 
@@ -251,7 +251,7 @@ def collect_conflicts_between_fields_and_fragment(
 
     # (E) Then collect any conflicts between the provided collection of fields and any
     # fragment names found in the given fragment.
-    for fragment_name2 in fragment_names2:
+    for referenced_fragment_name in referenced_fragment_names:
         collect_conflicts_between_fields_and_fragment(
             context,
             conflicts,
@@ -259,7 +259,7 @@ def collect_conflicts_between_fields_and_fragment(
             compared_fragment_pairs,
             are_mutually_exclusive,
             field_map,
-            fragment_name2,
+            referenced_fragment_name,
         )
 
 
@@ -293,11 +293,11 @@ def collect_conflicts_between_fragments(
     if not fragment1 or not fragment2:
         return None
 
-    field_map1, fragment_names1 = get_referenced_fields_and_fragment_names(
+    field_map1, referenced_fragment_names1 = get_referenced_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, fragment1
     )
 
-    field_map2, fragment_names2 = get_referenced_fields_and_fragment_names(
+    field_map2, referenced_fragment_names2 = get_referenced_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, fragment2
     )
 
@@ -315,7 +315,7 @@ def collect_conflicts_between_fragments(
 
     # (G) Then collect conflicts between the first fragment and any nested fragments
     # spread in the second fragment.
-    for nested_fragment_name2 in fragment_names2:
+    for referenced_fragment_name2 in referenced_fragment_names2:
         collect_conflicts_between_fragments(
             context,
             conflicts,
@@ -323,19 +323,19 @@ def collect_conflicts_between_fragments(
             compared_fragment_pairs,
             are_mutually_exclusive,
             fragment_name1,
-            nested_fragment_name2,
+            referenced_fragment_name2,
         )
 
     # (G) Then collect conflicts between the second fragment and any nested fragments
     # spread in the first fragment.
-    for nested_fragment_name1 in fragment_names1:
+    for referenced_fragment_name1 in referenced_fragment_names1:
         collect_conflicts_between_fragments(
             context,
             conflicts,
             cached_fields_and_fragment_names,
             compared_fragment_pairs,
             are_mutually_exclusive,
-            nested_fragment_name1,
+            referenced_fragment_name1,
             fragment_name2,
         )
 

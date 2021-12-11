@@ -218,19 +218,20 @@ def visit(
             node: Any = parent
             parent = ancestors_pop() if ancestors else None
             if is_edited:
-                node = node[:] if in_array else copy(node)
-            edit_offset = 0
-            for edit_key, edit_value in edits:
                 if in_array:
-                    edit_key -= edit_offset
-                if in_array and (edit_value is REMOVE or edit_value is Ellipsis):
-                    node.pop(edit_key)
-                    edit_offset += 1
-                elif isinstance(node, list):
-                    node[edit_key] = edit_value
+                    node = node[:]
+                    edit_offset = 0
+                    for edit_key, edit_value in edits:
+                        array_key = edit_key - edit_offset
+                        if edit_value is REMOVE or edit_value is Ellipsis:
+                            node.pop(array_key)
+                            edit_offset += 1
+                        else:
+                            node[array_key] = edit_value
                 else:
-                    setattr(node, edit_key, edit_value)
-
+                    node = copy(node)
+                    for edit_key, edit_value in edits:
+                        setattr(node, edit_key, edit_value)
             idx = stack.idx
             keys = stack.keys
             edits = stack.edits

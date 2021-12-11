@@ -103,9 +103,8 @@ def dedent_block_string(block_str: str) -> str:
     if get_block_string_indentation(body) > 0:
         body = "\n" + body
 
-    last_char = body[-1:]
-    has_trailing_quote = last_char == '"' and body[-4:] != '\\"""'
-    if has_trailing_quote or last_char == "\\":
+    has_trailing_quote = body.endswith('"') and not body.endswith('\\"""')
+    if has_trailing_quote or body.endswith("\\"):
         body += "\n"
 
     return '"""' + body + '"""'
