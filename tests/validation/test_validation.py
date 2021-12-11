@@ -180,6 +180,22 @@ def describe_validate_limit_maximum_number_of_validation_errors():
             },
         ]
 
+    def limits_to_100_when_max_errors_is_not_passed():
+        errors = validate(
+            test_schema,
+            parse(
+                "{" + " ".join(f"unknownField{n}" for n in range(120)) + "}",
+                no_location=True,
+            ),
+        )
+        assert len(errors) == 101
+        assert errors[0] == _invalid_field_error("unknownField0")
+        assert errors[-2] == _invalid_field_error("unknownField99")
+        assert errors[-1] == {
+            "message": "Too many validation errors, error limit reached."
+            " Validation aborted."
+        }
+
     def pass_through_exceptions_from_rules():
         class CustomRule(ValidationRule):
             def enter_field(self, *_args):

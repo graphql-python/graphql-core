@@ -35,12 +35,20 @@ def validate(
     a ValidationContext (see the language/visitor API). Visitor methods are expected to
     return GraphQLErrors, or lists of GraphQLErrors when invalid.
 
+    Validate will stop validation after a ``max_errors`` limit has been reached.
+    Attackers can send pathologically invalid queries to induce a DoS attack,
+    so by default ``max_errors`` set to 100 errors.
+
     Providing a custom TypeInfo instance is deprecated and will be removed in v3.3.
     """
     if not document_ast or not isinstance(document_ast, DocumentNode):
         raise TypeError("Must provide document.")
     # If the schema used for validation is invalid, throw an error.
     assert_valid_schema(schema)
+    if max_errors is None:
+        max_errors = 100
+    elif not isinstance(max_errors, int):
+        raise TypeError("The maximum number of errors must be passed as an int.")
     if type_info is None:
         type_info = TypeInfo(schema)
     elif not isinstance(type_info, TypeInfo):
@@ -53,13 +61,11 @@ def validate(
         raise TypeError(
             "Rules must be specified as a collection of ASTValidationRule subclasses."
         )
-    if max_errors is not None and not isinstance(max_errors, int):
-        raise TypeError("The maximum number of errors must be passed as an int.")
 
     errors: List[GraphQLError] = []
 
     def on_error(error: GraphQLError) -> None:
-        if max_errors is not None and len(errors) >= max_errors:
+        if len(errors) >= max_errors:  # type: ignore
             errors.append(
                 GraphQLError(
                     "Too many validation errors, error limit reached."
