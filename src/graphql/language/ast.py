@@ -255,12 +255,18 @@ class Node:
         )
 
     def __hash__(self) -> int:
-        if getattr(self, "_hash", None) is None:
-            self._hash = hash(tuple(getattr(self, key) for key in self.keys))
-        return self._hash
+        """Get a cached hash value for the node."""
+        # Caching the hash values improves the performance of AST validators
+        hashed = getattr(self, "_hash", None)
+        if hashed is None:
+            hashed = hash(tuple(getattr(self, key) for key in self.keys))
+            self._hash = hashed
+        return hashed
 
-    def __setattr__(self, key, value):
-        object.__setattr__(self, "_hash", None)
+    def __setattr__(self, key: str, value: Any) -> None:
+        # reset cashed hash value if attributes are changed
+        if hasattr(self, "_hash") and key in self.keys:
+            del self._hash
         super().__setattr__(key, value)
 
     def __copy__(self) -> "Node":

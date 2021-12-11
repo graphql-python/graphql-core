@@ -180,6 +180,19 @@ def describe_node_class():
         assert node3 != node
         assert hash(node3) != hash(node)
 
+    def caches_are_hashed():
+        node = SampleTestNode(alpha=1)
+        assert not hasattr(node, "_hash")
+        hash1 = hash(node)
+        assert hasattr(node, "_hash")
+        assert hash1 == getattr(node, "_hash")
+        node.alpha = 2
+        assert not hasattr(node, "_hash")
+        hash2 = hash(node)
+        assert hash2 != hash1
+        assert hasattr(node, "_hash")
+        assert hash2 == getattr(node, "_hash")
+
     def can_create_weak_reference():
         node = SampleTestNode(alpha=1, beta=2)
         ref = weakref.ref(node)
@@ -187,7 +200,7 @@ def describe_node_class():
 
     def can_create_custom_attribute():
         node = SampleTestNode(alpha=1, beta=2)
-        node.gamma = 3  # type: ignore
+        node.gamma = 3
         assert node.gamma == 3  # type: ignore
 
     def can_create_shallow_copy():
