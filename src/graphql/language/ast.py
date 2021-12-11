@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Tuple, Optional, Union
 
 from .source import Source
 from .token_kind import TokenKind
@@ -69,6 +69,7 @@ __all__ = [
     "UnionTypeExtensionNode",
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
+    "QUERY_DOCUMENT_KEYS",
 ]
 
 
@@ -217,6 +218,78 @@ class OperationType(Enum):
     QUERY = "query"
     MUTATION = "mutation"
     SUBSCRIPTION = "subscription"
+
+
+# Default map from node kinds to their node attributes (internal)
+QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
+    "name": (),
+    "document": ("definitions",),
+    "operation_definition": (
+        "name",
+        "variable_definitions",
+        "directives",
+        "selection_set",
+    ),
+    "variable_definition": ("variable", "type", "default_value", "directives"),
+    "variable": ("name",),
+    "selection_set": ("selections",),
+    "field": ("alias", "name", "arguments", "directives", "selection_set"),
+    "argument": ("name", "value"),
+    "fragment_spread": ("name", "directives"),
+    "inline_fragment": ("type_condition", "directives", "selection_set"),
+    "fragment_definition": (
+        # Note: fragment variable definitions are deprecated and will be removed in v3.3
+        "name",
+        "variable_definitions",
+        "type_condition",
+        "directives",
+        "selection_set",
+    ),
+    "list_value": ("values",),
+    "object_value": ("fields",),
+    "object_field": ("name", "value"),
+    "directive": ("name", "arguments"),
+    "named_type": ("name",),
+    "list_type": ("type",),
+    "non_null_type": ("type",),
+    "schema_definition": ("description", "directives", "operation_types"),
+    "operation_type_definition": ("type",),
+    "scalar_type_definition": ("description", "name", "directives"),
+    "object_type_definition": (
+        "description",
+        "name",
+        "interfaces",
+        "directives",
+        "fields",
+    ),
+    "field_definition": ("description", "name", "arguments", "type", "directives"),
+    "input_value_definition": (
+        "description",
+        "name",
+        "type",
+        "default_value",
+        "directives",
+    ),
+    "interface_type_definition": (
+        "description",
+        "name",
+        "interfaces",
+        "directives",
+        "fields",
+    ),
+    "union_type_definition": ("description", "name", "directives", "types"),
+    "enum_type_definition": ("description", "name", "directives", "values"),
+    "enum_value_definition": ("description", "name", "directives"),
+    "input_object_type_definition": ("description", "name", "directives", "fields"),
+    "directive_definition": ("description", "name", "arguments", "locations"),
+    "schema_extension": ("directives", "operation_types"),
+    "scalar_type_extension": ("name", "directives"),
+    "object_type_extension": ("name", "interfaces", "directives", "fields"),
+    "interface_type_extension": ("name", "interfaces", "directives", "fields"),
+    "union_type_extension": ("name", "directives", "types"),
+    "enum_type_extension": ("name", "directives", "values"),
+    "input_object_type_extension": ("name", "directives", "fields"),
+}
 
 
 # Base AST Node
