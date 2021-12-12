@@ -4,9 +4,10 @@ source = src
 omit =
     */conftest.py
     */test_*_fuzz.py
-    */cached_property.py
-    */is_iterable.py
     */assert_valid_name.py
+    */cached_property.py
+    */character_classes.py
+    */is_iterable.py
 
 [report]
 exclude_lines =

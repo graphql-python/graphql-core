@@ -524,7 +524,7 @@ def read_hex_digit(char: str) -> int:
         return ord(char) - 48
     elif "A" <= char <= "F":
         return ord(char) - 55
-    elif "a" <= char <= "f":  # a-f
+    elif "a" <= char <= "f":
         return ord(char) - 87
     return -1
 
