@@ -177,16 +177,19 @@ GraphQL-core 2 or directly taken over with only slight modifications, but most o
 code has been re-implemented from scratch, replicating the latest code in GraphQL.js
 very closely and adding type hints for Python.
 
-Design goals for the GraphQL-core 3 library are:
+Design goals for the GraphQL-core 3 library were:
 
-* to be a simple, cruft-free, state-of-the-art implementation of GraphQL using current
-  library and language versions
-* to be very close to the GraphQL.js reference implementation, while still using a
-  Pythonic API and code style
-* to make extensive use of Python type hints, similar to how GraphQL.js makes uses Flow
-* to use [black](https://github.com/ambv/black) for automatic code formatting
-* to replicate the complete Mocha-based test suite of GraphQL.js using
-  [pytest](https://docs.pytest.org/)
+* to be a simple, cruft-free, state-of-the-art GraphQL implementation for current
+  Python versions
+* to be very close to the GraphQL.js reference implementation, while still providing
+  a Pythonic API and code style
+* to make extensive use of Python type hints, similar to how GraphQL.js used Flow
+  (and is now using TypeScript)
+* to use [black](https://github.com/ambv/black) to achieve a consistent code style
+  while saving time and mental energy for more important matters
+* to replicate the complete Mocha-based test suite of GraphQL.js
+  using [pytest](https://docs.pytest.org/)
+  with [pytest-describe](https://pypi.org/project/pytest-describe/)
 
 Some restrictions (mostly in line with the design goals):
 
