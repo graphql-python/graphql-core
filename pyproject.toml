@@ -45,19 +45,19 @@ python = "^3.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
-pytest-asyncio = ">=0.15,<1"
+pytest-asyncio = ">=0.16,<1"
 pytest-benchmark = "^3.4"
-pytest-cov = "^2.12"
+pytest-cov = "^3.0"
 pytest-describe = "^2.0"
-pytest-timeout = "^1.4"
+pytest-timeout = "^2.0"
 black = [
-    {version = "21.9b0", python = ">=3.6.2"},
+    {version = "21.12b0", python = ">=3.6.2"},
     {version = "20.8b1", python = "<3.6.2"}
 ]
-flake8 = "^3.9"
+flake8 = "^4.0"
 mypy = "0.910"
-sphinx = "^4.2"
-sphinx_rtd_theme = ">=0.5,<1"
+sphinx = "^4.3"
+sphinx_rtd_theme = ">=1,<2"
 check-manifest = ">=0.46,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.24"
