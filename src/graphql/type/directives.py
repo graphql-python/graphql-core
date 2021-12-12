@@ -2,6 +2,7 @@ from typing import Any, Collection, Dict, List, Optional, cast
 
 from ..language import ast, DirectiveLocation
 from ..pyutils import inspect, is_description, FrozenList
+from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
 from .scalars import GraphQLBoolean, GraphQLString
 
@@ -45,10 +46,7 @@ class GraphQLDirective:
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[ast.DirectiveDefinitionNode] = None,
     ) -> None:
-        if not name:
-            raise TypeError("Directive must be named.")
-        elif not isinstance(name, str):
-            raise TypeError("The directive name must be a string.")
+        assert_name(name)
         try:
             locations = [
                 value
@@ -76,7 +74,7 @@ class GraphQLDirective:
             )
         else:
             args = {
-                name: value
+                assert_name(name): value
                 if isinstance(value, GraphQLArgument)
                 else GraphQLArgument(cast(GraphQLInputType, value))
                 for name, value in args.items()

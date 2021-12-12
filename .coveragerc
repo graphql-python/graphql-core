@@ -3,9 +3,10 @@ branch = True
 source = src
 omit =
     */conftest.py
+    */test_*_fuzz.py
     */cached_property.py
     */is_iterable.py
-    */test_*_fuzz.py
+    */assert_valid_name.py
 
 [report]
 exclude_lines =

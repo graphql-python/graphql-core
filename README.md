@@ -14,7 +14,7 @@ a query language for APIs created by Facebook.
 
 The current version 3.1.6 of GraphQL-core is up-to-date with GraphQL.js version 15.5.1.
 
-An extensive test suite with over 2200 unit tests and 100% coverage comprises a
+An extensive test suite with nearly 2300 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
 reliable and compatible with GraphQL.js.
 

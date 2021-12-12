@@ -1,5 +1,6 @@
 from pytest import raises
 
+from graphql.error import GraphQLError
 from graphql.language import DirectiveLocation, DirectiveDefinitionNode, Node
 from graphql.type import GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLString
 
@@ -108,17 +109,28 @@ def describe_type_system_directive():
         assert not directive == other_directive
         assert directive != other_directive
 
-    def rejects_an_unnamed_directive():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            GraphQLDirective(None, locations=[])  # type: ignore
-        assert str(exc_info.value) == "Directive must be named."
-
     def rejects_a_directive_with_incorrectly_typed_name():
+        with raises(TypeError, match="missing .* required .* 'name'"):
+            # noinspection PyArgumentList
+            GraphQLDirective()  # type: ignore
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLDirective({"bad": True}, locations=[])  # type: ignore
-        assert str(exc_info.value) == "The directive name must be a string."
+            GraphQLDirective(None, [])  # type: ignore
+        assert str(exc_info.value) == "Must provide name."
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLDirective(42, {})  # type: ignore
+        assert str(exc_info.value) == "Expected name to be a string."
+
+    def rejects_a_directive_with_invalid_name():
+        with raises(GraphQLError) as exc_info:
+            GraphQLDirective("", [])
+        assert str(exc_info.value) == "Expected name to be a non-empty string."
+        with raises(GraphQLError) as exc_info:
+            GraphQLDirective("bad-name", [])
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
 
     def rejects_a_directive_with_incorrectly_typed_args():
         with raises(TypeError) as exc_info:
@@ -146,6 +158,17 @@ def describe_type_system_directive():
             )
         assert str(exc_info.value) == (
             "Foo args must be GraphQLArgument or input type objects."
+        )
+
+    def rejects_a_directive_with_incorrectly_named_args():
+        with raises(GraphQLError) as exc_info:
+            GraphQLDirective(
+                "Foo",
+                locations=[DirectiveLocation.QUERY],
+                args={"bad-name": GraphQLArgument(GraphQLString)},
+            )
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
         )
 
     def rejects_a_directive_with_incorrectly_typed_repeatable_flag():

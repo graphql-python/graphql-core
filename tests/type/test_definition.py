@@ -1,5 +1,5 @@
 from math import isnan, nan
-from typing import cast
+from typing import cast, Dict
 
 from pytest import mark, raises
 
@@ -161,7 +161,7 @@ def describe_type_system_scalars():
         assert scalar.ast_node is None
         assert scalar.extension_ast_nodes is extension_ast_nodes
 
-    def rejects_a_scalar_type_without_a_name():
+    def rejects_a_scalar_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLScalarType()  # type: ignore
@@ -170,14 +170,19 @@ def describe_type_system_scalars():
             GraphQLScalarType(None)  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
-            GraphQLScalarType("")
-        assert str(exc_info.value) == "Must provide name."
-
-    def rejects_a_scalar_type_with_incorrectly_typed_name():
-        with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLScalarType(name=42)  # type: ignore
-        assert str(exc_info.value) == "The name must be a string."
+            GraphQLScalarType(42, {})  # type: ignore
+        assert str(exc_info.value) == "Expected name to be a string."
+
+    def rejects_a_scalar_type_with_invalid_name():
+        with raises(GraphQLError) as exc_info:
+            GraphQLScalarType("")
+        assert str(exc_info.value) == "Expected name to be a non-empty string."
+        with raises(GraphQLError) as exc_info:
+            GraphQLScalarType("bad-name")
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
 
     def rejects_a_scalar_type_with_incorrectly_typed_description():
         with raises(TypeError) as exc_info:
@@ -518,7 +523,7 @@ def describe_type_system_objects():
         assert object_type.ast_node is None
         assert object_type.extension_ast_nodes is extension_ast_nodes
 
-    def rejects_an_object_type_without_a_name():
+    def rejects_an_object_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLObjectType()  # type: ignore
@@ -527,15 +532,25 @@ def describe_type_system_objects():
             GraphQLObjectType(None, {})  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLObjectType(42, {})  # type: ignore
+        assert str(exc_info.value) == "Expected name to be a string."
+
+    def rejects_an_object_type_with_invalid_name():
+        with raises(GraphQLError) as exc_info:
             GraphQLObjectType("", {})
-        assert str(exc_info.value) == "Must provide name."
+        assert str(exc_info.value) == "Expected name to be a non-empty string."
+        with raises(GraphQLError) as exc_info:
+            GraphQLObjectType("bad-name", {})
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
 
     def rejects_an_object_type_field_with_undefined_config():
         undefined_field = cast(GraphQLField, None)
         obj_type = GraphQLObjectType("SomeObject", {"f": undefined_field})
         with raises(TypeError) as exc_info:
-            if obj_type.fields:
-                pass
+            assert not obj_type.fields
         msg = str(exc_info.value)
         assert msg == "SomeObject fields must be GraphQLField or output type objects."
 
@@ -543,18 +558,25 @@ def describe_type_system_objects():
         invalid_field = cast(GraphQLField, [GraphQLField(ScalarType)])
         obj_type = GraphQLObjectType("SomeObject", {"f": invalid_field})
         with raises(TypeError) as exc_info:
-            if obj_type.fields:
-                pass
+            assert not obj_type.fields
         msg = str(exc_info.value)
         assert msg == "SomeObject fields must be GraphQLField or output type objects."
+
+    def rejects_an_object_type_with_incorrectly_named_fields():
+        obj_type = GraphQLObjectType(
+            "SomeObject", {"bad-name": GraphQLField(ScalarType)}
+        )
+        with raises(GraphQLError) as exc_info:
+            assert not obj_type.fields
+        msg = str(exc_info.value)
+        assert msg == "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
 
     def rejects_an_object_type_field_function_that_returns_incorrect_type():
         obj_type = GraphQLObjectType(
             "SomeObject", lambda: [GraphQLField(ScalarType)]  # type: ignore
         )
         with raises(TypeError) as exc_info:
-            if obj_type.fields:
-                pass
+            assert not obj_type.fields
         assert str(exc_info.value) == (
             "SomeObject fields must be specified as a mapping with field names as keys."
         )
@@ -565,8 +587,7 @@ def describe_type_system_objects():
 
         obj_type = GraphQLObjectType("SomeObject", fields)
         with raises(TypeError) as exc_info:
-            if obj_type.fields:
-                pass
+            assert not obj_type.fields
         assert str(exc_info.value) == "SomeObject fields cannot be resolved. Oops!"
 
     def rejects_an_object_type_with_incorrectly_typed_field_args():
@@ -584,11 +605,27 @@ def describe_type_system_objects():
         msg = str(exc_info.value)
         assert msg == "Field args must be a dict with argument names as keys."
 
+    def rejects_an_object_type_with_incorrectly_named_field_args():
+        obj_type = GraphQLObjectType(
+            "SomeObject",
+            lambda: {
+                "badField": GraphQLField(
+                    ScalarType, args={"bad-name": GraphQLArgument(ScalarType)}
+                )
+            },
+        )
+        with raises(GraphQLError) as exc_info:
+            assert not obj_type.fields
+        msg = str(exc_info.value)
+        assert msg == (
+            "SomeObject fields cannot be resolved."
+            " Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
+
     def rejects_an_object_type_with_incorrectly_typed_interfaces():
         obj_type = GraphQLObjectType("SomeObject", {}, interfaces={})
         with raises(TypeError) as exc_info:
-            if obj_type.interfaces:
-                pass
+            assert not obj_type.interfaces
         assert str(exc_info.value) == (
             "SomeObject interfaces must be specified"
             " as a collection of GraphQLInterfaceType instances."
@@ -597,8 +634,7 @@ def describe_type_system_objects():
     def rejects_object_type_with_incorrectly_typed_interfaces_as_a_function():
         obj_type = GraphQLObjectType("SomeObject", {}, interfaces=lambda: {})
         with raises(TypeError) as exc_info:
-            if obj_type.interfaces:
-                pass
+            assert not obj_type.interfaces
         assert str(exc_info.value) == (
             "SomeObject interfaces must be specified"
             " as a collection of GraphQLInterfaceType instances."
@@ -610,8 +646,7 @@ def describe_type_system_objects():
 
         obj_type = GraphQLObjectType("SomeObject", {}, interfaces=interfaces)
         with raises(TypeError) as exc_info:
-            if obj_type.interfaces:
-                pass
+            assert not obj_type.interfaces
         assert str(exc_info.value) == "SomeObject interfaces cannot be resolved. Oops!"
 
     def rejects_an_empty_object_field_resolver():
@@ -792,8 +827,7 @@ def describe_type_system_interfaces():
     def rejects_an_interface_type_with_incorrectly_typed_fields():
         interface = GraphQLInterfaceType("SomeInterface", [])  # type: ignore
         with raises(TypeError) as exc_info:
-            if interface.fields:
-                pass
+            assert not interface.fields
         assert str(exc_info.value) == (
             "SomeInterface fields must be specified"
             " as a mapping with field names as keys."
@@ -802,8 +836,7 @@ def describe_type_system_interfaces():
             "SomeInterface", {"f": InputObjectType}  # type: ignore
         )
         with raises(TypeError) as exc_info:
-            if interface.fields:
-                pass
+            assert not interface.fields
         assert str(exc_info.value) == (
             "SomeInterface fields must be GraphQLField or output type objects."
         )
@@ -814,11 +847,10 @@ def describe_type_system_interfaces():
 
         interface = GraphQLInterfaceType("SomeInterface", fields)
         with raises(TypeError) as exc_info:
-            if interface.fields:
-                pass
+            assert not interface.fields
         assert str(exc_info.value) == "SomeInterface fields cannot be resolved. Oops!"
 
-    def rejects_an_interface_type_without_a_name():
+    def rejects_an_interface_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLInterfaceType()  # type: ignore
@@ -827,14 +859,24 @@ def describe_type_system_interfaces():
             GraphQLInterfaceType(None, {})  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLInterfaceType(42, {})  # type: ignore
+        assert str(exc_info.value) == "Expected name to be a string."
+
+    def rejects_an_interface_type_with_invalid_name():
+        with raises(GraphQLError) as exc_info:
             GraphQLInterfaceType("", {})
-        assert str(exc_info.value) == "Must provide name."
+        assert str(exc_info.value) == "Expected name to be a non-empty string."
+        with raises(GraphQLError) as exc_info:
+            GraphQLInterfaceType("bad-name", {})
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
 
     def rejects_an_interface_type_with_incorrectly_typed_interfaces():
         interface = GraphQLInterfaceType("AnotherInterface", {}, lambda: {})
         with raises(TypeError) as exc_info:
-            if interface.interfaces:
-                pass
+            assert not interface.interfaces
         assert str(exc_info.value) == (
             "AnotherInterface interfaces must be specified"
             " as a collection of GraphQLInterfaceType instances."
@@ -846,8 +888,7 @@ def describe_type_system_interfaces():
 
         interface = GraphQLInterfaceType("AnotherInterface", {}, interfaces)
         with raises(TypeError) as exc_info:
-            if interface.interfaces:
-                pass
+            assert not interface.interfaces
         assert (
             str(exc_info.value)
             == "AnotherInterface interfaces cannot be resolved. Oops!"
@@ -944,7 +985,7 @@ def describe_type_system_unions():
         assert union_type.ast_node is None
         assert union_type.extension_ast_nodes is extension_ast_nodes
 
-    def rejects_a_union_type_without_a_name():
+    def rejects_a_union_type_with_incorrectly_typed__name():
         with raises(TypeError, match="missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLUnionType()  # type: ignore
@@ -953,8 +994,19 @@ def describe_type_system_unions():
             GraphQLUnionType(None, [])  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLUnionType(42, [])  # type: ignore
+        assert str(exc_info.value) == "Expected name to be a string."
+
+    def rejects_a_union_type_with_invalid_name():
+        with raises(GraphQLError) as exc_info:
             GraphQLUnionType("", [])
-        assert str(exc_info.value) == "Must provide name."
+        assert str(exc_info.value) == "Expected name to be a non-empty string."
+        with raises(GraphQLError) as exc_info:
+            GraphQLUnionType("bad-name", [])
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
 
     def rejects_a_union_type_with_an_incorrect_type_for_resolve_type():
         with raises(TypeError) as exc_info:
@@ -967,8 +1019,7 @@ def describe_type_system_unions():
     def rejects_a_union_type_with_incorrectly_typed_types():
         union_type = GraphQLUnionType("SomeUnion", {"type": ObjectType})  # type: ignore
         with raises(TypeError) as exc_info:
-            if union_type.types:
-                pass
+            assert not union_type.types
         assert str(exc_info.value) == (
             "SomeUnion types must be specified"
             " as a collection of GraphQLObjectType instances."
@@ -980,8 +1031,7 @@ def describe_type_system_unions():
 
         union_type = GraphQLUnionType("SomeUnion", types)
         with raises(TypeError) as exc_info:
-            if union_type.types:
-                pass
+            assert not union_type.types
         assert str(exc_info.value) == "SomeUnion types cannot be resolved. Oops!"
 
     def rejects_a_union_type_with_an_incorrect_ast_node():
@@ -1193,23 +1243,35 @@ def describe_type_system_enums():
         assert enum_type.ast_node is None
         assert enum_type.extension_ast_nodes is extension_ast_nodes
 
-    def rejects_an_enum_type_without_a_name():
+    def rejects_an_enum_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
             # noinspection PyArgumentList
-            GraphQLEnumType(values={})  # type: ignore
+            GraphQLEnumType()  # type: ignore
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
-            GraphQLEnumType(None, values={})  # type: ignore
+            GraphQLEnumType(None, {})  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with raises(TypeError) as exc_info:
-            GraphQLEnumType("", values={})  # type: ignore
-        assert str(exc_info.value) == "Must provide name."
+            # noinspection PyTypeChecker
+            GraphQLEnumType(42, {})  # type: ignore
+        assert str(exc_info.value) == "Expected name to be a string."
 
-    def rejects_an_enum_type_with_incorrectly_typed_name():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            GraphQLEnumType(name=42, values={})  # type: ignore
-        assert str(exc_info.value) == "The name must be a string."
+    def rejects_an_enum_type_with_invalid_name():
+        values: Dict[str, GraphQLEnumValue] = {}
+        with raises(GraphQLError) as exc_info:
+            GraphQLEnumType("", values)
+        assert str(exc_info.value) == "Expected name to be a non-empty string."
+        with raises(GraphQLError) as exc_info:
+            GraphQLEnumType("bad-name", values)
+        assert str(exc_info.value) == (
+            "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+        )
+
+    def rejects_an_enum_type_with_incorrectly_named_values():
+        with raises(GraphQLError) as exc_info:
+            GraphQLEnumType("SomeEnum", {"bad-name": GraphQLField(ScalarType)})
+        msg = str(exc_info.value)
+        assert msg == "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
 
     def rejects_an_enum_type_without_values():
         with raises(TypeError, match="missing .* required .* 'values'"):
@@ -1472,7 +1534,7 @@ def describe_type_system_input_objects():
             assert input_field.ast_node is None
             assert input_field.out_name is None
 
-        def rejects_an_input_object_type_without_a_name():
+        def rejects_an_input_object_type_with_incorrectly_typed_name():
             with raises(TypeError, match="missing .* required .* 'name'"):
                 # noinspection PyArgumentList
                 GraphQLInputObjectType()  # type: ignore
@@ -1481,16 +1543,26 @@ def describe_type_system_input_objects():
                 GraphQLInputObjectType(None, {})  # type: ignore
             assert str(exc_info.value) == "Must provide name."
             with raises(TypeError) as exc_info:
+                # noinspection PyTypeChecker
+                GraphQLInputObjectType(42, {})  # type: ignore
+            assert str(exc_info.value) == "Expected name to be a string."
+
+        def rejects_an_input_object_type_with_invalid_name():
+            with raises(GraphQLError) as exc_info:
                 GraphQLInputObjectType("", {})
-            assert str(exc_info.value) == "Must provide name."
+            assert str(exc_info.value) == "Expected name to be a non-empty string."
+            with raises(GraphQLError) as exc_info:
+                GraphQLInputObjectType("bad-name", {})
+            assert str(exc_info.value) == (
+                "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
+            )
 
         def rejects_an_input_object_type_with_incorrect_fields():
             input_obj_type = GraphQLInputObjectType(
                 "SomeInputObject", []  # type: ignore
             )
             with raises(TypeError) as exc_info:
-                if input_obj_type.fields:
-                    pass
+                assert not input_obj_type.fields
             assert str(exc_info.value) == (
                 "SomeInputObject fields must be specified"
                 " as a mapping with field names as keys."
@@ -1501,11 +1573,21 @@ def describe_type_system_input_objects():
                 "SomeInputObject", lambda: []  # type: ignore
             )
             with raises(TypeError) as exc_info:
-                if input_obj_type.fields:
-                    pass
+                assert not input_obj_type.fields
             assert str(exc_info.value) == (
                 "SomeInputObject fields must be specified"
                 " as a mapping with field names as keys."
+            )
+
+        def rejects_an_input_object_type_with_incorrectly_named_fields():
+            input_obj_type = GraphQLInputObjectType(
+                "SomeInputObject", {"bad-name": GraphQLInputField(ScalarType)}
+            )
+            with raises(GraphQLError) as exc_info:
+                assert not input_obj_type.fields
+            msg = str(exc_info.value)
+            assert msg == (
+                "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
             )
 
         def rejects_an_input_object_type_with_unresolvable_fields():
@@ -1514,8 +1596,7 @@ def describe_type_system_input_objects():
 
             input_obj_type = GraphQLInputObjectType("SomeInputObject", fields)
             with raises(TypeError) as exc_info:
-                if input_obj_type.fields:
-                    pass
+                assert not input_obj_type.fields
             assert str(exc_info.value) == (
                 "SomeInputObject fields cannot be resolved. Oops!"
             )
@@ -1543,8 +1624,7 @@ def describe_type_system_input_objects():
                 {"f": GraphQLField(ScalarType, resolve=resolve)},  # type: ignore
             )
             with raises(TypeError) as exc_info:
-                if input_obj_type.fields:
-                    pass
+                assert not input_obj_type.fields
             assert str(exc_info.value) == (
                 "SomeInputObject fields must be GraphQLInputField"
                 " or input type objects."

@@ -132,6 +132,9 @@ from .type import (
     # Validate GraphQL schema.
     validate_schema,
     assert_valid_schema,
+    #  Uphold the spec rules about naming
+    assert_name,
+    assert_enum_value_name,
     # Types
     GraphQLType,
     GraphQLInputType,
@@ -508,6 +511,8 @@ __all__ = [
     "get_named_type",
     "validate_schema",
     "assert_valid_schema",
+    "assert_name",
+    "assert_enum_value_name",
     "GraphQLType",
     "GraphQLInputType",
     "GraphQLOutputType",

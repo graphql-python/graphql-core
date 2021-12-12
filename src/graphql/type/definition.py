@@ -56,6 +56,7 @@ from ..pyutils import (
     Undefined,
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
+from .assert_name import assert_name, assert_enum_value_name
 
 if TYPE_CHECKING:
     from .schema import GraphQLSchema  # noqa: F401
@@ -208,10 +209,7 @@ class GraphQLNamedType(GraphQLType):
         ast_node: Optional[TypeDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[TypeExtensionNode]] = None,
     ) -> None:
-        if not name:
-            raise TypeError("Must provide name.")
-        if not isinstance(name, str):
-            raise TypeError("The name must be a string.")
+        assert_name(name)
         if description is not None and not is_description(description):
             raise TypeError("The description must be a string.")
         if extensions is None:
@@ -465,7 +463,7 @@ class GraphQLField:
             )
         else:
             args = {
-                name: value
+                assert_name(name): value
                 if isinstance(value, GraphQLArgument)
                 else GraphQLArgument(cast(GraphQLInputType, value))
                 for name, value in args.items()
@@ -737,7 +735,8 @@ class GraphQLObjectType(GraphQLNamedType):
         try:
             fields = resolve_thunk(self._fields)
         except Exception as error:
-            raise TypeError(f"{self.name} fields cannot be resolved. {error}")
+            cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
+            raise cls(f"{self.name} fields cannot be resolved. {error}") from error
         if not isinstance(fields, Mapping) or not all(
             isinstance(key, str) for key in fields
         ):
@@ -753,7 +752,7 @@ class GraphQLObjectType(GraphQLNamedType):
                 f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
-            name: value
+            assert_name(name): value
             if isinstance(value, GraphQLField)
             else GraphQLField(value)  # type: ignore
             for name, value in fields.items()
@@ -767,7 +766,8 @@ class GraphQLObjectType(GraphQLNamedType):
                 self._interfaces  # type: ignore
             )
         except Exception as error:
-            raise TypeError(f"{self.name} interfaces cannot be resolved. {error}")
+            cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
+            raise cls(f"{self.name} interfaces cannot be resolved. {error}") from error
         if interfaces is None:
             interfaces = []
         elif not is_collection(interfaces) or not all(
@@ -862,7 +862,8 @@ class GraphQLInterfaceType(GraphQLNamedType):
         try:
             fields = resolve_thunk(self._fields)
         except Exception as error:
-            raise TypeError(f"{self.name} fields cannot be resolved. {error}")
+            cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
+            raise cls(f"{self.name} fields cannot be resolved. {error}") from error
         if not isinstance(fields, Mapping) or not all(
             isinstance(key, str) for key in fields
         ):
@@ -878,7 +879,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
-            name: value
+            assert_name(name): value
             if isinstance(value, GraphQLField)
             else GraphQLField(value)  # type: ignore
             for name, value in fields.items()
@@ -892,7 +893,8 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 self._interfaces  # type: ignore
             )
         except Exception as error:
-            raise TypeError(f"{self.name} interfaces cannot be resolved. {error}")
+            cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
+            raise cls(f"{self.name} interfaces cannot be resolved. {error}") from error
         if interfaces is None:
             interfaces = []
         elif not is_collection(interfaces) or not all(
@@ -985,7 +987,8 @@ class GraphQLUnionType(GraphQLNamedType):
         try:
             types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
         except Exception as error:
-            raise TypeError(f"{self.name} types cannot be resolved. {error}")
+            cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
+            raise cls(f"{self.name} types cannot be resolved. {error}") from error
         if types is None:
             types = []
         elif not is_collection(types) or not all(
@@ -1081,7 +1084,7 @@ class GraphQLEnumType(GraphQLNamedType):
             values = cast(Dict, values)
             values = {key: value.value for key, value in values.items()}
         values = {
-            key: value
+            assert_enum_value_name(key): value
             if isinstance(value, GraphQLEnumValue)
             else GraphQLEnumValue(value)
             for key, value in values.items()
@@ -1338,7 +1341,8 @@ class GraphQLInputObjectType(GraphQLNamedType):
         try:
             fields = resolve_thunk(self._fields)
         except Exception as error:
-            raise TypeError(f"{self.name} fields cannot be resolved. {error}")
+            cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
+            raise cls(f"{self.name} fields cannot be resolved. {error}") from error
         if not isinstance(fields, Mapping) or not all(
             isinstance(key, str) for key in fields
         ):
@@ -1355,7 +1359,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 " GraphQLInputField or input type objects."
             )
         return {
-            name: value
+            assert_name(name): value
             if isinstance(value, GraphQLInputField)
             else GraphQLInputField(value)  # type: ignore
             for name, value in fields.items()

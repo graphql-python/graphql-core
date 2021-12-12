@@ -11,7 +11,7 @@ from typing import (
     cast,
 )
 
-from ..error import GraphQLError, located_error
+from ..error import GraphQLError
 from ..pyutils import inspect
 from ..language import (
     DirectiveNode,
@@ -41,7 +41,6 @@ from .definition import (
     is_required_argument,
     is_required_input_field,
 )
-from ..utilities.assert_valid_name import is_valid_name_error
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
 from .directives import is_directive, GraphQLDeprecatedDirective
 from .introspection import is_introspection_type
@@ -109,10 +108,7 @@ class SchemaValidationContext:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
         nodes = cast(Optional[Collection[Node]], nodes)
-        self.add_error(GraphQLError(message, nodes))
-
-    def add_error(self, error: GraphQLError) -> None:
-        self.errors.append(error)
+        self.errors.append(GraphQLError(message, nodes))
 
     def validate_root_types(self) -> None:
         schema = self.schema
@@ -191,9 +187,12 @@ class SchemaValidationContext:
         except AttributeError:  # pragma: no cover
             pass
         else:
-            error = is_valid_name_error(name)
-            if error:
-                self.add_error(located_error(error, ast_node))
+            if name.startswith("__"):
+                self.report_error(
+                    f"Name {name!r} must not begin with '__',"
+                    " which is reserved by GraphQL introspection.",
+                    ast_node,
+                )
 
     def validate_types(self) -> None:
         validate_input_object_circular_refs = InputObjectCircularRefsValidator(self)
@@ -457,12 +456,6 @@ class SchemaValidationContext:
         for value_name, enum_value in enum_values.items():
             # Ensure valid name.
             self.validate_name(enum_value, value_name)
-            if value_name in ("true", "false", "null"):
-                self.report_error(
-                    f"Enum type {enum_type.name} cannot include value:"
-                    f" {value_name}.",
-                    enum_value.ast_node,
-                )
 
     def validate_input_fields(self, input_obj: GraphQLInputObjectType) -> None:
         fields = input_obj.fields

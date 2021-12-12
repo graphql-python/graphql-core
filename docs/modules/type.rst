@@ -187,8 +187,8 @@ Definitions
 Validate
 --------
 
-Functions:
-^^^^^^^^^^
+Functions
+^^^^^^^^^
 
 .. autofunction:: validate_schema
 
@@ -196,3 +196,13 @@ Assertions
 ^^^^^^^^^^
 
 .. autofunction:: assert_valid_schema
+
+
+Other
+-----
+
+Assertions
+^^^^^^^^^^
+
+.. autofunction:: assert_name
+.. autofunction:: assert_enum_value_name

@@ -20,7 +20,6 @@ from graphql.type import (
     GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumType,
-    GraphQLEnumValue,
     GraphQLField,
     GraphQLInputField,
     GraphQLInputType,
@@ -494,14 +493,12 @@ def describe_type_system_objects_must_have_fields():
 
     def rejects_an_object_type_with_incorrectly_named_fields():
         schema = schema_with_field_type(
-            GraphQLObjectType(
-                "SomeObject", {"bad-name-with-dashes": GraphQLField(GraphQLString)}
-            )
+            GraphQLObjectType("SomeObject", {"__badName": GraphQLField(GraphQLString)})
         )
         msg = validate_schema(schema)[0].message
         assert msg == (
-            "Names must only contain [_a-zA-Z0-9]"
-            " but 'bad-name-with-dashes' does not."
+            "Name '__badName' must not begin with '__',"
+            " which is reserved by GraphQL introspection."
         )
 
 
@@ -526,7 +523,7 @@ def describe_type_system_field_args_must_be_properly_named():
                 {
                     "badField": GraphQLField(
                         GraphQLString,
-                        args={"bad-name-with-dashes": GraphQLArgument(GraphQLString)},
+                        args={"__badName": GraphQLArgument(GraphQLString)},
                     )
                 },
             )
@@ -534,8 +531,8 @@ def describe_type_system_field_args_must_be_properly_named():
 
         msg = validate_schema(schema)[0].message
         assert msg == (
-            "Names must only contain [_a-zA-Z0-9]"
-            " but 'bad-name-with-dashes' does not."
+            "Name '__badName' must not begin with '__',"
+            " which is reserved by GraphQL introspection."
         )
 
 
@@ -994,36 +991,16 @@ def describe_type_system_enum_types_must_be_well_defined():
         ]
 
     def rejects_an_enum_type_with_incorrectly_named_values():
-        def schema_with_enum(name: str) -> GraphQLSchema:
-            return schema_with_field_type(
-                GraphQLEnumType("SomeEnum", {name: GraphQLEnumValue(1)})
-            )
-
-        schema1 = schema_with_enum("#value")
-        msg = validate_schema(schema1)[0].message
-        assert msg == ("Names must start with [_a-zA-Z] but '#value' does not.")
-
-        schema2 = schema_with_enum("1value")
-        msg = validate_schema(schema2)[0].message
-        assert msg == ("Names must start with [_a-zA-Z] but '1value' does not.")
-
-        schema3 = schema_with_enum("KEBAB-CASE")
-        msg = validate_schema(schema3)[0].message
-        assert msg == (
-            "Names must only contain [_a-zA-Z0-9] but 'KEBAB-CASE' does not."
+        schema = schema_with_field_type(
+            GraphQLEnumType("SomeEnum", values={"__badName": {}})
         )
 
-        schema4 = schema_with_enum("true")
-        msg = validate_schema(schema4)[0].message
-        assert msg == "Enum type SomeEnum cannot include value: true."
-
-        schema5 = schema_with_enum("false")
-        msg = validate_schema(schema5)[0].message
-        assert msg == "Enum type SomeEnum cannot include value: false."
-
-        schema6 = schema_with_enum("null")
-        msg = validate_schema(schema6)[0].message
-        assert msg == "Enum type SomeEnum cannot include value: null."
+        assert validate_schema(schema) == [
+            {
+                "message": "Name '__badName' must not begin with '__',"
+                " which is reserved by GraphQL introspection."
+            }
+        ]
 
 
 def describe_type_system_object_fields_must_have_output_types():

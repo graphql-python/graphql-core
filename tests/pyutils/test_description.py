@@ -107,7 +107,7 @@ def describe_description():
             named_type = GraphQLNamedType(name="Foo", description="not lazy")
             assert named_type.name == "Foo"
             assert named_type.description == "not lazy"
-            with raises(TypeError, match="The name must be a string\\."):
+            with raises(TypeError, match="Expected name to be a string\\."):
                 GraphQLNamedType(name=lazy_string)
             with raises(TypeError, match="The description must be a string\\."):
                 GraphQLNamedType(name="Foo", description=lazy_string)
@@ -115,7 +115,7 @@ def describe_description():
                 named_type = GraphQLNamedType(name="Foo", description=lazy_string)
                 assert named_type.description is lazy_string
                 assert str(named_type.description).endswith("lazy?")
-                with raises(TypeError, match="The name must be a string\\."):
+                with raises(TypeError, match="Expected name to be a string\\."):
                     GraphQLNamedType(name=lazy_string)
 
         def graphql_field():
@@ -185,7 +185,7 @@ def describe_description():
             directive = GraphQLDirective("Foo", [], description="not lazy")
             assert directive.name == "Foo"
             assert directive.description == "not lazy"
-            with raises(TypeError, match="The directive name must be a string\\."):
+            with raises(TypeError, match="Expected name to be a string\\."):
                 GraphQLDirective(lazy_string, [])
             with raises(TypeError, match="Foo description must be a string\\."):
                 GraphQLDirective("Foo", [], description=lazy_string)
@@ -193,7 +193,7 @@ def describe_description():
                 directive = GraphQLDirective("Foo", [], description=lazy_string)
                 assert directive.description is lazy_string
                 assert str(directive.description).endswith("lazy?")
-                with raises(TypeError, match="The directive name must be a string\\."):
+                with raises(TypeError, match="Expected name to be a string\\."):
                     GraphQLDirective(lazy_string, [])
 
     def introspection():

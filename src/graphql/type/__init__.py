@@ -14,6 +14,9 @@ from .schema import (
     GraphQLSchema,
 )
 
+# Uphold the spec rules about naming.
+from .assert_name import assert_name, assert_enum_value_name
+
 from .definition import (
     # Predicates
     is_type,
@@ -149,6 +152,8 @@ from .validate import validate_schema, assert_valid_schema
 __all__ = [
     "is_schema",
     "assert_schema",
+    "assert_name",
+    "assert_enum_value_name",
     "GraphQLSchema",
     "is_type",
     "is_scalar_type",
