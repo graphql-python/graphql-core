@@ -87,25 +87,59 @@ __Directive: GraphQLObjectType = GraphQLObjectType(
         # Note: The fields onOperation, onFragment and onField are deprecated
         "name": GraphQLField(
             GraphQLNonNull(GraphQLString),
-            resolve=lambda directive, _info: directive.name,
+            resolve=DirectiveResolvers.name,
         ),
         "description": GraphQLField(
-            GraphQLString, resolve=lambda directive, _info: directive.description
+            GraphQLString,
+            resolve=DirectiveResolvers.description,
         ),
         "isRepeatable": GraphQLField(
             GraphQLNonNull(GraphQLBoolean),
-            resolve=lambda directive, _info: directive.is_repeatable,
+            resolve=DirectiveResolvers.is_repeatable,
         ),
         "locations": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__DirectiveLocation))),
-            resolve=lambda directive, _info: directive.locations,
+            resolve=DirectiveResolvers.locations,
         ),
         "args": GraphQLField(
             GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            resolve=lambda directive, _info: directive.args.items(),
+            args={
+                "includeDeprecated": GraphQLArgument(
+                    GraphQLBoolean, default_value=False
+                )
+            },
+            resolve=DirectiveResolvers.args,
         ),
     },
 )
+
+
+class DirectiveResolvers:
+    @staticmethod
+    def name(directive, _info):
+        return directive.name
+
+    @staticmethod
+    def description(directive, _info):
+        return directive.description
+
+    @staticmethod
+    def is_repeatable(directive, _info):
+        return directive.is_repeatable
+
+    @staticmethod
+    def locations(directive, _info):
+        return directive.locations
+
+    # noinspection PyPep8Naming
+    @staticmethod
+    def args(directive, _info, includeDeprecated=False):
+        items = directive.args.items()
+        return (
+            list(items)
+            if includeDeprecated
+            else [item for item in items if item[1].deprecation_reason is None]
+        )
 
 
 __DirectiveLocation: GraphQLEnumType = GraphQLEnumType(

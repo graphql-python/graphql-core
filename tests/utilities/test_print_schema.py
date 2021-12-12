@@ -769,7 +769,7 @@ def describe_type_system_printer():
               description: String
               isRepeatable: Boolean!
               locations: [__DirectiveLocation!]!
-              args: [__InputValue!]!
+              args(includeDeprecated: Boolean = false): [__InputValue!]!
             }
 
             """
