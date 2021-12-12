@@ -129,6 +129,29 @@ def describe_graphql_error():
         assert e.positions == [6]
         assert e.locations == [(2, 5)]
 
+    def defaults_to_original_error_extension_only_if_arg_is_not_passed():
+        original_extensions = {"original": "extensions"}
+        original_error = GraphQLError("original", extensions=original_extensions)
+        inherited_error = GraphQLError("InheritedError", original_error=original_error)
+        assert inherited_error.message == "InheritedError"
+        assert inherited_error.original_error is original_error
+        assert inherited_error.extensions is original_extensions
+
+        own_extensions = {"own": "extensions"}
+        own_error = GraphQLError(
+            "OwnError", original_error=original_error, extensions=own_extensions
+        )
+        assert own_error.message == "OwnError"
+        assert own_error.original_error is original_error
+        assert own_error.extensions is own_extensions
+
+        own_empty_error = GraphQLError(
+            "OwnEmptyError", original_error=original_error, extensions={}
+        )
+        assert own_empty_error.message == "OwnEmptyError"
+        assert own_empty_error.original_error is original_error
+        assert own_empty_error.extensions == {}
+
     def serializes_to_include_all_standard_fields():
         e_short = GraphQLError("msg")
         assert str(e_short) == "msg"
