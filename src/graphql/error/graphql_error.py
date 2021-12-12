@@ -19,10 +19,7 @@ class GraphQLError(Exception):
     """
 
     message: str
-    """A message describing the Error for debugging purposes
-
-    Note: should be treated as readonly, despite invariant usage.
-    """
+    """A message describing the Error for debugging purposes"""
 
     locations: Optional[List["SourceLocation"]]
     """Source locations

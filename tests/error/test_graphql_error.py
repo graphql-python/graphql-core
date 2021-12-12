@@ -36,10 +36,13 @@ def describe_graphql_error():
         assert isinstance(GraphQLError("str"), Exception)
         assert isinstance(GraphQLError("str"), GraphQLError)
 
-    def has_a_name_message_and_stack_trace():
+    def has_a_name_message_extensions_and_stack_trace():
         e = GraphQLError("msg")
         assert e.__class__.__name__ == "GraphQLError"
         assert e.message == "msg"
+        assert e.extensions == {}
+        assert e.__traceback__ is None
+        assert str(e) == "msg"
 
     def uses_the_stack_of_an_original_error():
         try:
@@ -126,18 +129,27 @@ def describe_graphql_error():
         assert e.positions == [6]
         assert e.locations == [(2, 5)]
 
-    def serializes_to_include_message():
-        e = GraphQLError("msg")
-        assert str(e) == "msg"
-        assert repr(e) == "GraphQLError('msg')"
+    def serializes_to_include_all_standard_fields():
+        e_short = GraphQLError("msg")
+        assert str(e_short) == "msg"
+        assert repr(e_short) == "GraphQLError('msg')"
 
-    def serializes_to_include_message_and_locations():
-        e = GraphQLError("msg", field_node)
-        assert "msg" in str(e)
-        assert ":2:3" in str(e)
-        assert repr(e) == (
-            "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)])"
+        path: List[Union[str, int]] = ["path", 2, "field"]
+        extensions = {"foo": "bar "}
+        e_full = GraphQLError("msg", field_node, None, None, path, None, extensions)
+        assert str(e_full) == (
+            "msg\n\nGraphQL request:2:3\n" "1 | {\n2 |   field\n  |   ^\n3 | }"
         )
+        assert repr(e_full) == (
+            "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)],"
+            " path=['path', 2, 'field'], extensions={'foo': 'bar '})"
+        )
+        assert e_full.formatted == {
+            "message": "msg",
+            "locations": [{"line": 2, "column": 3}],
+            "path": ["path", 2, "field"],
+            "extensions": {"foo": "bar "},
+        }
 
     def repr_includes_extensions():
         e = GraphQLError("msg", extensions={"foo": "bar"})
