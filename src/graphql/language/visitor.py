@@ -21,6 +21,7 @@ __all__ = [
     "Visitor",
     "ParallelVisitor",
     "VisitorAction",
+    "VisitorKeyMap",
     "visit",
     "BREAK",
     "SKIP",
@@ -51,8 +52,10 @@ SKIP = VisitorActionEnum.SKIP
 REMOVE = VisitorActionEnum.REMOVE
 IDLE = None
 
+VisitorKeyMap = Dict[str, Tuple[str, ...]]
+
 # Default map from visitor kinds to their traversable node attributes:
-QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
+QUERY_DOCUMENT_KEYS: VisitorKeyMap = {
     "name": (),
     "document": ("definitions",),
     "operation_definition": (
@@ -168,6 +171,9 @@ class Visitor:
     nodes, you would defined the methods ``enter_field()`` and/or ``leave_field()``,
     with the same signature as above. If no kind specific method has been defined
     for a given node, the generic method is called.
+
+    To customize the node attributes to be used for traversal, you can provide a
+    dictionary visitor_keys mapping node kinds to node attributes.
     """
 
     # Provide special return values as attributes
@@ -215,9 +221,7 @@ class Stack(NamedTuple):
 
 
 def visit(
-    root: Node,
-    visitor: Visitor,
-    visitor_keys: Optional[Dict[str, Tuple[str, ...]]] = None,
+    root: Node, visitor: Visitor, visitor_keys: Optional[VisitorKeyMap] = None
 ) -> Any:
     """Visit each node in an AST.
 
