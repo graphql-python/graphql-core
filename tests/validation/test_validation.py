@@ -155,7 +155,6 @@ def describe_validate_limit_maximum_number_of_validation_errors():
     def _invalid_field_error(field_name: str):
         return {
             "message": f"Cannot query field '{field_name}' on type 'QueryRoot'.",
-            "locations": [],
         }
 
     def when_max_errors_is_equal_to_number_of_errors():
