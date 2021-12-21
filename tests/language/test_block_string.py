@@ -144,3 +144,17 @@ def describe_print_block_string():
         assert print_block_string(s) == join_lines(
             '"""', "    first  ", "  line     ", "indentation", "     string", '"""'
         )
+
+    def correctly_prints_value_if_proxy_object():
+        class PseudoProxyObject:
+            def __contains__(self, item):
+                return item in "lorem"
+
+            def __getattr__(self, item):
+                return getattr("lorem", item)
+
+            def __str__(self):
+                return "lorem"
+
+        value = PseudoProxyObject()
+        assert print_block_string(value) == f'"""{value}"""'

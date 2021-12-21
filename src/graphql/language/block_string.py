@@ -99,7 +99,7 @@ def print_block_string(value: str, prefer_multiple_lines: bool = False) -> str:
         "\n"
         if print_as_multiple_lines and not (is_single_line and has_leading_space)
         else ""
-    ) + value
+    ) + str(value)
     if print_as_multiple_lines:
         result += "\n"
 
