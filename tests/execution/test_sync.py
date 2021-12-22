@@ -1,6 +1,5 @@
 from gc import collect
 from inspect import isawaitable
-from typing import Awaitable, cast
 
 from pytest import mark, raises
 
@@ -58,7 +57,6 @@ def describe_execute_synchronously_when_possible():
         doc = "query Example { syncField, asyncField }"
         result = execute(schema, parse(doc), "rootValue")
         assert isawaitable(result)
-        result = cast(Awaitable, result)
         assert await result == (
             {"syncField": "rootValue", "asyncField": "rootValue"},
             None,

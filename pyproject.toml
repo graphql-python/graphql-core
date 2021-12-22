@@ -57,7 +57,7 @@ black = [
     {version = "20.8b1", python = "<3.6.2"}
 ]
 flake8 = "^4.0"
-mypy = "0.910"
+mypy = "0.930"
 sphinx = "^4.3"
 sphinx_rtd_theme = ">=1,<2"
 check-manifest = ">=0.46,<1"

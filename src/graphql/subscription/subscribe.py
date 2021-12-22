@@ -87,7 +87,7 @@ async def subscribe(
             operation_name,
             field_resolver,
         )
-        return await result if isawaitable(result) else result  # type: ignore
+        return await result if isawaitable(result) else result
 
     # Map every source value to a ExecutionResult value as described above.
     return MapAsyncIterator(result_or_stream, map_source_to_response)
