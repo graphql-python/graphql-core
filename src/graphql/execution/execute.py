@@ -187,6 +187,7 @@ class ExecutionContext:
     variable_values: Dict[str, Any]
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
+    subscribe_field_resolver: GraphQLFieldResolver
     errors: List[GraphQLError]
     middleware_manager: Optional[MiddlewareManager]
 
@@ -202,6 +203,7 @@ class ExecutionContext:
         variable_values: Dict[str, Any],
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
+        subscribe_field_resolver: GraphQLFieldResolver,
         errors: List[GraphQLError],
         middleware_manager: Optional[MiddlewareManager],
         is_awaitable: Optional[Callable[[Any], bool]],
@@ -214,6 +216,7 @@ class ExecutionContext:
         self.variable_values = variable_values
         self.field_resolver = field_resolver  # type: ignore
         self.type_resolver = type_resolver  # type: ignore
+        self.subscribe_field_resolver = subscribe_field_resolver  # type: ignore
         self.errors = errors
         self.middleware_manager = middleware_manager
         if is_awaitable:
@@ -231,6 +234,7 @@ class ExecutionContext:
         operation_name: Optional[str] = None,
         field_resolver: Optional[GraphQLFieldResolver] = None,
         type_resolver: Optional[GraphQLTypeResolver] = None,
+        subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
         middleware: Optional[Middleware] = None,
         is_awaitable: Optional[Callable[[Any], bool]] = None,
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
@@ -298,6 +302,7 @@ class ExecutionContext:
             coerced_variable_values,  # coerced values
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
+            subscribe_field_resolver or default_field_resolver,
             [],
             middleware_manager,
             is_awaitable,
@@ -978,6 +983,7 @@ def execute(
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
     type_resolver: Optional[GraphQLTypeResolver] = None,
+    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type["ExecutionContext"]] = None,
     is_awaitable: Optional[Callable[[Any], bool]] = None,
@@ -1009,6 +1015,7 @@ def execute(
         operation_name,
         field_resolver,
         type_resolver,
+        subscribe_field_resolver,
         middleware,
         is_awaitable,
     )
@@ -1071,6 +1078,7 @@ def execute_sync(
         operation_name,
         field_resolver,
         type_resolver,
+        None,
         middleware,
         execution_context_class,
         is_awaitable,

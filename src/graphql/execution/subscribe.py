@@ -100,7 +100,7 @@ async def create_source_event_stream(
     context_value: Any = None,
     variable_values: Optional[Dict[str, Any]] = None,
     operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
+    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source event stream
 
@@ -138,7 +138,7 @@ async def create_source_event_stream(
         context_value,
         variable_values,
         operation_name,
-        field_resolver,
+        subscribe_field_resolver=subscribe_field_resolver,
     )
 
     # Return early errors if execution context failed.
@@ -193,7 +193,7 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
 
         # Call the `subscribe()` resolver or the default resolver to produce an
         # AsyncIterable yielding raw payloads.
-        resolve_fn = field_def.subscribe or context.field_resolver
+        resolve_fn = field_def.subscribe or context.subscribe_field_resolver
 
         event_stream = resolve_fn(context.root_value, info, **args)
         if context.is_awaitable(event_stream):

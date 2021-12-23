@@ -210,6 +210,35 @@ def describe_subscription_initialization_phase():
         await subscription.aclose()
 
     @mark.asyncio
+    async def uses_a_custom_default_subscribe_field_resolver():
+        schema = GraphQLSchema(
+            query=DummyQueryType,
+            subscription=GraphQLObjectType(
+                "Subscription", {"foo": GraphQLField(GraphQLString)}
+            ),
+        )
+
+        class Root:
+            @staticmethod
+            async def custom_foo():
+                yield {"foo": "FooValue"}
+
+        subscription = await subscribe(
+            schema,
+            document=parse("subscription { foo }"),
+            root_value=Root(),
+            subscribe_field_resolver=lambda root, _info: root.custom_foo(),
+        )
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == (
+            {"foo": "FooValue"},
+            None,
+        )
+
+        await subscription.aclose()
+
+    @mark.asyncio
     async def should_only_resolve_the_first_field_of_invalid_multi_field():
         did_resolve = {"foo": False, "bar": False}
 
