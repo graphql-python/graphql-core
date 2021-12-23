@@ -139,15 +139,15 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 '''
-            type SomeObject implements AnotherInterface & SomeInterface {
-              self: SomeObject
-              tree: [SomeObject]!
-              """Old field description."""
-              oldField: String
-              """New field description."""
-              newField(arg: Boolean): String
-            }
-            '''
+                type SomeObject implements AnotherInterface & SomeInterface {
+                  self: SomeObject
+                  tree: [SomeObject]!
+                  """Old field description."""
+                  oldField: String
+                  """New field description."""
+                  newField(arg: Boolean): String
+                }
+                '''
             ),
         )
 
@@ -226,13 +226,13 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 '''
-            enum SomeEnum {
-              """Old value description."""
-              OLD_VALUE
-              """New value description."""
-              NEW_VALUE
-            }
-            '''
+                enum SomeEnum {
+                  """Old value description."""
+                  OLD_VALUE
+                  """New value description."""
+                  NEW_VALUE
+                }
+                '''
             ),
         )
 
@@ -263,8 +263,8 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 """
-            union SomeUnion = Foo | Biz | Bar
-            """
+                union SomeUnion = Foo | Biz | Bar
+                """
             ),
         )
 
@@ -318,13 +318,13 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 '''
-            input SomeInput {
-              """Old field description."""
-              oldField: String
-              """New field description."""
-              newField: String
-            }
-            '''
+                input SomeInput {
+                  """Old field description."""
+                  oldField: String
+                  """New field description."""
+                  newField: String
+                }
+                '''
             ),
         )
 

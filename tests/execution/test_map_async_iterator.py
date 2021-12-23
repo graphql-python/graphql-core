@@ -3,7 +3,7 @@ from asyncio import CancelledError, Event, ensure_future, sleep
 
 from pytest import mark, raises
 
-from graphql.subscription.map_async_iterator import MapAsyncIterator
+from graphql.execution import MapAsyncIterator
 
 
 try:  # pragma: no cover

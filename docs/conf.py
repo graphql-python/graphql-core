@@ -111,7 +111,6 @@ graphql_modules = {
     'language': ['ast', 'directive_locations', 'location',
                  'source', 'token_kind', 'visitor'],
     'pyutils': ['simple_pub_sub', 'frozen_list', 'path'],
-    'subscription': [],
     'type': ['definition', 'directives', 'schema'],
     'utilities': ['find_breaking_changes', 'type_info'],
     'validation': ['rules', 'validation_context']}
@@ -136,9 +135,9 @@ types.TracebackType
 EnterLeaveVisitor
 FormattedSourceLocation
 asyncio.events.AbstractEventLoop
+graphql.execution.map_async_iterator.MapAsyncIterator
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor
-graphql.subscription.map_async_iterator.MapAsyncIterator
 graphql.type.schema.InterfaceImplementations
 graphql.validation.validation_context.VariableUsage
 graphql.validation.rules.known_argument_names.KnownArgumentNamesOnDirectivesRule

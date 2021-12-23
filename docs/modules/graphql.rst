@@ -27,7 +27,6 @@ Sub-Packages
    execution
    language
    pyutils
-   subscription
    type
    utilities
    validation

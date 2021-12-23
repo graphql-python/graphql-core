@@ -8,6 +8,7 @@ omit =
     */cached_property.py
     */character_classes.py
     */is_iterable.py
+    */subscription/__init__.py
 
 [report]
 exclude_lines =

@@ -16,7 +16,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
-from graphql.subscription import create_source_event_stream, subscribe, MapAsyncIterator
+from graphql.execution import create_source_event_stream, subscribe, MapAsyncIterator
 
 try:
     anext

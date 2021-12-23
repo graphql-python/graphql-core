@@ -22,6 +22,12 @@ Execution
 .. autoclass:: FormattedExecutionResult
    :no-inherited-members:
 
+.. autofunction:: subscribe
+
+.. autofunction:: create_source_event_stream
+
+.. autoclass:: MapAsyncIterator
+
 .. autoclass:: Middleware
 
 .. autoclass:: MiddlewareManager

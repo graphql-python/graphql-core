@@ -36,7 +36,7 @@ from graphql import (
 )
 
 from graphql.pyutils import SimplePubSub, SimplePubSubIterator
-from graphql.subscription.map_async_iterator import MapAsyncIterator
+from graphql.execution.map_async_iterator import MapAsyncIterator
 
 
 class User(NamedTuple):

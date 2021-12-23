@@ -34,7 +34,6 @@ The sub-packages of GraphQL-core 3 are:
   - :mod:`graphql.error`: Creating and formatting GraphQL errors.
   - :mod:`graphql.utilities`:
     Common useful computations upon the GraphQL language and type objects.
-  - :mod:`graphql.subscription`: Subscribe to data updates.
 """
 
 # The GraphQL-core 3 and GraphQL.js version info.
@@ -286,13 +285,14 @@ from .execution import (
     ExecutionContext,
     ExecutionResult,
     FormattedExecutionResult,
+    # Subscription
+    subscribe,
+    create_source_event_stream,
+    MapAsyncIterator,
     # Middleware
     Middleware,
     MiddlewareManager,
 )
-
-from .subscription import subscribe, create_source_event_stream, MapAsyncIterator
-
 
 # Validate GraphQL queries.
 from .validation import (
