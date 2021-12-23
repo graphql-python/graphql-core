@@ -101,6 +101,7 @@ from .rules.unique_operation_types import UniqueOperationTypesRule
 from .rules.unique_type_names import UniqueTypeNamesRule
 from .rules.unique_enum_value_names import UniqueEnumValueNamesRule
 from .rules.unique_field_definition_names import UniqueFieldDefinitionNamesRule
+from .rules.unique_argument_definition_names import UniqueArgumentDefinitionNamesRule
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
 from .rules.possible_type_extensions import PossibleTypeExtensionsRule
 
@@ -148,6 +149,7 @@ __all__ = [
     "UniqueTypeNamesRule",
     "UniqueEnumValueNamesRule",
     "UniqueFieldDefinitionNamesRule",
+    "UniqueArgumentDefinitionNamesRule",
     "UniqueDirectiveNamesRule",
     "PossibleTypeExtensionsRule",
     "NoDeprecatedCustomRule",

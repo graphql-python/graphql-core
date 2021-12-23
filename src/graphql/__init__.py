@@ -336,6 +336,7 @@ from .validation import (
     UniqueTypeNamesRule,
     UniqueEnumValueNamesRule,
     UniqueFieldDefinitionNamesRule,
+    UniqueArgumentDefinitionNamesRule,
     UniqueDirectiveNamesRule,
     PossibleTypeExtensionsRule,
     # Custom validation rules
@@ -688,6 +689,7 @@ __all__ = [
     "UniqueTypeNamesRule",
     "UniqueEnumValueNamesRule",
     "UniqueFieldDefinitionNamesRule",
+    "UniqueArgumentDefinitionNamesRule",
     "UniqueDirectiveNamesRule",
     "PossibleTypeExtensionsRule",
     "NoDeprecatedCustomRule",

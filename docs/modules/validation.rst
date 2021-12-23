@@ -143,5 +143,6 @@ Rules
 .. autoclass:: UniqueTypeNamesRule
 .. autoclass:: UniqueEnumValueNamesRule
 .. autoclass:: UniqueFieldDefinitionNamesRule
+.. autoclass:: UniqueArgumentDefinitionNamesRule
 .. autoclass:: UniqueDirectiveNamesRule
 .. autoclass:: PossibleTypeExtensionsRule
