@@ -129,23 +129,23 @@ async def create_source_event_stream(
     # mistake which should throw an early error.
     assert_valid_execution_arguments(schema, document, variable_values)
 
+    # If a valid context cannot be created due to incorrect arguments,
+    # a "Response" with only errors is returned.
+    context = ExecutionContext.build(
+        schema,
+        document,
+        root_value,
+        context_value,
+        variable_values,
+        operation_name,
+        field_resolver,
+    )
+
+    # Return early errors if execution context failed.
+    if isinstance(context, list):
+        return ExecutionResult(data=None, errors=context)
+
     try:
-        # If a valid context cannot be created due to incorrect arguments,
-        # this will throw an error.
-        context = ExecutionContext.build(
-            schema,
-            document,
-            root_value,
-            context_value,
-            variable_values,
-            operation_name,
-            field_resolver,
-        )
-
-        # Return early errors if execution context failed.
-        if isinstance(context, list):
-            return ExecutionResult(data=None, errors=context)
-
         event_stream = await execute_subscription(context)
 
         # Assert field returned an event stream, otherwise yield an error.
