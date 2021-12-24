@@ -15,7 +15,7 @@ __all__ = [
 
 test_schema = build_schema(
     """
-   interface Mammal {
+    interface Mammal {
       mother: Mammal
       father: Mammal
     }
