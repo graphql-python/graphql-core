@@ -119,17 +119,28 @@ class GraphQLError(Exception):
     ) -> None:
         super().__init__(message)
         self.message = message
+
+        if path and not isinstance(path, list):
+            path = list(path)
+        self.path = path or None  # type: ignore
+        self.original_error = original_error
+
+        # Compute list of blame nodes.
         if nodes and not isinstance(nodes, list):
             nodes = [nodes]  # type: ignore
         self.nodes = nodes or None  # type: ignore
+
+        # Compute locations in the source for the given nodes/positions.
         self.source = source
         if not source and nodes:
             node = nodes[0]  # type: ignore
             if node and node.loc and node.loc.source:
                 self.source = node.loc.source
+
         if not positions and nodes:
             positions = [node.loc.start for node in nodes if node.loc]  # type: ignore
         self.positions = positions or None
+
         if positions and source:
             locations: Optional[List["SourceLocation"]] = [
                 source.get_location(pos) for pos in positions
@@ -143,10 +154,7 @@ class GraphQLError(Exception):
         else:
             locations = None
         self.locations = locations
-        if path and not isinstance(path, list):
-            path = list(path)
-        self.path = path or None  # type: ignore
-        self.original_error = original_error
+
         if original_error:
             self.__traceback__ = original_error.__traceback__
             if original_error.__cause__:
