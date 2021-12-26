@@ -72,10 +72,12 @@ class Lexer:
         if "\x20" <= char <= "\x7E":
             return "'\"'" if char == '"' else f"'{char}'"
         # Unicode code point
-        point = (
-            decode_surrogate_pair(ord(char), ord(body[location + 1]))
+        point = ord(
+            body[location : location + 2]
+            .encode("utf-16", "surrogatepass")
+            .decode("utf-16")
             if is_supplementary_code_point(body, location)
-            else ord(char)
+            else char
         )
         return f"U+{point:04X}"
 
@@ -351,7 +353,10 @@ class Lexer:
                 trailing_code = read_16_bit_hex_code(body, position + 8)
                 if 0xDC00 <= trailing_code <= 0xDFFF:
                     return EscapeSequence(
-                        chr(decode_surrogate_pair(code, trailing_code)), 12
+                        (chr(code) + chr(trailing_code))
+                        .encode("utf-16", "surrogatepass")
+                        .decode("utf-16"),
+                        12,
                     )
 
         raise GraphQLSyntaxError(
@@ -546,11 +551,10 @@ def is_supplementary_code_point(body: str, location: int) -> bool:
     The GraphQL specification defines source text as a sequence of unicode scalar
     values (which Unicode defines to exclude surrogate code points).
     """
-    return (
-        "\ud800" <= body[location] <= "\udbff"
-        and "\udc00" <= body[location + 1] <= "\udfff"
-    )
-
-
-def decode_surrogate_pair(leading: int, trailing: int) -> int:
-    return 0x10000 + (((leading & 0x03FF) << 10) | (trailing & 0x03FF))
+    try:
+        return (
+            "\ud800" <= body[location] <= "\udbff"
+            and "\udc00" <= body[location + 1] <= "\udfff"
+        )
+    except IndexError:
+        return False

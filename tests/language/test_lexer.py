@@ -539,6 +539,8 @@ def describe_lexer():
         assert_syntax_error("\uD83D\uDE00", "Unexpected character: U+1F600.", (1, 1))
         assert_syntax_error("\uD800\uDC00", "Unexpected character: U+10000.", (1, 1))
         assert_syntax_error("\uDBFF\uDFFF", "Unexpected character: U+10FFFF.", (1, 1))
+        assert_syntax_error("\uD800", "Invalid character: U+D800.", (1, 1))
+        assert_syntax_error("\uDBFF", "Invalid character: U+DBFF.", (1, 1))
         assert_syntax_error("\uDEAD", "Invalid character: U+DEAD.", (1, 1))
 
     # noinspection PyArgumentEqualDefault
