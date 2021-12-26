@@ -52,6 +52,9 @@ class GraphQLSchema:
     and mutation (optional). A schema definition is then supplied to the validator
     and executor.
 
+    Schemas should be considered immutable once they are created. If you want to modify
+    a schema, modify the result of the ``to_kwargs()`` method and recreate the schema.
+
     Example::
 
         MyAppSchema = GraphQLSchema(
