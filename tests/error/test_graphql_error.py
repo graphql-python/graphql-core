@@ -39,10 +39,13 @@ def describe_graphql_error():
         assert isinstance(GraphQLError("str"), Exception)
         assert isinstance(GraphQLError("str"), GraphQLError)
 
-    def has_a_name_message_and_stack_trace():
+    def has_a_name_message_extensions_and_stack_trace():
         e = GraphQLError("msg")
         assert e.__class__.__name__ == "GraphQLError"
         assert e.message == "msg"
+        assert e.extensions == {}
+        assert e.__traceback__ is None
+        assert str(e) == "msg"
 
     def uses_the_stack_of_an_original_error():
         try:
