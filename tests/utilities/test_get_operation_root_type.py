@@ -27,7 +27,7 @@ def get_operation_node(doc: DocumentNode) -> OperationDefinitionNode:
     return operation_node
 
 
-def describe_get_operation_root_type():
+def describe_deprecated_get_operation_root_type():
     def gets_a_query_type_for_an_unnamed_operation_definition_node():
         test_schema = GraphQLSchema(query_type)
         doc = parse("{ field }")

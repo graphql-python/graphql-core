@@ -166,8 +166,8 @@ class TypeInfo:
         self._directive = self._schema.get_directive(node.name.value)
 
     def enter_operation_definition(self, node: OperationDefinitionNode) -> None:
-        type_ = getattr(self._schema, f"{node.operation.value}_type")
-        self._type_stack.append(type_ if is_object_type(type_) else None)
+        root_type = self._schema.get_root_type(node.operation)
+        self._type_stack.append(root_type if is_object_type(root_type) else None)
 
     def enter_inline_fragment(self, node: InlineFragmentNode) -> None:
         type_condition_ast = node.type_condition

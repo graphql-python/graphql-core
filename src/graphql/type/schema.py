@@ -12,7 +12,7 @@ from typing import (
 )
 
 from ..error import GraphQLError
-from ..language import ast
+from ..language import ast, OperationType
 from ..pyutils import inspect, is_collection, is_description, FrozenList
 from .definition import (
     GraphQLAbstractType,
@@ -325,6 +325,9 @@ class GraphQLSchema:
             extension_ast_nodes=deepcopy(self.extension_ast_nodes),
             assume_valid=True,
         )
+
+    def get_root_type(self, operation: OperationType) -> Optional[GraphQLObjectType]:
+        return getattr(self, f"{operation.value}_type")
 
     def get_type(self, name: str) -> Optional[GraphQLNamedType]:
         return self.type_map.get(name)

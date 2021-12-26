@@ -37,7 +37,6 @@ from ..pyutils import (
     Path,
     Undefined,
 )
-from ..utilities.get_operation_root_type import get_operation_root_type
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
@@ -340,12 +339,19 @@ class ExecutionContext:
 
         Implements the "Executing operations" section of the spec.
         """
-        type_ = get_operation_root_type(self.schema, operation)
-        fields = collect_fields(
+        root_type = self.schema.get_root_type(operation.operation)
+        if root_type is None:
+            raise GraphQLError(
+                "Schema is not configured to execute"
+                f" {operation.operation.value} operation.",
+                operation,
+            )
+
+        root_fields = collect_fields(
             self.schema,
             self.fragments,
             self.variable_values,
-            type_,
+            root_type,
             operation.selection_set,
         )
 
@@ -360,7 +366,7 @@ class ExecutionContext:
                 self.execute_fields_serially
                 if operation.operation == OperationType.MUTATION
                 else self.execute_fields
-            )(type_, root_value, path, fields)
+            )(root_type, root_value, path, root_fields)
         except GraphQLError as error:
             self.errors.append(error)
             return None

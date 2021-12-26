@@ -15,7 +15,11 @@ def get_operation_root_type(
     schema: GraphQLSchema,
     operation: Union[OperationDefinitionNode, OperationTypeDefinitionNode],
 ) -> GraphQLObjectType:
-    """Extract the root type of the operation from the schema."""
+    """Extract the root type of the operation from the schema.
+
+    .. deprecated:: 3.2
+       Please use `GraphQLSchema.getRootType` instead. Will be removed in v3.3.
+    """
     operation_type = operation.operation
     if operation_type == OperationType.QUERY:
         query_type = schema.query_type

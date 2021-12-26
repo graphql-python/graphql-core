@@ -21,7 +21,6 @@ from ..execution.values import get_argument_values
 from ..language import DocumentNode
 from ..pyutils import Path, inspect
 from ..type import GraphQLFieldResolver, GraphQLSchema
-from ..utilities import get_operation_root_type
 from .map_async_iterator import MapAsyncIterator
 
 __all__ = ["subscribe", "create_source_event_stream"]
@@ -163,16 +162,23 @@ async def create_source_event_stream(
 
 async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
     schema = context.schema
-    type_ = get_operation_root_type(schema, context.operation)
-    fields = collect_fields(
+
+    root_type = schema.subscription_type
+    if root_type is None:
+        raise GraphQLError(
+            "Schema is not configured to execute subscription operation.",
+            context.operation,
+        )
+
+    root_fields = collect_fields(
         schema,
         context.fragments,
         context.variable_values,
-        type_,
+        root_type,
         context.operation.selection_set,
     )
-    response_name, field_nodes = next(iter(fields.items()))
-    field_def = get_field_def(schema, type_, field_nodes[0])
+    response_name, field_nodes = next(iter(root_fields.items()))
+    field_def = get_field_def(schema, root_type, field_nodes[0])
 
     if not field_def:
         field_name = field_nodes[0].name.value
@@ -180,8 +186,8 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
             f"The subscription field '{field_name}' is not defined.", field_nodes
         )
 
-    path = Path(None, response_name, type_.name)
-    info = context.build_resolve_info(field_def, field_nodes, type_, path)
+    path = Path(None, response_name, root_type.name)
+    info = context.build_resolve_info(field_def, field_nodes, root_type, path)
 
     # Implements the "ResolveFieldEventStream" algorithm from GraphQL specification.
     # It differs from "ResolveFieldValue" due to providing a different `resolveFn`.

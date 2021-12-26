@@ -789,6 +789,35 @@ def describe_execute_handles_basic_execution_tasks():
         result = execute_sync(schema, document, Data(), operation_name="S")
         assert result == ({"a": "b"}, None)
 
+    def resolves_to_an_error_if_schema_does_not_support_operation():
+        schema = GraphQLSchema(assume_valid=True)
+
+        document = parse(
+            """
+            query Q { __typename }
+            mutation M { __typename }
+            subscription S { __typename }
+            """
+        )
+
+        with raises(
+            GraphQLError,
+            match=r"^Schema is not configured to execute query operation\.",
+        ):
+            execute_sync(schema, document, operation_name="Q")
+
+        with raises(
+            GraphQLError,
+            match=r"^Schema is not configured to execute mutation operation\.",
+        ):
+            execute_sync(schema, document, operation_name="M")
+
+        with raises(
+            GraphQLError,
+            match=r"^Schema is not configured to execute subscription operation\.",
+        ):
+            execute_sync(schema, document, operation_name="S")
+
     @mark.asyncio
     async def correct_field_ordering_despite_execution_order():
         schema = GraphQLSchema(

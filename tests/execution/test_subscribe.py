@@ -297,6 +297,24 @@ def describe_subscription_initialization_phase():
             await subscribe(schema=schema)  # type: ignore
 
     @mark.asyncio
+    async def resolves_to_an_error_if_schema_does_not_support_subscriptions():
+        schema = GraphQLSchema(query=DummyQueryType)
+        document = parse("subscription { unknownField }")
+
+        result = await subscribe(schema, document)
+
+        assert result == (
+            None,
+            [
+                {
+                    "message": "Schema is not configured to execute"
+                    " subscription operation.",
+                    "locations": [(1, 1)],
+                }
+            ],
+        )
+
+    @mark.asyncio
     async def resolves_to_an_error_for_unknown_subscription_field():
         schema = GraphQLSchema(
             query=DummyQueryType,
