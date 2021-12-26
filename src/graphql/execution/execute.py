@@ -307,22 +307,15 @@ class ExecutionContext:
             is_awaitable,
         )
 
+    @staticmethod
     def build_response(
-        self, data: AwaitableOrValue[Optional[Dict[str, Any]]]
-    ) -> AwaitableOrValue[ExecutionResult]:
+        data: Optional[Dict[str, Any]], errors: List[GraphQLError]
+    ) -> ExecutionResult:
         """Build response.
 
         Given a completed execution context and data, build the (data, errors) response
         defined by the "Response" section of the GraphQL spec.
         """
-        if self.is_awaitable(data):
-
-            async def build_response_async() -> ExecutionResult:
-                return self.build_response(await data)  # type: ignore
-
-            return build_response_async()
-        data = cast(Optional[Dict[str, Any]], data)
-        errors = self.errors
         if not errors:
             return ExecutionResult(data, None)
         # Sort the error list in order to make it deterministic, since we might have
@@ -357,30 +350,11 @@ class ExecutionContext:
 
         path = None
 
-        # Errors from sub-fields of a NonNull type may propagate to the top level, at
-        # which point we still log the error and null the parent field, which in this
-        # case is the entire response.
-        try:
-            # noinspection PyArgumentList
-            result = (
-                self.execute_fields_serially
-                if operation.operation == OperationType.MUTATION
-                else self.execute_fields
-            )(root_type, root_value, path, root_fields)
-        except GraphQLError as error:
-            self.errors.append(error)
-            return None
-        else:
-            if self.is_awaitable(result):
-                # noinspection PyShadowingNames
-                async def await_result() -> Any:
-                    try:
-                        return await result  # type: ignore
-                    except GraphQLError as error:
-                        self.errors.append(error)
-
-                return await_result()
-            return result
+        return (
+            self.execute_fields_serially
+            if operation.operation == OperationType.MUTATION
+            else self.execute_fields
+        )(root_type, root_value, path, root_fields)
 
     def execute_fields_serially(
         self,
@@ -815,6 +789,7 @@ class ExecutionContext:
         runtime_type = resolve_type_fn(result, info, return_type)  # type: ignore
 
         if self.is_awaitable(runtime_type):
+            runtime_type = cast(Awaitable, runtime_type)
 
             async def await_complete_object_value() -> Any:
                 value = self.complete_object_value(
@@ -1037,9 +1012,31 @@ def execute(
     # its descendants will be omitted, and sibling fields will still be executed. An
     # execution which encounters errors will still result in a coroutine object that
     # can be executed without errors.
+    #
+    # Errors from sub-fields of a NonNull type may propagate to the top level,
+    # at which point we still log the error and null the parent field, which
+    # in this case is the entire response.
+    errors = exe_context.errors
+    build_response = exe_context.build_response
+    try:
+        operation = exe_context.operation
+        result = exe_context.execute_operation(operation, root_value)
 
-    data = exe_context.execute_operation(exe_context.operation, root_value)
-    return exe_context.build_response(data)
+        if exe_context.is_awaitable(result):
+            # noinspection PyShadowingNames
+            async def await_result() -> Any:
+                try:
+                    return build_response(await result, errors)  # type: ignore
+                except GraphQLError as error:
+                    errors.append(error)
+                    return build_response(None, errors)
+
+            return await_result()
+    except GraphQLError as error:
+        errors.append(error)
+        return build_response(None, errors)
+    else:
+        return build_response(result, errors)  # type: ignore
 
 
 def assume_not_awaitable(_value: Any) -> bool:

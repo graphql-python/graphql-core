@@ -800,23 +800,37 @@ def describe_execute_handles_basic_execution_tasks():
             """
         )
 
-        with raises(
-            GraphQLError,
-            match=r"^Schema is not configured to execute query operation\.",
-        ):
-            execute_sync(schema, document, operation_name="Q")
+        assert execute_sync(schema, document, operation_name="Q") == (
+            None,
+            [
+                {
+                    "message": "Schema is not configured to execute query operation.",
+                    "locations": [(2, 13)],
+                }
+            ],
+        )
 
-        with raises(
-            GraphQLError,
-            match=r"^Schema is not configured to execute mutation operation\.",
-        ):
-            execute_sync(schema, document, operation_name="M")
+        assert execute_sync(schema, document, operation_name="M") == (
+            None,
+            [
+                {
+                    "message": "Schema is not configured to execute"
+                    " mutation operation.",
+                    "locations": [(3, 13)],
+                }
+            ],
+        )
 
-        with raises(
-            GraphQLError,
-            match=r"^Schema is not configured to execute subscription operation\.",
-        ):
-            execute_sync(schema, document, operation_name="S")
+        assert execute_sync(schema, document, operation_name="S") == (
+            None,
+            [
+                {
+                    "message": "Schema is not configured to execute"
+                    " subscription operation.",
+                    "locations": [(4, 13)],
+                }
+            ],
+        )
 
     @mark.asyncio
     async def correct_field_ordering_despite_execution_order():
