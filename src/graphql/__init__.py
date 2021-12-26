@@ -46,6 +46,7 @@ from .pyutils import Undefined, UndefinedType
 # Create, format, and print GraphQL errors.
 from .error import (
     GraphQLError,
+    GraphQLErrorExtensions,
     GraphQLFormattedError,
     GraphQLSyntaxError,
     located_error,
@@ -694,6 +695,7 @@ __all__ = [
     "NoDeprecatedCustomRule",
     "NoSchemaIntrospectionCustomRule",
     "GraphQLError",
+    "GraphQLErrorExtensions",
     "GraphQLFormattedError",
     "GraphQLSyntaxError",
     "located_error",

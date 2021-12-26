@@ -14,7 +14,15 @@ if TYPE_CHECKING:
     )  # noqa: F401
     from ..language.source import Source  # noqa: F401
 
-__all__ = ["GraphQLError", "GraphQLFormattedError"]
+__all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
+
+
+# Custom extensions
+GraphQLErrorExtensions = Dict[str, Any]
+# Use a unique identifier name for your extension, for example the name of
+# your library or project. Do not use a shortened identifier as this increases
+# the risk of conflicts. We recommend you add at most one extension key,
+# a dictionary which can contain all the values you need.
 
 
 class GraphQLFormattedError(TypedDict, total=False):
@@ -33,7 +41,7 @@ class GraphQLFormattedError(TypedDict, total=False):
     path: List[Union[str, int]]
     # Reserved for implementors to extend the protocol however they see fit,
     # and hence there are no additional restrictions on its contents.
-    extensions: Dict[str, Any]
+    extensions: GraphQLErrorExtensions
 
 
 class GraphQLError(Exception):
@@ -91,7 +99,7 @@ class GraphQLError(Exception):
     original_error: Optional[Exception]
     """The original error thrown from a field resolver during execution"""
 
-    extensions: Optional[Dict[str, Any]]
+    extensions: Optional[GraphQLErrorExtensions]
     """Extension fields to add to the formatted error"""
 
     __slots__ = (
@@ -115,7 +123,7 @@ class GraphQLError(Exception):
         positions: Optional[Collection[int]] = None,
         path: Optional[Collection[Union[str, int]]] = None,
         original_error: Optional[Exception] = None,
-        extensions: Optional[Dict[str, Any]] = None,
+        extensions: Optional[GraphQLErrorExtensions] = None,
     ) -> None:
         super().__init__(message)
         self.message = message
