@@ -1,8 +1,10 @@
-from typing import Any, Dict
+from operator import attrgetter
+from typing import Any, Collection
 
 from ...error import GraphQLError
-from ...language import ArgumentNode, NameNode, VisitorAction, SKIP
-from . import ASTValidationContext, ASTValidationRule
+from ...language import ArgumentNode, DirectiveNode, FieldNode
+from ...pyutils import group_by
+from . import ASTValidationRule
 
 __all__ = ["UniqueArgumentNamesRule"]
 
@@ -16,26 +18,20 @@ class UniqueArgumentNamesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Argument-Names
     """
 
-    def __init__(self, context: ASTValidationContext):
-        super().__init__(context)
-        self.known_arg_names: Dict[str, NameNode] = {}
+    def enter_field(self, node: FieldNode, *_args: Any) -> None:
+        self.check_arg_uniqueness(node.arguments)
 
-    def enter_field(self, *_args: Any) -> None:
-        self.known_arg_names.clear()
+    def enter_directive(self, node: DirectiveNode, *args: Any) -> None:
+        self.check_arg_uniqueness(node.arguments)
 
-    def enter_directive(self, *_args: Any) -> None:
-        self.known_arg_names.clear()
+    def check_arg_uniqueness(self, argument_nodes: Collection[ArgumentNode]) -> None:
+        seen_args = group_by(argument_nodes, attrgetter("name.value"))
 
-    def enter_argument(self, node: ArgumentNode, *_args: Any) -> VisitorAction:
-        known_arg_names = self.known_arg_names
-        arg_name = node.name.value
-        if arg_name in known_arg_names:
-            self.report_error(
-                GraphQLError(
-                    f"There can be only one argument named '{arg_name}'.",
-                    [known_arg_names[arg_name], node.name],
+        for arg_name, arg_nodes in seen_args.items():
+            if len(arg_nodes) > 1:
+                self.report_error(
+                    GraphQLError(
+                        f"There can be only one argument named '{arg_name}'.",
+                        [node.name for node in arg_nodes],
+                    )
                 )
-            )
-        else:
-            known_arg_names[arg_name] = node.name
-        return SKIP

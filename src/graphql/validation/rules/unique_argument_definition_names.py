@@ -1,6 +1,5 @@
-from collections import defaultdict
 from operator import attrgetter
-from typing import Any, Callable, Collection, Dict, List, TypeVar
+from typing import Any, Collection
 
 from ...error import GraphQLError
 from ...language import (
@@ -15,6 +14,7 @@ from ...language import (
     VisitorAction,
     SKIP,
 )
+from ...pyutils import group_by
 from . import SDLValidationRule
 
 __all__ = ["UniqueArgumentDefinitionNamesRule"]
@@ -81,16 +81,3 @@ class UniqueArgumentDefinitionNamesRule(SDLValidationRule):
                     )
                 )
         return SKIP
-
-
-K = TypeVar("K")
-T = TypeVar("T")
-
-
-def group_by(items: Collection[T], key_fn: Callable[[T], K]) -> Dict[K, List[T]]:
-    """Group an unsorted collection of items by a key derived via a function."""
-    result: Dict[K, List[T]] = defaultdict(list)
-    for item in items:
-        key = key_fn(item)
-        result[key].append(item)
-    return result

@@ -1,8 +1,10 @@
-from typing import Any, Dict
+from operator import attrgetter
+from typing import Any
 
 from ...error import GraphQLError
-from ...language import NameNode, VariableDefinitionNode
-from . import ASTValidationContext, ASTValidationRule
+from ...language import OperationDefinitionNode
+from ...pyutils import group_by
+from . import ASTValidationRule
 
 __all__ = ["UniqueVariableNamesRule"]
 
@@ -13,24 +15,20 @@ class UniqueVariableNamesRule(ASTValidationRule):
     A GraphQL operation is only valid if all its variables are uniquely named.
     """
 
-    def __init__(self, context: ASTValidationContext):
-        super().__init__(context)
-        self.known_variable_names: Dict[str, NameNode] = {}
-
-    def enter_operation_definition(self, *_args: Any) -> None:
-        self.known_variable_names.clear()
-
-    def enter_variable_definition(
-        self, node: VariableDefinitionNode, *_args: Any
+    def enter_operation_definition(
+        self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
-        known_variable_names = self.known_variable_names
-        variable_name = node.variable.name.value
-        if variable_name in known_variable_names:
-            self.report_error(
-                GraphQLError(
-                    f"There can be only one variable named '${variable_name}'.",
-                    [known_variable_names[variable_name], node.variable.name],
+        variable_definitions = node.variable_definitions
+
+        seen_variable_definitions = group_by(
+            variable_definitions, attrgetter("variable.name.value")
+        )
+
+        for variable_name, variable_nodes in seen_variable_definitions.items():
+            if len(variable_nodes) > 1:
+                self.report_error(
+                    GraphQLError(
+                        f"There can be only one variable named '${variable_name}'.",
+                        [node.variable.name for node in variable_nodes],
+                    )
                 )
-            )
-        else:
-            known_variable_names[variable_name] = node.variable.name

@@ -116,11 +116,7 @@ def describe_validate_unique_argument_names():
             [
                 {
                     "message": "There can be only one argument named 'arg1'.",
-                    "locations": [(3, 21), (3, 36)],
-                },
-                {
-                    "message": "There can be only one argument named 'arg1'.",
-                    "locations": [(3, 21), (3, 51)],
+                    "locations": [(3, 21), (3, 36), (3, 51)],
                 },
             ],
         )
@@ -150,11 +146,7 @@ def describe_validate_unique_argument_names():
             [
                 {
                     "message": "There can be only one argument named 'arg1'.",
-                    "locations": [(3, 32), (3, 47)],
-                },
-                {
-                    "message": "There can be only one argument named 'arg1'.",
-                    "locations": [(3, 32), (3, 62)],
+                    "locations": [(3, 32), (3, 47), (3, 62)],
                 },
             ],
         )

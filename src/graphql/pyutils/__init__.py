@@ -17,6 +17,7 @@ from .description import (
     unregister_description,
 )
 from .did_you_mean import did_you_mean
+from .group_by import group_by
 from .identity_func import identity_func
 from .inspect import inspect
 from .is_awaitable import is_awaitable
@@ -38,6 +39,7 @@ __all__ = [
     "cached_property",
     "did_you_mean",
     "Description",
+    "group_by",
     "is_description",
     "register_description",
     "unregister_description",
