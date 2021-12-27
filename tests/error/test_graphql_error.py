@@ -55,8 +55,9 @@ def describe_graphql_error():
             [1, 2, 3],
             ["a", "b", "c"],
             Exception("test"),
-            {"foo": "bar"})
-        assert set(e.formatted) == {'message', 'path', 'locations', 'extensions'}
+            {"foo": "bar"},
+        )
+        assert set(e.formatted) == {"message", "path", "locations", "extensions"}
 
     def uses_the_stack_of_an_original_error():
         try:
@@ -143,6 +144,29 @@ def describe_graphql_error():
         assert e.positions == [6]
         assert e.locations == [(2, 5)]
 
+    def defaults_to_original_error_extension_only_if_arg_is_not_passed():
+        original_extensions = {"original": "extensions"}
+        original_error = GraphQLError("original", extensions=original_extensions)
+        inherited_error = GraphQLError("InheritedError", original_error=original_error)
+        assert inherited_error.message == "InheritedError"
+        assert inherited_error.original_error is original_error
+        assert inherited_error.extensions is original_extensions
+
+        own_extensions = {"own": "extensions"}
+        own_error = GraphQLError(
+            "OwnError", original_error=original_error, extensions=own_extensions
+        )
+        assert own_error.message == "OwnError"
+        assert own_error.original_error is original_error
+        assert own_error.extensions is own_extensions
+
+        own_empty_error = GraphQLError(
+            "OwnEmptyError", original_error=original_error, extensions={}
+        )
+        assert own_empty_error.message == "OwnEmptyError"
+        assert own_empty_error.original_error is original_error
+        assert own_empty_error.extensions == {}
+
     def serializes_to_include_message():
         e = GraphQLError("msg")
         assert str(e) == "msg"
@@ -158,6 +182,28 @@ def describe_graphql_error():
         assert e.formatted == {
             "locations": [{"column": 3, "line": 2}],
             "message": "msg",
+        }
+
+    def serializes_to_include_all_standard_fields():
+        e_short = GraphQLError("msg")
+        assert str(e_short) == "msg"
+        assert repr(e_short) == "GraphQLError('msg')"
+
+        path: List[Union[str, int]] = ["path", 2, "field"]
+        extensions = {"foo": "bar "}
+        e_full = GraphQLError("msg", field_node, None, None, path, None, extensions)
+        assert str(e_full) == (
+            "msg\n\nGraphQL request:2:3\n" "1 | {\n2 |   field\n  |   ^\n3 | }"
+        )
+        assert repr(e_full) == (
+            "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)],"
+            " path=['path', 2, 'field'], extensions={'foo': 'bar '})"
+        )
+        assert e_full.formatted == {
+            "message": "msg",
+            "locations": [{"line": 2, "column": 3}],
+            "path": ["path", 2, "field"],
+            "extensions": {"foo": "bar "},
         }
 
     def repr_includes_extensions():
