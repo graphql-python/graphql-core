@@ -116,6 +116,15 @@ def describe_graphql_error():
         assert e.positions == [0]
         assert e.locations == [(1, 1)]
 
+    def converts_node_without_location_to_source_positions_and_locations_as_none():
+        document_node = parse("{ foo }", no_location=True)
+
+        e = GraphQLError("msg", document_node)
+        assert e.nodes == [document_node]
+        assert e.source is None
+        assert e.positions is None
+        assert e.locations is None
+
     def converts_source_and_positions_to_locations():
         e = GraphQLError("msg", None, source, [6])
         assert e.nodes is None

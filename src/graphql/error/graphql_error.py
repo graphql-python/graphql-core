@@ -137,31 +137,26 @@ class GraphQLError(Exception):
         if nodes and not isinstance(nodes, list):
             nodes = [nodes]  # type: ignore
         self.nodes = nodes or None  # type: ignore
+        node_locations = (
+            [node.loc for node in nodes if node.loc] if nodes else []  # type: ignore
+        )
 
         # Compute locations in the source for the given nodes/positions.
         self.source = source
-        if not source and nodes:
-            node = nodes[0]  # type: ignore
-            if node and node.loc and node.loc.source:
-                self.source = node.loc.source
-
-        if not positions and nodes:
-            positions = [node.loc.start for node in nodes if node.loc]  # type: ignore
+        if not source and node_locations:
+            loc = node_locations[0]
+            if loc.source:  # pragma: no cover else
+                self.source = loc.source
+        if not positions and node_locations:
+            positions = [loc.start for loc in node_locations]
         self.positions = positions or None
-
         if positions and source:
             locations: Optional[List["SourceLocation"]] = [
                 source.get_location(pos) for pos in positions
             ]
-        elif nodes:
-            locations = [
-                node.loc.source.get_location(node.loc.start)
-                for node in nodes  # type: ignore
-                if node.loc
-            ]
         else:
-            locations = None
-        self.locations = locations
+            locations = [loc.source.get_location(loc.start) for loc in node_locations]
+        self.locations = locations or None
 
         if original_error:
             self.__traceback__ = original_error.__traceback__
