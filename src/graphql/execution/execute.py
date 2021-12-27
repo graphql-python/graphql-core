@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from inspect import isawaitable
 from typing import (
     Any,
+    AsyncIterable,
     Awaitable,
     Callable,
     Dict,
@@ -670,17 +671,31 @@ class ExecutionContext:
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
-        result: Iterable[Any],
+        result: Union[AsyncIterable[Any], Iterable[Any]],
     ) -> AwaitableOrValue[List[Any]]:
         """Complete a list value.
 
         Complete a list value by completing each item in the list with the inner type.
         """
         if not is_iterable(result):
+            # experimental: allow async iterables
+            if isinstance(result, AsyncIterable):
+                # noinspection PyShadowingNames
+                async def async_iterable_to_list(
+                    async_result: AsyncIterable[Any],
+                ) -> Any:
+                    sync_result = [item async for item in async_result]
+                    return self.complete_list_value(
+                        return_type, field_nodes, info, path, sync_result
+                    )
+
+                return async_iterable_to_list(result)
+
             raise GraphQLError(
                 "Expected Iterable, but did not find one for field"
                 f" '{info.parent_type.name}.{info.field_name}'."
             )
+        result = cast(Iterable[Any], result)
 
         # This is specified as a simple map, however we're optimizing the path where
         # the list contains no coroutine objects by avoiding creating another coroutine

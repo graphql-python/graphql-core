@@ -1,9 +1,10 @@
-from typing import Any
+from typing import cast, Any, Awaitable
 
 from pytest import mark
 
 from graphql.execution import execute, execute_sync, ExecutionResult
 from graphql.language import parse
+from graphql.pyutils import is_awaitable
 from graphql.utilities import build_schema
 
 
@@ -42,6 +43,24 @@ def describe_execute_accepts_any_iterable_as_list_value():
 
         assert _complete(list_field()) == (
             {"listField": ["one", "2", "true"]},
+            None,
+        )
+
+    def accepts_a_custom_iterable_as_a_list_value():
+        class ListField:
+            def __iter__(self):
+                self.last = "hello"
+                return self
+
+            def __next__(self):
+                last = self.last
+                if last == "stop":
+                    raise StopIteration
+                self.last = "world" if last == "hello" else "stop"
+                return last
+
+        assert _complete(ListField()) == (
+            {"listField": ["hello", "world"]},
             None,
         )
 
@@ -194,4 +213,47 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]!") == (
             None,
             errors,
+        )
+
+
+def describe_experimental_execute_accepts_async_iterables_as_list_value():
+    async def _complete(list_field):
+        result = execute(
+            build_schema("type Query { listField: [String] }"),
+            parse("{ listField }"),
+            Data(list_field),
+        )
+        assert is_awaitable(result)
+        result = cast(Awaitable, result)
+        return await result
+
+    @mark.asyncio
+    async def accepts_an_async_generator_as_a_list_value():
+        async def list_field():
+            yield "one"
+            yield 2
+            yield True
+
+        assert await _complete(list_field()) == (
+            {"listField": ["one", "2", "true"]},
+            None,
+        )
+
+    @mark.asyncio
+    async def accepts_a_custom_async_iterable_as_a_list_value():
+        class ListField:
+            def __aiter__(self):
+                self.last = "hello"
+                return self
+
+            async def __anext__(self):
+                last = self.last
+                if last == "stop":
+                    raise StopAsyncIteration
+                self.last = "world" if last == "hello" else "stop"
+                return last
+
+        assert await _complete(ListField()) == (
+            {"listField": ["hello", "world"]},
+            None,
         )
