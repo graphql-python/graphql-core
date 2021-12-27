@@ -83,6 +83,9 @@ def print_block_string(value: str, prefer_multiple_lines: bool = False) -> str:
 
     For internal use only.
     """
+    if not isinstance(value, str):
+        value = str(value)  # resolve lazy string proxy object
+
     is_single_line = "\n" not in value
     has_leading_space = value.startswith(" ") or value.startswith("\t")
     has_trailing_quote = value.endswith('"')
@@ -95,12 +98,12 @@ def print_block_string(value: str, prefer_multiple_lines: bool = False) -> str:
     )
 
     # Format a multi-line block quote to account for leading space.
-    result = (
+    before = (
         "\n"
         if print_as_multiple_lines and not (is_single_line and has_leading_space)
         else ""
-    ) + value
-    if print_as_multiple_lines:
-        result += "\n"
+    )
+    after = "\n" if print_as_multiple_lines else ""
+    value = value.replace('"""', '\\"""')
 
-    return '"""' + result.replace('"""', '\\"""') + '"""'
+    return f'"""{before}{value}{after}"""'
