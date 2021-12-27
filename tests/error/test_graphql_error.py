@@ -47,6 +47,17 @@ def describe_graphql_error():
         assert e.__traceback__ is None
         assert str(e) == "msg"
 
+    def formatted_dict_has_only_keys_prescribed_in_the_spec():
+        e = GraphQLError(
+            "msg",
+            [field_node],
+            source,
+            [1, 2, 3],
+            ["a", "b", "c"],
+            Exception("test"),
+            {"foo": "bar"})
+        assert set(e.formatted) == {'message', 'path', 'locations', 'extensions'}
+
     def uses_the_stack_of_an_original_error():
         try:
             raise RuntimeError("original")
