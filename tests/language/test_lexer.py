@@ -353,10 +353,10 @@ def describe_lexer():
             TokenKind.BLOCK_STRING, 0, 32, 1, 1, 'contains """ triple-quote'
         )
         assert lex_one('"""multi\nline"""') == Token(
-            TokenKind.BLOCK_STRING, 0, 16, 2, -8, "multi\nline"
+            TokenKind.BLOCK_STRING, 0, 16, 1, 1, "multi\nline"
         )
         assert lex_one('"""multi\rline\r\nnormalized"""') == Token(
-            TokenKind.BLOCK_STRING, 0, 28, 3, -14, "multi\nline\nnormalized"
+            TokenKind.BLOCK_STRING, 0, 28, 1, 1, "multi\nline\nnormalized"
         )
         assert lex_one('"""unescaped \\n\\r\\b\\t\\f\\u1234"""') == Token(
             TokenKind.BLOCK_STRING,
@@ -388,9 +388,7 @@ def describe_lexer():
         assert lex_one(
             '"""\n\n        spans\n          multiple\n'
             '            lines\n\n        """'
-        ) == Token(
-            TokenKind.BLOCK_STRING, 0, 68, 7, -56, "spans\n  multiple\n    lines"
-        )
+        ) == Token(TokenKind.BLOCK_STRING, 0, 68, 1, 1, "spans\n  multiple\n    lines")
 
     def advance_line_after_lexing_multiline_block_string():
         assert (

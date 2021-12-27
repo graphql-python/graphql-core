@@ -380,6 +380,9 @@ class Lexer:
         """Read a block string token from the source file."""
         body = self.source.body
         body_length = len(body)
+        start_line = self.line
+        start_column = 1 + start - self.line_start
+
         position = start + 3
         chunk_start = position
         raw_value = []
@@ -389,10 +392,12 @@ class Lexer:
 
             if char == '"' and body[position + 1 : position + 3] == '""':
                 raw_value.append(body[chunk_start:position])
-                return self.create_token(
+                return Token(
                     TokenKind.BLOCK_STRING,
                     start,
                     position + 3,
+                    start_line,
+                    start_column,
                     dedent_block_string_value("".join(raw_value)),
                 )
 
