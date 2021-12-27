@@ -184,6 +184,16 @@ def describe_graphql_error():
             "message": "msg",
         }
 
+    def serializes_to_include_path():
+        path: List[Union[int, str]] = ["path", 3, "to", "field"]
+        e = GraphQLError("msg", path=path)
+        assert e.path is path
+        assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
+        assert e.formatted == {
+            "message": "msg",
+            "path": ["path", 3, "to", "field"],
+        }
+
     def serializes_to_include_all_standard_fields():
         e_short = GraphQLError("msg")
         assert str(e_short) == "msg"
@@ -209,16 +219,6 @@ def describe_graphql_error():
     def repr_includes_extensions():
         e = GraphQLError("msg", extensions={"foo": "bar"})
         assert repr(e) == "GraphQLError('msg', extensions={'foo': 'bar'})"
-
-    def serializes_to_include_path():
-        path: List[Union[int, str]] = ["path", 3, "to", "field"]
-        e = GraphQLError("msg", path=path)
-        assert e.path is path
-        assert repr(e) == "GraphQLError('msg', path=['path', 3, 'to', 'field'])"
-        assert e.formatted == {
-            "message": "msg",
-            "path": ["path", 3, "to", "field"],
-        }
 
     def always_stores_path_as_list():
         path: List[Union[int, str]] = ["path", 3, "to", "field"]
