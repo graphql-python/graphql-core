@@ -1,3 +1,5 @@
+from typing import cast
+
 from graphql.language.block_string import (
     dedent_block_string_value,
     print_block_string,
@@ -145,16 +147,9 @@ def describe_print_block_string():
             '"""', "    first  ", "  line     ", "indentation", "     string", '"""'
         )
 
-    def correctly_prints_value_if_proxy_object():
-        class PseudoProxyObject:
-            def __contains__(self, item):
-                return item in "lorem"
-
-            def __getattr__(self, item):
-                return getattr("lorem", item)
-
+    def correctly_prints_lazy_stings():
+        class LazyString:
             def __str__(self):
-                return "lorem"
+                return "lazy"
 
-        value = PseudoProxyObject()
-        assert print_block_string(value) == f'"""{value}"""'
+        assert print_block_string(cast(str, LazyString())) == '"""lazy"""'
