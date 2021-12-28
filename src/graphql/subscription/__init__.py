@@ -3,7 +3,7 @@
 The :mod:`graphql.subscription` package is responsible for subscribing to updates
 on specific data.
 
-.. deprecated:: 3.3
+.. deprecated:: 3.2
    This package has been deprecated with its exported functions integrated into the
    :mod:`graphql.execution` package, to better conform with the terminology of the
    GraphQL specification. For backwards compatibility, the :mod:`graphql.subscription`
