@@ -1,4 +1,4 @@
-from typing import cast, Any, Dict, List, Optional, Union
+from typing import cast, Any, Dict, List, Optional, Tuple, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -27,7 +27,7 @@ class KnownDirectivesRule(ASTValidationRule):
 
     def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
-        locations_map: Dict[str, List[DirectiveLocation]] = {}
+        locations_map: Dict[str, Tuple[DirectiveLocation, ...]] = {}
 
         schema = context.schema
         defined_directives = (
@@ -38,9 +38,9 @@ class KnownDirectivesRule(ASTValidationRule):
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                locations_map[def_.name.value] = [
+                locations_map[def_.name.value] = tuple(
                     DirectiveLocation[name.value] for name in def_.locations
-                ]
+                )
         self.locations_map = locations_map
 
     def enter_directive(

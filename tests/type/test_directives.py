@@ -19,7 +19,7 @@ def describe_type_system_directive():
             ast_node=node,
         )
         assert directive.name == "test"
-        assert directive.locations == locations
+        assert directive.locations == tuple(locations)
         assert directive.args == {"arg": arg}
         assert directive.is_repeatable is True
         assert directive.description == "test description"
@@ -34,7 +34,7 @@ def describe_type_system_directive():
         assert directive.args == {}
         assert directive.is_repeatable is False
         assert directive.extensions == {}
-        assert directive.locations == locations
+        assert directive.locations == tuple(locations)
 
     def defines_a_directive_with_multiple_args():
         args = {
@@ -47,7 +47,7 @@ def describe_type_system_directive():
         assert directive.name == "Foo"
         assert directive.args == args
         assert directive.is_repeatable is False
-        assert directive.locations == locations
+        assert directive.locations == tuple(locations)
 
     def defines_a_repeatable_directive():
         locations = [DirectiveLocation.QUERY]
@@ -56,7 +56,7 @@ def describe_type_system_directive():
         assert directive.name == "Foo"
         assert directive.args == {}
         assert directive.is_repeatable is True
-        assert directive.locations == locations
+        assert directive.locations == tuple(locations)
 
     def directive_accepts_input_types_as_arguments():
         # noinspection PyTypeChecker
@@ -72,10 +72,10 @@ def describe_type_system_directive():
         directive = GraphQLDirective(
             name="Foo", locations=["SCHEMA", "OBJECT"]  # type: ignore
         )
-        assert directive.locations == [
+        assert directive.locations == (
             DirectiveLocation.SCHEMA,
             DirectiveLocation.OBJECT,
-        ]
+        )
 
     def directive_has_str():
         directive = GraphQLDirective("foo", [])

@@ -44,11 +44,11 @@ def build_ast_schema(
         mutation=None,
         subscription=None,
         description=None,
-        types=[],
-        directives=[],
+        types=(),
+        directives=(),
         extensions={},
         ast_node=None,
-        extension_ast_nodes=[],
+        extension_ast_nodes=(),
         assume_valid=False,
     )
     schema_kwargs = extend_schema_impl(empty_schema_kwargs, document_ast, assume_valid)
@@ -66,11 +66,15 @@ def build_ast_schema(
             elif type_name == "Subscription":
                 schema_kwargs["subscription"] = type_
 
-    directives = schema_kwargs["directives"]
     # If specified directives were not explicitly declared, add them.
-    for std_directive in specified_directives:
-        if all(directive.name != std_directive.name for directive in directives):
-            directives.append(std_directive)
+    directives = schema_kwargs["directives"]
+    directive_names = set(directive.name for directive in directives)
+    missing_directives = []
+    for directive in specified_directives:
+        if directive.name not in directive_names:
+            missing_directives.append(directive)
+    if missing_directives:
+        schema_kwargs["directives"] = directives + tuple(missing_directives)
 
     return GraphQLSchema(**schema_kwargs)
 

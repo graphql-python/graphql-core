@@ -26,7 +26,7 @@ from graphql.language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
 )
-from graphql.pyutils import FrozenList, Undefined
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumValue,
@@ -75,7 +75,7 @@ def describe_type_system_scalars():
             "parse_literal": None,
             "extensions": {},
             "ast_node": None,
-            "extension_ast_nodes": [],
+            "extension_ast_nodes": (),
         }
 
     def accepts_a_scalar_type_defining_serialize():
@@ -152,14 +152,7 @@ def describe_type_system_scalars():
             "SomeScalar", ast_node=ast_node, extension_ast_nodes=extension_ast_nodes
         )
         assert scalar.ast_node is ast_node
-        assert isinstance(scalar.extension_ast_nodes, FrozenList)
-        assert scalar.extension_ast_nodes == extension_ast_nodes
-        extension_ast_nodes = scalar.extension_ast_nodes
-        scalar = GraphQLScalarType(
-            "SomeScalar", ast_node=None, extension_ast_nodes=extension_ast_nodes
-        )
-        assert scalar.ast_node is None
-        assert scalar.extension_ast_nodes is extension_ast_nodes
+        assert scalar.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_a_scalar_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
@@ -470,11 +463,11 @@ def describe_type_system_objects():
 
     def accepts_an_object_type_with_list_interfaces():
         obj_type = GraphQLObjectType("SomeObject", {}, [InterfaceType])
-        assert obj_type.interfaces == [InterfaceType]
+        assert obj_type.interfaces == (InterfaceType,)
 
     def accepts_object_type_with_interfaces_as_a_function_returning_a_list():
         obj_type = GraphQLObjectType("SomeObject", {}, lambda: [InterfaceType])
-        assert obj_type.interfaces == [InterfaceType]
+        assert obj_type.interfaces == (InterfaceType,)
 
     def thunk_for_interfaces_of_object_type_is_resolved_only_once():
         calls = 0
@@ -485,9 +478,9 @@ def describe_type_system_objects():
             return [InterfaceType]
 
         obj_type = GraphQLObjectType("SomeObject", {}, interfaces)
-        assert obj_type.interfaces == [InterfaceType]
+        assert obj_type.interfaces == (InterfaceType,)
         assert calls == 1
-        assert obj_type.interfaces == [InterfaceType]
+        assert obj_type.interfaces == (InterfaceType,)
         assert calls == 1
 
     def accepts_a_lambda_as_an_object_field_resolver():
@@ -511,17 +504,7 @@ def describe_type_system_objects():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert object_type.ast_node is ast_node
-        assert isinstance(object_type.extension_ast_nodes, FrozenList)
-        assert object_type.extension_ast_nodes == extension_ast_nodes
-        extension_ast_nodes = object_type.extension_ast_nodes
-        object_type = GraphQLObjectType(
-            "SomeObject",
-            {"f": GraphQLField(ScalarType)},
-            ast_node=None,
-            extension_ast_nodes=extension_ast_nodes,
-        )
-        assert object_type.ast_node is None
-        assert object_type.extension_ast_nodes is extension_ast_nodes
+        assert object_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_an_object_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
@@ -728,11 +711,11 @@ def describe_type_system_interfaces():
             "name": "AnotherInterface",
             "description": None,
             "fields": fields,
-            "interfaces": [],
+            "interfaces": (),
             "resolve_type": None,
             "extensions": {},
             "ast_node": None,
-            "extension_ast_nodes": [],
+            "extension_ast_nodes": (),
         }
 
     def accepts_an_interface_type_defining_resolve_type():
@@ -778,13 +761,13 @@ def describe_type_system_interfaces():
         implementing = GraphQLInterfaceType(
             "AnotherInterface", {}, interfaces=[InterfaceType]
         )
-        assert implementing.interfaces == [InterfaceType]
+        assert implementing.interfaces == (InterfaceType,)
 
     def accepts_an_interface_type_with_an_interfaces_function():
         implementing = GraphQLInterfaceType(
             "AnotherInterface", {}, interfaces=lambda: [InterfaceType]
         )
-        assert implementing.interfaces == [InterfaceType]
+        assert implementing.interfaces == (InterfaceType,)
 
     def thunk_for_interfaces_of_interface_type_is_resolved_only_once():
         calls = 0
@@ -797,9 +780,9 @@ def describe_type_system_interfaces():
         implementing = GraphQLInterfaceType(
             "AnotherInterface", {}, interfaces=interfaces
         )
-        assert implementing.interfaces == [InterfaceType]
+        assert implementing.interfaces == (InterfaceType,)
         assert calls == 1
-        assert implementing.interfaces == [InterfaceType]
+        assert implementing.interfaces == (InterfaceType,)
         assert calls == 1
 
     def accepts_an_interface_type_with_ast_node_and_extension_ast_nodes():
@@ -812,17 +795,7 @@ def describe_type_system_interfaces():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert interface_type.ast_node is ast_node
-        assert isinstance(interface_type.extension_ast_nodes, FrozenList)
-        assert interface_type.extension_ast_nodes == extension_ast_nodes
-        extension_ast_nodes = interface_type.extension_ast_nodes
-        interface_type = GraphQLInterfaceType(
-            "SomeInterface",
-            {"f": GraphQLField(ScalarType)},
-            ast_node=None,
-            extension_ast_nodes=extension_ast_nodes,
-        )
-        assert interface_type.ast_node is None
-        assert interface_type.extension_ast_nodes is extension_ast_nodes
+        assert interface_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_an_interface_type_with_incorrectly_typed_fields():
         interface = GraphQLInterfaceType("SomeInterface", [])  # type: ignore
@@ -948,20 +921,20 @@ def describe_type_system_unions():
 
     def accepts_a_union_type_with_list_types():
         union_type = GraphQLUnionType("SomeUnion", [ObjectType])
-        assert union_type.types == [ObjectType]
+        assert union_type.types == (ObjectType,)
 
     def accepts_a_union_type_with_function_returning_a_list_of_types():
         union_type = GraphQLUnionType("SomeUnion", lambda: [ObjectType])
-        assert union_type.types == [ObjectType]
+        assert union_type.types == (ObjectType,)
 
     def accepts_a_union_type_without_types():
         with raises(TypeError, match="missing 1 required positional argument: 'types'"):
             # noinspection PyArgumentList
             GraphQLUnionType("SomeUnion")  # type: ignore
         union_type = GraphQLUnionType("SomeUnion", None)  # type: ignore
-        assert union_type.types == []
+        assert union_type.types == ()
         union_type = GraphQLUnionType("SomeUnion", [])
-        assert union_type.types == []
+        assert union_type.types == ()
 
     def accepts_a_union_type_with_ast_node_and_extension_ast_nodes():
         ast_node = UnionTypeDefinitionNode()
@@ -973,17 +946,7 @@ def describe_type_system_unions():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert union_type.ast_node is ast_node
-        assert isinstance(union_type.extension_ast_nodes, FrozenList)
-        assert union_type.extension_ast_nodes == extension_ast_nodes
-        extension_ast_nodes = union_type.extension_ast_nodes
-        union_type = GraphQLUnionType(
-            "SomeUnion",
-            [ObjectType],
-            ast_node=None,
-            extension_ast_nodes=extension_ast_nodes,
-        )
-        assert union_type.ast_node is None
-        assert union_type.extension_ast_nodes is extension_ast_nodes
+        assert union_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_a_union_type_with_incorrectly_typed__name():
         with raises(TypeError, match="missing .* required .* 'name'"):
@@ -1231,17 +1194,7 @@ def describe_type_system_enums():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert enum_type.ast_node is ast_node
-        assert isinstance(enum_type.extension_ast_nodes, FrozenList)
-        assert enum_type.extension_ast_nodes == extension_ast_nodes
-        extension_ast_nodes = enum_type.extension_ast_nodes
-        enum_type = GraphQLEnumType(
-            "SomeEnum",
-            {},  # type: ignore
-            ast_node=None,
-            extension_ast_nodes=extension_ast_nodes,
-        )
-        assert enum_type.ast_node is None
-        assert enum_type.extension_ast_nodes is extension_ast_nodes
+        assert enum_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_an_enum_type_with_incorrectly_typed_name():
         with raises(TypeError, match="missing .* required .* 'name'"):
@@ -1426,17 +1379,7 @@ def describe_type_system_input_objects():
             extension_ast_nodes=extension_ast_nodes,
         )
         assert input_obj_type.ast_node is ast_node
-        assert isinstance(input_obj_type.extension_ast_nodes, FrozenList)
-        assert input_obj_type.extension_ast_nodes == extension_ast_nodes
-        extension_ast_nodes = input_obj_type.extension_ast_nodes
-        input_obj_type = GraphQLInputObjectType(
-            "SomeInputObject",
-            {},
-            ast_node=None,
-            extension_ast_nodes=extension_ast_nodes,
-        )
-        assert input_obj_type.ast_node is None
-        assert input_obj_type.extension_ast_nodes is extension_ast_nodes
+        assert input_obj_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_an_input_object_type_with_incorrect_out_type_function():
         with raises(TypeError) as exc_info:

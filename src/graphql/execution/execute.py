@@ -34,7 +34,6 @@ from ..pyutils import (
     is_awaitable as default_is_awaitable,
     is_iterable,
     AwaitableOrValue,
-    FrozenList,
     Path,
     Undefined,
 )
@@ -285,7 +284,7 @@ class ExecutionContext:
 
         coerced_variable_values = get_variable_values(
             schema,
-            operation.variable_definitions or FrozenList(),
+            operation.variable_definitions or (),
             raw_variable_values or {},
             max_errors=50,
         )

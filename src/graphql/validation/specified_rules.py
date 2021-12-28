@@ -1,6 +1,4 @@
-from typing import Type
-
-from ..pyutils import FrozenList
+from typing import Tuple, Type
 
 from .rules import ASTValidationRule
 
@@ -102,64 +100,58 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
-    (
-        ExecutableDefinitionsRule,
-        UniqueOperationNamesRule,
-        LoneAnonymousOperationRule,
-        SingleFieldSubscriptionsRule,
-        KnownTypeNamesRule,
-        FragmentsOnCompositeTypesRule,
-        VariablesAreInputTypesRule,
-        ScalarLeafsRule,
-        FieldsOnCorrectTypeRule,
-        UniqueFragmentNamesRule,
-        KnownFragmentNamesRule,
-        NoUnusedFragmentsRule,
-        PossibleFragmentSpreadsRule,
-        NoFragmentCyclesRule,
-        UniqueVariableNamesRule,
-        NoUndefinedVariablesRule,
-        NoUnusedVariablesRule,
-        KnownDirectivesRule,
-        UniqueDirectivesPerLocationRule,
-        KnownArgumentNamesRule,
-        UniqueArgumentNamesRule,
-        ValuesOfCorrectTypeRule,
-        ProvidedRequiredArgumentsRule,
-        VariablesInAllowedPositionRule,
-        OverlappingFieldsCanBeMergedRule,
-        UniqueInputFieldNamesRule,
-    )
+specified_rules: Tuple[Type[ASTValidationRule], ...] = (
+    ExecutableDefinitionsRule,
+    UniqueOperationNamesRule,
+    LoneAnonymousOperationRule,
+    SingleFieldSubscriptionsRule,
+    KnownTypeNamesRule,
+    FragmentsOnCompositeTypesRule,
+    VariablesAreInputTypesRule,
+    ScalarLeafsRule,
+    FieldsOnCorrectTypeRule,
+    UniqueFragmentNamesRule,
+    KnownFragmentNamesRule,
+    NoUnusedFragmentsRule,
+    PossibleFragmentSpreadsRule,
+    NoFragmentCyclesRule,
+    UniqueVariableNamesRule,
+    NoUndefinedVariablesRule,
+    NoUnusedVariablesRule,
+    KnownDirectivesRule,
+    UniqueDirectivesPerLocationRule,
+    KnownArgumentNamesRule,
+    UniqueArgumentNamesRule,
+    ValuesOfCorrectTypeRule,
+    ProvidedRequiredArgumentsRule,
+    VariablesInAllowedPositionRule,
+    OverlappingFieldsCanBeMergedRule,
+    UniqueInputFieldNamesRule,
 )
-specified_rules.__doc__ = """\
-    This list includes all validation rules defined by the GraphQL spec.
+"""A tuple with all validation rules defined by the GraphQL specification.
 
-    The order of the rules in this list has been adjusted to lead to the
-    most clear output when encountering multiple validation errors.
-    """
+The order of the rules in this tuple has been adjusted to lead to the
+most clear output when encountering multiple validation errors.
+"""
 
-specified_sdl_rules: FrozenList[Type[ASTValidationRule]] = FrozenList(
-    (
-        LoneSchemaDefinitionRule,
-        UniqueOperationTypesRule,
-        UniqueTypeNamesRule,
-        UniqueEnumValueNamesRule,
-        UniqueFieldDefinitionNamesRule,
-        UniqueArgumentDefinitionNamesRule,
-        UniqueDirectiveNamesRule,
-        KnownTypeNamesRule,
-        KnownDirectivesRule,
-        UniqueDirectivesPerLocationRule,
-        PossibleTypeExtensionsRule,
-        KnownArgumentNamesOnDirectivesRule,
-        UniqueArgumentNamesRule,
-        UniqueInputFieldNamesRule,
-        ProvidedRequiredArgumentsOnDirectivesRule,
-    )
+specified_sdl_rules: Tuple[Type[ASTValidationRule], ...] = (
+    LoneSchemaDefinitionRule,
+    UniqueOperationTypesRule,
+    UniqueTypeNamesRule,
+    UniqueEnumValueNamesRule,
+    UniqueFieldDefinitionNamesRule,
+    UniqueArgumentDefinitionNamesRule,
+    UniqueDirectiveNamesRule,
+    KnownTypeNamesRule,
+    KnownDirectivesRule,
+    UniqueDirectivesPerLocationRule,
+    PossibleTypeExtensionsRule,
+    KnownArgumentNamesOnDirectivesRule,
+    UniqueArgumentNamesRule,
+    UniqueInputFieldNamesRule,
+    ProvidedRequiredArgumentsOnDirectivesRule,
 )
-specified_sdl_rules.__doc__ = """\
-    This list includes all rules for validating SDL.
+"""This tuple includes all rules for validating SDL.
 
-    For internal use only.
-    """
+For internal use only.
+"""

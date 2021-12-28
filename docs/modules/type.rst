@@ -122,7 +122,9 @@ Definitions
 .. autoclass:: GraphQLSkipDirective
 .. autoclass:: GraphQLDeprecatedDirective
 
-.. autodata:: specified_directives
+.. data:: specified_directives
+
+   A tuple with all directives from the GraphQL specification
 
 .. data:: DEFAULT_DEPRECATION_REASON
    :annotation: = 'No longer supported'
@@ -146,7 +148,9 @@ Definitions
 .. autoclass:: TypeNameMetaFieldDef
 .. autoclass:: SchemaMetaFieldDef
 
-.. autodata:: introspection_types
+.. data:: introspection_types
+
+   This is a mapping containing all introspection types with their names as keys
 
 
 Scalars
@@ -166,8 +170,7 @@ Definitions
 .. autoclass:: GraphQLInt
 .. autoclass:: GraphQLString
 
-The list of all specified directives is available as
-:data:`specified_directives`.
+A tuple with all specified directives is available as :data:`specified_directives`.
 
 
 Schema

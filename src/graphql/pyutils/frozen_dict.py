@@ -10,7 +10,11 @@ VT = TypeVar("VT", covariant=True)
 
 
 class FrozenDict(Dict[KT, VT]):
-    """Dictionary that can only be read, but not changed."""
+    """Dictionary that can only be read, but not changed.
+
+    .. deprecated:: 3.2
+       Use dicts and the Mapping type instead. Will be removed in v3.3.
+    """
 
     def __delitem__(self, key):
         raise FrozenError

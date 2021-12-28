@@ -29,8 +29,9 @@ Rules
 .. module:: graphql.validation.rules
 .. currentmodule:: graphql.validation
 
-.. autodata:: specified_rules
-   :annotation: = FrozenList([...])
+.. data:: specified_rules
+
+   A tuple with all validation rules defined by the GraphQL specification
 
 **Spec Section: "Executable Definitions"**
 

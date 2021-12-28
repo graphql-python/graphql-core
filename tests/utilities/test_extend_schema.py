@@ -497,11 +497,11 @@ def describe_extend_schema():
         )
         test_directive = assert_directive(extended_twice_schema.get_directive("test"))
 
-        assert test_type.extension_ast_nodes == []
-        assert test_enum.extension_ast_nodes == []
-        assert test_union.extension_ast_nodes == []
-        assert test_input.extension_ast_nodes == []
-        assert test_interface.extension_ast_nodes == []
+        assert test_type.extension_ast_nodes == ()
+        assert test_enum.extension_ast_nodes == ()
+        assert test_union.extension_ast_nodes == ()
+        assert test_input.extension_ast_nodes == ()
+        assert test_interface.extension_ast_nodes == ()
 
         assert query.extension_ast_nodes
         assert len(query.extension_ast_nodes) == 2

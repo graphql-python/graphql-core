@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import Any, Dict, List, NamedTuple, Union, cast
+from typing import Any, Collection, Dict, List, NamedTuple, Union, cast
 
 from ..language import print_ast, visit, ObjectValueNode, Visitor
-from ..pyutils import inspect, natural_comparison_key, FrozenList, Undefined
+from ..pyutils import inspect, natural_comparison_key, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLField,
@@ -561,12 +561,13 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
         def enter_object_value(
             object_value_node: ObjectValueNode, *_args: Any
         ) -> ObjectValueNode:
-            object_value_node.fields = FrozenList(
+            object_value_node.fields = tuple(
                 sorted(
                     object_value_node.fields,
                     key=lambda node: natural_comparison_key(node.name.value),
                 )
             )
+
             return object_value_node
 
     sorted_ast = visit(ast, SortVisitor())
@@ -582,7 +583,7 @@ class ListDiff(NamedTuple):
     persisted: List
 
 
-def list_diff(old_list: List, new_list: List) -> ListDiff:
+def list_diff(old_list: Collection, new_list: Collection) -> ListDiff:
     """Get differences between two lists of named items."""
     added = []
     persisted = []

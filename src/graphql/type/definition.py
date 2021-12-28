@@ -5,10 +5,10 @@ from typing import (
     Collection,
     Dict,
     Generic,
-    List,
     Mapping,
     NamedTuple,
     Optional,
+    Tuple,
     TYPE_CHECKING,
     Type,
     TypeVar,
@@ -45,7 +45,6 @@ from ..language import (
 )
 from ..pyutils import (
     AwaitableOrValue,
-    FrozenList,
     Path,
     cached_property,
     did_you_mean,
@@ -199,7 +198,7 @@ class GraphQLNamedType(GraphQLType):
     description: Optional[str]
     extensions: Dict[str, Any]
     ast_node: Optional[TypeDefinitionNode]
-    extension_ast_nodes: FrozenList[TypeExtensionNode]
+    extension_ast_nodes: Tuple[TypeExtensionNode, ...]
 
     def __init__(
         self,
@@ -228,10 +227,10 @@ class GraphQLNamedType(GraphQLType):
                     f"{name} extension AST nodes must be specified"
                     " as a collection of TypeExtensionNode instances."
                 )
-            if not isinstance(extension_ast_nodes, FrozenList):
-                extension_ast_nodes = FrozenList(extension_ast_nodes)
+            if not isinstance(extension_ast_nodes, tuple):
+                extension_ast_nodes = tuple(extension_ast_nodes)
         else:
-            extension_ast_nodes = FrozenList()
+            extension_ast_nodes = ()
         self.name = name
         self.description = description
         self.extensions = extensions
@@ -300,7 +299,7 @@ class GraphQLScalarType(GraphQLNamedType):
 
     specified_by_url: Optional[str]
     ast_node: Optional[ScalarTypeDefinitionNode]
-    extension_ast_nodes: FrozenList[ScalarTypeExtensionNode]
+    extension_ast_nodes: Tuple[ScalarTypeExtensionNode, ...]
 
     def __init__(
         self,
@@ -538,7 +537,7 @@ class GraphQLResolveInfo(NamedTuple):
     """
 
     field_name: str
-    field_nodes: List[FieldNode]
+    field_nodes: Collection[FieldNode]
     return_type: "GraphQLOutputType"
     parent_type: "GraphQLObjectType"
     path: Path
@@ -680,7 +679,7 @@ class GraphQLObjectType(GraphQLNamedType):
 
     is_type_of: Optional[GraphQLIsTypeOfFn]
     ast_node: Optional[ObjectTypeDefinitionNode]
-    extension_ast_nodes: FrozenList[ObjectTypeExtensionNode]
+    extension_ast_nodes: Tuple[ObjectTypeExtensionNode, ...]
 
     def __init__(
         self,
@@ -759,7 +758,7 @@ class GraphQLObjectType(GraphQLNamedType):
         }
 
     @cached_property
-    def interfaces(self) -> List["GraphQLInterfaceType"]:
+    def interfaces(self) -> Tuple["GraphQLInterfaceType", ...]:
         """Get provided interfaces."""
         try:
             interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
@@ -769,7 +768,7 @@ class GraphQLObjectType(GraphQLNamedType):
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} interfaces cannot be resolved. {error}") from error
         if interfaces is None:
-            interfaces = []
+            interfaces = ()
         elif not is_collection(interfaces) or not all(
             isinstance(value, GraphQLInterfaceType) for value in interfaces
         ):
@@ -777,7 +776,7 @@ class GraphQLObjectType(GraphQLNamedType):
                 f"{self.name} interfaces must be specified"
                 " as a collection of GraphQLInterfaceType instances."
             )
-        return list(interfaces)
+        return tuple(interfaces)
 
 
 def is_object_type(type_: Any) -> bool:
@@ -807,7 +806,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
 
     resolve_type: Optional[GraphQLTypeResolver]
     ast_node: Optional[InterfaceTypeDefinitionNode]
-    extension_ast_nodes: FrozenList[InterfaceTypeExtensionNode]
+    extension_ast_nodes: Tuple[InterfaceTypeExtensionNode, ...]
 
     def __init__(
         self,
@@ -849,7 +848,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         return dict(
             **super().to_kwargs(),
             fields=self.fields.copy(),
-            interfaces=self.interfaces.copy(),
+            interfaces=self.interfaces,
             resolve_type=self.resolve_type,
         )
 
@@ -886,7 +885,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         }
 
     @cached_property
-    def interfaces(self) -> List["GraphQLInterfaceType"]:
+    def interfaces(self) -> Tuple["GraphQLInterfaceType", ...]:
         """Get provided interfaces."""
         try:
             interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
@@ -896,7 +895,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} interfaces cannot be resolved. {error}") from error
         if interfaces is None:
-            interfaces = []
+            interfaces = ()
         elif not is_collection(interfaces) or not all(
             isinstance(value, GraphQLInterfaceType) for value in interfaces
         ):
@@ -904,7 +903,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 f"{self.name} interfaces must be specified"
                 " as a collection of GraphQLInterfaceType instances."
             )
-        return list(interfaces)
+        return tuple(interfaces)
 
 
 def is_interface_type(type_: Any) -> bool:
@@ -937,7 +936,7 @@ class GraphQLUnionType(GraphQLNamedType):
 
     resolve_type: Optional[GraphQLTypeResolver]
     ast_node: Optional[UnionTypeDefinitionNode]
-    extension_ast_nodes: FrozenList[UnionTypeExtensionNode]
+    extension_ast_nodes: Tuple[UnionTypeExtensionNode, ...]
 
     def __init__(
         self,
@@ -982,7 +981,7 @@ class GraphQLUnionType(GraphQLNamedType):
         return self.__class__(**self.to_kwargs())
 
     @cached_property
-    def types(self) -> List[GraphQLObjectType]:
+    def types(self) -> Tuple[GraphQLObjectType, ...]:
         """Get provided types."""
         try:
             types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
@@ -990,7 +989,7 @@ class GraphQLUnionType(GraphQLNamedType):
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} types cannot be resolved. {error}") from error
         if types is None:
-            types = []
+            types = ()
         elif not is_collection(types) or not all(
             isinstance(value, GraphQLObjectType) for value in types
         ):
@@ -998,7 +997,7 @@ class GraphQLUnionType(GraphQLNamedType):
                 f"{self.name} types must be specified"
                 " as a collection of GraphQLObjectType instances."
             )
-        return list(types)
+        return tuple(types)
 
 
 def is_union_type(type_: Any) -> bool:
@@ -1047,7 +1046,7 @@ class GraphQLEnumType(GraphQLNamedType):
 
     values: GraphQLEnumValueMap
     ast_node: Optional[EnumTypeDefinitionNode]
-    extension_ast_nodes: FrozenList[EnumTypeExtensionNode]
+    extension_ast_nodes: Tuple[EnumTypeExtensionNode, ...]
 
     def __init__(
         self,
@@ -1278,7 +1277,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     """
 
     ast_node: Optional[InputObjectTypeDefinitionNode]
-    extension_ast_nodes: FrozenList[InputObjectTypeExtensionNode]
+    extension_ast_nodes: Tuple[InputObjectTypeExtensionNode, ...]
 
     def __init__(
         self,

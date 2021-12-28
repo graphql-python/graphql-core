@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple, Optional, Union
 
 from .source import Source
 from .token_kind import TokenKind
-from ..pyutils import camel_to_snake, FrozenList
+from ..pyutils import camel_to_snake
 
 __all__ = [
     "Location",
@@ -153,6 +153,23 @@ class Token:
     def __deepcopy__(self, memo: Dict) -> "Token":
         """Allow only shallow copies to avoid recursion."""
         return copy(self)
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """Remove the links when pickling.
+
+        Keeping the links would make pickling a schema too expensive.
+        """
+        return {
+            key: getattr(self, key)
+            for key in self.__slots__
+            if key not in {"prev", "next"}
+        }
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Reset the links when un-pickling."""
+        for key, value in state.items():
+            setattr(self, key, value)
+        self.prev = self.next = None
 
     @property
     def desc(self) -> str:
@@ -310,8 +327,8 @@ class Node:
         """Initialize the node with the given keyword arguments."""
         for key in self.keys:
             value = kwargs.get(key)
-            if isinstance(value, list) and not isinstance(value, FrozenList):
-                value = FrozenList(value)
+            if isinstance(value, list):
+                value = tuple(value)
             setattr(self, key, value)
 
     def __repr__(self) -> str:
@@ -387,7 +404,7 @@ class NameNode(Node):
 class DocumentNode(Node):
     __slots__ = ("definitions",)
 
-    definitions: FrozenList["DefinitionNode"]
+    definitions: Tuple["DefinitionNode", ...]
 
 
 class DefinitionNode(Node):
@@ -398,8 +415,8 @@ class ExecutableDefinitionNode(DefinitionNode):
     __slots__ = "name", "directives", "variable_definitions", "selection_set"
 
     name: Optional[NameNode]
-    directives: FrozenList["DirectiveNode"]
-    variable_definitions: FrozenList["VariableDefinitionNode"]
+    directives: Tuple["DirectiveNode", ...]
+    variable_definitions: Tuple["VariableDefinitionNode", ...]
     selection_set: "SelectionSetNode"
 
 
@@ -415,19 +432,19 @@ class VariableDefinitionNode(Node):
     variable: "VariableNode"
     type: "TypeNode"
     default_value: Optional["ConstValueNode"]
-    directives: FrozenList["ConstDirectiveNode"]
+    directives: Tuple["ConstDirectiveNode", ...]
 
 
 class SelectionSetNode(Node):
     __slots__ = ("selections",)
 
-    selections: FrozenList["SelectionNode"]
+    selections: Tuple["SelectionNode", ...]
 
 
 class SelectionNode(Node):
     __slots__ = ("directives",)
 
-    directives: FrozenList["DirectiveNode"]
+    directives: Tuple["DirectiveNode", ...]
 
 
 class FieldNode(SelectionNode):
@@ -435,7 +452,7 @@ class FieldNode(SelectionNode):
 
     alias: Optional[NameNode]
     name: NameNode
-    arguments: FrozenList["ArgumentNode"]
+    arguments: Tuple["ArgumentNode", ...]
     selection_set: Optional[SelectionSetNode]
 
 
@@ -525,23 +542,23 @@ class EnumValueNode(ValueNode):
 class ListValueNode(ValueNode):
     __slots__ = ("values",)
 
-    values: FrozenList[ValueNode]
+    values: Tuple[ValueNode, ...]
 
 
 class ConstListValueNode(ListValueNode):
 
-    values: FrozenList["ConstValueNode"]
+    values: Tuple["ConstValueNode", ...]
 
 
 class ObjectValueNode(ValueNode):
     __slots__ = ("fields",)
 
-    fields: FrozenList["ObjectFieldNode"]
+    fields: Tuple["ObjectFieldNode", ...]
 
 
 class ConstObjectValueNode(ObjectValueNode):
 
-    fields: FrozenList["ConstObjectFieldNode"]
+    fields: Tuple["ConstObjectFieldNode", ...]
 
 
 class ObjectFieldNode(Node):
@@ -575,12 +592,12 @@ class DirectiveNode(Node):
     __slots__ = "name", "arguments"
 
     name: NameNode
-    arguments: FrozenList[ArgumentNode]
+    arguments: Tuple[ArgumentNode, ...]
 
 
 class ConstDirectiveNode(DirectiveNode):
 
-    arguments: FrozenList[ConstArgumentNode]
+    arguments: Tuple[ConstArgumentNode, ...]
 
 
 # Type Reference
@@ -619,8 +636,8 @@ class SchemaDefinitionNode(TypeSystemDefinitionNode):
     __slots__ = "description", "directives", "operation_types"
 
     description: Optional[StringValueNode]
-    directives: FrozenList[ConstDirectiveNode]
-    operation_types: FrozenList["OperationTypeDefinitionNode"]
+    directives: Tuple[ConstDirectiveNode, ...]
+    operation_types: Tuple["OperationTypeDefinitionNode", ...]
 
 
 class OperationTypeDefinitionNode(Node):
@@ -638,21 +655,21 @@ class TypeDefinitionNode(TypeSystemDefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: FrozenList[DirectiveNode]
+    directives: Tuple[DirectiveNode, ...]
 
 
 class ScalarTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ()
 
-    directives: FrozenList[ConstDirectiveNode]
+    directives: Tuple[ConstDirectiveNode, ...]
 
 
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = "interfaces", "fields"
 
-    interfaces: FrozenList[NamedTypeNode]
-    directives: FrozenList[ConstDirectiveNode]
-    fields: FrozenList["FieldDefinitionNode"]
+    interfaces: Tuple[NamedTypeNode, ...]
+    directives: Tuple[ConstDirectiveNode, ...]
+    fields: Tuple["FieldDefinitionNode", ...]
 
 
 class FieldDefinitionNode(DefinitionNode):
@@ -660,8 +677,8 @@ class FieldDefinitionNode(DefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: FrozenList[ConstDirectiveNode]
-    arguments: FrozenList["InputValueDefinitionNode"]
+    directives: Tuple[ConstDirectiveNode, ...]
+    arguments: Tuple["InputValueDefinitionNode", ...]
     type: TypeNode
 
 
@@ -670,7 +687,7 @@ class InputValueDefinitionNode(DefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: FrozenList[ConstDirectiveNode]
+    directives: Tuple[ConstDirectiveNode, ...]
     type: TypeNode
     default_value: Optional[ConstValueNode]
 
@@ -678,23 +695,23 @@ class InputValueDefinitionNode(DefinitionNode):
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = "fields", "interfaces"
 
-    fields: FrozenList["FieldDefinitionNode"]
-    directives: FrozenList[ConstDirectiveNode]
-    interfaces: FrozenList[NamedTypeNode]
+    fields: Tuple["FieldDefinitionNode", ...]
+    directives: Tuple[ConstDirectiveNode, ...]
+    interfaces: Tuple[NamedTypeNode, ...]
 
 
 class UnionTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("types",)
 
-    directives: FrozenList[ConstDirectiveNode]
-    types: FrozenList[NamedTypeNode]
+    directives: Tuple[ConstDirectiveNode, ...]
+    types: Tuple[NamedTypeNode, ...]
 
 
 class EnumTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("values",)
 
-    directives: FrozenList[ConstDirectiveNode]
-    values: FrozenList["EnumValueDefinitionNode"]
+    directives: Tuple[ConstDirectiveNode, ...]
+    values: Tuple["EnumValueDefinitionNode", ...]
 
 
 class EnumValueDefinitionNode(DefinitionNode):
@@ -702,14 +719,14 @@ class EnumValueDefinitionNode(DefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    directives: FrozenList[ConstDirectiveNode]
+    directives: Tuple[ConstDirectiveNode, ...]
 
 
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("fields",)
 
-    directives: FrozenList[ConstDirectiveNode]
-    fields: FrozenList[InputValueDefinitionNode]
+    directives: Tuple[ConstDirectiveNode, ...]
+    fields: Tuple[InputValueDefinitionNode, ...]
 
 
 # Directive Definitions
@@ -720,9 +737,9 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 
     description: Optional[StringValueNode]
     name: NameNode
-    arguments: FrozenList[InputValueDefinitionNode]
+    arguments: Tuple[InputValueDefinitionNode, ...]
     repeatable: bool
-    locations: FrozenList[NameNode]
+    locations: Tuple[NameNode, ...]
 
 
 # Type System Extensions
@@ -731,8 +748,8 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 class SchemaExtensionNode(Node):
     __slots__ = "directives", "operation_types"
 
-    directives: FrozenList[ConstDirectiveNode]
-    operation_types: FrozenList[OperationTypeDefinitionNode]
+    directives: Tuple[ConstDirectiveNode, ...]
+    operation_types: Tuple[OperationTypeDefinitionNode, ...]
 
 
 # Type Extensions
@@ -742,7 +759,7 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
     __slots__ = "name", "directives"
 
     name: NameNode
-    directives: FrozenList[ConstDirectiveNode]
+    directives: Tuple[ConstDirectiveNode, ...]
 
 
 TypeSystemExtensionNode = Union[SchemaExtensionNode, TypeExtensionNode]
@@ -755,30 +772,30 @@ class ScalarTypeExtensionNode(TypeExtensionNode):
 class ObjectTypeExtensionNode(TypeExtensionNode):
     __slots__ = "interfaces", "fields"
 
-    interfaces: FrozenList[NamedTypeNode]
-    fields: FrozenList[FieldDefinitionNode]
+    interfaces: Tuple[NamedTypeNode, ...]
+    fields: Tuple[FieldDefinitionNode, ...]
 
 
 class InterfaceTypeExtensionNode(TypeExtensionNode):
     __slots__ = "interfaces", "fields"
 
-    interfaces: FrozenList[NamedTypeNode]
-    fields: FrozenList[FieldDefinitionNode]
+    interfaces: Tuple[NamedTypeNode, ...]
+    fields: Tuple[FieldDefinitionNode, ...]
 
 
 class UnionTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("types",)
 
-    types: FrozenList[NamedTypeNode]
+    types: Tuple[NamedTypeNode, ...]
 
 
 class EnumTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("values",)
 
-    values: FrozenList[EnumValueDefinitionNode]
+    values: Tuple[EnumValueDefinitionNode, ...]
 
 
 class InputObjectTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("fields",)
 
-    fields: FrozenList[InputValueDefinitionNode]
+    fields: Tuple[InputValueDefinitionNode, ...]

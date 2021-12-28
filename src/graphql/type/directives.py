@@ -1,7 +1,7 @@
-from typing import Any, Collection, Dict, List, Optional, cast
+from typing import Any, Collection, Dict, Optional, Tuple, cast
 
 from ..language import ast, DirectiveLocation
-from ..pyutils import inspect, is_description, FrozenList
+from ..pyutils import inspect, is_description
 from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
 from .scalars import GraphQLBoolean, GraphQLString
@@ -29,7 +29,7 @@ class GraphQLDirective:
     """
 
     name: str
-    locations: List[DirectiveLocation]
+    locations: Tuple[DirectiveLocation, ...]
     is_repeatable: bool
     args: Dict[str, GraphQLArgument]
     description: Optional[str]
@@ -48,12 +48,12 @@ class GraphQLDirective:
     ) -> None:
         assert_name(name)
         try:
-            locations = [
+            locations = tuple(
                 value
                 if isinstance(value, DirectiveLocation)
                 else DirectiveLocation[cast(str, value)]
                 for value in locations
-            ]
+            )
         except (KeyError, TypeError):
             raise TypeError(
                 f"{name} locations must be specified"
@@ -218,15 +218,13 @@ GraphQLSpecifiedByDirective = GraphQLDirective(
 )
 
 
-specified_directives: FrozenList[GraphQLDirective] = FrozenList(
-    [
-        GraphQLIncludeDirective,
-        GraphQLSkipDirective,
-        GraphQLDeprecatedDirective,
-        GraphQLSpecifiedByDirective,
-    ]
+specified_directives: Tuple[GraphQLDirective, ...] = (
+    GraphQLIncludeDirective,
+    GraphQLSkipDirective,
+    GraphQLDeprecatedDirective,
+    GraphQLSpecifiedByDirective,
 )
-specified_directives.__doc__ = """The full list of specified directives."""
+"""A tuple with all directives from the GraphQL specification"""
 
 
 def is_specified_directive(directive: GraphQLDirective) -> bool:

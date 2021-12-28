@@ -19,7 +19,6 @@ from graphql.language import (
     Visitor,
     VisitorKeyMap,
 )
-from graphql.pyutils import FrozenList
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
@@ -39,7 +38,7 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
     assert isinstance(key, (int, str))
 
     if isinstance(key, int):
-        assert isinstance(parent, list)
+        assert isinstance(parent, tuple)
         assert 0 <= key <= len(parent)
     else:
         assert isinstance(parent, Node)
@@ -59,7 +58,7 @@ def check_visitor_fn_args(ast, node, key, parent, path, ancestors, is_edited=Fal
             k = path[i]
             assert isinstance(k, (int, str))
             if isinstance(k, int):
-                assert isinstance(current_node, list)
+                assert isinstance(current_node, tuple)
                 assert 0 <= k <= len(current_node)
                 current_node = current_node[k]
             else:
@@ -407,8 +406,8 @@ def describe_visitor():
                     node = copy(node)
                     assert node.selection_set
                     node.selection_set.selections = (
-                        FrozenList([added_field]) + node.selection_set.selections
-                    )
+                        added_field,
+                    ) + node.selection_set.selections
                     return node
                 if node == added_field:
                     self.did_visit_added_field = True
@@ -589,7 +588,7 @@ def describe_visitor():
 
         custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
         assert custom_selection_set is not None
-        custom_selection_set.selections = custom_selection_set.selections + [
+        custom_selection_set.selections = custom_selection_set.selections + (
             CustomFieldNode(
                 name=NameNode(value="NameNodeToBeSkipped"),
                 selection_set=SelectionSetNode(
@@ -597,8 +596,8 @@ def describe_visitor():
                         name=NameNode(value="NameNodeToBeSkipped")
                     )
                 ),
-            )
-        ]
+            ),
+        )
 
         visited = []
 

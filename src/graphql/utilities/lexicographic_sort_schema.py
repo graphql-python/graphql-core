@@ -1,7 +1,7 @@
-from typing import Dict, List, Optional, Tuple, Union, cast
+from typing import Collection, Dict, Optional, Tuple, Union, cast
 
 from ..language import DirectiveLocation
-from ..pyutils import inspect, natural_comparison_key, FrozenList
+from ..pyutils import inspect, natural_comparison_key
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -97,10 +97,10 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             for name, field in sorted(fields_map.items())
         }
 
-    def sort_types(array: FrozenList[GraphQLNamedType]) -> List[GraphQLNamedType]:
-        return [
+    def sort_types(array: Collection[GraphQLNamedType]) -> Tuple[GraphQLNamedType, ...]:
+        return tuple(
             replace_named_type(type_) for type_ in sorted(array, key=sort_by_name_key)
-        ]
+        )
 
     def sort_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         if is_scalar_type(type_) or is_introspection_type(type_):

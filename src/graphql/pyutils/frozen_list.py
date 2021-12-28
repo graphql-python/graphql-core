@@ -10,7 +10,11 @@ T = TypeVar("T", covariant=True)
 
 
 class FrozenList(List[T]):
-    """List that can only be read, but not changed."""
+    """List that can only be read, but not changed.
+
+    .. deprecated:: 3.2
+       Use tuples or lists and the Collection type instead. Will be removed in v3.3.
+    """
 
     def __delitem__(self, key):
         raise FrozenError

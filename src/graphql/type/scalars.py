@@ -1,8 +1,8 @@
 from math import isfinite
-from typing import Any
+from typing import Any, Mapping
 
 from ..error import GraphQLError
-from ..pyutils import inspect, FrozenDict
+from ..pyutils import inspect
 from ..language.ast import (
     BooleanValueNode,
     FloatValueNode,
@@ -299,18 +299,16 @@ GraphQLID = GraphQLScalarType(
 )
 
 
-specified_scalar_types: FrozenDict[str, GraphQLScalarType] = FrozenDict(
-    {
-        type_.name: type_
-        for type_ in (
-            GraphQLString,
-            GraphQLInt,
-            GraphQLFloat,
-            GraphQLBoolean,
-            GraphQLID,
-        )
-    }
-)
+specified_scalar_types: Mapping[str, GraphQLScalarType] = {
+    type_.name: type_
+    for type_ in (
+        GraphQLString,
+        GraphQLInt,
+        GraphQLFloat,
+        GraphQLBoolean,
+        GraphQLID,
+    )
+}
 
 
 def is_specified_scalar_type(type_: GraphQLNamedType) -> bool:

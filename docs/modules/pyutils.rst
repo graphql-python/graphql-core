@@ -25,14 +25,6 @@ PyUtils
    :no-members:
    :no-inherited-members:
    :no-special-members:
-.. autoclass:: FrozenList
-   :no-members:
-   :no-inherited-members:
-   :no-special-members:
-.. autoclass:: FrozenDict
-   :no-members:
-   :no-inherited-members:
-   :no-special-members:
 .. autoclass:: Path
 .. autofunction:: print_path_list
 .. autoclass:: SimplePubSub

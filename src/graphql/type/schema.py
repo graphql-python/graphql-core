@@ -7,13 +7,14 @@ from typing import (
     NamedTuple,
     Optional,
     Set,
+    Tuple,
     Union,
     cast,
 )
 
 from ..error import GraphQLError
 from ..language import ast, OperationType
-from ..pyutils import inspect, is_collection, is_description, FrozenList
+from ..pyutils import inspect, is_collection, is_description
 from .definition import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
@@ -99,11 +100,11 @@ class GraphQLSchema:
     mutation_type: Optional[GraphQLObjectType]
     subscription_type: Optional[GraphQLObjectType]
     type_map: TypeMap
-    directives: FrozenList[GraphQLDirective]
+    directives: Tuple[GraphQLDirective, ...]
     description: Optional[str]
     extensions: Dict[str, Any]
     ast_node: Optional[ast.SchemaDefinitionNode]
-    extension_ast_nodes: FrozenList[ast.SchemaExtensionNode]
+    extension_ast_nodes: Tuple[ast.SchemaExtensionNode, ...]
 
     _implementations_map: Dict[str, InterfaceImplementations]
     _sub_type_map: Dict[str, Set[str]]
@@ -150,8 +151,8 @@ class GraphQLSchema:
             # noinspection PyUnresolvedReferences
             if not is_collection(directives):
                 raise TypeError("Schema directives must be a collection.")
-            if not isinstance(directives, FrozenList):
-                directives = FrozenList(directives)
+            if not isinstance(directives, tuple):
+                directives = tuple(directives)
         if description is not None and not is_description(description):
             raise TypeError("Schema description must be a string.")
         if extensions is None:
@@ -171,10 +172,10 @@ class GraphQLSchema:
                     "Schema extension AST nodes must be specified"
                     " as a collection of SchemaExtensionNode instances."
                 )
-            if not isinstance(extension_ast_nodes, FrozenList):
-                extension_ast_nodes = FrozenList(extension_ast_nodes)
+            if not isinstance(extension_ast_nodes, tuple):
+                extension_ast_nodes = tuple(extension_ast_nodes)
         else:
-            extension_ast_nodes = FrozenList()
+            extension_ast_nodes = ()
 
         self.description = description
         self.extensions = extensions
@@ -184,11 +185,7 @@ class GraphQLSchema:
         self.mutation_type = mutation
         self.subscription_type = subscription
         # Provide specified directives (e.g. @include and @skip) by default
-        self.directives = (
-            specified_directives
-            if directives is None
-            else cast(FrozenList[GraphQLDirective], directives)
-        )
+        self.directives = specified_directives if directives is None else directives
 
         # To preserve order of user-provided types, we add first to add them to
         # the set of "collected" types, so `collect_referenced_types` ignore them.
@@ -280,12 +277,12 @@ class GraphQLSchema:
             query=self.query_type,
             mutation=self.mutation_type,
             subscription=self.subscription_type,
-            types=FrozenList(self.type_map.values()) or None,
-            directives=self.directives[:],
+            types=tuple(self.type_map.values()) or None,
+            directives=self.directives,
             description=self.description,
             extensions=self.extensions,
             ast_node=self.ast_node,
-            extension_ast_nodes=self.extension_ast_nodes or FrozenList(),
+            extension_ast_nodes=self.extension_ast_nodes,
             assume_valid=self._validation_errors is not None,
         )
 

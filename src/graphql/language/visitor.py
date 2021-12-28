@@ -196,7 +196,7 @@ def visit(
         visitor_keys = QUERY_DOCUMENT_KEYS
 
     stack: Any = None
-    in_array = isinstance(root, list)
+    in_array = False
     keys: Tuple[Node, ...] = (root,)
     idx = -1
     edits: List[Any] = []
@@ -219,7 +219,7 @@ def visit(
             parent = ancestors_pop() if ancestors else None
             if is_edited:
                 if in_array:
-                    node = node[:]
+                    node = list(node)
                     edit_offset = 0
                     for edit_key, edit_value in edits:
                         array_key = edit_key - edit_offset
@@ -228,6 +228,7 @@ def visit(
                             edit_offset += 1
                         else:
                             node[array_key] = edit_value
+                    node = tuple(node)
                 else:
                     node = copy(node)
                     for edit_key, edit_value in edits:
@@ -253,7 +254,7 @@ def visit(
             if parent:
                 path_append(key)
 
-        if isinstance(node, list):
+        if isinstance(node, tuple):
             result = None
         else:
             if not isinstance(node, Node):
@@ -290,7 +291,7 @@ def visit(
                 path_pop()
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
-            in_array = isinstance(node, list)
+            in_array = isinstance(node, tuple)
             keys = node if in_array else visitor_keys.get(node.kind, ())
             idx = -1
             edits = []

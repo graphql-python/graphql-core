@@ -6,6 +6,7 @@ from typing import (
     DefaultDict,
     Dict,
     List,
+    Mapping,
     Optional,
     Union,
     cast,
@@ -234,7 +235,7 @@ def extend_schema_impl(
         type_: GraphQLInputObjectType,
     ) -> GraphQLInputObjectType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map[kwargs["name"]]
+        extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLInputObjectType(
             **{
@@ -257,7 +258,7 @@ def extend_schema_impl(
 
     def extend_enum_type(type_: GraphQLEnumType) -> GraphQLEnumType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map[kwargs["name"]]
+        extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLEnumType(
             **{
@@ -269,7 +270,7 @@ def extend_schema_impl(
 
     def extend_scalar_type(type_: GraphQLScalarType) -> GraphQLScalarType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map[kwargs["name"]]
+        extensions = tuple(type_extensions_map[kwargs["name"]])
 
         specified_by_url = kwargs["specified_by_url"]
         for extension_node in extensions:
@@ -286,7 +287,7 @@ def extend_schema_impl(
     # noinspection PyShadowingNames
     def extend_object_type(type_: GraphQLObjectType) -> GraphQLObjectType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map[kwargs["name"]]
+        extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLObjectType(
             **{
@@ -310,7 +311,7 @@ def extend_schema_impl(
     # noinspection PyShadowingNames
     def extend_interface_type(type_: GraphQLInterfaceType) -> GraphQLInterfaceType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map[kwargs["name"]]
+        extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLInterfaceType(
             **{
@@ -333,7 +334,7 @@ def extend_schema_impl(
 
     def extend_union_type(type_: GraphQLUnionType) -> GraphQLUnionType:
         kwargs = type_.to_kwargs()
-        extensions = type_extensions_map[kwargs["name"]]
+        extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLUnionType(
             **{
@@ -655,21 +656,22 @@ def extend_schema_impl(
         "mutation": get_operation(OperationType.MUTATION),
         "subscription": get_operation(OperationType.SUBSCRIPTION),
         "types": type_map.values(),
-        "directives": [
+        "directives": tuple(
             replace_directive(directive) for directive in schema_kwargs["directives"]
-        ]
-        + [build_directive(directive) for directive in directive_defs],
+        )
+        + tuple(build_directive(directive) for directive in directive_defs),
         "description": schema_def.description.value
         if schema_def and schema_def.description
         else None,
         "extensions": {},
         "ast_node": schema_def or schema_kwargs["ast_node"],
-        "extension_ast_nodes": schema_kwargs["extension_ast_nodes"] + schema_extensions,
+        "extension_ast_nodes": schema_kwargs["extension_ast_nodes"]
+        + tuple(schema_extensions),
         "assume_valid": assume_valid,
     }
 
 
-std_type_map: Dict[str, Union[GraphQLNamedType, GraphQLObjectType]] = {
+std_type_map: Mapping[str, Union[GraphQLNamedType, GraphQLObjectType]] = {
     **specified_scalar_types,
     **introspection_types,
 }

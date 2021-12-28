@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Mapping
 
 from .definition import (
     GraphQLArgument,
@@ -20,7 +21,7 @@ from .definition import (
     is_union_type,
 )
 from ..language import DirectiveLocation, print_ast
-from ..pyutils import inspect, FrozenDict
+from ..pyutils import inspect
 from .scalars import GraphQLBoolean, GraphQLString
 
 __all__ = [
@@ -599,19 +600,17 @@ TypeNameMetaFieldDef = GraphQLField(
 
 # Since double underscore names are subject to name mangling in Python,
 # the introspection classes are best imported via this dictionary:
-introspection_types = FrozenDict(
-    {
-        "__Schema": __Schema,
-        "__Directive": __Directive,
-        "__DirectiveLocation": __DirectiveLocation,
-        "__Type": __Type,
-        "__Field": __Field,
-        "__InputValue": __InputValue,
-        "__EnumValue": __EnumValue,
-        "__TypeKind": __TypeKind,
-    }
-)
-introspection_types.__doc__ = """A dictionary containing all introspection types."""
+introspection_types: Mapping[str, GraphQLNamedType] = {  # treat as read-only
+    "__Schema": __Schema,
+    "__Directive": __Directive,
+    "__DirectiveLocation": __DirectiveLocation,
+    "__Type": __Type,
+    "__Field": __Field,
+    "__InputValue": __InputValue,
+    "__EnumValue": __EnumValue,
+    "__TypeKind": __TypeKind,
+}
+"""A mapping containing all introspection types with their names as keys"""
 
 
 def is_introspection_type(type_: GraphQLNamedType) -> bool:
