@@ -164,6 +164,7 @@ from .utilities import (
     # Produce the GraphQL query recommended for a full schema introspection.
     # Accepts optional IntrospectionOptions.
     get_introspection_query,
+    IntrospectionQuery,
     # Get the target Operation from a Document.
     get_operation_ast,
     # Get the Type for the target Operation AST.
@@ -700,6 +701,7 @@ __all__ = [
     "GraphQLSyntaxError",
     "located_error",
     "get_introspection_query",
+    "IntrospectionQuery",
     "get_operation_ast",
     "get_operation_root_type",
     "introspection_from_schema",

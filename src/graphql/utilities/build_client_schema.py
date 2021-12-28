@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import cast, Callable, Collection, Dict, List
+from typing import cast, Callable, Collection, Dict, List, Union
 
 from ..language import DirectiveLocation, parse_value
 from ..pyutils import inspect, Undefined
@@ -31,13 +31,27 @@ from ..type import (
     is_output_type,
     specified_scalar_types,
 )
+from .get_introspection_query import (
+    IntrospectionDirective,
+    IntrospectionEnumType,
+    IntrospectionField,
+    IntrospectionInterfaceType,
+    IntrospectionInputObjectType,
+    IntrospectionInputValue,
+    IntrospectionObjectType,
+    IntrospectionQuery,
+    IntrospectionScalarType,
+    IntrospectionType,
+    IntrospectionTypeRef,
+    IntrospectionUnionType,
+)
 from .value_from_ast import value_from_ast
 
 __all__ = ["build_client_schema"]
 
 
 def build_client_schema(
-    introspection: Dict, assume_valid: bool = False
+    introspection: IntrospectionQuery, assume_valid: bool = False
 ) -> GraphQLSchema:
     """Build a GraphQLSchema for use by client tools.
 
@@ -64,22 +78,25 @@ def build_client_schema(
 
     # Given a type reference in introspection, return the GraphQLType instance,
     # preferring cached instances before building new instances.
-    def get_type(type_ref: Dict) -> GraphQLType:
+    def get_type(type_ref: IntrospectionTypeRef) -> GraphQLType:
         kind = type_ref.get("kind")
         if kind == TypeKind.LIST.name:
             item_ref = type_ref.get("ofType")
             if not item_ref:
                 raise TypeError("Decorated type deeper than introspection query.")
+            item_ref = cast(IntrospectionTypeRef, item_ref)
             return GraphQLList(get_type(item_ref))
-        elif kind == TypeKind.NON_NULL.name:
+        if kind == TypeKind.NON_NULL.name:
             nullable_ref = type_ref.get("ofType")
             if not nullable_ref:
                 raise TypeError("Decorated type deeper than introspection query.")
+            nullable_ref = cast(IntrospectionTypeRef, nullable_ref)
             nullable_type = get_type(nullable_ref)
             return GraphQLNonNull(assert_nullable_type(nullable_type))
+        type_ref = cast(IntrospectionType, type_ref)
         return get_named_type(type_ref)
 
-    def get_named_type(type_ref: Dict) -> GraphQLNamedType:
+    def get_named_type(type_ref: IntrospectionType) -> GraphQLNamedType:
         type_name = type_ref.get("name")
         if not type_name:
             raise TypeError(f"Unknown type reference: {inspect(type_ref)}.")
@@ -93,25 +110,29 @@ def build_client_schema(
             )
         return type_
 
-    def get_object_type(type_ref: Dict) -> GraphQLObjectType:
+    def get_object_type(type_ref: IntrospectionObjectType) -> GraphQLObjectType:
         return assert_object_type(get_type(type_ref))
 
-    def get_interface_type(type_ref: Dict) -> GraphQLInterfaceType:
+    def get_interface_type(
+        type_ref: IntrospectionInterfaceType,
+    ) -> GraphQLInterfaceType:
         return assert_interface_type(get_type(type_ref))
 
     # Given a type's introspection result, construct the correct GraphQLType instance.
-    def build_type(type_: Dict) -> GraphQLNamedType:
+    def build_type(type_: IntrospectionType) -> GraphQLNamedType:
         if type_ and "name" in type_ and "kind" in type_:
-            builder = type_builders.get(cast(str, type_["kind"]))
+            builder = type_builders.get(type_["kind"])
             if builder:  # pragma: no cover else
-                return cast(GraphQLNamedType, builder(type_))
+                return builder(type_)
         raise TypeError(
             "Invalid or incomplete introspection result."
             " Ensure that a full introspection query is used in order"
             f" to build a client schema: {inspect(type_)}."
         )
 
-    def build_scalar_def(scalar_introspection: Dict) -> GraphQLScalarType:
+    def build_scalar_def(
+        scalar_introspection: IntrospectionScalarType,
+    ) -> GraphQLScalarType:
         return GraphQLScalarType(
             name=scalar_introspection["name"],
             description=scalar_introspection.get("description"),
@@ -119,10 +140,12 @@ def build_client_schema(
         )
 
     def build_implementations_list(
-        implementing_introspection: Dict,
+        implementing_introspection: Union[
+            IntrospectionObjectType, IntrospectionInterfaceType
+        ],
     ) -> List[GraphQLInterfaceType]:
-        interfaces = implementing_introspection.get("interfaces")
-        if interfaces is None:
+        maybe_interfaces = implementing_introspection.get("interfaces")
+        if maybe_interfaces is None:
             # Temporary workaround until GraphQL ecosystem will fully support
             # 'interfaces' on interface types
             if implementing_introspection["kind"] == TypeKind.INTERFACE.name:
@@ -131,9 +154,12 @@ def build_client_schema(
                 "Introspection result missing interfaces:"
                 f" {inspect(implementing_introspection)}."
             )
+        interfaces = cast(Collection[IntrospectionInterfaceType], maybe_interfaces)
         return [get_interface_type(interface) for interface in interfaces]
 
-    def build_object_def(object_introspection: Dict) -> GraphQLObjectType:
+    def build_object_def(
+        object_introspection: IntrospectionObjectType,
+    ) -> GraphQLObjectType:
         return GraphQLObjectType(
             name=object_introspection["name"],
             description=object_introspection.get("description"),
@@ -141,7 +167,9 @@ def build_client_schema(
             fields=lambda: build_field_def_map(object_introspection),
         )
 
-    def build_interface_def(interface_introspection: Dict) -> GraphQLInterfaceType:
+    def build_interface_def(
+        interface_introspection: IntrospectionInterfaceType,
+    ) -> GraphQLInterfaceType:
         return GraphQLInterfaceType(
             name=interface_introspection["name"],
             description=interface_introspection.get("description"),
@@ -149,22 +177,23 @@ def build_client_schema(
             fields=lambda: build_field_def_map(interface_introspection),
         )
 
-    def build_union_def(union_introspection: Dict) -> GraphQLUnionType:
-        possible_types = union_introspection.get("possibleTypes")
-        if possible_types is None:
+    def build_union_def(
+        union_introspection: IntrospectionUnionType,
+    ) -> GraphQLUnionType:
+        maybe_possible_types = union_introspection.get("possibleTypes")
+        if maybe_possible_types is None:
             raise TypeError(
                 "Introspection result missing possibleTypes:"
                 f" {inspect(union_introspection)}."
             )
+        possible_types = cast(Collection[IntrospectionObjectType], maybe_possible_types)
         return GraphQLUnionType(
             name=union_introspection["name"],
             description=union_introspection.get("description"),
-            types=lambda: [
-                get_object_type(type_) for type_ in cast(List[Dict], possible_types)
-            ],
+            types=lambda: [get_object_type(type_) for type_ in possible_types],
         )
 
-    def build_enum_def(enum_introspection: Dict) -> GraphQLEnumType:
+    def build_enum_def(enum_introspection: IntrospectionEnumType) -> GraphQLEnumType:
         if enum_introspection.get("enumValues") is None:
             raise TypeError(
                 "Introspection result missing enumValues:"
@@ -184,7 +213,7 @@ def build_client_schema(
         )
 
     def build_input_object_def(
-        input_object_introspection: Dict,
+        input_object_introspection: IntrospectionInputObjectType,
     ) -> GraphQLInputObjectType:
         if input_object_introspection.get("inputFields") is None:
             raise TypeError(
@@ -199,16 +228,18 @@ def build_client_schema(
             ),
         )
 
-    type_builders: Dict[str, Callable[[Dict], GraphQLType]] = {
-        TypeKind.SCALAR.name: build_scalar_def,
-        TypeKind.OBJECT.name: build_object_def,
-        TypeKind.INTERFACE.name: build_interface_def,
-        TypeKind.UNION.name: build_union_def,
-        TypeKind.ENUM.name: build_enum_def,
-        TypeKind.INPUT_OBJECT.name: build_input_object_def,
+    type_builders: Dict[str, Callable[[IntrospectionType], GraphQLNamedType]] = {
+        TypeKind.SCALAR.name: build_scalar_def,  # type: ignore
+        TypeKind.OBJECT.name: build_object_def,  # type: ignore
+        TypeKind.INTERFACE.name: build_interface_def,  # type: ignore
+        TypeKind.UNION.name: build_union_def,  # type: ignore
+        TypeKind.ENUM.name: build_enum_def,  # type: ignore
+        TypeKind.INPUT_OBJECT.name: build_input_object_def,  # type: ignore
     }
 
-    def build_field_def_map(type_introspection: Dict) -> Dict[str, GraphQLField]:
+    def build_field_def_map(
+        type_introspection: Union[IntrospectionObjectType, IntrospectionInterfaceType],
+    ) -> Dict[str, GraphQLField]:
         if type_introspection.get("fields") is None:
             raise TypeError(
                 f"Introspection result missing fields: {type_introspection}."
@@ -218,8 +249,9 @@ def build_client_schema(
             for field_introspection in type_introspection["fields"]
         }
 
-    def build_field(field_introspection: Dict) -> GraphQLField:
-        type_ = get_type(field_introspection["type"])
+    def build_field(field_introspection: IntrospectionField) -> GraphQLField:
+        type_introspection = cast(IntrospectionType, field_introspection["type"])
+        type_ = get_type(type_introspection)
         if not is_output_type(type_):
             raise TypeError(
                 "Introspection must provide output type for fields,"
@@ -242,15 +274,18 @@ def build_client_schema(
         )
 
     def build_argument_def_map(
-        input_value_introspections: Dict,
+        argument_value_introspections: Collection[IntrospectionInputValue],
     ) -> Dict[str, GraphQLArgument]:
         return {
             argument_introspection["name"]: build_argument(argument_introspection)
-            for argument_introspection in input_value_introspections
+            for argument_introspection in argument_value_introspections
         }
 
-    def build_argument(argument_introspection: Dict) -> GraphQLArgument:
-        type_ = get_type(argument_introspection["type"])
+    def build_argument(
+        argument_introspection: IntrospectionInputValue,
+    ) -> GraphQLArgument:
+        type_introspection = cast(IntrospectionType, argument_introspection["type"])
+        type_ = get_type(type_introspection)
         if not is_input_type(type_):
             raise TypeError(
                 "Introspection must provide input type for arguments,"
@@ -258,11 +293,11 @@ def build_client_schema(
             )
         type_ = cast(GraphQLInputType, type_)
 
-        default_value = argument_introspection.get("defaultValue")
+        default_value_introspection = argument_introspection.get("defaultValue")
         default_value = (
             Undefined
-            if default_value is None
-            else value_from_ast(parse_value(default_value), type_)
+            if default_value_introspection is None
+            else value_from_ast(parse_value(default_value_introspection), type_)
         )
         return GraphQLArgument(
             type_,
@@ -272,7 +307,7 @@ def build_client_schema(
         )
 
     def build_input_value_def_map(
-        input_value_introspections: Dict,
+        input_value_introspections: Collection[IntrospectionInputValue],
     ) -> Dict[str, GraphQLInputField]:
         return {
             input_value_introspection["name"]: build_input_value(
@@ -281,8 +316,11 @@ def build_client_schema(
             for input_value_introspection in input_value_introspections
         }
 
-    def build_input_value(input_value_introspection: Dict) -> GraphQLInputField:
-        type_ = get_type(input_value_introspection["type"])
+    def build_input_value(
+        input_value_introspection: IntrospectionInputValue,
+    ) -> GraphQLInputField:
+        type_introspection = cast(IntrospectionType, input_value_introspection["type"])
+        type_ = get_type(type_introspection)
         if not is_input_type(type_):
             raise TypeError(
                 "Introspection must provide input type for input fields,"
@@ -290,11 +328,11 @@ def build_client_schema(
             )
         type_ = cast(GraphQLInputType, type_)
 
-        default_value = input_value_introspection.get("defaultValue")
+        default_value_introspection = input_value_introspection.get("defaultValue")
         default_value = (
             Undefined
-            if default_value is None
-            else value_from_ast(parse_value(default_value), type_)
+            if default_value_introspection is None
+            else value_from_ast(parse_value(default_value_introspection), type_)
         )
         return GraphQLInputField(
             type_,
@@ -303,7 +341,9 @@ def build_client_schema(
             deprecation_reason=input_value_introspection.get("deprecationReason"),
         )
 
-    def build_directive(directive_introspection: Dict) -> GraphQLDirective:
+    def build_directive(
+        directive_introspection: IntrospectionDirective,
+    ) -> GraphQLDirective:
         if directive_introspection.get("args") is None:
             raise TypeError(
                 "Introspection result missing directive args:"

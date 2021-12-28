@@ -11,6 +11,9 @@ The GraphQL query recommended for a full schema introspection:
 
 .. autofunction:: get_introspection_query
 
+.. autoclass:: IntrospectionQuery
+   :no-inherited-members:
+
 Get the target Operation from a Document:
 
 .. autofunction:: get_operation_ast

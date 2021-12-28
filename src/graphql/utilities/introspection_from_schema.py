@@ -1,14 +1,11 @@
-from typing import Any, Dict
+from typing import cast
 
 from ..error import GraphQLError
 from ..language import parse
 from ..type import GraphQLSchema
-from .get_introspection_query import get_introspection_query
+from .get_introspection_query import get_introspection_query, IntrospectionQuery
 
 __all__ = ["introspection_from_schema"]
-
-
-IntrospectionSchema = Dict[str, Any]
 
 
 def introspection_from_schema(
@@ -18,7 +15,7 @@ def introspection_from_schema(
     directive_is_repeatable: bool = True,
     schema_description: bool = True,
     input_value_deprecation: bool = True,
-) -> IntrospectionSchema:
+) -> IntrospectionQuery:
     """Build an IntrospectionQuery from a GraphQLSchema
 
     IntrospectionQuery is useful for utilities that care about type and field
@@ -46,4 +43,4 @@ def introspection_from_schema(
         raise result.errors[0]
     if not result.data:  # pragma: no cover
         raise GraphQLError("Introspection did not return a result")
-    return result.data
+    return cast(IntrospectionQuery, result.data)

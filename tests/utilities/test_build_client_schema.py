@@ -1,3 +1,5 @@
+from typing import cast
+
 from pytest import raises
 
 from graphql import graphql_sync
@@ -21,11 +23,19 @@ from graphql.utilities import (
     introspection_from_schema,
     print_schema,
 )
+from graphql.utilities.get_introspection_query import (
+    IntrospectionEnumType,
+    IntrospectionInputObjectType,
+    IntrospectionInterfaceType,
+    IntrospectionObjectType,
+    IntrospectionType,
+    IntrospectionUnionType,
+)
 
 from ..utils import dedent
 
 
-def cycle_introspection(sdl_string):
+def cycle_introspection(sdl_string: str):
     """Test that the client side introspection gives the same result.
 
     This function does a full cycle of going from a string with the contents of the SDL,
@@ -75,7 +85,7 @@ def describe_type_system_build_schema_from_introspection():
 
         schema = build_schema(sdl)
         introspection = introspection_from_schema(schema)
-        del introspection["__schema"]["queryType"]
+        del introspection["__schema"]["queryType"]  # type: ignore
 
         client_schema = build_client_schema(introspection)
         assert client_schema.query_type is None
@@ -483,7 +493,7 @@ def describe_type_system_build_schema_from_introspection():
 
         schema = build_schema(sdl)
         introspection = introspection_from_schema(schema)
-        del introspection["__schema"]["directives"]
+        del introspection["__schema"]["directives"]  # type: ignore
 
         client_schema = build_client_schema(introspection)
 
@@ -653,7 +663,7 @@ def describe_type_system_build_schema_from_introspection():
 
             with raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
-                build_client_schema({})
+                build_client_schema({})  # type: ignore
 
             assert str(exc_info.value) == (
                 "Invalid or incomplete introspection result. Ensure that you"
@@ -705,9 +715,9 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_type_reference_is_missing_name():
             introspection = introspection_from_schema(dummy_schema)
-
-            assert introspection["__schema"]["queryType"]["name"] == "Query"
-            del introspection["__schema"]["queryType"]["name"]
+            query_type = cast(IntrospectionType, introspection["__schema"]["queryType"])
+            assert query_type["name"] == "Query"
+            del query_type["name"]  # type: ignore
 
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
@@ -716,7 +726,6 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_kind():
             introspection = introspection_from_schema(dummy_schema)
-
             query_type_introspection = next(
                 type_
                 for type_ in introspection["__schema"]["types"]
@@ -735,14 +744,17 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_interfaces():
             introspection = introspection_from_schema(dummy_schema)
-
-            query_type_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "Query"
+            query_type_introspection = cast(
+                IntrospectionObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "Query"
+                ),
             )
+
             assert query_type_introspection["interfaces"] == []
-            del query_type_introspection["interfaces"]
+            del query_type_introspection["interfaces"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -754,28 +766,34 @@ def describe_type_system_build_schema_from_introspection():
 
         def legacy_support_for_interfaces_with_null_as_interfaces_field():
             introspection = introspection_from_schema(dummy_schema)
-            some_interface_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "SomeInterface"
+            some_interface_introspection = cast(
+                IntrospectionInterfaceType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "SomeInterface"
+                ),
             )
 
             assert some_interface_introspection["interfaces"] == []
-            some_interface_introspection["interfaces"] = None
+            some_interface_introspection["interfaces"] = None  # type: ignore
 
             client_schema = build_client_schema(introspection)
             assert print_schema(client_schema) == print_schema(dummy_schema)
 
         def throws_when_missing_fields():
             introspection = introspection_from_schema(dummy_schema)
-            query_type_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "Query"
+            query_type_introspection = cast(
+                IntrospectionObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "Query"
+                ),
             )
 
             assert query_type_introspection["fields"]
-            del query_type_introspection["fields"]
+            del query_type_introspection["fields"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -787,14 +805,18 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_field_args():
             introspection = introspection_from_schema(dummy_schema)
-
-            query_type_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "Query"
+            query_type_introspection = cast(
+                IntrospectionObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "Query"
+                ),
             )
-            assert query_type_introspection["fields"][0]["args"]
-            del query_type_introspection["fields"][0]["args"]
+
+            field = query_type_introspection["fields"][0]
+            assert field["args"]
+            del field["args"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -805,19 +827,18 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_output_type_is_used_as_an_arg_type():
             introspection = introspection_from_schema(dummy_schema)
+            query_type_introspection = cast(
+                IntrospectionObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "Query"
+                ),
+            )
 
-            query_type_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "Query"
-            )
-            assert (
-                query_type_introspection["fields"][0]["args"][0]["type"]["name"]
-                == "String"
-            )
-            query_type_introspection["fields"][0]["args"][0]["type"][
-                "name"
-            ] = "SomeUnion"
+            arg = query_type_introspection["fields"][0]["args"][0]
+            assert arg["type"]["name"] == "String"
+            arg["type"]["name"] = "SomeUnion"
 
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
@@ -830,19 +851,18 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_output_type_is_used_as_an_input_value_type():
             introspection = introspection_from_schema(dummy_schema)
+            input_object_type_introspection = cast(
+                IntrospectionInputObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "SomeInputObject"
+                ),
+            )
 
-            input_object_type_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "SomeInputObject"
-            )
-            assert (
-                input_object_type_introspection["inputFields"][0]["type"]["name"]
-                == "String"
-            )
-            input_object_type_introspection["inputFields"][0]["type"][
-                "name"
-            ] = "SomeUnion"
+            input_field = input_object_type_introspection["inputFields"][0]
+            assert input_field["type"]["name"] == "String"
+            input_field["type"]["name"] = "SomeUnion"
 
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
@@ -855,14 +875,18 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_input_type_is_used_as_a_field_type():
             introspection = introspection_from_schema(dummy_schema)
-
-            query_type_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "Query"
+            query_type_introspection = cast(
+                IntrospectionObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "Query"
+                ),
             )
-            assert query_type_introspection["fields"][0]["type"]["name"] == "String"
-            query_type_introspection["fields"][0]["type"]["name"] = "SomeInputObject"
+
+            field = query_type_introspection["fields"][0]
+            assert field["type"]["name"] == "String"
+            field["type"]["name"] = "SomeInputObject"
 
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
@@ -875,14 +899,17 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_possible_types():
             introspection = introspection_from_schema(dummy_schema)
-
-            some_union_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "SomeUnion"
+            some_union_introspection = cast(
+                IntrospectionUnionType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "SomeUnion"
+                ),
             )
+
             assert some_union_introspection["possibleTypes"]
-            del some_union_introspection["possibleTypes"]
+            del some_union_introspection["possibleTypes"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -893,14 +920,17 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_enum_values():
             introspection = introspection_from_schema(dummy_schema)
-
-            some_enum_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "SomeEnum"
+            some_enum_introspection = cast(
+                IntrospectionEnumType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "SomeEnum"
+                ),
             )
+
             assert some_enum_introspection["enumValues"]
-            del some_enum_introspection["enumValues"]
+            del some_enum_introspection["enumValues"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -911,14 +941,17 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_input_fields():
             introspection = introspection_from_schema(dummy_schema)
-
-            some_input_object_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "SomeInputObject"
+            some_input_object_introspection = cast(
+                IntrospectionInputObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "SomeInputObject"
+                ),
             )
+
             assert some_input_object_introspection["inputFields"]
-            del some_input_object_introspection["inputFields"]
+            del some_input_object_introspection["inputFields"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -929,11 +962,11 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_directive_locations():
             introspection = introspection_from_schema(dummy_schema)
-
             some_directive_introspection = introspection["__schema"]["directives"][0]
+
             assert some_directive_introspection["name"] == "SomeDirective"
             assert some_directive_introspection["locations"] == ["QUERY"]
-            del some_directive_introspection["locations"]
+            del some_directive_introspection["locations"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -944,11 +977,11 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_missing_directive_args():
             introspection = introspection_from_schema(dummy_schema)
-
             some_directive_introspection = introspection["__schema"]["directives"][0]
+
             assert some_directive_introspection["name"] == "SomeDirective"
             assert some_directive_introspection["args"] == []
-            del some_directive_introspection["args"]
+            del some_directive_introspection["args"]  # type: ignore
 
             with raises(
                 TypeError,
@@ -1021,12 +1054,15 @@ def describe_type_system_build_schema_from_introspection():
                 """
             schema = build_schema(sdl, assume_valid=True)
             introspection = introspection_from_schema(schema)
-
-            foo_introspection = next(
-                type_
-                for type_ in introspection["__schema"]["types"]
-                if type_["name"] == "Foo"
+            foo_introspection = cast(
+                IntrospectionObjectType,
+                next(
+                    type_
+                    for type_ in introspection["__schema"]["types"]
+                    if type_["name"] == "Foo"
+                ),
             )
+
             assert foo_introspection["interfaces"] == []
             # we need to patch here since invalid interfaces cannot be built with Python
             foo_introspection["interfaces"] = [
@@ -1050,12 +1086,12 @@ def describe_type_system_build_schema_from_introspection():
                 """
             schema = build_schema(sdl, assume_valid=True)
             introspection = introspection_from_schema(schema)
-
             foo_introspection = next(
                 type_
                 for type_ in introspection["__schema"]["types"]
                 if type_["name"] == "Foo"
             )
+
             assert foo_introspection["kind"] == "UNION"
             assert foo_introspection["possibleTypes"] == []
             # we need to patch here since invalid unions cannot be built with Python

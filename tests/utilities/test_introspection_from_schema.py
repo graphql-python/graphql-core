@@ -1,16 +1,15 @@
-from typing import Dict
-
 from graphql.type import GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLString
 from graphql.utilities import (
     build_client_schema,
     print_schema,
     introspection_from_schema,
+    IntrospectionQuery,
 )
 
 from ..utils import dedent
 
 
-def introspection_to_sdl(introspection: Dict) -> str:
+def introspection_to_sdl(introspection: IntrospectionQuery) -> str:
     return print_schema(build_client_schema(introspection))
 
 
