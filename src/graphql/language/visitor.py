@@ -174,7 +174,7 @@ class Visitor:
                         raise AttributeError(f"Invalid AST node kind: {kind}")
 
     @classmethod
-    def get_visit_fn(cls, kind, is_leaving=False) -> Callable:
+    def get_visit_fn(cls, kind, is_leaving=False) -> Optional[Callable]:
         """Get the visit function for the given node kind and direction."""
         method = "leave" if is_leaving else "enter"
         visit_fn = getattr(cls, f"{method}_{kind}", None)

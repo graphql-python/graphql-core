@@ -134,11 +134,17 @@ def describe_usage():
 
         async_query = queries.pop(0)
         assert "asyncio" in async_query and "graphql_sync" not in async_query
-        exec(async_query, scope)
-        out, err = capsys.readouterr()
-        assert not err
-        assert "R2-D2" in out
-        assert out == expected_result(queries)
+        assert "asyncio.run" in async_query
+        try:  # pragma: no cover
+            from asyncio import run  # noqa: F401
+        except ImportError:  # Python < 3.7
+            assert "ExecutionResult" in expected_result(queries)
+        else:  # pragma: no cover
+            exec(async_query, scope)
+            out, err = capsys.readouterr()
+            assert not err
+            assert "R2-D2" in out
+            assert out == expected_result(queries)
 
         sync_query = queries.pop(0)
         assert "graphql_sync" in sync_query and "asyncio" not in sync_query

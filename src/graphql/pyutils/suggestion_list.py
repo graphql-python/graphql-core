@@ -18,7 +18,7 @@ def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
         if distance <= threshold:
             options_by_distance[option] = distance
 
-    return sorted(options_by_distance, key=options_by_distance.get)
+    return sorted(options_by_distance, key=options_by_distance.get)  # type: ignore
 
 
 def lexical_distance(a_str: str, b_str: str) -> int:

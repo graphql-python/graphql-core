@@ -7,6 +7,7 @@ Error
 
 .. autoexception:: GraphQLError
    :members:
+   :no-inherited-members:
 
 .. autoexception:: GraphQLSyntaxError
 

@@ -1,4 +1,4 @@
-from asyncio import Event, ensure_future, Future, wait
+from asyncio import Event, ensure_future, Task, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
 from typing import AsyncIterable, Callable, Set
@@ -42,7 +42,7 @@ class MapAsyncIterator:
             aclose = ensure_future(self._close_event.wait())
             anext = ensure_future(self.iterator.__anext__())
 
-            pending: Set[Future] = (
+            pending: Set[Task] = (
                 await wait([aclose, anext], return_when=FIRST_COMPLETED)
             )[1]
             for task in pending:

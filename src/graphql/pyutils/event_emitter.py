@@ -5,6 +5,11 @@ from inspect import isawaitable
 
 from collections import defaultdict
 
+try:
+    from asyncio import run
+except ImportError:  # Python < 3.7
+    run = None  # type: ignore
+
 __all__ = ["EventEmitter", "EventEmitterAsyncIterator"]
 
 
@@ -44,7 +49,10 @@ class EventEmitterAsyncIterator:
     """
 
     def __init__(self, event_emitter: EventEmitter, event_name: str) -> None:
-        self.queue: Queue = Queue(loop=cast(AbstractEventLoop, event_emitter.loop))
+        if run:
+            self.queue: Queue = Queue()
+        else:  # Python < 3.7
+            self.queue = Queue(loop=cast(AbstractEventLoop, event_emitter.loop))
         event_emitter.add_listener(event_name, self.queue.put)
         self.remove_listener = lambda: event_emitter.remove_listener(
             event_name, self.queue.put

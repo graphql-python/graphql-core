@@ -393,9 +393,7 @@ class ExecutionContext:
                     return awaited_results
 
                 # noinspection PyTypeChecker
-                results = await_and_set_result(
-                    cast(Awaitable, results), response_name, result
-                )
+                results = await_and_set_result(results, response_name, result)
             elif isawaitable(result):
                 # noinspection PyShadowingNames
                 async def set_result(results, response_name, result):
@@ -881,7 +879,7 @@ class ExecutionContext:
                     result,
                 )
                 if isawaitable(value):
-                    return await value  # type: ignore
+                    return await value
                 return value
 
             return await_complete_object_value()
@@ -1116,7 +1114,7 @@ def default_type_resolver(
             is_type_of_result = type_.is_type_of(value, info)
 
             if isawaitable(is_type_of_result):
-                append_awaitable_results(cast(Awaitable, is_type_of_result))
+                append_awaitable_results(is_type_of_result)
                 append_awaitable_types(type_)
             elif is_type_of_result:
                 return type_

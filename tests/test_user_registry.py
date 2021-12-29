@@ -8,6 +8,11 @@ from asyncio import sleep, wait
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
 
+try:
+    from asyncio import create_task
+except ImportError:  # Python < 3.7
+    create_task = None  # type: ignore
+
 from pytest import fixture, mark  # type: ignore
 
 from graphql import (
@@ -51,7 +56,7 @@ class MutationEnum(Enum):
 
 
 class UserRegistry:
-    """"Simulation of a user registry with asynchronous database backend access."""
+    """ "Simulation of a user registry with asynchronous database backend access."""
 
     def __init__(self, **users) -> None:
         self._registry: Dict[str, User] = users
@@ -506,9 +511,11 @@ def describe_subscription():
                 if len(received_all) == 6:
                     break
 
-        done, pending = await wait(
-            [mutate_users(), receive_one(), receive_all()], timeout=1
-        )
+        tasks = [
+            create_task(task()) if create_task else task()
+            for task in (mutate_users, receive_one, receive_all)
+        ]
+        done, pending = await wait(tasks, timeout=1)
         assert not pending
 
         expected_data: List[Dict[str, Any]] = [
