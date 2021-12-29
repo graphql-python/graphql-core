@@ -9,7 +9,6 @@ include .coveragerc
 include .editorconfig
 include .flake8
 
-include codecov.yml
 include mypy.ini
 include tox.ini
 
