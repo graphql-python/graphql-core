@@ -1042,6 +1042,10 @@ def describe_validate_overlapping_fields_can_be_merged():
     def does_not_infinite_loop_on_recursive_fragments():
         assert_valid(
             """
+            {
+              ...fragA
+            }
+
             fragment fragA on Human { name, relatives { name, ...fragA } }
             """
         )
@@ -1049,13 +1053,57 @@ def describe_validate_overlapping_fields_can_be_merged():
     def does_not_infinite_loop_on_immediately_recursive_fragments():
         assert_valid(
             """
+            {
+              ...fragA
+            }
+
             fragment fragA on Human { name, ...fragA }
             """
+        )
+
+    def does_not_infinite_loop_on_recursive_fragment_with_field_named_after_fragment():
+        assert_valid(
+            """
+            {
+              ...fragA
+              fragA
+            }
+
+            fragment fragA on Query { ...fragA }
+            """
+        )
+
+    def finds_invalid_cases_even_with_field_named_after_fragment():
+        assert_errors(
+            """
+            {
+              fragA
+              ...fragA
+            }
+
+            fragment fragA on Type {
+              fragA: b
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'fragA' conflict"
+                    " because 'fragA' and 'b' are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (8, 15)],
+                }
+            ],
         )
 
     def does_not_infinite_loop_on_transitively_recursive_fragments():
         assert_valid(
             """
+            {
+              ...fragA
+              fragB
+            }
+
             fragment fragA on Human { name, ...fragB }
             fragment fragB on Human { name, ...fragC }
             fragment fragC on Human { name, ...fragA }

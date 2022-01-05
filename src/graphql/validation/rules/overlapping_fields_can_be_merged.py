@@ -254,6 +254,15 @@ def collect_conflicts_between_fields_and_fragment(
     # (E) Then collect any conflicts between the provided collection of fields and any
     # fragment names found in the given fragment.
     for referenced_fragment_name in referenced_fragment_names:
+        # Memoize so two fragments are not compared for conflicts more than once.
+        if compared_fragment_pairs.has(
+            referenced_fragment_name, fragment_name, are_mutually_exclusive
+        ):
+            continue
+        compared_fragment_pairs.add(
+            referenced_fragment_name, fragment_name, are_mutually_exclusive
+        )
+
         collect_conflicts_between_fields_and_fragment(
             context,
             conflicts,
