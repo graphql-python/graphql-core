@@ -1091,6 +1091,7 @@ GraphQLEnumValueMap = Dict[str, "GraphQLEnumValue"]
 
 class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     values: GraphQLEnumValueMap
+    names_as_values: Optional[bool]
 
 
 class GraphQLEnumType(GraphQLNamedType):
@@ -1098,7 +1099,10 @@ class GraphQLEnumType(GraphQLNamedType):
 
     Some leaf values of requests and input values are Enums. GraphQL serializes Enum
     values as strings, however internally Enums can be represented by any kind of type,
-    often integers. They can also be provided as a Python Enum.
+    often integers. They can also be provided as a Python Enum. In this case, the flag
+    `names_as_values` determines what will be used as internal representation. The
+    default value of `False` will use the enum values, the value `True` will use the
+    enum names, and the value `None` will use the members themselves.
 
     Example::
 
@@ -1132,6 +1136,7 @@ class GraphQLEnumType(GraphQLNamedType):
         self,
         name: str,
         values: Union[GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]],
+        names_as_values: Optional[bool] = False,
         description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[EnumTypeDefinitionNode] = None,
@@ -1158,10 +1163,13 @@ class GraphQLEnumType(GraphQLNamedType):
                         f"{name} values must be an Enum or a mapping"
                         " with value names as keys."
                     )
-            values = cast(Dict, values)
+            values = cast(Dict[str, Any], values)
         else:
-            values = cast(Dict, values)
-            values = {key: value.value for key, value in values.items()}
+            values = cast(Dict[str, Enum], values)
+            if names_as_values is False:
+                values = {key: value.value for key, value in values.items()}
+            elif names_as_values is True:
+                values = {key: key for key in values}
         values = {
             assert_enum_value_name(key): value
             if isinstance(value, GraphQLEnumValue)
