@@ -1,7 +1,12 @@
-from typing import Any, Dict, Union
+from typing import cast, Union
 
 from ..language import DocumentNode, Source, parse
-from ..type import GraphQLSchema, specified_directives
+from ..type import (
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLSchemaKwargs,
+    specified_directives,
+)
 from .extend_schema import extend_schema_impl
 
 __all__ = [
@@ -39,7 +44,7 @@ def build_ast_schema(
 
         assert_valid_sdl(document_ast)
 
-    empty_schema_kwargs: Dict[str, Any] = dict(
+    empty_schema_kwargs = GraphQLSchemaKwargs(
         query=None,
         mutation=None,
         subscription=None,
@@ -54,17 +59,17 @@ def build_ast_schema(
     schema_kwargs = extend_schema_impl(empty_schema_kwargs, document_ast, assume_valid)
 
     if not schema_kwargs["ast_node"]:
-        for type_ in schema_kwargs["types"]:
+        for type_ in schema_kwargs["types"] or ():
             # Note: While this could make early assertions to get the correctly
             # typed values below, that would throw immediately while type system
             # validation with validate_schema() will produce more actionable results.
             type_name = type_.name
             if type_name == "Query":
-                schema_kwargs["query"] = type_
+                schema_kwargs["query"] = cast(GraphQLObjectType, type_)
             elif type_name == "Mutation":
-                schema_kwargs["mutation"] = type_
+                schema_kwargs["mutation"] = cast(GraphQLObjectType, type_)
             elif type_name == "Subscription":
-                schema_kwargs["subscription"] = type_
+                schema_kwargs["subscription"] = cast(GraphQLObjectType, type_)
 
     # If specified directives were not explicitly declared, add them.
     directives = schema_kwargs["directives"]

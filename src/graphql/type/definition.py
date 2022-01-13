@@ -57,6 +57,11 @@ from ..pyutils import (
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 from .assert_name import assert_name, assert_enum_value_name
 
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+
 if TYPE_CHECKING:
     from .schema import GraphQLSchema  # noqa: F401
 
@@ -101,37 +106,48 @@ __all__ = [
     "get_named_type",
     "GraphQLAbstractType",
     "GraphQLArgument",
+    "GraphQLArgumentKwargs",
     "GraphQLArgumentMap",
     "GraphQLCompositeType",
     "GraphQLEnumType",
+    "GraphQLEnumTypeKwargs",
     "GraphQLEnumValue",
+    "GraphQLEnumValueKwargs",
     "GraphQLEnumValueMap",
     "GraphQLField",
+    "GraphQLFieldKwargs",
     "GraphQLFieldMap",
     "GraphQLFieldResolver",
     "GraphQLInputField",
+    "GraphQLInputFieldKwargs",
     "GraphQLInputFieldMap",
     "GraphQLInputObjectType",
+    "GraphQLInputObjectTypeKwargs",
     "GraphQLInputType",
     "GraphQLInterfaceType",
+    "GraphQLInterfaceTypeKwargs",
     "GraphQLIsTypeOfFn",
     "GraphQLLeafType",
     "GraphQLList",
     "GraphQLNamedType",
+    "GraphQLNamedTypeKwargs",
     "GraphQLNamedInputType",
     "GraphQLNamedOutputType",
     "GraphQLNullableType",
     "GraphQLNonNull",
     "GraphQLResolveInfo",
     "GraphQLScalarType",
+    "GraphQLScalarTypeKwargs",
     "GraphQLScalarSerializer",
     "GraphQLScalarValueParser",
     "GraphQLScalarLiteralParser",
     "GraphQLObjectType",
+    "GraphQLObjectTypeKwargs",
     "GraphQLOutputType",
     "GraphQLType",
     "GraphQLTypeResolver",
     "GraphQLUnionType",
+    "GraphQLUnionTypeKwargs",
     "GraphQLWrappingType",
     "Thunk",
     "ThunkCollection",
@@ -191,6 +207,16 @@ def assert_wrapping_type(type_: Any) -> GraphQLWrappingType:
     return cast(GraphQLWrappingType, type_)
 
 
+class GraphQLNamedTypeKwargs(TypedDict, total=False):
+    name: str
+    description: Optional[str]
+    extensions: Dict[str, Any]
+    # unfortunately, we cannot make the following more specific, because they are
+    # used by subclasses with different node types and typed dicts cannot be refined
+    ast_node: Optional[Any]
+    extension_ast_nodes: Tuple[Any, ...]
+
+
 class GraphQLNamedType(GraphQLType):
     """Base class for all GraphQL named types"""
 
@@ -243,8 +269,8 @@ class GraphQLNamedType(GraphQLType):
     def __str__(self) -> str:
         return self.name
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLNamedTypeKwargs:
+        return GraphQLNamedTypeKwargs(
             name=self.name,
             description=self.description,
             extensions=self.extensions,
@@ -275,6 +301,13 @@ def resolve_thunk(thunk: Thunk[T]) -> T:
 GraphQLScalarSerializer = Callable[[Any], Any]
 GraphQLScalarValueParser = Callable[[Any], Any]
 GraphQLScalarLiteralParser = Callable[[ValueNode, Optional[Dict[str, Any]]], Any]
+
+
+class GraphQLScalarTypeKwargs(GraphQLNamedTypeKwargs, total=False):
+    serialize: Optional[GraphQLScalarSerializer]
+    parse_value: Optional[GraphQLScalarValueParser]
+    parse_literal: Optional[GraphQLScalarLiteralParser]
+    specified_by_url: Optional[str]
 
 
 class GraphQLScalarType(GraphQLNamedType):
@@ -391,9 +424,10 @@ class GraphQLScalarType(GraphQLNamedType):
         """
         return self.parse_value(value_from_ast_untyped(node, variables))
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
-            **super().to_kwargs(),
+    def to_kwargs(self) -> GraphQLScalarTypeKwargs:
+        # noinspection PyArgumentList
+        return GraphQLScalarTypeKwargs(  # type: ignore
+            super().to_kwargs(),
             serialize=None
             if self.serialize is GraphQLScalarType.serialize
             else self.serialize,
@@ -422,6 +456,17 @@ def assert_scalar_type(type_: Any) -> GraphQLScalarType:
 
 
 GraphQLArgumentMap = Dict[str, "GraphQLArgument"]
+
+
+class GraphQLFieldKwargs(TypedDict, total=False):
+    type_: "GraphQLOutputType"
+    args: Optional[GraphQLArgumentMap]
+    resolve: Optional["GraphQLFieldResolver"]
+    subscribe: Optional["GraphQLFieldResolver"]
+    description: Optional[str]
+    deprecation_reason: Optional[str]
+    extensions: Dict[str, Any]
+    ast_node: Optional[FieldDefinitionNode]
 
 
 class GraphQLField:
@@ -510,8 +555,8 @@ class GraphQLField:
             and self.extensions == other.extensions
         )
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLFieldKwargs:
+        return GraphQLFieldKwargs(
             type_=self.type,
             args=self.args.copy() if self.args else None,
             resolve=self.resolve,
@@ -572,6 +617,16 @@ GraphQLIsTypeOfFn = Callable[[Any, GraphQLResolveInfo], AwaitableOrValue[bool]]
 GraphQLFieldMap = Dict[str, GraphQLField]
 
 
+class GraphQLArgumentKwargs(TypedDict, total=False):
+    type_: "GraphQLInputType"
+    default_value: Any
+    description: Optional[str]
+    deprecation_reason: Optional[str]
+    out_name: Optional[str]
+    extensions: Dict[str, Any]
+    ast_node: Optional[InputValueDefinitionNode]
+
+
 class GraphQLArgument:
     """Definition of a GraphQL argument"""
 
@@ -630,8 +685,8 @@ class GraphQLArgument:
             and self.extensions == other.extensions
         )
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLArgumentKwargs:
+        return GraphQLArgumentKwargs(
             type_=self.type,
             default_value=self.default_value,
             description=self.description,
@@ -649,10 +704,17 @@ def is_required_argument(arg: GraphQLArgument) -> bool:
     return is_non_null_type(arg.type) and arg.default_value is Undefined
 
 
+class GraphQLObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
+
+    fields: GraphQLFieldMap
+    interfaces: Tuple["GraphQLInterfaceType", ...]
+    is_type_of: Optional[GraphQLIsTypeOfFn]
+
+
 class GraphQLObjectType(GraphQLNamedType):
     """Object Type Definition
 
-    Almost all of the GraphQL types you define will be object types. Object types have
+    Almost all the GraphQL types you define will be object types. Object types have
     a name, but most importantly describe their fields.
 
     Example::
@@ -717,9 +779,10 @@ class GraphQLObjectType(GraphQLNamedType):
         self._interfaces = interfaces
         self.is_type_of = is_type_of
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
-            **super().to_kwargs(),
+    def to_kwargs(self) -> GraphQLObjectTypeKwargs:
+        # noinspection PyArgumentList
+        return GraphQLObjectTypeKwargs(  # type: ignore
+            super().to_kwargs(),
             fields=self.fields.copy(),
             interfaces=self.interfaces,
             is_type_of=self.is_type_of,
@@ -789,6 +852,12 @@ def assert_object_type(type_: Any) -> GraphQLObjectType:
     return cast(GraphQLObjectType, type_)
 
 
+class GraphQLInterfaceTypeKwargs(GraphQLNamedTypeKwargs, total=False):
+    fields: GraphQLFieldMap
+    interfaces: Tuple["GraphQLInterfaceType", ...]
+    resolve_type: Optional[GraphQLTypeResolver]
+
+
 class GraphQLInterfaceType(GraphQLNamedType):
     """Interface Type Definition
 
@@ -844,9 +913,10 @@ class GraphQLInterfaceType(GraphQLNamedType):
         self._interfaces = interfaces
         self.resolve_type = resolve_type
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
-            **super().to_kwargs(),
+    def to_kwargs(self) -> GraphQLInterfaceTypeKwargs:
+        # noinspection PyArgumentList
+        return GraphQLInterfaceTypeKwargs(  # type: ignore
+            super().to_kwargs(),
             fields=self.fields.copy(),
             interfaces=self.interfaces,
             resolve_type=self.resolve_type,
@@ -916,6 +986,11 @@ def assert_interface_type(type_: Any) -> GraphQLInterfaceType:
     return cast(GraphQLInterfaceType, type_)
 
 
+class GraphQLUnionTypeKwargs(GraphQLNamedTypeKwargs, total=False):
+    types: Tuple[GraphQLObjectType, ...]
+    resolve_type: Optional[GraphQLTypeResolver]
+
+
 class GraphQLUnionType(GraphQLNamedType):
     """Union Type Definition
 
@@ -972,9 +1047,10 @@ class GraphQLUnionType(GraphQLNamedType):
         self._types = types
         self.resolve_type = resolve_type
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
-            **super().to_kwargs(), types=self.types, resolve_type=self.resolve_type
+    def to_kwargs(self) -> GraphQLUnionTypeKwargs:
+        # noinspection PyArgumentList
+        return GraphQLUnionTypeKwargs(  # type: ignore
+            super().to_kwargs(), types=self.types, resolve_type=self.resolve_type
         )
 
     def __copy__(self) -> "GraphQLUnionType":  # pragma: no cover
@@ -1011,6 +1087,10 @@ def assert_union_type(type_: Any) -> GraphQLUnionType:
 
 
 GraphQLEnumValueMap = Dict[str, "GraphQLEnumValue"]
+
+
+class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
+    values: GraphQLEnumValueMap
 
 
 class GraphQLEnumType(GraphQLNamedType):
@@ -1099,8 +1179,11 @@ class GraphQLEnumType(GraphQLNamedType):
             )
         self.values = values
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(**super().to_kwargs(), values=self.values.copy())
+    def to_kwargs(self) -> GraphQLEnumTypeKwargs:
+        # noinspection PyArgumentList
+        return GraphQLEnumTypeKwargs(  # type: ignore
+            super().to_kwargs(), values=self.values.copy()
+        )
 
     def __copy__(self) -> "GraphQLEnumType":  # pragma: no cover
         return self.__class__(**self.to_kwargs())
@@ -1187,6 +1270,14 @@ def did_you_mean_enum_value(enum_type: GraphQLEnumType, unknown_value_str: str) 
     return did_you_mean(suggested_values, "the enum value")
 
 
+class GraphQLEnumValueKwargs(TypedDict, total=False):
+    value: Any
+    description: Optional[str]
+    deprecation_reason: Optional[str]
+    extensions: Dict[str, Any]
+    ast_node: Optional[EnumValueDefinitionNode]
+
+
 class GraphQLEnumValue:
 
     value: Any
@@ -1234,8 +1325,8 @@ class GraphQLEnumValue:
             and self.extensions == other.extensions
         )
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLEnumValueKwargs:
+        return GraphQLEnumValueKwargs(
             value=self.value,
             description=self.description,
             deprecation_reason=self.deprecation_reason,
@@ -1249,6 +1340,11 @@ class GraphQLEnumValue:
 
 GraphQLInputFieldMap = Dict[str, "GraphQLInputField"]
 GraphQLInputFieldOutType = Callable[[Dict[str, Any]], Any]
+
+
+class GraphQLInputObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
+    fields: GraphQLInputFieldMap
+    out_type: Optional[GraphQLInputFieldOutType]
 
 
 class GraphQLInputObjectType(GraphQLNamedType):
@@ -1322,9 +1418,10 @@ class GraphQLInputObjectType(GraphQLNamedType):
         """
         return value
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
-            **super().to_kwargs(),
+    def to_kwargs(self) -> GraphQLInputObjectTypeKwargs:
+        # noinspection PyArgumentList
+        return GraphQLInputObjectTypeKwargs(  # type: ignore
+            super().to_kwargs(),
             fields=self.fields.copy(),
             out_type=None
             if self.out_type is GraphQLInputObjectType.out_type
@@ -1373,6 +1470,16 @@ def assert_input_object_type(type_: Any) -> GraphQLInputObjectType:
     if not is_input_object_type(type_):
         raise TypeError(f"Expected {type_} to be a GraphQL Input Object type.")
     return cast(GraphQLInputObjectType, type_)
+
+
+class GraphQLInputFieldKwargs(TypedDict, total=False):
+    type_: "GraphQLInputType"
+    default_value: Any
+    description: Optional[str]
+    deprecation_reason: Optional[str]
+    out_name: Optional[str]
+    extensions: Dict[str, Any]
+    ast_node: Optional[InputValueDefinitionNode]
 
 
 class GraphQLInputField:
@@ -1433,8 +1540,8 @@ class GraphQLInputField:
             and self.out_name == other.out_name
         )
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLInputFieldKwargs:
+        return GraphQLInputFieldKwargs(
             type_=self.type,
             default_value=self.default_value,
             description=self.description,

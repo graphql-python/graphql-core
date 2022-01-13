@@ -28,6 +28,7 @@ from .suggestion_list import suggestion_list
 from .frozen_error import FrozenError
 from .frozen_list import FrozenList
 from .frozen_dict import FrozenDict
+from .merge_kwargs import merge_kwargs
 from .path import Path
 from .print_path_list import print_path_list
 from .simple_pub_sub import SimplePubSub, SimplePubSubIterator
@@ -48,6 +49,7 @@ __all__ = [
     "is_awaitable",
     "is_collection",
     "is_iterable",
+    "merge_kwargs",
     "natural_comparison_key",
     "AwaitableOrValue",
     "suggestion_list",

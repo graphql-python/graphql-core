@@ -154,7 +154,7 @@ def on_missing_reference(app, env, node, contnode):
     target = node.get('reftarget')
     if not target:
         return None
-    if target in ignore_references:
+    if target in ignore_references or target.endswith('Kwargs'):
         return contnode
     typ = node.get('reftype')
     name = target.rsplit('.', 1)[-1]

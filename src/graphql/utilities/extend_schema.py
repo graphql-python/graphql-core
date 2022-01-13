@@ -41,7 +41,7 @@ from ..language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
 )
-from ..pyutils import inspect
+from ..pyutils import inspect, merge_kwargs
 from ..type import (
     GraphQLArgument,
     GraphQLArgumentMap,
@@ -65,6 +65,7 @@ from ..type import (
     GraphQLOutputType,
     GraphQLScalarType,
     GraphQLSchema,
+    GraphQLSchemaKwargs,
     GraphQLSpecifiedByDirective,
     GraphQLType,
     GraphQLUnionType,
@@ -131,10 +132,10 @@ def extend_schema(
 
 
 def extend_schema_impl(
-    schema_kwargs: Dict[str, Any],
+    schema_kwargs: GraphQLSchemaKwargs,
     document_ast: DocumentNode,
     assume_valid: bool = False,
-) -> Dict[str, Any]:
+) -> GraphQLSchemaKwargs:
     """Extend the given schema arguments with extensions from a given document.
 
     For internal use only.
@@ -198,10 +199,10 @@ def extend_schema_impl(
     def replace_directive(directive: GraphQLDirective) -> GraphQLDirective:
         kwargs = directive.to_kwargs()
         return GraphQLDirective(
-            **{  # type: ignore
-                **kwargs,
-                "args": {name: extend_arg(arg) for name, arg in kwargs["args"].items()},
-            }
+            **merge_kwargs(
+                kwargs,
+                args={name: extend_arg(arg) for name, arg in kwargs["args"].items()},
+            )
         )
 
     def extend_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
@@ -238,22 +239,22 @@ def extend_schema_impl(
         extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLInputObjectType(
-            **{
-                **kwargs,
-                "fields": lambda: {
+            **merge_kwargs(
+                kwargs,
+                fields=lambda: {
                     **{
                         name: GraphQLInputField(
-                            **{  # type: ignore
-                                **field.to_kwargs(),
-                                "type_": replace_type(field.type),
-                            }
+                            **merge_kwargs(
+                                field.to_kwargs(),
+                                type_=replace_type(field.type),
+                            )
                         )
                         for name, field in kwargs["fields"].items()
                     },
                     **build_input_field_map(extensions),
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
-            }
+                extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
+            )
         )
 
     def extend_enum_type(type_: GraphQLEnumType) -> GraphQLEnumType:
@@ -261,11 +262,11 @@ def extend_schema_impl(
         extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLEnumType(
-            **{
-                **kwargs,
-                "values": {**kwargs["values"], **build_enum_value_map(extensions)},
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
-            }
+            **merge_kwargs(
+                kwargs,
+                values={**kwargs["values"], **build_enum_value_map(extensions)},
+                extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
+            )
         )
 
     def extend_scalar_type(type_: GraphQLScalarType) -> GraphQLScalarType:
@@ -277,11 +278,11 @@ def extend_schema_impl(
             specified_by_url = get_specified_by_url(extension_node) or specified_by_url
 
         return GraphQLScalarType(
-            **{
-                **kwargs,
-                "specified_by_url": specified_by_url,
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
-            }
+            **merge_kwargs(
+                kwargs,
+                specified_by_url=specified_by_url,
+                extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
+            )
         )
 
     # noinspection PyShadowingNames
@@ -290,22 +291,22 @@ def extend_schema_impl(
         extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLObjectType(
-            **{
-                **kwargs,
-                "interfaces": lambda: [
+            **merge_kwargs(
+                kwargs,
+                interfaces=lambda: [
                     cast(GraphQLInterfaceType, replace_named_type(interface))
                     for interface in kwargs["interfaces"]
                 ]
                 + build_interfaces(extensions),
-                "fields": lambda: {
+                fields=lambda: {
                     **{
                         name: extend_field(field)
                         for name, field in kwargs["fields"].items()
                     },
                     **build_field_map(extensions),
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
-            }
+                extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
+            )
         )
 
     # noinspection PyShadowingNames
@@ -314,22 +315,22 @@ def extend_schema_impl(
         extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLInterfaceType(
-            **{
-                **kwargs,
-                "interfaces": lambda: [
+            **merge_kwargs(
+                kwargs,
+                interfaces=lambda: [
                     cast(GraphQLInterfaceType, replace_named_type(interface))
                     for interface in kwargs["interfaces"]
                 ]
                 + build_interfaces(extensions),
-                "fields": lambda: {
+                fields=lambda: {
                     **{
                         name: extend_field(field)
                         for name, field in kwargs["fields"].items()
                     },
                     **build_field_map(extensions),
                 },
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
-            }
+                extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
+            )
         )
 
     def extend_union_type(type_: GraphQLUnionType) -> GraphQLUnionType:
@@ -337,33 +338,33 @@ def extend_schema_impl(
         extensions = tuple(type_extensions_map[kwargs["name"]])
 
         return GraphQLUnionType(
-            **{
-                **kwargs,
-                "types": lambda: [
+            **merge_kwargs(
+                kwargs,
+                types=lambda: [
                     cast(GraphQLObjectType, replace_named_type(member_type))
                     for member_type in kwargs["types"]
                 ]
                 + build_union_types(extensions),
-                "extension_ast_nodes": kwargs["extension_ast_nodes"] + extensions,
-            }
+                extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
+            )
         )
 
     # noinspection PyShadowingNames
     def extend_field(field: GraphQLField) -> GraphQLField:
         return GraphQLField(
-            **{  # type: ignore
-                **field.to_kwargs(),
-                "type_": replace_type(field.type),
-                "args": {name: extend_arg(arg) for name, arg in field.args.items()},
-            }
+            **merge_kwargs(
+                field.to_kwargs(),
+                type_=replace_type(field.type),
+                args={name: extend_arg(arg) for name, arg in field.args.items()},
+            )
         )
 
     def extend_arg(arg: GraphQLArgument) -> GraphQLArgument:
         return GraphQLArgument(
-            **{  # type: ignore
-                **arg.to_kwargs(),
-                "type_": replace_type(arg.type),
-            }
+            **merge_kwargs(
+                arg.to_kwargs(),
+                type_=replace_type(arg.type),
+            )
         )
 
     # noinspection PyShadowingNames
@@ -631,7 +632,7 @@ def extend_schema_impl(
             return build_function(ast_node)
 
     type_map: Dict[str, GraphQLNamedType] = {}
-    for existing_type in schema_kwargs["types"]:
+    for existing_type in schema_kwargs["types"] or ():
         type_map[existing_type.name] = extend_named_type(existing_type)
     for type_node in type_defs:
         name = type_node.name.value
@@ -640,7 +641,7 @@ def extend_schema_impl(
     # Get the extended root operation types.
     operation_types: Dict[OperationType, GraphQLNamedType] = {}
     for operation_type in OperationType:
-        original_type = schema_kwargs[operation_type.value]
+        original_type = schema_kwargs[operation_type.value]  # type: ignore
         if original_type:
             operation_types[operation_type] = replace_named_type(original_type)
     # Then, incorporate schema definition and all schema extensions.
@@ -651,24 +652,24 @@ def extend_schema_impl(
 
     # Then produce and return the kwargs for a Schema with these types.
     get_operation = operation_types.get
-    return {
-        "query": get_operation(OperationType.QUERY),
-        "mutation": get_operation(OperationType.MUTATION),
-        "subscription": get_operation(OperationType.SUBSCRIPTION),
-        "types": type_map.values(),
-        "directives": tuple(
+    return GraphQLSchemaKwargs(
+        query=get_operation(OperationType.QUERY),  # type: ignore
+        mutation=get_operation(OperationType.MUTATION),  # type: ignore
+        subscription=get_operation(OperationType.SUBSCRIPTION),  # type: ignore
+        types=tuple(type_map.values()),
+        directives=tuple(
             replace_directive(directive) for directive in schema_kwargs["directives"]
         )
         + tuple(build_directive(directive) for directive in directive_defs),
-        "description": schema_def.description.value
+        description=schema_def.description.value
         if schema_def and schema_def.description
         else None,
-        "extensions": {},
-        "ast_node": schema_def or schema_kwargs["ast_node"],
-        "extension_ast_nodes": schema_kwargs["extension_ast_nodes"]
+        extensions={},
+        ast_node=schema_def or schema_kwargs["ast_node"],
+        extension_ast_nodes=schema_kwargs["extension_ast_nodes"]
         + tuple(schema_extensions),
-        "assume_valid": assume_valid,
-    }
+        assume_valid=assume_valid,
+    )
 
 
 std_type_map: Mapping[str, Union[GraphQLNamedType, GraphQLObjectType]] = {

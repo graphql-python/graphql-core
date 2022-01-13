@@ -34,7 +34,12 @@ from .definition import (
 from .directives import GraphQLDirective, specified_directives, is_directive
 from .introspection import introspection_types
 
-__all__ = ["GraphQLSchema", "is_schema", "assert_schema"]
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+
+__all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "is_schema", "assert_schema"]
 
 
 TypeMap = Dict[str, GraphQLNamedType]
@@ -44,6 +49,19 @@ class InterfaceImplementations(NamedTuple):
 
     objects: List[GraphQLObjectType]
     interfaces: List[GraphQLInterfaceType]
+
+
+class GraphQLSchemaKwargs(TypedDict, total=False):
+    query: Optional[GraphQLObjectType]
+    mutation: Optional[GraphQLObjectType]
+    subscription: Optional[GraphQLObjectType]
+    types: Optional[Tuple[GraphQLNamedType, ...]]
+    directives: Tuple[GraphQLDirective, ...]
+    description: Optional[str]
+    extensions: Dict[str, Any]
+    ast_node: Optional[ast.SchemaDefinitionNode]
+    extension_ast_nodes: Tuple[ast.SchemaExtensionNode, ...]
+    assume_valid: bool
 
 
 class GraphQLSchema:
@@ -272,8 +290,8 @@ class GraphQLSchema:
 
                         implementations.objects.append(named_type)
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLSchemaKwargs:
+        return GraphQLSchemaKwargs(
             query=self.query_type,
             mutation=self.mutation_type,
             subscription=self.subscription_type,

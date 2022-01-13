@@ -59,6 +59,7 @@ Un-modifiers
 
 Definitions
 ^^^^^^^^^^^
+
 .. autoclass:: GraphQLEnumType
 .. autoclass:: GraphQLInputObjectType
 .. autoclass:: GraphQLInterfaceType
@@ -74,6 +75,7 @@ Type Wrappers
 
 Types
 ^^^^^
+
 .. autoclass:: GraphQLAbstractType
 .. autoclass:: GraphQLArgument
 .. autoclass:: GraphQLArgumentMap

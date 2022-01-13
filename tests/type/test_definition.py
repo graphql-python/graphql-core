@@ -344,6 +344,28 @@ def describe_type_system_fields():
 
 
 def describe_type_system_objects():
+    def defines_an_object_type():
+        fields = {"f": GraphQLField(ScalarType)}
+        interfaces = (InterfaceType,)
+        type_ = GraphQLObjectType("AnotherObjectType", fields, interfaces)
+        assert type_.name == "AnotherObjectType"
+        assert type_.fields == fields
+        assert type_.fields is not fields
+        assert type_.interfaces == interfaces
+        assert type_.interfaces is interfaces
+        assert type_.extensions == {}
+        kwargs = type_.to_kwargs()
+        assert kwargs == {
+            "name": "AnotherObjectType",
+            "description": None,
+            "fields": fields,
+            "interfaces": interfaces,
+            "is_type_of": None,
+            "extensions": {},
+            "ast_node": None,
+            "extension_ast_nodes": (),
+        }
+
     def does_not_mutate_passed_field_definitions():
         output_fields = {
             "field1": GraphQLField(ScalarType),

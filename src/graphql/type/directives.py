@@ -6,12 +6,18 @@ from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
 from .scalars import GraphQLBoolean, GraphQLString
 
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+
 __all__ = [
     "is_directive",
     "assert_directive",
     "is_specified_directive",
     "specified_directives",
     "GraphQLDirective",
+    "GraphQLDirectiveKwargs",
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
     "GraphQLDeprecatedDirective",
@@ -19,6 +25,16 @@ __all__ = [
     "DirectiveLocation",
     "DEFAULT_DEPRECATION_REASON",
 ]
+
+
+class GraphQLDirectiveKwargs(TypedDict, total=False):
+    name: str
+    locations: Tuple[DirectiveLocation, ...]
+    args: Dict[str, GraphQLArgument]
+    is_repeatable: bool
+    description: Optional[str]
+    extensions: Dict[str, Any]
+    ast_node: Optional[ast.DirectiveDefinitionNode]
 
 
 class GraphQLDirective:
@@ -116,8 +132,8 @@ class GraphQLDirective:
             and self.extensions == other.extensions
         )
 
-    def to_kwargs(self) -> Dict[str, Any]:
-        return dict(
+    def to_kwargs(self) -> GraphQLDirectiveKwargs:
+        return GraphQLDirectiveKwargs(
             name=self.name,
             locations=self.locations,
             args=self.args,
