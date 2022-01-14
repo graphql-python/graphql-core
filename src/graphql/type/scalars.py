@@ -21,17 +21,22 @@ __all__ = [
     "GraphQLString",
     "GraphQLBoolean",
     "GraphQLID",
+    "GRAPHQL_MAX_INT",
+    "GRAPHQL_MIN_INT",
 ]
 
-
-# As per the GraphQL Spec, Integers are only treated as valid when a valid
-# 32-bit signed integer, providing the broadest support across platforms.
-#
-# n.b. JavaScript's integers are safe between -(2^53 - 1) and 2^53 - 1 because
-# they are internally represented as IEEE 754 doubles,
+# As per the GraphQL Spec, Integers are only treated as valid
+# when they can be represented as a 32-bit signed integer,
+# providing the broadest support across platforms.
+# n.b. JavaScript's numbers are safe between -(2^53 - 1) and 2^53 - 1
+# because they are internally represented as IEEE 754 doubles,
 # while Python's integers may be arbitrarily large.
-MAX_INT = 2_147_483_647
-MIN_INT = -2_147_483_648
+
+GRAPHQL_MAX_INT = 2_147_483_647
+"""Maximum possible Int value as per GraphQL Spec (32-bit signed integer)"""
+
+GRAPHQL_MIN_INT = -2_147_483_648
+"""Minimum possible Int value as per GraphQL Spec (32-bit signed integer)"""
 
 
 def serialize_int(output_value: Any) -> int:
@@ -53,7 +58,7 @@ def serialize_int(output_value: Any) -> int:
         raise GraphQLError(
             "Int cannot represent non-integer value: " + inspect(output_value)
         )
-    if not MIN_INT <= num <= MAX_INT:
+    if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
         raise GraphQLError(
             "Int cannot represent non 32-bit signed integer value: "
             + inspect(output_value)
@@ -72,7 +77,7 @@ def coerce_int(input_value: Any) -> int:
         raise GraphQLError(
             "Int cannot represent non-integer value: " + inspect(input_value)
         )
-    if not MIN_INT <= input_value <= MAX_INT:
+    if not GRAPHQL_MIN_INT <= input_value <= GRAPHQL_MAX_INT:
         raise GraphQLError(
             "Int cannot represent non 32-bit signed integer value: "
             + inspect(input_value)
@@ -88,7 +93,7 @@ def parse_int_literal(value_node: ValueNode, _variables: Any = None) -> int:
             value_node,
         )
     num = int(value_node.value)
-    if not MIN_INT <= num <= MAX_INT:
+    if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
         raise GraphQLError(
             "Int cannot represent non 32-bit signed integer value: "
             + print_ast(value_node),

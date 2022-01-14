@@ -147,6 +147,9 @@ from .scalars import (
     GraphQLString,
     GraphQLBoolean,
     GraphQLID,
+    # Int boundaries constants
+    GRAPHQL_MAX_INT,
+    GRAPHQL_MIN_INT,
 )
 
 from .introspection import (
@@ -279,6 +282,8 @@ __all__ = [
     "GraphQLString",
     "GraphQLBoolean",
     "GraphQLID",
+    "GRAPHQL_MAX_INT",
+    "GRAPHQL_MIN_INT",
     "is_introspection_type",
     "introspection_types",
     "TypeKind",

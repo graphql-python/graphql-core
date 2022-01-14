@@ -247,6 +247,9 @@ from .type import (
     GraphQLString,
     GraphQLBoolean,
     GraphQLID,
+    # Int boundaries constants
+    GRAPHQL_MAX_INT,
+    GRAPHQL_MIN_INT,
     # Built-in Directives defined by the Spec
     specified_directives,
     GraphQLIncludeDirective,
@@ -471,6 +474,8 @@ __all__ = [
     "GraphQLString",
     "GraphQLBoolean",
     "GraphQLID",
+    "GRAPHQL_MAX_INT",
+    "GRAPHQL_MIN_INT",
     "specified_directives",
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
