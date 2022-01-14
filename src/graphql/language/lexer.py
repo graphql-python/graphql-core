@@ -2,7 +2,7 @@ from typing import List, NamedTuple, Optional
 
 from ..error import GraphQLSyntaxError
 from .ast import Token
-from .block_string import dedent_block_string_value
+from .block_string import dedent_block_string_lines
 from .character_classes import is_digit, is_name_start, is_name_continue
 from .source import Source
 from .token_kind import TokenKind
@@ -380,40 +380,49 @@ class Lexer:
         """Read a block string token from the source file."""
         body = self.source.body
         body_length = len(body)
-        start_line = self.line
-        start_column = 1 + start - self.line_start
+        line_start = self.line_start
 
         position = start + 3
         chunk_start = position
-        raw_value = []
+        current_line = ""
 
+        block_lines = []
         while position < body_length:
             char = body[position]
 
             if char == '"' and body[position + 1 : position + 3] == '""':
-                raw_value.append(body[chunk_start:position])
-                return Token(
+                current_line += body[chunk_start:position]
+                block_lines.append(current_line)
+
+                token = self.create_token(
                     TokenKind.BLOCK_STRING,
                     start,
                     position + 3,
-                    start_line,
-                    start_column,
-                    dedent_block_string_value("".join(raw_value)),
+                    # return a string of the lines joined with new lines
+                    "\n".join(dedent_block_string_lines(block_lines)),
                 )
 
+                self.line += len(block_lines) - 1
+                self.line_start = line_start
+                return token
+
             if char == "\\" and body[position + 1 : position + 4] == '"""':
-                raw_value.extend((body[chunk_start:position], '"""'))
+                current_line += body[chunk_start:position]
+                chunk_start = position + 1  # skip only slash
                 position += 4
-                chunk_start = position
                 continue
 
             if char in "\r\n":
+                current_line += body[chunk_start:position]
+                block_lines.append(current_line)
+
                 if char == "\r" and body[position + 1 : position + 2] == "\n":
                     position += 2
                 else:
                     position += 1
-                self.line += 1
-                self.line_start = position
+
+                current_line = ""
+                chunk_start = line_start = position
                 continue
 
             if is_unicode_scalar_value(char):

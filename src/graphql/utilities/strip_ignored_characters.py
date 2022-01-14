@@ -2,11 +2,10 @@ from typing import Union, cast
 
 from ..language import Lexer, TokenKind
 from ..language.source import Source, is_source
-from ..language.block_string import (
-    dedent_block_string_value,
-    get_block_string_indentation,
-)
+from ..language.block_string import print_block_string
 from ..language.lexer import is_punctuator_token_kind
+
+__all__ = ["strip_ignored_characters"]
 
 
 def strip_ignored_characters(source: Union[str, Source]) -> str:
@@ -86,25 +85,12 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
 
         token_body = body[current_token.start : current_token.end]
         if token_kind == TokenKind.BLOCK_STRING:
-            stripped_body += dedent_block_string(token_body)
+            stripped_body += print_block_string(
+                current_token.value or "", minimize=True
+            )
         else:
             stripped_body += token_body
 
         was_last_added_token_non_punctuator = is_non_punctuator
 
     return stripped_body
-
-
-def dedent_block_string(block_str: str) -> str:
-    """Skip leading and trailing triple quotations"""
-    raw_str = block_str[3:-3]
-    body = dedent_block_string_value(raw_str)
-
-    if get_block_string_indentation(body) > 0:
-        body = "\n" + body
-
-    has_trailing_quote = body.endswith('"') and not body.endswith('\\"""')
-    if has_trailing_quote or body.endswith("\\"):
-        body += "\n"
-
-    return '"""' + body + '"""'

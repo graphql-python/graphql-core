@@ -48,7 +48,6 @@ Print a GraphQLSchema to GraphQL Schema language:
 .. autofunction:: print_introspection_schema
 .. autofunction:: print_schema
 .. autofunction:: print_type
-.. autofunction:: print_value
 
 Create a GraphQLType from a GraphQL language AST:
 

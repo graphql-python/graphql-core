@@ -21,11 +21,13 @@ from graphql.pyutils import (
     register_description,
     unregister_description,
 )
-from graphql.utilities import get_introspection_query
+from graphql.utilities import get_introspection_query, print_schema
+
+from ..utils import dedent
 
 
 class LazyString:
-    def __init__(self, text: object):
+    def __init__(self, text: object) -> None:
         self.text = text
 
     def __str__(self) -> str:
@@ -196,7 +198,7 @@ def describe_description():
                 with raises(TypeError, match="Expected name to be a string\\."):
                     GraphQLDirective(lazy_string, [])
 
-    def introspection():
+    def handels_introspection():
         class Lazy:
             def __init__(self, text: str):
                 self.text = text
@@ -231,3 +233,38 @@ def describe_description():
         assert introspected_field["name"] == "lazyField"
         assert introspected_field["description"] == "a lazy description"
         assert introspected_field["deprecationReason"] == "a lazy reason"
+
+    def handles_printing():
+        class Lazy:
+            def __init__(self, text: str):
+                self.text = text
+                self.evaluated = False
+
+            def __str__(self) -> str:
+                self.evaluated = True
+                return self.text
+
+        description = Lazy("a lazy description")
+        deprecation_reason = Lazy("a lazy reason")
+
+        with registered(Lazy):
+            field = GraphQLField(
+                GraphQLString,
+                description=cast(str, description),
+                deprecation_reason=cast(str, deprecation_reason),
+            )
+
+        schema = GraphQLSchema(GraphQLObjectType("Query", {"lazyField": field}))
+
+        assert not description.evaluated
+        assert not deprecation_reason.evaluated
+        assert print_schema(schema) == dedent(
+            '''
+            type Query {
+              """a lazy description"""
+              lazyField: String @deprecated(reason: "a lazy reason")
+            }
+            '''
+        )
+        assert description.evaluated
+        assert deprecation_reason.evaluated

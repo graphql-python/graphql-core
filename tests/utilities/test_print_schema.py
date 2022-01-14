@@ -594,6 +594,18 @@ def describe_type_system_printer():
             '''
         )
 
+    def prints_a_description_with_only_whitespace():
+        schema = build_single_field_schema(GraphQLField(GraphQLString, description=" "))
+
+        assert expect_printed_schema(schema) == dedent(
+            """
+            type Query {
+              " "
+              singleField: String
+            }
+            """
+        )
+
     def one_line_prints_a_short_description():
         schema = build_single_field_schema(
             GraphQLField(GraphQLString, description="This field is awesome")

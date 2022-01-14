@@ -33,7 +33,7 @@ from .print_schema import (
     print_introspection_schema,
     print_schema,
     print_type,
-    print_value,
+    print_value,  # deprecated
 )
 
 # Create a GraphQLType from a GraphQL language AST.

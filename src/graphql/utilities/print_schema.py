@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast, StringValueNode
-from ..language.block_string import print_block_string
+from ..language.block_string import is_printable_as_block_string
 from ..pyutils import inspect
 from ..type import (
     DEFAULT_DEPRECATION_REASON,
@@ -282,8 +282,11 @@ def print_description(
     if description is None:
         return ""
 
-    prefer_multiple_lines = len(description) > 70
-    block_string = print_block_string(description, prefer_multiple_lines)
+    block_string = print_ast(
+        StringValueNode(
+            value=description, block=is_printable_as_block_string(description)
+        )
+    )
 
     prefix = "\n" + indentation if indentation and not first_in_block else indentation
 
