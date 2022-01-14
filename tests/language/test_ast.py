@@ -240,4 +240,32 @@ def describe_node_class():
         assert Foo.kind == "foo"
 
     def provides_keys_as_class_attribute():
-        assert SampleTestNode.keys == ["loc", "alpha", "beta"]
+        assert SampleTestNode.keys == ("loc", "alpha", "beta")
+
+    def can_can_convert_to_dict():
+        node = SampleTestNode(alpha=1, beta=2)
+        res = node.to_dict()
+        assert node.to_dict(locations=True) == res
+        assert res == {"kind": "sample_test", "alpha": 1, "beta": 2}
+        assert list(res) == ["kind", "alpha", "beta"]
+
+    def can_can_convert_to_dict_with_locations():
+        token = Token(
+            kind=TokenKind.NAME,
+            start=1,
+            end=3,
+            line=1,
+            column=1,
+            value="foo",
+        )
+        loc = Location(token, token, Source("foo"))
+        node = SampleTestNode(alpha=1, beta=2, loc=loc)
+        res = node.to_dict(locations=True)
+        assert res == {
+            "kind": "sample_test",
+            "alpha": 1,
+            "beta": 2,
+            "loc": {"start": 1, "end": 3},
+        }
+        assert list(res) == ["kind", "alpha", "beta", "loc"]
+        assert list(res["loc"]) == ["start", "end"]

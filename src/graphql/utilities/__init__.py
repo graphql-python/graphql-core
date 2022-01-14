@@ -39,6 +39,9 @@ from .print_schema import (
 # Create a GraphQLType from a GraphQL language AST.
 from .type_from_ast import type_from_ast
 
+# Convert a language AST to a dictionary.
+from .ast_to_dict import ast_to_dict
+
 # Create a Python value from a GraphQL language AST with a type.
 from .value_from_ast import value_from_ast
 
@@ -91,6 +94,7 @@ __all__ = [
     "TypeInfoVisitor",
     "assert_valid_name",
     "ast_from_value",
+    "ast_to_dict",
     "build_ast_schema",
     "build_client_schema",
     "build_schema",

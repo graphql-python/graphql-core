@@ -189,6 +189,8 @@ from .utilities import (
     print_introspection_schema,
     # Create a GraphQLType from a GraphQL language AST.
     type_from_ast,
+    # Convert a language AST to a dictionary.
+    ast_to_dict,
     # Create a Python value from a GraphQL language AST with a Type.
     value_from_ast,
     # Create a Python value from a GraphQL language AST without a Type.
@@ -744,6 +746,7 @@ __all__ = [
     "value_from_ast",
     "value_from_ast_untyped",
     "ast_from_value",
+    "ast_to_dict",
     "TypeInfo",
     "coerce_input_value",
     "concat_ast",

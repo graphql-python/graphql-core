@@ -321,7 +321,7 @@ class Node:
     loc: Optional[Location]
 
     kind: str = "ast"  # the kind of the node as a snake_case string
-    keys = ["loc"]  # the names of the attributes of this node
+    keys: Tuple[str, ...] = ("loc",)  # the names of the attributes of this node
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the node with the given keyword arguments."""
@@ -349,6 +349,7 @@ class Node:
         # Caching the hash values improves the performance of AST validators
         hashed = getattr(self, "_hash", None)
         if hashed is None:
+            self._hash = id(self)  # avoid recursion
             hashed = hash(tuple(getattr(self, key) for key in self.keys))
             self._hash = hashed
         return hashed
@@ -386,7 +387,12 @@ class Node:
             # noinspection PyUnresolvedReferences
             keys.extend(base.keys)  # type: ignore
         keys.extend(cls.__slots__)
-        cls.keys = keys
+        cls.keys = tuple(keys)
+
+    def to_dict(self, locations: bool = False) -> Dict:
+        from ..utilities import ast_to_dict
+
+        return ast_to_dict(self, locations)
 
 
 # Name
