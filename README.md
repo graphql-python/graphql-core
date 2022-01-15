@@ -98,9 +98,9 @@ Then, serve the result of a query against that type schema.
 ```python
 from graphql import graphql_sync
 
-query = '{ hello }'
+source = '{ hello }'
 
-print(graphql_sync(schema, query))
+print(graphql_sync(schema, source))
 ```
 
 This runs a query fetching the one field defined, and then prints the result:
@@ -115,9 +115,9 @@ semantically valid before executing it, reporting errors otherwise.
 ```python
 from graphql import graphql_sync
 
-query = '{ BoyHowdy }'
+source = '{ BoyHowdy }'
 
-print(graphql_sync(schema, query))
+print(graphql_sync(schema, source))
 ```
 
 Because we queried a non-existing field, we will get the following result:
