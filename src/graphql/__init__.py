@@ -314,6 +314,8 @@ from .type import (
     # Un-modifiers
     get_nullable_type,
     get_named_type,
+    # Thunk handling
+    resolve_thunk,
     # Validate GraphQL schema.
     validate_schema,
     assert_valid_schema,
@@ -532,6 +534,7 @@ __all__ = [
     "assert_named_type",
     "get_nullable_type",
     "get_named_type",
+    "resolve_thunk",
     "validate_schema",
     "assert_valid_schema",
     "assert_name",

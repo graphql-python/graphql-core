@@ -104,6 +104,7 @@ __all__ = [
     "assert_named_type",
     "get_nullable_type",
     "get_named_type",
+    "resolve_thunk",
     "GraphQLAbstractType",
     "GraphQLArgument",
     "GraphQLArgumentKwargs",

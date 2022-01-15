@@ -61,6 +61,8 @@ from .definition import (
     # Un-modifiers
     get_nullable_type,
     get_named_type,
+    # Thunk handling
+    resolve_thunk,
     # Definitions
     GraphQLScalarType,
     GraphQLObjectType,
@@ -213,6 +215,7 @@ __all__ = [
     "assert_named_type",
     "get_nullable_type",
     "get_named_type",
+    "resolve_thunk",
     "GraphQLScalarType",
     "GraphQLObjectType",
     "GraphQLInterfaceType",

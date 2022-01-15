@@ -212,6 +212,12 @@ Assertions
 Other
 -----
 
+Thunk Handling
+^^^^^^^^^^^^^^
+
+.. autofunction:: resolve_thunk
+
+
 Assertions
 ^^^^^^^^^^
 
