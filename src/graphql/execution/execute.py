@@ -497,7 +497,7 @@ class ExecutionContext:
     ) -> AwaitableOrValue[Any]:
         """Resolve the field on the given source object.
 
-        Implements the "Executing field" section of the spec.
+        Implements the "Executing fields" section of the spec.
 
         In particular, this method figures out the value that the field returns by
         calling its resolve function, then calls complete_value to await coroutine
@@ -589,15 +589,15 @@ class ExecutionContext:
     ) -> AwaitableOrValue[Any]:
         """Complete a value.
 
-        Implements the instructions for completeValue as defined in the "Field entries"
-        section of the spec.
+        Implements the instructions for completeValue as defined in the
+        "Value completion" section of the spec.
 
-        If the field type is Non-Null, then this recursively completes the value for the
-        inner type. It throws a field error if that completion returns null, as per the
-        "Nullability" section of the spec.
+        If the field type is Non-Null, then this recursively completes the value
+        for the inner type. It throws a field error if that completion returns null,
+        as per the "Nullability" section of the spec.
 
-        If the field type is a List, then this recursively completes the value for the
-        inner type on each item in the list.
+        If the field type is a List, then this recursively completes the value
+        for the inner type on each item in the list.
 
         If the field type is a Scalar or Enum, ensures the completed value is a legal
         value of the type by calling the ``serialize`` method of GraphQL type
