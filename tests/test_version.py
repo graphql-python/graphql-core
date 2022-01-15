@@ -53,6 +53,8 @@ def describe_version():
             assert str(v) == "1.2.3"
             v = VersionInfo(1, 2, 3, "alpha", 4)
             assert str(v) == "1.2.3a4"
+            v = VersionInfo(1, 2, 3, "candidate", 4)
+            assert str(v) == "1.2.3rc4"
 
     def describe_graphql_core_version():
         def base_package_has_correct_version():
