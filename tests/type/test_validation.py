@@ -1102,7 +1102,7 @@ def describe_type_system_object_fields_must_have_output_types():
 
 
 def describe_type_system_objects_can_only_implement_unique_interfaces():
-    def rejects_an_object_implementing_a_non_type_values():
+    def rejects_an_object_implementing_a_non_type_value():
         query_type = GraphQLObjectType(
             "BadObject",
             {"f": GraphQLField(GraphQLString)},
@@ -2671,7 +2671,7 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
 
 
 def describe_assert_valid_schema():
-    def do_not_throw_on_valid_schemas():
+    def does_not_throw_on_valid_schemas():
         schema = build_schema(
             (
                 """
@@ -2683,7 +2683,7 @@ def describe_assert_valid_schema():
         )
         assert_valid_schema(schema)
 
-    def include_multiple_errors_into_a_description():
+    def combines_multiple_errors():
         schema = build_schema("type SomeType")
         with raises(TypeError) as exc_info:
             assert_valid_schema(schema)
