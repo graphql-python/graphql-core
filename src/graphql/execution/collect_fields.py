@@ -30,7 +30,7 @@ def collect_fields(
 ) -> Dict[str, List[FieldNode]]:
     """Collect fields.
 
-    Given a selection_set, collects all of the fields returns them at the end.
+    Given a selection_set, collects all the fields and returns them.
 
     collect_fields requires the "runtime type" of an object. For a field that
     returns an Interface or Union type, the "runtime type" will be the actual
@@ -54,8 +54,8 @@ def collect_sub_fields(
 ) -> Dict[str, List[FieldNode]]:
     """Collect sub fields.
 
-    Given a list of field nodes, collects all of the subfields of the passed
-    in fields, and returns them at the end.
+    Given a list of field nodes, collects all the subfields of the passed in fields,
+    and returns them at the end.
 
     collect_sub_fields requires the "return type" of an object. For a field that
     returns an Interface or Union type, the "return type" will be the actual
