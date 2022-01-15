@@ -73,47 +73,47 @@ def describe_lexer():
 
     def errors_respect_whitespace():
         with raises(GraphQLSyntaxError) as exc_info:
-            lex_one("\n\n    ?\n")
+            lex_one("\n\n ~\n")
 
         assert str(exc_info.value) == dedent(
             """
-            Syntax Error: Unexpected character: '?'.
+            Syntax Error: Unexpected character: '~'.
 
-            GraphQL request:3:5
+            GraphQL request:3:2
             2 |
-            3 |     ?
+            3 |     ~
               |     ^
             4 |
             """
         )
 
     def updates_line_numbers_in_error_for_file_context():
-        s = "\n\n     ?\n\n"
+        s = "\n\n     ~\n\n"
         source = Source(s, "foo.js", SourceLocation(11, 12))
         with raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
         assert str(exc_info.value) == dedent(
             """
-            Syntax Error: Unexpected character: '?'.
+            Syntax Error: Unexpected character: '~'.
 
             foo.js:13:6
             12 |
-            13 |      ?
+            13 |      ~
                |      ^
             14 |
             """
         )
 
     def updates_column_numbers_in_error_for_file_context():
-        source = Source("?", "foo.js", SourceLocation(1, 5))
+        source = Source("~", "foo.js", SourceLocation(1, 5))
         with raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
         assert str(exc_info.value) == dedent(
             """
-            Syntax Error: Unexpected character: '?'.
+            Syntax Error: Unexpected character: '~'.
 
             foo.js:1:5
-            1 |     ?
+            1 |     ~
               |     ^
             """
         )
@@ -527,7 +527,7 @@ def describe_lexer():
 
     def lex_reports_useful_unknown_character_error():
         assert_syntax_error("..", "Unexpected character: '.'.", (1, 1))
-        assert_syntax_error("?", "Unexpected character: '?'.", (1, 1))
+        assert_syntax_error("~", "Unexpected character: '~'.", (1, 1))
         assert_syntax_error("\x00", "Unexpected character: U+0000.", (1, 1))
         assert_syntax_error("\b", "Unexpected character: U+0008.", (1, 1))
         assert_syntax_error("\xAA", "Unexpected character: U+00AA.", (1, 1))
