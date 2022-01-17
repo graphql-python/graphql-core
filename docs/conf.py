@@ -121,6 +121,8 @@ graphql_modules = {
 graphql_classes = {
     'GraphQLAbstractType': 'type',
     'GraphQLObjectType': 'type',
+    'GraphQLOutputType': 'type',
+    'GraphQLTypeResolver': 'type',
     'Node': 'language',
     'Source': 'language',
     'SourceLocation': 'language'
@@ -134,6 +136,8 @@ traceback
 types.TracebackType
 EnterLeaveVisitor
 FormattedSourceLocation
+GraphQLAbstractType
+GraphQLOutputType
 asyncio.events.AbstractEventLoop
 graphql.execution.map_async_iterator.MapAsyncIterator
 graphql.language.lexer.EscapeSequence
