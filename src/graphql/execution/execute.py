@@ -99,8 +99,8 @@ __all__ = [
 class FormattedExecutionResult(TypedDict, total=False):
     """Formatted execution result"""
 
-    errors: Optional[List[GraphQLFormattedError]]
     data: Optional[Dict[str, Any]]
+    errors: Optional[List[GraphQLFormattedError]]
     extensions: Optional[Dict[str, Any]]
 
 
