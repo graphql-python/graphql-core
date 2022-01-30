@@ -164,7 +164,7 @@ async def subscribe_user(_root, info, id=None):
     """Subscribe to mutations of a specific user object or all user objects"""
     async_iterator = info.context["registry"].event_iterator(id)
     async for event in async_iterator:
-        yield await event if isawaitable(event) else event
+        yield await event if isawaitable(event) else event  # pragma: no cover exit
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
@@ -498,13 +498,13 @@ def describe_subscription():
             )
 
         async def receive_one():
-            async for result in subscription_one:  # type: ignore
+            async for result in subscription_one:  # type: ignore # pragma: no cover
                 received_one.append(result)
                 if len(received_one) == 3:  # pragma: no cover else
                     break
 
         async def receive_all():
-            async for result in subscription_all:  # type: ignore
+            async for result in subscription_all:  # type: ignore # pragma: no cover
                 received_all.append(result)
                 if len(received_all) == 6:  # pragma: no cover else
                     break
