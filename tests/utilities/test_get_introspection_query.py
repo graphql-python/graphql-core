@@ -32,7 +32,7 @@ class ExcpectIntrospectionQuery:
 
     @staticmethod
     def to_reg_exp(name: str) -> Pattern:
-        return re.compile(fr"\b{name}\b")
+        return re.compile(rf"\b{name}\b")
 
 
 def describe_get_introspection_query():

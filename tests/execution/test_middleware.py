@@ -157,20 +157,17 @@ def describe_middleware():
             class BadMiddleware:
                 pass  # no resolve method here
 
-            assert (
-                execute(
-                    GraphQLSchema(
-                        GraphQLObjectType(
-                            "TestType",
-                            {"foo": GraphQLField(GraphQLString)},
-                        )
-                    ),
-                    parse("{ foo }"),
-                    {"foo": "bar"},
-                    middleware=MiddlewareManager(BadMiddleware()),
-                )
-                == ({"foo": "bar"}, None)
-            )
+            assert execute(
+                GraphQLSchema(
+                    GraphQLObjectType(
+                        "TestType",
+                        {"foo": GraphQLField(GraphQLString)},
+                    )
+                ),
+                parse("{ foo }"),
+                {"foo": "bar"},
+                middleware=MiddlewareManager(BadMiddleware()),
+            ) == ({"foo": "bar"}, None)
 
         def with_function_and_object():
             doc = parse("{ field }")

@@ -36,27 +36,21 @@ def describe_execute_resolve_function():
     def default_function_accesses_keys_of_dict():
         root_value = {"test": "testValue"}
 
-        assert (
-            execute_sync(
-                schema=_test_schema(GraphQLField(GraphQLString)),
-                document=parse("{ test }"),
-                root_value=root_value,
-            )
-            == ({"test": "testValue"}, None)
-        )
+        assert execute_sync(
+            schema=_test_schema(GraphQLField(GraphQLString)),
+            document=parse("{ test }"),
+            root_value=root_value,
+        ) == ({"test": "testValue"}, None)
 
     def default_function_accesses_keys_of_chain_map():
         # use a mapping that is not a subclass of dict
         root_value = ChainMap({"test": "testValue"})
 
-        assert (
-            execute_sync(
-                schema=_test_schema(GraphQLField(GraphQLString)),
-                document=parse("{ test }"),
-                root_value=root_value,
-            )
-            == ({"test": "testValue"}, None)
-        )
+        assert execute_sync(
+            schema=_test_schema(GraphQLField(GraphQLString)),
+            document=parse("{ test }"),
+            root_value=root_value,
+        ) == ({"test": "testValue"}, None)
 
     def default_function_calls_methods():
         class RootValue:
