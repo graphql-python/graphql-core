@@ -5,6 +5,7 @@ from typing import (
     Collection,
     Dict,
     Generic,
+    List,
     Mapping,
     NamedTuple,
     Optional,
@@ -583,7 +584,7 @@ class GraphQLResolveInfo(NamedTuple):
     """
 
     field_name: str
-    field_nodes: Collection[FieldNode]
+    field_nodes: List[FieldNode]
     return_type: "GraphQLOutputType"
     parent_type: "GraphQLObjectType"
     path: Path
