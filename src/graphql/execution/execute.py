@@ -408,12 +408,6 @@ class ExecutionContext:
                 )
             else:
                 cast(Dict[str, Any], results)[response_name] = result
-        if is_awaitable(results):
-            # noinspection PyShadowingNames
-            async def get_results() -> Any:
-                return await cast(Awaitable, results)
-
-            return get_results()
         return results
 
     def execute_fields(
