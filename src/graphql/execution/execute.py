@@ -526,7 +526,6 @@ class ExecutionContext:
             # value as part of the resolve info.
             result = resolve_fn(source, info, **args)
 
-            completed: AwaitableOrValue[Any]
             if self.is_awaitable(result):
                 # noinspection PyShadowingNames
                 async def await_result() -> Any:
