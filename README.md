@@ -50,10 +50,10 @@ GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
     python -m pip install graphql-core
 
-You can also use [pipenv](https://docs.pipenv.org/) for installation in a
+You can also use [poetry](https://github.com/python-poetry/poetry) for installation in a
 virtual environment:
 
-    pipenv install graphql-core
+    poetry install
 
 
 ## Usage

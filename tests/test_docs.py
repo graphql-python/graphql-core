@@ -50,8 +50,8 @@ def describe_introduction():
         intro = get_snippets("intro")
         pip_install = intro.pop(0)
         assert "pip install" in pip_install and "graphql-core" in pip_install
-        pipenv_install = intro.pop(0)
-        assert "pipenv install" in pipenv_install and "graphql-core" in pipenv_install
+        poetry_install = intro.pop(0)
+        assert "poetry install" in poetry_install
         create_schema = intro.pop(0)
         assert "schema = GraphQLSchema(" in create_schema
         scope: Scope = {}
