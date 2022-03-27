@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 from typing import Awaitable
 
 from pytest import mark
@@ -21,18 +21,19 @@ class Barrier:
     """Barrier that makes progress only after a certain number of waits."""
 
     def __init__(self, number: int):
-        self.event = asyncio.Event()
+        self.event = anyio.Event()
         self.number = number
 
     async def wait(self) -> bool:
         self.number -= 1
         if not self.number:
             self.event.set()
-        return await self.event.wait()
+        await self.event.wait()
+        return True
 
 
 def describe_parallel_execution():
-    @mark.asyncio
+    @mark.anyio
     async def resolve_fields_in_parallel():
         barrier = Barrier(2)
 
@@ -54,11 +55,13 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        
+        with anyio.fail_after(1.0):
+            result = await awaitable_result
 
         assert result == ({"foo": True, "bar": True}, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def resolve_list_in_parallel():
         barrier = Barrier(2)
 
@@ -84,11 +87,12 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        with anyio.fail_after(1.0):
+            result = await awaitable_result
 
         assert result == ({"foo": [True, True]}, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def resolve_is_type_of_in_parallel():
         FooType = GraphQLInterfaceType("Foo", {"foo": GraphQLField(GraphQLString)})
 
@@ -147,7 +151,8 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        with anyio.fail_after(1.0):
+            result = await awaitable_result
 
         assert result == (
             {"foo": [{"foo": "bar", "foobar": 1}, {"foo": "baz", "foobaz": 2}]},

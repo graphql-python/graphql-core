@@ -1,6 +1,21 @@
 # pytest configuration
 
+import sys
+
 import pytest
+
+if sys.version_info >= (3, 7):
+    event_loops = [
+        pytest.param(("asyncio"), id="asyncio"),
+        pytest.param(("trio"), id="trio"),
+    ]
+else:
+    event_loops = [pytest.param(("asyncio"), id="asyncio")]
+
+
+@pytest.fixture(params=event_loops)
+def anyio_backend(request):
+    return request.param
 
 
 def pytest_addoption(parser):

@@ -4,23 +4,18 @@ This is an additional end-to-end test and demo for running the basic GraphQL
 operations on a simulated user registry database backend.
 """
 
-from asyncio import sleep, wait
+from anyio import create_task_group, fail_after, sleep
 from collections import defaultdict
 from enum import Enum
 from inspect import isawaitable
 from typing import Any, Dict, List, NamedTuple, Optional
-
-try:
-    from asyncio import create_task
-except ImportError:  # Python < 3.7
-    create_task = None  # type: ignore
 
 from pytest import fixture, mark
 
 from graphql import (
     graphql,
     parse,
-    subscribe,
+    subscribe, 
     GraphQLArgument,
     GraphQLBoolean,
     GraphQLEnumType,
@@ -227,7 +222,7 @@ def context():
 
 
 def describe_query():
-    @mark.asyncio
+    @mark.anyio
     async def query_user(context):
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
@@ -259,7 +254,7 @@ def describe_query():
 
 
 def describe_mutation():
-    @mark.asyncio
+    @mark.anyio
     async def create_user(context):
         received = {}
 
@@ -306,7 +301,7 @@ def describe_mutation():
             "User 0": {"user": user, "mutation": MutationEnum.CREATED.value},
         }
 
-    @mark.asyncio
+    @mark.anyio
     async def update_user(context):
         received = {}
 
@@ -362,7 +357,7 @@ def describe_mutation():
             "User 0": {"user": user, "mutation": MutationEnum.UPDATED.value},
         }
 
-    @mark.asyncio
+    @mark.anyio
     async def delete_user(context):
         received = {}
 
@@ -404,7 +399,7 @@ def describe_mutation():
 
 
 def describe_subscription():
-    @mark.asyncio
+    @mark.anyio
     async def subscribe_to_user_mutations(context):
         query = """
             subscription ($userId: ID!) {
@@ -509,12 +504,11 @@ def describe_subscription():
                 if len(received_all) == 6:  # pragma: no cover else
                     break
 
-        tasks = [
-            create_task(task()) if create_task else task()
-            for task in (mutate_users, receive_one, receive_all)
-        ]
-        done, pending = await wait(tasks, timeout=1)
-        assert not pending
+        with fail_after(delay=1):
+            async with create_task_group() as tg:
+                tg.start_soon(mutate_users)
+                tg.start_soon(receive_one)
+                tg.start_soon(receive_all)
 
         expected_data: List[Dict[str, Any]] = [
             {

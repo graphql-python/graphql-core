@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 
 from typing import Any, Dict, List, Callable
 
@@ -121,7 +121,7 @@ DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString
 
 # Check all error cases when initializing the subscription.
 def describe_subscription_initialization_phase():
-    @mark.asyncio
+    @mark.anyio
     async def accepts_positional_arguments():
         document = parse(
             """
@@ -143,7 +143,7 @@ def describe_subscription_initialization_phase():
             await anext(ai)
         await ai.aclose()  # type: ignore
 
-    @mark.asyncio
+    @mark.anyio
     async def accepts_multiple_subscription_fields_defined_in_schema():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -168,7 +168,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()
 
-    @mark.asyncio
+    @mark.anyio
     async def accepts_type_definition_with_sync_subscribe_function():
         async def foo_generator(_obj, _info):
             yield {"foo": "FooValue"}
@@ -188,10 +188,10 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()
 
-    @mark.asyncio
+    @mark.anyio
     async def accepts_type_definition_with_async_subscribe_function():
         async def foo_generator(_obj, _info):
-            await asyncio.sleep(0)
+            await anyio.sleep(0)
             yield {"foo": "FooValue"}
 
         schema = GraphQLSchema(
@@ -209,7 +209,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()
 
-    @mark.asyncio
+    @mark.anyio
     async def uses_a_custom_default_subscribe_field_resolver():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -238,7 +238,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()
 
-    @mark.asyncio
+    @mark.anyio
     async def should_only_resolve_the_first_field_of_invalid_multi_field():
         did_resolve = {"foo": False, "bar": False}
 
@@ -273,7 +273,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()
 
-    @mark.asyncio
+    @mark.anyio
     async def throws_an_error_if_some_of_required_arguments_are_missing():
         document = parse("subscription { foo }")
 
@@ -296,7 +296,7 @@ def describe_subscription_initialization_phase():
         with raises(TypeError, match="missing .* positional argument: 'document'"):
             await subscribe(schema=schema)  # type: ignore
 
-    @mark.asyncio
+    @mark.anyio
     async def resolves_to_an_error_if_schema_does_not_support_subscriptions():
         schema = GraphQLSchema(query=DummyQueryType)
         document = parse("subscription { unknownField }")
@@ -314,7 +314,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def resolves_to_an_error_for_unknown_subscription_field():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -335,7 +335,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def should_pass_through_unexpected_errors_thrown_in_subscribe():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -346,7 +346,7 @@ def describe_subscription_initialization_phase():
         with raises(TypeError, match="^Must provide document\\.$"):
             await subscribe(schema=schema, document={})  # type: ignore
 
-    @mark.asyncio
+    @mark.anyio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
         schema = GraphQLSchema(
@@ -370,7 +370,7 @@ def describe_subscription_initialization_phase():
             "Subscription field must return AsyncIterable. Received: 'test'."
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def resolves_to_an_error_for_subscription_resolver_errors():
         async def subscribe_with_fn(subscribe_fn: Callable):
             schema = GraphQLSchema(
@@ -421,7 +421,7 @@ def describe_subscription_initialization_phase():
 
         assert await subscribe_with_fn(reject_error) == expected_result
 
-    @mark.asyncio
+    @mark.anyio
     async def resolves_to_an_error_if_variables_were_wrong_type():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -464,7 +464,7 @@ def describe_subscription_initialization_phase():
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.
 def describe_subscription_publish_phase():
-    @mark.asyncio
+    @mark.anyio
     async def produces_a_payload_for_multiple_subscribe_in_same_subscription():
         pubsub = SimplePubSub()
 
@@ -499,7 +499,7 @@ def describe_subscription_publish_phase():
         assert await payload1 == (expected_payload, None)
         assert await payload2 == (expected_payload, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def produces_a_payload_per_subscription_event():
         pubsub = SimplePubSub()
         subscription = await create_subscription(pubsub)
@@ -577,7 +577,7 @@ def describe_subscription_publish_phase():
         with raises(StopAsyncIteration):
             assert await anext(subscription)
 
-    @mark.asyncio
+    @mark.anyio
     async def produces_a_payload_when_there_are_multiple_events():
         pubsub = SimplePubSub()
         subscription = await create_subscription(pubsub)
@@ -633,7 +633,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def should_not_trigger_when_subscription_is_already_done():
         pubsub = SimplePubSub()
         subscription = await create_subscription(pubsub)
@@ -683,7 +683,7 @@ def describe_subscription_publish_phase():
         with raises(StopAsyncIteration):
             await payload
 
-    @mark.asyncio
+    @mark.anyio
     async def should_not_trigger_when_subscription_is_thrown():
         pubsub = SimplePubSub()
         subscription = await create_subscription(pubsub)
@@ -724,7 +724,7 @@ def describe_subscription_publish_phase():
         with raises(StopAsyncIteration):
             await payload
 
-    @mark.asyncio
+    @mark.anyio
     async def event_order_is_correct_for_multiple_publishes():
         pubsub = SimplePubSub()
         subscription = await create_subscription(pubsub)
@@ -780,7 +780,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def should_handle_error_during_execution_of_source_event():
         async def generate_messages(_obj, _info):
             yield "Hello"
@@ -828,7 +828,7 @@ def describe_subscription_publish_phase():
         # Subsequent events are still executed.
         assert await anext(subscription) == ({"newMessage": "Bonjour"}, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def should_pass_through_error_thrown_in_source_event_stream():
         async def generate_messages(_obj, _info):
             yield "Hello"
@@ -865,7 +865,7 @@ def describe_subscription_publish_phase():
         with raises(StopAsyncIteration):
             await anext(subscription)
 
-    @mark.asyncio
+    @mark.anyio
     async def should_work_with_async_resolve_function():
         async def generate_messages(_obj, _info):
             yield "Hello"

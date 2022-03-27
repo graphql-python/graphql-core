@@ -52,7 +52,7 @@ def describe_execute_synchronously_when_possible():
             None,
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def returns_an_awaitable_if_any_field_is_asynchronous():
         doc = "query Example { syncField, asyncField }"
         result = execute(schema, parse(doc), "rootValue")
@@ -81,7 +81,7 @@ def describe_execute_synchronously_when_possible():
                 None,
             )
 
-        @mark.asyncio
+        @mark.anyio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_execution_with_check_sync():
             doc = "query Example { syncField, asyncField }"
@@ -92,7 +92,7 @@ def describe_execute_synchronously_when_possible():
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
 
-        @mark.asyncio
+        @mark.anyio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"
@@ -150,7 +150,7 @@ def describe_execute_synchronously_when_possible():
                 None,
             )
 
-        @mark.asyncio
+        @mark.anyio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_operation_with_check_sync():
             doc = "query Example { syncField, asyncField }"
@@ -159,7 +159,7 @@ def describe_execute_synchronously_when_possible():
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
 
-        @mark.asyncio
+        @mark.anyio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"

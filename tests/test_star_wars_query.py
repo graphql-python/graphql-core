@@ -7,7 +7,7 @@ from .star_wars_schema import star_wars_schema as schema
 
 def describe_star_wars_query_tests():
     def describe_basic_queries():
-        @mark.asyncio
+        @mark.anyio
         async def correctly_identifies_r2_d2_as_hero_of_the_star_wars_saga():
             source = """
                 query HeroNameQuery {
@@ -19,7 +19,7 @@ def describe_star_wars_query_tests():
             result = await graphql(schema=schema, source=source)
             assert result == ({"hero": {"name": "R2-D2"}}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def accepts_positional_arguments_to_graphql():
             source = """
                 query HeroNameQuery {
@@ -34,7 +34,7 @@ def describe_star_wars_query_tests():
             sync_result = graphql_sync(schema, source)
             assert sync_result == result
 
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_query_for_the_id_and_friends_of_r2_d2():
             source = """
                 query HeroNameAndFriendsQuery {
@@ -64,7 +64,7 @@ def describe_star_wars_query_tests():
             )
 
     def describe_nested_queries():
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_query_for_the_friends_of_friends_of_r2_d2():
             source = """
                 query NestedQuery {
@@ -122,7 +122,7 @@ def describe_star_wars_query_tests():
             )
 
     def describe_using_ids_and_query_parameters_to_refetch_objects():
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_query_for_r2_d2_directly_using_his_id():
             source = """
                 query {
@@ -134,7 +134,7 @@ def describe_star_wars_query_tests():
             result = await graphql(schema=schema, source=source)
             assert result == ({"droid": {"name": "R2-D2"}}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_query_characters_directly_using_their_id():
             source = """
                 query FetchLukeAndC3POQuery {
@@ -152,7 +152,7 @@ def describe_star_wars_query_tests():
                 None,
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def allows_creating_a_generic_query_to_fetch_luke_using_his_id():
             source = """
                 query FetchSomeIDQuery($someId: String!) {
@@ -167,7 +167,7 @@ def describe_star_wars_query_tests():
             )
             assert result == ({"human": {"name": "Luke Skywalker"}}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def allows_creating_a_generic_query_to_fetch_han_using_his_id():
             source = """
                 query FetchSomeIDQuery($someId: String!) {
@@ -182,7 +182,7 @@ def describe_star_wars_query_tests():
             )
             assert result == ({"human": {"name": "Han Solo"}}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def generic_query_that_gets_null_back_when_passed_invalid_id():
             source = """
                 query humanQuery($id: String!) {
@@ -198,7 +198,7 @@ def describe_star_wars_query_tests():
             assert result == ({"human": None}, None)
 
     def describe_using_aliases_to_change_the_key_in_the_response():
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_query_for_luke_changing_his_key_with_an_alias():
             source = """
                 query FetchLukeAliased {
@@ -210,7 +210,7 @@ def describe_star_wars_query_tests():
             result = await graphql(schema=schema, source=source)
             assert result == ({"luke": {"name": "Luke Skywalker"}}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def query_for_luke_and_leia_using_two_root_fields_and_an_alias():
             source = """
                 query FetchLukeAndLeiaAliased {
@@ -229,7 +229,7 @@ def describe_star_wars_query_tests():
             )
 
     def describe_uses_fragments_to_express_more_complex_queries():
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_query_using_duplicated_content():
             source = """
                 query DuplicateFields {
@@ -252,7 +252,7 @@ def describe_star_wars_query_tests():
                 None,
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_use_a_fragment_to_avoid_duplicating_content():
             source = """
                 query UseFragment {
@@ -278,7 +278,7 @@ def describe_star_wars_query_tests():
             )
 
     def describe_using_typename_to_find_the_type_of_an_object():
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_verify_that_r2_d2_is_a_droid():
             source = """
                 query CheckTypeOfR2 {
@@ -291,7 +291,7 @@ def describe_star_wars_query_tests():
             result = await graphql(schema=schema, source=source)
             assert result == ({"hero": {"__typename": "Droid", "name": "R2-D2"}}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def allows_us_to_verify_that_luke_is_a_human():
             source = """
                 query CheckTypeOfLuke {
@@ -308,7 +308,7 @@ def describe_star_wars_query_tests():
             )
 
     def describe_reporting_errors_raised_in_resolvers():
-        @mark.asyncio
+        @mark.anyio
         async def correctly_reports_error_on_accessing_secret_backstory():
             source = """
                 query HeroNameQuery {
@@ -330,7 +330,7 @@ def describe_star_wars_query_tests():
                 ],
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def correctly_reports_error_on_accessing_backstory_in_a_list():
             source = """
                 query HeroNameQuery {
@@ -374,7 +374,7 @@ def describe_star_wars_query_tests():
                 ],
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def correctly_reports_error_on_accessing_through_an_alias():
             source = """
                 query HeroNameQuery {

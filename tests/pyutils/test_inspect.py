@@ -137,7 +137,7 @@ def describe_inspect():
         assert inspect(test_generator) == "<generator function test_generator>"
         assert inspect(test_generator()) == "<generator test_generator>"
 
-    @mark.asyncio
+    @mark.anyio
     async def inspect_coroutine():
         async def test_coroutine():
             pass

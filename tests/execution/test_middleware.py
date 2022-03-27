@@ -90,7 +90,7 @@ def describe_middleware():
 
             assert result.data == {"first": "Eno", "second": "Owt"}  # type: ignore
 
-        @mark.asyncio
+        @mark.anyio
         async def single_async_function():
             doc = parse("{ first second }")
 
@@ -202,7 +202,7 @@ def describe_middleware():
             )
             assert result.data == {"field": "devloseR"}  # type: ignore
 
-        @mark.asyncio
+        @mark.anyio
         async def with_async_function_and_object():
             doc = parse("{ field }")
 
