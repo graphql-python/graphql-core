@@ -90,8 +90,6 @@ def describe_ast_from_value():
             value="123456789.01234567"
         )
 
-        assert ast_from_value(1.0, GraphQLFloat) == FloatValueNode(value="1")
-
         assert ast_from_value(1.1, GraphQLFloat) == FloatValueNode(value="1.1")
 
     def converts_string_values_to_string_asts():
