@@ -1,4 +1,4 @@
-from asyncio import sleep
+from anyio import sleep
 from inspect import isawaitable
 
 from pytest import mark, raises
@@ -7,11 +7,12 @@ from graphql.pyutils import SimplePubSub
 
 
 def describe_simple_pub_sub():
-    @mark.asyncio
-    async def subscribe_async_iterator_mock():
+    @mark.parametrize("anyio_backend", ["asyncio"])
+    async def subscribe_async_iterator_mock(anyio_backend):
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()
 
+        assert iterator.__aiter__() == iterator
         # Queue up publishes
         assert pubsub.emit("Apple") is True
         assert pubsub.emit("Banana") is True
@@ -51,8 +52,8 @@ def describe_simple_pub_sub():
         with raises(StopAsyncIteration):
             await iterator.__anext__()
 
-    @mark.asyncio
-    async def iterator_aclose_empties_push_queue():
+    @mark.parametrize("anyio_backend", ["asyncio"])
+    async def iterator_aclose_empties_push_queue(anyio_backend):
         pubsub = SimplePubSub()
         assert not pubsub.subscribers
         iterator = pubsub.get_subscriber()
@@ -69,8 +70,8 @@ def describe_simple_pub_sub():
         assert iterator.pull_queue.qsize() == 0
         assert not iterator.listening
 
-    @mark.asyncio
-    async def iterator_aclose_empties_pull_queue():
+    @mark.parametrize("anyio_backend", ["asyncio"])
+    async def iterator_aclose_empties_pull_queue(anyio_backend):
         pubsub = SimplePubSub()
         assert not pubsub.subscribers
         iterator = pubsub.get_subscriber()
@@ -86,11 +87,26 @@ def describe_simple_pub_sub():
         assert iterator.pull_queue.qsize() == 0
         assert not iterator.listening
 
-    @mark.asyncio
-    async def iterator_aclose_is_idempotent():
+    @mark.parametrize("anyio_backend", ["asyncio"])
+    async def iterator_aclose_is_idempotent(anyio_backend):
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()
         assert iterator.listening
         for n in range(3):
             await iterator.aclose()
             assert not iterator.listening
+
+    @mark.parametrize("anyio_backend", ["asyncio"])
+    async def non_async_subscriber(anyio_backend):
+        message = "test message"
+        received_message = False
+
+        def get_msg(evt):
+            nonlocal received_message
+            assert evt == message
+            received_message = True
+
+        pubsub = SimplePubSub()
+        pubsub.subscribers.add(get_msg)
+        pubsub.emit(message)
+        assert received_message

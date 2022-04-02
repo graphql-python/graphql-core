@@ -42,15 +42,13 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.6,>=3.6.2"
 typing-extensions = { version = "^4.0", python = "<3.8" }
+anyio = "^3.5.0"
+trio = { version = "^0.20.0", python = ">=3.7", optional=true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
-pytest-asyncio = [
-    {version=">=0.17,<1", python = ">=3.7" },
-    {version=">=0.16,<0.17", python = "<3.7" },
-]
 pytest-benchmark = "^3.4"
 pytest-cov = "^3.0"
 pytest-describe = "^2.0"
@@ -66,6 +64,11 @@ sphinx_rtd_theme = ">=1,<2"
 check-manifest = ">=0.47,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.24"
+trio-typing = "^0.7.0"
+
+[tool.poetry.extras]
+trio = ["trio"]
+
 
 [tool.black]
 target-version = ['py36', 'py37', 'py38', 'py39', 'py310']

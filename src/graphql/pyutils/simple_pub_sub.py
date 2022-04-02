@@ -17,6 +17,8 @@ class SimplePubSub:
     Creates an AsyncIterator from an EventEmitter.
 
     Useful for mocking a PubSub system for tests.
+
+    Warning: Only works with an asyncio event loop.
     """
 
     subscribers: Set[Callable]
@@ -39,6 +41,10 @@ class SimplePubSub:
 
 
 class SimplePubSubIterator(AsyncIterator):
+    """
+    Warning: Only works with an asyncio event loop.
+    """
+
     def __init__(self, pubsub: SimplePubSub, transform: Optional[Callable]) -> None:
         self.pubsub = pubsub
         self.transform = transform

@@ -118,7 +118,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
             return IntValueNode(value=str(serialized))
         if isinstance(serialized, float) and isfinite(serialized):
             value = str(serialized)
-            if value.endswith('.0'):
+            if value.endswith(".0"):
                 value = value[:-2]
             return FloatValueNode(value=value)
 

@@ -125,12 +125,12 @@ def describe_execute_handles_non_nullable_types():
             }
             """
 
-        @mark.asyncio
+        @mark.anyio
         async def returns_null():
             result = await execute_sync_and_async(query, NullingData())
             assert result == ({"sync": None}, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def throws():
             result = await execute_sync_and_async(query, ThrowingData())
             assert result == (
@@ -154,7 +154,7 @@ def describe_execute_handles_non_nullable_types():
             }
             """
 
-        @mark.asyncio
+        @mark.anyio
         async def that_returns_null():
             result = await execute_sync_and_async(query, NullingData())
             assert result == (
@@ -169,7 +169,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def that_throws():
             result = await execute_sync_and_async(query, ThrowingData())
             assert result == (
@@ -215,14 +215,14 @@ def describe_execute_handles_non_nullable_types():
             },
         }
 
-        @mark.asyncio
+        @mark.anyio
         async def returns_null():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, NullingData())
             )
             assert result == (data, None)
 
-        @mark.asyncio
+        @mark.anyio
         async def throws():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, ThrowingData())
@@ -349,7 +349,7 @@ def describe_execute_handles_non_nullable_types():
             "anotherPromiseNest": None,
         }
 
-        @mark.asyncio
+        @mark.anyio
         async def returns_null():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, NullingData())
@@ -412,7 +412,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def throws():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, ThrowingData())
@@ -478,7 +478,7 @@ def describe_execute_handles_non_nullable_types():
             }
             """
 
-        @mark.asyncio
+        @mark.anyio
         async def returns_null():
             result = await execute_sync_and_async(query, NullingData())
             assert result == (
@@ -493,7 +493,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-        @mark.asyncio
+        @mark.anyio
         async def throws():
             result = await execute_sync_and_async(query, ThrowingData())
             assert result == (

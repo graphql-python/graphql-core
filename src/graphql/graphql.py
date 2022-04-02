@@ -1,4 +1,5 @@
 from asyncio import ensure_future
+from sniffio import current_async_library
 from inspect import isawaitable
 from typing import Any, Awaitable, Callable, Dict, Optional, Union, Type, cast
 
@@ -143,7 +144,8 @@ def graphql_sync(
 
     # Assert that the execution was synchronous.
     if isawaitable(result):
-        ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
+        if current_async_library() == "asyncio":
+            ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
     return cast(ExecutionResult, result)

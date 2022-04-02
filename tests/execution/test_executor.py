@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 from typing import cast, Any, Awaitable, Optional
 
 from pytest import mark, raises
@@ -91,7 +91,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert result == ({"a": "rootValue"}, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def executes_arbitrary_code():
         # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class Data:
@@ -137,7 +137,7 @@ def describe_execute_handles_basic_execution_tasks():
                 return [Data(), None, Data()]
 
         async def promise_data():
-            await asyncio.sleep(0)
+            await anyio.sleep(0)
             return Data()
 
         DeepDataType: GraphQLObjectType
@@ -422,7 +422,7 @@ def describe_execute_handles_basic_execution_tasks():
         assert len(resolved_args) == 1
         assert resolved_args[0] == {"numArg": 123, "stringArg": "foo"}
 
-    @mark.asyncio
+    @mark.anyio
     async def nulls_out_error_subtrees():
         document = parse(
             """
@@ -832,7 +832,7 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def correct_field_ordering_despite_execution_order():
         schema = GraphQLSchema(
             GraphQLObjectType(
@@ -948,7 +948,7 @@ def describe_execute_handles_basic_execution_tasks():
             None,
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def fails_when_is_type_of_check_is_not_met():
         class Special:
             value: str

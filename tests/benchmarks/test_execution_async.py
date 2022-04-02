@@ -1,4 +1,7 @@
 import asyncio
+
+from pytest import mark
+
 from graphql import (
     GraphQLSchema,
     GraphQLObjectType,
@@ -37,7 +40,10 @@ schema = GraphQLSchema(
 )
 
 
-def test_execute_basic_async(benchmark):
+@mark.parametrize("anyio_backend", ["asyncio"])
+def test_execute_basic_async(anyio_backend, benchmark):
+    # Note: test too low level for anyio, duplicated test for trio below
+
     # Note: we are creating the async loop outside of the benchmark code so that
     # the setup is not included in the benchmark timings
     loop = asyncio.events.new_event_loop()
@@ -47,6 +53,22 @@ def test_execute_basic_async(benchmark):
     )
     asyncio.events.set_event_loop(None)
     loop.close()
+    assert not result.errors
+    assert result.data == {
+        "user": {
+            "id": "1",
+            "name": "Sarah",
+        },
+    }
+
+
+@mark.parametrize("anyio_backend", ["trio"])
+def test_execute_basic_async_trio(anyio_backend, benchmark):
+    # TODO: can the trio loop be started beforehand?
+    # Can the benchmark be run in an async function somehow?
+    import trio
+
+    result = benchmark(lambda: trio.run(graphql, schema, "query { user { id, name }}"))
     assert not result.errors
     assert result.data == {
         "user": {

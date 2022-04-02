@@ -1,4 +1,4 @@
-import asyncio
+import anyio
 from typing import Awaitable
 
 from pytest import mark
@@ -36,14 +36,14 @@ class Root:
         return self.numberHolder
 
     async def promise_to_change_the_number(self, new_number: int) -> NumberHolder:
-        await asyncio.sleep(0)
+        await anyio.sleep(0)
         return self.immediately_change_the_number(new_number)
 
     def fail_to_change_the_number(self, newNumber: int):
         raise RuntimeError(f"Cannot change the number to {newNumber}")
 
     async def promise_and_fail_to_change_the_number(self, newNumber: int):
-        await asyncio.sleep(0)
+        await anyio.sleep(0)
         self.fail_to_change_the_number(newNumber)
 
 
@@ -91,7 +91,7 @@ schema = GraphQLSchema(
 
 
 def describe_execute_handles_mutation_execution_ordering():
-    @mark.asyncio
+    @mark.anyio
     async def evaluates_mutations_serially():
         document = parse(
             """
@@ -139,7 +139,7 @@ def describe_execute_handles_mutation_execution_ordering():
         result = execute_sync(schema=schema, document=document)
         assert result == ({}, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def evaluates_mutations_correctly_in_presence_of_a_failed_mutation():
         document = parse(
             """

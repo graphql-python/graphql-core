@@ -1,5 +1,5 @@
 import sys
-from asyncio import CancelledError, Event, ensure_future, sleep
+from anyio import create_task_group, get_cancelled_exc_class, sleep, Event
 
 from pytest import mark, raises
 
@@ -16,7 +16,7 @@ except NameError:  # pragma: no cover (Python < 3.10)
 
 
 def describe_map_async_iterator():
-    @mark.asyncio
+    @mark.anyio
     async def maps_over_async_generator():
         async def source():
             yield 1
@@ -31,7 +31,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             assert await anext(doubles)
 
-    @mark.asyncio
+    @mark.anyio
     async def maps_over_async_iterable():
         items = [1, 2, 3]
 
@@ -52,7 +52,7 @@ def describe_map_async_iterator():
         assert not items
         assert values == [2, 4, 6]
 
-    @mark.asyncio
+    @mark.anyio
     async def compatible_with_async_for():
         async def source():
             yield 1
@@ -65,7 +65,7 @@ def describe_map_async_iterator():
 
         assert values == [2, 4, 6]
 
-    @mark.asyncio
+    @mark.anyio
     async def maps_over_async_values_with_async_function():
         async def source():
             yield 1
@@ -81,7 +81,7 @@ def describe_map_async_iterator():
 
         assert values == [2, 4, 6]
 
-    @mark.asyncio
+    @mark.anyio
     async def allows_returning_early_from_mapped_async_generator():
         async def source():
             yield 1
@@ -102,7 +102,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             await anext(doubles)
 
-    @mark.asyncio
+    @mark.anyio
     async def allows_returning_early_from_mapped_async_iterable():
         items = [1, 2, 3]
 
@@ -130,7 +130,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             await anext(doubles)
 
-    @mark.asyncio
+    @mark.anyio
     async def passes_through_early_return_from_async_values():
         async def source():
             try:
@@ -154,7 +154,7 @@ def describe_map_async_iterator():
         with raises(GeneratorExit):
             assert await anext(doubles)
 
-    @mark.asyncio
+    @mark.anyio
     async def allows_throwing_errors_through_async_iterable():
         items = [1, 2, 3]
 
@@ -184,7 +184,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             await anext(doubles)
 
-    @mark.asyncio
+    @mark.anyio
     async def allows_throwing_errors_with_values_through_async_iterators():
         class Iterator:
             def __aiter__(self):
@@ -210,7 +210,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             await anext(one)
 
-    @mark.asyncio
+    @mark.anyio
     async def allows_throwing_errors_with_traceback_through_async_iterators():
         class Iterator:
             def __aiter__(self):
@@ -236,7 +236,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             await anext(one)
 
-    @mark.asyncio
+    @mark.anyio
     async def passes_through_caught_errors_through_async_generators():
         async def source():
             try:
@@ -259,7 +259,7 @@ def describe_map_async_iterator():
         with raises(StopAsyncIteration):
             await anext(doubles)
 
-    @mark.asyncio
+    @mark.anyio
     async def does_not_normally_map_over_thrown_errors():
         async def source():
             yield "Hello"
@@ -274,7 +274,7 @@ def describe_map_async_iterator():
 
         assert str(exc_info.value) == "Goodbye"
 
-    @mark.asyncio
+    @mark.anyio
     async def does_not_normally_map_over_externally_thrown_errors():
         async def source():
             yield "Hello"
@@ -288,7 +288,7 @@ def describe_map_async_iterator():
 
         assert str(exc_info.value) == "Goodbye"
 
-    @mark.asyncio
+    @mark.anyio
     async def can_use_simple_iterator_instead_of_generator():
         async def source():
             yield 1
@@ -367,7 +367,7 @@ def describe_map_async_iterator():
 
         await sleep(0)
 
-    @mark.asyncio
+    @mark.anyio
     async def stops_async_iteration_on_close():
         async def source():
             yield 1
@@ -381,21 +381,35 @@ def describe_map_async_iterator():
         result = await anext(doubles)
         assert result == 2
 
-        # Make sure it is blocked
-        doubles_future = ensure_future(anext(doubles))
-        await sleep(0.05)
-        assert not doubles_future.done()
+        done = False
 
-        # Unblock and watch StopAsyncIteration propagate
-        await doubles.aclose()
-        await sleep(0.05)
-        assert doubles_future.done()
-        assert isinstance(doubles_future.exception(), StopAsyncIteration)
+        async def set_done():
+            nonlocal done
+            try:
+                await anext(doubles)
+            except StopAsyncIteration:
+                done = True
+                raise
+
+        with raises(StopAsyncIteration):
+            async with create_task_group() as tg:
+                # Make sure it is blocked
+                tg.start_soon(set_done)
+                await sleep(0.05)
+                assert not done
+
+                # Unblock and watch StopAsyncIteration propagate
+                try:
+                    await doubles.aclose()
+                except StopAsyncIteration:  # pragma: no cover
+                    assert False  # other exceptions would fail the test anyway
+
+        assert done
 
         with raises(StopAsyncIteration):
             await anext(singles)
 
-    @mark.asyncio
+    @mark.anyio
     async def can_unset_closed_state_of_async_iterator():
         items = [1, 2, 3]
 
@@ -434,6 +448,10 @@ def describe_map_async_iterator():
         iterator.is_closed = False
         doubles.is_closed = False
         assert not doubles.is_closed
+        # ensure is_closed=False is idempotent
+        close_evt = doubles._close_event
+        doubles.is_closed = False
+        assert close_evt == doubles._close_event
 
         assert await anext(doubles) == 6
         assert not doubles.is_closed
@@ -445,8 +463,10 @@ def describe_map_async_iterator():
         assert not doubles.is_closed
         assert not iterator.is_closed
 
-    @mark.asyncio
+    @mark.anyio
     async def can_cancel_async_iterator_while_waiting():
+        is_waiting = Event()
+
         class Iterator:
             def __init__(self):
                 self.is_closed = False
@@ -457,9 +477,10 @@ def describe_map_async_iterator():
 
             async def __anext__(self):
                 try:
+                    is_waiting.set()
                     await sleep(0.5)
                     return self.value  # pragma: no cover
-                except CancelledError:
+                except get_cancelled_exc_class():
                     self.value = -1
                     raise
 
@@ -475,17 +496,18 @@ def describe_map_async_iterator():
             try:
                 async for _ in doubles:
                     assert False  # pragma: no cover
-            except CancelledError:
+            except get_cancelled_exc_class():
                 cancelled = True
 
-        task = ensure_future(iterator_task())
-        await sleep(0.05)
-        assert not cancelled
-        assert not doubles.is_closed
-        assert iterator.value == 1
-        assert not iterator.is_closed
-        task.cancel()
-        await sleep(0.05)
+        async with create_task_group() as tg:
+            tg.start_soon(iterator_task)
+            await is_waiting.wait()
+            assert not cancelled
+            assert not doubles.is_closed
+            assert iterator.value == 1
+            assert not iterator.is_closed
+            tg.cancel_scope.cancel()
+
         assert cancelled
         assert iterator.value == -1
         assert doubles.is_closed

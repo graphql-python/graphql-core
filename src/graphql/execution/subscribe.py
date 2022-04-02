@@ -1,3 +1,4 @@
+from asyncio import CancelledError
 from inspect import isawaitable
 from typing import (
     Any,
@@ -209,4 +210,6 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
 
         return event_stream
     except Exception as error:
+        if isinstance(error, CancelledError):  # pragma: no cover (Python >= 3.8)
+            raise
         raise located_error(error, field_nodes, path.as_list())

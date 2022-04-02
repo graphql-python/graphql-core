@@ -117,7 +117,7 @@ def describe_execute_handles_list_nullability():
 
         return result
 
-    @mark.asyncio
+    @mark.anyio
     async def contains_values():
         list_field = [1, 2]
         assert await _complete(list_field, "[Int]") == ({"listField": [1, 2]}, None)
@@ -125,7 +125,7 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]") == ({"listField": [1, 2]}, None)
         assert await _complete(list_field, "[Int!]!") == ({"listField": [1, 2]}, None)
 
-    @mark.asyncio
+    @mark.anyio
     async def contains_null():
         list_field = [1, None, 2]
         errors = [
@@ -146,7 +146,7 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]") == ({"listField": None}, errors)
         assert await _complete(list_field, "[Int!]!") == (None, errors)
 
-    @mark.asyncio
+    @mark.anyio
     async def returns_null():
         list_field = None
         errors = [
@@ -161,7 +161,7 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]") == ({"listField": None}, None)
         assert await _complete(list_field, "[Int!]!") == (None, errors)
 
-    @mark.asyncio
+    @mark.anyio
     async def contains_error():
         list_field = [1, RuntimeError("bad"), 2]
         errors = [
@@ -188,7 +188,7 @@ def describe_execute_handles_list_nullability():
             errors,
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def results_in_errors():
         list_field = RuntimeError("bad")
         errors = [
@@ -227,7 +227,7 @@ def describe_experimental_execute_accepts_async_iterables_as_list_value():
         result = cast(Awaitable, result)
         return await result
 
-    @mark.asyncio
+    @mark.anyio
     async def accepts_an_async_generator_as_a_list_value():
         async def list_field():
             yield "one"
@@ -239,7 +239,7 @@ def describe_experimental_execute_accepts_async_iterables_as_list_value():
             None,
         )
 
-    @mark.asyncio
+    @mark.anyio
     async def accepts_a_custom_async_iterable_as_a_list_value():
         class ListField:
             def __aiter__(self):
