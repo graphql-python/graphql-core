@@ -43,12 +43,12 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-typing-extensions = { version = "^4.0", python = "<3.8" }
+typing-extensions = { version = "^4.1", python = "<3.8" }
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
 pytest-asyncio = [
-    {version=">=0.17,<1", python = ">=3.7" },
+    {version=">=0.18,<1", python = ">=3.7" },
     {version=">=0.16,<0.17", python = "<3.7" },
 ]
 pytest-benchmark = "^3.4"
@@ -56,14 +56,14 @@ pytest-cov = "^3.0"
 pytest-describe = "^2.0"
 pytest-timeout = "^2.0"
 black = [
-    {version = "22.1.0", python = ">=3.6.2"},
+    {version = "22.3.0", python = ">=3.6.2"},
     {version = "20.8b1", python = "<3.6.2"}
 ]
 flake8 = "^4.0"
-mypy = "0.931"
+mypy = "0.942"
 sphinx = "^4.3"
 sphinx_rtd_theme = ">=1,<2"
-check-manifest = ">=0.47,<1"
+check-manifest = ">=0.48,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.24"
 

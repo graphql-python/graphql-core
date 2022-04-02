@@ -641,7 +641,7 @@ def extend_schema_impl(
     # Get the extended root operation types.
     operation_types: Dict[OperationType, GraphQLNamedType] = {}
     for operation_type in OperationType:
-        original_type = schema_kwargs[operation_type.value]  # type: ignore
+        original_type = schema_kwargs[operation_type.value]
         if original_type:
             operation_types[operation_type] = replace_named_type(original_type)
     # Then, incorporate schema definition and all schema extensions.
