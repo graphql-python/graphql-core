@@ -1,4 +1,6 @@
-from asyncio import ensure_future, gather
+from anyio import create_task_group, ExceptionGroup
+from asyncio import ensure_future, CancelledError
+from sniffio import current_async_library
 from collections.abc import Mapping
 from inspect import isawaitable
 from typing import (
@@ -444,13 +446,16 @@ class ExecutionContext:
         # field, which is possibly a coroutine object. Return a coroutine object that
         # will yield this same map, but with any coroutines awaited in parallel and
         # replaced with the values they yielded.
+        async def await_field(field: str) -> None:
+            results[field] = await results[field]
+
         async def get_results() -> Dict[str, Any]:
-            results.update(
-                zip(
-                    awaitable_fields,
-                    await gather(*(results[field] for field in awaitable_fields)),
-                )
-            )
+            try:
+                async with create_task_group() as tg:
+                    for field in awaitable_fields:
+                        tg.start_soon(await_field, field)
+            except ExceptionGroup as exc:
+                raise exc.exceptions[0]
             return results
 
         return get_results()
@@ -531,6 +536,10 @@ class ExecutionContext:
                             return await completed
                         return completed
                     except Exception as raw_error:
+                        if isinstance(
+                            raw_error, CancelledError
+                        ):  # pragma: no cover (Python >= 3.8)
+                            raise
                         error = located_error(raw_error, field_nodes, path.as_list())
                         self.handle_field_error(error, return_type)
                         return None
@@ -546,6 +555,10 @@ class ExecutionContext:
                     try:
                         return await completed
                     except Exception as raw_error:
+                        if isinstance(
+                            raw_error, CancelledError
+                        ):  # pragma: no cover (Python >= 3.8)
+                            raise
                         error = located_error(raw_error, field_nodes, path.as_list())
                         self.handle_field_error(error, return_type)
                         return None
@@ -714,6 +727,10 @@ class ExecutionContext:
                             return await completed
                         return completed
                     except Exception as raw_error:
+                        if isinstance(
+                            raw_error, CancelledError
+                        ):  # pragma: no cover (Python >= 3.8)
+                            raise
                         error = located_error(
                             raw_error, field_nodes, item_path.as_list()
                         )
@@ -732,6 +749,10 @@ class ExecutionContext:
                             try:
                                 return await item
                             except Exception as raw_error:
+                                if isinstance(
+                                    raw_error, CancelledError
+                                ):  # pragma: no cover (Python >= 3.8)
+                                    raise
                                 error = located_error(
                                     raw_error, field_nodes, item_path.as_list()
                                 )
@@ -752,14 +773,16 @@ class ExecutionContext:
             return completed_results
 
         # noinspection PyShadowingNames
+        async def await_index(index: int) -> None:
+            completed_results[index] = await completed_results[index]
+
         async def get_completed_results() -> List[Any]:
-            for index, result in zip(
-                awaitable_indices,
-                await gather(
-                    *(completed_results[index] for index in awaitable_indices)
-                ),
-            ):
-                completed_results[index] = result
+            try:
+                async with create_task_group() as tg:
+                    for index in awaitable_indices:
+                        tg.start_soon(await_index, index)
+            except ExceptionGroup as exc:
+                raise exc.exceptions[0]
             return completed_results
 
         return get_completed_results()
@@ -1096,7 +1119,8 @@ def execute_sync(
 
     # Assert that the execution was synchronous.
     if isawaitable(result):
-        ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
+        if current_async_library() == "asyncio":
+            ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
     return cast(ExecutionResult, result)
@@ -1216,8 +1240,18 @@ def default_type_resolver(
 
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
+        is_type_of_results = [None for _ in awaitable_is_type_of_results]
+
+        async def await_is_type_of_result(index: int) -> None:
+            is_type_of_results[index] = await awaitable_is_type_of_results[index]
+
         async def get_type() -> Optional[str]:
-            is_type_of_results = await gather(*awaitable_is_type_of_results)
+            try:
+                async with create_task_group() as tg:
+                    for index in range(len(awaitable_is_type_of_results)):
+                        tg.start_soon(await_is_type_of_result, index)
+            except ExceptionGroup as exc:
+                raise exc.exceptions[0]
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
                     return type_.name

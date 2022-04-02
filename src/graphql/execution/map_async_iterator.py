@@ -1,7 +1,12 @@
-from asyncio import CancelledError, Event, Task, ensure_future, wait
-from concurrent.futures import FIRST_COMPLETED
+from anyio import (
+    get_cancelled_exc_class,
+    create_task_group,
+    Event,
+    CancelScope,
+)
+from anyio.abc import TaskGroup
 from inspect import isasyncgen, isawaitable
-from typing import cast, Any, AsyncIterable, Callable, Optional, Set, Type, Union
+from typing import cast, Any, AsyncIterable, Callable, Optional, Type, Union
 from types import TracebackType
 
 __all__ = ["MapAsyncIterator"]
@@ -27,6 +32,10 @@ class MapAsyncIterator:
         """Get the iterator object."""
         return self
 
+    async def _wait_for_close(self, tg: TaskGroup) -> None:
+        await self._close_event.wait()
+        tg.cancel_scope.cancel()
+
     async def __anext__(self) -> Any:
         """Get the next value of the iterator."""
         if self.is_closed:
@@ -34,31 +43,29 @@ class MapAsyncIterator:
                 raise StopAsyncIteration
             value = await self.iterator.__anext__()
         else:
-            aclose = ensure_future(self._close_event.wait())
-            anext = ensure_future(self.iterator.__anext__())
-
+            close_evt = None
+            iterator_exc = None
             try:
-                pending: Set[Task] = (
-                    await wait([aclose, anext], return_when=FIRST_COMPLETED)
-                )[1]
-            except CancelledError:
-                # cancel underlying tasks and close
-                aclose.cancel()
-                anext.cancel()
-                await self.aclose()
-                raise  # re-raise the cancellation
-
-            for task in pending:
-                task.cancel()
-
-            if aclose.done():
+                async with create_task_group() as tg:
+                    # we need to store the current event, it could be reset
+                    close_evt = self._close_event
+                    tg.start_soon(self._wait_for_close, tg)
+                    try:
+                        value = await self.iterator.__anext__()
+                    except BaseException as exc:
+                        iterator_exc = exc
+                    tg.cancel_scope.cancel()
+            except BaseException:
+                # We ignore this and use the iterator exception (if any)
+                pass
+            if close_evt is not None and close_evt.is_set():
+                # closed from outside via `is_closed=True / aclose`
                 raise StopAsyncIteration
-
-            error = anext.exception()
-            if error:
-                raise error
-
-            value = anext.result()
+            if iterator_exc is not None:
+                if isinstance(iterator_exc, get_cancelled_exc_class()):
+                    with CancelScope(shield=True):
+                        await self.aclose()
+                raise iterator_exc
 
         result = self.callback(value)
 
@@ -111,5 +118,5 @@ class MapAsyncIterator:
         """Mark the iterator as closed."""
         if value:
             self._close_event.set()
-        else:
-            self._close_event.clear()
+        elif self._close_event.is_set():
+            self._close_event = Event()

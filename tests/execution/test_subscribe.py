@@ -1,11 +1,11 @@
 import anyio
-
+import math
 from typing import Any, Dict, List, Callable
 
 from pytest import mark, raises
 
 from graphql.language import parse
-from graphql.pyutils import SimplePubSub
+from graphql.pyutils import MemoryObjectBroadcastStream, create_broadcast_stream
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -76,7 +76,7 @@ email_schema = GraphQLSchema(
 )
 
 
-def create_subscription(pubsub: SimplePubSub):
+def create_subscription(pubsub: MemoryObjectBroadcastStream):
     document = parse(
         """
         subscription ($priority: Int = 0) {
@@ -110,7 +110,7 @@ def create_subscription(pubsub: SimplePubSub):
 
     data: Dict[str, Any] = {
         "inbox": {"emails": emails},
-        "importantEmail": pubsub.get_subscriber(transform),
+        "importantEmail": pubsub.get_listener(transform),
     }
 
     return subscribe(email_schema, document, data)
@@ -466,7 +466,7 @@ def describe_subscription_initialization_phase():
 def describe_subscription_publish_phase():
     @mark.anyio
     async def produces_a_payload_for_multiple_subscribe_in_same_subscription():
-        pubsub = SimplePubSub()
+        pubsub = create_broadcast_stream(math.inf)
 
         subscription = await create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
@@ -478,7 +478,7 @@ def describe_subscription_publish_phase():
         payload2 = anext(second_subscription)
 
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -501,7 +501,7 @@ def describe_subscription_publish_phase():
 
     @mark.anyio
     async def produces_a_payload_per_subscription_event():
-        pubsub = SimplePubSub()
+        pubsub = create_broadcast_stream(math.inf)
         subscription = await create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
@@ -510,7 +510,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -534,7 +534,7 @@ def describe_subscription_publish_phase():
 
         # Another new email arrives, before anext(subscription) is called.
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "hyo@graphql.org",
                     "subject": "Tools",
@@ -562,7 +562,7 @@ def describe_subscription_publish_phase():
 
         # Which may result in disconnecting upstream services as well.
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "adam@graphql.org",
                     "subject": "Important",
@@ -579,7 +579,7 @@ def describe_subscription_publish_phase():
 
     @mark.anyio
     async def produces_a_payload_when_there_are_multiple_events():
-        pubsub = SimplePubSub()
+        pubsub = create_broadcast_stream(math.inf)
         subscription = await create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
@@ -587,7 +587,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -612,7 +612,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright 2",
@@ -635,7 +635,7 @@ def describe_subscription_publish_phase():
 
     @mark.anyio
     async def should_not_trigger_when_subscription_is_already_done():
-        pubsub = SimplePubSub()
+        pubsub = create_broadcast_stream(math.inf)
         subscription = await create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
@@ -643,7 +643,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -669,7 +669,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright 2",
@@ -685,7 +685,7 @@ def describe_subscription_publish_phase():
 
     @mark.anyio
     async def should_not_trigger_when_subscription_is_thrown():
-        pubsub = SimplePubSub()
+        pubsub = create_broadcast_stream(math.inf)
         subscription = await create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
@@ -693,7 +693,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Alright",
@@ -726,7 +726,7 @@ def describe_subscription_publish_phase():
 
     @mark.anyio
     async def event_order_is_correct_for_multiple_publishes():
-        pubsub = SimplePubSub()
+        pubsub = create_broadcast_stream(math.inf)
         subscription = await create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
@@ -734,7 +734,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Message",
@@ -747,7 +747,7 @@ def describe_subscription_publish_phase():
 
         # A new email arrives!
         assert (
-            pubsub.emit(
+            await pubsub.send(
                 {
                     "from": "yuzhi@graphql.org",
                     "subject": "Message 2",

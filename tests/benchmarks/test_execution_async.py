@@ -64,7 +64,8 @@ def test_execute_basic_async(anyio_backend, benchmark):
 
 @mark.parametrize("anyio_backend", ["trio"])
 def test_execute_basic_async_trio(anyio_backend, benchmark):
-    # TODO: can the trio loop be started beforehand? run benchmark in async function somehow?
+    # TODO: can the trio loop be started beforehand?
+    # Can the benchmark be run in an async function somehow?
     import trio
 
     result = benchmark(lambda: trio.run(graphql, schema, "query { user { id, name }}"))

@@ -401,9 +401,9 @@ def describe_map_async_iterator():
                 # Unblock and watch StopAsyncIteration propagate
                 try:
                     await doubles.aclose()
-                except:
-                    assert False  # ensure that aclose does not raise a StopAsyncIteration
-                    
+                except StopAsyncIteration:  # pragma: no cover
+                    assert False  # other exceptions would fail the test anyway
+
         assert done
 
         with raises(StopAsyncIteration):
@@ -448,6 +448,10 @@ def describe_map_async_iterator():
         iterator.is_closed = False
         doubles.is_closed = False
         assert not doubles.is_closed
+        # ensure is_closed=False is idempotent
+        close_evt = doubles._close_event
+        doubles.is_closed = False
+        assert close_evt == doubles._close_event
 
         assert await anext(doubles) == 6
         assert not doubles.is_closed
@@ -461,6 +465,8 @@ def describe_map_async_iterator():
 
     @mark.anyio
     async def can_cancel_async_iterator_while_waiting():
+        is_waiting = Event()
+
         class Iterator:
             def __init__(self):
                 self.is_closed = False
@@ -471,6 +477,7 @@ def describe_map_async_iterator():
 
             async def __anext__(self):
                 try:
+                    is_waiting.set()
                     await sleep(0.5)
                     return self.value  # pragma: no cover
                 except get_cancelled_exc_class():
@@ -494,7 +501,7 @@ def describe_map_async_iterator():
 
         async with create_task_group() as tg:
             tg.start_soon(iterator_task)
-            await sleep(0.05)
+            await is_waiting.wait()
             assert not cancelled
             assert not doubles.is_closed
             assert iterator.value == 1

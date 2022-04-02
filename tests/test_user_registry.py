@@ -4,18 +4,20 @@ This is an additional end-to-end test and demo for running the basic GraphQL
 operations on a simulated user registry database backend.
 """
 
-from anyio import create_task_group, fail_after, sleep
+from anyio import create_task_group, fail_after, sleep, Event, TASK_STATUS_IGNORED
+from anyio.abc import TaskStatus
+from anyio.streams.memory import MemoryObjectReceiveStream
 from collections import defaultdict
 from enum import Enum
-from inspect import isawaitable
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Callable, Tuple, Coroutine
+from functools import partial
 
 from pytest import fixture, mark
 
 from graphql import (
     graphql,
     parse,
-    subscribe, 
+    subscribe,
     GraphQLArgument,
     GraphQLBoolean,
     GraphQLEnumType,
@@ -30,7 +32,7 @@ from graphql import (
     GraphQLString,
 )
 
-from graphql.pyutils import SimplePubSub, SimplePubSubIterator
+from graphql.pyutils import create_broadcast_stream
 from graphql.execution.map_async_iterator import MapAsyncIterator
 
 
@@ -57,7 +59,7 @@ class UserRegistry:
 
     def __init__(self, **users):
         self._registry: Dict[str, User] = users
-        self._pubsub = defaultdict(SimplePubSub)
+        self._pubsub = defaultdict(partial(create_broadcast_stream, 0))
 
     async def get(self, id_: str) -> Optional[User]:
         """Get a user object from the registry"""
@@ -70,7 +72,7 @@ class UserRegistry:
         id_ = str(len(self._registry))
         user = User(id=id_, **kwargs)
         self._registry[id_] = user
-        self.emit_event(MutationEnum.CREATED, user)
+        await self.emit_event(MutationEnum.CREATED, user)
         return user
 
     async def update(self, id_: str, **kwargs) -> User:
@@ -79,24 +81,24 @@ class UserRegistry:
         # noinspection PyProtectedMember
         user = self._registry[id_]._replace(**kwargs)
         self._registry[id_] = user
-        self.emit_event(MutationEnum.UPDATED, user)
+        await self.emit_event(MutationEnum.UPDATED, user)
         return user
 
     async def delete(self, id_: str) -> User:
         """Delete a user object in the registry"""
         await sleep(0)
         user = self._registry.pop(id_)
-        self.emit_event(MutationEnum.DELETED, user)
+        await self.emit_event(MutationEnum.DELETED, user)
         return user
 
-    def emit_event(self, mutation: MutationEnum, user: User) -> None:
+    async def emit_event(self, mutation: MutationEnum, user: User) -> None:
         """Emit mutation events for the given object and its class"""
         payload = {"user": user, "mutation": mutation.value}
-        self._pubsub[None].emit(payload)  # notify all user subscriptions
-        self._pubsub[user.id].emit(payload)  # notify single user subscriptions
+        await self._pubsub[None].send(payload)  # notify all user subscriptions
+        await self._pubsub[user.id].send(payload)  # notify single user subscriptions
 
-    def event_iterator(self, id_: Optional[str]) -> SimplePubSubIterator:
-        return self._pubsub[id_].get_subscriber()
+    def event_iterator(self, id_: Optional[str]) -> MemoryObjectReceiveStream:
+        return self._pubsub[id_].get_listener()
 
 
 mutation_type = GraphQLEnumType("MutationType", MutationEnum)
@@ -158,8 +160,9 @@ async def resolve_delete_user(_root, info, id):
 async def subscribe_user(_root, info, id=None):
     """Subscribe to mutations of a specific user object or all user objects"""
     async_iterator = info.context["registry"].event_iterator(id)
-    async for event in async_iterator:
-        yield await event if isawaitable(event) else event  # pragma: no cover exit
+    async with async_iterator:  # pragma: no cover exit
+        async for event in async_iterator:
+            yield event  # pragma: no cover exit
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
@@ -253,149 +256,174 @@ def describe_query():
         }
 
 
+def expect_events(
+    num_events: int,
+) -> Tuple[
+    Dict[str, Any],
+    Event,
+    Callable[[MemoryObjectReceiveStream, str], Coroutine[None, None, None]],
+]:
+    received = {}
+    all_events_received = Event()
+
+    async def subscriber(
+        publisher, event_name, task_status: TaskStatus = TASK_STATUS_IGNORED
+    ):
+        nonlocal num_events
+        async with publisher.get_listener() as listener:
+            task_status.started()
+            async for msg in listener:  # pragma: no cover exit
+                received[event_name] = msg
+                num_events -= 1
+                print("received", event_name, msg)
+                print("remaining_num", num_events)
+                if num_events == 0:
+                    all_events_received.set()
+
+    return received, all_events_received, subscriber
+
+
 def describe_mutation():
     @mark.anyio
     async def create_user(context):
-        received = {}
-
-        def subscriber(event_name):
-            def receive(msg):
-                received[event_name] = msg
-
-            return receive
+        received, received_events, subscriber = expect_events(2)
 
         # noinspection PyProtectedMember
         pubsub = context["registry"]._pubsub
-        pubsub[None].subscribers.add(subscriber("User"))
-        pubsub["0"].subscribers.add(subscriber("User 0"))
+        with fail_after(1):
+            async with create_task_group() as tg:
+                await tg.start(subscriber, pubsub[None], "User")
+                await tg.start(subscriber, pubsub["0"], "User 0")
 
-        query = """
-            mutation ($userData: UserInputType!) {
-                createUser(data: $userData) {
-                    id, firstName, lastName, tweets, verified
+                query = """
+                    mutation ($userData: UserInputType!) {
+                        createUser(data: $userData) {
+                            id, firstName, lastName, tweets, verified
+                        }
+                    }
+                    """
+                user_data = dict(
+                    firstName="John", lastName="Doe", tweets=42, verified=True
+                )
+                variables = {"userData": user_data}
+                result = await graphql(
+                    schema, query, context_value=context, variable_values=variables
+                )
+
+                user = await context["registry"].get("0")
+                assert user == User(id="0", **user_data)  # type: ignore
+
+                assert result.errors is None
+                assert result.data == {
+                    "createUser": {
+                        "id": user.id,
+                        "firstName": user.firstName,
+                        "lastName": user.lastName,
+                        "tweets": user.tweets,
+                        "verified": user.verified,
+                    }
                 }
-            }
-            """
-        user_data = dict(firstName="John", lastName="Doe", tweets=42, verified=True)
-        variables = {"userData": user_data}
-        result = await graphql(
-            schema, query, context_value=context, variable_values=variables
-        )
 
-        user = await context["registry"].get("0")
-        assert user == User(id="0", **user_data)  # type: ignore
-
-        assert result.errors is None
-        assert result.data == {
-            "createUser": {
-                "id": user.id,
-                "firstName": user.firstName,
-                "lastName": user.lastName,
-                "tweets": user.tweets,
-                "verified": user.verified,
-            }
-        }
-
-        assert received == {
-            "User": {"user": user, "mutation": MutationEnum.CREATED.value},
-            "User 0": {"user": user, "mutation": MutationEnum.CREATED.value},
-        }
+                print("WAITING FOR EVENTS")
+                await received_events.wait()
+                print("DONE")
+                assert received == {
+                    "User": {"user": user, "mutation": MutationEnum.CREATED.value},
+                    "User 0": {"user": user, "mutation": MutationEnum.CREATED.value},
+                }
+                tg.cancel_scope.cancel()
 
     @mark.anyio
     async def update_user(context):
-        received = {}
-
-        def subscriber(event_name):
-            def receive(msg):
-                received[event_name] = msg
-
-            return receive
+        received, received_events, subscriber = expect_events(2)
 
         # noinspection PyProtectedMember
         pubsub = context["registry"]._pubsub
-        pubsub[None].subscribers.add(subscriber("User"))
-        pubsub["0"].subscribers.add(subscriber("User 0"))
+        with fail_after(1):
+            async with create_task_group() as tg:
+                await tg.start(subscriber, pubsub[None], "User")
+                await tg.start(subscriber, pubsub["0"], "User 0")
 
-        user = await context["registry"].create(
-            firstName="John", lastName="Doe", tweets=42, verified=True
-        )
-        user_data = {
-            "firstName": "Jane",
-            "lastName": "Roe",
-            "tweets": 210,
-            "verified": False,
-        }
-
-        query = """
-            mutation ($userId: ID!, $userData: UserInputType!) {
-                updateUser(id: $userId, data: $userData) {
-                    id, firstName, lastName, tweets, verified
+                user = await context["registry"].create(
+                    firstName="John", lastName="Doe", tweets=42, verified=True
+                )
+                user_data = {
+                    "firstName": "Jane",
+                    "lastName": "Roe",
+                    "tweets": 210,
+                    "verified": False,
                 }
-            }"""
 
-        variables = {"userId": user.id, "userData": user_data}
-        result = await graphql(
-            schema, query, context_value=context, variable_values=variables
-        )
+                query = """
+                    mutation ($userId: ID!, $userData: UserInputType!) {
+                        updateUser(id: $userId, data: $userData) {
+                            id, firstName, lastName, tweets, verified
+                        }
+                    }"""
 
-        user = await context["registry"].get("0")
-        assert user == User(id="0", **user_data)  # type: ignore
+                variables = {"userId": user.id, "userData": user_data}
+                result = await graphql(
+                    schema, query, context_value=context, variable_values=variables
+                )
 
-        assert result.errors is None
-        assert result.data == {
-            "updateUser": {
-                "id": user.id,
-                "firstName": user.firstName,
-                "lastName": user.lastName,
-                "tweets": user.tweets,
-                "verified": user.verified,
-            }
-        }
+                user = await context["registry"].get("0")
+                assert user == User(id="0", **user_data)  # type: ignore
 
-        assert received == {
-            "User": {"user": user, "mutation": MutationEnum.UPDATED.value},
-            "User 0": {"user": user, "mutation": MutationEnum.UPDATED.value},
-        }
+                assert result.errors is None
+                assert result.data == {
+                    "updateUser": {
+                        "id": user.id,
+                        "firstName": user.firstName,
+                        "lastName": user.lastName,
+                        "tweets": user.tweets,
+                        "verified": user.verified,
+                    }
+                }
+
+                await received_events.wait()
+                assert received == {
+                    "User": {"user": user, "mutation": MutationEnum.UPDATED.value},
+                    "User 0": {"user": user, "mutation": MutationEnum.UPDATED.value},
+                }
+                tg.cancel_scope.cancel()
 
     @mark.anyio
     async def delete_user(context):
-        received = {}
-
-        def subscriber(name):
-            def receive(msg):
-                received[name] = msg
-
-            return receive
+        received, received_events, subscriber = expect_events(2)
 
         # noinspection PyProtectedMember
         pubsub = context["registry"]._pubsub
-        pubsub[None].subscribers.add(subscriber("User"))
-        pubsub["0"].subscribers.add(subscriber("User 0"))
+        with fail_after(1):
+            async with create_task_group() as tg:
+                await tg.start(subscriber, pubsub[None], "User")
+                await tg.start(subscriber, pubsub["0"], "User 0")
 
-        user = await context["registry"].create(
-            firstName="John", lastName="Doe", tweets=42, verified=True
-        )
+                user = await context["registry"].create(
+                    firstName="John", lastName="Doe", tweets=42, verified=True
+                )
 
-        query = """
-            mutation ($userId: ID!) {
-                deleteUser(id: $userId)
-            }
-            """
+                query = """
+                    mutation ($userId: ID!) {
+                        deleteUser(id: $userId)
+                    }
+                    """
 
-        variables = {"userId": user.id}
-        result = await graphql(
-            schema, query, context_value=context, variable_values=variables
-        )
+                variables = {"userId": user.id}
+                result = await graphql(
+                    schema, query, context_value=context, variable_values=variables
+                )
 
-        assert result.errors is None
-        assert result.data == {"deleteUser": True}
+                assert result.errors is None
+                assert result.data == {"deleteUser": True}
 
-        assert await context["registry"].get(user.id) is None
+                assert await context["registry"].get(user.id) is None
 
-        assert received == {
-            "User": {"user": user, "mutation": MutationEnum.DELETED.value},
-            "User 0": {"user": user, "mutation": MutationEnum.DELETED.value},
-        }
+                await received_events.wait()
+                assert received == {
+                    "User": {"user": user, "mutation": MutationEnum.DELETED.value},
+                    "User 0": {"user": user, "mutation": MutationEnum.DELETED.value},
+                }
+                tg.cancel_scope.cancel()
 
 
 def describe_subscription():

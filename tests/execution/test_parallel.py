@@ -55,11 +55,39 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        
+
         with anyio.fail_after(1.0):
             result = await awaitable_result
 
         assert result == ({"foo": True, "bar": True}, None)
+
+    @mark.anyio
+    async def cancel_resolve_fields_in_parallel():
+        ast = parse("{foo, bar}")
+
+        async def resolve(*_args):
+            return await anyio.sleep(5)
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Type",
+                {
+                    "foo": GraphQLField(GraphQLString, resolve=resolve),
+                    "bar": GraphQLField(GraphQLString, resolve=resolve),
+                },
+            )
+        )
+
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        cancelled = False
+        with anyio.move_on_after(0.1):
+            try:
+                await awaitable_result
+            except anyio.get_cancelled_exc_class():
+                cancelled = True
+                raise
+        assert cancelled
 
     @mark.anyio
     async def resolve_list_in_parallel():
@@ -91,6 +119,38 @@ def describe_parallel_execution():
             result = await awaitable_result
 
         assert result == ({"foo": [True, True]}, None)
+
+    @mark.anyio
+    async def cancel_resolve_list_in_parallel():
+        async def resolve(*_args):
+            return await anyio.sleep(5)
+
+        async def resolve_list(*args):
+            return [resolve(*args), resolve(*args)]
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(
+                        GraphQLList(GraphQLBoolean), resolve=resolve_list
+                    )
+                },
+            )
+        )
+
+        ast = parse("{foo}")
+
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        cancelled = False
+        with anyio.move_on_after(0.1):
+            try:
+                await awaitable_result
+            except anyio.get_cancelled_exc_class():
+                cancelled = True
+                raise
+        assert cancelled
 
     @mark.anyio
     async def resolve_is_type_of_in_parallel():
@@ -158,3 +218,67 @@ def describe_parallel_execution():
             {"foo": [{"foo": "bar", "foobar": 1}, {"foo": "baz", "foobaz": 2}]},
             None,
         )
+
+    @mark.anyio
+    async def cancel_resolve_is_type_of_in_parallel():
+        FooType = GraphQLInterfaceType("Foo", {"foo": GraphQLField(GraphQLString)})
+
+        async def is_type_of_bar(obj, *_args):
+            await anyio.sleep(5)
+
+        BarType = GraphQLObjectType(
+            "Bar",
+            {"foo": GraphQLField(GraphQLString), "foobar": GraphQLField(GraphQLInt)},
+            interfaces=[FooType],
+            is_type_of=is_type_of_bar,
+        )
+
+        async def is_type_of_baz(obj, *_args):
+            await anyio.sleep(5)
+
+        BazType = GraphQLObjectType(
+            "Baz",
+            {"foo": GraphQLField(GraphQLString), "foobaz": GraphQLField(GraphQLInt)},
+            interfaces=[FooType],
+            is_type_of=is_type_of_baz,
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(
+                        GraphQLList(FooType),
+                        resolve=lambda *_args: [
+                            {"foo": "bar", "foobar": 1},
+                            {"foo": "baz", "foobaz": 2},
+                        ],
+                    )
+                },
+            ),
+            types=[BarType, BazType],
+        )
+
+        ast = parse(
+            """
+            {
+              foo {
+                foo
+                ... on Bar { foobar }
+                ... on Baz { foobaz }
+              }
+            }
+            """
+        )
+
+        # raises TimeoutError if not parallel
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        cancelled = False
+        with anyio.move_on_after(0.1):
+            try:
+                await awaitable_result
+            except anyio.get_cancelled_exc_class():
+                cancelled = True
+                raise
+        assert cancelled
