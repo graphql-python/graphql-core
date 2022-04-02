@@ -115,9 +115,12 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
         # Python ints and floats correspond nicely to Int and Float values.
         if isinstance(serialized, int):
-            return IntValueNode(value=f"{serialized:d}")
+            return IntValueNode(value=str(serialized))
         if isinstance(serialized, float) and isfinite(serialized):
-            return FloatValueNode(value=f"{serialized:g}")
+            value = str(serialized)
+            if value.endswith('.0'):
+                value = value[:-2]
+            return FloatValueNode(value=value)
 
         if isinstance(serialized, str):
             # Enum types use Enum literals.
