@@ -200,6 +200,8 @@ def visit(
     keys: Tuple[Node, ...] = (root,)
     idx = -1
     edits: List[Any] = []
+    node: Any = root
+    key: Any = None
     parent: Any = None
     path: List[Any] = []
     path_append = path.append
@@ -207,7 +209,6 @@ def visit(
     ancestors: List[Any] = []
     ancestors_append = ancestors.append
     ancestors_pop = ancestors.pop
-    new_root = root
 
     while True:
         idx += 1
@@ -215,7 +216,7 @@ def visit(
         is_edited = is_leaving and edits
         if is_leaving:
             key = path[-1] if ancestors else None
-            node: Any = parent
+            node = parent
             parent = ancestors_pop() if ancestors else None
             if is_edited:
                 if in_array:
@@ -238,21 +239,16 @@ def visit(
             edits = stack.edits
             in_array = stack.in_array
             stack = stack.prev
-        else:
-            if parent:
-                if in_array:
-                    key = idx
-                    node = parent[key]
-                else:
-                    key = keys[idx]
-                    node = getattr(parent, key, None)
+        elif parent:
+            if in_array:
+                key = idx
+                node = parent[key]
             else:
-                key = None
-                node = new_root
+                key = keys[idx]
+                node = getattr(parent, key, None)
             if node is None:
                 continue
-            if parent:
-                path_append(key)
+            path_append(key)
 
         if isinstance(node, tuple):
             result = None
@@ -303,9 +299,9 @@ def visit(
             break
 
     if edits:
-        new_root = edits[-1][1]
+        return edits[-1][1]
 
-    return new_root
+    return root
 
 
 class ParallelVisitor(Visitor):
