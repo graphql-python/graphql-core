@@ -229,6 +229,53 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
         )
 
+    def allows_different_order_of_args():
+        schema = build_schema(
+            """
+            type Query {
+              someField(a: String, b: String): String
+            }
+            """
+        )
+        # This is valid since arguments are unordered, see:
+        # https://spec.graphql.org/draft/#
+        # sec-Language.Arguments.Arguments-are-unordered
+        assert_valid(
+            """
+            {
+              someField(a: null, b: null)
+              someField(b: null, a: null)
+            }
+            """,
+            schema=schema,
+        )
+
+    def allows_different_order_of_input_object_fields_in_arg_values():
+        schema = build_schema(
+            """
+            input SomeInput {
+              a: String
+              b: String
+            }
+
+            type Query {
+              someField(arg: SomeInput): String
+            }
+            """
+        )
+        # This is valid since input object fields are unordered, see:
+        # https://spec.graphql.org/draft/#
+        # sec-Input-Object-Values.Input-object-fields-are-unordered
+        assert_valid(
+            """
+            {
+              someField(arg: { a: null, b: null })
+              someField(arg: { b: null, a: null })
+            }
+            """,
+            schema=schema,
+        )
+
     def encounters_conflict_in_fragments():
         assert_errors(
             """

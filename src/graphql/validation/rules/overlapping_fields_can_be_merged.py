@@ -27,6 +27,7 @@ from ...type import (
     is_object_type,
 )
 from ...utilities import type_from_ast
+from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
 MYPY = False
@@ -589,7 +590,7 @@ def same_arguments(
     for argument1 in arguments1:
         for argument2 in arguments2:
             if argument2.name.value == argument1.name.value:
-                if not same_value(argument1.value, argument2.value):
+                if stringify_value(argument1.value) != stringify_value(argument2.value):
                     return False
                 break
         else:
@@ -597,8 +598,8 @@ def same_arguments(
     return True
 
 
-def same_value(value1: ValueNode, value2: ValueNode) -> bool:
-    return print_ast(value1) == print_ast(value2)
+def stringify_value(value: ValueNode) -> str:
+    return print_ast(sort_value_node(value))
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:

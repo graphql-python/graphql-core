@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Any, Collection, Dict, List, NamedTuple, Union, cast
 
-from ..language import print_ast, visit, ObjectValueNode, Visitor
-from ..pyutils import inspect, natural_comparison_key, Undefined
+from ..language import print_ast
+from ..pyutils import inspect, Undefined
 from ..type import (
     GraphQLEnumType,
     GraphQLField,
@@ -28,6 +28,7 @@ from ..type import (
     is_specified_scalar_type,
     is_union_type,
 )
+from ..utilities.sort_value_node import sort_value_node
 from .ast_from_value import ast_from_value
 
 __all__ = [
@@ -555,24 +556,7 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
     ast = ast_from_value(value, type_)
     if ast is None:  # pragma: no cover
         raise TypeError(f"Invalid value: {inspect(value)}")
-
-    class SortVisitor(Visitor):
-        @staticmethod
-        def enter_object_value(
-            object_value_node: ObjectValueNode, *_args: Any
-        ) -> ObjectValueNode:
-            object_value_node.fields = tuple(
-                sorted(
-                    object_value_node.fields,
-                    key=lambda node: natural_comparison_key(node.name.value),
-                )
-            )
-
-            return object_value_node
-
-    sorted_ast = visit(ast, SortVisitor())
-
-    return print_ast(sorted_ast)
+    return print_ast(sort_value_node(ast))
 
 
 class ListDiff(NamedTuple):
