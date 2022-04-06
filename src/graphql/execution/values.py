@@ -47,8 +47,6 @@ def get_variable_values(
     Prepares a dict of variable values of the correct type based on the provided
     variable definitions and arbitrary input. If the input cannot be parsed to match
     the variable definitions, a GraphQLError will be raised.
-
-    For internal use only.
     """
     errors: List[GraphQLError] = []
 

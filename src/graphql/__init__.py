@@ -426,6 +426,7 @@ from .execution import (
     default_field_resolver,
     default_type_resolver,
     get_directive_values,
+    get_variable_values,
     # Types
     ExecutionContext,
     ExecutionResult,
@@ -682,6 +683,7 @@ __all__ = [
     "default_field_resolver",
     "default_type_resolver",
     "get_directive_values",
+    "get_variable_values",
     "ExecutionContext",
     "ExecutionResult",
     "FormattedExecutionResult",

@@ -17,7 +17,7 @@ from .execute import (
 from .map_async_iterator import MapAsyncIterator
 from .subscribe import subscribe, create_source_event_stream
 from .middleware import MiddlewareManager
-from .values import get_directive_values
+from .values import get_directive_values, get_variable_values
 
 __all__ = [
     "create_source_event_stream",
@@ -33,4 +33,5 @@ __all__ = [
     "Middleware",
     "MiddlewareManager",
     "get_directive_values",
+    "get_variable_values",
 ]
