@@ -389,3 +389,20 @@ def describe_formatted():
             "message": "msg",
             "extensions": {"foo": "bar"},
         }
+
+    def can_be_created_from_dict():
+        args = dict(
+            nodes=[operation_node],
+            source=source,
+            positions=[6],
+            path=["path", 2, "a"],
+            original_error=Exception("I like turtles"),
+            extensions=dict(hee="I like turtles"),
+        )
+        error = GraphQLError("msg", **args)  # type: ignore
+        assert error.formatted == {
+            "message": "msg",
+            "locations": [{"column": 5, "line": 2}],
+            "path": ["path", 2, "a"],
+            "extensions": {"hee": "I like turtles"},
+        }
