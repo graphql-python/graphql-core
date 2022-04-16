@@ -32,7 +32,9 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    install_requires=[],
+    install_requires=[
+        "typing-extensions>=4.1,<5; python_version < '3.8'",
+    ],
     python_requires=">=3.6,<4",
     packages=find_packages("src"),
     package_dir={"": "src"},
