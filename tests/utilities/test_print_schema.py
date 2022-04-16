@@ -301,6 +301,21 @@ def describe_type_system_printer():
             '''
         )
 
+    def omits_schema_of_common_names():
+        schema = GraphQLSchema(query=GraphQLObjectType("Query", {}),
+                               mutation=GraphQLObjectType("Mutation", {}),
+                               subscription=GraphQLObjectType("Subscription", {}))
+
+        assert expect_printed_schema(schema) == dedent(
+            """
+            type Query
+
+            type Mutation
+
+            type Subscription
+            """
+        )
+
     def prints_custom_query_root_types():
         schema = GraphQLSchema(query=GraphQLObjectType("CustomType", {}))
 
