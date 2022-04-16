@@ -319,14 +319,22 @@ class GraphQLScalarType(GraphQLNamedType):
     and are defined with a name and a series of functions used to parse input from ast
     or variables and to ensure validity.
 
-    If a type's serialize function does not return a value (i.e. it returns ``None``),
-    then no error will be included in the response.
+    If a type's serialize function returns ``None``, then an error will be raised and a
+    ``None`` value will be returned in the response. It is always better to validate.
 
     Example::
 
-        def serialize_odd(value):
-            if value % 2 == 1:
-                return value
+        def serialize_odd(value: Any) -> int:
+            try:
+                value = int(value)
+            except ValueError:
+                raise GraphQLError(
+                    f"Scalar 'Odd' cannot represent '{value}'"
+                    " since it is not an integer.")
+            if not value % 2:
+                raise GraphQLError(
+                    f"Scalar 'Odd' cannot represent '{value}' since it is even.")
+            return value
 
         odd_type = GraphQLScalarType('Odd', serialize=serialize_odd)
 
