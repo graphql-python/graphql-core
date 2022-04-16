@@ -47,6 +47,27 @@ def describe_graphql_error():
         assert e.__traceback__ is None
         assert str(e) == "msg"
 
+    def can_pass_positional_and_keyword_arguments():
+        e1 = GraphQLError(
+            "msg",
+            [field_node],
+            source,
+            [1, 2, 3],
+            ["a", "b", "c"],
+            Exception("test"),
+            {"foo": "bar"},
+        )
+        e2 = GraphQLError(
+            message="msg",
+            nodes=[field_node],
+            source=source,
+            positions=[1, 2, 3],
+            path=["a", "b", "c"],
+            original_error=Exception("test"),
+            extensions={"foo": "bar"},
+        )
+        assert e1 == e2
+
     def formatted_dict_has_only_keys_prescribed_in_the_spec():
         e = GraphQLError(
             "msg",
