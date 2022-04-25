@@ -342,6 +342,7 @@ class GraphQLSchema:
             ast_node=deepcopy(self.ast_node),
             extension_ast_nodes=deepcopy(self.extension_ast_nodes),
             assume_valid=True,
+            exclude_unset=self.exclude_unset,
         )
 
     def get_root_type(self, operation: OperationType) -> Optional[GraphQLObjectType]:
