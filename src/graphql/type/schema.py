@@ -140,6 +140,7 @@ class GraphQLSchema:
         ast_node: Optional[ast.SchemaDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[ast.SchemaExtensionNode]] = None,
         assume_valid: bool = False,
+        exclude_unset: Optional[bool] = False
     ) -> None:
         """Initialize GraphQL schema.
 
@@ -202,6 +203,7 @@ class GraphQLSchema:
         self.query_type = query
         self.mutation_type = mutation
         self.subscription_type = subscription
+        self.exclude_unset = exclude_unset
         # Provide specified directives (e.g. @include and @skip) by default
         self.directives = specified_directives if directives is None else directives
 
@@ -302,6 +304,7 @@ class GraphQLSchema:
             ast_node=self.ast_node,
             extension_ast_nodes=self.extension_ast_nodes,
             assume_valid=self._validation_errors is not None,
+            exclude_unset=self.exclude_unset,
         )
 
     def __copy__(self) -> "GraphQLSchema":  # pragma: no cover

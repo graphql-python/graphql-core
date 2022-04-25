@@ -44,6 +44,7 @@ def coerce_input_value(
     type_: GraphQLInputType,
     on_error: OnErrorCB = default_on_error,
     path: Optional[Path] = None,
+    exclude_unset: Optional[bool] = False,
 ) -> Any:
     """Coerce a Python value given a GraphQL Input Type."""
     if is_non_null_type(type_):
@@ -95,25 +96,31 @@ def coerce_input_value(
         for field_name, field in fields.items():
             field_value = input_value.get(field_name, Undefined)
 
-            if field_value is Undefined:
-                if field.default_value is not Undefined:
-                    # Use out name as name if it exists (extension of GraphQL.js).
-                    coerced_dict[field.out_name or field_name] = field.default_value
-                elif is_non_null_type(field.type):  # pragma: no cover else
-                    type_str = inspect(field.type)
-                    on_error(
-                        path.as_list() if path else [],
-                        input_value,
-                        GraphQLError(
-                            f"Field '{field_name}' of required type '{type_str}'"
-                            " was not provided."
-                        ),
+            if exclude_unset:
+                if field_name in input_value:
+                    coerced_dict[field.out_name or field_name] = coerce_input_value(
+                        field_value, field.type, on_error, Path(path, field_name, type_.name)
                     )
-                continue
+            else:
+                if field_value is Undefined:
+                    if field.default_value is not Undefined:
+                        # Use out name as name if it exists (extension of GraphQL.js).
+                        coerced_dict[field.out_name or field_name] = field.default_value
+                    elif is_non_null_type(field.type):  # pragma: no cover else
+                        type_str = inspect(field.type)
+                        on_error(
+                            path.as_list() if path else [],
+                            input_value,
+                            GraphQLError(
+                                f"Field '{field_name}' of required type '{type_str}'"
+                                " was not provided."
+                            ),
+                        )
+                    continue
 
-            coerced_dict[field.out_name or field_name] = coerce_input_value(
-                field_value, field.type, on_error, Path(path, field_name, type_.name)
-            )
+                coerced_dict[field.out_name or field_name] = coerce_input_value(
+                    field_value, field.type, on_error, Path(path, field_name, type_.name)
+                )
 
         # Ensure every provided field is defined.
         for field_name in input_value:
