@@ -1,3 +1,4 @@
+import inspect as inspect_builtin
 from typing import Any, Dict, List, Optional, cast
 
 from ..language import (
@@ -128,7 +129,10 @@ def value_from_ast(
         type_ = cast(GraphQLScalarType, type_)
         # noinspection PyBroadException
         try:
-            if variables:
+            if (
+                variables
+                and len(inspect_builtin.signature(type_.parse_literal).parameters) >= 2
+            ):
                 result = type_.parse_literal(value_node, variables)
             else:
                 result = type_.parse_literal(value_node)
