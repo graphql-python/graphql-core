@@ -971,27 +971,27 @@ def describe_extend_schema():
             dedent(
                 """
                 scalar SomeScalar @specifiedBy(url: "http://example.com/foo_spec")
-    
+
                 type SomeObject implements SomeInterface & NewInterface & AnotherNewInterface {
                   oldField: String
                   newField: String
                   anotherNewField: String
                 }
-    
+
                 enum SomeEnum {
                   OLD_VALUE
                   NEW_VALUE
                   ANOTHER_NEW_VALUE
                 }
-    
+
                 union SomeUnion = SomeObject | NewObject | AnotherNewObject
-    
+
                 input SomeInput {
                   oldField: String
                   newField: String
                   anotherNewField: String
                 }
-    
+
                 """  # noqa: E501
             )
             + "\n\n"
@@ -1045,12 +1045,12 @@ def describe_extend_schema():
                   oldField: String
                   newField: String
                 }
-    
+
                 interface AnotherInterface implements SomeInterface {
                   oldField: String
                   newField: String
                 }
-    
+
                 type SomeObject implements SomeInterface & AnotherInterface {
                   oldField: String
                   newField: String
@@ -1106,16 +1106,16 @@ def describe_extend_schema():
                   oldField: String
                   newField: String
                 }
-    
+
                 type SomeObject implements SomeInterface & AnotherInterface & NewInterface {
                   oldField: String
                   newField: String
                 }
-    
+
                 interface NewInterface {
                   newField: String
                 }
-                """
+                """  # noqa: E501
             ),
         )
 
@@ -1494,11 +1494,11 @@ def describe_extend_schema():
                     extend schema {
                       mutation: Mutation
                     }
-    
+
                     extend schema {
                       subscription: Subscription
                     }
-    
+
                     extend schema @foo
                     """
                 ),

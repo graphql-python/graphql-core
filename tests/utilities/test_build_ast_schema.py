@@ -934,24 +934,24 @@ def describe_schema_builder():
             some_enum,
             dedent(
                 """
-            enum SomeEnum {
-              FIRST
-            }
-            """
+                enum SomeEnum {
+                  FIRST
+                }
+                """
             ),
         )
         expect_extension_ast_nodes(
             some_enum,
             dedent(
                 """
-            extend enum SomeEnum {
-              SECOND
-            }
+                extend enum SomeEnum {
+                  SECOND
+                }
 
-            extend enum SomeEnum {
-              THIRD
-            }
-            """
+                extend enum SomeEnum {
+                  THIRD
+                }
+                """
             ),
         )
 
@@ -987,24 +987,24 @@ def describe_schema_builder():
             some_input,
             dedent(
                 """
-            input SomeInput {
-              first: String
-            }
-            """
+                input SomeInput {
+                  first: String
+                }
+                """
             ),
         )
         expect_extension_ast_nodes(
             some_input,
             dedent(
                 """
-            extend input SomeInput {
-              second: Int
-            }
+                extend input SomeInput {
+                  second: Int
+                }
 
-            extend input SomeInput {
-              third: Float
-            }
-            """
+                extend input SomeInput {
+                  third: Float
+                }
+                """
             ),
         )
 
@@ -1188,7 +1188,9 @@ def describe_schema_builder():
 
     # This currently does not work because of how extend_schema is implemented
     @mark.skip(reason="pickling of schemas is not yet supported")
-    def can_pickle_and_unpickle_big_schema(big_schema_sdl):  # noqa: F811
+    def can_pickle_and_unpickle_big_schema(
+        big_schema_sdl,  # noqa: F811
+    ):  # pragma: no cover
         import pickle
 
         # create a schema from the kitchen sink SDL
