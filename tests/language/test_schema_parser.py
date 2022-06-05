@@ -796,18 +796,18 @@ def describe_schema_parser():
     def parses_kitchen_sink_schema(kitchen_sink_sdl):  # noqa: F811
         assert parse(kitchen_sink_sdl)
 
-    def can_pickle_and_unpickle_kitchen_sink_schema(kitchen_sink_sdl):  # noqa: F811
+    def can_pickle_and_unpickle_kitchen_sink_schema_ast(kitchen_sink_sdl):  # noqa: F811
         import pickle
 
-        # create a schema from the kitchen sink SDL
+        # create a schema AST from the kitchen sink SDL
         doc = parse(kitchen_sink_sdl)
-        # check that the schema can be pickled
+        # check that the schema AST can be pickled
         # (particularly, there should be no recursion error)
         dumped = pickle.dumps(doc)
         # check that the pickle size is reasonable
         assert len(dumped) < 50 * len(kitchen_sink_sdl)
         loaded = pickle.loads(dumped)
-        # check that the un-pickled schema is still the same
+        # check that the un-pickled schema AST is still the same
         assert loaded == doc
         # check that pickling again creates the same result
         dumped_again = pickle.dumps(doc)

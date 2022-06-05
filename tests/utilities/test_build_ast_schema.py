@@ -1,7 +1,7 @@
 from collections import namedtuple
 from typing import Union
 
-from pytest import raises
+from pytest import mark, raises
 
 from graphql import graphql_sync
 from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
@@ -34,6 +34,7 @@ from graphql.type import (
 )
 from graphql.utilities import build_ast_schema, build_schema, print_schema, print_type
 
+from ..fixtures import big_schema_sdl  # noqa: F401
 from ..utils import dedent
 
 
@@ -42,7 +43,7 @@ def cycle_sdl(sdl: str) -> str:
 
     This function does a full cycle of going from a string with the contents of the SDL,
     parsed in a schema AST, materializing that schema AST into an in-memory
-    GraphQLSchema, and then finally printing that GraphQL into the SDÖ.
+    GraphQLSchema, and then finally printing that GraphQL into the SDL.
     """
     ast = parse(sdl)
     schema = build_ast_schema(ast)
@@ -1184,3 +1185,27 @@ def describe_schema_builder():
         with raises(TypeError) as exc_info:
             build_ast_schema({})  # type: ignore
         assert str(exc_info.value) == "Must provide valid Document AST."
+
+    # This currently does not work because of how extend_schema is implemented
+    @mark.skip(reason="pickling of schemas is not yet supported")
+    def can_pickle_and_unpickle_big_schema(big_schema_sdl):  # noqa: F811
+        import pickle
+
+        # create a schema from the kitchen sink SDL
+        schema = build_schema(big_schema_sdl, assume_valid_sdl=True)
+        # check that the schema can be pickled
+        # (particularly, there should be no recursion error,
+        # or errors because of trying to pickle lambdas or local functions)
+        dumped = pickle.dumps(schema)
+        # check that the pickle size is reasonable
+        assert len(dumped) < 50 * len(big_schema_sdl)
+        loaded = pickle.loads(dumped)
+
+        # check that the un-pickled schema is still the same
+        assert loaded == schema
+        # check that pickling again creates the same result
+        dumped_again = pickle.dumps(schema)
+        assert dumped_again == dumped
+
+        # check that printing the unpickled schema gives the same SDL
+        assert cycle_sdl(print_schema(schema)) == cycle_sdl(big_schema_sdl)

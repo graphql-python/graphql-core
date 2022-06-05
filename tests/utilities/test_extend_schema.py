@@ -970,29 +970,29 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 """
-            scalar SomeScalar @specifiedBy(url: "http://example.com/foo_spec")
-
-            type SomeObject implements SomeInterface & NewInterface & AnotherNewInterface {
-              oldField: String
-              newField: String
-              anotherNewField: String
-            }
-
-            enum SomeEnum {
-              OLD_VALUE
-              NEW_VALUE
-              ANOTHER_NEW_VALUE
-            }
-
-            union SomeUnion = SomeObject | NewObject | AnotherNewObject
-
-            input SomeInput {
-              oldField: String
-              newField: String
-              anotherNewField: String
-            }
-
-            """  # noqa: E501
+                scalar SomeScalar @specifiedBy(url: "http://example.com/foo_spec")
+    
+                type SomeObject implements SomeInterface & NewInterface & AnotherNewInterface {
+                  oldField: String
+                  newField: String
+                  anotherNewField: String
+                }
+    
+                enum SomeEnum {
+                  OLD_VALUE
+                  NEW_VALUE
+                  ANOTHER_NEW_VALUE
+                }
+    
+                union SomeUnion = SomeObject | NewObject | AnotherNewObject
+    
+                input SomeInput {
+                  oldField: String
+                  newField: String
+                  anotherNewField: String
+                }
+    
+                """  # noqa: E501
             )
             + "\n\n"
             + new_types_sdl,
@@ -1041,21 +1041,21 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 """
-            interface SomeInterface {
-              oldField: String
-              newField: String
-            }
-
-            interface AnotherInterface implements SomeInterface {
-              oldField: String
-              newField: String
-            }
-
-            type SomeObject implements SomeInterface & AnotherInterface {
-              oldField: String
-              newField: String
-            }
-            """
+                interface SomeInterface {
+                  oldField: String
+                  newField: String
+                }
+    
+                interface AnotherInterface implements SomeInterface {
+                  oldField: String
+                  newField: String
+                }
+    
+                type SomeObject implements SomeInterface & AnotherInterface {
+                  oldField: String
+                  newField: String
+                }
+                """
             ),
         )
 
@@ -1102,20 +1102,20 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 """
-            interface AnotherInterface implements SomeInterface & NewInterface {
-              oldField: String
-              newField: String
-            }
-
-            type SomeObject implements SomeInterface & AnotherInterface & NewInterface {
-              oldField: String
-              newField: String
-            }
-
-            interface NewInterface {
-              newField: String
-            }
-            """
+                interface AnotherInterface implements SomeInterface & NewInterface {
+                  oldField: String
+                  newField: String
+                }
+    
+                type SomeObject implements SomeInterface & AnotherInterface & NewInterface {
+                  oldField: String
+                  newField: String
+                }
+    
+                interface NewInterface {
+                  newField: String
+                }
+                """
             ),
         )
 
@@ -1150,11 +1150,11 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 """
-            interface SomeInterface {
-              oldField: SomeInterface
-              newField: String
-            }
-            """
+                interface SomeInterface {
+                  oldField: SomeInterface
+                  newField: String
+                }
+                """
             ),
         )
 
@@ -1189,12 +1189,12 @@ def describe_extend_schema():
             extended_schema,
             dedent(
                 """
-            interface SomeInterface {
-              some: SomeInterface
-              newFieldA: Int
-              newFieldB(test: Boolean): String
-            }
-            """
+                interface SomeInterface {
+                  some: SomeInterface
+                  newFieldA: Int
+                  newFieldB(test: Boolean): String
+                }
+                """
             ),
         )
 
@@ -1491,15 +1491,15 @@ def describe_extend_schema():
                 extended_twice_schema,
                 dedent(
                     """
-                extend schema {
-                  mutation: Mutation
-                }
-
-                extend schema {
-                  subscription: Subscription
-                }
-
-                extend schema @foo
-                """
+                    extend schema {
+                      mutation: Mutation
+                    }
+    
+                    extend schema {
+                      subscription: Subscription
+                    }
+    
+                    extend schema @foo
+                    """
                 ),
             )
