@@ -1,7 +1,7 @@
-from graphql.pyutils import Undefined
+from graphql.pyutils import Undefined, UndefinedType
 
 
-def describe_invalid():
+def describe_Undefined():
     def has_repr():
         assert repr(Undefined) == "Undefined"
 
@@ -26,3 +26,8 @@ def describe_invalid():
         false_object = False
         assert Undefined != false_object
         assert not Undefined == false_object
+
+
+def describe_UndefinedType():
+    def is_singleton():
+        assert Undefined is UndefinedType()

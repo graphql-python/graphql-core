@@ -1,10 +1,17 @@
-from typing import Any
+from typing import Any, Optional
 
 __all__ = ["Undefined", "UndefinedType"]
 
 
 class UndefinedType(ValueError):
     """Auxiliary class for creating the Undefined singleton."""
+
+    _instance: Optional["UndefinedType"] = None
+
+    def __new__(cls) -> "UndefinedType":
+        if cls._instance is None:
+            cls._instance = super(UndefinedType, cls).__new__(cls)
+        return cls._instance
 
     def __repr__(self) -> str:
         return "Undefined"

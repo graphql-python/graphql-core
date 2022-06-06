@@ -1,7 +1,7 @@
 from collections import namedtuple
 from typing import Union
 
-from pytest import mark, raises
+from pytest import raises
 
 from graphql import graphql_sync
 from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
@@ -1186,12 +1186,13 @@ def describe_schema_builder():
             build_ast_schema({})  # type: ignore
         assert str(exc_info.value) == "Must provide valid Document AST."
 
-    # This currently does not work because of how extend_schema is implemented
-    @mark.skip(reason="pickling of schemas is not yet supported")
     def can_pickle_and_unpickle_big_schema(
         big_schema_sdl,  # noqa: F811
     ):  # pragma: no cover
         import pickle
+
+        # use our printing conventions
+        big_schema_sdl = cycle_sdl(big_schema_sdl)
 
         # create a schema from the kitchen sink SDL
         schema = build_schema(big_schema_sdl, assume_valid_sdl=True)
@@ -1199,15 +1200,16 @@ def describe_schema_builder():
         # (particularly, there should be no recursion error,
         # or errors because of trying to pickle lambdas or local functions)
         dumped = pickle.dumps(schema)
+
         # check that the pickle size is reasonable
-        assert len(dumped) < 50 * len(big_schema_sdl)
+        assert len(dumped) < 25 * len(big_schema_sdl)
         loaded = pickle.loads(dumped)
 
-        # check that the un-pickled schema is still the same
-        assert loaded == schema
-        # check that pickling again creates the same result
-        dumped_again = pickle.dumps(schema)
-        assert dumped_again == dumped
-
         # check that printing the unpickled schema gives the same SDL
-        assert cycle_sdl(print_schema(schema)) == cycle_sdl(big_schema_sdl)
+        assert print_schema(loaded) == big_schema_sdl
+
+        # check that pickling again creates the same result
+        dumped = pickle.dumps(schema)
+        assert len(dumped) < 25 * len(big_schema_sdl)
+        loaded = pickle.loads(dumped)
+        assert print_schema(loaded) == big_schema_sdl

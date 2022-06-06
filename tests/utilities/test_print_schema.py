@@ -691,7 +691,7 @@ def describe_type_system_printer():
               mutationType: __Type
 
               """
-              If this server support subscription, the type that subscription operations will be rooted at.
+              If this server supports subscription, the type that subscription operations will be rooted at.
               """
               subscriptionType: __Type
 
