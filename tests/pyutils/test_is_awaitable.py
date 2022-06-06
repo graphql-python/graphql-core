@@ -95,7 +95,6 @@ def describe_is_awaitable():
         assert is_awaitable(some_future)
         assert is_awaitable(some_future)
 
-    @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def declines_an_async_generator():
         async def some_async_generator():
