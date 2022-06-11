@@ -29,7 +29,7 @@ def located_error(
         return original_error
     try:
         # noinspection PyUnresolvedReferences
-        message = original_error.message  # type: ignore
+        message = str(original_error.message)  # type: ignore
     except AttributeError:
         message = str(original_error)
     try:
