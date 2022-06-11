@@ -2,8 +2,6 @@ from typing import cast, Any
 
 from graphql.error import GraphQLError, located_error
 
-from ..utils import dedent
-
 
 def describe_located_error():
     def throws_without_an_original_error():
@@ -26,23 +24,14 @@ def describe_located_error():
         cast(Any, e).path = "/something/feed/_search"
         assert located_error(e, [], []) is not e
 
-    def handles_proxy_error_messages():
-        class ProxyString:
-            def __init__(self, value):
-                self.value = value
+    def handles_lazy_error_messages():
+        class LazyString:
+            def __str__(self) -> str:
+                return "lazy"
 
-            def __str__(self):
-                return self.value
-
-        class MyError(Exception):
+        class LazyError(Exception):
             def __init__(self):
-                self.message = ProxyString("Example error")
+                self.message = LazyString()
                 super().__init__()
 
-        error = located_error(MyError(), [], [])
-
-        assert str(error) == dedent(
-            """
-            Example error
-            """
-        )
+        assert str(located_error(LazyError())) == "lazy"
