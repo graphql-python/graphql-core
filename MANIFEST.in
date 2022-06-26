@@ -3,6 +3,7 @@ include MANIFEST.in
 include CODEOWNERS
 include LICENSE
 include README.md
+include SECURITY.md
 
 include .bumpversion.cfg
 include .coveragerc
