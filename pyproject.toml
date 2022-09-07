@@ -2,7 +2,7 @@
 name = "graphql-core"
 version = "3.2.1"
 description = """
-GraphQL-core is a Python port of GraphQL.js,
+GraphQL-core is a Python port of GraphQL.js,\
  the JavaScript reference implementation for GraphQL."""
 license = "MIT"
 authors = [
