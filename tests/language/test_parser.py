@@ -91,6 +91,23 @@ def describe_parser():
             """
         )
 
+    def limits_maximum_number_of_tokens():
+        assert parse("{ foo }", max_tokens=3)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error: Document contains more than 2 tokens."
+            " Parsing aborted.",
+        ):
+            assert parse("{ foo }", max_tokens=2)
+
+        assert parse('{ foo(bar: "baz") }', max_tokens=8)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error: Document contains more than 7 tokens."
+            " Parsing aborted.",
+        ):
+            assert parse('{ foo(bar: "baz") }', max_tokens=7)
+
     def parses_variable_inline_values():
         parse("{ field(complex: { a: { b: [ $var ] } }) }")
 
