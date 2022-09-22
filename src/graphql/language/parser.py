@@ -191,7 +191,7 @@ class Parser:
     """
 
     _lexer: Lexer
-    _no_Location: bool
+    _no_location: bool
     _allow_legacy_fragment_variables: bool
 
     def __init__(
