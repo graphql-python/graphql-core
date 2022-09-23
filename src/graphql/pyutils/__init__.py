@@ -26,8 +26,6 @@ from .natural_compare import natural_comparison_key
 from .awaitable_or_value import AwaitableOrValue
 from .suggestion_list import suggestion_list
 from .frozen_error import FrozenError
-from .frozen_list import FrozenList
-from .frozen_dict import FrozenDict
 from .merge_kwargs import merge_kwargs
 from .path import Path
 from .print_path_list import print_path_list
@@ -54,8 +52,6 @@ __all__ = [
     "AwaitableOrValue",
     "suggestion_list",
     "FrozenError",
-    "FrozenList",
-    "FrozenDict",
     "Path",
     "print_path_list",
     "SimplePubSub",
