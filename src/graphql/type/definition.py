@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from enum import Enum
 from typing import (
     Any,
@@ -280,7 +282,7 @@ class GraphQLNamedType(GraphQLType):
             extension_ast_nodes=self.extension_ast_nodes,
         )
 
-    def __copy__(self) -> "GraphQLNamedType":  # pragma: no cover
+    def __copy__(self) -> GraphQLNamedType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 
@@ -451,7 +453,7 @@ class GraphQLScalarType(GraphQLNamedType):
             specified_by_url=self.specified_by_url,
         )
 
-    def __copy__(self) -> "GraphQLScalarType":  # pragma: no cover
+    def __copy__(self) -> GraphQLScalarType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 
@@ -469,7 +471,7 @@ GraphQLArgumentMap = Dict[str, "GraphQLArgument"]
 
 
 class GraphQLFieldKwargs(TypedDict, total=False):
-    type_: "GraphQLOutputType"
+    type_: GraphQLOutputType
     args: Optional[GraphQLArgumentMap]
     resolve: Optional["GraphQLFieldResolver"]
     subscribe: Optional["GraphQLFieldResolver"]
@@ -482,7 +484,7 @@ class GraphQLFieldKwargs(TypedDict, total=False):
 class GraphQLField:
     """Definition of a GraphQL field"""
 
-    type: "GraphQLOutputType"
+    type: GraphQLOutputType
     args: GraphQLArgumentMap
     resolve: Optional["GraphQLFieldResolver"]
     subscribe: Optional["GraphQLFieldResolver"]
@@ -493,7 +495,7 @@ class GraphQLField:
 
     def __init__(
         self,
-        type_: "GraphQLOutputType",
+        type_: GraphQLOutputType,
         args: Optional[GraphQLArgumentMap] = None,
         resolve: Optional["GraphQLFieldResolver"] = None,
         subscribe: Optional["GraphQLFieldResolver"] = None,
@@ -577,7 +579,7 @@ class GraphQLField:
             ast_node=self.ast_node,
         )
 
-    def __copy__(self) -> "GraphQLField":  # pragma: no cover
+    def __copy__(self) -> GraphQLField:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 
@@ -593,10 +595,10 @@ class GraphQLResolveInfo(NamedTuple):
 
     field_name: str
     field_nodes: List[FieldNode]
-    return_type: "GraphQLOutputType"
-    parent_type: "GraphQLObjectType"
+    return_type: GraphQLOutputType
+    parent_type: GraphQLObjectType
     path: Path
-    schema: "GraphQLSchema"
+    schema: GraphQLSchema
     fragments: Dict[str, FragmentDefinitionNode]
     root_value: Any
     operation: OperationDefinitionNode
@@ -628,7 +630,7 @@ GraphQLFieldMap = Dict[str, GraphQLField]
 
 
 class GraphQLArgumentKwargs(TypedDict, total=False):
-    type_: "GraphQLInputType"
+    type_: GraphQLInputType
     default_value: Any
     description: Optional[str]
     deprecation_reason: Optional[str]
@@ -640,7 +642,7 @@ class GraphQLArgumentKwargs(TypedDict, total=False):
 class GraphQLArgument:
     """Definition of a GraphQL argument"""
 
-    type: "GraphQLInputType"
+    type: GraphQLInputType
     default_value: Any
     description: Optional[str]
     deprecation_reason: Optional[str]
@@ -650,7 +652,7 @@ class GraphQLArgument:
 
     def __init__(
         self,
-        type_: "GraphQLInputType",
+        type_: GraphQLInputType,
         default_value: Any = Undefined,
         description: Optional[str] = None,
         deprecation_reason: Optional[str] = None,
@@ -706,7 +708,7 @@ class GraphQLArgument:
             ast_node=self.ast_node,
         )
 
-    def __copy__(self) -> "GraphQLArgument":  # pragma: no cover
+    def __copy__(self) -> GraphQLArgument:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 
@@ -798,7 +800,7 @@ class GraphQLObjectType(GraphQLNamedType):
             is_type_of=self.is_type_of,
         )
 
-    def __copy__(self) -> "GraphQLObjectType":  # pragma: no cover
+    def __copy__(self) -> GraphQLObjectType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
     @cached_property
@@ -932,7 +934,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
             resolve_type=self.resolve_type,
         )
 
-    def __copy__(self) -> "GraphQLInterfaceType":  # pragma: no cover
+    def __copy__(self) -> GraphQLInterfaceType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
     @cached_property
@@ -1063,7 +1065,7 @@ class GraphQLUnionType(GraphQLNamedType):
             super().to_kwargs(), types=self.types, resolve_type=self.resolve_type
         )
 
-    def __copy__(self) -> "GraphQLUnionType":  # pragma: no cover
+    def __copy__(self) -> GraphQLUnionType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
     @cached_property
@@ -1203,7 +1205,7 @@ class GraphQLEnumType(GraphQLNamedType):
             super().to_kwargs(), values=self.values.copy()
         )
 
-    def __copy__(self) -> "GraphQLEnumType":  # pragma: no cover
+    def __copy__(self) -> GraphQLEnumType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
     @cached_property
@@ -1352,7 +1354,7 @@ class GraphQLEnumValue:
             ast_node=self.ast_node,
         )
 
-    def __copy__(self) -> "GraphQLEnumValue":  # pragma: no cover
+    def __copy__(self) -> GraphQLEnumValue:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 
@@ -1446,7 +1448,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
             else self.out_type,
         )
 
-    def __copy__(self) -> "GraphQLInputObjectType":  # pragma: no cover
+    def __copy__(self) -> GraphQLInputObjectType:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
     @cached_property
@@ -1491,7 +1493,7 @@ def assert_input_object_type(type_: Any) -> GraphQLInputObjectType:
 
 
 class GraphQLInputFieldKwargs(TypedDict, total=False):
-    type_: "GraphQLInputType"
+    type_: GraphQLInputType
     default_value: Any
     description: Optional[str]
     deprecation_reason: Optional[str]
@@ -1503,7 +1505,7 @@ class GraphQLInputFieldKwargs(TypedDict, total=False):
 class GraphQLInputField:
     """Definition of a GraphQL input field"""
 
-    type: "GraphQLInputType"
+    type: GraphQLInputType
     default_value: Any
     description: Optional[str]
     deprecation_reason: Optional[str]
@@ -1513,7 +1515,7 @@ class GraphQLInputField:
 
     def __init__(
         self,
-        type_: "GraphQLInputType",
+        type_: GraphQLInputType,
         default_value: Any = Undefined,
         description: Optional[str] = None,
         deprecation_reason: Optional[str] = None,
@@ -1569,7 +1571,7 @@ class GraphQLInputField:
             ast_node=self.ast_node,
         )
 
-    def __copy__(self) -> "GraphQLInputField":  # pragma: no cover
+    def __copy__(self) -> GraphQLInputField:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 

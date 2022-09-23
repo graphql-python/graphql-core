@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from typing import Any, NamedTuple, TYPE_CHECKING
 
 try:
@@ -37,7 +39,7 @@ class SourceLocation(NamedTuple):
         return not self == other
 
 
-def get_location(source: "Source", position: int) -> SourceLocation:
+def get_location(source: Source, position: int) -> SourceLocation:
     """Get the line and column for a character position in the source.
 
     Takes a Source and a UTF-8 character offset, and returns the corresponding line and

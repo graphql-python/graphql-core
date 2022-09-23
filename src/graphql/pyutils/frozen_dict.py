@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from copy import deepcopy
 from typing import Dict, TypeVar
 
@@ -28,12 +30,12 @@ class FrozenDict(Dict[KT, VT]):
     def __hash__(self):
         return hash(tuple(self.items()))
 
-    def __copy__(self) -> "FrozenDict":
+    def __copy__(self) -> FrozenDict:
         return FrozenDict(self)
 
     copy = __copy__
 
-    def __deepcopy__(self, memo: Dict) -> "FrozenDict":
+    def __deepcopy__(self, memo: Dict) -> FrozenDict:
         return FrozenDict({k: deepcopy(v, memo) for k, v in self.items()})
 
     def clear(self):

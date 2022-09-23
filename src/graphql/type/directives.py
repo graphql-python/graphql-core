@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from typing import Any, Collection, Dict, Optional, Tuple, cast
 
 from ..language import ast, DirectiveLocation
@@ -143,7 +145,7 @@ class GraphQLDirective:
             ast_node=self.ast_node,
         )
 
-    def __copy__(self) -> "GraphQLDirective":  # pragma: no cover
+    def __copy__(self) -> GraphQLDirective:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
 

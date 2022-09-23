@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 import re
 from typing import NamedTuple
 
@@ -20,7 +22,7 @@ class VersionInfo(NamedTuple):
     serial: int
 
     @classmethod
-    def from_str(cls, v: str) -> "VersionInfo":
+    def from_str(cls, v: str) -> VersionInfo:
         groups = _re_version.match(v).groups()  # type: ignore
         major, minor, micro = map(int, groups[:3])
         level = (groups[3] or "")[:1]

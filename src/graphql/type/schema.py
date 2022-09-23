@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from copy import copy, deepcopy
 from typing import (
     Any,
@@ -304,10 +306,10 @@ class GraphQLSchema:
             assume_valid=self._validation_errors is not None,
         )
 
-    def __copy__(self) -> "GraphQLSchema":  # pragma: no cover
+    def __copy__(self) -> GraphQLSchema:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
-    def __deepcopy__(self, memo_: Dict) -> "GraphQLSchema":
+    def __deepcopy__(self, memo_: Dict) -> GraphQLSchema:
         from ..type import (
             is_introspection_type,
             is_specified_scalar_type,
@@ -405,7 +407,7 @@ class TypeSet(Dict[GraphQLNamedType, None]):
     """An ordered set of types that can be collected starting from initial types."""
 
     @classmethod
-    def with_initial_types(cls, types: Collection[GraphQLType]) -> "TypeSet":
+    def with_initial_types(cls, types: Collection[GraphQLType]) -> TypeSet:
         return cast(TypeSet, super().fromkeys(types))
 
     def collect_referenced_types(self, type_: GraphQLType) -> None:

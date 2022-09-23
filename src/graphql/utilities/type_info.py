@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from typing import Any, Callable, List, Optional, Union, cast
 
 from ..language import (
@@ -298,7 +300,7 @@ def get_field_def(
 class TypeInfoVisitor(Visitor):
     """A visitor which maintains a provided TypeInfo."""
 
-    def __init__(self, type_info: "TypeInfo", visitor: Visitor):
+    def __init__(self, type_info: TypeInfo, visitor: Visitor):
         super().__init__()
         self.type_info = type_info
         self.visitor = visitor

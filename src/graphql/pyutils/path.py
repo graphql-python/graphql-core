@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from typing import Any, List, NamedTuple, Optional, Union
 
 __all__ = ["Path"]
@@ -13,7 +15,7 @@ class Path(NamedTuple):
     typename: Optional[str]
     """name of the parent type to avoid path ambiguity"""
 
-    def add_key(self, key: Union[str, int], typename: Optional[str] = None) -> "Path":
+    def add_key(self, key: Union[str, int], typename: Optional[str] = None) -> Path:
         """Return a new Path containing the given key."""
         return Path(self, key, typename)
 

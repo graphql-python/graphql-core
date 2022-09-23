@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from graphql.execution import execute_sync
 from graphql.language import parse
 from graphql.type import (
@@ -90,7 +92,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
 
         # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Author:
-            def pic(self, info_, width: int, height: int) -> "Pic":
+            def pic(self, info_, width: int, height: int) -> Pic:
                 return Pic(123, width, height)
 
             @property

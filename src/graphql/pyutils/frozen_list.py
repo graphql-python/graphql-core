@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from copy import deepcopy
 from typing import Dict, List, TypeVar
 
@@ -39,10 +41,10 @@ class FrozenList(List[T]):
     def __hash__(self):
         return hash(tuple(self))
 
-    def __copy__(self) -> "FrozenList":
+    def __copy__(self) -> FrozenList:
         return FrozenList(self)
 
-    def __deepcopy__(self, memo: Dict) -> "FrozenList":
+    def __deepcopy__(self, memo: Dict) -> FrozenList:
         return FrozenList(deepcopy(value, memo) for value in self)
 
     def append(self, x):

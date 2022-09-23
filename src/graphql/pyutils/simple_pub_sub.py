@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from asyncio import Future, Queue, ensure_future, sleep
 from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
@@ -31,7 +33,7 @@ class SimplePubSub:
 
     def get_subscriber(
         self, transform: Optional[Callable] = None
-    ) -> "SimplePubSubIterator":
+    ) -> SimplePubSubIterator:
         return SimplePubSubIterator(self, transform)
 
 
@@ -44,7 +46,7 @@ class SimplePubSubIterator(AsyncIterator):
         self.listening = True
         pubsub.subscribers.add(self.push_value)
 
-    def __aiter__(self) -> "SimplePubSubIterator":
+    def __aiter__(self) -> SimplePubSubIterator:
         return self
 
     async def __anext__(self) -> Any:
