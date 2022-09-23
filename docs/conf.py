@@ -134,6 +134,7 @@ GNT GT KT T VT
 enum.Enum
 traceback
 types.TracebackType
+TypeMap
 EnterLeaveVisitor
 FormattedSourceLocation
 GraphQLAbstractType
