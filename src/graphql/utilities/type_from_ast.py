@@ -1,15 +1,16 @@
-from typing import cast, overload, Optional
+from typing import Optional, cast, overload
 
 from ..language import ListTypeNode, NamedTypeNode, NonNullTypeNode, TypeNode
 from ..pyutils import inspect
 from ..type import (
-    GraphQLSchema,
-    GraphQLNamedType,
     GraphQLList,
+    GraphQLNamedType,
     GraphQLNonNull,
     GraphQLNullableType,
+    GraphQLSchema,
     GraphQLType,
 )
+
 
 __all__ = ["type_from_ast"]
 

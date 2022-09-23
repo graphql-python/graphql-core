@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from .utils import dedent
 
+
 Scope = Dict[str, Any]
 
 

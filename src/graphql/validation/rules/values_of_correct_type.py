@@ -1,22 +1,22 @@
-from typing import cast, Any
+from typing import Any, cast
 
 from ...error import GraphQLError
 from ...language import (
+    SKIP,
     BooleanValueNode,
     EnumValueNode,
     FloatValueNode,
     IntValueNode,
-    NullValueNode,
     ListValueNode,
+    NullValueNode,
     ObjectFieldNode,
     ObjectValueNode,
     StringValueNode,
     ValueNode,
     VisitorAction,
-    SKIP,
     print_ast,
 )
-from ...pyutils import did_you_mean, suggestion_list, Undefined
+from ...pyutils import Undefined, did_you_mean, suggestion_list
 from ...type import (
     GraphQLInputObjectType,
     GraphQLScalarType,
@@ -29,6 +29,7 @@ from ...type import (
     is_required_input_field,
 )
 from . import ValidationRule
+
 
 __all__ = ["ValuesOfCorrectTypeRule"]
 

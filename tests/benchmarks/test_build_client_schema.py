@@ -1,4 +1,4 @@
-from graphql import build_client_schema, GraphQLSchema
+from graphql import GraphQLSchema, build_client_schema
 
 from ..fixtures import big_schema_introspection_result  # noqa: F401
 

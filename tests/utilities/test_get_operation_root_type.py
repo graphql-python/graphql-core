@@ -2,11 +2,11 @@ from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.language import (
-    parse,
     DocumentNode,
     OperationDefinitionNode,
     OperationTypeDefinitionNode,
     SchemaDefinitionNode,
+    parse,
 )
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.utilities import get_operation_root_type

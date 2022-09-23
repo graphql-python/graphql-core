@@ -1,9 +1,9 @@
 from math import nan
 from typing import Any, Dict, Optional
 
-from graphql.execution import execute_sync, ExecutionResult
+from graphql.execution import ExecutionResult, execute_sync
 from graphql.execution.values import get_variable_values
-from graphql.language import parse, OperationDefinitionNode, StringValueNode, ValueNode
+from graphql.language import OperationDefinitionNode, StringValueNode, ValueNode, parse
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,

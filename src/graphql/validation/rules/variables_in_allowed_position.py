@@ -9,8 +9,9 @@ from ...language import (
 )
 from ...pyutils import Undefined
 from ...type import GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type
-from ...utilities import type_from_ast, is_type_sub_type_of
+from ...utilities import is_type_sub_type_of, type_from_ast
 from . import ValidationContext, ValidationRule
+
 
 __all__ = ["VariablesInAllowedPositionRule"]
 

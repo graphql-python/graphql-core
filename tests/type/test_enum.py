@@ -16,6 +16,7 @@ from graphql.type import (
 )
 from graphql.utilities import introspection_from_schema
 
+
 ColorType = GraphQLEnumType("Color", values={"RED": 0, "GREEN": 1, "BLUE": 2})
 
 

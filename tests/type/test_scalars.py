@@ -7,11 +7,11 @@ from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
 from graphql.pyutils import Undefined
 from graphql.type import (
-    GraphQLInt,
-    GraphQLFloat,
-    GraphQLString,
     GraphQLBoolean,
+    GraphQLFloat,
     GraphQLID,
+    GraphQLInt,
+    GraphQLString,
 )
 
 

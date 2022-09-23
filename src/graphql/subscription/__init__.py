@@ -11,6 +11,7 @@ on specific data.
    package. In v3.3, the :mod:`graphql.subscription` package will be dropped entirely.
 """
 
-from ..execution import subscribe, create_source_event_stream, MapAsyncIterator
+from ..execution import MapAsyncIterator, create_source_event_stream, subscribe
+
 
 __all__ = ["subscribe", "create_source_event_stream", "MapAsyncIterator"]

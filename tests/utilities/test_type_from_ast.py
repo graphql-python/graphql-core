@@ -1,6 +1,6 @@
 from pytest import raises
 
-from graphql.language import parse_type, TypeNode
+from graphql.language import TypeNode, parse_type
 from graphql.type import GraphQLList, GraphQLNonNull, GraphQLObjectType
 from graphql.utilities import type_from_ast
 

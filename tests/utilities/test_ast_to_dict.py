@@ -1,4 +1,4 @@
-from graphql.language import parse, FieldNode, NameNode, OperationType, SelectionSetNode
+from graphql.language import FieldNode, NameNode, OperationType, SelectionSetNode, parse
 from graphql.utilities import ast_to_dict
 
 

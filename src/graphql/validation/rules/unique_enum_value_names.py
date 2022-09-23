@@ -1,10 +1,11 @@
 from collections import defaultdict
-from typing import cast, Any, Dict
+from typing import Any, Dict, cast
 
 from ...error import GraphQLError
-from ...language import NameNode, EnumTypeDefinitionNode, VisitorAction, SKIP
-from ...type import is_enum_type, GraphQLEnumType
+from ...language import SKIP, EnumTypeDefinitionNode, NameNode, VisitorAction
+from ...type import GraphQLEnumType, is_enum_type
 from . import SDLValidationContext, SDLValidationRule
+
 
 __all__ = ["UniqueEnumValueNamesRule"]
 

@@ -1,14 +1,14 @@
-from typing import cast, List, Union
+from typing import List, Union, cast
 
 from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.language import (
-    parse,
     Node,
-    OperationDefinitionNode,
     ObjectTypeDefinitionNode,
+    OperationDefinitionNode,
     Source,
+    parse,
 )
 
 from ..utils import dedent

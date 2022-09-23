@@ -1,8 +1,8 @@
 from itertools import chain
-from typing import cast, Callable, Collection, Dict, List, Union
+from typing import Callable, Collection, Dict, List, Union, cast
 
 from ..language import DirectiveLocation, parse_value
-from ..pyutils import inspect, Undefined
+from ..pyutils import Undefined, inspect
 from ..type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -35,9 +35,9 @@ from .get_introspection_query import (
     IntrospectionDirective,
     IntrospectionEnumType,
     IntrospectionField,
-    IntrospectionInterfaceType,
     IntrospectionInputObjectType,
     IntrospectionInputValue,
+    IntrospectionInterfaceType,
     IntrospectionObjectType,
     IntrospectionQuery,
     IntrospectionScalarType,
@@ -46,6 +46,7 @@ from .get_introspection_query import (
     IntrospectionUnionType,
 )
 from .value_from_ast import value_from_ast
+
 
 __all__ = ["build_client_schema"]
 

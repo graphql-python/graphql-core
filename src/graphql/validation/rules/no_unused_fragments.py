@@ -2,12 +2,13 @@ from typing import Any, List
 
 from ...error import GraphQLError
 from ...language import (
+    SKIP,
     FragmentDefinitionNode,
     OperationDefinitionNode,
     VisitorAction,
-    SKIP,
 )
 from . import ASTValidationContext, ASTValidationRule
+
 
 __all__ = ["NoUnusedFragmentsRule"]
 

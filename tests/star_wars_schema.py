@@ -62,6 +62,7 @@ from tests.star_wars_data import (
     get_secret_backstory,
 )
 
+
 __all__ = ["star_wars_schema"]
 
 # We begin by setting up our schema.

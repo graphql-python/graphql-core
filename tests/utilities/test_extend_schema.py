@@ -25,14 +25,10 @@ from graphql.type import (
     assert_union_type,
     validate_schema,
 )
-from graphql.utilities import (
-    build_schema,
-    concat_ast,
-    extend_schema,
-    print_schema,
-)
+from graphql.utilities import build_schema, concat_ast, extend_schema, print_schema
 
 from ..utils import dedent
+
 
 TypeWithAstNode = Union[
     GraphQLArgument,

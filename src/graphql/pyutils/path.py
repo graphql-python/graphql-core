@@ -2,6 +2,7 @@ from __future__ import annotations  # Python < 3.10
 
 from typing import Any, List, NamedTuple, Optional, Union
 
+
 __all__ = ["Path"]
 
 

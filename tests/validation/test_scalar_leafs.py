@@ -4,6 +4,7 @@ from graphql.validation import ScalarLeafsRule
 
 from .harness import assert_validation_errors
 
+
 assert_errors = partial(assert_validation_errors, ScalarLeafsRule)
 
 assert_valid = partial(assert_errors, errors=[])

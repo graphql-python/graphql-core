@@ -18,6 +18,7 @@ from ..type import (
 from ..utilities.type_from_ast import type_from_ast
 from .values import get_directive_values
 
+
 __all__ = ["collect_fields", "collect_sub_fields"]
 
 

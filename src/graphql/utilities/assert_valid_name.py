@@ -1,7 +1,8 @@
 from typing import Optional
 
-from ..type.assert_name import assert_name
 from ..error import GraphQLError
+from ..type.assert_name import assert_name
+
 
 __all__ = ["assert_valid_name", "is_valid_name_error"]
 

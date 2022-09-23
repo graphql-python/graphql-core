@@ -1,23 +1,23 @@
 from copy import copy
 from functools import partial
-from typing import cast, List, Optional
+from typing import List, Optional, cast
 
 from pytest import mark, raises
 
 from graphql.language import (
-    Node,
-    FieldNode,
-    NameNode,
-    SelectionNode,
-    SelectionSetNode,
-    parse,
-    visit,
     BREAK,
     REMOVE,
     SKIP,
+    FieldNode,
+    NameNode,
+    Node,
     ParallelVisitor,
+    SelectionNode,
+    SelectionSetNode,
     Visitor,
     VisitorKeyMap,
+    parse,
+    visit,
 )
 
 from ..fixtures import kitchen_sink_query  # noqa: F401

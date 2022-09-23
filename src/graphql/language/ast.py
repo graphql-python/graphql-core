@@ -2,11 +2,12 @@ from __future__ import annotations  # Python < 3.10
 
 from copy import copy, deepcopy
 from enum import Enum
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from ..pyutils import camel_to_snake
 from .source import Source
 from .token_kind import TokenKind
-from ..pyutils import camel_to_snake
+
 
 __all__ = [
     "Location",

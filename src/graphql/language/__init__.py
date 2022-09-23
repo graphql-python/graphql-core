@@ -4,110 +4,102 @@ The :mod:`graphql.language` package is responsible for parsing and operating on 
 GraphQL language.
 """
 
-from .source import Source
-
-from .location import get_location, SourceLocation, FormattedSourceLocation
-
-from .print_location import print_location, print_source_location
-
-from .token_kind import TokenKind
-
-from .lexer import Lexer
-
-from .parser import parse, parse_type, parse_value, parse_const_value
-
-from .printer import print_ast
-
-from .visitor import (
-    visit,
-    Visitor,
-    ParallelVisitor,
-    VisitorAction,
-    VisitorKeyMap,
-    BREAK,
-    SKIP,
-    REMOVE,
-    IDLE,
-)
-
+from .ast import ArgumentNode  # Each kind of AST node
 from .ast import (
-    Location,
-    Token,
-    Node,
-    # Each kind of AST node
-    NameNode,
-    DocumentNode,
-    DefinitionNode,
-    ExecutableDefinitionNode,
-    OperationDefinitionNode,
-    OperationType,
-    VariableDefinitionNode,
-    VariableNode,
-    SelectionSetNode,
-    SelectionNode,
-    FieldNode,
-    ArgumentNode,
+    BooleanValueNode,
     ConstArgumentNode,
+    ConstDirectiveNode,
+    ConstListValueNode,
+    ConstObjectFieldNode,
+    ConstObjectValueNode,
+    ConstValueNode,
+    DefinitionNode,
+    DirectiveDefinitionNode,
+    DirectiveNode,
+    DocumentNode,
+    EnumTypeDefinitionNode,
+    EnumTypeExtensionNode,
+    EnumValueDefinitionNode,
+    EnumValueNode,
+    ExecutableDefinitionNode,
+    FieldDefinitionNode,
+    FieldNode,
+    FloatValueNode,
+    FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
-    FragmentDefinitionNode,
-    ValueNode,
-    ConstValueNode,
-    IntValueNode,
-    FloatValueNode,
-    StringValueNode,
-    BooleanValueNode,
-    NullValueNode,
-    EnumValueNode,
-    ListValueNode,
-    ConstListValueNode,
-    ObjectValueNode,
-    ConstObjectValueNode,
-    ObjectFieldNode,
-    ConstObjectFieldNode,
-    DirectiveNode,
-    ConstDirectiveNode,
-    TypeNode,
-    NamedTypeNode,
-    ListTypeNode,
-    NonNullTypeNode,
-    TypeSystemDefinitionNode,
-    SchemaDefinitionNode,
-    OperationTypeDefinitionNode,
-    TypeDefinitionNode,
-    ScalarTypeDefinitionNode,
-    ObjectTypeDefinitionNode,
-    FieldDefinitionNode,
+    InputObjectTypeDefinitionNode,
+    InputObjectTypeExtensionNode,
     InputValueDefinitionNode,
     InterfaceTypeDefinitionNode,
-    UnionTypeDefinitionNode,
-    EnumTypeDefinitionNode,
-    EnumValueDefinitionNode,
-    InputObjectTypeDefinitionNode,
-    DirectiveDefinitionNode,
-    TypeSystemExtensionNode,
-    SchemaExtensionNode,
-    TypeExtensionNode,
-    ScalarTypeExtensionNode,
-    ObjectTypeExtensionNode,
     InterfaceTypeExtensionNode,
+    IntValueNode,
+    ListTypeNode,
+    ListValueNode,
+    Location,
+    NamedTypeNode,
+    NameNode,
+    Node,
+    NonNullTypeNode,
+    NullValueNode,
+    ObjectFieldNode,
+    ObjectTypeDefinitionNode,
+    ObjectTypeExtensionNode,
+    ObjectValueNode,
+    OperationDefinitionNode,
+    OperationType,
+    OperationTypeDefinitionNode,
+    ScalarTypeDefinitionNode,
+    ScalarTypeExtensionNode,
+    SchemaDefinitionNode,
+    SchemaExtensionNode,
+    SelectionNode,
+    SelectionSetNode,
+    StringValueNode,
+    Token,
+    TypeDefinitionNode,
+    TypeExtensionNode,
+    TypeNode,
+    TypeSystemDefinitionNode,
+    TypeSystemExtensionNode,
+    UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
-    EnumTypeExtensionNode,
-    InputObjectTypeExtensionNode,
+    ValueNode,
+    VariableDefinitionNode,
+    VariableNode,
 )
+from .directive_locations import DirectiveLocation
+from .lexer import Lexer
+from .location import FormattedSourceLocation, SourceLocation, get_location
+from .parser import parse, parse_const_value, parse_type, parse_value
 from .predicates import (
+    is_const_value_node,
     is_definition_node,
     is_executable_definition_node,
     is_selection_node,
-    is_value_node,
-    is_const_value_node,
+    is_type_definition_node,
+    is_type_extension_node,
     is_type_node,
     is_type_system_definition_node,
-    is_type_definition_node,
     is_type_system_extension_node,
-    is_type_extension_node,
+    is_value_node,
 )
-from .directive_locations import DirectiveLocation
+from .print_location import print_location, print_source_location
+from .printer import print_ast
+from .source import Source
+from .token_kind import TokenKind
+from .visitor import (
+    BREAK,
+    IDLE,
+    REMOVE,
+    SKIP,
+    ParallelVisitor,
+    Visitor,
+    VisitorAction,
+    VisitorKeyMap,
+    visit,
+)
+
 
 __all__ = [
     "get_location",

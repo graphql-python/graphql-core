@@ -1,5 +1,7 @@
 from re import search
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
+
 
 with open("src/graphql/version.py") as version_file:
     version = search('version = "(.*)"', version_file.read()).group(1)

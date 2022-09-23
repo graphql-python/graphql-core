@@ -1,8 +1,8 @@
-from typing import cast, Any, Awaitable
+from typing import Any, Awaitable, cast
 
 from pytest import mark
 
-from graphql.execution import execute, execute_sync, ExecutionResult
+from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.pyutils import is_awaitable
 from graphql.utilities import build_schema

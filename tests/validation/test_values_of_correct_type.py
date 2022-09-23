@@ -5,13 +5,14 @@ from graphql.type import (
     GraphQLArgument,
     GraphQLField,
     GraphQLObjectType,
-    GraphQLSchema,
     GraphQLScalarType,
+    GraphQLSchema,
     GraphQLString,
 )
 from graphql.validation import ValuesOfCorrectTypeRule
 
 from .harness import assert_validation_errors
+
 
 assert_errors = partial(assert_validation_errors, ValuesOfCorrectTypeRule)
 

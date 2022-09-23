@@ -5,10 +5,9 @@ errors.
 """
 
 from .graphql_error import GraphQLError, GraphQLErrorExtensions, GraphQLFormattedError
-
+from .located_error import located_error
 from .syntax_error import GraphQLSyntaxError
 
-from .located_error import located_error
 
 __all__ = [
     "GraphQLError",

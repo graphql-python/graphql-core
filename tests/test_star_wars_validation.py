@@ -1,7 +1,7 @@
 from typing import List
 
 from graphql.error import GraphQLError
-from graphql.language import parse, Source
+from graphql.language import Source, parse
 from graphql.validation import validate
 
 from .star_wars_schema import star_wars_schema

@@ -4,20 +4,15 @@ This is an additional end-to-end test and demo for running the basic GraphQL
 operations on a simulated user registry database backend.
 """
 
-from asyncio import sleep, wait
+from asyncio import create_task, sleep, wait
 from collections import defaultdict
 from enum import Enum
 from inspect import isawaitable
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from asyncio import create_task
-
 from pytest import fixture, mark
 
 from graphql import (
-    graphql,
-    parse,
-    subscribe,
     GraphQLArgument,
     GraphQLBoolean,
     GraphQLEnumType,
@@ -30,10 +25,12 @@ from graphql import (
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
+    graphql,
+    parse,
+    subscribe,
 )
-
-from graphql.pyutils import SimplePubSub, SimplePubSubIterator
 from graphql.execution.map_async_iterator import MapAsyncIterator
+from graphql.pyutils import SimplePubSub, SimplePubSubIterator
 
 
 class User(NamedTuple):

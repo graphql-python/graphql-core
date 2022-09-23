@@ -3,9 +3,10 @@ from functools import partial
 from graphql.language import parse
 from graphql.type import GraphQLSchema
 from graphql.utilities import build_schema
-from graphql.validation import validate, FieldsOnCorrectTypeRule
+from graphql.validation import FieldsOnCorrectTypeRule, validate
 
 from .harness import assert_validation_errors
+
 
 test_schema = build_schema(
     """

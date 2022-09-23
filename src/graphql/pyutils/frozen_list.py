@@ -5,6 +5,7 @@ from typing import Dict, List, TypeVar
 
 from .frozen_error import FrozenError
 
+
 __all__ = ["FrozenList"]
 
 

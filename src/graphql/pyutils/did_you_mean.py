@@ -1,5 +1,6 @@
 from typing import Optional, Sequence
 
+
 __all__ = ["did_you_mean"]
 
 MAX_LENGTH = 5

@@ -1,4 +1,4 @@
-from typing import cast, Optional, Tuple
+from typing import Optional, Tuple, cast
 
 from pytest import raises
 
@@ -11,8 +11,8 @@ from graphql.language import (
     IntValueNode,
     ListTypeNode,
     ListValueNode,
-    NameNode,
     NamedTypeNode,
+    NameNode,
     NonNullTypeNode,
     NullValueNode,
     ObjectFieldNode,
@@ -20,21 +20,22 @@ from graphql.language import (
     OperationDefinitionNode,
     OperationType,
     SelectionSetNode,
+    Source,
     StringValueNode,
-    ValueNode,
-    VariableNode,
     Token,
     TokenKind,
+    ValueNode,
+    VariableNode,
     parse,
+    parse_const_value,
     parse_type,
     parse_value,
-    parse_const_value,
-    Source,
 )
 from graphql.pyutils import inspect
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
+
 
 Location = Optional[Tuple[int, int]]
 

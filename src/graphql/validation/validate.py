@@ -2,12 +2,13 @@ from typing import Collection, List, Optional, Type
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
-from ..type import GraphQLSchema, assert_valid_schema
 from ..pyutils import inspect, is_collection
+from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
 from .rules import ASTValidationRule
 from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext
+
 
 __all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
 

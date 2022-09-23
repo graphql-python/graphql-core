@@ -16,6 +16,7 @@ from ...language import (
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
+
 __all__ = ["UniqueDirectivesPerLocationRule"]
 
 

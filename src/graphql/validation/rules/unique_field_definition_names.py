@@ -2,9 +2,10 @@ from collections import defaultdict
 from typing import Any, Dict
 
 from ...error import GraphQLError
-from ...language import NameNode, ObjectTypeDefinitionNode, VisitorAction, SKIP
-from ...type import is_object_type, is_interface_type, is_input_object_type
+from ...language import SKIP, NameNode, ObjectTypeDefinitionNode, VisitorAction
+from ...type import is_input_object_type, is_interface_type, is_object_type
 from . import SDLValidationContext, SDLValidationRule
+
 
 __all__ = ["UniqueFieldDefinitionNamesRule"]
 

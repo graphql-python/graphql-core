@@ -3,9 +3,26 @@ from typing import Any, List, Union
 
 from pytest import mark, raises
 
-from graphql.language import parse, DirectiveLocation
+from graphql.language import DirectiveLocation, parse
 from graphql.pyutils import inspect
 from graphql.type import (
+    GraphQLArgument,
+    GraphQLDirective,
+    GraphQLEnumType,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLInputType,
+    GraphQLInt,
+    GraphQLInterfaceType,
+    GraphQLList,
+    GraphQLNamedType,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLOutputType,
+    GraphQLSchema,
+    GraphQLString,
+    GraphQLUnionType,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,
@@ -17,27 +34,11 @@ from graphql.type import (
     is_input_type,
     is_output_type,
     validate_schema,
-    GraphQLArgument,
-    GraphQLDirective,
-    GraphQLEnumType,
-    GraphQLField,
-    GraphQLInputField,
-    GraphQLInputType,
-    GraphQLInputObjectType,
-    GraphQLInt,
-    GraphQLInterfaceType,
-    GraphQLList,
-    GraphQLNamedType,
-    GraphQLNonNull,
-    GraphQLObjectType,
-    GraphQLOutputType,
-    GraphQLSchema,
-    GraphQLString,
-    GraphQLUnionType,
 )
 from graphql.utilities import build_schema, extend_schema
 
 from ..utils import dedent
+
 
 SomeSchema = build_schema(
     """

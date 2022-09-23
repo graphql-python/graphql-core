@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Collection, Optional, Union
 from ..pyutils import inspect
 from .graphql_error import GraphQLError
 
+
 if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
 

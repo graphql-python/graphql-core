@@ -1,6 +1,7 @@
 import inspect
-from typing import Any
 from types import CoroutineType, GeneratorType
+from typing import Any
+
 
 __all__ = ["is_awaitable"]
 

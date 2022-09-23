@@ -14,8 +14,8 @@ from typing import (
 
 from ..pyutils import inspect, snake_to_camel
 from . import ast
+from .ast import QUERY_DOCUMENT_KEYS, Node
 
-from .ast import Node, QUERY_DOCUMENT_KEYS
 
 __all__ = [
     "Visitor",

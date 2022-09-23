@@ -1,7 +1,7 @@
 from math import isnan, nan
 from typing import Any, Dict, Optional
 
-from graphql.language import parse_value, ValueNode
+from graphql.language import ValueNode, parse_value
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,

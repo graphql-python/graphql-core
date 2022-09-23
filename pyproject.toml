@@ -55,13 +55,13 @@ pytest-describe = "^2.0"
 pytest-timeout = "^2.1"
 black = "22.8.0"
 flake8 = "^5.0"
+isort = "^5.10"
 mypy = "0.971"
 sphinx = "^5.1"
 sphinx_rtd_theme = ">=1,<2"
 check-manifest = ">=0.48,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.26"
-
 
 [tool.black]
 target-version = ['py37', 'py38', 'py39', 'py310']
@@ -94,6 +94,11 @@ exclude_lines = [
     '^\s+pass$'
 ]
 ignore_errors = true
+
+[tool.isort]
+profile = "black"
+force_single_line = false
+lines_after_imports = 2
 
 [tool.mypy]
 python_version = 3.9

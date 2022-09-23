@@ -5,6 +5,7 @@ from graphql.validation import PossibleFragmentSpreadsRule
 
 from .harness import assert_validation_errors
 
+
 test_schema = build_schema(
     """
     interface Being {

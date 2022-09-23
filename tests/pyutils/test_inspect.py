@@ -1,20 +1,21 @@
-from math import nan, inf
 from contextlib import contextmanager
 from importlib import import_module
+from math import inf, nan
 from typing import Any, Dict, FrozenSet, List, Set, Tuple
 
 from pytest import mark
 
-from graphql.pyutils import inspect, Undefined
+from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLDirective,
     GraphQLField,
     GraphQLInt,
     GraphQLList,
-    GraphQLObjectType,
     GraphQLNonNull,
+    GraphQLObjectType,
     GraphQLString,
 )
+
 
 inspect_module = import_module(inspect.__module__)
 

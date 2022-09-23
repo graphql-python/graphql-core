@@ -32,21 +32,22 @@ from ..type import (
     GraphQLOutputType,
     GraphQLSchema,
     GraphQLType,
-    is_composite_type,
-    is_input_type,
-    is_output_type,
-    get_named_type,
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
-    is_object_type,
-    is_interface_type,
+    get_named_type,
     get_nullable_type,
-    is_list_type,
-    is_input_object_type,
+    is_composite_type,
     is_enum_type,
+    is_input_object_type,
+    is_input_type,
+    is_interface_type,
+    is_list_type,
+    is_object_type,
+    is_output_type,
 )
 from .type_from_ast import type_from_ast
+
 
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 

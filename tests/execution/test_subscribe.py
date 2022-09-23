@@ -1,9 +1,9 @@
 import asyncio
-
-from typing import Any, Dict, List, Callable
+from typing import Any, Callable, Dict, List
 
 from pytest import mark, raises
 
+from graphql.execution import MapAsyncIterator, create_source_event_stream, subscribe
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
@@ -16,7 +16,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
-from graphql.execution import create_source_event_stream, subscribe, MapAsyncIterator
+
 
 try:
     anext

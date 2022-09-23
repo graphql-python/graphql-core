@@ -1,18 +1,7 @@
 from operator import attrgetter, itemgetter
-from typing import (
-    Any,
-    Collection,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, Collection, Dict, List, Optional, Set, Tuple, Union, cast
 
 from ..error import GraphQLError
-from ..pyutils import inspect
 from ..language import (
     DirectiveNode,
     InputValueDefinitionNode,
@@ -22,6 +11,8 @@ from ..language import (
     SchemaDefinitionNode,
     SchemaExtensionNode,
 )
+from ..pyutils import inspect
+from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
 from .definition import (
     GraphQLEnumType,
     GraphQLInputField,
@@ -37,14 +28,14 @@ from .definition import (
     is_non_null_type,
     is_object_type,
     is_output_type,
-    is_union_type,
     is_required_argument,
     is_required_input_field,
+    is_union_type,
 )
-from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
-from .directives import is_directive, GraphQLDeprecatedDirective
+from .directives import GraphQLDeprecatedDirective, is_directive
 from .introspection import is_introspection_type
 from .schema import GraphQLSchema, assert_schema
+
 
 __all__ = ["validate_schema", "assert_valid_schema"]
 

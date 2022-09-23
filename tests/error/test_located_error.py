@@ -1,4 +1,4 @@
-from typing import cast, Any
+from typing import Any, cast
 
 from graphql.error import GraphQLError, located_error
 

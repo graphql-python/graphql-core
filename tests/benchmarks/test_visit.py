@@ -1,5 +1,5 @@
 from graphql import parse
-from graphql.language import visit, Visitor, ParallelVisitor
+from graphql.language import ParallelVisitor, Visitor, visit
 
 from ..fixtures import big_schema_sdl  # noqa: F401
 

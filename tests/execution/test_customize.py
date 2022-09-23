@@ -1,6 +1,6 @@
-from graphql.execution import execute, ExecutionContext
+from graphql.execution import ExecutionContext, execute
 from graphql.language import parse
-from graphql.type import GraphQLSchema, GraphQLObjectType, GraphQLString, GraphQLField
+from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 
 def describe_customize_execution():

@@ -1,8 +1,9 @@
 from typing import Any, Dict
 
 from ...error import GraphQLError
-from ...language import NameNode, OperationDefinitionNode, VisitorAction, SKIP
+from ...language import SKIP, NameNode, OperationDefinitionNode, VisitorAction
 from . import ASTValidationContext, ASTValidationRule
+
 
 __all__ = ["UniqueOperationNamesRule"]
 

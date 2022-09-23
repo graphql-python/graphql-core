@@ -1,7 +1,7 @@
 from graphql.type import (
-    GraphQLSchema,
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
+    GraphQLSchema,
     GraphQLSkipDirective,
     GraphQLSpecifiedByDirective,
 )

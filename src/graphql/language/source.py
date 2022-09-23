@@ -2,6 +2,7 @@ from typing import Any
 
 from .location import SourceLocation
 
+
 __all__ = ["Source", "is_source"]
 
 

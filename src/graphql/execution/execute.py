@@ -10,11 +10,12 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Union,
     Tuple,
     Type,
+    Union,
     cast,
 )
+
 
 try:
     from typing import TypedDict
@@ -29,26 +30,21 @@ from ..language import (
     OperationDefinitionNode,
     OperationType,
 )
-from ..pyutils import (
-    inspect,
-    is_awaitable as default_is_awaitable,
-    is_iterable,
-    AwaitableOrValue,
-    Path,
-    Undefined,
-)
+from ..pyutils import AwaitableOrValue, Path, Undefined, inspect
+from ..pyutils import is_awaitable as default_is_awaitable
+from ..pyutils import is_iterable
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
+    GraphQLFieldResolver,
     GraphQLLeafType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLOutputType,
-    GraphQLSchema,
-    GraphQLFieldResolver,
-    GraphQLTypeResolver,
     GraphQLResolveInfo,
+    GraphQLSchema,
+    GraphQLTypeResolver,
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
@@ -62,6 +58,7 @@ from ..type import (
 from .collect_fields import collect_fields, collect_sub_fields
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_variable_values
+
 
 __all__ = [
     "assert_valid_execution_arguments",

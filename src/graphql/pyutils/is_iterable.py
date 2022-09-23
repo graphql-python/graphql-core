@@ -1,12 +1,5 @@
-from typing import (
-    Any,
-    ByteString,
-    Collection,
-    Iterable,
-    Mapping,
-    Text,
-    ValuesView,
-)
+from typing import Any, ByteString, Collection, Iterable, Mapping, Text, ValuesView
+
 
 __all__ = ["is_collection", "is_iterable"]
 

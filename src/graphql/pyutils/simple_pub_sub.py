@@ -1,10 +1,8 @@
 from __future__ import annotations  # Python < 3.10
 
-from asyncio import Future, Queue, ensure_future, sleep
+from asyncio import Future, Queue, ensure_future, get_running_loop, sleep
 from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
-
-from asyncio import get_running_loop
 
 
 __all__ = ["SimplePubSub", "SimplePubSubIterator"]

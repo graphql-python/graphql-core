@@ -5,6 +5,7 @@ from typing import Dict, TypeVar
 
 from .frozen_error import FrozenError
 
+
 __all__ = ["FrozenDict"]
 
 KT = TypeVar("KT")

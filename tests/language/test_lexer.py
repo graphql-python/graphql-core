@@ -9,6 +9,7 @@ from graphql.pyutils import inspect
 
 from ..utils import dedent
 
+
 Location = Optional[Tuple[int, int]]
 
 

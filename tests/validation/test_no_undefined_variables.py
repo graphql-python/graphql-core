@@ -4,6 +4,7 @@ from graphql.validation import NoUndefinedVariablesRule
 
 from .harness import assert_validation_errors
 
+
 assert_errors = partial(assert_validation_errors, NoUndefinedVariablesRule)
 
 assert_valid = partial(assert_errors, errors=[])

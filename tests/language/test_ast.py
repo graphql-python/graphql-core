@@ -1,5 +1,5 @@
-from copy import copy, deepcopy
 import weakref
+from copy import copy, deepcopy
 
 from graphql.language import Location, Node, Source, Token, TokenKind
 from graphql.pyutils import inspect

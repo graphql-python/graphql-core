@@ -2,6 +2,7 @@ from typing import Any, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
+    SKIP,
     DirectiveDefinitionNode,
     DocumentNode,
     ExecutableDefinitionNode,
@@ -9,9 +10,9 @@ from ...language import (
     SchemaExtensionNode,
     TypeDefinitionNode,
     VisitorAction,
-    SKIP,
 )
 from . import ASTValidationRule
+
 
 __all__ = ["ExecutableDefinitionsRule"]
 

@@ -2,6 +2,9 @@ from collections import defaultdict
 from functools import cmp_to_key
 from typing import Any, Dict, List, Union, cast
 
+from ...error import GraphQLError
+from ...language import FieldNode
+from ...pyutils import did_you_mean, natural_comparison_key, suggestion_list
 from ...type import (
     GraphQLAbstractType,
     GraphQLInterfaceType,
@@ -12,10 +15,8 @@ from ...type import (
     is_interface_type,
     is_object_type,
 )
-from ...error import GraphQLError
-from ...language import FieldNode
-from ...pyutils import did_you_mean, natural_comparison_key, suggestion_list
 from . import ValidationRule
+
 
 __all__ = ["FieldsOnCorrectTypeRule"]
 

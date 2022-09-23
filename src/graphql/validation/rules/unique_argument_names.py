@@ -6,6 +6,7 @@ from ...language import ArgumentNode, DirectiveNode, FieldNode
 from ...pyutils import group_by
 from . import ASTValidationRule
 
+
 __all__ = ["UniqueArgumentNamesRule"]
 
 

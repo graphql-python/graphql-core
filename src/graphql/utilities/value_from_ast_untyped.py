@@ -2,7 +2,6 @@ from math import nan
 from typing import Any, Callable, Dict, Optional, Union
 
 from ..language import (
-    ValueNode,
     BooleanValueNode,
     EnumValueNode,
     FloatValueNode,
@@ -11,10 +10,11 @@ from ..language import (
     NullValueNode,
     ObjectValueNode,
     StringValueNode,
+    ValueNode,
     VariableNode,
 )
+from ..pyutils import Undefined, inspect
 
-from ..pyutils import inspect, Undefined
 
 __all__ = ["value_from_ast_untyped"]
 

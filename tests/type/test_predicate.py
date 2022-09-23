@@ -5,8 +5,8 @@ from pytest import raises
 from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
-    GraphQLDeprecatedDirective,
     GraphQLBoolean,
+    GraphQLDeprecatedDirective,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLFloat,
@@ -53,12 +53,12 @@ from graphql.type import (
     is_leaf_type,
     is_list_type,
     is_named_type,
-    is_required_argument,
-    is_required_input_field,
     is_non_null_type,
     is_nullable_type,
     is_object_type,
     is_output_type,
+    is_required_argument,
+    is_required_input_field,
     is_scalar_type,
     is_specified_directive,
     is_specified_scalar_type,
@@ -66,6 +66,7 @@ from graphql.type import (
     is_union_type,
     is_wrapping_type,
 )
+
 
 ObjectType = GraphQLObjectType("Object", {})
 InterfaceType = GraphQLInterfaceType("Interface", {})

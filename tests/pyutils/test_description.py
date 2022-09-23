@@ -4,22 +4,22 @@ from typing import cast
 from pytest import raises
 
 from graphql import graphql_sync
+from graphql.pyutils import (
+    Description,
+    is_description,
+    register_description,
+    unregister_description,
+)
 from graphql.type import (
     GraphQLArgument,
     GraphQLDirective,
     GraphQLEnumValue,
     GraphQLField,
     GraphQLInputField,
-    GraphQLObjectType,
     GraphQLNamedType,
+    GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
-)
-from graphql.pyutils import (
-    Description,
-    is_description,
-    register_description,
-    unregister_description,
 )
 from graphql.utilities import get_introspection_query, print_schema
 

@@ -4,6 +4,7 @@ from graphql.validation import VariablesInAllowedPositionRule
 
 from .harness import assert_validation_errors
 
+
 assert_errors = partial(assert_validation_errors, VariablesInAllowedPositionRule)
 
 assert_valid = partial(assert_errors, errors=[])

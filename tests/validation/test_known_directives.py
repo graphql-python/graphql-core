@@ -3,7 +3,8 @@ from functools import partial
 from graphql.utilities import build_schema
 from graphql.validation import KnownDirectivesRule
 
-from .harness import assert_validation_errors, assert_sdl_validation_errors
+from .harness import assert_sdl_validation_errors, assert_validation_errors
+
 
 schema_with_directives = build_schema(
     """

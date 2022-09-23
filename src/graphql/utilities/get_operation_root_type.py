@@ -2,11 +2,12 @@ from typing import Union
 
 from ..error import GraphQLError
 from ..language import (
-    OperationType,
     OperationDefinitionNode,
+    OperationType,
     OperationTypeDefinitionNode,
 )
 from ..type import GraphQLObjectType, GraphQLSchema
+
 
 __all__ = ["get_operation_root_type"]
 

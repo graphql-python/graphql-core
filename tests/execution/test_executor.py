@@ -1,12 +1,12 @@
 import asyncio
-from typing import cast, Any, Awaitable, Optional
+from typing import Any, Awaitable, Optional, cast
 
 from pytest import mark, raises
 
 from graphql.error import GraphQLError
 from graphql.execution import execute, execute_sync
-from graphql.language import parse, FieldNode, OperationDefinitionNode
-from graphql.pyutils import inspect, Undefined
+from graphql.language import FieldNode, OperationDefinitionNode, parse
+from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -17,8 +17,8 @@ from graphql.type import (
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLResolveInfo,
-    GraphQLSchema,
     GraphQLScalarType,
+    GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
     ResponsePath,

@@ -18,8 +18,8 @@ from graphql.type import (
     assert_enum_type,
 )
 from graphql.utilities import (
-    build_schema,
     build_client_schema,
+    build_schema,
     introspection_from_schema,
     print_schema,
 )

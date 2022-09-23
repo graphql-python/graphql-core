@@ -2,7 +2,8 @@ from typing import Any
 
 from ...error import GraphQLError
 from ...language import SchemaDefinitionNode
-from . import SDLValidationRule, SDLValidationContext
+from . import SDLValidationContext, SDLValidationRule
+
 
 __all__ = ["LoneSchemaDefinitionRule"]
 

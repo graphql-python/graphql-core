@@ -7,8 +7,10 @@ from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind, parse
 from graphql.utilities import strip_ignored_characters
 
-from ..fixtures import kitchen_sink_query, kitchen_sink_sdl  # noqa: F401
+from ..fixtures import kitchen_sink_query  # noqa: F401
+from ..fixtures import kitchen_sink_sdl
 from ..utils import dedent
+
 
 ignored_tokens = [
     # UnicodeBOM

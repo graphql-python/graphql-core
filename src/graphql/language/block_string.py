@@ -1,5 +1,6 @@
-from typing import Collection, List
 from sys import maxsize
+from typing import Collection, List
+
 
 __all__ = [
     "dedent_block_string_lines",

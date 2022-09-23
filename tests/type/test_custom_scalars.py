@@ -15,6 +15,7 @@ from graphql.type import (
 )
 from graphql.utilities import value_from_ast_untyped
 
+
 # this test is not (yet) part of GraphQL.js, see
 # https://github.com/graphql/graphql-js/issues/2657
 

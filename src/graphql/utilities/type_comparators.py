@@ -15,6 +15,7 @@ from ..type import (
     is_object_type,
 )
 
+
 __all__ = ["is_equal_type", "is_type_sub_type_of", "do_types_overlap"]
 
 

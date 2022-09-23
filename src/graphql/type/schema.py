@@ -15,16 +15,16 @@ from typing import (
 )
 
 from ..error import GraphQLError
-from ..language import ast, OperationType
+from ..language import OperationType, ast
 from ..pyutils import inspect, is_collection, is_description
 from .definition import (
     GraphQLAbstractType,
-    GraphQLInterfaceType,
     GraphQLInputObjectType,
+    GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
-    GraphQLUnionType,
     GraphQLType,
+    GraphQLUnionType,
     GraphQLWrappingType,
     get_named_type,
     is_input_object_type,
@@ -33,8 +33,9 @@ from .definition import (
     is_union_type,
     is_wrapping_type,
 )
-from .directives import GraphQLDirective, specified_directives, is_directive
+from .directives import GraphQLDirective, is_directive, specified_directives
 from .introspection import introspection_types
+
 
 try:
     from typing import TypedDict
@@ -312,8 +313,8 @@ class GraphQLSchema:
     def __deepcopy__(self, memo_: Dict) -> GraphQLSchema:
         from ..type import (
             is_introspection_type,
-            is_specified_scalar_type,
             is_specified_directive,
+            is_specified_scalar_type,
         )
 
         type_map: TypeMap = {

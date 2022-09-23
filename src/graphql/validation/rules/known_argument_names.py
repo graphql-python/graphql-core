@@ -1,16 +1,17 @@
-from typing import cast, Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
+    SKIP,
     ArgumentNode,
     DirectiveDefinitionNode,
     DirectiveNode,
-    SKIP,
     VisitorAction,
 )
 from ...pyutils import did_you_mean, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
+
 
 __all__ = ["KnownArgumentNamesRule", "KnownArgumentNamesOnDirectivesRule"]
 

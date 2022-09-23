@@ -2,6 +2,7 @@ from __future__ import annotations  # Python < 3.10
 
 from enum import Enum
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Collection,
@@ -12,7 +13,6 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
-    TYPE_CHECKING,
     Type,
     TypeVar,
     Union,
@@ -23,8 +23,8 @@ from typing import (
 from ..error import GraphQLError
 from ..language import (
     EnumTypeDefinitionNode,
-    EnumValueDefinitionNode,
     EnumTypeExtensionNode,
+    EnumValueDefinitionNode,
     EnumValueNode,
     FieldDefinitionNode,
     FieldNode,
@@ -49,16 +49,17 @@ from ..language import (
 from ..pyutils import (
     AwaitableOrValue,
     Path,
+    Undefined,
     cached_property,
     did_you_mean,
     inspect,
     is_collection,
     is_description,
     suggestion_list,
-    Undefined,
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
-from .assert_name import assert_name, assert_enum_value_name
+from .assert_name import assert_enum_value_name, assert_name
+
 
 try:
     from typing import TypedDict

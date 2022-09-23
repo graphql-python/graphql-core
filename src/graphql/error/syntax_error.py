@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from .graphql_error import GraphQLError
 
+
 if TYPE_CHECKING:
     from ..language.source import Source  # noqa: F401
 

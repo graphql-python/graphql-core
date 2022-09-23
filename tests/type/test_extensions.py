@@ -17,6 +17,7 @@ from graphql.type import (
     GraphQLUnionType,
 )
 
+
 dummy_type = GraphQLScalarType("DummyScalar")
 
 bad_extensions = [param([], id="list"), param({1: "ext"}, id="non_string_key")]

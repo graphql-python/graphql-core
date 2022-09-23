@@ -5,6 +5,7 @@ from ....language import FieldNode
 from ....type import get_named_type, is_introspection_type
 from .. import ValidationRule
 
+
 __all__ = ["NoSchemaIntrospectionCustomRule"]
 
 

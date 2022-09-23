@@ -1,5 +1,6 @@
 from sys import exc_info
-from typing import Any, Collection, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Union
+
 
 try:
     from typing import TypedDict
@@ -8,10 +9,8 @@ except ImportError:  # Python < 3.8
 
 if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
-    from ..language.location import (
-        SourceLocation,
-        FormattedSourceLocation,
-    )  # noqa: F401
+    from ..language.location import FormattedSourceLocation  # noqa: F401
+    from ..language.location import SourceLocation
     from ..language.source import Source  # noqa: F401
 
 __all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
