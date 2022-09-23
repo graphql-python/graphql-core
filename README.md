@@ -10,7 +10,7 @@ a query language for APIs created by Facebook.
 ![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 3.2.2 of GraphQL-core is up-to-date with GraphQL.js version 16.4.0.
+The current version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js version 16.6.0.
 
 An extensive test suite with over 2300 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
