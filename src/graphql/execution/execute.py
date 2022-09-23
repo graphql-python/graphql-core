@@ -37,6 +37,7 @@ from ..pyutils import (
     Path,
     Undefined,
 )
+from ..utilities.deferred_value import DeferredValue, deferred_dict, deferred_list
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
@@ -222,6 +223,11 @@ class ExecutionContext:
             self.is_awaitable = is_awaitable
         self._subfields_cache: Dict[Tuple, Dict[str, List[FieldNode]]] = {}
 
+        self._deferred_values: List[Tuple[DeferredValue, Any]] = []
+
+    def is_lazy(self, value: Any) -> bool:
+        return False
+
     @classmethod
     def build(
         cls,
@@ -350,11 +356,24 @@ class ExecutionContext:
 
         path = None
 
-        return (
+        result = (
             self.execute_fields_serially
             if operation.operation == OperationType.MUTATION
             else self.execute_fields
         )(root_type, root_value, path, root_fields)
+
+        while len(self._deferred_values) > 0:
+            for d in list(self._deferred_values):
+                self._deferred_values.remove(d)
+                res = d[1].get()
+                d[0].resolve(res)
+
+        if isinstance(result, DeferredValue):
+            if result.is_rejected:
+                raise cast(Exception, result.reason)
+            return result.value
+
+        return result
 
     def execute_fields_serially(
         self,
@@ -426,6 +445,7 @@ class ExecutionContext:
         is_awaitable = self.is_awaitable
         awaitable_fields: List[str] = []
         append_awaitable = awaitable_fields.append
+        contains_deferred = False
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
@@ -435,6 +455,11 @@ class ExecutionContext:
                 results[response_name] = result
                 if is_awaitable(result):
                     append_awaitable(response_name)
+                if isinstance(result, DeferredValue):
+                    contains_deferred = True
+
+        if contains_deferred:
+            return deferred_dict(results)
 
         #  If there are no coroutines, we can just return the object
         if not awaitable_fields:
@@ -627,6 +652,23 @@ class ExecutionContext:
         if result is None or result is Undefined:
             return None
 
+        if self.is_lazy(result):
+            def handle_resolve(resolved: Any) -> Any:
+                return self.complete_value(
+                    return_type, field_nodes, info, path, resolved
+                )
+
+            def handle_error(raw_error: Exception) -> None:
+                raise raw_error
+
+            deferred = DeferredValue()
+            self._deferred_values.append((
+                deferred, result
+            ))
+
+            completed = deferred.then(handle_resolve, handle_error)
+            return completed
+
         # If field type is List, complete each item in the list with inner type
         if is_list_type(return_type):
             return self.complete_list_value(
@@ -698,6 +740,7 @@ class ExecutionContext:
         append_awaitable = awaitable_indices.append
         completed_results: List[Any] = []
         append_result = completed_results.append
+        contains_deferred = False
         for index, item in enumerate(result):
             # No need to modify the info object containing the path, since from here on
             # it is not ever accessed by resolver functions.
@@ -739,6 +782,9 @@ class ExecutionContext:
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)
+                    if isinstance(completed_item, DeferredValue):
+                        contains_deferred = True
+
                 except Exception as raw_error:
                     error = located_error(raw_error, field_nodes, item_path.as_list())
                     self.handle_field_error(error, item_type)
@@ -747,6 +793,9 @@ class ExecutionContext:
             if is_awaitable(completed_item):
                 append_awaitable(index)
             append_result(completed_item)
+
+        if contains_deferred is True:
+            return deferred_list(completed_results)
 
         if not awaitable_indices:
             return completed_results
