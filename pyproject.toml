@@ -25,14 +25,14 @@ packages = [
     { include = "graphql", from = "src" },
     { include = "tests", format = "sdist" },
     { include = "docs", format = "sdist" },
-    { include = '.bumpversion.cfg', format = "sdist" },
-    { include = '.editorconfig', format = "sdist" },
-    { include = '.flake8', format = "sdist" },
-    { include = '.readthedocs.yaml', format = "sdist" },
-    { include = 'poetry.lock', format = "sdist" },
-    { include = 'tox.ini', format = "sdist" },
-    { include = 'CODEOWNERS', format = "sdist" },
-    { include = 'SECURITY.md', format = "sdist" }
+    { include = ".bumpversion.cfg", format = "sdist" },
+    { include = ".editorconfig", format = "sdist" },
+    { include = ".flake8", format = "sdist" },
+    { include = ".readthedocs.yaml", format = "sdist" },
+    { include = "poetry.lock", format = "sdist" },
+    { include = "tox.ini", format = "sdist" },
+    { include = "CODEOWNERS", format = "sdist" },
+    { include = "SECURITY.md", format = "sdist" }
 ]
 
 [tool.poetry.urls]
@@ -62,6 +62,7 @@ optional = true
 [tool.poetry.group.lint.dependencies]
 black = "22.8.0"
 flake8 = "^5.0"
+flake8-bandit = "^4.1"
 isort = "^5.10"
 mypy = "0.971"
 bump2version = ">=1.0,<2"
@@ -74,8 +75,11 @@ optional = true
 sphinx = ">= 4.3,<6"
 sphinx_rtd_theme = ">=1,<2"
 
+[tool.bandit]
+exclude_dirs = ["tests"]
+
 [tool.black]
-target-version = ['py37', 'py38', 'py39', 'py310']
+target-version = ["py37", "py38", "py39", "py310"]
 
 [tool.coverage.run]
 branch = true
