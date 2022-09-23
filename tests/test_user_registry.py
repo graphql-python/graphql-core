@@ -10,10 +10,7 @@ from enum import Enum
 from inspect import isawaitable
 from typing import Any, Dict, List, NamedTuple, Optional
 
-try:
-    from asyncio import create_task
-except ImportError:  # Python < 3.7
-    create_task = None  # type: ignore
+from asyncio import create_task
 
 from pytest import fixture, mark
 

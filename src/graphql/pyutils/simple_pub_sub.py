@@ -2,10 +2,7 @@ from asyncio import Future, Queue, ensure_future, sleep
 from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
 
-try:
-    from asyncio import get_running_loop
-except ImportError:
-    from asyncio import get_event_loop as get_running_loop  # Python < 3.7
+from asyncio import get_running_loop
 
 
 __all__ = ["SimplePubSub", "SimplePubSubIterator"]

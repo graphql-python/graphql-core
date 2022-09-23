@@ -26,16 +26,15 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
     install_requires=[
-        "typing-extensions>=4.2,<5; python_version < '3.8'",
+        "typing-extensions>=4.3,<5; python_version < '3.8'",
     ],
-    python_requires=">=3.6,<4",
+    python_requires=">=3.7,<4",
     packages=find_packages("src"),
     package_dir={"": "src"},
     # PEP-561: https://www.python.org/dev/peps/pep-0561/
