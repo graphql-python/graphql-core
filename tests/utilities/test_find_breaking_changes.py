@@ -986,8 +986,8 @@ def describe_find_dangerous_changes():
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
                 "Type1.field1 arg complexObject has changed defaultValue"
-                " from {innerInputArray: [{arrayField: [1, 2, 3]}]}"
-                " to {innerInputArray: [{arrayField: [3, 2, 1]}]}.",
+                " from { innerInputArray: [{ arrayField: [1, 2, 3] }] }"
+                " to { innerInputArray: [{ arrayField: [3, 2, 1] }] }.",
             ),
         ]
 

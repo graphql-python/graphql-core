@@ -21,13 +21,13 @@ def describe_sort_value_node():
         )
 
     def sort_input_object_fields():
-        _expect_sorted_value("{ b: 2, a: 1 }", "{a: 1, b: 2}")
-        _expect_sorted_value("{ a: { c: 3, b: 2 } }", "{a: {b: 2, c: 3}}")
+        _expect_sorted_value("{ b: 2, a: 1 }", "{ a: 1, b: 2 }")
+        _expect_sorted_value("{ a: { c: 3, b: 2 } }", "{ a: { b: 2, c: 3 } }")
         _expect_sorted_value(
             "[{ b: 2, a: 1 }, { d: 4, c: 3}]",
-            "[{a: 1, b: 2}, {c: 3, d: 4}]",
+            "[{ a: 1, b: 2 }, { c: 3, d: 4 }]",
         )
         _expect_sorted_value(
             "{ b: { g: 7, f: 6 }, c: 3 , a: { d: 4, e: 5 } }",
-            "{a: {d: 4, e: 5}, b: {f: 6, g: 7}, c: 3}",
+            "{ a: { d: 4, e: 5 }, b: { f: 6, g: 7 }, c: 3 }",
         )

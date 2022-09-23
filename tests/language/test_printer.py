@@ -60,11 +60,12 @@ def describe_printer_query_document():
 
     def prints_query_with_variable_directives():
         query_ast_with_variable_directive = parse(
-            "query ($foo: TestType = {a: 123}" " @testDirective(if: true) @test) { id }"
+            "query ($foo: TestType = { a: 123 }"
+            " @testDirective(if: true) @test) { id }"
         )
         assert print_ast(query_ast_with_variable_directive) == dedent(
             """
-            query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
+            query ($foo: TestType = { a: 123 } @testDirective(if: true) @test) {
               id
             }
             """
@@ -185,9 +186,9 @@ def describe_printer_query_document():
               foo(
                 size: $size
                 bar: $b
-                obj: {key: "value", block: """
+                obj: { key: "value", block: """
                 block string uses \"""
-                """}
+                """ }
               )
             }
 

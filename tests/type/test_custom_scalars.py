@@ -186,7 +186,7 @@ def describe_custom_scalar():
     def parse_literal_with_errors():
         source = """
             query Money($amount: String!, $currency: Float!) {
-              toEuros(money: {amount: $amount, currency: $currency})
+              toEuros(money: { amount: $amount, currency: $currency })
             }
             """
 
@@ -197,7 +197,7 @@ def describe_custom_scalar():
             [
                 {
                     "message": "Argument 'money' has invalid value"
-                    " {amount: $amount, currency: $currency}.",
+                    " { amount: $amount, currency: $currency }.",
                     "locations": [(3, 30)],
                 },
             ],

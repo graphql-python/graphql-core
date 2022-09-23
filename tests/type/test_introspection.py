@@ -1079,7 +1079,7 @@ def describe_introspection():
             """
             input InputObjectWithDefaultValues {
               a: String = "Emoji: \\u{1F600}"
-              b: Complex = {x: ["abc"], y: 123}
+              b: Complex = { x: ["abc"], y: 123 }
             }
 
             input Complex {
@@ -1109,7 +1109,7 @@ def describe_introspection():
                 "__type": {
                     "inputFields": [
                         {"name": "a", "defaultValue": '"Emoji: \U0001f600"'},
-                        {"name": "b", "defaultValue": '{x: ["abc"], y: 123}'},
+                        {"name": "b", "defaultValue": '{ x: ["abc"], y: 123 }'},
                     ]
                 }
             },
