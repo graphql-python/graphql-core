@@ -5,147 +5,170 @@ The :mod:`graphql.type` package is responsible for defining GraphQL types and sc
 
 from ..pyutils import Path as ResponsePath
 
-# Uphold the spec rules about naming.
-from .assert_name import assert_enum_value_name, assert_name
-from .definition import (
-    GraphQLAbstractType,  # Predicates; Assertions; Un-modifiers; Thunk handling; Definitions; Type Wrappers; Types; Keyword Args; Resolvers
+from .schema import (
+    # Predicate
+    is_schema,
+    # Assertion
+    assert_schema,
+    # GraphQL Schema definition
+    GraphQLSchema,
+    # Keyword Args
+    GraphQLSchemaKwargs,
 )
+
+# Uphold the spec rules about naming.
+from .assert_name import assert_name, assert_enum_value_name
+
 from .definition import (
-    GraphQLArgument,
-    GraphQLArgumentKwargs,
-    GraphQLArgumentMap,
-    GraphQLCompositeType,
-    GraphQLEnumType,
-    GraphQLEnumTypeKwargs,
-    GraphQLEnumValue,
-    GraphQLEnumValueKwargs,
-    GraphQLEnumValueMap,
-    GraphQLField,
-    GraphQLFieldKwargs,
-    GraphQLFieldMap,
-    GraphQLFieldResolver,
-    GraphQLInputField,
-    GraphQLInputFieldKwargs,
-    GraphQLInputFieldMap,
-    GraphQLInputObjectType,
-    GraphQLInputObjectTypeKwargs,
-    GraphQLInputType,
+    # Predicates
+    is_type,
+    is_scalar_type,
+    is_object_type,
+    is_interface_type,
+    is_union_type,
+    is_enum_type,
+    is_input_object_type,
+    is_list_type,
+    is_non_null_type,
+    is_input_type,
+    is_output_type,
+    is_leaf_type,
+    is_composite_type,
+    is_abstract_type,
+    is_wrapping_type,
+    is_nullable_type,
+    is_named_type,
+    is_required_argument,
+    is_required_input_field,
+    # Assertions
+    assert_type,
+    assert_scalar_type,
+    assert_object_type,
+    assert_interface_type,
+    assert_union_type,
+    assert_enum_type,
+    assert_input_object_type,
+    assert_list_type,
+    assert_non_null_type,
+    assert_input_type,
+    assert_output_type,
+    assert_leaf_type,
+    assert_composite_type,
+    assert_abstract_type,
+    assert_wrapping_type,
+    assert_nullable_type,
+    assert_named_type,
+    # Un-modifiers
+    get_nullable_type,
+    get_named_type,
+    # Thunk handling
+    resolve_thunk,
+    # Definitions
+    GraphQLScalarType,
+    GraphQLObjectType,
     GraphQLInterfaceType,
-    GraphQLInterfaceTypeKwargs,
-    GraphQLIsTypeOfFn,
-    GraphQLLeafType,
+    GraphQLUnionType,
+    GraphQLEnumType,
+    GraphQLInputObjectType,
+    # Type Wrappers
     GraphQLList,
+    GraphQLNonNull,
+    # Types
+    GraphQLType,
+    GraphQLInputType,
+    GraphQLOutputType,
+    GraphQLLeafType,
+    GraphQLCompositeType,
+    GraphQLAbstractType,
+    GraphQLWrappingType,
+    GraphQLNullableType,
+    GraphQLNamedType,
     GraphQLNamedInputType,
     GraphQLNamedOutputType,
-    GraphQLNamedType,
-    GraphQLNamedTypeKwargs,
-    GraphQLNonNull,
-    GraphQLNullableType,
-    GraphQLObjectType,
-    GraphQLObjectTypeKwargs,
-    GraphQLOutputType,
-    GraphQLResolveInfo,
-    GraphQLScalarLiteralParser,
-    GraphQLScalarSerializer,
-    GraphQLScalarType,
-    GraphQLScalarTypeKwargs,
-    GraphQLScalarValueParser,
-    GraphQLType,
-    GraphQLTypeResolver,
-    GraphQLUnionType,
-    GraphQLUnionTypeKwargs,
-    GraphQLWrappingType,
     Thunk,
     ThunkCollection,
     ThunkMapping,
-    assert_abstract_type,
-    assert_composite_type,
-    assert_enum_type,
-    assert_input_object_type,
-    assert_input_type,
-    assert_interface_type,
-    assert_leaf_type,
-    assert_list_type,
-    assert_named_type,
-    assert_non_null_type,
-    assert_nullable_type,
-    assert_object_type,
-    assert_output_type,
-    assert_scalar_type,
-    assert_type,
-    assert_union_type,
-    assert_wrapping_type,
-    get_named_type,
-    get_nullable_type,
-    is_abstract_type,
-    is_composite_type,
-    is_enum_type,
-    is_input_object_type,
-    is_input_type,
-    is_interface_type,
-    is_leaf_type,
-    is_list_type,
-    is_named_type,
-    is_non_null_type,
-    is_nullable_type,
-    is_object_type,
-    is_output_type,
-    is_required_argument,
-    is_required_input_field,
-    is_scalar_type,
-    is_type,
-    is_union_type,
-    is_wrapping_type,
-    resolve_thunk,
+    GraphQLArgument,
+    GraphQLArgumentMap,
+    GraphQLEnumValue,
+    GraphQLEnumValueMap,
+    GraphQLField,
+    GraphQLFieldMap,
+    GraphQLInputField,
+    GraphQLInputFieldMap,
+    GraphQLScalarSerializer,
+    GraphQLScalarValueParser,
+    GraphQLScalarLiteralParser,
+    # Keyword Args
+    GraphQLArgumentKwargs,
+    GraphQLEnumTypeKwargs,
+    GraphQLEnumValueKwargs,
+    GraphQLFieldKwargs,
+    GraphQLInputFieldKwargs,
+    GraphQLInputObjectTypeKwargs,
+    GraphQLInterfaceTypeKwargs,
+    GraphQLNamedTypeKwargs,
+    GraphQLObjectTypeKwargs,
+    GraphQLScalarTypeKwargs,
+    GraphQLUnionTypeKwargs,
+    # Resolvers
+    GraphQLFieldResolver,
+    GraphQLTypeResolver,
+    GraphQLIsTypeOfFn,
+    GraphQLResolveInfo,
 )
+
 from .directives import (
-    DEFAULT_DEPRECATION_REASON,  # Predicate; Assertion; Directives Definition; Built-in Directives defined by the Spec; Keyword Args; Constant Deprecation Reason
-)
-from .directives import (
-    GraphQLDeprecatedDirective,
-    GraphQLDirective,
-    GraphQLDirectiveKwargs,
-    GraphQLIncludeDirective,
-    GraphQLSkipDirective,
-    GraphQLSpecifiedByDirective,
-    assert_directive,
+    # Predicate
     is_directive,
+    # Assertion
+    assert_directive,
+    # Directives Definition
+    GraphQLDirective,
+    # Built-in Directives defined by the Spec
     is_specified_directive,
     specified_directives,
-)
-from .introspection import (
-    SchemaMetaFieldDef,  # Predicate; GraphQL Types for introspection.; "Enum" of Type Kinds; Meta-field definitions.
-)
-from .introspection import (
-    TypeKind,
-    TypeMetaFieldDef,
-    TypeNameMetaFieldDef,
-    introspection_types,
-    is_introspection_type,
+    GraphQLIncludeDirective,
+    GraphQLSkipDirective,
+    GraphQLDeprecatedDirective,
+    GraphQLSpecifiedByDirective,
+    # Keyword Args
+    GraphQLDirectiveKwargs,
+    # Constant Deprecation Reason
+    DEFAULT_DEPRECATION_REASON,
 )
 
 # Common built-in scalar instances.
 from .scalars import (
-    GRAPHQL_MAX_INT,  # Predicate; Standard GraphQL Scalars; Int boundaries constants
-)
-from .scalars import (
-    GRAPHQL_MIN_INT,
-    GraphQLBoolean,
-    GraphQLFloat,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLString,
+    # Predicate
     is_specified_scalar_type,
+    # Standard GraphQL Scalars
     specified_scalar_types,
+    GraphQLInt,
+    GraphQLFloat,
+    GraphQLString,
+    GraphQLBoolean,
+    GraphQLID,
+    # Int boundaries constants
+    GRAPHQL_MAX_INT,
+    GRAPHQL_MIN_INT,
 )
-from .schema import (
-    GraphQLSchema,  # Predicate; Assertion; GraphQL Schema definition; Keyword Args
+
+from .introspection import (
+    # Predicate
+    is_introspection_type,
+    # GraphQL Types for introspection.
+    introspection_types,
+    # "Enum" of Type Kinds
+    TypeKind,
+    # Meta-field definitions.
+    SchemaMetaFieldDef,
+    TypeMetaFieldDef,
+    TypeNameMetaFieldDef,
 )
-from .schema import GraphQLSchemaKwargs, assert_schema, is_schema
 
 # Validate GraphQL schema.
-from .validate import assert_valid_schema, validate_schema
-
+from .validate import validate_schema, assert_valid_schema
 
 __all__ = [
     "is_schema",

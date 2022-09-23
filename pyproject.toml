@@ -68,7 +68,7 @@ target-version = ['py37', 'py38', 'py39', 'py310']
 
 [tool.coverage.run]
 branch = true
-source = ["src"]
+source = ["src", "tests"]
 omit = [
     "*/conftest.py",
     "*/test_*_fuzz.py",
@@ -96,6 +96,8 @@ exclude_lines = [
 ignore_errors = true
 
 [tool.isort]
+src_paths = ["src", "tests"]
+skip_glob = ["src/**/__init__.py"]
 profile = "black"
 force_single_line = false
 lines_after_imports = 2

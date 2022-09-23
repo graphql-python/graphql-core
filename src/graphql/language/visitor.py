@@ -21,6 +21,7 @@ __all__ = [
     "Visitor",
     "ParallelVisitor",
     "VisitorAction",
+    "VisitorKeyMap",
     "visit",
     "BREAK",
     "SKIP",

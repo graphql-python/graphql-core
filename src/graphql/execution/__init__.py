@@ -5,20 +5,19 @@ fulfilling a GraphQL request.
 """
 
 from .execute import (
+    execute,
+    execute_sync,
+    default_field_resolver,
+    default_type_resolver,
     ExecutionContext,
     ExecutionResult,
     FormattedExecutionResult,
     Middleware,
-    default_field_resolver,
-    default_type_resolver,
-    execute,
-    execute_sync,
 )
 from .map_async_iterator import MapAsyncIterator
+from .subscribe import subscribe, create_source_event_stream
 from .middleware import MiddlewareManager
-from .subscribe import create_source_event_stream, subscribe
 from .values import get_argument_values, get_directive_values, get_variable_values
-
 
 __all__ = [
     "create_source_event_stream",

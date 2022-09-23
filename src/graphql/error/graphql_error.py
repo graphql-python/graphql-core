@@ -9,8 +9,10 @@ except ImportError:  # Python < 3.8
 
 if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
-    from ..language.location import FormattedSourceLocation  # noqa: F401
-    from ..language.location import SourceLocation
+    from ..language.location import (  # noqa: F401
+        FormattedSourceLocation,
+        SourceLocation,
+    )
     from ..language.source import Source  # noqa: F401
 
 __all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
