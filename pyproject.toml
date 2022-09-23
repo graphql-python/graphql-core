@@ -31,9 +31,7 @@ packages = [
     { include = '.readthedocs.yaml', format = "sdist" },
     { include = 'poetry.lock', format = "sdist" },
     { include = 'tox.ini', format = "sdist" },
-    { include = 'setup.cfg', format = "sdist" },
     { include = 'CODEOWNERS', format = "sdist" },
-    { include = 'MANIFEST.in', format = "sdist" },
     { include = 'SECURITY.md', format = "sdist" }
 ]
 
@@ -66,7 +64,6 @@ black = "22.8.0"
 flake8 = "^5.0"
 isort = "^5.10"
 mypy = "0.971"
-check-manifest = ">=0.48,<1"
 bump2version = ">=1.0,<2"
 
 [tool.poetry.group.doc]
@@ -150,5 +147,5 @@ timeout = "100"
 filterwarnings = "ignore::pytest.PytestConfigWarning"
 
 [build-system]
-requires = ["poetry_core>=1.2,<2", "setuptools>=65,<70"]
+requires = ["poetry_core>=1.2,<2"]
 build-backend = "poetry.core.masonry.api"

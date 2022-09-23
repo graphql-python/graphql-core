@@ -22,4 +22,4 @@ jobs:
     - name: Run code quality tests with tox
       run: tox
       env:
-        TOXENV: black,flake8,isort,mypy,docs,manifest
+        TOXENV: black,flake8,isort,mypy,docs
