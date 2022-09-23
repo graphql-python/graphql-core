@@ -5,9 +5,7 @@ description = """
 GraphQL-core is a Python port of GraphQL.js,\
  the JavaScript reference implementation for GraphQL."""
 license = "MIT"
-authors = [
-    "Christoph Zwerschke <cito@online.de>"
-]
+authors = ["Christoph Zwerschke <cito@online.de>"]
 readme = "README.md"
 homepage = "https://github.com/graphql-python/graphql-core"
 repository = "https://github.com/graphql-python/graphql-core"
@@ -28,10 +26,8 @@ packages = [
     { include = "tests", format = "sdist" },
     { include = "docs", format = "sdist" },
     { include = '.bumpversion.cfg', format = "sdist" },
-    { include = '.coveragerc', format = "sdist" },
     { include = '.editorconfig', format = "sdist" },
     { include = '.flake8', format = "sdist" },
-    { include = '.mypy.ini', format = "sdist" },
     { include = '.readthedocs.yaml', format = "sdist" },
     { include = 'poetry.lock', format = "sdist" },
     { include = 'tox.ini', format = "sdist" },
@@ -41,10 +37,13 @@ packages = [
     { include = 'SECURITY.md', format = "sdist" }
 ]
 
+[tool.poetry.urls]
+Changelog = "https://github.com/graphql-python/graphql-core/releases"
+
 [tool.poetry.dependencies]
 python = "^3.7"
 typing-extensions = [
-    { version = "^4.3", python = "<3.8" },
+    { version = "^4.3", python = "<3.8" }
 ]
 
 [tool.poetry.dev-dependencies]
@@ -63,8 +62,71 @@ check-manifest = ">=0.48,<1"
 bump2version = ">=1.0,<2"
 tox = "^3.26"
 
+
 [tool.black]
 target-version = ['py37', 'py38', 'py39', 'py310']
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    "*/conftest.py",
+    "*/test_*_fuzz.py",
+    "*/assert_valid_name.py",
+    "*/cached_property.py",
+    "*/character_classes.py",
+    "*/is_iterable.py",
+    "*/subscription/__init__.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "except ImportError:",
+    "# Python <",
+    "raise NotImplementedError",
+    'raise TypeError\(f?"Unexpected',
+    "assert False,",
+    '\s+next\($',
+    "if MYPY:",
+    "if TYPE_CHECKING:",
+    '^\s+\.\.\.$',
+    '^\s+pass$'
+]
+ignore_errors = true
+
+[tool.mypy]
+python_version = 3.9
+check_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "graphql.pyutils.frozen_dict",
+    "graphql.pyutils.frozen_list",
+    "graphql.type.introspection",
+    "tests.*"
+]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+minversion = "7.1"
+# Only run benchmarks as tests.
+# To actually run the benchmarks, use --benchmark-enable on the command line.
+# To run the slow tests (fuzzing), add --run-slow on the command line.
+addopts = "--benchmark-disable"
+# Deactivate default name pattern for test classes (we use pytest_describe).
+python_classes = "PyTest*"
+# Handle all async fixtures and tests automatically by asyncio
+asyncio_mode = "auto"
+# Set a timeout in seconds for aborting tests that run too long.
+timeout = "100"
+# Ignore config options not (yet) available in older Python versions.
+filterwarnings = "ignore::pytest.PytestConfigWarning"
 
 [build-system]
 requires = ["poetry_core>=1,<2", "setuptools>=65,<70"]
