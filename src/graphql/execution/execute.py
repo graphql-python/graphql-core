@@ -714,7 +714,7 @@ class ExecutionContext:
                         error = located_error(
                             raw_error, field_nodes, item_path.as_list()
                         )
-                        self.handle_field_error(error, item_type)
+                        self.handle_field_error(error, item_type)  # noqa: B023
                         return None
 
                 completed_item = await_completed(item, item_path)
@@ -732,7 +732,7 @@ class ExecutionContext:
                                 error = located_error(
                                     raw_error, field_nodes, item_path.as_list()
                                 )
-                                self.handle_field_error(error, item_type)
+                                self.handle_field_error(error, item_type)  # noqa: B023
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)

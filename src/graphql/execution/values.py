@@ -125,13 +125,15 @@ def coerce_variable_values(
             path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
         ) -> None:
             invalid_str = inspect(invalid_value)
-            prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
+            prefix = (
+                f"Variable '${var_name}' got invalid value {invalid_str}"  # noqa: B023
+            )
             if path:
-                prefix += f" at '{var_name}{print_path_list(path)}'"
+                prefix += f" at '{var_name}{print_path_list(path)}'"  # noqa: B023
             on_error(
                 GraphQLError(
                     prefix + "; " + error.message,
-                    var_def_node,
+                    var_def_node,  # noqa: B023
                     original_error=error.original_error,
                 )
             )

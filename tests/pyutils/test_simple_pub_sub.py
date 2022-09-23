@@ -91,6 +91,6 @@ def describe_simple_pub_sub():
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()
         assert iterator.listening
-        for n in range(3):
+        for _n in range(3):
             await iterator.aclose()
             assert not iterator.listening

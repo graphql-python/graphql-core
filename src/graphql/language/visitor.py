@@ -110,7 +110,7 @@ class Visitor:
     def __init_subclass__(cls) -> None:
         """Verify that all defined handlers are valid."""
         super().__init_subclass__()
-        for attr, val in cls.__dict__.items():
+        for attr in cls.__dict__:
             if attr.startswith("_"):
                 continue
             attr_kind = attr.split("_", 1)

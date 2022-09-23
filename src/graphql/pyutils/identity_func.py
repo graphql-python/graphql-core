@@ -8,7 +8,9 @@ __all__ = ["identity_func"]
 
 T = TypeVar("T")
 
+DEFAULT_VALUE = cast(Any, Undefined)
 
-def identity_func(x: T = cast(Any, Undefined), *_args: Any) -> T:
+
+def identity_func(x: T = DEFAULT_VALUE, *_args: Any) -> T:
     """Return the first received argument."""
     return x
