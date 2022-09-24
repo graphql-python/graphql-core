@@ -1,7 +1,5 @@
 from typing import List, Union, cast
 
-from pytest import raises
-
 from graphql.error import GraphQLError
 from graphql.language import (
     Node,
