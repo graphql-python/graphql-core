@@ -364,6 +364,12 @@ def describe_type_system_a_schema_must_have_object_root_types():
             input SomeInputObject {
               test: String
             }
+            
+            scalar SomeScalar
+
+            enum SomeEnum {
+              ENUM_VALUE
+            }
             """
         )
         schema = extend_schema(
@@ -381,7 +387,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
             parse(
                 """
                 extend schema {
-                  mutation: SomeInputObject
+                  mutation: SomeScalar
                 }
                 """
             ),
@@ -391,7 +397,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
             parse(
                 """
                 extend schema {
-                  subscription: SomeInputObject
+                  subscription: SomeEnum
                 }
                 """
             ),
@@ -404,12 +410,12 @@ def describe_type_system_a_schema_must_have_object_root_types():
             },
             {
                 "message": "Mutation root type must be Object type"
-                " if provided, it cannot be SomeInputObject.",
+                " if provided, it cannot be SomeScalar.",
                 "locations": [(3, 29)],
             },
             {
                 "message": "Subscription root type must be Object type"
-                " if provided, it cannot be SomeInputObject.",
+                " if provided, it cannot be SomeEnum.",
                 "locations": [(3, 33)],
             },
         ]
