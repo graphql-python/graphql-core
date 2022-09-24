@@ -364,7 +364,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
             input SomeInputObject {
               test: String
             }
-            
+
             scalar SomeScalar
 
             enum SomeEnum {
