@@ -242,12 +242,6 @@ def describe_visitor():
             visitor.leave,
         )
 
-        # also test deprecated method
-        assert visitor.get_visit_fn("document") == visitor.enter_document
-        assert visitor.get_visit_fn("field") == visitor.enter
-        assert visitor.get_visit_fn("document", True) == visitor.leave_document
-        assert visitor.get_visit_fn("field", True) == visitor.leave
-
     def validates_path_argument():
         ast = parse("{ a }", no_location=True)
         visited = []
