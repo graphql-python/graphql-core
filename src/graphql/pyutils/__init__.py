@@ -17,6 +17,7 @@ from .description import (
     unregister_description,
 )
 from .did_you_mean import did_you_mean
+from .format_list import or_list, and_list
 from .group_by import group_by
 from .identity_func import identity_func
 from .inspect import inspect
@@ -37,6 +38,8 @@ __all__ = [
     "snake_to_camel",
     "cached_property",
     "did_you_mean",
+    "or_list",
+    "and_list",
     "Description",
     "group_by",
     "is_description",

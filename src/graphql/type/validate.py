@@ -1,3 +1,4 @@
+from collections import defaultdict
 from operator import attrgetter, itemgetter
 from typing import Any, Collection, Dict, List, Optional, Set, Tuple, Union, cast
 
@@ -11,7 +12,7 @@ from ..language import (
     SchemaDefinitionNode,
     SchemaExtensionNode,
 )
-from ..pyutils import inspect
+from ..pyutils import and_list, inspect
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
 from .definition import (
     GraphQLEnumType,
@@ -105,19 +106,37 @@ class SchemaValidationContext:
         schema = self.schema
         if not schema.query_type:
             self.report_error("Query root type must be provided.", schema.ast_node)
+        root_types_map: Dict[GraphQLObjectType, List[OperationType]] = defaultdict(list)
+
         for operation_type in OperationType:
             root_type = schema.get_root_type(operation_type)
-            if root_type and not is_object_type(root_type):
-                operation_type_str = operation_type.value.capitalize()
-                root_type_str = inspect(root_type)
-                if_provided_str = (
-                    "" if operation_type == operation_type.QUERY else " if provided"
+            if root_type:
+                if is_object_type(root_type):
+                    root_types_map[root_type].append(operation_type)
+                else:
+                    operation_type_str = operation_type.value.capitalize()
+                    root_type_str = inspect(root_type)
+                    if_provided_str = (
+                        "" if operation_type == operation_type.QUERY else " if provided"
+                    )
+                    self.report_error(
+                        f"{operation_type_str} root type must be Object type"
+                        f"{if_provided_str}, it cannot be {root_type_str}.",
+                        get_operation_type_node(schema, operation_type)
+                        or root_type.ast_node,
+                    )
+        for root_type, operation_types in root_types_map.items():
+            if len(operation_types) > 1:
+                operation_list = and_list(
+                    [operation_type.value for operation_type in operation_types]
                 )
                 self.report_error(
-                    f"{operation_type_str} root type must be Object type"
-                    f"{if_provided_str}, it cannot be {root_type_str}.",
-                    get_operation_type_node(schema, operation_type)
-                    or root_type.ast_node,
+                    "All root types must be different,"
+                    f" '{root_type.name}' type is used as {operation_list} root types.",
+                    [
+                        get_operation_type_node(schema, operation_type)
+                        for operation_type in operation_types
+                    ],
                 )
 
     def validate_directives(self) -> None:

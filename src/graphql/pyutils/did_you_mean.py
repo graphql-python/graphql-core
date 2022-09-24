@@ -1,5 +1,7 @@
 from typing import Optional, Sequence
 
+from .format_list import or_list
+
 
 __all__ = ["did_you_mean"]
 
@@ -10,20 +12,11 @@ def did_you_mean(suggestions: Sequence[str], sub_message: Optional[str] = None) 
     """Given [ A, B, C ] return ' Did you mean A, B, or C?'"""
     if not suggestions or not MAX_LENGTH:
         return ""
-    parts = [" Did you mean "]
+    message = " Did you mean "
     if sub_message:
-        parts.extend([sub_message, " "])
+        message += sub_message + " "
     suggestions = suggestions[:MAX_LENGTH]
-    n = len(suggestions)
-    if n == 1:
-        parts.append(f"'{suggestions[0]}'?")
-    elif n == 2:
-        parts.append(f"'{suggestions[0]}' or '{suggestions[1]}'?")
-    else:
-        parts.extend(
-            [
-                ", ".join(f"'{s}'" for s in suggestions[:-1]),
-                f", or '{suggestions[-1]}'?",
-            ]
-        )
-    return "".join(parts)
+    suggestion_list = or_list(
+        [f"'{suggestion}'" for suggestion in suggestions[:MAX_LENGTH]]
+    )
+    return message + suggestion_list + "?"

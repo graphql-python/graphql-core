@@ -454,6 +454,80 @@ def describe_type_system_a_schema_must_have_object_root_types():
         ]
 
 
+def describe_type_system_root_types_must_all_be_different_if_provided():
+    def accepts_a_schema_with_different_root_types():
+        schema = build_schema(
+            """
+            type SomeObject1 {
+              field: String
+            }
+
+            type SomeObject2 {
+              field: String
+            }
+
+            type SomeObject3 {
+              field: String
+            }
+
+            schema {
+              query: SomeObject1
+              mutation: SomeObject2
+              subscription: SomeObject3
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_a_schema_where_the_same_type_is_used_for_multiple_root_types():
+        schema = build_schema(
+            """
+            type SomeObject {
+              field: String
+            }
+
+            type UniqueObject {
+              field: String
+            }
+
+            schema {
+              query: SomeObject
+              mutation: UniqueObject
+              subscription: SomeObject
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "All root types must be different, 'SomeObject' type"
+                " is used as query and subscription root types.",
+                "locations": [(11, 22), (13, 29)],
+            }
+        ]
+
+    def rejects_a_schema_where_the_same_type_is_used_for_all_root_types():
+        schema = build_schema(
+            """
+            type SomeObject {
+              field: String
+            }
+
+            schema {
+              query: SomeObject
+              mutation: SomeObject
+              subscription: SomeObject
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "All root types must be different, 'SomeObject' type"
+                " is used as query, mutation, and subscription root types.",
+                "locations": [(7, 22), (8, 25), (9, 29)],
+            }
+        ]
+
+
 def describe_type_system_objects_must_have_fields():
     def accepts_an_object_type_with_fields_object():
         schema = build_schema(
