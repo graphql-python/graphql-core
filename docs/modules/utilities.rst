@@ -94,11 +94,6 @@ Comparators for types:
 .. autofunction:: is_type_sub_type_of
 .. autofunction:: do_types_overlap
 
-Assert that a string is a valid GraphQL name:
-
-.. autofunction:: assert_valid_name
-.. autofunction:: is_valid_name_error
-
 Compare two GraphQLSchemas and detect breaking changes:
 
 .. autofunction:: find_breaking_changes

@@ -212,10 +212,6 @@ from .utilities import (
     is_equal_type,
     is_type_sub_type_of,
     do_types_overlap,
-    # Assert a string is a valid GraphQL name.
-    assert_valid_name,
-    # Determine if a string is a valid GraphQL name.
-    is_valid_name_error,
     # Compare two GraphQLSchemas and detect breaking changes.
     BreakingChange,
     BreakingChangeType,
@@ -764,8 +760,6 @@ __all__ = [
     "is_equal_type",
     "is_type_sub_type_of",
     "do_types_overlap",
-    "assert_valid_name",
-    "is_valid_name_error",
     "find_breaking_changes",
     "find_dangerous_changes",
     "BreakingChange",
