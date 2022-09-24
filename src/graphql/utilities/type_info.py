@@ -1,6 +1,6 @@
 from __future__ import annotations  # Python < 3.10
 
-from typing import Any, Callable, List, Optional, Union, cast
+from typing import Any, List, Optional, Union, cast
 
 from ..language import (
     ArgumentNode,
@@ -52,11 +52,6 @@ from .type_from_ast import type_from_ast
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
-GetFieldDefFn = Callable[
-    [GraphQLSchema, GraphQLType, FieldNode], Optional[GraphQLField]
-]
-
-
 class TypeInfo:
     """Utility class for keeping track of type definitions.
 
@@ -70,14 +65,11 @@ class TypeInfo:
         self,
         schema: GraphQLSchema,
         initial_type: Optional[GraphQLType] = None,
-        get_field_def_fn: Optional[GetFieldDefFn] = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
         Initial type may be provided in rare cases to facilitate traversals beginning
         somewhere other than documents.
-
-        The optional last parameter is deprecated and will be removed in v3.3.
         """
         self._schema = schema
         self._type_stack: List[Optional[GraphQLOutputType]] = []
@@ -88,7 +80,6 @@ class TypeInfo:
         self._directive: Optional[GraphQLDirective] = None
         self._argument: Optional[GraphQLArgument] = None
         self._enum_value: Optional[GraphQLEnumValue] = None
-        self._get_field_def: GetFieldDefFn = get_field_def_fn or get_field_def
         if initial_type:
             if is_input_type(initial_type):
                 self._input_type_stack.append(cast(GraphQLInputType, initial_type))
@@ -158,7 +149,7 @@ class TypeInfo:
     def enter_field(self, node: FieldNode) -> None:
         parent_type = self.get_parent_type()
         if parent_type:
-            field_def = self._get_field_def(self._schema, parent_type, node)
+            field_def = get_field_def(self._schema, parent_type, node)
             field_type = field_def.type if field_def else None
         else:
             field_def = field_type = None
@@ -277,7 +268,7 @@ class TypeInfo:
 
 
 def get_field_def(
-    schema: GraphQLSchema, parent_type: GraphQLType, field_node: FieldNode
+    schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode
 ) -> Optional[GraphQLField]:
     """Get field definition.
 
@@ -285,16 +276,16 @@ def get_field_def(
     :func:`graphql.execution.get_field_def`, in this statically evaluated environment
     we do not always have an Object type, and need to handle Interface and Union types.
     """
-    name = field_node.name.value
-    if name == "__schema" and schema.query_type is parent_type:
+    field_name = field_node.name.value
+    if field_name == "__schema" and schema.query_type is parent_type:
         return SchemaMetaFieldDef
-    if name == "__type" and schema.query_type is parent_type:
+    if field_name == "__type" and schema.query_type is parent_type:
         return TypeMetaFieldDef
-    if name == "__typename" and is_composite_type(parent_type):
+    if field_name == "__typename" and is_composite_type(parent_type):
         return TypeNameMetaFieldDef
     if is_object_type(parent_type) or is_interface_type(parent_type):
         parent_type = cast(Union[GraphQLObjectType, GraphQLInterfaceType], parent_type)
-        return parent_type.fields.get(name)
+        return parent_type.fields.get(field_name)
     return None
 
 
