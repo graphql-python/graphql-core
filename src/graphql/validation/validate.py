@@ -2,7 +2,7 @@ from typing import Collection, List, Optional, Type
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
-from ..pyutils import is_collection
+from ..pyutils import inspect, is_collection
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
 from .rules import ASTValidationRule
@@ -22,6 +22,7 @@ def validate(
     document_ast: DocumentNode,
     rules: Optional[Collection[Type[ASTValidationRule]]] = None,
     max_errors: Optional[int] = None,
+    type_info: Optional[TypeInfo] = None,
 ) -> List[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -38,6 +39,8 @@ def validate(
     Validate will stop validation after a ``max_errors`` limit has been reached.
     Attackers can send pathologically invalid queries to induce a DoS attack,
     so by default ``max_errors`` set to 100 errors.
+
+    Providing a custom TypeInfo instance is deprecated and will be removed in v3.3.
     """
     if not document_ast or not isinstance(document_ast, DocumentNode):
         raise TypeError("Must provide document.")
@@ -47,6 +50,10 @@ def validate(
         max_errors = 100
     elif not isinstance(max_errors, int):
         raise TypeError("The maximum number of errors must be passed as an int.")
+    if type_info is None:
+        type_info = TypeInfo(schema)
+    elif not isinstance(type_info, TypeInfo):
+        raise TypeError(f"Not a TypeInfo object: {inspect(type_info)}.")
     if rules is None:
         rules = specified_rules
     elif not is_collection(rules) or not all(
@@ -69,7 +76,6 @@ def validate(
             raise ValidationAbortedError
         errors.append(error)
 
-    type_info = TypeInfo(schema)
     context = ValidationContext(schema, document_ast, type_info, on_error)
 
     # This uses a specialized visitor which runs multiple visitors in parallel,
