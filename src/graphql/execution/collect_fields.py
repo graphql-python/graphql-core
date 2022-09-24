@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict, List, Set, Union, cast
 
 from ..language import (
@@ -39,7 +40,7 @@ def collect_fields(
 
     For internal use only.
     """
-    fields: Dict[str, List[FieldNode]] = {}
+    fields: Dict[str, List[FieldNode]] = defaultdict(list)
     collect_fields_impl(
         schema, fragments, variable_values, runtime_type, selection_set, fields, set()
     )
@@ -64,7 +65,7 @@ def collect_sub_fields(
 
     For internal use only.
     """
-    sub_field_nodes: Dict[str, List[FieldNode]] = {}
+    sub_field_nodes: Dict[str, List[FieldNode]] = defaultdict(list)
     visited_fragment_names: Set[str] = set()
     for node in field_nodes:
         if node.selection_set:
@@ -94,8 +95,7 @@ def collect_fields_impl(
         if isinstance(selection, FieldNode):
             if not should_include_node(variable_values, selection):
                 continue
-            name = get_field_entry_key(selection)
-            fields.setdefault(name, []).append(selection)
+            fields[get_field_entry_key(selection)].append(selection)
         elif isinstance(selection, InlineFragmentNode):
             if not should_include_node(
                 variable_values, selection
