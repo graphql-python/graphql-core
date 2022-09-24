@@ -236,30 +236,3 @@ class GraphQLError(Exception):
         if self.extensions:
             formatted["extensions"] = self.extensions
         return formatted
-
-
-def print_error(error: GraphQLError) -> str:
-    """Print a GraphQLError to a string.
-
-    Represents useful location information about the error's position in the source.
-
-    .. deprecated:: 3.2
-       Please use ``str(error)`` instead. Will be removed in v3.3.
-    """
-    if not isinstance(error, GraphQLError):
-        raise TypeError("Expected a GraphQLError.")
-    return str(error)
-
-
-def format_error(error: GraphQLError) -> GraphQLFormattedError:
-    """Format a GraphQL error.
-
-    Given a GraphQLError, format it according to the rules described by the "Response
-    Format, Errors" section of the GraphQL Specification.
-
-    .. deprecated:: 3.2
-       Please use ``error.formatted`` instead. Will be removed in v3.3.
-    """
-    if not isinstance(error, GraphQLError):
-        raise TypeError("Expected a GraphQLError.")
-    return error.formatted
