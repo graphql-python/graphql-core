@@ -20,7 +20,7 @@ from ..utilities.type_from_ast import type_from_ast
 from .values import get_directive_values
 
 
-__all__ = ["collect_fields", "collect_sub_fields"]
+__all__ = ["collect_fields", "collect_subfields"]
 
 
 def collect_fields(
@@ -47,19 +47,19 @@ def collect_fields(
     return fields
 
 
-def collect_sub_fields(
+def collect_subfields(
     schema: GraphQLSchema,
     fragments: Dict[str, FragmentDefinitionNode],
     variable_values: Dict[str, Any],
     return_type: GraphQLObjectType,
     field_nodes: List[FieldNode],
 ) -> Dict[str, List[FieldNode]]:
-    """Collect sub fields.
+    """Collect subfields.
 
     Given a list of field nodes, collects all the subfields of the passed in fields,
     and returns them at the end.
 
-    collect_sub_fields requires the "return type" of an object. For a field that
+    collect_subfields requires the "return type" of an object. For a field that
     returns an Interface or Union type, the "return type" will be the actual
     object type returned by that field.
 

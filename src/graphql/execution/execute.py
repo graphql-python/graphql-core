@@ -55,7 +55,7 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
-from .collect_fields import collect_fields, collect_sub_fields
+from .collect_fields import collect_fields, collect_subfields
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_variable_values
 
@@ -948,7 +948,7 @@ class ExecutionContext:
         )
         sub_field_nodes = cache.get(key)
         if sub_field_nodes is None:
-            sub_field_nodes = collect_sub_fields(
+            sub_field_nodes = collect_subfields(
                 self.schema,
                 self.fragments,
                 self.variable_values,
