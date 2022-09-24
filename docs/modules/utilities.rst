@@ -18,10 +18,6 @@ Get the target Operation from a Document:
 
 .. autofunction:: get_operation_ast
 
-Get the Type for the target Operation AST:
-
-.. autofunction:: get_operation_root_type
-
 Convert a GraphQLSchema to an IntrospectionQuery:
 
 .. autofunction:: introspection_from_schema

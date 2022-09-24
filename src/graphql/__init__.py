@@ -167,8 +167,6 @@ from .utilities import (
     IntrospectionQuery,
     # Get the target Operation from a Document.
     get_operation_ast,
-    # Get the Type for the target Operation AST.
-    get_operation_root_type,
     # Convert a GraphQLSchema to an IntrospectionQuery.
     introspection_from_schema,
     # Build a GraphQLSchema from an introspection result.
@@ -744,7 +742,6 @@ __all__ = [
     "get_introspection_query",
     "IntrospectionQuery",
     "get_operation_ast",
-    "get_operation_root_type",
     "introspection_from_schema",
     "build_client_schema",
     "build_ast_schema",

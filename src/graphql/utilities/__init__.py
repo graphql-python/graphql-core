@@ -10,9 +10,6 @@ from .get_introspection_query import get_introspection_query, IntrospectionQuery
 # Get the target Operation from a Document.
 from .get_operation_ast import get_operation_ast
 
-# Get the Type for the target Operation AST.
-from .get_operation_root_type import get_operation_root_type
-
 # Convert a GraphQLSchema to an IntrospectionQuery.
 from .introspection_from_schema import introspection_from_schema
 
@@ -106,7 +103,6 @@ __all__ = [
     "find_dangerous_changes",
     "get_introspection_query",
     "get_operation_ast",
-    "get_operation_root_type",
     "is_equal_type",
     "is_type_sub_type_of",
     "is_valid_name_error",
