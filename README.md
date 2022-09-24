@@ -10,11 +10,14 @@ a query language for APIs created by Facebook.
 ![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js version 16.6.0.
-
 An extensive test suite with over 2300 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
 reliable and compatible with GraphQL.js.
+
+The current stable version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js version 16.6.0.
+
+You can also try out the latest alpha version 3.3.0a1 of GraphQL-core that is up-to-date with GraphQL.js version 17.0.0a1.
+Please note that this new minor version of GraphQL-core does not support Python 3.7 anymore.
 
 Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js. Changes in the major version of GraphQL.js are reflected in the minor version of GraphQL-core instead. This means there can be breaking changes in the API when the minor version changes, and only patch releases are fully backward compatible. Therefore, we recommend something like `=~ 3.2.0` as version specifier when including GraphQL-core as a dependency.
 
