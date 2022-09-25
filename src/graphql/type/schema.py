@@ -208,8 +208,8 @@ class GraphQLSchema:
         # Provide specified directives (e.g. @include and @skip) by default
         self.directives = specified_directives if directives is None else directives
 
-        # To preserve order of user-provided types, we add first to add them to
-        # the set of "collected" types, so `collect_referenced_types` ignore them.
+        # To preserve order of user-provided types, we first add them to the set
+        # of "collected" types, so `collect_referenced_types` ignores them.
         if types:
             all_referenced_types = TypeSet.with_initial_types(types)
             collect_referenced_types = all_referenced_types.collect_referenced_types
@@ -258,10 +258,20 @@ class GraphQLSchema:
                     " is missing a name.",
                 )
             if type_name in type_map:
-                raise TypeError(
-                    "Schema must contain uniquely named types"
-                    f" but contains multiple types named '{type_name}'."
-                )
+                from ..type import specified_scalar_types
+
+                if (
+                    type_name in specified_scalar_types
+                    and type_map[type_name] is not specified_scalar_types[type_name]
+                ):
+                    # allow replacing a copy of a specified scalar type
+                    named_type = specified_scalar_types[type_name]
+                else:
+                    raise TypeError(
+                        "Schema must contain uniquely named types"
+                        f" but contains multiple types named '{type_name}'."
+                    )
+
             type_map[type_name] = named_type
 
             if is_interface_type(named_type):
