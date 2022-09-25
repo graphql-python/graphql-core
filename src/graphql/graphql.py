@@ -1,10 +1,10 @@
 from asyncio import ensure_future
 from inspect import isawaitable
-from typing import Any, Awaitable, Callable, Dict, Optional, Union, Type, cast
+from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union, cast
 
 from .error import GraphQLError
-from .execution import execute, ExecutionResult, ExecutionContext, Middleware
-from .language import parse, Source
+from .execution import ExecutionContext, ExecutionResult, Middleware, execute
+from .language import Source, parse
 from .pyutils import AwaitableOrValue
 from .type import (
     GraphQLFieldResolver,
@@ -12,6 +12,7 @@ from .type import (
     GraphQLTypeResolver,
     validate_schema,
 )
+
 
 __all__ = ["graphql", "graphql_sync"]
 

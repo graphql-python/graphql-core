@@ -1,10 +1,11 @@
-from typing import cast, Any, Optional
+from typing import Any, Optional, cast
 
 from ...error import GraphQLError
 from ...language import FragmentSpreadNode, InlineFragmentNode
 from ...type import GraphQLCompositeType, is_composite_type
 from ...utilities import do_types_overlap, type_from_ast
 from . import ValidationRule
+
 
 __all__ = ["PossibleFragmentSpreadsRule"]
 

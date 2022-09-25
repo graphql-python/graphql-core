@@ -1,8 +1,9 @@
 from typing import Any, Dict, List, Set
 
 from ...error import GraphQLError
-from ...language import FragmentDefinitionNode, FragmentSpreadNode, VisitorAction, SKIP
+from ...language import SKIP, FragmentDefinitionNode, FragmentSpreadNode, VisitorAction
 from . import ASTValidationContext, ASTValidationRule
+
 
 __all__ = ["NoFragmentCyclesRule"]
 

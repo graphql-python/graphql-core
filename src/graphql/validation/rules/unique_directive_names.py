@@ -1,8 +1,9 @@
 from typing import Any, Dict
 
 from ...error import GraphQLError
-from ...language import DirectiveDefinitionNode, NameNode, VisitorAction, SKIP
+from ...language import SKIP, DirectiveDefinitionNode, NameNode, VisitorAction
 from . import SDLValidationContext, SDLValidationRule
+
 
 __all__ = ["UniqueDirectiveNamesRule"]
 

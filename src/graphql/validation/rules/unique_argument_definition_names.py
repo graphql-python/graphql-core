@@ -3,6 +3,7 @@ from typing import Any, Collection
 
 from ...error import GraphQLError
 from ...language import (
+    SKIP,
     DirectiveDefinitionNode,
     FieldDefinitionNode,
     InputValueDefinitionNode,
@@ -12,10 +13,10 @@ from ...language import (
     ObjectTypeDefinitionNode,
     ObjectTypeExtensionNode,
     VisitorAction,
-    SKIP,
 )
 from ...pyutils import group_by
 from . import SDLValidationRule
+
 
 __all__ = ["UniqueArgumentDefinitionNamesRule"]
 

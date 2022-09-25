@@ -1,14 +1,12 @@
-from typing import cast, List, Union
-
-from pytest import raises
+from typing import List, Union, cast
 
 from graphql.error import GraphQLError
 from graphql.language import (
-    parse,
     Node,
-    OperationDefinitionNode,
     ObjectTypeDefinitionNode,
+    OperationDefinitionNode,
     Source,
+    parse,
 )
 
 from ..utils import dedent
@@ -273,17 +271,6 @@ def describe_graphql_error():
 
 
 def describe_to_string():
-    def deprecated_prints_an_error_using_print_error():
-        # noinspection PyProtectedMember
-        from graphql.error.graphql_error import print_error
-
-        error = GraphQLError("Error")
-        assert print_error(error) == "Error"
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            print_error(Exception)  # type: ignore
-        assert str(exc_info.value) == "Expected a GraphQLError."
-
     def prints_an_error_without_location():
         error = GraphQLError("Error without location")
         assert str(error) == "Error without location"
@@ -353,19 +340,6 @@ def describe_to_string():
 
 
 def describe_formatted():
-    def deprecated_formats_an_error_using_format_error():
-        # noinspection PyProtectedMember
-        from graphql.error.graphql_error import format_error
-
-        error = GraphQLError("Example Error")
-        assert format_error(error) == {
-            "message": "Example Error",
-        }
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            format_error(Exception)  # type: ignore
-        assert str(exc_info.value) == "Expected a GraphQLError."
-
     def formats_graphql_error():
         path: List[Union[int, str]] = ["one", 2]
         extensions = {"ext": None}

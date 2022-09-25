@@ -1,0 +1,4 @@
+# unfortunately, flake8-bandit does not support pyproject.toml
+
+[bandit]
+exclude = /tests

@@ -4,6 +4,7 @@ from ...error import GraphQLError
 from ...language import FragmentSpreadNode
 from . import ValidationRule
 
+
 __all__ = ["KnownFragmentNamesRule"]
 
 

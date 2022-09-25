@@ -1,9 +1,9 @@
 from pytest import mark
 
-from graphql.language import Source, Lexer, TokenKind
+from graphql.language import Lexer, Source, TokenKind
 from graphql.language.block_string import (
-    print_block_string,
     is_printable_as_block_string,
+    print_block_string,
 )
 
 from ..utils import dedent, gen_fuzz_strings

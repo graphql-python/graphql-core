@@ -1,7 +1,7 @@
 from pytest import raises
 
 from graphql.error import GraphQLError
-from graphql.language import DirectiveLocation, DirectiveDefinitionNode, Node
+from graphql.language import DirectiveDefinitionNode, DirectiveLocation, Node
 from graphql.type import GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLString
 
 

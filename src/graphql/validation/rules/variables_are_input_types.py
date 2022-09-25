@@ -6,6 +6,7 @@ from ...type import is_input_type
 from ...utilities import type_from_ast
 from . import ValidationRule
 
+
 __all__ = ["VariablesAreInputTypesRule"]
 
 

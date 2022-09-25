@@ -4,11 +4,11 @@ from graphql.language import (
     Node,
     OperationDefinitionNode,
     SelectionSetNode,
+    Visitor,
     parse,
     parse_value,
     print_ast,
     visit,
-    Visitor,
 )
 from graphql.type import GraphQLSchema, get_named_type, is_composite_type
 from graphql.utilities import TypeInfo, TypeInfoVisitor, build_schema

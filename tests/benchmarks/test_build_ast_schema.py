@@ -1,4 +1,4 @@
-from graphql import parse, build_ast_schema, GraphQLSchema
+from graphql import GraphQLSchema, build_ast_schema, parse
 
 from ..fixtures import big_schema_sdl  # noqa: F401
 

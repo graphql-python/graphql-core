@@ -1,21 +1,20 @@
 from enum import Enum
 from math import isnan, nan
-from typing import cast, Dict
+from typing import Dict, cast
 
 from pytest import mark, raises
 
 from graphql.error import GraphQLError
 from graphql.language import (
-    parse_value,
     EnumTypeDefinitionNode,
     EnumTypeExtensionNode,
     EnumValueNode,
-    Node,
     InputObjectTypeDefinitionNode,
     InputObjectTypeExtensionNode,
     InputValueDefinitionNode,
     InterfaceTypeDefinitionNode,
     InterfaceTypeExtensionNode,
+    Node,
     ObjectTypeDefinitionNode,
     ObjectTypeExtensionNode,
     ScalarTypeDefinitionNode,
@@ -23,15 +22,16 @@ from graphql.language import (
     StringValueNode,
     TypeDefinitionNode,
     TypeExtensionNode,
-    ValueNode,
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
+    ValueNode,
+    parse_value,
 )
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
-    GraphQLEnumValue,
     GraphQLEnumType,
+    GraphQLEnumValue,
     GraphQLField,
     GraphQLInputField,
     GraphQLInputObjectType,
@@ -44,6 +44,7 @@ from graphql.type import (
     GraphQLString,
     GraphQLUnionType,
 )
+
 
 ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})

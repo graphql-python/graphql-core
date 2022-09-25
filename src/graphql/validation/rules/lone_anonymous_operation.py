@@ -4,6 +4,7 @@ from ...error import GraphQLError
 from ...language import DocumentNode, OperationDefinitionNode
 from . import ASTValidationContext, ASTValidationRule
 
+
 __all__ = ["LoneAnonymousOperationRule"]
 
 

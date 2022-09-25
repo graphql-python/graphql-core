@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from .utils import dedent
 
+
 Scope = Dict[str, Any]
 
 
@@ -50,8 +51,8 @@ def describe_introduction():
         intro = get_snippets("intro")
         pip_install = intro.pop(0)
         assert "pip install" in pip_install and "graphql-core" in pip_install
-        pipenv_install = intro.pop(0)
-        assert "pipenv install" in pipenv_install and "graphql-core" in pipenv_install
+        poetry_install = intro.pop(0)
+        assert "poetry install" in poetry_install
         create_schema = intro.pop(0)
         assert "schema = GraphQLSchema(" in create_schema
         scope: Scope = {}
@@ -135,16 +136,13 @@ def describe_usage():
         async_query = queries.pop(0)
         assert "asyncio" in async_query and "graphql_sync" not in async_query
         assert "asyncio.run" in async_query
-        try:  # pragma: no cover
-            from asyncio import run  # noqa: F401
-        except ImportError:  # Python < 3.7
-            assert "ExecutionResult" in expected_result(queries)
-        else:  # pragma: no cover
-            exec(async_query, scope)
-            out, err = capsys.readouterr()
-            assert not err
-            assert "R2-D2" in out
-            assert out == expected_result(queries)
+        from asyncio import run  # noqa: F401
+
+        exec(async_query, scope)
+        out, err = capsys.readouterr()
+        assert not err
+        assert "R2-D2" in out
+        assert out == expected_result(queries)
 
         sync_query = queries.pop(0)
         assert "graphql_sync" in sync_query and "asyncio" not in sync_query

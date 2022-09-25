@@ -1,11 +1,8 @@
-from asyncio import Future, Queue, ensure_future, sleep
+from __future__ import annotations  # Python < 3.10
+
+from asyncio import Future, Queue, ensure_future, get_running_loop, sleep
 from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
-
-try:
-    from asyncio import get_running_loop
-except ImportError:
-    from asyncio import get_event_loop as get_running_loop  # Python < 3.7
 
 
 __all__ = ["SimplePubSub", "SimplePubSubIterator"]
@@ -34,7 +31,7 @@ class SimplePubSub:
 
     def get_subscriber(
         self, transform: Optional[Callable] = None
-    ) -> "SimplePubSubIterator":
+    ) -> SimplePubSubIterator:
         return SimplePubSubIterator(self, transform)
 
 
@@ -47,7 +44,7 @@ class SimplePubSubIterator(AsyncIterator):
         self.listening = True
         pubsub.subscribers.add(self.push_value)
 
-    def __aiter__(self) -> "SimplePubSubIterator":
+    def __aiter__(self) -> SimplePubSubIterator:
         return self
 
     async def __anext__(self) -> Any:

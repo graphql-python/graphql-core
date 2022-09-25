@@ -2,15 +2,16 @@ from typing import Any, Dict, Optional, Union
 
 from ...error import GraphQLError
 from ...language import (
-    OperationTypeDefinitionNode,
+    SKIP,
     OperationType,
+    OperationTypeDefinitionNode,
     SchemaDefinitionNode,
     SchemaExtensionNode,
     VisitorAction,
-    SKIP,
 )
 from ...type import GraphQLObjectType
 from . import SDLValidationContext, SDLValidationRule
+
 
 __all__ = ["UniqueOperationTypesRule"]
 

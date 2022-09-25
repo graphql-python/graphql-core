@@ -1,6 +1,7 @@
-from typing import Collection, Optional, List
+from typing import Collection, List, Optional
 
 from .natural_compare import natural_comparison_key
+
 
 __all__ = ["suggestion_list"]
 

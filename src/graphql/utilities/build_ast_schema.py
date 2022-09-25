@@ -1,4 +1,4 @@
-from typing import cast, Union
+from typing import Union, cast
 
 from ..language import DocumentNode, Source, parse
 from ..type import (
@@ -8,6 +8,7 @@ from ..type import (
     specified_directives,
 )
 from .extend_schema import ExtendSchemaImpl
+
 
 __all__ = [
     "build_ast_schema",

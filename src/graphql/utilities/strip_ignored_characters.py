@@ -1,9 +1,10 @@
 from typing import Union, cast
 
 from ..language import Lexer, TokenKind
-from ..language.source import Source, is_source
 from ..language.block_string import print_block_string
 from ..language.lexer import is_punctuator_token_kind
+from ..language.source import Source, is_source
+
 
 __all__ = ["strip_ignored_characters"]
 

@@ -1,7 +1,7 @@
 from math import nan
 from typing import Any, Dict, Optional
 
-from graphql.language import parse_value, FloatValueNode, IntValueNode
+from graphql.language import FloatValueNode, IntValueNode, parse_value
 from graphql.pyutils import Undefined
 from graphql.utilities import value_from_ast_untyped
 

@@ -15,11 +15,11 @@ from ..language import (
     StringValueNode,
     ValueNode,
 )
-from ..pyutils import inspect, is_iterable, Undefined
+from ..pyutils import Undefined, inspect, is_iterable
 from ..type import (
     GraphQLID,
-    GraphQLInputType,
     GraphQLInputObjectType,
+    GraphQLInputType,
     GraphQLList,
     GraphQLNonNull,
     is_enum_type,
@@ -28,6 +28,7 @@ from ..type import (
     is_list_type,
     is_non_null_type,
 )
+
 
 __all__ = ["ast_from_value"]
 

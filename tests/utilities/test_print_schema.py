@@ -1,12 +1,14 @@
-from typing import cast, Any, Dict
+from typing import Any, Dict, cast
 
 from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDirective,
     GraphQLEnumType,
     GraphQLField,
     GraphQLFloat,
+    GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInt,
     GraphQLInterfaceType,
@@ -17,13 +19,11 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
-    GraphQLInputField,
-    GraphQLDirective,
 )
 from graphql.utilities import (
     build_schema,
-    print_schema,
     print_introspection_schema,
+    print_schema,
     print_value,
 )
 

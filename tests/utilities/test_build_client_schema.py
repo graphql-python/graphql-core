@@ -18,8 +18,8 @@ from graphql.type import (
     assert_enum_type,
 )
 from graphql.utilities import (
-    build_schema,
     build_client_schema,
+    build_schema,
     introspection_from_schema,
     print_schema,
 )
@@ -459,7 +459,7 @@ def describe_type_system_build_schema_from_introspection():
             type Query {
               defaultInt(intArg: Int = 30): String
               defaultList(listArg: [Int] = [1, 2, 3]): String
-              defaultObject(objArg: Geo = {lat: 37.485, lon: -122.148}): String
+              defaultObject(objArg: Geo = { lat: 37.485, lon: -122.148 }): String
               defaultNull(intArg: Int = null): String
               noDefault(intArg: Int): String
             }

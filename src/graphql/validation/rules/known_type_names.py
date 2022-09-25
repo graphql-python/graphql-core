@@ -2,16 +2,17 @@ from typing import Any, Collection, List, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
+    NamedTypeNode,
+    Node,
+    TypeDefinitionNode,
     is_type_definition_node,
     is_type_system_definition_node,
     is_type_system_extension_node,
-    Node,
-    NamedTypeNode,
-    TypeDefinitionNode,
 )
-from ...type import introspection_types, specified_scalar_types
 from ...pyutils import did_you_mean, suggestion_list
-from . import ASTValidationRule, ValidationContext, SDLValidationContext
+from ...type import introspection_types, specified_scalar_types
+from . import ASTValidationRule, SDLValidationContext, ValidationContext
+
 
 __all__ = ["KnownTypeNamesRule"]
 

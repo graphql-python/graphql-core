@@ -6,13 +6,13 @@ from pytest import mark
 from graphql.execution import execute
 from graphql.language import parse
 from graphql.type import (
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLField,
-    GraphQLList,
-    GraphQLInterfaceType,
     GraphQLBoolean,
+    GraphQLField,
     GraphQLInt,
+    GraphQLInterfaceType,
+    GraphQLList,
+    GraphQLObjectType,
+    GraphQLSchema,
     GraphQLString,
 )
 

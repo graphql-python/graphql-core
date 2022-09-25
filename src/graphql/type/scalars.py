@@ -2,7 +2,6 @@ from math import isfinite
 from typing import Any, Mapping
 
 from ..error import GraphQLError
-from ..pyutils import inspect
 from ..language.ast import (
     BooleanValueNode,
     FloatValueNode,
@@ -11,7 +10,9 @@ from ..language.ast import (
     ValueNode,
 )
 from ..language.printer import print_ast
+from ..pyutils import inspect
 from .definition import GraphQLNamedType, GraphQLScalarType
+
 
 __all__ = [
     "is_specified_scalar_type",

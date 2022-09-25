@@ -2,8 +2,8 @@ from collections import ChainMap
 from typing import Any
 
 from graphql.error import GraphQLError
-from graphql.execution import execute_sync, ExecutionResult
-from graphql.language import parse, SourceLocation
+from graphql.execution import ExecutionResult, execute_sync
+from graphql.language import SourceLocation, parse
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,

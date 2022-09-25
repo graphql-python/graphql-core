@@ -4,6 +4,7 @@ from ...error import GraphQLError
 from ...language import NameNode, ObjectFieldNode
 from . import ASTValidationContext, ASTValidationRule
 
+
 __all__ = ["UniqueInputFieldNamesRule"]
 
 

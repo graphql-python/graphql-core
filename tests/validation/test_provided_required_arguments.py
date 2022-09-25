@@ -6,7 +6,8 @@ from graphql.validation.rules.provided_required_arguments import (
     ProvidedRequiredArgumentsOnDirectivesRule,
 )
 
-from .harness import assert_validation_errors, assert_sdl_validation_errors
+from .harness import assert_sdl_validation_errors, assert_validation_errors
+
 
 assert_errors = partial(assert_validation_errors, ProvidedRequiredArgumentsRule)
 

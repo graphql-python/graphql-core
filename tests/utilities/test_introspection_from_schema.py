@@ -1,9 +1,9 @@
-from graphql.type import GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLString
+from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.utilities import (
-    build_client_schema,
-    print_schema,
-    introspection_from_schema,
     IntrospectionQuery,
+    build_client_schema,
+    introspection_from_schema,
+    print_schema,
 )
 
 from ..utils import dedent

@@ -2,7 +2,11 @@ from typing import Any
 
 from .location import SourceLocation
 
+
 __all__ = ["Source", "is_source"]
+
+DEFAULT_NAME = "GraphQL request"
+DEFAULT_SOURCE_LOCATION = SourceLocation(1, 1)
 
 
 class Source:
@@ -14,8 +18,8 @@ class Source:
     def __init__(
         self,
         body: str,
-        name: str = "GraphQL request",
-        location_offset: SourceLocation = SourceLocation(1, 1),
+        name: str = DEFAULT_NAME,
+        location_offset: SourceLocation = DEFAULT_SOURCE_LOCATION,
     ) -> None:
         """Initialize source input.
 

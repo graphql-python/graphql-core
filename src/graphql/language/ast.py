@@ -1,10 +1,13 @@
+from __future__ import annotations  # Python < 3.10
+
 from copy import copy, deepcopy
 from enum import Enum
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from ..pyutils import camel_to_snake
 from .source import Source
 from .token_kind import TokenKind
-from ..pyutils import camel_to_snake
+
 
 __all__ = [
     "Location",
@@ -137,7 +140,7 @@ class Token:
             (self.kind, self.start, self.end, self.line, self.column, self.value)
         )
 
-    def __copy__(self) -> "Token":
+    def __copy__(self) -> Token:
         """Create a shallow copy of the token"""
         token = self.__class__(
             self.kind,
@@ -150,7 +153,7 @@ class Token:
         token.prev = self.prev
         return token
 
-    def __deepcopy__(self, memo: Dict) -> "Token":
+    def __deepcopy__(self, memo: Dict) -> Token:
         """Allow only shallow copies to avoid recursion."""
         return copy(self)
 
@@ -360,11 +363,11 @@ class Node:
             del self._hash
         super().__setattr__(key, value)
 
-    def __copy__(self) -> "Node":
+    def __copy__(self) -> Node:
         """Create a shallow copy of the node."""
         return self.__class__(**{key: getattr(self, key) for key in self.keys})
 
-    def __deepcopy__(self, memo: Dict) -> "Node":
+    def __deepcopy__(self, memo: Dict) -> Node:
         """Create a deep copy of the node"""
         # noinspection PyArgumentList
         return self.__class__(

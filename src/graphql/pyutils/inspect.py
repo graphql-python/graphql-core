@@ -1,17 +1,18 @@
 from inspect import (
-    isclass,
-    ismethod,
-    isfunction,
-    isgeneratorfunction,
-    isgenerator,
-    iscoroutinefunction,
-    iscoroutine,
-    isasyncgenfunction,
     isasyncgen,
+    isasyncgenfunction,
+    isclass,
+    iscoroutine,
+    iscoroutinefunction,
+    isfunction,
+    isgenerator,
+    isgeneratorfunction,
+    ismethod,
 )
 from typing import Any, List
 
 from .undefined import Undefined
+
 
 __all__ = ["inspect"]
 

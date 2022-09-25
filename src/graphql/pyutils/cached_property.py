@@ -1,4 +1,5 @@
-from typing import Any, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
+
 
 if TYPE_CHECKING:
     standard_cached_property = None
@@ -21,7 +22,7 @@ else:
         """
 
         def __init__(self, func: Callable) -> None:
-            self.__doc__ = getattr(func, "__doc__")
+            self.__doc__ = func.__doc__
             self.func = func
 
         def __get__(self, obj: object, cls: type) -> Any:

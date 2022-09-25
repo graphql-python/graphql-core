@@ -6,6 +6,7 @@ from ...language import OperationDefinitionNode
 from ...pyutils import group_by
 from . import ASTValidationRule
 
+
 __all__ = ["UniqueVariableNamesRule"]
 
 

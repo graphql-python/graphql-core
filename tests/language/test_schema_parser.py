@@ -18,8 +18,8 @@ from graphql.language import (
     InterfaceTypeDefinitionNode,
     InterfaceTypeExtensionNode,
     ListTypeNode,
-    NameNode,
     NamedTypeNode,
+    NameNode,
     NonNullTypeNode,
     ObjectTypeDefinitionNode,
     ObjectTypeExtensionNode,
@@ -36,6 +36,7 @@ from graphql.language import (
 )
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
+
 
 Location = Optional[Tuple[int, int]]
 

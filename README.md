@@ -8,17 +8,18 @@ a query language for APIs created by Facebook.
 [![Documentation Status](https://readthedocs.org/projects/graphql-core-3/badge/)](https://graphql-core-3.readthedocs.io)
 ![Test Status](https://github.com/graphql-python/graphql-core/actions/workflows/test.yml/badge.svg)
 ![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
-[![Dependency Updates](https://pyup.io/repos/github/graphql-python/graphql-core/shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core/)
-[![Python 3 Status](https://pyup.io/repos/github/graphql-python/graphql-core/python-3-shield.svg)](https://pyup.io/repos/github/graphql-python/graphql-core/)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
-
-The current version 3.2.1 of GraphQL-core is up-to-date with GraphQL.js version 16.3.0.
 
 An extensive test suite with over 2300 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
 reliable and compatible with GraphQL.js.
 
-Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js. Increases in the major version of GraphQL.js are reflected in the minor version of GraphQL-core instead. This means there can be breaking changes in the API when the minor version changes, and only patch releases are fully backward compatible. Therefore, we recommend something like `=~ 3.2.0` as version specifier when including GraphQL-core as a dependency.
+The current stable version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js version 16.6.0.
+
+You can also try out the latest alpha version 3.3.0a1 of GraphQL-core that is up-to-date with GraphQL.js version 17.0.0a1.
+Please note that this new minor version of GraphQL-core does not support Python 3.7 anymore.
+
+Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js. Changes in the major version of GraphQL.js are reflected in the minor version of GraphQL-core instead. This means there can be breaking changes in the API when the minor version changes, and only patch releases are fully backward compatible. Therefore, we recommend something like `=~ 3.2.0` as version specifier when including GraphQL-core as a dependency.
 
 
 ## Documentation
@@ -50,10 +51,10 @@ GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
     python -m pip install graphql-core
 
-You can also use [pipenv](https://docs.pipenv.org/) for installation in a
+You can also use [poetry](https://github.com/python-poetry/poetry) for installation in a
 virtual environment:
 
-    pipenv install graphql-core
+    poetry install
 
 
 ## Usage

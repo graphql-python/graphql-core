@@ -29,6 +29,7 @@ from ..type import (
     is_union_type,
 )
 
+
 __all__ = ["lexicographic_sort_schema"]
 
 

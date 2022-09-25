@@ -5,8 +5,8 @@ from ..language import (
     DirectiveNode,
     EnumValueDefinitionNode,
     ExecutableDefinitionNode,
-    FieldNode,
     FieldDefinitionNode,
+    FieldNode,
     InputValueDefinitionNode,
     NullValueNode,
     SchemaDefinitionNode,
@@ -17,7 +17,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
-from ..pyutils import inspect, print_path_list, Undefined
+from ..pyutils import Undefined, inspect, print_path_list
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -29,6 +29,7 @@ from ..type import (
 from ..utilities.coerce_input_value import coerce_input_value
 from ..utilities.type_from_ast import type_from_ast
 from ..utilities.value_from_ast import value_from_ast
+
 
 __all__ = ["get_argument_values", "get_directive_values", "get_variable_values"]
 
@@ -124,13 +125,15 @@ def coerce_variable_values(
             path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
         ) -> None:
             invalid_str = inspect(invalid_value)
-            prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
+            prefix = (
+                f"Variable '${var_name}' got invalid value {invalid_str}"  # noqa: B023
+            )
             if path:
-                prefix += f" at '{var_name}{print_path_list(path)}'"
+                prefix += f" at '{var_name}{print_path_list(path)}'"  # noqa: B023
             on_error(
                 GraphQLError(
                     prefix + "; " + error.message,
-                    var_def_node,
+                    var_def_node,  # noqa: B023
                     original_error=error.original_error,
                 )
             )

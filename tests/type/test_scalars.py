@@ -7,11 +7,11 @@ from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
 from graphql.pyutils import Undefined
 from graphql.type import (
-    GraphQLInt,
-    GraphQLFloat,
-    GraphQLString,
     GraphQLBoolean,
+    GraphQLFloat,
     GraphQLID,
+    GraphQLInt,
+    GraphQLString,
 )
 
 
@@ -93,7 +93,7 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises("[1]", "Int cannot represent non-integer value: [1]")
             _parse_literal_raises(
-                "{value: 1}", "Int cannot represent non-integer value: {value: 1}"
+                "{value: 1}", "Int cannot represent non-integer value: { value: 1 }"
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "Int cannot represent non-integer value: ENUM_VALUE"
@@ -246,7 +246,8 @@ def describe_type_system_specified_scalar_types():
                 "[0.1]", "Float cannot represent non numeric value: [0.1]"
             )
             _parse_literal_raises(
-                "{value: 0.1}", "Float cannot represent non numeric value: {value: 0.1}"
+                "{value: 0.1}",
+                "Float cannot represent non numeric value: { value: 0.1 }",
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "Float cannot represent non numeric value: ENUM_VALUE"
@@ -357,7 +358,7 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises(
                 '{value: "foo"}',
-                'String cannot represent a non string value: {value: "foo"}',
+                'String cannot represent a non string value: { value: "foo" }',
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "String cannot represent a non string value: ENUM_VALUE"
@@ -488,11 +489,11 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises(
                 "{value: false}",
-                "Boolean cannot represent a non boolean value: {value: false}",
+                "Boolean cannot represent a non boolean value: { value: false }",
             )
             _parse_literal_raises(
                 "{value: False}",
-                "Boolean cannot represent a non boolean value: {value: False}",
+                "Boolean cannot represent a non boolean value: { value: False }",
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "Boolean cannot represent a non boolean value: ENUM_VALUE"
@@ -614,9 +615,9 @@ def describe_type_system_specified_scalar_types():
                 '["1"]', 'ID cannot represent a non-string and non-integer value: ["1"]'
             )
             _parse_literal_raises(
-                '{value: "1"}',
+                '{ value: "1" }',
                 "ID cannot represent a non-string and non-integer value:"
-                ' {value: "1"}',
+                ' { value: "1" }',
             )
             _parse_literal_raises(
                 "ENUM_VALUE",

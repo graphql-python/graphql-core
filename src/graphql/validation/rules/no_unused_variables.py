@@ -4,6 +4,7 @@ from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
 from . import ValidationContext, ValidationRule
 
+
 __all__ = ["NoUnusedVariablesRule"]
 
 

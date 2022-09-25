@@ -1,4 +1,4 @@
-from graphql.language import print_source_location, Source, SourceLocation
+from graphql.language import Source, SourceLocation, print_source_location
 
 from ..utils import dedent
 

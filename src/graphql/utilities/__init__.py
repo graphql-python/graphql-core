@@ -10,9 +10,6 @@ from .get_introspection_query import get_introspection_query, IntrospectionQuery
 # Get the target Operation from a Document.
 from .get_operation_ast import get_operation_ast
 
-# Get the Type for the target Operation AST.
-from .get_operation_root_type import get_operation_root_type
-
 # Convert a GraphQLSchema to an IntrospectionQuery.
 from .introspection_from_schema import introspection_from_schema
 
@@ -71,9 +68,6 @@ from .strip_ignored_characters import strip_ignored_characters
 # Comparators for types
 from .type_comparators import is_equal_type, is_type_sub_type_of, do_types_overlap
 
-# Assert that a string is a valid GraphQL name.
-from .assert_valid_name import assert_valid_name, is_valid_name_error
-
 # Compare two GraphQLSchemas and detect breaking changes.
 from .find_breaking_changes import (
     BreakingChange,
@@ -92,7 +86,6 @@ __all__ = [
     "IntrospectionQuery",
     "TypeInfo",
     "TypeInfoVisitor",
-    "assert_valid_name",
     "ast_from_value",
     "ast_to_dict",
     "build_ast_schema",
@@ -106,10 +99,8 @@ __all__ = [
     "find_dangerous_changes",
     "get_introspection_query",
     "get_operation_ast",
-    "get_operation_root_type",
     "is_equal_type",
     "is_type_sub_type_of",
-    "is_valid_name_error",
     "introspection_from_schema",
     "lexicographic_sort_schema",
     "print_introspection_schema",

@@ -1,7 +1,7 @@
 import re
+from itertools import cycle
 from typing import Tuple
 
-from itertools import cycle
 
 __all__ = ["natural_comparison_key"]
 

@@ -1,27 +1,21 @@
 from inspect import isawaitable
-from typing import (
-    Any,
-    AsyncIterable,
-    AsyncIterator,
-    Dict,
-    Optional,
-    Union,
-)
+from typing import Any, AsyncIterable, AsyncIterator, Dict, Optional, Union
 
 from ..error import GraphQLError, located_error
 from ..execution.collect_fields import collect_fields
 from ..execution.execute import (
+    ExecutionContext,
+    ExecutionResult,
     assert_valid_execution_arguments,
     execute,
     get_field_def,
-    ExecutionContext,
-    ExecutionResult,
 )
 from ..execution.values import get_argument_values
 from ..language import DocumentNode
 from ..pyutils import Path, inspect
 from ..type import GraphQLFieldResolver, GraphQLSchema
 from .map_async_iterator import MapAsyncIterator
+
 
 __all__ = ["subscribe", "create_source_event_stream"]
 

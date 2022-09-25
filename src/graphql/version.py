@@ -1,12 +1,15 @@
+from __future__ import annotations  # Python < 3.10
+
 import re
 from typing import NamedTuple
+
 
 __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
 
-version = "3.2.1"
+version = "3.3.0a1"
 
-version_js = "16.3.0"
+version_js = "17.0.0a1"
 
 
 _re_version = re.compile(r"(\d+)\.(\d+)\.(\d+)(\D*)(\d*)")
@@ -20,7 +23,7 @@ class VersionInfo(NamedTuple):
     serial: int
 
     @classmethod
-    def from_str(cls, v: str) -> "VersionInfo":
+    def from_str(cls, v: str) -> VersionInfo:
         groups = _re_version.match(v).groups()  # type: ignore
         major, minor, micro = map(int, groups[:3])
         level = (groups[3] or "")[:1]

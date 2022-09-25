@@ -1,7 +1,7 @@
 from functools import partial, reduce
 from inspect import isfunction
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
-from typing import Callable, Iterator, Dict, List, Tuple, Any, Optional
 
 __all__ = ["MiddlewareManager"]
 

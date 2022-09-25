@@ -4,6 +4,7 @@ from graphql.validation import ExecutableDefinitionsRule
 
 from .harness import assert_validation_errors
 
+
 assert_errors = partial(assert_validation_errors, ExecutableDefinitionsRule)
 
 assert_valid = partial(assert_errors, errors=[])

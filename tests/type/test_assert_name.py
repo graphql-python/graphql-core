@@ -1,7 +1,7 @@
 from pytest import mark, raises
 
 from graphql.error import GraphQLError
-from graphql.type import assert_name, assert_enum_value_name
+from graphql.type import assert_enum_value_name, assert_name
 
 
 def describe_assert_name():

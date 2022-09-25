@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from typing import Any, Callable, List, Optional, Union, cast
 
 from ..language import (
@@ -30,21 +32,22 @@ from ..type import (
     GraphQLOutputType,
     GraphQLSchema,
     GraphQLType,
-    is_composite_type,
-    is_input_type,
-    is_output_type,
-    get_named_type,
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
-    is_object_type,
-    is_interface_type,
+    get_named_type,
     get_nullable_type,
-    is_list_type,
-    is_input_object_type,
+    is_composite_type,
     is_enum_type,
+    is_input_object_type,
+    is_input_type,
+    is_interface_type,
+    is_list_type,
+    is_object_type,
+    is_output_type,
 )
 from .type_from_ast import type_from_ast
+
 
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
@@ -298,7 +301,7 @@ def get_field_def(
 class TypeInfoVisitor(Visitor):
     """A visitor which maintains a provided TypeInfo."""
 
-    def __init__(self, type_info: "TypeInfo", visitor: Visitor):
+    def __init__(self, type_info: TypeInfo, visitor: Visitor):
         super().__init__()
         self.type_info = type_info
         self.visitor = visitor

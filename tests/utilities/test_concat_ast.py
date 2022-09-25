@@ -1,4 +1,4 @@
-from graphql.language import parse, print_ast, Source
+from graphql.language import Source, parse, print_ast
 from graphql.utilities import concat_ast
 
 from ..utils import dedent

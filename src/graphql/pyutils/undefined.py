@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+
 __all__ = ["Undefined", "UndefinedType"]
 
 

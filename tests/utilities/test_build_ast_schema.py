@@ -4,24 +4,24 @@ from typing import Union
 from pytest import raises
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
+from graphql.language import DocumentNode, InterfaceTypeDefinitionNode, parse, print_ast
 from graphql.type import (
-    GraphQLDeprecatedDirective,
-    GraphQLIncludeDirective,
-    GraphQLSchema,
-    GraphQLSkipDirective,
-    GraphQLSpecifiedByDirective,
-    GraphQLBoolean,
-    GraphQLFloat,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLString,
     GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLDeprecatedDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLFloat,
+    GraphQLID,
+    GraphQLIncludeDirective,
     GraphQLInputField,
+    GraphQLInt,
     GraphQLNamedType,
+    GraphQLSchema,
+    GraphQLSkipDirective,
+    GraphQLSpecifiedByDirective,
+    GraphQLString,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,

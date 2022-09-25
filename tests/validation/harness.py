@@ -4,8 +4,9 @@ from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.type import GraphQLSchema
 from graphql.utilities import build_schema
-from graphql.validation import ValidationRule, SDLValidationRule
+from graphql.validation import SDLValidationRule, ValidationRule
 from graphql.validation.validate import validate, validate_sdl
+
 
 __all__ = [
     "test_schema",

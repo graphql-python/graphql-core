@@ -7,7 +7,7 @@ from ..language import (
     ValueNode,
     VariableNode,
 )
-from ..pyutils import inspect, Undefined
+from ..pyutils import Undefined, inspect
 from ..type import (
     GraphQLInputObjectType,
     GraphQLInputType,
@@ -19,6 +19,7 @@ from ..type import (
     is_list_type,
     is_non_null_type,
 )
+
 
 __all__ = ["value_from_ast"]
 

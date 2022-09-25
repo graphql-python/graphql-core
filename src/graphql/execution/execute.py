@@ -10,11 +10,12 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Union,
     Tuple,
     Type,
+    Union,
     cast,
 )
+
 
 try:
     from typing import TypedDict
@@ -29,26 +30,21 @@ from ..language import (
     OperationDefinitionNode,
     OperationType,
 )
-from ..pyutils import (
-    inspect,
-    is_awaitable as default_is_awaitable,
-    is_iterable,
-    AwaitableOrValue,
-    Path,
-    Undefined,
-)
+from ..pyutils import AwaitableOrValue, Path, Undefined, inspect
+from ..pyutils import is_awaitable as default_is_awaitable
+from ..pyutils import is_iterable
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
+    GraphQLFieldResolver,
     GraphQLLeafType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLOutputType,
-    GraphQLSchema,
-    GraphQLFieldResolver,
-    GraphQLTypeResolver,
     GraphQLResolveInfo,
+    GraphQLSchema,
+    GraphQLTypeResolver,
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
@@ -59,9 +55,10 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
-from .collect_fields import collect_fields, collect_sub_fields
+from .collect_fields import collect_fields, collect_subfields
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_variable_values
+
 
 __all__ = [
     "assert_valid_execution_arguments",
@@ -717,7 +714,7 @@ class ExecutionContext:
                         error = located_error(
                             raw_error, field_nodes, item_path.as_list()
                         )
-                        self.handle_field_error(error, item_type)
+                        self.handle_field_error(error, item_type)  # noqa: B023
                         return None
 
                 completed_item = await_completed(item, item_path)
@@ -735,7 +732,7 @@ class ExecutionContext:
                                 error = located_error(
                                     raw_error, field_nodes, item_path.as_list()
                                 )
-                                self.handle_field_error(error, item_type)
+                                self.handle_field_error(error, item_type)  # noqa: B023
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)
@@ -951,7 +948,7 @@ class ExecutionContext:
         )
         sub_field_nodes = cache.get(key)
         if sub_field_nodes is None:
-            sub_field_nodes = collect_sub_fields(
+            sub_field_nodes = collect_subfields(
                 self.schema,
                 self.fragments,
                 self.variable_values,

@@ -18,10 +18,6 @@ Get the target Operation from a Document:
 
 .. autofunction:: get_operation_ast
 
-Get the Type for the target Operation AST:
-
-.. autofunction:: get_operation_root_type
-
 Convert a GraphQLSchema to an IntrospectionQuery:
 
 .. autofunction:: introspection_from_schema
@@ -97,11 +93,6 @@ Comparators for types:
 .. autofunction:: is_equal_type
 .. autofunction:: is_type_sub_type_of
 .. autofunction:: do_types_overlap
-
-Assert that a string is a valid GraphQL name:
-
-.. autofunction:: assert_valid_name
-.. autofunction:: is_valid_name_error
 
 Compare two GraphQLSchemas and detect breaking changes:
 

@@ -3,9 +3,26 @@ from typing import Any, List, Union
 
 from pytest import mark, raises
 
-from graphql.language import parse, DirectiveLocation
+from graphql.language import DirectiveLocation, parse
 from graphql.pyutils import inspect
 from graphql.type import (
+    GraphQLArgument,
+    GraphQLDirective,
+    GraphQLEnumType,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLInputType,
+    GraphQLInt,
+    GraphQLInterfaceType,
+    GraphQLList,
+    GraphQLNamedType,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLOutputType,
+    GraphQLSchema,
+    GraphQLString,
+    GraphQLUnionType,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,
@@ -17,27 +34,11 @@ from graphql.type import (
     is_input_type,
     is_output_type,
     validate_schema,
-    GraphQLArgument,
-    GraphQLDirective,
-    GraphQLEnumType,
-    GraphQLField,
-    GraphQLInputField,
-    GraphQLInputType,
-    GraphQLInputObjectType,
-    GraphQLInt,
-    GraphQLInterfaceType,
-    GraphQLList,
-    GraphQLNamedType,
-    GraphQLNonNull,
-    GraphQLObjectType,
-    GraphQLOutputType,
-    GraphQLSchema,
-    GraphQLString,
-    GraphQLUnionType,
 )
 from graphql.utilities import build_schema, extend_schema
 
 from ..utils import dedent
+
 
 SomeSchema = build_schema(
     """
@@ -363,6 +364,12 @@ def describe_type_system_a_schema_must_have_object_root_types():
             input SomeInputObject {
               test: String
             }
+
+            scalar SomeScalar
+
+            enum SomeEnum {
+              ENUM_VALUE
+            }
             """
         )
         schema = extend_schema(
@@ -380,7 +387,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
             parse(
                 """
                 extend schema {
-                  mutation: SomeInputObject
+                  mutation: SomeScalar
                 }
                 """
             ),
@@ -390,7 +397,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
             parse(
                 """
                 extend schema {
-                  subscription: SomeInputObject
+                  subscription: SomeEnum
                 }
                 """
             ),
@@ -403,12 +410,12 @@ def describe_type_system_a_schema_must_have_object_root_types():
             },
             {
                 "message": "Mutation root type must be Object type"
-                " if provided, it cannot be SomeInputObject.",
+                " if provided, it cannot be SomeScalar.",
                 "locations": [(3, 29)],
             },
             {
                 "message": "Subscription root type must be Object type"
-                " if provided, it cannot be SomeInputObject.",
+                " if provided, it cannot be SomeEnum.",
                 "locations": [(3, 33)],
             },
         ]
@@ -444,6 +451,80 @@ def describe_type_system_a_schema_must_have_object_root_types():
             {"message": "Expected directive but got: None."},
             {"message": "Expected directive but got: 'SomeDirective'."},
             {"message": "Expected directive but got: SomeScalar."},
+        ]
+
+
+def describe_type_system_root_types_must_all_be_different_if_provided():
+    def accepts_a_schema_with_different_root_types():
+        schema = build_schema(
+            """
+            type SomeObject1 {
+              field: String
+            }
+
+            type SomeObject2 {
+              field: String
+            }
+
+            type SomeObject3 {
+              field: String
+            }
+
+            schema {
+              query: SomeObject1
+              mutation: SomeObject2
+              subscription: SomeObject3
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def rejects_a_schema_where_the_same_type_is_used_for_multiple_root_types():
+        schema = build_schema(
+            """
+            type SomeObject {
+              field: String
+            }
+
+            type UniqueObject {
+              field: String
+            }
+
+            schema {
+              query: SomeObject
+              mutation: UniqueObject
+              subscription: SomeObject
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "All root types must be different, 'SomeObject' type"
+                " is used as query and subscription root types.",
+                "locations": [(11, 22), (13, 29)],
+            }
+        ]
+
+    def rejects_a_schema_where_the_same_type_is_used_for_all_root_types():
+        schema = build_schema(
+            """
+            type SomeObject {
+              field: String
+            }
+
+            schema {
+              query: SomeObject
+              mutation: SomeObject
+              subscription: SomeObject
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "All root types must be different, 'SomeObject' type"
+                " is used as query, mutation, and subscription root types.",
+                "locations": [(7, 22), (8, 25), (9, 29)],
+            }
         ]
 
 

@@ -7,6 +7,7 @@ demo.
 
 from typing import Awaitable, Collection, Dict, Iterator, Optional
 
+
 __all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_backstory"]
 
 # These are classes which correspond to the schema.

@@ -1,6 +1,7 @@
-from typing import Callable, Dict, List, Optional, Union, TypeVar, cast
 from functools import partial
+from typing import Callable, Dict, List, Optional, TypeVar, Union, cast
 
+from ..error import GraphQLError, GraphQLSyntaxError
 from .ast import (
     ArgumentNode,
     BooleanValueNode,
@@ -24,14 +25,14 @@ from .ast import (
     InputObjectTypeDefinitionNode,
     InputObjectTypeExtensionNode,
     InputValueDefinitionNode,
-    IntValueNode,
     InterfaceTypeDefinitionNode,
     InterfaceTypeExtensionNode,
+    IntValueNode,
     ListTypeNode,
     ListValueNode,
     Location,
-    NameNode,
     NamedTypeNode,
+    NameNode,
     NonNullTypeNode,
     NullValueNode,
     ObjectFieldNode,
@@ -48,6 +49,7 @@ from .ast import (
     SelectionNode,
     SelectionSetNode,
     StringValueNode,
+    Token,
     TypeNode,
     TypeSystemExtensionNode,
     UnionTypeDefinitionNode,
@@ -57,11 +59,10 @@ from .ast import (
     VariableNode,
 )
 from .directive_locations import DirectiveLocation
-from .ast import Token
 from .lexer import Lexer, is_punctuator_token_kind
 from .source import Source, is_source
 from .token_kind import TokenKind
-from ..error import GraphQLError, GraphQLSyntaxError
+
 
 __all__ = ["parse", "parse_type", "parse_value", "parse_const_value"]
 
@@ -191,7 +192,7 @@ class Parser:
     """
 
     _lexer: Lexer
-    _no_Location: bool
+    _no_location: bool
     _allow_legacy_fragment_variables: bool
 
     def __init__(

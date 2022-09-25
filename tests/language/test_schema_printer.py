@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from pytest import raises
 
-from graphql.language import ScalarTypeDefinitionNode, NameNode, print_ast, parse
+from graphql.language import NameNode, ScalarTypeDefinitionNode, parse, print_ast
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 from ..utils import dedent
@@ -56,7 +56,7 @@ def describe_printer_sdl_document():
               three(argument: InputType, other: String): Int
               four(argument: String = "string"): String
               five(argument: [String] = ["string", "string"]): String
-              six(argument: InputType = {key: "value"}): Type
+              six(argument: InputType = { key: "value" }): Type
               seven(argument: Int = null): Type
             }
 

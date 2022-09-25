@@ -30,6 +30,7 @@ from ...utilities import type_from_ast
 from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
+
 MYPY = False
 
 __all__ = ["OverlappingFieldsCanBeMergedRule"]

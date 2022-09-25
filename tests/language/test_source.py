@@ -1,6 +1,5 @@
 import weakref
-
-from typing import cast, Tuple
+from typing import Tuple, cast
 
 from pytest import raises
 

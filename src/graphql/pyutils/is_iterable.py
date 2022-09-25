@@ -1,18 +1,17 @@
-from typing import (
-    Any,
-    ByteString,
-    Collection,
-    Iterable,
-    Mapping,
-    Text,
-    ValuesView,
-)
+from array import array
+from typing import Any, ByteString, Collection, Iterable, Mapping, Text, ValuesView
+
 
 __all__ = ["is_collection", "is_iterable"]
 
-collection_types: Any = Collection
+collection_types: Any = [Collection]
 if not isinstance({}.values(), Collection):  # Python < 3.7.2
-    collection_types = (Collection, ValuesView)
+    collection_types.append(ValuesView)
+if not isinstance(array, Collection):  # PyPy issue 3820
+    collection_types.append(array)
+collection_types = (
+    collection_types[0] if len(collection_types) == 1 else tuple(collection_types)
+)
 iterable_types: Any = Iterable
 not_iterable_types: Any = (ByteString, Mapping, Text)
 

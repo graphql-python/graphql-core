@@ -1,23 +1,23 @@
 from copy import copy
 from functools import partial
-from typing import cast, List, Optional
+from typing import List, Optional, cast
 
 from pytest import mark, raises
 
 from graphql.language import (
-    Node,
-    FieldNode,
-    NameNode,
-    SelectionNode,
-    SelectionSetNode,
-    parse,
-    visit,
     BREAK,
     REMOVE,
     SKIP,
+    FieldNode,
+    NameNode,
+    Node,
     ParallelVisitor,
+    SelectionNode,
+    SelectionSetNode,
     Visitor,
     VisitorKeyMap,
+    parse,
+    visit,
 )
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
@@ -241,12 +241,6 @@ def describe_visitor():
             visitor.enter,
             visitor.leave,
         )
-
-        # also test deprecated method
-        assert visitor.get_visit_fn("document") == visitor.enter_document
-        assert visitor.get_visit_fn("field") == visitor.enter
-        assert visitor.get_visit_fn("document", True) == visitor.leave_document
-        assert visitor.get_visit_fn("field", True) == visitor.leave
 
     def validates_path_argument():
         ast = parse("{ a }", no_location=True)

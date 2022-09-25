@@ -1,27 +1,27 @@
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-
 from ..error import GraphQLError
 from ..pyutils import (
     Path,
+    Undefined,
     did_you_mean,
     inspect,
     is_iterable,
     print_path_list,
     suggestion_list,
-    Undefined,
 )
 from ..type import (
     GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLList,
+    GraphQLNonNull,
     GraphQLScalarType,
-    is_leaf_type,
     is_input_object_type,
+    is_leaf_type,
     is_list_type,
     is_non_null_type,
-    GraphQLNonNull,
 )
+
 
 __all__ = ["coerce_input_value"]
 

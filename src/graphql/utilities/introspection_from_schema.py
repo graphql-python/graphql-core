@@ -3,7 +3,8 @@ from typing import cast
 from ..error import GraphQLError
 from ..language import parse
 from ..type import GraphQLSchema
-from .get_introspection_query import get_introspection_query, IntrospectionQuery
+from .get_introspection_query import IntrospectionQuery, get_introspection_query
+
 
 __all__ = ["introspection_from_schema"]
 
@@ -34,7 +35,7 @@ def introspection_from_schema(
         )
     )
 
-    from ..execution.execute import execute_sync, ExecutionResult
+    from ..execution.execute import ExecutionResult, execute_sync
 
     result = execute_sync(schema, document)
     if not isinstance(result, ExecutionResult):  # pragma: no cover

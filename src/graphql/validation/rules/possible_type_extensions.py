@@ -15,6 +15,7 @@ from ...type import (
 )
 from . import SDLValidationContext, SDLValidationRule
 
+
 __all__ = ["PossibleTypeExtensionsRule"]
 
 

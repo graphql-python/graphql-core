@@ -3,9 +3,10 @@ from typing import List, NamedTuple, Optional
 from ..error import GraphQLSyntaxError
 from .ast import Token
 from .block_string import dedent_block_string_lines
-from .character_classes import is_digit, is_name_start, is_name_continue
+from .character_classes import is_digit, is_name_continue, is_name_start
 from .source import Source
 from .token_kind import TokenKind
+
 
 __all__ = ["Lexer", "is_punctuator_token_kind"]
 

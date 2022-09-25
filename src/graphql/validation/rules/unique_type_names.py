@@ -1,8 +1,9 @@
 from typing import Any, Dict
 
 from ...error import GraphQLError
-from ...language import NameNode, TypeDefinitionNode, VisitorAction, SKIP
+from ...language import SKIP, NameNode, TypeDefinitionNode, VisitorAction
 from . import SDLValidationContext, SDLValidationRule
+
 
 __all__ = ["UniqueTypeNamesRule"]
 

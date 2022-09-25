@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Mapping
 
+from ..language import DirectiveLocation, print_ast
+from ..pyutils import inspect
 from .definition import (
     GraphQLArgument,
     GraphQLEnumType,
@@ -21,9 +23,8 @@ from .definition import (
     is_scalar_type,
     is_union_type,
 )
-from ..language import DirectiveLocation, print_ast
-from ..pyutils import inspect
 from .scalars import GraphQLBoolean, GraphQLString
+
 
 __all__ = [
     "SchemaMetaFieldDef",

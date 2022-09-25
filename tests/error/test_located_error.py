@@ -1,4 +1,4 @@
-from typing import cast, Any
+from typing import Any, cast
 
 from graphql.error import GraphQLError, located_error
 
@@ -23,3 +23,15 @@ def describe_located_error():
         e = Exception("I am from elasticsearch")
         cast(Any, e).path = "/something/feed/_search"
         assert located_error(e, [], []) is not e
+
+    def handles_lazy_error_messages():
+        class LazyString:
+            def __str__(self) -> str:
+                return "lazy"
+
+        class LazyError(Exception):
+            def __init__(self):
+                self.message = LazyString()
+                super().__init__()
+
+        assert str(located_error(LazyError())) == "lazy"

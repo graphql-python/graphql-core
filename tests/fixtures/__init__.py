@@ -4,6 +4,7 @@ from os.path import dirname, join
 
 from pytest import fixture
 
+
 __all__ = [
     "kitchen_sink_query",
     "kitchen_sink_sdl",

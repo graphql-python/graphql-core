@@ -3,7 +3,8 @@ from typing import Any, Collection, Optional
 from ..language.ast import Node, OperationType
 from .block_string import print_block_string
 from .print_string import print_string
-from .visitor import visit, Visitor
+from .visitor import Visitor, visit
+
 
 __all__ = ["print_ast"]
 
@@ -168,7 +169,7 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_object_value(node: PrintedNode, *_args: Any) -> str:
-        return f"{{{join(node.fields, ', ')}}}"
+        return f"{{ {join(node.fields, ', ')} }}"
 
     @staticmethod
     def leave_object_field(node: PrintedNode, *_args: Any) -> str:

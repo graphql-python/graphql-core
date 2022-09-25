@@ -1,5 +1,6 @@
 from ..error import GraphQLError
-from ..language.character_classes import is_name_start, is_name_continue
+from ..language.character_classes import is_name_continue, is_name_start
+
 
 __all__ = ["assert_name", "assert_enum_value_name"]
 

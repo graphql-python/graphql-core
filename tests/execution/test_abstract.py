@@ -3,7 +3,7 @@ from typing import Any, NamedTuple, Optional
 
 from pytest import mark
 
-from graphql.execution import execute, execute_sync, ExecutionResult
+from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.type import (
     GraphQLBoolean,

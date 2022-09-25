@@ -1,15 +1,16 @@
-from typing import cast, Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
-    DirectiveLocation,
     DirectiveDefinitionNode,
+    DirectiveLocation,
     DirectiveNode,
     Node,
     OperationDefinitionNode,
 )
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
+
 
 __all__ = ["KnownDirectivesRule"]
 

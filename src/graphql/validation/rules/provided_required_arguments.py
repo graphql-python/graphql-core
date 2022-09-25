@@ -1,7 +1,8 @@
-from typing import cast, Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
+    SKIP,
     DirectiveDefinitionNode,
     DirectiveNode,
     FieldNode,
@@ -9,11 +10,11 @@ from ...language import (
     NonNullTypeNode,
     TypeNode,
     VisitorAction,
-    SKIP,
     print_ast,
 )
 from ...type import GraphQLArgument, is_required_argument, is_type, specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
+
 
 __all__ = ["ProvidedRequiredArgumentsRule", "ProvidedRequiredArgumentsOnDirectivesRule"]
 

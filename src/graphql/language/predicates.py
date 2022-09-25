@@ -1,8 +1,8 @@
 from .ast import (
-    Node,
     DefinitionNode,
     ExecutableDefinitionNode,
     ListValueNode,
+    Node,
     ObjectValueNode,
     SchemaExtensionNode,
     SelectionNode,
@@ -13,6 +13,7 @@ from .ast import (
     ValueNode,
     VariableNode,
 )
+
 
 __all__ = [
     "is_definition_node",

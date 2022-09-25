@@ -1,4 +1,4 @@
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 from graphql.execution import execute_sync
 from graphql.language import parse

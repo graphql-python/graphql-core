@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-from ..language import print_ast, StringValueNode
+from ..language import StringValueNode, print_ast
 from ..language.block_string import is_printable_as_block_string
 from ..pyutils import inspect
 from ..type import (
@@ -28,6 +28,7 @@ from ..type import (
     is_union_type,
 )
 from .ast_from_value import ast_from_value
+
 
 __all__ = ["print_schema", "print_introspection_schema", "print_type", "print_value"]
 

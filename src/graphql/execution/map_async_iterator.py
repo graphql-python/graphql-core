@@ -1,8 +1,11 @@
+from __future__ import annotations  # Python < 3.10
+
 from asyncio import CancelledError, Event, Task, ensure_future, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
-from typing import cast, Any, AsyncIterable, Callable, Optional, Set, Type, Union
 from types import TracebackType
+from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union, cast
+
 
 __all__ = ["MapAsyncIterator"]
 
@@ -23,7 +26,7 @@ class MapAsyncIterator:
         self.callback = callback
         self._close_event = Event()
 
-    def __aiter__(self) -> "MapAsyncIterator":
+    def __aiter__(self) -> MapAsyncIterator:
         """Get the iterator object."""
         return self
 

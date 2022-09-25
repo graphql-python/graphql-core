@@ -3,10 +3,11 @@ from typing import Any, Dict, List, Optional, Union
 
 from ..language import DirectiveLocation
 
+
 try:
-    from typing import TypedDict, Literal
+    from typing import Literal, TypedDict
 except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict, Literal  # type: ignore
+    from typing_extensions import Literal, TypedDict  # type: ignore
 
 __all__ = [
     "get_introspection_query",

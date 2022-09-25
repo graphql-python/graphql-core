@@ -10,6 +10,7 @@ from ...language import (
 )
 from . import ValidationRule
 
+
 __all__ = ["SingleFieldSubscriptionsRule"]
 
 

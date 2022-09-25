@@ -14,13 +14,14 @@ from typing import (
 
 from ..pyutils import inspect, snake_to_camel
 from . import ast
+from .ast import QUERY_DOCUMENT_KEYS, Node
 
-from .ast import Node, QUERY_DOCUMENT_KEYS
 
 __all__ = [
     "Visitor",
     "ParallelVisitor",
     "VisitorAction",
+    "VisitorKeyMap",
     "visit",
     "BREAK",
     "SKIP",
@@ -109,7 +110,7 @@ class Visitor:
     def __init_subclass__(cls) -> None:
         """Verify that all defined handlers are valid."""
         super().__init_subclass__()
-        for attr, val in cls.__dict__.items():
+        for attr in cls.__dict__:
             if attr.startswith("_"):
                 continue
             attr_kind = attr.split("_", 1)
@@ -144,17 +145,6 @@ class Visitor:
             enter_leave = EnterLeaveVisitor(enter_fn, leave_fn)
             self.enter_leave_map[kind] = enter_leave
             return enter_leave
-
-    def get_visit_fn(
-        self, kind: str, is_leaving: bool = False
-    ) -> Optional[Callable[..., Optional[VisitorAction]]]:
-        """Get the visit function for the given node kind and direction.
-
-        .. deprecated:: 3.2
-           Please use ``get_enter_leave_for_kind`` instead. Will be removed in v3.3.
-        """
-        enter_leave = self.get_enter_leave_for_kind(kind)
-        return enter_leave.leave if is_leaving else enter_leave.enter
 
 
 class Stack(NamedTuple):
