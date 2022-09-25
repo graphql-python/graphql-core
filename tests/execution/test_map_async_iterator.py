@@ -1,3 +1,4 @@
+import platform
 import sys
 from asyncio import CancelledError, Event, ensure_future, sleep
 
@@ -5,6 +6,8 @@ from pytest import mark, raises
 
 from graphql.execution import MapAsyncIterator
 
+
+is_pypy = platform.python_implementation() == "PyPy"
 
 try:  # pragma: no cover
     anext
@@ -344,6 +347,10 @@ def describe_map_async_iterator():
             with raises(StopAsyncIteration):
                 await anext(doubles)
 
+            # no more exceptions should be thrown
+            if is_pypy:
+                # need to investigate why this is needed with PyPy
+                await doubles.aclose()  # pragma: no cover
             await doubles.athrow(RuntimeError("no more ouch"))
 
             with raises(StopAsyncIteration):
