@@ -1,5 +1,5 @@
 from inspect import isawaitable
-from typing import Any, AsyncIterable, AsyncIterator, Dict, Optional, Union
+from typing import Any, AsyncIterable, AsyncIterator, Dict, Optional, Type, Union
 
 from ..error import GraphQLError, located_error
 from ..execution.collect_fields import collect_fields
@@ -29,6 +29,7 @@ async def subscribe(
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
+    execution_context_class: Optional[Type["ExecutionContext"]] = None,
 ) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -57,6 +58,7 @@ async def subscribe(
         variable_values,
         operation_name,
         subscribe_field_resolver,
+        execution_context_class,
     )
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
@@ -79,6 +81,7 @@ async def subscribe(
             variable_values,
             operation_name,
             field_resolver,
+            execution_context_class=execution_context_class,
         )
         return await result if isawaitable(result) else result
 
@@ -94,6 +97,7 @@ async def create_source_event_stream(
     variable_values: Optional[Dict[str, Any]] = None,
     operation_name: Optional[str] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
+    execution_context_class: Optional[Type["ExecutionContext"]] = None,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source event stream
 
@@ -122,9 +126,12 @@ async def create_source_event_stream(
     # mistake which should throw an early error.
     assert_valid_execution_arguments(schema, document, variable_values)
 
+    if not execution_context_class:
+        execution_context_class = ExecutionContext
+
     # If a valid context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
-    context = ExecutionContext.build(
+    context = execution_context_class.build(
         schema,
         document,
         root_value,

@@ -3,7 +3,12 @@ from typing import Any, Callable, Dict, List
 
 from pytest import mark, raises
 
-from graphql.execution import MapAsyncIterator, create_source_event_stream, subscribe
+from graphql.execution import (
+    create_source_event_stream,
+    subscribe,
+    MapAsyncIterator,
+    ExecutionContext,
+)
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
@@ -892,3 +897,42 @@ def describe_subscription_publish_phase():
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
+
+    @mark.asyncio
+    async def should_work_with_custom_execution_contexts():
+        class CustomExecutionContext(ExecutionContext):
+            def build_resolve_info(self, *args, **kwargs):
+                resolve_info = super().build_resolve_info(*args, **kwargs)
+                resolve_info.context['foo'] = 'bar'
+                return resolve_info
+
+        async def generate_messages(_obj, info):
+            yield info.context['foo']
+
+        def resolve_message(message, _info):
+            return message
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=resolve_message,
+                        subscribe=generate_messages,
+                    )
+                },
+            ),
+        )
+
+        document = parse("subscription { newMessage }")
+        subscription = await subscribe(
+            schema,
+            document,
+            context_value={},
+            execution_context_class=CustomExecutionContext
+        )
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == ({"newMessage": "bar"}, None)
