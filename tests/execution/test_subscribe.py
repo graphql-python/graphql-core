@@ -3,12 +3,7 @@ from typing import Any, Callable, Dict, List
 
 from pytest import mark, raises
 
-from graphql.execution import (
-    ExecutionContext,
-    MapAsyncIterator,
-    create_source_event_stream,
-    subscribe,
-)
+from graphql.execution import MapAsyncIterator, create_source_event_stream, subscribe
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
@@ -211,35 +206,6 @@ def describe_subscription_initialization_phase():
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
-
-        await subscription.aclose()
-
-    @mark.asyncio
-    async def uses_a_custom_default_subscribe_field_resolver():
-        schema = GraphQLSchema(
-            query=DummyQueryType,
-            subscription=GraphQLObjectType(
-                "Subscription", {"foo": GraphQLField(GraphQLString)}
-            ),
-        )
-
-        class Root:
-            @staticmethod
-            async def custom_foo():
-                yield {"foo": "FooValue"}
-
-        subscription = await subscribe(
-            schema,
-            document=parse("subscription { foo }"),
-            root_value=Root(),
-            subscribe_field_resolver=lambda root, _info: root.custom_foo(),
-        )
-        assert isinstance(subscription, MapAsyncIterator)
-
-        assert await anext(subscription) == (
-            {"foo": "FooValue"},
-            None,
-        )
 
         await subscription.aclose()
 
@@ -897,42 +863,3 @@ def describe_subscription_publish_phase():
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
-
-    @mark.asyncio
-    async def should_work_with_custom_execution_contexts():
-        class CustomExecutionContext(ExecutionContext):
-            def build_resolve_info(self, *args, **kwargs):
-                resolve_info = super().build_resolve_info(*args, **kwargs)
-                resolve_info.context["foo"] = "bar"
-                return resolve_info
-
-        async def generate_messages(_obj, info):
-            yield info.context["foo"]
-
-        def resolve_message(message, _info):
-            return message
-
-        schema = GraphQLSchema(
-            query=QueryType,
-            subscription=GraphQLObjectType(
-                "Subscription",
-                {
-                    "newMessage": GraphQLField(
-                        GraphQLString,
-                        resolve=resolve_message,
-                        subscribe=generate_messages,
-                    )
-                },
-            ),
-        )
-
-        document = parse("subscription { newMessage }")
-        subscription = await subscribe(
-            schema,
-            document,
-            context_value={},
-            execution_context_class=CustomExecutionContext,
-        )
-        assert isinstance(subscription, MapAsyncIterator)
-
-        assert await anext(subscription) == ({"newMessage": "bar"}, None)
