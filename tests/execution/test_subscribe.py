@@ -4,10 +4,10 @@ from typing import Any, Callable, Dict, List
 from pytest import mark, raises
 
 from graphql.execution import (
+    ExecutionContext,
+    MapAsyncIterator,
     create_source_event_stream,
     subscribe,
-    MapAsyncIterator,
-    ExecutionContext,
 )
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
@@ -903,11 +903,11 @@ def describe_subscription_publish_phase():
         class CustomExecutionContext(ExecutionContext):
             def build_resolve_info(self, *args, **kwargs):
                 resolve_info = super().build_resolve_info(*args, **kwargs)
-                resolve_info.context['foo'] = 'bar'
+                resolve_info.context["foo"] = "bar"
                 return resolve_info
 
         async def generate_messages(_obj, info):
-            yield info.context['foo']
+            yield info.context["foo"]
 
         def resolve_message(message, _info):
             return message
@@ -931,7 +931,7 @@ def describe_subscription_publish_phase():
             schema,
             document,
             context_value={},
-            execution_context_class=CustomExecutionContext
+            execution_context_class=CustomExecutionContext,
         )
         assert isinstance(subscription, MapAsyncIterator)
 
