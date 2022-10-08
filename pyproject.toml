@@ -60,7 +60,7 @@ tox = "^3.26"
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-black = "22.8.0"
+black = "22.10.0"
 flake8 = "^5.0"
 flake8-bandit = "^4.1"
 flake8-bugbear = "22.9.23"
