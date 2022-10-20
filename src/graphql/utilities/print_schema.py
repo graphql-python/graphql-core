@@ -180,7 +180,7 @@ def print_enum(type_: GraphQLEnumType) -> str:
         print_description(value, "  ", not i)
         + f"  {name}"
         + print_deprecated(value.deprecation_reason)
-        for i, (name, value) in enumerate(type_.values.items())
+        for i, (name, value) in enumerate(sorted(type_.values.items(), key=lambda x: x[0]))
     ]
     return print_description(type_) + f"enum {type_.name}" + print_block(values)
 
