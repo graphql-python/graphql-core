@@ -37,6 +37,7 @@ from graphql.type import (
 from graphql.utilities import build_ast_schema, build_schema, print_schema, print_type
 
 from ..fixtures import big_schema_sdl  # noqa: F401
+from ..star_wars_schema import star_wars_schema
 from ..utils import dedent, timeout_factor
 
 
@@ -1188,7 +1189,50 @@ def describe_schema_builder():
             build_ast_schema({})  # type: ignore
         assert str(exc_info.value) == "Must provide valid Document AST."
 
-    def describe_deepcopy_and_pickle():
+    def describe_deepcopy_and_pickle():  # pragma: no cover
+        star_wars_sdl = print_schema(star_wars_schema)
+
+        def can_deep_copy_star_wars_schema():
+            # create a schema from the star wars SDL
+            schema = build_schema(star_wars_sdl, assume_valid_sdl=True)
+            # create a deepcopy of the schema
+            copied = deepcopy(schema)
+            # check that printing the copied schema gives the same SDL
+            assert print_schema(copied) == star_wars_sdl
+
+        def can_pickle_and_unpickle_star_wars_schema():
+            # create a schema from the star wars SDL
+            schema = build_schema(star_wars_sdl, assume_valid_sdl=True)
+            # check that the schema can be pickled
+            # (particularly, there should be no recursion error,
+            # or errors because of trying to pickle lambdas or local functions)
+            dumped = pickle.dumps(schema)
+
+            # check that the pickle size is reasonable
+            assert len(dumped) < 25 * len(star_wars_sdl)
+            loaded = pickle.loads(dumped)
+
+            # check that printing the unpickled schema gives the same SDL
+            assert print_schema(loaded) == star_wars_sdl
+
+            # check that pickling again creates the same result
+            dumped = pickle.dumps(schema)
+            assert len(dumped) < 25 * len(star_wars_sdl)
+            loaded = pickle.loads(dumped)
+            assert print_schema(loaded) == star_wars_sdl
+
+        def can_deep_copy_pickled_star_wars_schema():
+            # create a schema from the star wars SDL
+            schema = build_schema(star_wars_sdl, assume_valid_sdl=True)
+            # pickle and unpickle the schema
+            loaded = pickle.loads(pickle.dumps(schema))
+            # create a deepcopy of the unpickled schema
+            copied = deepcopy(loaded)
+            # check that printing the copied schema gives the same SDL
+            assert print_schema(copied) == star_wars_sdl
+
+    @mark.slow
+    def describe_deepcopy_and_pickle_big():  # pragma: no cover
         @mark.timeout(20 * timeout_factor)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811
             # use our printing conventions

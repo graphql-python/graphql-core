@@ -1,3 +1,4 @@
+import pickle
 from enum import Enum
 from math import isnan, nan
 from typing import Dict, cast
@@ -260,6 +261,17 @@ def describe_type_system_scalars():
             "SomeScalar extension AST nodes must be specified"
             " as a collection of ScalarTypeExtensionNode instances."
         )
+
+    def pickles_a_custom_scalar_type():
+        foo_type = GraphQLScalarType("Foo")
+        cycled_foo_type = pickle.loads(pickle.dumps(foo_type))
+        assert cycled_foo_type.name == foo_type.name
+        assert cycled_foo_type is not foo_type
+
+    def pickles_a_specified_scalar_type():
+        cycled_int_type = pickle.loads(pickle.dumps(GraphQLInt))
+        assert cycled_int_type.name == "Int"
+        assert cycled_int_type is GraphQLInt
 
 
 def describe_type_system_fields():
