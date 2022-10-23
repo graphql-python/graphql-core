@@ -1188,7 +1188,6 @@ def describe_schema_builder():
             build_ast_schema({})  # type: ignore
         assert str(exc_info.value) == "Must provide valid Document AST."
 
-    @mark.slow
     def describe_deepcopy_and_pickle():
         @mark.timeout(20 * timeout_factor)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811
