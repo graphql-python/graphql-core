@@ -134,11 +134,15 @@ def build_client_schema(
     def build_scalar_def(
         scalar_introspection: IntrospectionScalarType,
     ) -> GraphQLScalarType:
-        return GraphQLScalarType(
-            name=scalar_introspection["name"],
-            description=scalar_introspection.get("description"),
-            specified_by_url=scalar_introspection.get("specifiedByURL"),
-        )
+        name = scalar_introspection["name"]
+        try:
+            return GraphQLScalarType.specified_types[name]
+        except KeyError:
+            return GraphQLScalarType(
+                name=name,
+                description=scalar_introspection.get("description"),
+                specified_by_url=scalar_introspection.get("specifiedByURL"),
+            )
 
     def build_implementations_list(
         implementing_introspection: Union[

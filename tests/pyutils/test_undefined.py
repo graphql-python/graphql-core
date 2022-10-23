@@ -1,3 +1,7 @@
+import pickle
+
+from pytest import warns
+
 from graphql.pyutils import Undefined, UndefinedType
 
 
@@ -27,7 +31,12 @@ def describe_Undefined():
         assert Undefined != false_object
         assert not Undefined == false_object
 
+    def cannot_be_redefined():
+        with warns(RuntimeWarning, match="Redefinition of 'Undefined'"):
+            redefined_undefined = UndefinedType()
+        assert redefined_undefined is Undefined
 
-def describe_UndefinedType():
-    def is_singleton():
-        assert Undefined is UndefinedType()
+    def can_be_pickled():
+        pickled_undefined = pickle.dumps(Undefined)
+        unpickled_undefined = pickle.loads(pickled_undefined)
+        assert unpickled_undefined is Undefined

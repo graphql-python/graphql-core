@@ -258,19 +258,10 @@ class GraphQLSchema:
                     " is missing a name.",
                 )
             if type_name in type_map:
-                from ..type import specified_scalar_types
-
-                if (
-                    type_name in specified_scalar_types
-                    and type_map[type_name] is not specified_scalar_types[type_name]
-                ):
-                    # allow replacing a copy of a specified scalar type
-                    named_type = specified_scalar_types[type_name]
-                else:
-                    raise TypeError(
-                        "Schema must contain uniquely named types"
-                        f" but contains multiple types named '{type_name}'."
-                    )
+                raise TypeError(
+                    "Schema must contain uniquely named types"
+                    f" but contains multiple types named '{type_name}'."
+                )
 
             type_map[type_name] = named_type
 

@@ -6,7 +6,7 @@ from graphql.language.block_string import (
     print_block_string,
 )
 
-from ..utils import dedent, gen_fuzz_strings
+from ..utils import dedent, gen_fuzz_strings, timeout_factor
 
 
 def lex_value(s: str) -> str:
@@ -42,7 +42,7 @@ def assert_non_printable_block_string(test_value: str) -> None:
 
 def describe_print_block_string():
     @mark.slow
-    @mark.timeout(20)
+    @mark.timeout(80 * timeout_factor)
     def correctly_print_random_strings():
         # Testing with length >7 is taking exponentially more time. However, it is
         # highly recommended testing with increased limit if you make any change.

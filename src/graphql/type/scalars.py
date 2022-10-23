@@ -320,3 +320,7 @@ specified_scalar_types: Mapping[str, GraphQLScalarType] = {
 def is_specified_scalar_type(type_: GraphQLNamedType) -> bool:
     """Check whether the given named GraphQL type is a specified scalar type."""
     return type_.name in specified_scalar_types
+
+
+# store the specified instances as class attribute to avoid redefinition
+GraphQLScalarType.specified_types = specified_scalar_types
