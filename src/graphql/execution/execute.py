@@ -210,9 +210,9 @@ class ExecutionContext:
         self.context_value = context_value
         self.operation = operation
         self.variable_values = variable_values
-        self.field_resolver = field_resolver  # type: ignore
-        self.type_resolver = type_resolver  # type: ignore
-        self.subscribe_field_resolver = subscribe_field_resolver  # type: ignore
+        self.field_resolver = field_resolver
+        self.type_resolver = type_resolver
+        self.subscribe_field_resolver = subscribe_field_resolver
         self.errors = errors
         self.middleware_manager = middleware_manager
         if is_awaitable:
@@ -790,7 +790,7 @@ class ExecutionContext:
         that value, then complete the value for that type.
         """
         resolve_type_fn = return_type.resolve_type or self.type_resolver
-        runtime_type = resolve_type_fn(result, info, return_type)  # type: ignore
+        runtime_type = resolve_type_fn(result, info, return_type)
 
         if self.is_awaitable(runtime_type):
             runtime_type = cast(Awaitable, runtime_type)
