@@ -136,7 +136,7 @@ def build_client_schema(
     ) -> GraphQLScalarType:
         name = scalar_introspection["name"]
         try:
-            return GraphQLScalarType.specified_types[name]
+            return cast(GraphQLScalarType, GraphQLScalarType.reserved_types[name])
         except KeyError:
             return GraphQLScalarType(
                 name=name,
@@ -165,12 +165,16 @@ def build_client_schema(
     def build_object_def(
         object_introspection: IntrospectionObjectType,
     ) -> GraphQLObjectType:
-        return GraphQLObjectType(
-            name=object_introspection["name"],
-            description=object_introspection.get("description"),
-            interfaces=lambda: build_implementations_list(object_introspection),
-            fields=lambda: build_field_def_map(object_introspection),
-        )
+        name = object_introspection["name"]
+        try:
+            return cast(GraphQLObjectType, GraphQLObjectType.reserved_types[name])
+        except KeyError:
+            return GraphQLObjectType(
+                name=name,
+                description=object_introspection.get("description"),
+                interfaces=lambda: build_implementations_list(object_introspection),
+                fields=lambda: build_field_def_map(object_introspection),
+            )
 
     def build_interface_def(
         interface_introspection: IntrospectionInterfaceType,
@@ -204,18 +208,22 @@ def build_client_schema(
                 "Introspection result missing enumValues:"
                 f" {inspect(enum_introspection)}."
             )
-        return GraphQLEnumType(
-            name=enum_introspection["name"],
-            description=enum_introspection.get("description"),
-            values={
-                value_introspect["name"]: GraphQLEnumValue(
-                    value=value_introspect["name"],
-                    description=value_introspect.get("description"),
-                    deprecation_reason=value_introspect.get("deprecationReason"),
-                )
-                for value_introspect in enum_introspection["enumValues"]
-            },
-        )
+        name = enum_introspection["name"]
+        try:
+            return cast(GraphQLEnumType, GraphQLEnumType.reserved_types[name])
+        except KeyError:
+            return GraphQLEnumType(
+                name=name,
+                description=enum_introspection.get("description"),
+                values={
+                    value_introspect["name"]: GraphQLEnumValue(
+                        value=value_introspect["name"],
+                        description=value_introspect.get("description"),
+                        deprecation_reason=value_introspect.get("deprecationReason"),
+                    )
+                    for value_introspect in enum_introspection["enumValues"]
+                },
+            )
 
     def build_input_object_def(
         input_object_introspection: IntrospectionInputObjectType,

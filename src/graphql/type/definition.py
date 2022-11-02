@@ -1,6 +1,5 @@
 from __future__ import annotations  # Python < 3.10
 
-import warnings
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -232,6 +231,23 @@ class GraphQLNamedType(GraphQLType):
     ast_node: Optional[TypeDefinitionNode]
     extension_ast_nodes: Tuple[TypeExtensionNode, ...]
 
+    reserved_types: Dict[str, "GraphQLNamedType"] = {}
+
+    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> "GraphQLNamedType":
+        if name in cls.reserved_types:
+            raise TypeError(f"Redefinition of reserved type {name!r}")
+        return super().__new__(cls)
+
+    def __reduce__(self) -> Tuple[Callable, Tuple]:
+        return self._get_instance, (self.name, tuple(self.to_kwargs().items()))
+
+    @classmethod
+    def _get_instance(cls, name: str, args: Tuple) -> "GraphQLNamedType":
+        try:
+            return cls.reserved_types[name]
+        except KeyError:
+            return cls(**dict(args))
+
     def __init__(
         self,
         name: str,
@@ -347,28 +363,6 @@ class GraphQLScalarType(GraphQLNamedType):
     specified_by_url: Optional[str]
     ast_node: Optional[ScalarTypeDefinitionNode]
     extension_ast_nodes: Tuple[ScalarTypeExtensionNode, ...]
-
-    specified_types: Mapping[str, GraphQLScalarType] = {}
-
-    def __new__(cls, name: str, *args: Any, **kwargs: Any) -> "GraphQLScalarType":
-        if name and name in cls.specified_types:
-            warnings.warn(
-                f"Redefinition of specified scalar type {name!r}",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-            return cls.specified_types[name]
-        return super().__new__(cls)
-
-    def __reduce__(self) -> Tuple[Callable, Tuple]:
-        return self._get_instance, (self.name, tuple(self.to_kwargs().items()))
-
-    @classmethod
-    def _get_instance(cls, name: str, args: Tuple) -> "GraphQLScalarType":
-        try:
-            return cls.specified_types[name]
-        except KeyError:
-            return cls(**dict(args))
 
     def __init__(
         self,

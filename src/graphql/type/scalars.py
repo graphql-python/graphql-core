@@ -322,5 +322,5 @@ def is_specified_scalar_type(type_: GraphQLNamedType) -> bool:
     return type_.name in specified_scalar_types
 
 
-# store the specified instances as class attribute to avoid redefinition
-GraphQLScalarType.specified_types = specified_scalar_types
+# register the scalar types to avoid redefinition
+GraphQLNamedType.reserved_types.update(specified_scalar_types)

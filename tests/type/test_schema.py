@@ -20,6 +20,7 @@ from graphql.type import (
     GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
+    GraphQLNamedType,
     GraphQLObjectType,
     GraphQLScalarType,
     GraphQLSchema,
@@ -332,14 +333,14 @@ def describe_type_system_schema():
     def describe_a_schema_must_contain_uniquely_named_types():
         def rejects_a_schema_which_redefines_a_built_in_type():
             # temporarily allow redefinition of the String scalar type
-            specified_types = GraphQLScalarType.specified_types
-            GraphQLScalarType.specified_types = {}
+            reserved_types = GraphQLNamedType.reserved_types
+            GraphQLScalarType.reserved_types = {}
             try:
                 # create a redefined String scalar type
                 FakeString = GraphQLScalarType("String")
             finally:
                 # protect from redefinition again
-                GraphQLScalarType.specified_types = specified_types
+                GraphQLScalarType.reserved_types = reserved_types
 
             QueryType = GraphQLObjectType(
                 "Query",

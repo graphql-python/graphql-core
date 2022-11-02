@@ -684,3 +684,7 @@ introspection_types: Mapping[str, GraphQLNamedType] = {  # treat as read-only
 def is_introspection_type(type_: GraphQLNamedType) -> bool:
     """Check whether the given named GraphQL type is an introspection type."""
     return type_.name in introspection_types
+
+
+# register the introspection types to avoid redefinition
+GraphQLNamedType.reserved_types.update(introspection_types)

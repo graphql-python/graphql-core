@@ -2,7 +2,7 @@ import pickle
 from math import inf, nan, pi
 from typing import Any
 
-from pytest import raises, warns
+from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
@@ -175,11 +175,8 @@ def describe_type_system_specified_scalar_types():
             assert str(exc_info.value) == "Int cannot represent non-integer value: [5]"
 
         def cannot_be_redefined():
-            with warns(
-                RuntimeWarning, match="Redefinition of specified scalar type 'Int'"
-            ):
-                redefined_int = GraphQLScalarType(name="Int")
-            assert redefined_int == GraphQLInt
+            with raises(TypeError, match="Redefinition of reserved type 'Int'"):
+                GraphQLScalarType(name="Int")
 
         def pickles():
             assert pickle.loads(pickle.dumps(GraphQLInt)) is GraphQLInt
@@ -308,11 +305,8 @@ def describe_type_system_specified_scalar_types():
             )
 
         def cannot_be_redefined():
-            with warns(
-                RuntimeWarning, match="Redefinition of specified scalar type 'Float'"
-            ):
-                redefined_float = GraphQLScalarType(name="Float")
-            assert redefined_float == GraphQLFloat
+            with raises(TypeError, match="Redefinition of reserved type 'Float'"):
+                GraphQLScalarType(name="Float")
 
         def pickles():
             assert pickle.loads(pickle.dumps(GraphQLFloat)) is GraphQLFloat
@@ -424,11 +418,8 @@ def describe_type_system_specified_scalar_types():
             )
 
         def cannot_be_redefined():
-            with warns(
-                RuntimeWarning, match="Redefinition of specified scalar type 'String'"
-            ):
-                redefined_string = GraphQLScalarType(name="String")
-            assert redefined_string == GraphQLString
+            with raises(TypeError, match="Redefinition of reserved type 'String'"):
+                GraphQLScalarType(name="String")
 
         def pickles():
             assert pickle.loads(pickle.dumps(GraphQLString)) is GraphQLString
@@ -576,11 +567,8 @@ def describe_type_system_specified_scalar_types():
             )
 
         def cannot_be_redefined():
-            with warns(
-                RuntimeWarning, match="Redefinition of specified scalar type 'Boolean'"
-            ):
-                redefined_boolean = GraphQLScalarType(name="Boolean")
-            assert redefined_boolean == GraphQLBoolean
+            with raises(TypeError, match="Redefinition of reserved type 'Boolean'"):
+                GraphQLScalarType(name="Boolean")
 
         def pickles():
             assert pickle.loads(pickle.dumps(GraphQLBoolean)) is GraphQLBoolean
@@ -707,11 +695,8 @@ def describe_type_system_specified_scalar_types():
             assert str(exc_info.value) == "ID cannot represent value: ['abc']"
 
         def cannot_be_redefined():
-            with warns(
-                RuntimeWarning, match="Redefinition of specified scalar type 'ID'"
-            ):
-                redefined_id = GraphQLScalarType(name="ID")
-            assert redefined_id == GraphQLID
+            with raises(TypeError, match="Redefinition of reserved type 'ID'"):
+                GraphQLScalarType(name="ID")
 
         def pickles():
             assert pickle.loads(pickle.dumps(GraphQLID)) is GraphQLID

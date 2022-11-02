@@ -44,6 +44,7 @@ from graphql.type import (
     GraphQLScalarType,
     GraphQLString,
     GraphQLUnionType,
+    introspection_types,
 )
 
 
@@ -1915,3 +1916,11 @@ def describe_type_system_test_utility_methods():
             repr(GraphQLField(GraphQLList(GraphQLInt)))
             == "<GraphQLField <GraphQLList <GraphQLScalarType 'Int'>>>"
         )
+
+
+def describe_type_system_introspection_types():
+    def cannot_redefine_introspection_types():
+        for name, introspection_type in introspection_types.items():
+            assert introspection_type.name == name
+            with raises(TypeError, match=f"Redefinition of reserved type '{name}'"):
+                introspection_type.__class__(**introspection_type.to_kwargs())
