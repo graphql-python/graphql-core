@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from typing import List, Optional, Union
 
 from graphql.execution import execute_sync
@@ -18,9 +20,9 @@ class Dog:
 
     name: str
     barks: bool
-    mother: Optional["Dog"]
-    father: Optional["Dog"]
-    progeny: List["Dog"]
+    mother: Optional[Dog]
+    father: Optional[Dog]
+    progeny: List[Dog]
 
     def __init__(self, name: str, barks: bool):
         self.name = name
@@ -34,9 +36,9 @@ class Cat:
 
     name: str
     meows: bool
-    mother: Optional["Cat"]
-    father: Optional["Cat"]
-    progeny: List["Cat"]
+    mother: Optional[Cat]
+    father: Optional[Cat]
+    progeny: List[Cat]
 
     def __init__(self, name: str, meows: bool):
         self.name = name
@@ -50,13 +52,13 @@ class Person:
 
     name: str
     pets: Optional[List[Union[Dog, Cat]]]
-    friends: Optional[List[Union[Dog, Cat, "Person"]]]
+    friends: Optional[List[Union[Dog, Cat, Person]]]
 
     def __init__(
         self,
         name: str,
         pets: Optional[List[Union[Dog, Cat]]] = None,
-        friends: Optional[List[Union[Dog, Cat, "Person"]]] = None,
+        friends: Optional[List[Union[Dog, Cat, Person]]] = None,
     ):
         self.name = name
         self.pets = pets

@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 import warnings
 from typing import Any, Optional
 
@@ -8,9 +10,9 @@ __all__ = ["Undefined", "UndefinedType"]
 class UndefinedType(ValueError):
     """Auxiliary class for creating the Undefined singleton."""
 
-    _instance: Optional["UndefinedType"] = None
+    _instance: Optional[UndefinedType] = None
 
-    def __new__(cls) -> "UndefinedType":
+    def __new__(cls) -> UndefinedType:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         else:

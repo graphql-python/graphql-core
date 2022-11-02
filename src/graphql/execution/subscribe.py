@@ -29,7 +29,7 @@ async def subscribe(
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    execution_context_class: Optional[Type["ExecutionContext"]] = None,
+    execution_context_class: Optional[Type[ExecutionContext]] = None,
 ) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -97,7 +97,7 @@ async def create_source_event_stream(
     variable_values: Optional[Dict[str, Any]] = None,
     operation_name: Optional[str] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    execution_context_class: Optional[Type["ExecutionContext"]] = None,
+    execution_context_class: Optional[Type[ExecutionContext]] = None,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source event stream
 

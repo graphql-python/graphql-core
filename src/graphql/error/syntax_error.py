@@ -14,7 +14,7 @@ __all__ = ["GraphQLSyntaxError"]
 class GraphQLSyntaxError(GraphQLError):
     """A GraphQLError representing a syntax error."""
 
-    def __init__(self, source: Source, position: int, description: str) -> None:
+    def __init__(self, source: "Source", position: int, description: str) -> None:
         super().__init__(
             f"Syntax Error: {description}", source=source, positions=[position]
         )

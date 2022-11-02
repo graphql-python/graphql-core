@@ -12,7 +12,7 @@ __all__ = ["located_error"]
 
 def located_error(
     original_error: Exception,
-    nodes: Optional[Union["None", Collection["Node"]]] = None,
+    nodes: Optional[Union[None, Collection["Node"]]] = None,
     path: Optional[Collection[Union[str, int]]] = None,
 ) -> GraphQLError:
     """Located GraphQL Error

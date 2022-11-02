@@ -120,9 +120,12 @@ graphql_modules = {
 # We need to give autodoc a little help in this cases, too:
 graphql_classes = {
     'GraphQLAbstractType': 'type',
+    'GraphQLFieldResolver': 'type',
     'GraphQLObjectType': 'type',
     'GraphQLOutputType': 'type',
     'GraphQLTypeResolver': 'type',
+    'AwaitableOrValue': 'execution',
+    'Middleware': 'execution',
     'Node': 'language',
     'Source': 'language',
     'SourceLocation': 'language'
@@ -135,13 +138,18 @@ enum.Enum
 traceback
 types.TracebackType
 TypeMap
+AwaitableOrValue
 EnterLeaveVisitor
 FormattedSourceLocation
 GraphQLAbstractType
 GraphQLErrorExtensions
+GraphQLFieldResolver
+GraphQLTypeResolver
 GraphQLOutputType
+Middleware
 asyncio.events.AbstractEventLoop
 graphql.execution.map_async_iterator.MapAsyncIterator
+graphql.execution.Middleware
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor
 graphql.type.schema.InterfaceImplementations

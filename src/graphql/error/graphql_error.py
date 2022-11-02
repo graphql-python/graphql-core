@@ -149,7 +149,7 @@ class GraphQLError(Exception):
             positions = [loc.start for loc in node_locations]
         self.positions = positions or None
         if positions and source:
-            locations: Optional[List["SourceLocation"]] = [
+            locations: Optional[List[SourceLocation]] = [
                 source.get_location(pos) for pos in positions
             ]
         else:

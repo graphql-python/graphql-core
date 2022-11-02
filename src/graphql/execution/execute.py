@@ -1,3 +1,5 @@
+from __future__ import annotations  # Python < 3.10
+
 from asyncio import ensure_future, gather
 from collections.abc import Mapping
 from inspect import isawaitable
@@ -238,7 +240,7 @@ class ExecutionContext:
         subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
         middleware: Optional[Middleware] = None,
         is_awaitable: Optional[Callable[[Any], bool]] = None,
-    ) -> Union[List[GraphQLError], "ExecutionContext"]:
+    ) -> Union[List[GraphQLError], ExecutionContext]:
         """Build an execution context
 
         Constructs a ExecutionContext object from the arguments passed to execute, which
@@ -972,7 +974,7 @@ def execute(
     type_resolver: Optional[GraphQLTypeResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type["ExecutionContext"]] = None,
+    execution_context_class: Optional[Type[ExecutionContext]] = None,
     is_awaitable: Optional[Callable[[Any], bool]] = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -1060,7 +1062,7 @@ def execute_sync(
     field_resolver: Optional[GraphQLFieldResolver] = None,
     type_resolver: Optional[GraphQLTypeResolver] = None,
     middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type["ExecutionContext"]] = None,
+    execution_context_class: Optional[Type[ExecutionContext]] = None,
     check_sync: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.

@@ -236,9 +236,9 @@ class GraphQLNamedType(GraphQLType):
     ast_node: Optional[TypeDefinitionNode]
     extension_ast_nodes: Tuple[TypeExtensionNode, ...]
 
-    reserved_types: Dict[str, "GraphQLNamedType"] = {}
+    reserved_types: Dict[str, GraphQLNamedType] = {}
 
-    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> "GraphQLNamedType":
+    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> GraphQLNamedType:
         if name in cls.reserved_types:
             raise TypeError(f"Redefinition of reserved type {name!r}")
         return super().__new__(cls)
@@ -247,7 +247,7 @@ class GraphQLNamedType(GraphQLType):
         return self._get_instance, (self.name, tuple(self.to_kwargs().items()))
 
     @classmethod
-    def _get_instance(cls, name: str, args: Tuple) -> "GraphQLNamedType":
+    def _get_instance(cls, name: str, args: Tuple) -> GraphQLNamedType:
         try:
             return cls.reserved_types[name]
         except KeyError:
@@ -496,8 +496,8 @@ GraphQLArgumentMap = Dict[str, "GraphQLArgument"]
 class GraphQLFieldKwargs(TypedDict, total=False):
     type_: GraphQLOutputType
     args: Optional[GraphQLArgumentMap]
-    resolve: Optional["GraphQLFieldResolver"]
-    subscribe: Optional["GraphQLFieldResolver"]
+    resolve: Optional[GraphQLFieldResolver]
+    subscribe: Optional[GraphQLFieldResolver]
     description: Optional[str]
     deprecation_reason: Optional[str]
     extensions: Dict[str, Any]
@@ -509,8 +509,8 @@ class GraphQLField:
 
     type: GraphQLOutputType
     args: GraphQLArgumentMap
-    resolve: Optional["GraphQLFieldResolver"]
-    subscribe: Optional["GraphQLFieldResolver"]
+    resolve: Optional[GraphQLFieldResolver]
+    subscribe: Optional[GraphQLFieldResolver]
     description: Optional[str]
     deprecation_reason: Optional[str]
     extensions: Dict[str, Any]
@@ -520,8 +520,8 @@ class GraphQLField:
         self,
         type_: GraphQLOutputType,
         args: Optional[GraphQLArgumentMap] = None,
-        resolve: Optional["GraphQLFieldResolver"] = None,
-        subscribe: Optional["GraphQLFieldResolver"] = None,
+        resolve: Optional[GraphQLFieldResolver] = None,
+        subscribe: Optional[GraphQLFieldResolver] = None,
         description: Optional[str] = None,
         deprecation_reason: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
@@ -621,7 +621,7 @@ class GraphQLResolveInfo(NamedTuple):
     return_type: GraphQLOutputType
     parent_type: GraphQLObjectType
     path: Path
-    schema: GraphQLSchema
+    schema: "GraphQLSchema"
     fragments: Dict[str, FragmentDefinitionNode]
     root_value: Any
     operation: OperationDefinitionNode
@@ -742,7 +742,7 @@ def is_required_argument(arg: GraphQLArgument) -> bool:
 class GraphQLObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
 
     fields: GraphQLFieldMap
-    interfaces: Tuple["GraphQLInterfaceType", ...]
+    interfaces: Tuple[GraphQLInterfaceType, ...]
     is_type_of: Optional[GraphQLIsTypeOfFn]
 
 
@@ -782,7 +782,7 @@ class GraphQLObjectType(GraphQLNamedType):
         self,
         name: str,
         fields: ThunkMapping[GraphQLField],
-        interfaces: Optional[ThunkCollection["GraphQLInterfaceType"]] = None,
+        interfaces: Optional[ThunkCollection[GraphQLInterfaceType]] = None,
         is_type_of: Optional[GraphQLIsTypeOfFn] = None,
         extensions: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
@@ -856,10 +856,10 @@ class GraphQLObjectType(GraphQLNamedType):
         }
 
     @cached_property
-    def interfaces(self) -> Tuple["GraphQLInterfaceType", ...]:
+    def interfaces(self) -> Tuple[GraphQLInterfaceType, ...]:
         """Get provided interfaces."""
         try:
-            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
+            interfaces: Collection[GraphQLInterfaceType] = resolve_thunk(
                 self._interfaces  # type: ignore
             )
         except Exception as error:
@@ -889,7 +889,7 @@ def assert_object_type(type_: Any) -> GraphQLObjectType:
 
 class GraphQLInterfaceTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     fields: GraphQLFieldMap
-    interfaces: Tuple["GraphQLInterfaceType", ...]
+    interfaces: Tuple[GraphQLInterfaceType, ...]
     resolve_type: Optional[GraphQLTypeResolver]
 
 
@@ -916,7 +916,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         self,
         name: str,
         fields: ThunkMapping[GraphQLField],
-        interfaces: Optional[ThunkCollection["GraphQLInterfaceType"]] = None,
+        interfaces: Optional[ThunkCollection[GraphQLInterfaceType]] = None,
         resolve_type: Optional[GraphQLTypeResolver] = None,
         description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
@@ -990,10 +990,10 @@ class GraphQLInterfaceType(GraphQLNamedType):
         }
 
     @cached_property
-    def interfaces(self) -> Tuple["GraphQLInterfaceType", ...]:
+    def interfaces(self) -> Tuple[GraphQLInterfaceType, ...]:
         """Get provided interfaces."""
         try:
-            interfaces: Collection["GraphQLInterfaceType"] = resolve_thunk(
+            interfaces: Collection[GraphQLInterfaceType] = resolve_thunk(
                 self._interfaces  # type: ignore
             )
         except Exception as error:
@@ -1421,7 +1421,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        fields: ThunkMapping["GraphQLInputField"],
+        fields: ThunkMapping[GraphQLInputField],
         description: Optional[str] = None,
         out_type: Optional[GraphQLInputFieldOutType] = None,
         extensions: Optional[Dict[str, Any]] = None,

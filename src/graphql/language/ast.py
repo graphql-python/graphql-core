@@ -93,8 +93,8 @@ class Token:
     value: Optional[str]
     # Tokens exist as nodes in a double-linked-list amongst all tokens including
     # ignored tokens. <SOF> is always the first node and <EOF> the last.
-    prev: Optional["Token"]
-    next: Optional["Token"]
+    prev: Optional[Token]
+    next: Optional[Token]
 
     def __init__(
         self,
@@ -413,7 +413,7 @@ class NameNode(Node):
 class DocumentNode(Node):
     __slots__ = ("definitions",)
 
-    definitions: Tuple["DefinitionNode", ...]
+    definitions: Tuple[DefinitionNode, ...]
 
 
 class DefinitionNode(Node):
@@ -424,9 +424,9 @@ class ExecutableDefinitionNode(DefinitionNode):
     __slots__ = "name", "directives", "variable_definitions", "selection_set"
 
     name: Optional[NameNode]
-    directives: Tuple["DirectiveNode", ...]
-    variable_definitions: Tuple["VariableDefinitionNode", ...]
-    selection_set: "SelectionSetNode"
+    directives: Tuple[DirectiveNode, ...]
+    variable_definitions: Tuple[VariableDefinitionNode, ...]
+    selection_set: SelectionSetNode
 
 
 class OperationDefinitionNode(ExecutableDefinitionNode):
@@ -438,22 +438,22 @@ class OperationDefinitionNode(ExecutableDefinitionNode):
 class VariableDefinitionNode(Node):
     __slots__ = "variable", "type", "default_value", "directives"
 
-    variable: "VariableNode"
-    type: "TypeNode"
-    default_value: Optional["ConstValueNode"]
-    directives: Tuple["ConstDirectiveNode", ...]
+    variable: VariableNode
+    type: TypeNode
+    default_value: Optional[ConstValueNode]
+    directives: Tuple[ConstDirectiveNode, ...]
 
 
 class SelectionSetNode(Node):
     __slots__ = ("selections",)
 
-    selections: Tuple["SelectionNode", ...]
+    selections: Tuple[SelectionNode, ...]
 
 
 class SelectionNode(Node):
     __slots__ = ("directives",)
 
-    directives: Tuple["DirectiveNode", ...]
+    directives: Tuple[DirectiveNode, ...]
 
 
 class FieldNode(SelectionNode):
@@ -461,7 +461,7 @@ class FieldNode(SelectionNode):
 
     alias: Optional[NameNode]
     name: NameNode
-    arguments: Tuple["ArgumentNode", ...]
+    arguments: Tuple[ArgumentNode, ...]
     selection_set: Optional[SelectionSetNode]
 
 
@@ -469,12 +469,12 @@ class ArgumentNode(Node):
     __slots__ = "name", "value"
 
     name: NameNode
-    value: "ValueNode"
+    value: ValueNode
 
 
 class ConstArgumentNode(ArgumentNode):
 
-    value: "ConstValueNode"
+    value: ConstValueNode
 
 
 # Fragments
@@ -489,7 +489,7 @@ class FragmentSpreadNode(SelectionNode):
 class InlineFragmentNode(SelectionNode):
     __slots__ = "type_condition", "selection_set"
 
-    type_condition: "NamedTypeNode"
+    type_condition: NamedTypeNode
     selection_set: SelectionSetNode
 
 
@@ -497,7 +497,7 @@ class FragmentDefinitionNode(ExecutableDefinitionNode):
     __slots__ = ("type_condition",)
 
     name: NameNode
-    type_condition: "NamedTypeNode"
+    type_condition: NamedTypeNode
 
 
 # Values
@@ -556,18 +556,18 @@ class ListValueNode(ValueNode):
 
 class ConstListValueNode(ListValueNode):
 
-    values: Tuple["ConstValueNode", ...]
+    values: Tuple[ConstValueNode, ...]
 
 
 class ObjectValueNode(ValueNode):
     __slots__ = ("fields",)
 
-    fields: Tuple["ObjectFieldNode", ...]
+    fields: Tuple[ObjectFieldNode, ...]
 
 
 class ConstObjectValueNode(ObjectValueNode):
 
-    fields: Tuple["ConstObjectFieldNode", ...]
+    fields: Tuple[ConstObjectFieldNode, ...]
 
 
 class ObjectFieldNode(Node):
@@ -579,7 +579,7 @@ class ObjectFieldNode(Node):
 
 class ConstObjectFieldNode(ObjectFieldNode):
 
-    value: "ConstValueNode"
+    value: ConstValueNode
 
 
 ConstValueNode = Union[
@@ -646,7 +646,7 @@ class SchemaDefinitionNode(TypeSystemDefinitionNode):
 
     description: Optional[StringValueNode]
     directives: Tuple[ConstDirectiveNode, ...]
-    operation_types: Tuple["OperationTypeDefinitionNode", ...]
+    operation_types: Tuple[OperationTypeDefinitionNode, ...]
 
 
 class OperationTypeDefinitionNode(Node):
@@ -678,7 +678,7 @@ class ObjectTypeDefinitionNode(TypeDefinitionNode):
 
     interfaces: Tuple[NamedTypeNode, ...]
     directives: Tuple[ConstDirectiveNode, ...]
-    fields: Tuple["FieldDefinitionNode", ...]
+    fields: Tuple[FieldDefinitionNode, ...]
 
 
 class FieldDefinitionNode(DefinitionNode):
@@ -687,7 +687,7 @@ class FieldDefinitionNode(DefinitionNode):
     description: Optional[StringValueNode]
     name: NameNode
     directives: Tuple[ConstDirectiveNode, ...]
-    arguments: Tuple["InputValueDefinitionNode", ...]
+    arguments: Tuple[InputValueDefinitionNode, ...]
     type: TypeNode
 
 
@@ -704,7 +704,7 @@ class InputValueDefinitionNode(DefinitionNode):
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = "fields", "interfaces"
 
-    fields: Tuple["FieldDefinitionNode", ...]
+    fields: Tuple[FieldDefinitionNode, ...]
     directives: Tuple[ConstDirectiveNode, ...]
     interfaces: Tuple[NamedTypeNode, ...]
 
@@ -720,7 +720,7 @@ class EnumTypeDefinitionNode(TypeDefinitionNode):
     __slots__ = ("values",)
 
     directives: Tuple[ConstDirectiveNode, ...]
-    values: Tuple["EnumValueDefinitionNode", ...]
+    values: Tuple[EnumValueDefinitionNode, ...]
 
 
 class EnumValueDefinitionNode(DefinitionNode):
