@@ -48,9 +48,9 @@ typing-extensions = [
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.1"
+pytest = "^7.2"
 pytest-asyncio = ">=0.20,<1"
-pytest-benchmark = "^3.4"
+pytest-benchmark = "^4.0"
 pytest-cov = "^4.0"
 pytest-describe = "^2.0"
 pytest-timeout = "^2.1"
