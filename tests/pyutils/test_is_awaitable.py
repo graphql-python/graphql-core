@@ -1,5 +1,6 @@
 import asyncio
 from inspect import isawaitable
+from sys import version_info as python_version
 
 from pytest import mark
 
@@ -75,8 +76,12 @@ def describe_is_awaitable():
         assert isawaitable(some_coroutine())
         assert is_awaitable(some_coroutine())
 
-    @mark.filterwarnings("ignore::Warning")  # Deprecation and Runtime
-    def recognizes_an_old_style_coroutine():
+    @mark.filterwarnings("ignore::Warning")  # Deprecation and Runtime warnings
+    @mark.skipif(
+        python_version >= (3, 11),
+        reason="Generator-based coroutines not supported any more since Python 3.11",
+    )
+    def recognizes_an_old_style_coroutine():  # pragma: no cover
         @asyncio.coroutine
         def some_old_style_coroutine():
             yield False  # pragma: no cover

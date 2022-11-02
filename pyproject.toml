@@ -19,7 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11"
 ]
 packages = [
     { include = "graphql", from = "src" },
@@ -80,7 +81,7 @@ sphinx_rtd_theme = ">=1,<2"
 exclude_dirs = ["tests"]
 
 [tool.black]
-target-version = ["py37", "py38", "py39", "py310"]
+target-version = ["py37", "py38", "py39", "py310", "py311"]
 
 [tool.coverage.run]
 branch = true
@@ -119,7 +120,7 @@ force_single_line = false
 lines_after_imports = 2
 
 [tool.mypy]
-python_version = 3.9
+python_version = "3.10"
 check_untyped_defs = true
 no_implicit_optional = true
 strict_optional = true
