@@ -1,3 +1,4 @@
+import pickle
 from math import inf, nan, pi
 from typing import Any
 
@@ -11,6 +12,7 @@ from graphql.type import (
     GraphQLFloat,
     GraphQLID,
     GraphQLInt,
+    GraphQLScalarType,
     GraphQLString,
 )
 
@@ -172,6 +174,13 @@ def describe_type_system_specified_scalar_types():
                 serialize([5])
             assert str(exc_info.value) == "Int cannot represent non-integer value: [5]"
 
+        def cannot_be_redefined():
+            with raises(TypeError, match="Redefinition of reserved type 'Int'"):
+                GraphQLScalarType(name="Int")
+
+        def pickles():
+            assert pickle.loads(pickle.dumps(GraphQLInt)) is GraphQLInt
+
     def describe_graphql_float():
         def parse_value():
             _parse_value = GraphQLFloat.parse_value
@@ -295,6 +304,13 @@ def describe_type_system_specified_scalar_types():
                 str(exc_info.value) == "Float cannot represent non numeric value: [5]"
             )
 
+        def cannot_be_redefined():
+            with raises(TypeError, match="Redefinition of reserved type 'Float'"):
+                GraphQLScalarType(name="Float")
+
+        def pickles():
+            assert pickle.loads(pickle.dumps(GraphQLFloat)) is GraphQLFloat
+
     def describe_graphql_string():
         def parse_value():
             _parse_value = GraphQLString.parse_value
@@ -400,6 +416,13 @@ def describe_type_system_specified_scalar_types():
                 str(exc_info.value) == "String cannot represent value:"
                 " {'value_of': 'value_of string'}"
             )
+
+        def cannot_be_redefined():
+            with raises(TypeError, match="Redefinition of reserved type 'String'"):
+                GraphQLScalarType(name="String")
+
+        def pickles():
+            assert pickle.loads(pickle.dumps(GraphQLString)) is GraphQLString
 
     def describe_graphql_boolean():
         def parse_value():
@@ -543,6 +566,13 @@ def describe_type_system_specified_scalar_types():
                 "Boolean cannot represent a non boolean value: {}"
             )
 
+        def cannot_be_redefined():
+            with raises(TypeError, match="Redefinition of reserved type 'Boolean'"):
+                GraphQLScalarType(name="Boolean")
+
+        def pickles():
+            assert pickle.loads(pickle.dumps(GraphQLBoolean)) is GraphQLBoolean
+
     def describe_graphql_id():
         def parse_value():
             _parse_value = GraphQLID.parse_value
@@ -663,3 +693,10 @@ def describe_type_system_specified_scalar_types():
             with raises(GraphQLError) as exc_info:
                 serialize(["abc"])
             assert str(exc_info.value) == "ID cannot represent value: ['abc']"
+
+        def cannot_be_redefined():
+            with raises(TypeError, match="Redefinition of reserved type 'ID'"):
+                GraphQLScalarType(name="ID")
+
+        def pickles():
+            assert pickle.loads(pickle.dumps(GraphQLID)) is GraphQLID

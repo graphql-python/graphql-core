@@ -1,3 +1,5 @@
+import pickle
+from copy import deepcopy
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
@@ -797,19 +799,36 @@ def describe_schema_parser():
     def parses_kitchen_sink_schema(kitchen_sink_sdl):  # noqa: F811
         assert parse(kitchen_sink_sdl)
 
-    def can_pickle_and_unpickle_kitchen_sink_schema_ast(kitchen_sink_sdl):  # noqa: F811
-        import pickle
+    def describe_deepcopy_and_pickle():
+        def can_deep_copy_ast(kitchen_sink_sdl):  # noqa: F811
+            # create a schema AST from the kitchen sink SDL
+            doc = parse(kitchen_sink_sdl)
+            # make a deepcopy of the schema AST
+            copied_doc = deepcopy(doc)
+            # check that the copied AST is equal to the original one
+            assert copied_doc == doc
 
-        # create a schema AST from the kitchen sink SDL
-        doc = parse(kitchen_sink_sdl)
-        # check that the schema AST can be pickled
-        # (particularly, there should be no recursion error)
-        dumped = pickle.dumps(doc)
-        # check that the pickle size is reasonable
-        assert len(dumped) < 50 * len(kitchen_sink_sdl)
-        loaded = pickle.loads(dumped)
-        # check that the un-pickled schema AST is still the same
-        assert loaded == doc
-        # check that pickling again creates the same result
-        dumped_again = pickle.dumps(doc)
-        assert dumped_again == dumped
+        def can_pickle_and_unpickle_ast(kitchen_sink_sdl):  # noqa: F811
+            # create a schema AST from the kitchen sink SDL
+            doc = parse(kitchen_sink_sdl)
+            # check that the schema AST can be pickled
+            # (particularly, there should be no recursion error)
+            dumped = pickle.dumps(doc)
+            # check that the pickle size is reasonable
+            assert len(dumped) < 50 * len(kitchen_sink_sdl)
+            loaded = pickle.loads(dumped)
+            # check that the un-pickled schema AST is still the same
+            assert loaded == doc
+            # check that pickling again creates the same result
+            dumped_again = pickle.dumps(doc)
+            assert dumped_again == dumped
+
+        def can_deep_copy_pickled_ast(kitchen_sink_sdl):  # noqa: F811
+            # create a schema AST from the kitchen sink SDL
+            doc = parse(kitchen_sink_sdl)
+            # pickle and unpickle the schema AST
+            loaded_doc = pickle.loads(pickle.dumps(doc))
+            # make a deepcopy of this
+            copied_doc = deepcopy(loaded_doc)
+            # check that the result is still equal to the original schema AST
+            assert copied_doc == doc

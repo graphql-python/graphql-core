@@ -8,6 +8,7 @@ from .definition import (
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLFieldMap,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
@@ -35,88 +36,105 @@ __all__ = [
 ]
 
 
-__Schema: GraphQLObjectType = GraphQLObjectType(
+class SchemaFields(GraphQLFieldMap):
+    def __new__(cls):
+        return {
+            "description": GraphQLField(GraphQLString, resolve=cls.description),
+            "types": GraphQLField(
+                GraphQLNonNull(GraphQLList(GraphQLNonNull(_Type))),
+                resolve=cls.types,
+                description="A list of all types supported by this server.",
+            ),
+            "queryType": GraphQLField(
+                GraphQLNonNull(_Type),
+                resolve=cls.query_type,
+                description="The type that query operations will be rooted at.",
+            ),
+            "mutationType": GraphQLField(
+                _Type,
+                resolve=cls.mutation_type,
+                description="If this server supports mutation, the type that"
+                " mutation operations will be rooted at.",
+            ),
+            "subscriptionType": GraphQLField(
+                _Type,
+                resolve=cls.subscription_type,
+                description="If this server supports subscription, the type that"
+                " subscription operations will be rooted at.",
+            ),
+            "directives": GraphQLField(
+                GraphQLNonNull(GraphQLList(GraphQLNonNull(_Directive))),
+                resolve=cls.directives,
+                description="A list of all directives supported by this server.",
+            ),
+        }
+
+    @staticmethod
+    def description(schema, _info):
+        return schema.description
+
+    @staticmethod
+    def types(schema, _info):
+        return schema.type_map.values()
+
+    @staticmethod
+    def query_type(schema, _info):
+        return schema.query_type
+
+    @staticmethod
+    def mutation_type(schema, _info):
+        return schema.mutation_type
+
+    @staticmethod
+    def subscription_type(schema, _info):
+        return schema.subscription_type
+
+    @staticmethod
+    def directives(schema, _info):
+        return schema.directives
+
+
+_Schema: GraphQLObjectType = GraphQLObjectType(
     name="__Schema",
     description="A GraphQL Schema defines the capabilities of a GraphQL"
     " server. It exposes all available types and directives"
     " on the server, as well as the entry points for query,"
     " mutation, and subscription operations.",
-    fields=lambda: {
-        "description": GraphQLField(
-            GraphQLString, resolve=lambda schema, _info: schema.description
-        ),
-        "types": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__Type))),
-            resolve=lambda schema, _info: schema.type_map.values(),
-            description="A list of all types supported by this server.",
-        ),
-        "queryType": GraphQLField(
-            GraphQLNonNull(__Type),
-            resolve=lambda schema, _info: schema.query_type,
-            description="The type that query operations will be rooted at.",
-        ),
-        "mutationType": GraphQLField(
-            __Type,
-            resolve=lambda schema, _info: schema.mutation_type,
-            description="If this server supports mutation, the type that"
-            " mutation operations will be rooted at.",
-        ),
-        "subscriptionType": GraphQLField(
-            __Type,
-            resolve=lambda schema, _info: schema.subscription_type,
-            description="If this server support subscription, the type that"
-            " subscription operations will be rooted at.",
-        ),
-        "directives": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__Directive))),
-            resolve=lambda schema, _info: schema.directives,
-            description="A list of all directives supported by this server.",
-        ),
-    },
+    fields=SchemaFields,
 )
 
 
-__Directive: GraphQLObjectType = GraphQLObjectType(
-    name="__Directive",
-    description="A Directive provides a way to describe alternate runtime"
-    " execution and type validation behavior in a GraphQL"
-    " document.\n\nIn some cases, you need to provide options"
-    " to alter GraphQL's execution behavior in ways field"
-    " arguments will not suffice, such as conditionally including"
-    " or skipping a field. Directives provide this by describing"
-    " additional information to the executor.",
-    fields=lambda: {
-        # Note: The fields onOperation, onFragment and onField are deprecated
-        "name": GraphQLField(
-            GraphQLNonNull(GraphQLString),
-            resolve=DirectiveResolvers.name,
-        ),
-        "description": GraphQLField(
-            GraphQLString,
-            resolve=DirectiveResolvers.description,
-        ),
-        "isRepeatable": GraphQLField(
-            GraphQLNonNull(GraphQLBoolean),
-            resolve=DirectiveResolvers.is_repeatable,
-        ),
-        "locations": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__DirectiveLocation))),
-            resolve=DirectiveResolvers.locations,
-        ),
-        "args": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            args={
-                "includeDeprecated": GraphQLArgument(
-                    GraphQLBoolean, default_value=False
-                )
-            },
-            resolve=DirectiveResolvers.args,
-        ),
-    },
-)
+class DirectiveFields(GraphQLFieldMap):
+    def __new__(cls):
+        return {
+            # Note: The fields onOperation, onFragment and onField are deprecated
+            "name": GraphQLField(
+                GraphQLNonNull(GraphQLString),
+                resolve=cls.name,
+            ),
+            "description": GraphQLField(
+                GraphQLString,
+                resolve=cls.description,
+            ),
+            "isRepeatable": GraphQLField(
+                GraphQLNonNull(GraphQLBoolean),
+                resolve=cls.is_repeatable,
+            ),
+            "locations": GraphQLField(
+                GraphQLNonNull(GraphQLList(GraphQLNonNull(_DirectiveLocation))),
+                resolve=cls.locations,
+            ),
+            "args": GraphQLField(
+                GraphQLNonNull(GraphQLList(GraphQLNonNull(_InputValue))),
+                args={
+                    "includeDeprecated": GraphQLArgument(
+                        GraphQLBoolean, default_value=False
+                    )
+                },
+                resolve=cls.args,
+            ),
+        }
 
-
-class DirectiveResolvers:
     @staticmethod
     def name(directive, _info):
         return directive.name
@@ -144,7 +162,20 @@ class DirectiveResolvers:
         )
 
 
-__DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
+_Directive: GraphQLObjectType = GraphQLObjectType(
+    name="__Directive",
+    description="A Directive provides a way to describe alternate runtime"
+    " execution and type validation behavior in a GraphQL"
+    " document.\n\nIn some cases, you need to provide options"
+    " to alter GraphQL's execution behavior in ways field"
+    " arguments will not suffice, such as conditionally including"
+    " or skipping a field. Directives provide this by describing"
+    " additional information to the executor.",
+    fields=DirectiveFields,
+)
+
+
+_DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
     name="__DirectiveLocation",
     description="A Directive can be adjacent to many parts of the GraphQL"
     " language, a __DirectiveLocation describes one such possible"
@@ -229,65 +260,50 @@ __DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
 )
 
 
-__Type: GraphQLObjectType = GraphQLObjectType(
-    name="__Type",
-    description="The fundamental unit of any GraphQL Schema is the type."
-    " There are many kinds of types in GraphQL as represented"
-    " by the `__TypeKind` enum.\n\nDepending on the kind of a"
-    " type, certain fields describe information about that type."
-    " Scalar types provide no information beyond a name, description"
-    " and optional `specifiedByURL`, while Enum types provide their values."
-    " Object and Interface types provide the fields they describe."
-    " Abstract types, Union and Interface, provide the Object"
-    " types possible at runtime. List and NonNull types compose"
-    " other types.",
-    fields=lambda: {
-        "kind": GraphQLField(GraphQLNonNull(__TypeKind), resolve=TypeResolvers.kind),
-        "name": GraphQLField(GraphQLString, resolve=TypeResolvers.name),
-        "description": GraphQLField(GraphQLString, resolve=TypeResolvers.description),
-        "specifiedByURL": GraphQLField(
-            GraphQLString, resolve=TypeResolvers.specified_by_url
-        ),
-        "fields": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Field)),
-            args={
-                "includeDeprecated": GraphQLArgument(
-                    GraphQLBoolean, default_value=False
-                )
-            },
-            resolve=TypeResolvers.fields,
-        ),
-        "interfaces": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Type)), resolve=TypeResolvers.interfaces
-        ),
-        "possibleTypes": GraphQLField(
-            GraphQLList(GraphQLNonNull(__Type)),
-            resolve=TypeResolvers.possible_types,
-        ),
-        "enumValues": GraphQLField(
-            GraphQLList(GraphQLNonNull(__EnumValue)),
-            args={
-                "includeDeprecated": GraphQLArgument(
-                    GraphQLBoolean, default_value=False
-                )
-            },
-            resolve=TypeResolvers.enum_values,
-        ),
-        "inputFields": GraphQLField(
-            GraphQLList(GraphQLNonNull(__InputValue)),
-            args={
-                "includeDeprecated": GraphQLArgument(
-                    GraphQLBoolean, default_value=False
-                )
-            },
-            resolve=TypeResolvers.input_fields,
-        ),
-        "ofType": GraphQLField(__Type, resolve=TypeResolvers.of_type),
-    },
-)
+class TypeFields(GraphQLFieldMap):
+    def __new__(cls):
+        return {
+            "kind": GraphQLField(GraphQLNonNull(_TypeKind), resolve=cls.kind),
+            "name": GraphQLField(GraphQLString, resolve=cls.name),
+            "description": GraphQLField(GraphQLString, resolve=cls.description),
+            "specifiedByURL": GraphQLField(GraphQLString, resolve=cls.specified_by_url),
+            "fields": GraphQLField(
+                GraphQLList(GraphQLNonNull(_Field)),
+                args={
+                    "includeDeprecated": GraphQLArgument(
+                        GraphQLBoolean, default_value=False
+                    )
+                },
+                resolve=cls.fields,
+            ),
+            "interfaces": GraphQLField(
+                GraphQLList(GraphQLNonNull(_Type)), resolve=cls.interfaces
+            ),
+            "possibleTypes": GraphQLField(
+                GraphQLList(GraphQLNonNull(_Type)),
+                resolve=cls.possible_types,
+            ),
+            "enumValues": GraphQLField(
+                GraphQLList(GraphQLNonNull(_EnumValue)),
+                args={
+                    "includeDeprecated": GraphQLArgument(
+                        GraphQLBoolean, default_value=False
+                    )
+                },
+                resolve=cls.enum_values,
+            ),
+            "inputFields": GraphQLField(
+                GraphQLList(GraphQLNonNull(_InputValue)),
+                args={
+                    "includeDeprecated": GraphQLArgument(
+                        GraphQLBoolean, default_value=False
+                    )
+                },
+                resolve=cls.input_fields,
+            ),
+            "ofType": GraphQLField(_Type, resolve=cls.of_type),
+        }
 
-
-class TypeResolvers:
     @staticmethod
     def kind(type_, _info):
         if is_scalar_type(type_):
@@ -370,38 +386,46 @@ class TypeResolvers:
         return getattr(type_, "of_type", None)
 
 
-__Field: GraphQLObjectType = GraphQLObjectType(
-    name="__Field",
-    description="Object and Interface types are described by a list of Fields,"
-    " each of which has a name, potentially a list of arguments,"
-    " and a return type.",
-    fields=lambda: {
-        "name": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=FieldResolvers.name
-        ),
-        "description": GraphQLField(GraphQLString, resolve=FieldResolvers.description),
-        "args": GraphQLField(
-            GraphQLNonNull(GraphQLList(GraphQLNonNull(__InputValue))),
-            args={
-                "includeDeprecated": GraphQLArgument(
-                    GraphQLBoolean, default_value=False
-                )
-            },
-            resolve=FieldResolvers.args,
-        ),
-        "type": GraphQLField(GraphQLNonNull(__Type), resolve=FieldResolvers.type),
-        "isDeprecated": GraphQLField(
-            GraphQLNonNull(GraphQLBoolean),
-            resolve=FieldResolvers.is_deprecated,
-        ),
-        "deprecationReason": GraphQLField(
-            GraphQLString, resolve=FieldResolvers.deprecation_reason
-        ),
-    },
+_Type: GraphQLObjectType = GraphQLObjectType(
+    name="__Type",
+    description="The fundamental unit of any GraphQL Schema is the type."
+    " There are many kinds of types in GraphQL as represented"
+    " by the `__TypeKind` enum.\n\nDepending on the kind of a"
+    " type, certain fields describe information about that type."
+    " Scalar types provide no information beyond a name, description"
+    " and optional `specifiedByURL`, while Enum types provide their values."
+    " Object and Interface types provide the fields they describe."
+    " Abstract types, Union and Interface, provide the Object"
+    " types possible at runtime. List and NonNull types compose"
+    " other types.",
+    fields=TypeFields,
 )
 
 
-class FieldResolvers:
+class FieldFields(GraphQLFieldMap):
+    def __new__(cls):
+        return {
+            "name": GraphQLField(GraphQLNonNull(GraphQLString), resolve=cls.name),
+            "description": GraphQLField(GraphQLString, resolve=cls.description),
+            "args": GraphQLField(
+                GraphQLNonNull(GraphQLList(GraphQLNonNull(_InputValue))),
+                args={
+                    "includeDeprecated": GraphQLArgument(
+                        GraphQLBoolean, default_value=False
+                    )
+                },
+                resolve=cls.args,
+            ),
+            "type": GraphQLField(GraphQLNonNull(_Type), resolve=cls.type),
+            "isDeprecated": GraphQLField(
+                GraphQLNonNull(GraphQLBoolean),
+                resolve=cls.is_deprecated,
+            ),
+            "deprecationReason": GraphQLField(
+                GraphQLString, resolve=cls.deprecation_reason
+            ),
+        }
+
     @staticmethod
     def name(item, _info):
         return item[0]
@@ -433,39 +457,38 @@ class FieldResolvers:
         return item[1].deprecation_reason
 
 
-__InputValue: GraphQLObjectType = GraphQLObjectType(
-    name="__InputValue",
-    description="Arguments provided to Fields or Directives and the input"
-    " fields of an InputObject are represented as Input Values"
-    " which describe their type and optionally a default value.",
-    fields=lambda: {
-        "name": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=InputValueFieldResolvers.name
-        ),
-        "description": GraphQLField(
-            GraphQLString, resolve=InputValueFieldResolvers.description
-        ),
-        "type": GraphQLField(
-            GraphQLNonNull(__Type), resolve=InputValueFieldResolvers.type
-        ),
-        "defaultValue": GraphQLField(
-            GraphQLString,
-            description="A GraphQL-formatted string representing"
-            " the default value for this input value.",
-            resolve=InputValueFieldResolvers.default_value,
-        ),
-        "isDeprecated": GraphQLField(
-            GraphQLNonNull(GraphQLBoolean),
-            resolve=InputValueFieldResolvers.is_deprecated,
-        ),
-        "deprecationReason": GraphQLField(
-            GraphQLString, resolve=InputValueFieldResolvers.deprecation_reason
-        ),
-    },
+_Field: GraphQLObjectType = GraphQLObjectType(
+    name="__Field",
+    description="Object and Interface types are described by a list of Fields,"
+    " each of which has a name, potentially a list of arguments,"
+    " and a return type.",
+    fields=FieldFields,
 )
 
 
-class InputValueFieldResolvers:
+class InputValueFields(GraphQLFieldMap):
+    def __new__(cls):
+        return {
+            "name": GraphQLField(GraphQLNonNull(GraphQLString), resolve=cls.name),
+            "description": GraphQLField(
+                GraphQLString, resolve=InputValueFields.description
+            ),
+            "type": GraphQLField(GraphQLNonNull(_Type), resolve=cls.type),
+            "defaultValue": GraphQLField(
+                GraphQLString,
+                description="A GraphQL-formatted string representing"
+                " the default value for this input value.",
+                resolve=cls.default_value,
+            ),
+            "isDeprecated": GraphQLField(
+                GraphQLNonNull(GraphQLBoolean),
+                resolve=cls.is_deprecated,
+            ),
+            "deprecationReason": GraphQLField(
+                GraphQLString, resolve=cls.deprecation_reason
+            ),
+        }
+
     @staticmethod
     def name(item, _info):
         return item[0]
@@ -495,27 +518,57 @@ class InputValueFieldResolvers:
         return item[1].deprecation_reason
 
 
-__EnumValue: GraphQLObjectType = GraphQLObjectType(
+_InputValue: GraphQLObjectType = GraphQLObjectType(
+    name="__InputValue",
+    description="Arguments provided to Fields or Directives and the input"
+    " fields of an InputObject are represented as Input Values"
+    " which describe their type and optionally a default value.",
+    fields=InputValueFields,
+)
+
+
+class EnumValueFields(GraphQLFieldMap):
+    def __new__(cls):
+        return {
+            "name": GraphQLField(
+                GraphQLNonNull(GraphQLString), resolve=EnumValueFields.name
+            ),
+            "description": GraphQLField(
+                GraphQLString, resolve=EnumValueFields.description
+            ),
+            "isDeprecated": GraphQLField(
+                GraphQLNonNull(GraphQLBoolean),
+                resolve=EnumValueFields.is_deprecated,
+            ),
+            "deprecationReason": GraphQLField(
+                GraphQLString, resolve=EnumValueFields.deprecation_reason
+            ),
+        }
+
+    @staticmethod
+    def name(item, _info):
+        return item[0]
+
+    @staticmethod
+    def description(item, _info):
+        return item[1].description
+
+    @staticmethod
+    def is_deprecated(item, _info):
+        return item[1].deprecation_reason is not None
+
+    @staticmethod
+    def deprecation_reason(item, _info):
+        return item[1].deprecation_reason
+
+
+_EnumValue: GraphQLObjectType = GraphQLObjectType(
     name="__EnumValue",
     description="One possible value for a given Enum. Enum values are unique"
     " values, not a placeholder for a string or numeric value."
     " However an Enum value is returned in a JSON response as a"
     " string.",
-    fields=lambda: {
-        "name": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=lambda item, _info: item[0]
-        ),
-        "description": GraphQLField(
-            GraphQLString, resolve=lambda item, _info: item[1].description
-        ),
-        "isDeprecated": GraphQLField(
-            GraphQLNonNull(GraphQLBoolean),
-            resolve=lambda item, _info: item[1].deprecation_reason is not None,
-        ),
-        "deprecationReason": GraphQLField(
-            GraphQLString, resolve=lambda item, _info: item[1].deprecation_reason
-        ),
-    },
+    fields=EnumValueFields,
 )
 
 
@@ -530,7 +583,7 @@ class TypeKind(Enum):
     NON_NULL = "non-null"
 
 
-__TypeKind: GraphQLEnumType = GraphQLEnumType(
+_TypeKind: GraphQLEnumType = GraphQLEnumType(
     name="__TypeKind",
     description="An enum describing what kind of type a given `__Type` is.",
     values={
@@ -575,19 +628,33 @@ __TypeKind: GraphQLEnumType = GraphQLEnumType(
 )
 
 
+class MetaFields:
+    @staticmethod
+    def schema(_source, info):
+        return info.schema
+
+    @staticmethod
+    def type(_source, info, **args):
+        return info.schema.get_type(args["name"])
+
+    @staticmethod
+    def type_name(_source, info, **_args):
+        return info.parent_type.name
+
+
 SchemaMetaFieldDef = GraphQLField(
-    GraphQLNonNull(__Schema),  # name = '__schema'
+    GraphQLNonNull(_Schema),  # name = '__schema'
     description="Access the current type schema of this server.",
     args={},
-    resolve=lambda _source, info: info.schema,
+    resolve=MetaFields.schema,
 )
 
 
 TypeMetaFieldDef = GraphQLField(
-    __Type,  # name = '__type'
+    _Type,  # name = '__type'
     description="Request the type information of a single type.",
     args={"name": GraphQLArgument(GraphQLNonNull(GraphQLString))},
-    resolve=lambda _source, info, **args: info.schema.get_type(args["name"]),
+    resolve=MetaFields.type,
 )
 
 
@@ -595,21 +662,21 @@ TypeNameMetaFieldDef = GraphQLField(
     GraphQLNonNull(GraphQLString),  # name='__typename'
     description="The name of the current Object type at runtime.",
     args={},
-    resolve=lambda _source, info, **_args: info.parent_type.name,
+    resolve=MetaFields.type_name,
 )
 
 
 # Since double underscore names are subject to name mangling in Python,
 # the introspection classes are best imported via this dictionary:
 introspection_types: Mapping[str, GraphQLNamedType] = {  # treat as read-only
-    "__Schema": __Schema,
-    "__Directive": __Directive,
-    "__DirectiveLocation": __DirectiveLocation,
-    "__Type": __Type,
-    "__Field": __Field,
-    "__InputValue": __InputValue,
-    "__EnumValue": __EnumValue,
-    "__TypeKind": __TypeKind,
+    "__Schema": _Schema,
+    "__Directive": _Directive,
+    "__DirectiveLocation": _DirectiveLocation,
+    "__Type": _Type,
+    "__Field": _Field,
+    "__InputValue": _InputValue,
+    "__EnumValue": _EnumValue,
+    "__TypeKind": _TypeKind,
 }
 """A mapping containing all introspection types with their names as keys"""
 
@@ -617,3 +684,7 @@ introspection_types: Mapping[str, GraphQLNamedType] = {  # treat as read-only
 def is_introspection_type(type_: GraphQLNamedType) -> bool:
     """Check whether the given named GraphQL type is an introspection type."""
     return type_.name in introspection_types
+
+
+# register the introspection types to avoid redefinition
+GraphQLNamedType.reserved_types.update(introspection_types)
