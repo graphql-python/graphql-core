@@ -18,7 +18,6 @@ from ...language import (
 )
 from ...pyutils import Undefined, did_you_mean, suggestion_list
 from ...type import (
-    GraphQLInputObjectType,
     GraphQLScalarType,
     get_named_type,
     get_nullable_type,
@@ -57,7 +56,6 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if not is_input_object_type(type_):
             self.is_valid_value_node(node)
             return SKIP  # Don't traverse further.
-        type_ = cast(GraphQLInputObjectType, type_)
         # Ensure every required field exists.
         field_node_map = {field.name.value: field for field in node.fields}
         for field_name, field_def in type_.fields.items():
@@ -77,7 +75,6 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         parent_type = get_named_type(self.context.get_parent_input_type())
         field_type = self.context.get_input_type()
         if not field_type and is_input_object_type(parent_type):
-            parent_type = cast(GraphQLInputObjectType, parent_type)
             suggestions = suggestion_list(node.name.value, list(parent_type.fields))
             self.report_error(
                 GraphQLError(

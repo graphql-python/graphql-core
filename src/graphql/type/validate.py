@@ -210,29 +210,24 @@ class SchemaValidationContext:
                 self.validate_name(type_)
 
             if is_object_type(type_):
-                type_ = cast(GraphQLObjectType, type_)
                 # Ensure fields are valid
                 self.validate_fields(type_)
 
                 # Ensure objects implement the interfaces they claim to.
                 self.validate_interfaces(type_)
             elif is_interface_type(type_):
-                type_ = cast(GraphQLInterfaceType, type_)
                 # Ensure fields are valid.
                 self.validate_fields(type_)
 
                 # Ensure interfaces implement the interfaces they claim to.
                 self.validate_interfaces(type_)
             elif is_union_type(type_):
-                type_ = cast(GraphQLUnionType, type_)
                 # Ensure Unions include valid member types.
                 self.validate_union_members(type_)
             elif is_enum_type(type_):
-                type_ = cast(GraphQLEnumType, type_)
                 # Ensure Enums have valid values.
                 self.validate_enum_values(type_)
             elif is_input_object_type(type_):
-                type_ = cast(GraphQLInputObjectType, type_)
                 # Ensure Input Object fields are valid.
                 self.validate_input_fields(type_)
 
@@ -534,7 +529,7 @@ class InputObjectCircularRefsValidator:
             if is_non_null_type(field.type) and is_input_object_type(
                 field.type.of_type
             ):
-                field_type = cast(GraphQLInputObjectType, field.type.of_type)
+                field_type = field.type.of_type
                 cycle_index = self.field_path_index_by_type_name.get(field_type.name)
 
                 self.field_path.append((field_name, field))

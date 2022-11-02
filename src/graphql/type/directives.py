@@ -13,6 +13,10 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
 
 __all__ = [
     "is_directive",
@@ -150,7 +154,7 @@ class GraphQLDirective:
         return self.__class__(**self.to_kwargs())
 
 
-def is_directive(directive: Any) -> bool:
+def is_directive(directive: Any) -> TypeGuard[GraphQLDirective]:
     """Test if the given value is a GraphQL directive."""
     return isinstance(directive, GraphQLDirective)
 
@@ -158,7 +162,7 @@ def is_directive(directive: Any) -> bool:
 def assert_directive(directive: Any) -> GraphQLDirective:
     if not is_directive(directive):
         raise TypeError(f"Expected {inspect(directive)} to be a GraphQL directive.")
-    return cast(GraphQLDirective, directive)
+    return directive
 
 
 # Used to conditionally include fields or fragments.

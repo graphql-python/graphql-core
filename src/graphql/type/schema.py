@@ -1,31 +1,17 @@
 from __future__ import annotations  # Python < 3.10
 
 from copy import copy, deepcopy
-from typing import (
-    Any,
-    Collection,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, Collection, Dict, List, NamedTuple, Optional, Set, Tuple, cast
 
 from ..error import GraphQLError
 from ..language import OperationType, ast
 from ..pyutils import inspect, is_collection, is_description
 from .definition import (
     GraphQLAbstractType,
-    GraphQLInputObjectType,
     GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
     GraphQLType,
-    GraphQLUnionType,
-    GraphQLWrappingType,
     get_named_type,
     is_input_object_type,
     is_interface_type,
@@ -41,6 +27,11 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
+
 
 __all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "is_schema", "assert_schema"]
 
@@ -266,11 +257,9 @@ class GraphQLSchema:
             type_map[type_name] = named_type
 
             if is_interface_type(named_type):
-                named_type = cast(GraphQLInterfaceType, named_type)
                 # Store implementations by interface.
                 for iface in named_type.interfaces:
                     if is_interface_type(iface):
-                        iface = cast(GraphQLInterfaceType, iface)
                         if iface.name in implementations_map:
                             implementations = implementations_map[iface.name]
                         else:
@@ -280,11 +269,9 @@ class GraphQLSchema:
 
                         implementations.interfaces.append(named_type)
             elif is_object_type(named_type):
-                named_type = cast(GraphQLObjectType, named_type)
                 # Store implementations by objects.
                 for iface in named_type.interfaces:
                     if is_interface_type(iface):
-                        iface = cast(GraphQLInterfaceType, iface)
                         if iface.name in implementations_map:
                             implementations = implementations_map[iface.name]
                         else:
@@ -356,7 +343,7 @@ class GraphQLSchema:
     ) -> List[GraphQLObjectType]:
         """Get list of all possible concrete types for given abstract type."""
         return (
-            cast(GraphQLUnionType, abstract_type).types
+            abstract_type.types
             if is_union_type(abstract_type)
             else self.get_implementations(
                 cast(GraphQLInterfaceType, abstract_type)
@@ -381,7 +368,7 @@ class GraphQLSchema:
             types = set()
             add = types.add
             if is_union_type(abstract_type):
-                for type_ in cast(GraphQLUnionType, abstract_type).types:
+                for type_ in abstract_type.types:
                     add(type_.name)
             else:
                 implementations = self.get_implementations(
@@ -423,13 +410,9 @@ class TypeSet(Dict[GraphQLNamedType, None]):
 
         collect_referenced_types = self.collect_referenced_types
         if is_union_type(named_type):
-            named_type = cast(GraphQLUnionType, named_type)
             for member_type in named_type.types:
                 collect_referenced_types(member_type)
         elif is_object_type(named_type) or is_interface_type(named_type):
-            named_type = cast(
-                Union[GraphQLObjectType, GraphQLInterfaceType], named_type
-            )
             for interface_type in named_type.interfaces:
                 collect_referenced_types(interface_type)
 
@@ -438,12 +421,11 @@ class TypeSet(Dict[GraphQLNamedType, None]):
                 for arg in field.args.values():
                     collect_referenced_types(arg.type)
         elif is_input_object_type(named_type):
-            named_type = cast(GraphQLInputObjectType, named_type)
             for field in named_type.fields.values():
                 collect_referenced_types(field.type)
 
 
-def is_schema(schema: Any) -> bool:
+def is_schema(schema: Any) -> TypeGuard[GraphQLSchema]:
     """Test if the given value is a GraphQL schema."""
     return isinstance(schema, GraphQLSchema)
 
@@ -451,13 +433,12 @@ def is_schema(schema: Any) -> bool:
 def assert_schema(schema: Any) -> GraphQLSchema:
     if not is_schema(schema):
         raise TypeError(f"Expected {inspect(schema)} to be a GraphQL schema.")
-    return cast(GraphQLSchema, schema)
+    return schema
 
 
 def remapped_type(type_: GraphQLType, type_map: TypeMap) -> GraphQLType:
     """Get a copy of the given type that uses this type map."""
     if is_wrapping_type(type_):
-        type_ = cast(GraphQLWrappingType, type_)
         return type_.__class__(remapped_type(type_.of_type, type_map))
     type_ = cast(GraphQLNamedType, type_)
     return type_map.get(type_.name, type_)
@@ -466,12 +447,10 @@ def remapped_type(type_: GraphQLType, type_map: TypeMap) -> GraphQLType:
 def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
     """Change all references in the given named type to use this type map."""
     if is_union_type(type_):
-        type_ = cast(GraphQLUnionType, type_)
         type_.types = [
             type_map.get(member_type.name, member_type) for member_type in type_.types
         ]
     elif is_object_type(type_) or is_interface_type(type_):
-        type_ = cast(Union[GraphQLObjectType, GraphQLInterfaceType], type_)
         type_.interfaces = [
             type_map.get(interface_type.name, interface_type)
             for interface_type in type_.interfaces
@@ -487,7 +466,6 @@ def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
                 args[arg_name] = arg
             fields[field_name] = field
     elif is_input_object_type(type_):
-        type_ = cast(GraphQLInputObjectType, type_)
         fields = type_.fields
         for field_name, field in fields.items():
             field = copy(field)

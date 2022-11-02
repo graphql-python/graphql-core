@@ -11,10 +11,7 @@ from ..pyutils import (
     suggestion_list,
 )
 from ..type import (
-    GraphQLInputObjectType,
     GraphQLInputType,
-    GraphQLList,
-    GraphQLNonNull,
     GraphQLScalarType,
     is_input_object_type,
     is_leaf_type,
@@ -48,7 +45,6 @@ def coerce_input_value(
     """Coerce a Python value given a GraphQL Input Type."""
     if is_non_null_type(type_):
         if input_value is not None and input_value is not Undefined:
-            type_ = cast(GraphQLNonNull, type_)
             return coerce_input_value(input_value, type_.of_type, on_error, path)
         on_error(
             path.as_list() if path else [],
@@ -64,7 +60,6 @@ def coerce_input_value(
         return None
 
     if is_list_type(type_):
-        type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
         if is_iterable(input_value):
             coerced_list: List[Any] = []
@@ -80,7 +75,6 @@ def coerce_input_value(
         return [coerce_input_value(input_value, item_type, on_error, path)]
 
     if is_input_object_type(type_):
-        type_ = cast(GraphQLInputObjectType, type_)
         if not isinstance(input_value, dict):
             on_error(
                 path.as_list() if path else [],

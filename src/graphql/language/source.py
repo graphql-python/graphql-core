@@ -3,6 +3,12 @@ from typing import Any
 from .location import SourceLocation
 
 
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
+
+
 __all__ = ["Source", "is_source"]
 
 DEFAULT_NAME = "GraphQL request"
@@ -66,7 +72,7 @@ class Source:
         return not self == other
 
 
-def is_source(source: Any) -> bool:
+def is_source(source: Any) -> TypeGuard[Source]:
     """Test if the given value is a Source object.
 
     For internal use only.

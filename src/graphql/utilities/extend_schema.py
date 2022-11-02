@@ -244,7 +244,7 @@ class ExtendSchemaImpl:
     # noinspection PyTypeChecker,PyUnresolvedReferences
     def replace_type(self, type_: GraphQLType) -> GraphQLType:
         if is_list_type(type_):
-            return GraphQLList(self.replace_type(type_.of_type))  # type: ignore
+            return GraphQLList(self.replace_type(type_.of_type))
         if is_non_null_type(type_):
             return GraphQLNonNull(self.replace_type(type_.of_type))  # type: ignore
         return self.replace_named_type(type_)  # type: ignore
@@ -272,22 +272,16 @@ class ExtendSchemaImpl:
             # Builtin types are not extended.
             return type_
         if is_scalar_type(type_):
-            type_ = cast(GraphQLScalarType, type_)
             return self.extend_scalar_type(type_)
         if is_object_type(type_):
-            type_ = cast(GraphQLObjectType, type_)
             return self.extend_object_type(type_)
         if is_interface_type(type_):
-            type_ = cast(GraphQLInterfaceType, type_)
             return self.extend_interface_type(type_)
         if is_union_type(type_):
-            type_ = cast(GraphQLUnionType, type_)
             return self.extend_union_type(type_)
         if is_enum_type(type_):
-            type_ = cast(GraphQLEnumType, type_)
             return self.extend_enum_type(type_)
         if is_input_object_type(type_):
-            type_ = cast(GraphQLInputObjectType, type_)
             return self.extend_input_object_type(type_)
 
         # Not reachable. All possible types have been considered.

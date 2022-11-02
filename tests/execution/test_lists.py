@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, cast
+from typing import Any
 
 from pytest import mark
 
@@ -224,7 +224,6 @@ def describe_experimental_execute_accepts_async_iterables_as_list_value():
             Data(list_field),
         )
         assert is_awaitable(result)
-        result = cast(Awaitable, result)
         return await result
 
     @mark.asyncio

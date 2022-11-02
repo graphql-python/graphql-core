@@ -43,9 +43,9 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         type_: Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]
     ) -> Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]:
         if is_list_type(type_):
-            return GraphQLList(replace_type(cast(GraphQLList, type_).of_type))
+            return GraphQLList(replace_type(type_.of_type))
         if is_non_null_type(type_):
-            return GraphQLNonNull(replace_type(cast(GraphQLNonNull, type_).of_type))
+            return GraphQLNonNull(replace_type(type_.of_type))
         return replace_named_type(cast(GraphQLNamedType, type_))
 
     def replace_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
@@ -112,7 +112,6 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         if is_scalar_type(type_) or is_introspection_type(type_):
             return type_
         if is_object_type(type_):
-            type_ = cast(GraphQLObjectType, type_)
             return GraphQLObjectType(
                 **merge_kwargs(
                     type_.to_kwargs(),
@@ -121,7 +120,6 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                 )
             )
         if is_interface_type(type_):
-            type_ = cast(GraphQLInterfaceType, type_)
             return GraphQLInterfaceType(
                 **merge_kwargs(
                     type_.to_kwargs(),
@@ -130,12 +128,10 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                 )
             )
         if is_union_type(type_):
-            type_ = cast(GraphQLUnionType, type_)
             return GraphQLUnionType(
                 **merge_kwargs(type_.to_kwargs(), types=lambda: sort_types(type_.types))
             )
         if is_enum_type(type_):
-            type_ = cast(GraphQLEnumType, type_)
             return GraphQLEnumType(
                 **merge_kwargs(
                     type_.to_kwargs(),
@@ -151,7 +147,6 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                 )
             )
         if is_input_object_type(type_):
-            type_ = cast(GraphQLInputObjectType, type_)
             return GraphQLInputObjectType(
                 **merge_kwargs(
                     type_.to_kwargs(),

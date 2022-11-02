@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 from ...error import GraphQLError
 from ...language import (
@@ -8,7 +8,7 @@ from ...language import (
     VariableDefinitionNode,
 )
 from ...pyutils import Undefined
-from ...type import GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type
+from ...type import GraphQLSchema, GraphQLType, is_non_null_type
 from ...utilities import is_type_sub_type_of, type_from_ast
 from . import ValidationContext, ValidationRule
 
@@ -88,7 +88,6 @@ def allowed_variable_usage(
         has_location_default_value = location_default_value is not Undefined
         if not has_non_null_variable_default_value and not has_location_default_value:
             return False
-        location_type = cast(GraphQLNonNull, location_type)
         nullable_location_type = location_type.of_type
         return is_type_sub_type_of(schema, var_type, nullable_location_type)
     return is_type_sub_type_of(schema, var_type, location_type)

@@ -1,6 +1,6 @@
 import re
 from math import isfinite
-from typing import Any, Mapping, Optional, cast
+from typing import Any, Mapping, Optional
 
 from ..language import (
     BooleanValueNode,
@@ -18,10 +18,7 @@ from ..language import (
 from ..pyutils import Undefined, inspect, is_iterable
 from ..type import (
     GraphQLID,
-    GraphQLInputObjectType,
     GraphQLInputType,
-    GraphQLList,
-    GraphQLNonNull,
     is_enum_type,
     is_input_object_type,
     is_leaf_type,
@@ -60,7 +57,6 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
     """
     if is_non_null_type(type_):
-        type_ = cast(GraphQLNonNull, type_)
         ast_value = ast_from_value(value, type_.of_type)
         if isinstance(ast_value, NullValueNode):
             return None
@@ -77,7 +73,6 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     # Convert Python list to GraphQL list. If the GraphQLType is a list, but the value
     # is not a list, convert the value using the list's item type.
     if is_list_type(type_):
-        type_ = cast(GraphQLList, type_)
         item_type = type_.of_type
         if is_iterable(value):
             maybe_value_nodes = (ast_from_value(item, item_type) for item in value)
@@ -90,7 +85,6 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     if is_input_object_type(type_):
         if value is None or not isinstance(value, Mapping):
             return None
-        type_ = cast(GraphQLInputObjectType, type_)
         field_items = (
             (field_name, ast_from_value(value[field_name], field.type))
             for field_name, field in type_.fields.items()
@@ -106,7 +100,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     if is_leaf_type(type_):
         # Since value is an internally represented value, it must be serialized to an
         # externally represented value before converting into an AST.
-        serialized = type_.serialize(value)  # type: ignore
+        serialized = type_.serialize(value)
         if serialized is None or serialized is Undefined:
             return None
 

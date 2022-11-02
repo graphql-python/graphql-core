@@ -15,9 +15,7 @@ from ...language import (
 from ...type import (
     GraphQLCompositeType,
     GraphQLField,
-    GraphQLList,
     GraphQLNamedType,
-    GraphQLNonNull,
     GraphQLOutputType,
     get_named_type,
     is_interface_type,
@@ -602,9 +600,7 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     """
     if is_list_type(type1):
         return (
-            do_types_conflict(
-                cast(GraphQLList, type1).of_type, cast(GraphQLList, type2).of_type
-            )
+            do_types_conflict(type1.of_type, type2.of_type)
             if is_list_type(type2)
             else True
         )
@@ -612,9 +608,7 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
         return True
     if is_non_null_type(type1):
         return (
-            do_types_conflict(
-                cast(GraphQLNonNull, type1).of_type, cast(GraphQLNonNull, type2).of_type
-            )
+            do_types_conflict(type1.of_type, type2.of_type)
             if is_non_null_type(type2)
             else True
         )
@@ -681,7 +675,7 @@ def collect_fields_and_fragment_names(
         if isinstance(selection, FieldNode):
             field_name = selection.name.value
             field_def = (
-                parent_type.fields.get(field_name)  # type: ignore
+                parent_type.fields.get(field_name)
                 if is_object_type(parent_type) or is_interface_type(parent_type)
                 else None
             )

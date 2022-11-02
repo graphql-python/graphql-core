@@ -1,9 +1,9 @@
 from collections import defaultdict
-from typing import Any, Dict, cast
+from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import SKIP, EnumTypeDefinitionNode, NameNode, VisitorAction
-from ...type import GraphQLEnumType, is_enum_type
+from ...type import is_enum_type
 from . import SDLValidationContext, SDLValidationRule
 
 
@@ -33,10 +33,7 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
             value_name = value_def.name.value
 
             existing_type = existing_type_map.get(type_name)
-            if (
-                is_enum_type(existing_type)
-                and value_name in cast(GraphQLEnumType, existing_type).values
-            ):
+            if is_enum_type(existing_type) and value_name in existing_type.values:
                 self.report_error(
                     GraphQLError(
                         f"Enum value '{type_name}.{value_name}'"

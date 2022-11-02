@@ -73,6 +73,21 @@ def describe_strip_ignored_characters():
             '"""Type description""" type Foo{"""Field description""" bar:String}'
         )
 
+    def strips_ignored_characters_from_source():
+        source = Source(
+            dedent(
+                """
+            {
+              foo {
+                bar
+              }
+            }
+            """
+            )
+        )
+
+        assert strip_ignored_characters(source) == "{foo{bar}}"
+
     def report_document_with_invalid_token():
         with raises(GraphQLSyntaxError) as exc_info:
             strip_ignored_characters('{ foo(arg: "\n"')

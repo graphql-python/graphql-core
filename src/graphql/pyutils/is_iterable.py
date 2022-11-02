@@ -2,6 +2,12 @@ from array import array
 from typing import Any, ByteString, Collection, Iterable, Mapping, Text, ValuesView
 
 
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
+
+
 __all__ = ["is_collection", "is_iterable"]
 
 collection_types: Any = [Collection]
@@ -16,14 +22,14 @@ iterable_types: Any = Iterable
 not_iterable_types: Any = (ByteString, Mapping, Text)
 
 
-def is_collection(value: Any) -> bool:
+def is_collection(value: Any) -> TypeGuard[Collection]:
     """Check if value is a collection, but not a string or a mapping."""
     return isinstance(value, collection_types) and not isinstance(
         value, not_iterable_types
     )
 
 
-def is_iterable(value: Any) -> bool:
+def is_iterable(value: Any) -> TypeGuard[Iterable]:
     """Check if value is an iterable, but not a string or a mapping."""
     return isinstance(value, iterable_types) and not isinstance(
         value, not_iterable_types

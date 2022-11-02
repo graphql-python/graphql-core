@@ -201,9 +201,8 @@ class Parser:
         no_location: bool = False,
         allow_legacy_fragment_variables: bool = False,
     ):
-        source = (
-            cast(Source, source) if is_source(source) else Source(cast(str, source))
-        )
+        if not is_source(source):
+            source = Source(cast(str, source))
 
         self._lexer = Lexer(source)
         self._no_location = no_location

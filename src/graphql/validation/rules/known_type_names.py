@@ -4,7 +4,8 @@ from ...error import GraphQLError
 from ...language import (
     NamedTypeNode,
     Node,
-    TypeDefinitionNode,
+    TypeSystemDefinitionNode,
+    TypeSystemExtensionNode,
     is_type_definition_node,
     is_type_system_definition_node,
     is_type_system_extension_node,
@@ -12,6 +13,12 @@ from ...language import (
 from ...pyutils import did_you_mean, suggestion_list
 from ...type import introspection_types, specified_scalar_types
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
+
+
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
 
 
 __all__ = ["KnownTypeNamesRule"]
@@ -34,7 +41,6 @@ class KnownTypeNamesRule(ASTValidationRule):
         defined_types = []
         for def_ in context.document.definitions:
             if is_type_definition_node(def_):
-                def_ = cast(TypeDefinitionNode, def_)
                 defined_types.append(def_.name.value)
         self.defined_types = set(defined_types)
 
@@ -78,7 +84,9 @@ class KnownTypeNamesRule(ASTValidationRule):
 standard_type_names = set(specified_scalar_types).union(introspection_types)
 
 
-def is_sdl_node(value: Union[Node, Collection[Node], None]) -> bool:
+def is_sdl_node(
+    value: Union[Node, Collection[Node], None]
+) -> TypeGuard[Union[TypeSystemDefinitionNode, TypeSystemExtensionNode]]:
     return (
         value is not None
         and not isinstance(value, list)

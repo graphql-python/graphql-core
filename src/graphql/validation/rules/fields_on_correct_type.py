@@ -1,12 +1,11 @@
 from collections import defaultdict
 from functools import cmp_to_key
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, List, Union
 
 from ...error import GraphQLError
 from ...language import FieldNode
 from ...pyutils import did_you_mean, natural_comparison_key, suggestion_list
 from ...type import (
-    GraphQLAbstractType,
     GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLOutputType,
@@ -74,7 +73,6 @@ def get_suggested_type_names(
         # Must be an Object type, which does not have possible fields.
         return []
 
-    type_ = cast(GraphQLAbstractType, type_)
     # Use a dict instead of a set for stable sorting when usage counts are the same
     suggested_types: Dict[Union[GraphQLObjectType, GraphQLInterfaceType], None] = {}
     usage_count: Dict[str, int] = defaultdict(int)
@@ -104,13 +102,9 @@ def get_suggested_type_names(
             return usage_count_diff
 
         # Suggest super types first followed by subtypes
-        if is_interface_type(type_a) and schema.is_sub_type(
-            cast(GraphQLInterfaceType, type_a), type_b
-        ):
+        if is_interface_type(type_a) and schema.is_sub_type(type_a, type_b):
             return -1
-        if is_interface_type(type_b) and schema.is_sub_type(
-            cast(GraphQLInterfaceType, type_b), type_a
-        ):
+        if is_interface_type(type_b) and schema.is_sub_type(type_b, type_a):
             return 1
 
         name_a = natural_comparison_key(type_a.name)
@@ -131,7 +125,7 @@ def get_suggested_field_names(type_: GraphQLOutputType, field_name: str) -> List
     be the result of a typo.
     """
     if is_object_type(type_) or is_interface_type(type_):
-        possible_field_names = list(type_.fields)  # type: ignore
+        possible_field_names = list(type_.fields)
         return suggestion_list(field_name, possible_field_names)
     # Otherwise, must be a Union type, which does not define fields.
     return []

@@ -1,3 +1,5 @@
+from typing import Union
+
 from .ast import (
     DefinitionNode,
     ExecutableDefinitionNode,
@@ -15,6 +17,12 @@ from .ast import (
 )
 
 
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
+
+
 __all__ = [
     "is_definition_node",
     "is_executable_definition_node",
@@ -29,27 +37,27 @@ __all__ = [
 ]
 
 
-def is_definition_node(node: Node) -> bool:
+def is_definition_node(node: Node) -> TypeGuard[DefinitionNode]:
     """Check whether the given node represents a definition."""
     return isinstance(node, DefinitionNode)
 
 
-def is_executable_definition_node(node: Node) -> bool:
+def is_executable_definition_node(node: Node) -> TypeGuard[ExecutableDefinitionNode]:
     """Check whether the given node represents an executable definition."""
     return isinstance(node, ExecutableDefinitionNode)
 
 
-def is_selection_node(node: Node) -> bool:
+def is_selection_node(node: Node) -> TypeGuard[SelectionNode]:
     """Check whether the given node represents a selection."""
     return isinstance(node, SelectionNode)
 
 
-def is_value_node(node: Node) -> bool:
+def is_value_node(node: Node) -> TypeGuard[ValueNode]:
     """Check whether the given node represents a value."""
     return isinstance(node, ValueNode)
 
 
-def is_const_value_node(node: Node) -> bool:
+def is_const_value_node(node: Node) -> TypeGuard[ValueNode]:
     """Check whether the given node represents a constant value."""
     return is_value_node(node) and (
         any(is_const_value_node(value) for value in node.values)
@@ -60,26 +68,28 @@ def is_const_value_node(node: Node) -> bool:
     )
 
 
-def is_type_node(node: Node) -> bool:
+def is_type_node(node: Node) -> TypeGuard[TypeNode]:
     """Check whether the given node represents a type."""
     return isinstance(node, TypeNode)
 
 
-def is_type_system_definition_node(node: Node) -> bool:
+def is_type_system_definition_node(node: Node) -> TypeGuard[TypeSystemDefinitionNode]:
     """Check whether the given node represents a type system definition."""
     return isinstance(node, TypeSystemDefinitionNode)
 
 
-def is_type_definition_node(node: Node) -> bool:
+def is_type_definition_node(node: Node) -> TypeGuard[TypeDefinitionNode]:
     """Check whether the given node represents a type definition."""
     return isinstance(node, TypeDefinitionNode)
 
 
-def is_type_system_extension_node(node: Node) -> bool:
+def is_type_system_extension_node(
+    node: Node,
+) -> TypeGuard[Union[SchemaExtensionNode, TypeExtensionNode]]:
     """Check whether the given node represents a type system extension."""
     return isinstance(node, (SchemaExtensionNode, TypeExtensionNode))
 
 
-def is_type_extension_node(node: Node) -> bool:
+def is_type_extension_node(node: Node) -> TypeGuard[TypeExtensionNode]:
     """Check whether the given node represents a type extension."""
     return isinstance(node, TypeExtensionNode)

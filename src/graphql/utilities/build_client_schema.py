@@ -11,13 +11,11 @@ from ..type import (
     GraphQLField,
     GraphQLInputField,
     GraphQLInputObjectType,
-    GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
     GraphQLObjectType,
-    GraphQLOutputType,
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLType,
@@ -270,7 +268,6 @@ def build_client_schema(
                 "Introspection must provide output type for fields,"
                 f" but received: {inspect(type_)}."
             )
-        type_ = cast(GraphQLOutputType, type_)
 
         args_introspection = field_introspection.get("args")
         if args_introspection is None:
@@ -304,7 +301,6 @@ def build_client_schema(
                 "Introspection must provide input type for arguments,"
                 f" but received: {inspect(type_)}."
             )
-        type_ = cast(GraphQLInputType, type_)
 
         default_value_introspection = argument_introspection.get("defaultValue")
         default_value = (
@@ -339,7 +335,6 @@ def build_client_schema(
                 "Introspection must provide input type for input fields,"
                 f" but received: {inspect(type_)}."
             )
-        type_ = cast(GraphQLInputType, type_)
 
         default_value_introspection = input_value_introspection.get("defaultValue")
         default_value = (

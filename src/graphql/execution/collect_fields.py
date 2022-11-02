@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Union, cast
+from typing import Any, Dict, List, Set, Union
 
 from ..language import (
     FieldNode,
@@ -9,7 +9,6 @@ from ..language import (
     SelectionSetNode,
 )
 from ..type import (
-    GraphQLAbstractType,
     GraphQLIncludeDirective,
     GraphQLObjectType,
     GraphQLSchema,
@@ -166,7 +165,7 @@ def does_fragment_condition_match(
     if conditional_type is type_:
         return True
     if is_abstract_type(conditional_type):
-        return schema.is_sub_type(cast(GraphQLAbstractType, conditional_type), type_)
+        return schema.is_sub_type(conditional_type, type_)
     return False
 
 

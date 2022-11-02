@@ -8,8 +8,6 @@ from ...language import (
     Node,
     SchemaDefinitionNode,
     SchemaExtensionNode,
-    TypeDefinitionNode,
-    TypeExtensionNode,
     is_type_definition_node,
     is_type_extension_node,
 )
@@ -64,7 +62,6 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
         if isinstance(node, (SchemaDefinitionNode, SchemaExtensionNode)):
             seen_directives = self.schema_directives
         elif is_type_definition_node(node) or is_type_extension_node(node):
-            node = cast(Union[TypeDefinitionNode, TypeExtensionNode], node)
             type_name = node.name.value
             seen_directives = self.type_directives_map[type_name]
         else:

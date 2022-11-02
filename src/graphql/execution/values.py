@@ -1,4 +1,4 @@
-from typing import Any, Callable, Collection, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Collection, Dict, List, Optional, Union
 
 from ..error import GraphQLError
 from ..language import (
@@ -21,7 +21,6 @@ from ..pyutils import Undefined, inspect, print_path_list
 from ..type import (
     GraphQLDirective,
     GraphQLField,
-    GraphQLInputType,
     GraphQLSchema,
     is_input_type,
     is_non_null_type,
@@ -92,7 +91,6 @@ def coerce_variable_values(
             )
             continue
 
-        var_type = cast(GraphQLInputType, var_type)
         if var_name not in inputs:
             if var_def_node.default_value:
                 coerced_values[var_name] = value_from_ast(
