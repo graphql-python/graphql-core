@@ -25,6 +25,12 @@ from ..type import (
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = [
     "ASTValidationContext",
     "SDLValidationContext",
@@ -33,7 +39,7 @@ __all__ = [
     "VariableUsageVisitor",
 ]
 
-NodeWithSelectionSet = Union[OperationDefinitionNode, FragmentDefinitionNode]
+NodeWithSelectionSet: TypeAlias = Union[OperationDefinitionNode, FragmentDefinitionNode]
 
 
 class VariableUsage(NamedTuple):

@@ -29,6 +29,12 @@ from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 MYPY = False
 
 __all__ = ["OverlappingFieldsCanBeMergedRule"]
@@ -85,18 +91,18 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
 
 
-Conflict = Tuple["ConflictReason", List[FieldNode], List[FieldNode]]
+Conflict: TypeAlias = Tuple["ConflictReason", List[FieldNode], List[FieldNode]]
 # Field name and reason.
-ConflictReason = Tuple[str, "ConflictReasonMessage"]
+ConflictReason: TypeAlias = Tuple[str, "ConflictReasonMessage"]
 # Reason is a string, or a nested list of conflicts.
 if MYPY:  # recursive types not fully supported yet (/python/mypy/issues/731)
-    ConflictReasonMessage = Union[str, List]
+    ConflictReasonMessage: TypeAlias = Union[str, List]
 else:
-    ConflictReasonMessage = Union[str, List[ConflictReason]]
+    ConflictReasonMessage: TypeAlias = Union[str, List[ConflictReason]]
 # Tuple defining a field node in a context.
-NodeAndDef = Tuple[GraphQLCompositeType, FieldNode, Optional[GraphQLField]]
+NodeAndDef: TypeAlias = Tuple[GraphQLCompositeType, FieldNode, Optional[GraphQLField]]
 # Dictionary of lists of those.
-NodeAndDefCollection = Dict[str, List[NodeAndDef]]
+NodeAndDefCollection: TypeAlias = Dict[str, List[NodeAndDef]]
 
 
 # Algorithm:

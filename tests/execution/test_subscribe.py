@@ -19,6 +19,11 @@ from graphql.type import (
 
 
 try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+
+try:
     anext
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
@@ -27,7 +32,15 @@ except NameError:  # pragma: no cover (Python < 3.10)
         return await iterator.__anext__()
 
 
-Email = Dict  # should become a TypedDict once we require Python 3.8
+Email = TypedDict(
+    "Email",
+    {
+        "from": str,
+        "subject": str,
+        "message": str,
+        "unread": bool,
+    },
+)
 
 EmailType = GraphQLObjectType(
     "Email",

@@ -6,12 +6,18 @@ from .print_string import print_string
 from .visitor import Visitor, visit
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = ["print_ast"]
 
 
 MAX_LINE_LENGTH = 80
 
-Strings = Collection[str]
+Strings: TypeAlias = Collection[str]
 
 
 class PrintedNode:

@@ -30,10 +30,16 @@ from ..utilities.type_from_ast import type_from_ast
 from ..utilities.value_from_ast import value_from_ast
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = ["get_argument_values", "get_directive_values", "get_variable_values"]
 
 
-CoercedVariableValues = Union[List[GraphQLError], Dict[str, Any]]
+CoercedVariableValues: TypeAlias = Union[List[GraphQLError], Dict[str, Any]]
 
 
 def get_variable_values(
@@ -209,7 +215,7 @@ def get_argument_values(
     return coerced_values
 
 
-NodeWithDirective = Union[
+NodeWithDirective: TypeAlias = Union[
     EnumValueDefinitionNode,
     ExecutableDefinitionNode,
     FieldDefinitionNode,

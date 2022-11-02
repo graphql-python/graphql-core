@@ -31,6 +31,12 @@ from ..utilities.sort_value_node import sort_value_node
 from .ast_from_value import ast_from_value
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = [
     "BreakingChange",
     "BreakingChangeType",
@@ -79,7 +85,7 @@ class DangerousChange(NamedTuple):
     description: str
 
 
-Change = Union[BreakingChange, DangerousChange]
+Change: TypeAlias = Union[BreakingChange, DangerousChange]
 
 
 def find_breaking_changes(

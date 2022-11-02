@@ -24,9 +24,9 @@ try:
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
 try:
-    from typing import TypeGuard
+    from typing import TypeAlias, TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing_extensions import TypeAlias, TypeGuard
 
 from ..error import GraphQLError, GraphQLFormattedError, located_error
 from ..language import (
@@ -170,7 +170,7 @@ class ExecutionResult:
         return not self == other
 
 
-Middleware = Optional[Union[Tuple, List, MiddlewareManager]]
+Middleware: TypeAlias = Optional[Union[Tuple, List, MiddlewareManager]]
 
 
 class ExecutionContext:

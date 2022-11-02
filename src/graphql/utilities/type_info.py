@@ -44,10 +44,16 @@ from ..type import (
 from .type_from_ast import type_from_ast
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
-GetFieldDefFn = Callable[
+GetFieldDefFn: TypeAlias = Callable[
     [GraphQLSchema, GraphQLType, FieldNode], Optional[GraphQLField]
 ]
 

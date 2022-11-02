@@ -10,7 +10,13 @@ from graphql.pyutils import inspect
 from ..utils import dedent
 
 
-Location = Optional[Tuple[int, int]]
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
+Location: TypeAlias = Optional[Tuple[int, int]]
 
 
 def lex_one(s: str) -> Token:

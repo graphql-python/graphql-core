@@ -40,7 +40,13 @@ from graphql.language import (
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
 
-Location = Optional[Tuple[int, int]]
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
+Location: TypeAlias = Optional[Tuple[int, int]]
 
 
 def assert_syntax_error(text: str, message: str, location: Location) -> None:

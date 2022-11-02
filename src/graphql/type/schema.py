@@ -28,15 +28,15 @@ try:
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
 try:
-    from typing import TypeGuard
+    from typing import TypeAlias, TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing_extensions import TypeAlias, TypeGuard
 
 
 __all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "is_schema", "assert_schema"]
 
 
-TypeMap = Dict[str, GraphQLNamedType]
+TypeMap: TypeAlias = Dict[str, GraphQLNamedType]
 
 
 class InterfaceImplementations(NamedTuple):

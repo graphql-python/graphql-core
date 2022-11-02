@@ -20,10 +20,16 @@ from ..type import (
 )
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = ["coerce_input_value"]
 
 
-OnErrorCB = Callable[[List[Union[str, int]], Any, GraphQLError], None]
+OnErrorCB: TypeAlias = Callable[[List[Union[str, int]], Any, GraphQLError], None]
 
 
 def default_on_error(

@@ -6,7 +6,13 @@ from typing import Any, Dict, List
 from .utils import dedent
 
 
-Scope = Dict[str, Any]
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
+Scope: TypeAlias = Dict[str, Any]
 
 
 def get_snippets(source, indent=4):

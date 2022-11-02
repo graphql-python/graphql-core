@@ -11,10 +11,16 @@ from ..language import (
 )
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = ["separate_operations"]
 
 
-DepGraph = Dict[str, List[str]]
+DepGraph: TypeAlias = Dict[str, List[str]]
 
 
 def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:

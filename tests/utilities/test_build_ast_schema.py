@@ -42,6 +42,12 @@ from ..star_wars_schema import star_wars_schema
 from ..utils import dedent, timeout_factor
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 def cycle_sdl(sdl: str) -> str:
     """Full cycle test.
 
@@ -54,11 +60,11 @@ def cycle_sdl(sdl: str) -> str:
     return print_schema(schema)
 
 
-TypeWithAstNode = Union[
+TypeWithAstNode: TypeAlias = Union[
     GraphQLArgument, GraphQLEnumValue, GraphQLField, GraphQLInputField, GraphQLNamedType
 ]
 
-TypeWithExtensionAstNodes = GraphQLNamedType
+TypeWithExtensionAstNodes: TypeAlias = GraphQLNamedType
 
 
 def expect_ast_node(obj: TypeWithAstNode, expected: str) -> None:

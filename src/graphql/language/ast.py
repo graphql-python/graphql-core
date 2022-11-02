@@ -9,6 +9,12 @@ from .source import Source
 from .token_kind import TokenKind
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = [
     "Location",
     "Token",
@@ -582,7 +588,7 @@ class ConstObjectFieldNode(ObjectFieldNode):
     value: ConstValueNode
 
 
-ConstValueNode = Union[
+ConstValueNode: TypeAlias = Union[
     IntValueNode,
     FloatValueNode,
     StringValueNode,
@@ -771,7 +777,7 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
     directives: Tuple[ConstDirectiveNode, ...]
 
 
-TypeSystemExtensionNode = Union[SchemaExtensionNode, TypeExtensionNode]
+TypeSystemExtensionNode: TypeAlias = Union[SchemaExtensionNode, TypeExtensionNode]
 
 
 class ScalarTypeExtensionNode(TypeExtensionNode):

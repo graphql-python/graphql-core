@@ -6,6 +6,10 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from ..language.ast import Node  # noqa: F401
@@ -19,7 +23,7 @@ __all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
 
 
 # Custom extensions
-GraphQLErrorExtensions = Dict[str, Any]
+GraphQLErrorExtensions: TypeAlias = Dict[str, Any]
 # Use a unique identifier name for your extension, for example the name of
 # your library or project. Do not use a shortened identifier as this increases
 # the risk of conflicts. We recommend you add at most one extension key,

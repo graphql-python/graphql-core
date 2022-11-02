@@ -64,11 +64,17 @@ from .source import Source, is_source
 from .token_kind import TokenKind
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = ["parse", "parse_type", "parse_value", "parse_const_value"]
 
 T = TypeVar("T")
 
-SourceType = Union[Source, str]
+SourceType: TypeAlias = Union[Source, str]
 
 
 def parse(

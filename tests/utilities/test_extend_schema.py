@@ -30,7 +30,13 @@ from graphql.utilities import build_schema, concat_ast, extend_schema, print_sch
 from ..utils import dedent
 
 
-TypeWithAstNode = Union[
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
+TypeWithAstNode: TypeAlias = Union[
     GraphQLArgument,
     GraphQLEnumValue,
     GraphQLField,
@@ -39,7 +45,7 @@ TypeWithAstNode = Union[
     GraphQLSchema,
 ]
 
-TypeWithExtensionAstNodes = Union[
+TypeWithExtensionAstNodes: TypeAlias = Union[
     GraphQLNamedType,
     GraphQLSchema,
 ]

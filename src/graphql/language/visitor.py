@@ -17,6 +17,12 @@ from . import ast
 from .ast import QUERY_DOCUMENT_KEYS, Node
 
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
 __all__ = [
     "Visitor",
     "ParallelVisitor",
@@ -41,7 +47,7 @@ class VisitorActionEnum(Enum):
     REMOVE = Ellipsis
 
 
-VisitorAction = Optional[VisitorActionEnum]
+VisitorAction: TypeAlias = Optional[VisitorActionEnum]
 
 # Note that in GraphQL.js these are defined differently:
 # BREAK = {}, SKIP = false, REMOVE = null, IDLE = undefined
@@ -51,7 +57,7 @@ SKIP = VisitorActionEnum.SKIP
 REMOVE = VisitorActionEnum.REMOVE
 IDLE = None
 
-VisitorKeyMap = Dict[str, Tuple[str, ...]]
+VisitorKeyMap: TypeAlias = Dict[str, Tuple[str, ...]]
 
 
 class EnterLeaveVisitor(NamedTuple):
