@@ -26,6 +26,10 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLType,
+    GraphQLUnionType,
+    SchemaMetaFieldDef,
+    TypeMetaFieldDef,
+    TypeNameMetaFieldDef,
     specified_directives,
 )
 from graphql.utilities import build_schema, lexicographic_sort_schema, print_schema
@@ -292,6 +296,60 @@ def describe_type_system_schema():
         # Also check that this order is stable
         copy_schema = GraphQLSchema(**schema.to_kwargs())
         assert list(copy_schema.type_map) == type_names
+
+    def describe_get_field():
+        pet_type = GraphQLInterfaceType("Pet", {"name": GraphQLField(GraphQLString)})
+        cat_type = GraphQLObjectType(
+            "Cat", {"name": GraphQLField(GraphQLString)}, [pet_type]
+        )
+        dog_type = GraphQLObjectType(
+            "Dog", {"name": GraphQLField(GraphQLString)}, [pet_type]
+        )
+        cat_or_dog = GraphQLUnionType("CatOrDog", [cat_type, dog_type])
+        query_type = GraphQLObjectType("Query", {"catOrDog": GraphQLField(cat_or_dog)})
+        mutation_type = GraphQLObjectType("Mutation", {})
+        subscription_type = GraphQLObjectType("Subscription", {})
+        schema = GraphQLSchema(query_type, mutation_type, subscription_type)
+
+        _get_field = schema.get_field
+
+        def returns_known_field():
+            assert _get_field(pet_type, "name") == pet_type.fields["name"]
+            assert _get_field(cat_type, "name") == cat_type.fields["name"]
+
+            assert _get_field(query_type, "catOrDog") == query_type.fields["catOrDog"]
+
+        def returns_none_for_unknown_fields():
+            assert _get_field(cat_or_dog, "name") is None
+
+            assert _get_field(query_type, "unknown") is None
+            assert _get_field(pet_type, "unknown") is None
+            assert _get_field(cat_type, "unknown") is None
+            assert _get_field(cat_or_dog, "unknown") is None
+
+        def handles_introspection_fields():
+            assert _get_field(query_type, "__typename") == TypeNameMetaFieldDef
+            assert _get_field(mutation_type, "__typename") == TypeNameMetaFieldDef
+            assert _get_field(subscription_type, "__typename") == TypeNameMetaFieldDef
+
+            assert _get_field(pet_type, "__typename") is TypeNameMetaFieldDef
+            assert _get_field(cat_type, "__typename") is TypeNameMetaFieldDef
+            assert _get_field(dog_type, "__typename") is TypeNameMetaFieldDef
+            assert _get_field(cat_or_dog, "__typename") is TypeNameMetaFieldDef
+
+            assert _get_field(query_type, "__type") is TypeMetaFieldDef
+            assert _get_field(query_type, "__schema") is SchemaMetaFieldDef
+
+        def returns_non_for_introspection_fields_in_wrong_location():
+            assert _get_field(pet_type, "__type") is None
+            assert _get_field(dog_type, "__type") is None
+            assert _get_field(mutation_type, "__type") is None
+            assert _get_field(subscription_type, "__type") is None
+
+            assert _get_field(pet_type, "__schema") is None
+            assert _get_field(dog_type, "__schema") is None
+            assert _get_field(mutation_type, "__schema") is None
+            assert _get_field(subscription_type, "__schema") is None
 
     def describe_validity():
         def describe_when_not_assumed_valid():

@@ -1,3 +1,5 @@
+from typing import List, Optional, Tuple
+
 from graphql.language import (
     FieldNode,
     NameNode,
@@ -10,7 +12,14 @@ from graphql.language import (
     print_ast,
     visit,
 )
-from graphql.type import GraphQLSchema, get_named_type, is_composite_type
+from graphql.type import (
+    GraphQLSchema,
+    SchemaMetaFieldDef,
+    TypeMetaFieldDef,
+    TypeNameMetaFieldDef,
+    get_named_type,
+    is_composite_type,
+)
 from graphql.utilities import TypeInfo, TypeInfoVisitor, build_schema
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
@@ -39,9 +48,13 @@ test_schema = build_schema(
       name(surname: Boolean): String
     }
 
+    union HumanOrAlien = Human | Alien
+
     type QueryRoot {
       human(id: ID): Human
       alien: Alien
+      humanOrAlien: HumanOrAlien
+      pet: Pet
     }
 
     schema {
@@ -139,6 +152,77 @@ def describe_visit_with_type_info():
         visit(ast, TypeInfoVisitor(type_info, wrapped_visitor))
 
         assert test_visitor.args == wrapped_visitor.args
+
+    def supports_introspection_fields():
+        type_info = TypeInfo(test_schema)
+
+        ast = parse(
+            """
+            {
+              __typename
+              __type(name: "Cat") { __typename }
+              __schema {
+                __typename # in object type
+              }
+              humanOrAlien {
+                __typename # in union type
+              }
+              pet {
+                __typename # in interface type
+              }
+              someUnknownType {
+                __typename # unknown
+              }
+              pet {
+                __type # unknown
+                __schema # unknown
+              }
+            }
+            """
+        )
+
+        visited_fields: List[Tuple[Optional[str], Optional[str]]] = []
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter_field(self, node: OperationDefinitionNode, *_args):
+                parent_type = type_info.get_parent_type()
+                type_name = getattr(type_info.get_parent_type(), "name", None)
+                field_def = type_info.get_field_def()
+                fields = getattr(parent_type, "fields", {})
+                fields = dict(
+                    **fields,
+                    __type=TypeMetaFieldDef,
+                    __typename=TypeNameMetaFieldDef,
+                    __schema=SchemaMetaFieldDef,
+                )
+                for name, field in fields.items():
+                    if field is field_def:
+                        field_name = name
+                        break
+                else:
+                    field_name = None
+                visited_fields.append((type_name, field_name))
+
+        test_visitor = TestVisitor()
+        assert visit(ast, TypeInfoVisitor(type_info, test_visitor))
+
+        assert visited_fields == [
+            ("QueryRoot", "__typename"),
+            ("QueryRoot", "__type"),
+            ("__Type", "__typename"),
+            ("QueryRoot", "__schema"),
+            ("__Schema", "__typename"),
+            ("QueryRoot", "humanOrAlien"),
+            ("HumanOrAlien", "__typename"),
+            ("QueryRoot", "pet"),
+            ("Pet", "__typename"),
+            ("QueryRoot", None),
+            (None, None),
+            ("QueryRoot", "pet"),
+            ("Pet", None),
+            ("Pet", None),
+        ]
 
     def maintains_type_info_during_visit():
         visited = []

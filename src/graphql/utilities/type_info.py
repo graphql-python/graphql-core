@@ -27,16 +27,12 @@ from ..type import (
     GraphQLOutputType,
     GraphQLSchema,
     GraphQLType,
-    SchemaMetaFieldDef,
-    TypeMetaFieldDef,
-    TypeNameMetaFieldDef,
     get_named_type,
     get_nullable_type,
     is_composite_type,
     is_enum_type,
     is_input_object_type,
     is_input_type,
-    is_interface_type,
     is_list_type,
     is_object_type,
     is_output_type,
@@ -54,7 +50,7 @@ __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
 GetFieldDefFn: TypeAlias = Callable[
-    [GraphQLSchema, GraphQLType, FieldNode], Optional[GraphQLField]
+    [GraphQLSchema, GraphQLCompositeType, FieldNode], Optional[GraphQLField]
 ]
 
 
@@ -264,24 +260,9 @@ class TypeInfo:
 
 
 def get_field_def(
-    schema: GraphQLSchema, parent_type: GraphQLType, field_node: FieldNode
+    schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode
 ) -> Optional[GraphQLField]:
-    """Get field definition.
-
-    Not exactly the same as the executor's definition of
-    :func:`graphql.execution.get_field_def`, in this statically evaluated environment
-    we do not always have an Object type, and need to handle Interface and Union types.
-    """
-    name = field_node.name.value
-    if name == "__schema" and schema.query_type is parent_type:
-        return SchemaMetaFieldDef
-    if name == "__type" and schema.query_type is parent_type:
-        return TypeMetaFieldDef
-    if name == "__typename" and is_composite_type(parent_type):
-        return TypeNameMetaFieldDef
-    if is_object_type(parent_type) or is_interface_type(parent_type):
-        return parent_type.fields.get(name)
-    return None
+    return schema.get_field(parent_type, field_node.name.value)
 
 
 class TypeInfoVisitor(Visitor):

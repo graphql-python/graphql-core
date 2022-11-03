@@ -8,7 +8,6 @@ from ..execution.execute import (
     ExecutionResult,
     assert_valid_execution_arguments,
     execute,
-    get_field_def,
 )
 from ..execution.values import get_argument_values
 from ..language import DocumentNode
@@ -179,10 +178,10 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
         context.operation.selection_set,
     )
     response_name, field_nodes = next(iter(root_fields.items()))
-    field_def = get_field_def(schema, root_type, field_nodes[0])
+    field_name = field_nodes[0].name.value
+    field_def = schema.get_field(root_type, field_name)
 
     if not field_def:
-        field_name = field_nodes[0].name.value
         raise GraphQLError(
             f"The subscription field '{field_name}' is not defined.", field_nodes
         )

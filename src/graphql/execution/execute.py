@@ -50,9 +50,6 @@ from ..type import (
     GraphQLResolveInfo,
     GraphQLSchema,
     GraphQLTypeResolver,
-    SchemaMetaFieldDef,
-    TypeMetaFieldDef,
-    TypeNameMetaFieldDef,
     assert_valid_schema,
     is_abstract_type,
     is_leaf_type,
@@ -71,7 +68,6 @@ __all__ = [
     "default_type_resolver",
     "execute",
     "execute_sync",
-    "get_field_def",
     "ExecutionResult",
     "ExecutionContext",
     "FormattedExecutionResult",
@@ -501,7 +497,8 @@ class ExecutionContext:
         calling its resolve function, then calls complete_value to await coroutine
         objects, serialize scalars, or execute the sub-selection-set for objects.
         """
-        field_def = get_field_def(self.schema, parent_type, field_nodes[0])
+        field_name = field_nodes[0].name.value
+        field_def = self.schema.get_field(parent_type, field_name)
         if not field_def:
             return Undefined
 
@@ -1128,31 +1125,6 @@ def assert_valid_execution_arguments(
             " with variable names as keys. Perhaps look to see"
             " if an unparsed JSON string was provided."
         )
-
-
-def get_field_def(
-    schema: GraphQLSchema, parent_type: GraphQLObjectType, field_node: FieldNode
-) -> GraphQLField:
-    """Get field definition.
-
-    This method looks up the field on the given type definition. It has special casing
-    for the three introspection fields, ``__schema``, ``__type`, and ``__typename``.
-    ``__typename`` is special because it can always be queried as a field, even in
-    situations where no other fields are allowed, like on a Union. ``__schema`` and
-    ``__type`` could get automatically added to the query type, but that would require
-    mutating type definitions, which would cause issues.
-
-    For internal use only.
-    """
-    field_name = field_node.name.value
-
-    if field_name == "__schema" and schema.query_type == parent_type:
-        return SchemaMetaFieldDef
-    elif field_name == "__type" and schema.query_type == parent_type:
-        return TypeMetaFieldDef
-    elif field_name == "__typename":
-        return TypeNameMetaFieldDef
-    return parent_type.fields.get(field_name)
 
 
 def invalid_return_type_error(

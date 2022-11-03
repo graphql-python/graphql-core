@@ -8,6 +8,8 @@ from ..language import OperationType, ast
 from ..pyutils import inspect, is_collection, is_description
 from .definition import (
     GraphQLAbstractType,
+    GraphQLCompositeType,
+    GraphQLField,
     GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
@@ -20,7 +22,12 @@ from .definition import (
     is_wrapping_type,
 )
 from .directives import GraphQLDirective, is_directive, specified_directives
-from .introspection import introspection_types
+from .introspection import (
+    SchemaMetaFieldDef,
+    TypeMetaFieldDef,
+    TypeNameMetaFieldDef,
+    introspection_types,
+)
 
 
 try:
@@ -386,6 +393,35 @@ class GraphQLSchema:
             if directive.name == name:
                 return directive
         return None
+
+    def get_field(
+        self, parent_type: GraphQLCompositeType, field_name: str
+    ) -> Optional[GraphQLField]:
+        """Get field of a given type with the given name.
+
+        This method looks up the field on the given type definition.
+        It has special casing for the three introspection fields, `__schema`,
+        `__type` and `__typename`.
+
+        `__typename` is special because it can always be queried as a field, even
+        in situations where no other fields are allowed, like on a Union.
+
+        `__schema` and `__type` could get automatically added to the query type,
+        but that would require mutating type definitions, which would cause issues.
+        """
+        if field_name == "__schema":
+            return SchemaMetaFieldDef if self.query_type is parent_type else None
+        if field_name == "__type":
+            return TypeMetaFieldDef if self.query_type is parent_type else None
+        if field_name == "__typename":
+            return TypeNameMetaFieldDef
+
+        # this function is part of a "hot" path inside executor and to assume presence
+        # of 'fields' is faster than to use `not is_union_type`
+        try:
+            return parent_type.fields[field_name]  # type: ignore
+        except (AttributeError, KeyError):
+            return None
 
     @property
     def validation_errors(self) -> Optional[List[GraphQLError]]:
