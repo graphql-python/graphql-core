@@ -354,11 +354,16 @@ def describe_subscription_initialization_phase():
     @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
-        with raises(TypeError) as exc_info:
-            await subscribe_with_bad_fn(lambda _obj, _info: "test")
-
-        assert str(exc_info.value) == (
-            "Subscription field must return AsyncIterable. Received: 'test'."
+        assert await subscribe_with_bad_fn(lambda _obj, _info: "test") == (
+            None,
+            [
+                {
+                    "message": "Subscription field must return AsyncIterable."
+                    " Received: 'test'.",
+                    "locations": [(1, 16)],
+                    "path": ["foo"],
+                }
+            ],
         )
 
     @mark.asyncio

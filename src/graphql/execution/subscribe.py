@@ -145,18 +145,8 @@ async def create_source_event_stream(
         return ExecutionResult(data=None, errors=context)
 
     try:
-        event_stream = await execute_subscription(context)
-
-        # Assert field returned an event stream, otherwise yield an error.
-        if not isinstance(event_stream, AsyncIterable):
-            raise TypeError(
-                "Subscription field must return AsyncIterable."
-                f" Received: {inspect(event_stream)}."
-            )
-        return event_stream
-
+        return await execute_subscription(context)
     except GraphQLError as error:
-        # Report it as an ExecutionResult, containing only errors and no data.
         return ExecutionResult(data=None, errors=[error])
 
 
@@ -206,6 +196,13 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
             event_stream = await event_stream
         if isinstance(event_stream, Exception):
             raise event_stream
+
+        # Assert field returned an event stream, otherwise yield an error.
+        if not isinstance(event_stream, AsyncIterable):
+            raise GraphQLError(
+                "Subscription field must return AsyncIterable."
+                f" Received: {inspect(event_stream)}."
+            )
 
         return event_stream
     except Exception as error:
