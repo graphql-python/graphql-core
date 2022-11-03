@@ -45,7 +45,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     def enter_list_value(self, node: ListValueNode, *_args: Any) -> VisitorAction:
         # Note: TypeInfo will traverse into a list's item type, so look to the parent
         # input type to check if it is a list.
-        type_ = get_nullable_type(self.context.get_parent_input_type())  # type: ignore
+        type_ = get_nullable_type(self.context.get_parent_input_type())
         if not is_list_type(type_):
             self.is_valid_value_node(node)
             return SKIP  # Don't traverse further.

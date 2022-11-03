@@ -201,7 +201,7 @@ class TypeInfo:
 
     # noinspection PyUnusedLocal
     def enter_list_value(self, node: ListValueNode) -> None:
-        list_type = get_nullable_type(self.get_input_type())  # type: ignore
+        list_type = get_nullable_type(self.get_input_type())
         item_type = list_type.of_type if is_list_type(list_type) else list_type
         # List positions never have a default value.
         self._default_value_stack.append(Undefined)

@@ -144,6 +144,8 @@ __all__ = [
     "GraphQLNamedInputType",
     "GraphQLNamedOutputType",
     "GraphQLNullableType",
+    "GraphQLNullableInputType",
+    "GraphQLNullableOutputType",
     "GraphQLNonNull",
     "GraphQLResolveInfo",
     "GraphQLScalarType",
@@ -169,7 +171,7 @@ class GraphQLType:
     """Base class for all GraphQL types"""
 
     # Note: We don't use slots for GraphQLType objects because memory considerations
-    # are not really important for the schema definition and it would make caching
+    # are not really important for the schema definition, and it would make caching
     # properties slower or more complicated.
 
 
@@ -188,7 +190,7 @@ def assert_type(type_: Any) -> GraphQLType:
 
 # These types wrap and modify other types
 
-GT = TypeVar("GT", bound=GraphQLType)
+GT = TypeVar("GT", bound=GraphQLType, covariant=True)
 
 
 class GraphQLWrappingType(GraphQLType, Generic[GT]):
@@ -1609,7 +1611,7 @@ def is_required_input_field(field: GraphQLInputField) -> bool:
 # Wrapper types
 
 
-class GraphQLList(Generic[GT], GraphQLWrappingType[GT]):
+class GraphQLList(GraphQLWrappingType[GT]):
     """List Type Wrapper
 
     A list is a wrapping type which points to another type. Lists are often created
@@ -1645,10 +1647,10 @@ def assert_list_type(type_: Any) -> GraphQLList:
     return type_
 
 
-GNT = TypeVar("GNT", bound="GraphQLNullableType")
+GNT = TypeVar("GNT", bound="GraphQLNullableType", covariant=True)
 
 
-class GraphQLNonNull(GraphQLWrappingType[GNT], Generic[GNT]):
+class GraphQLNonNull(GraphQLWrappingType[GNT]):
     """Non-Null Type Wrapper
 
     A non-null is a wrapping type which points to another type. Non-null types enforce
@@ -1680,27 +1682,7 @@ class GraphQLNonNull(GraphQLWrappingType[GNT], Generic[GNT]):
         return f"{self.of_type}!"
 
 
-def is_non_null_type(type_: Any) -> TypeGuard[GraphQLNonNull]:
-    return isinstance(type_, GraphQLNonNull)
-
-
-def assert_non_null_type(type_: Any) -> GraphQLNonNull:
-    if not is_non_null_type(type_):
-        raise TypeError(f"Expected {type_} to be a GraphQL Non-Null type.")
-    return type_
-
-
 # These types can all accept null as a value.
-
-graphql_nullable_types = (
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    GraphQLInputObjectType,
-    GraphQLList,
-)
 
 GraphQLNullableType: TypeAlias = Union[
     GraphQLScalarType,
@@ -1713,8 +1695,95 @@ GraphQLNullableType: TypeAlias = Union[
 ]
 
 
+# These types may be used as input types for arguments and directives.
+
+GraphQLNullableInputType: TypeAlias = Union[
+    GraphQLScalarType,
+    GraphQLEnumType,
+    GraphQLInputObjectType,
+    # actually GraphQLList[GraphQLInputType], but we can't recurse
+    GraphQLList,
+]
+
+GraphQLInputType: TypeAlias = Union[
+    GraphQLNullableInputType, GraphQLNonNull[GraphQLNullableInputType]
+]
+
+
+# These types may be used as output types as the result of fields.
+
+GraphQLNullableOutputType: TypeAlias = Union[
+    GraphQLScalarType,
+    GraphQLObjectType,
+    GraphQLInterfaceType,
+    GraphQLUnionType,
+    GraphQLEnumType,
+    # actually GraphQLList[GraphQLOutputType], but we can't recurse
+    GraphQLList,
+]
+
+GraphQLOutputType: TypeAlias = Union[
+    GraphQLNullableOutputType, GraphQLNonNull[GraphQLNullableOutputType]
+]
+
+
+# Predicates and Assertions
+
+
+def is_input_type(type_: Any) -> TypeGuard[GraphQLInputType]:
+    return isinstance(
+        type_, (GraphQLScalarType, GraphQLEnumType, GraphQLInputObjectType)
+    ) or (isinstance(type_, GraphQLWrappingType) and is_input_type(type_.of_type))
+
+
+def assert_input_type(type_: Any) -> GraphQLInputType:
+    if not is_input_type(type_):
+        raise TypeError(f"Expected {type_} to be a GraphQL input type.")
+    return type_
+
+
+def is_output_type(type_: Any) -> TypeGuard[GraphQLOutputType]:
+    return isinstance(
+        type_,
+        (
+            GraphQLScalarType,
+            GraphQLObjectType,
+            GraphQLInterfaceType,
+            GraphQLUnionType,
+            GraphQLEnumType,
+        ),
+    ) or (isinstance(type_, GraphQLWrappingType) and is_output_type(type_.of_type))
+
+
+def assert_output_type(type_: Any) -> GraphQLOutputType:
+    if not is_output_type(type_):
+        raise TypeError(f"Expected {type_} to be a GraphQL output type.")
+    return type_
+
+
+def is_non_null_type(type_: Any) -> TypeGuard[GraphQLNonNull]:
+    return isinstance(type_, GraphQLNonNull)
+
+
+def assert_non_null_type(type_: Any) -> GraphQLNonNull:
+    if not is_non_null_type(type_):
+        raise TypeError(f"Expected {type_} to be a GraphQL Non-Null type.")
+    return type_
+
+
 def is_nullable_type(type_: Any) -> TypeGuard[GraphQLNullableType]:
-    return isinstance(type_, graphql_nullable_types)
+    return isinstance(
+        type_,
+        (
+            GraphQLScalarType,
+            GraphQLObjectType,
+            GraphQLInterfaceType,
+            GraphQLUnionType,
+            GraphQLEnumType,
+            GraphQLInputObjectType,
+            GraphQLList,
+        ),
+    )
 
 
 def assert_nullable_type(type_: Any) -> GraphQLNullableType:
@@ -1745,59 +1814,6 @@ def get_nullable_type(
     if is_non_null_type(type_):
         type_ = type_.of_type
     return cast(Optional[GraphQLNullableType], type_)
-
-
-# These types may be used as input types for arguments and directives.
-
-graphql_input_types = (GraphQLScalarType, GraphQLEnumType, GraphQLInputObjectType)
-
-GraphQLInputType: TypeAlias = Union[
-    GraphQLScalarType, GraphQLEnumType, GraphQLInputObjectType, GraphQLWrappingType
-]
-
-
-def is_input_type(type_: Any) -> TypeGuard[GraphQLInputType]:
-    return isinstance(type_, graphql_input_types) or (
-        isinstance(type_, GraphQLWrappingType) and is_input_type(type_.of_type)
-    )
-
-
-def assert_input_type(type_: Any) -> GraphQLInputType:
-    if not is_input_type(type_):
-        raise TypeError(f"Expected {type_} to be a GraphQL input type.")
-    return type_
-
-
-# These types may be used as output types as the result of fields.
-
-graphql_output_types = (
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-)
-
-GraphQLOutputType: TypeAlias = Union[
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    GraphQLWrappingType,
-]
-
-
-def is_output_type(type_: Any) -> TypeGuard[GraphQLOutputType]:
-    return isinstance(type_, graphql_output_types) or (
-        isinstance(type_, GraphQLWrappingType) and is_output_type(type_.of_type)
-    )
-
-
-def assert_output_type(type_: Any) -> GraphQLOutputType:
-    if not is_output_type(type_):
-        raise TypeError(f"Expected {type_} to be a GraphQL output type.")
-    return type_
 
 
 # These named types do not include modifiers like List or NonNull.
@@ -1847,13 +1863,11 @@ def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:
 
 # These types may describe types which may be leaf values.
 
-graphql_leaf_types = (GraphQLScalarType, GraphQLEnumType)
-
 GraphQLLeafType: TypeAlias = Union[GraphQLScalarType, GraphQLEnumType]
 
 
 def is_leaf_type(type_: Any) -> TypeGuard[GraphQLLeafType]:
-    return isinstance(type_, graphql_leaf_types)
+    return isinstance(type_, (GraphQLScalarType, GraphQLEnumType))
 
 
 def assert_leaf_type(type_: Any) -> GraphQLLeafType:
@@ -1864,15 +1878,15 @@ def assert_leaf_type(type_: Any) -> GraphQLLeafType:
 
 # These types may describe the parent context of a selection set.
 
-graphql_composite_types = (GraphQLObjectType, GraphQLInterfaceType, GraphQLUnionType)
-
 GraphQLCompositeType: TypeAlias = Union[
     GraphQLObjectType, GraphQLInterfaceType, GraphQLUnionType
 ]
 
 
 def is_composite_type(type_: Any) -> TypeGuard[GraphQLCompositeType]:
-    return isinstance(type_, graphql_composite_types)
+    return isinstance(
+        type_, (GraphQLObjectType, GraphQLInterfaceType, GraphQLUnionType)
+    )
 
 
 def assert_composite_type(type_: Any) -> GraphQLType:
@@ -1883,13 +1897,11 @@ def assert_composite_type(type_: Any) -> GraphQLType:
 
 # These types may describe abstract types.
 
-graphql_abstract_types = (GraphQLInterfaceType, GraphQLUnionType)
-
 GraphQLAbstractType: TypeAlias = Union[GraphQLInterfaceType, GraphQLUnionType]
 
 
 def is_abstract_type(type_: Any) -> TypeGuard[GraphQLAbstractType]:
-    return isinstance(type_, graphql_abstract_types)
+    return isinstance(type_, (GraphQLInterfaceType, GraphQLUnionType))
 
 
 def assert_abstract_type(type_: Any) -> GraphQLAbstractType:
