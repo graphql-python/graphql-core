@@ -23,6 +23,7 @@ from graphql.type import (
     assert_object_type,
     assert_scalar_type,
     assert_union_type,
+    specified_directives,
     validate_schema,
 )
 from graphql.utilities import build_schema, concat_ast, extend_schema, print_schema
@@ -101,6 +102,38 @@ def describe_extend_schema():
             schema=extended_schema, source="{ newField }", root_value={"newField": 123}
         )
         assert result == ({"newField": "123"}, None)
+
+    def does_not_modify_built_in_types_and_directives():
+        schema = build_schema(
+            """
+              type Query {
+                str: String
+                int: Int
+                float: Float
+                id: ID
+                bool: Boolean
+              }
+            """
+        )
+
+        extension_sdl = dedent(
+            """
+            extend type Query {
+              foo: String
+            }
+            """
+        )
+
+        extended_schema = extend_schema(schema, parse(extension_sdl))
+
+        # built-ins are used
+        assert extended_schema.get_type("Int") is GraphQLInt
+        assert extended_schema.get_type("Float") is GraphQLFloat
+        assert extended_schema.get_type("String") is GraphQLString
+        assert extended_schema.get_type("Boolean") is GraphQLBoolean
+        assert extended_schema.get_type("ID") is GraphQLID
+
+        assert extended_schema.directives == specified_directives
 
     def extends_objects_by_adding_new_fields():
         schema = build_schema(

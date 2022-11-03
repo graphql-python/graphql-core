@@ -80,6 +80,7 @@ from ..type import (
     is_non_null_type,
     is_object_type,
     is_scalar_type,
+    is_specified_directive,
     is_specified_scalar_type,
     is_union_type,
     specified_scalar_types,
@@ -257,6 +258,10 @@ class ExtendSchemaImpl:
 
     # noinspection PyShadowingNames
     def replace_directive(self, directive: GraphQLDirective) -> GraphQLDirective:
+        if is_specified_directive(directive):
+            # Builtin directives are not extended.
+            return directive
+
         kwargs = directive.to_kwargs()
         return GraphQLDirective(
             **merge_kwargs(
