@@ -3,7 +3,12 @@ from typing import Any, Callable, Dict, List
 
 from pytest import mark, raises
 
-from graphql.execution import MapAsyncIterator, create_source_event_stream, subscribe
+from graphql.execution import (
+    ExecutionResult,
+    MapAsyncIterator,
+    create_source_event_stream,
+    subscribe,
+)
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
@@ -130,6 +135,22 @@ def create_subscription(pubsub: SimplePubSub):
 
 
 DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)})
+
+
+async def subscribe_with_bad_fn(subscribe_fn: Callable) -> ExecutionResult:
+    schema = GraphQLSchema(
+        query=DummyQueryType,
+        subscription=GraphQLObjectType(
+            "Subscription",
+            {"foo": GraphQLField(GraphQLString, subscribe=subscribe_fn)},
+        ),
+    )
+    document = parse("subscription { foo }")
+    result = await subscribe(schema, document)
+
+    assert isinstance(result, ExecutionResult)
+    assert await create_source_event_stream(schema, document) == result
+    return result
 
 
 # Check all error cases when initializing the subscription.
@@ -333,22 +354,8 @@ def describe_subscription_initialization_phase():
     @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
-        schema = GraphQLSchema(
-            query=DummyQueryType,
-            subscription=GraphQLObjectType(
-                "Subscription",
-                {
-                    "foo": GraphQLField(
-                        GraphQLString, subscribe=lambda _obj, _info: "test"
-                    )
-                },
-            ),
-        )
-
-        document = parse("subscription { foo }")
-
         with raises(TypeError) as exc_info:
-            await subscribe(schema, document)
+            await subscribe_with_bad_fn(lambda _obj, _info: "test")
 
         assert str(exc_info.value) == (
             "Subscription field must return AsyncIterable. Received: 'test'."
@@ -356,20 +363,6 @@ def describe_subscription_initialization_phase():
 
     @mark.asyncio
     async def resolves_to_an_error_for_subscription_resolver_errors():
-        async def subscribe_with_fn(subscribe_fn: Callable):
-            schema = GraphQLSchema(
-                query=DummyQueryType,
-                subscription=GraphQLObjectType(
-                    "Subscription",
-                    {"foo": GraphQLField(GraphQLString, subscribe=subscribe_fn)},
-                ),
-            )
-            document = parse("subscription { foo }")
-            result = await subscribe(schema, document)
-
-            assert await create_source_event_stream(schema, document) == result
-            return result
-
         expected_result = (
             None,
             [
@@ -385,25 +378,25 @@ def describe_subscription_initialization_phase():
         def return_error(_obj, _info):
             return TypeError("test error")
 
-        assert await subscribe_with_fn(return_error) == expected_result
+        assert await subscribe_with_bad_fn(return_error) == expected_result
 
         # Throwing an error
         def throw_error(*_args):
             raise TypeError("test error")
 
-        assert await subscribe_with_fn(throw_error) == expected_result
+        assert await subscribe_with_bad_fn(throw_error) == expected_result
 
         # Resolving to an error
         async def resolve_error(*_args):
             return TypeError("test error")
 
-        assert await subscribe_with_fn(resolve_error) == expected_result
+        assert await subscribe_with_bad_fn(resolve_error) == expected_result
 
         # Rejecting with an error
         async def reject_error(*_args):
             return TypeError("test error")
 
-        assert await subscribe_with_fn(reject_error) == expected_result
+        assert await subscribe_with_bad_fn(reject_error) == expected_result
 
     @mark.asyncio
     async def resolves_to_an_error_if_variables_were_wrong_type():
