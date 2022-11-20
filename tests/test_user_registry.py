@@ -410,7 +410,7 @@ def describe_subscription():
             """
 
         variables = {"userId": "0"}
-        subscription_one = await subscribe(
+        subscription_one = subscribe(
             schema, parse(query), context_value=context, variable_values=variables
         )
         assert isinstance(subscription_one, MapAsyncIterator)
@@ -424,7 +424,7 @@ def describe_subscription():
             }
             """
 
-        subscription_all = await subscribe(schema, parse(query), context_value=context)
+        subscription_all = subscribe(schema, parse(query), context_value=context)
         assert isinstance(subscription_all, MapAsyncIterator)
 
         received_one = []

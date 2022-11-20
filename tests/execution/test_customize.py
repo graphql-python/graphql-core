@@ -67,7 +67,7 @@ def describe_customize_subscription():
             async def custom_foo():
                 yield {"foo": "FooValue"}
 
-        subscription = await subscribe(
+        subscription = subscribe(
             schema,
             document=parse("subscription { foo }"),
             root_value=Root(),
@@ -111,7 +111,7 @@ def describe_customize_subscription():
         )
 
         document = parse("subscription { foo }")
-        subscription = await subscribe(
+        subscription = subscribe(
             schema,
             document,
             context_value={},

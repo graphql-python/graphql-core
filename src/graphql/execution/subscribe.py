@@ -1,5 +1,15 @@
 from inspect import isawaitable
-from typing import Any, AsyncIterable, AsyncIterator, Dict, Optional, Type, Union
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Awaitable,
+    Dict,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 
 from ..error import GraphQLError, located_error
 from ..execution.collect_fields import collect_fields
@@ -11,7 +21,7 @@ from ..execution.execute import (
 )
 from ..execution.values import get_argument_values
 from ..language import DocumentNode
-from ..pyutils import Path, inspect
+from ..pyutils import AwaitableOrValue, Path, inspect
 from ..type import GraphQLFieldResolver, GraphQLSchema
 from .map_async_iterator import MapAsyncIterator
 
@@ -19,7 +29,7 @@ from .map_async_iterator import MapAsyncIterator
 __all__ = ["subscribe", "create_source_event_stream"]
 
 
-async def subscribe(
+def subscribe(
     schema: GraphQLSchema,
     document: DocumentNode,
     root_value: Any = None,
@@ -29,7 +39,7 @@ async def subscribe(
     field_resolver: Optional[GraphQLFieldResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
-) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
+) -> AwaitableOrValue[Union[AsyncIterator[ExecutionResult], ExecutionResult]]:
     """Create a GraphQL subscription.
 
     Implements the "Subscribe" algorithm described in the GraphQL spec.
@@ -49,7 +59,7 @@ async def subscribe(
     If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
     a stream of ExecutionResults representing the response stream.
     """
-    result_or_stream = await create_source_event_stream(
+    result_or_stream = create_source_event_stream(
         schema,
         document,
         root_value,
@@ -59,8 +69,6 @@ async def subscribe(
         subscribe_field_resolver,
         execution_context_class,
     )
-    if isinstance(result_or_stream, ExecutionResult):
-        return result_or_stream
 
     async def map_source_to_response(payload: Any) -> ExecutionResult:
         """Map source to response.
@@ -84,11 +92,28 @@ async def subscribe(
         )
         return await result if isawaitable(result) else result
 
+    if (execution_context_class or ExecutionContext).is_awaitable(result_or_stream):
+        awaitable_result_or_stream = cast(Awaitable, result_or_stream)
+
+        # noinspection PyShadowingNames
+        async def await_result() -> Any:
+            result_or_stream = await awaitable_result_or_stream
+            if isinstance(result_or_stream, ExecutionResult):
+                return result_or_stream
+            return MapAsyncIterator(result_or_stream, map_source_to_response)
+
+        return await_result()
+
+    if isinstance(result_or_stream, ExecutionResult):
+        return result_or_stream
+
     # Map every source value to a ExecutionResult value as described above.
-    return MapAsyncIterator(result_or_stream, map_source_to_response)
+    return MapAsyncIterator(
+        cast(AsyncIterable[Any], result_or_stream), map_source_to_response
+    )
 
 
-async def create_source_event_stream(
+def create_source_event_stream(
     schema: GraphQLSchema,
     document: DocumentNode,
     root_value: Any = None,
@@ -97,7 +122,7 @@ async def create_source_event_stream(
     operation_name: Optional[str] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
-) -> Union[AsyncIterable[Any], ExecutionResult]:
+) -> AwaitableOrValue[Union[AsyncIterable[Any], ExecutionResult]]:
     """Create source event stream
 
     Implements the "CreateSourceEventStream" algorithm described in the GraphQL
@@ -145,12 +170,28 @@ async def create_source_event_stream(
         return ExecutionResult(data=None, errors=context)
 
     try:
-        return await execute_subscription(context)
+        event_stream = execute_subscription(context)
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])
 
+    if context.is_awaitable(event_stream):
+        awaitable_event_stream = cast(Awaitable, event_stream)
 
-async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
+        # noinspection PyShadowingNames
+        async def await_event_stream() -> Union[AsyncIterable[Any], ExecutionResult]:
+            try:
+                return await awaitable_event_stream
+            except GraphQLError as error:
+                return ExecutionResult(data=None, errors=[error])
+
+        return await_event_stream()
+
+    return event_stream
+
+
+def execute_subscription(
+    context: ExecutionContext,
+) -> AwaitableOrValue[AsyncIterable[Any]]:
     schema = context.schema
 
     root_type = schema.subscription_type
@@ -191,19 +232,33 @@ async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
         # AsyncIterable yielding raw payloads.
         resolve_fn = field_def.subscribe or context.subscribe_field_resolver
 
-        event_stream = resolve_fn(context.root_value, info, **args)
-        if context.is_awaitable(event_stream):
-            event_stream = await event_stream
-        if isinstance(event_stream, Exception):
-            raise event_stream
+        result = resolve_fn(context.root_value, info, **args)
+        if context.is_awaitable(result):
 
-        # Assert field returned an event stream, otherwise yield an error.
-        if not isinstance(event_stream, AsyncIterable):
-            raise GraphQLError(
-                "Subscription field must return AsyncIterable."
-                f" Received: {inspect(event_stream)}."
-            )
+            # noinspection PyShadowingNames
+            async def await_result() -> AsyncIterable[Any]:
+                try:
+                    return assert_event_stream(await result)
+                except Exception as error:
+                    raise located_error(error, field_nodes, path.as_list())
 
-        return event_stream
+            return await_result()
+
+        return assert_event_stream(result)
+
     except Exception as error:
         raise located_error(error, field_nodes, path.as_list())
+
+
+def assert_event_stream(result: Any) -> AsyncIterable:
+    if isinstance(result, Exception):
+        raise result
+
+    # Assert field returned an event stream, otherwise yield an error.
+    if not isinstance(result, AsyncIterable):
+        raise GraphQLError(
+            "Subscription field must return AsyncIterable."
+            f" Received: {inspect(result)}."
+        )
+
+    return result

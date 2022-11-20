@@ -1,5 +1,15 @@
 import asyncio
-from typing import Any, Callable, Dict, List
+from typing import (
+    Any,
+    AsyncIterable,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from pytest import mark, raises
 
@@ -10,7 +20,7 @@ from graphql.execution import (
     subscribe,
 )
 from graphql.language import parse
-from graphql.pyutils import SimplePubSub
+from graphql.pyutils import AwaitableOrValue, SimplePubSub, is_awaitable
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -36,6 +46,8 @@ except NameError:  # pragma: no cover (Python < 3.10)
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 
+
+T = TypeVar("T")
 
 Email = TypedDict(
     "Email",
@@ -137,7 +149,30 @@ def create_subscription(pubsub: SimplePubSub):
 DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)})
 
 
-async def subscribe_with_bad_fn(subscribe_fn: Callable) -> ExecutionResult:
+def assert_equal_awaitables_or_values(
+    value1: AwaitableOrValue[T], value2: AwaitableOrValue[T]
+) -> AwaitableOrValue[T]:
+    if is_awaitable(value1):
+        awaitable1 = cast(Awaitable[T], value1)
+        assert is_awaitable(value2)
+        awaitable2 = cast(Awaitable[T], value2)
+
+        # noinspection PyShadowingNames
+        async def awaited_equal_value():
+            value1 = await awaitable1
+            value2 = await awaitable2
+            assert value1 == value2
+            return value1
+
+        return awaited_equal_value()
+    assert not is_awaitable(value2)
+    assert value1 == value2
+    return value1
+
+
+def subscribe_with_bad_fn(
+    subscribe_fn: Callable,
+) -> AwaitableOrValue[Union[ExecutionResult, AsyncIterable[Any]]]:
     schema = GraphQLSchema(
         query=DummyQueryType,
         subscription=GraphQLObjectType(
@@ -146,11 +181,10 @@ async def subscribe_with_bad_fn(subscribe_fn: Callable) -> ExecutionResult:
         ),
     )
     document = parse("subscription { foo }")
-    result = await subscribe(schema, document)
 
-    assert isinstance(result, ExecutionResult)
-    assert await create_source_event_stream(schema, document) == result
-    return result
+    return assert_equal_awaitables_or_values(
+        subscribe(schema, document), create_source_event_stream(schema, document)
+    )
 
 
 # Check all error cases when initializing the subscription.
@@ -169,9 +203,7 @@ def describe_subscription_initialization_phase():
             for value in ():  # type: ignore
                 yield value  # pragma: no cover
 
-        ai = await subscribe(
-            email_schema, document, {"importantEmail": empty_async_iterator}
-        )
+        ai = subscribe(email_schema, document, {"importantEmail": empty_async_iterator})
 
         with raises(StopAsyncIteration):
             await anext(ai)
@@ -193,7 +225,7 @@ def describe_subscription_initialization_phase():
         async def foo_generator(_info):
             yield {"foo": "FooValue"}
 
-        subscription = await subscribe(
+        subscription = subscribe(
             schema, parse("subscription { foo }"), {"foo": foo_generator}
         )
         assert isinstance(subscription, MapAsyncIterator)
@@ -215,7 +247,7 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        subscription = await subscribe(schema, parse("subscription { foo }"))
+        subscription = subscribe(schema, parse("subscription { foo }"))
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
@@ -228,15 +260,22 @@ def describe_subscription_initialization_phase():
             await asyncio.sleep(0)
             yield {"foo": "FooValue"}
 
+        async def subscribe_fn(obj, info):
+            await asyncio.sleep(0)
+            return foo_generator(obj, info)
+
         schema = GraphQLSchema(
             query=DummyQueryType,
             subscription=GraphQLObjectType(
                 "Subscription",
-                {"foo": GraphQLField(GraphQLString, subscribe=foo_generator)},
+                {"foo": GraphQLField(GraphQLString, subscribe=subscribe_fn)},
             ),
         )
 
-        subscription = await subscribe(schema, parse("subscription { foo }"))
+        awaitable = subscribe(schema, parse("subscription { foo }"))
+        assert is_awaitable(awaitable)
+
+        subscription = await awaitable
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
@@ -266,7 +305,7 @@ def describe_subscription_initialization_phase():
             ),
         )
 
-        subscription = await subscribe(schema, parse("subscription { foo bar }"))
+        subscription = subscribe(schema, parse("subscription { foo bar }"))
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == (
@@ -290,23 +329,23 @@ def describe_subscription_initialization_phase():
         )
 
         with raises(TypeError, match="^Expected None to be a GraphQL schema\\.$"):
-            await subscribe(None, document)  # type: ignore
+            subscribe(None, document)  # type: ignore
 
         with raises(TypeError, match="missing .* positional argument: 'schema'"):
-            await subscribe(document=document)  # type: ignore
+            subscribe(document=document)  # type: ignore
 
         with raises(TypeError, match="^Must provide document\\.$"):
-            await subscribe(schema, None)  # type: ignore
+            subscribe(schema, None)  # type: ignore
 
         with raises(TypeError, match="missing .* positional argument: 'document'"):
-            await subscribe(schema=schema)  # type: ignore
+            subscribe(schema=schema)  # type: ignore
 
     @mark.asyncio
     async def resolves_to_an_error_if_schema_does_not_support_subscriptions():
         schema = GraphQLSchema(query=DummyQueryType)
         document = parse("subscription { unknownField }")
 
-        result = await subscribe(schema, document)
+        result = subscribe(schema, document)
 
         assert result == (
             None,
@@ -329,7 +368,7 @@ def describe_subscription_initialization_phase():
         )
         document = parse("subscription { unknownField }")
 
-        result = await subscribe(schema, document)
+        result = subscribe(schema, document)
         assert result == (
             None,
             [
@@ -349,12 +388,12 @@ def describe_subscription_initialization_phase():
             ),
         )
         with raises(TypeError, match="^Must provide document\\.$"):
-            await subscribe(schema=schema, document={})  # type: ignore
+            subscribe(schema=schema, document={})  # type: ignore
 
     @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
-        assert await subscribe_with_bad_fn(lambda _obj, _info: "test") == (
+        expected_result = (
             None,
             [
                 {
@@ -365,6 +404,18 @@ def describe_subscription_initialization_phase():
                 }
             ],
         )
+
+        def sync_fn(_obj, _info):
+            return "test"
+
+        assert subscribe_with_bad_fn(sync_fn) == expected_result
+
+        async def async_fn(obj, info):
+            return sync_fn(obj, info)
+
+        result = subscribe_with_bad_fn(async_fn)
+        assert is_awaitable(result)
+        assert await result == expected_result
 
     @mark.asyncio
     async def resolves_to_an_error_for_subscription_resolver_errors():
@@ -380,28 +431,33 @@ def describe_subscription_initialization_phase():
         )
 
         # Returning an error
-        def return_error(_obj, _info):
+        def return_error(*_args):
             return TypeError("test error")
 
-        assert await subscribe_with_bad_fn(return_error) == expected_result
+        assert subscribe_with_bad_fn(return_error) == expected_result
 
         # Throwing an error
         def throw_error(*_args):
             raise TypeError("test error")
 
-        assert await subscribe_with_bad_fn(throw_error) == expected_result
+        assert subscribe_with_bad_fn(throw_error) == expected_result
 
         # Resolving to an error
-        async def resolve_error(*_args):
-            return TypeError("test error")
+        async def resolve_to_error(*args):
+            return return_error(*args)
 
-        assert await subscribe_with_bad_fn(resolve_error) == expected_result
+        result = subscribe_with_bad_fn(resolve_to_error)
+        assert is_awaitable(result)
+        assert await result == expected_result
 
         # Rejecting with an error
-        async def reject_error(*_args):
-            return TypeError("test error")
 
-        assert await subscribe_with_bad_fn(reject_error) == expected_result
+        async def reject_with_error(*args):
+            return throw_error(*args)
+
+        result = subscribe_with_bad_fn(reject_with_error)
+        assert is_awaitable(result)
+        assert await result == expected_result
 
     @mark.asyncio
     async def resolves_to_an_error_if_variables_were_wrong_type():
@@ -428,7 +484,7 @@ def describe_subscription_initialization_phase():
 
         # If we receive variables that cannot be coerced correctly, subscribe() will
         # resolve to an ExecutionResult that contains an informative error description.
-        result = await subscribe(schema, document, variable_values=variable_values)
+        result = subscribe(schema, document, variable_values=variable_values)
 
         assert result == (
             None,
@@ -450,10 +506,10 @@ def describe_subscription_publish_phase():
     async def produces_a_payload_for_multiple_subscribe_in_same_subscription():
         pubsub = SimplePubSub()
 
-        subscription = await create_subscription(pubsub)
+        subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
-        second_subscription = await create_subscription(pubsub)
+        second_subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
         payload1 = anext(subscription)
@@ -484,7 +540,7 @@ def describe_subscription_publish_phase():
     @mark.asyncio
     async def produces_a_payload_per_subscription_event():
         pubsub = SimplePubSub()
-        subscription = await create_subscription(pubsub)
+        subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
         # Wait for the next subscription payload.
@@ -562,7 +618,7 @@ def describe_subscription_publish_phase():
     @mark.asyncio
     async def produces_a_payload_when_there_are_multiple_events():
         pubsub = SimplePubSub()
-        subscription = await create_subscription(pubsub)
+        subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
         payload = anext(subscription)
@@ -618,7 +674,7 @@ def describe_subscription_publish_phase():
     @mark.asyncio
     async def should_not_trigger_when_subscription_is_already_done():
         pubsub = SimplePubSub()
-        subscription = await create_subscription(pubsub)
+        subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
         payload = anext(subscription)
@@ -668,7 +724,7 @@ def describe_subscription_publish_phase():
     @mark.asyncio
     async def should_not_trigger_when_subscription_is_thrown():
         pubsub = SimplePubSub()
-        subscription = await create_subscription(pubsub)
+        subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
         payload = anext(subscription)
@@ -709,7 +765,7 @@ def describe_subscription_publish_phase():
     @mark.asyncio
     async def event_order_is_correct_for_multiple_publishes():
         pubsub = SimplePubSub()
-        subscription = await create_subscription(pubsub)
+        subscription = create_subscription(pubsub)
         assert isinstance(subscription, MapAsyncIterator)
 
         payload = anext(subscription)
@@ -789,7 +845,7 @@ def describe_subscription_publish_phase():
         )
 
         document = parse("subscription { newMessage }")
-        subscription = await subscribe(schema, document)
+        subscription = subscribe(schema, document)
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
@@ -834,7 +890,7 @@ def describe_subscription_publish_phase():
         )
 
         document = parse("subscription { newMessage }")
-        subscription = await subscribe(schema, document)
+        subscription = subscribe(schema, document)
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await (anext(subscription)) == ({"newMessage": "Hello"}, None)
@@ -848,7 +904,7 @@ def describe_subscription_publish_phase():
             await anext(subscription)
 
     @mark.asyncio
-    async def should_work_with_async_resolve_function():
+    async def should_work_with_sync_resolve_function():
         async def generate_messages(_obj, _info):
             yield "Hello"
 
@@ -870,7 +926,37 @@ def describe_subscription_publish_phase():
         )
 
         document = parse("subscription { newMessage }")
-        subscription = await subscribe(schema, document)
+        subscription = subscribe(schema, document)
+        assert isinstance(subscription, MapAsyncIterator)
+
+        assert await anext(subscription) == ({"newMessage": "Hello"}, None)
+
+    @mark.asyncio
+    async def should_work_with_async_resolve_function():
+        async def generate_messages(_obj, _info):
+            await asyncio.sleep(0)
+            yield "Hello"
+
+        async def resolve_message(message, _info):
+            await asyncio.sleep(0)
+            return message
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=resolve_message,
+                        subscribe=generate_messages,
+                    )
+                },
+            ),
+        )
+
+        document = parse("subscription { newMessage }")
+        subscription = subscribe(schema, document)
         assert isinstance(subscription, MapAsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
