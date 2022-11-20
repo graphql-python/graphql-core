@@ -504,8 +504,7 @@ def describe_subscription():
                     break
 
         tasks = [
-            create_task(task()) if create_task else task()
-            for task in (mutate_users, receive_one, receive_all)
+            create_task(task()) for task in (mutate_users, receive_one, receive_all)
         ]
         done, pending = await wait(tasks, timeout=1)
         assert not pending
