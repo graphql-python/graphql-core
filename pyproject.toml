@@ -55,17 +55,20 @@ pytest-benchmark = "^4.0"
 pytest-cov = "^4.0"
 pytest-describe = "^2.0"
 pytest-timeout = "^2.1"
-tox = "^3.26"
+tox = ">=3.0"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-black = "22.10.0"
-flake8 = "^5.0"
+black = "22.12.0"
+flake8 = [
+    { version = ">=5,<7", python = ">=3.8" },
+    { version = ">=5,<6", python = "<3.8" }
+]
 flake8-bandit = "^4.1"
-flake8-bugbear = "22.10.27"
-isort = "^5.10"
+flake8-bugbear = "22.12.6"
+isort = "^5.11"
 mypy = "0.991"
 bump2version = ">=1.0,<2"
 
@@ -73,8 +76,10 @@ bump2version = ">=1.0,<2"
 optional = true
 
 [tool.poetry.group.doc.dependencies]
-# Sphinx >= 4.4 has conflicting dependencies with Flake8
-sphinx = ">= 4.3,<6"
+sphinx = [
+    { version = ">=4,<7", python = ">=3.8" },
+    { version = ">=4,<6", python = "<3.8" }
+]
 sphinx_rtd_theme = ">=1,<2"
 
 [tool.bandit]
@@ -153,5 +158,5 @@ timeout = "100"
 filterwarnings = "ignore::pytest.PytestConfigWarning"
 
 [build-system]
-requires = ["poetry_core>=1.2,<2"]
+requires = ["poetry_core>=1.4,<2"]
 build-backend = "poetry.core.masonry.api"
