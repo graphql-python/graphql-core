@@ -333,7 +333,7 @@ class ExecutionContext:
         return ExecutionResult(data, errors)
 
     def execute_operation(
-        self, operation: OperationDefinitionNode, root_value: Any
+        self, operation: OperationDefinitionNode
     ) -> Optional[AwaitableOrValue[Any]]:
         """Execute an operation.
 
@@ -355,13 +355,11 @@ class ExecutionContext:
             operation.selection_set,
         )
 
-        path = None
-
         return (
             self.execute_fields_serially
             if operation.operation == OperationType.MUTATION
             else self.execute_fields
-        )(root_type, root_value, path, root_fields)
+        )(root_type, self.root_value, None, root_fields)
 
     def execute_fields_serially(
         self,
@@ -1029,7 +1027,7 @@ def execute(
     build_response = exe_context.build_response
     try:
         operation = exe_context.operation
-        result = exe_context.execute_operation(operation, root_value)
+        result = exe_context.execute_operation(operation)
 
         if exe_context.is_awaitable(result):
             # noinspection PyShadowingNames
