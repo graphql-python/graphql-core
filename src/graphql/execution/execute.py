@@ -334,7 +334,7 @@ class ExecutionContext:
 
     def execute_operation(
         self, operation: OperationDefinitionNode
-    ) -> Optional[AwaitableOrValue[Any]]:
+    ) -> AwaitableOrValue[Any]:
         """Execute an operation.
 
         Implements the "Executing operations" section of the spec.
@@ -1033,7 +1033,7 @@ def execute(
             # noinspection PyShadowingNames
             async def await_result() -> Any:
                 try:
-                    return build_response(await result, errors)  # type: ignore
+                    return build_response(await result, errors)
                 except GraphQLError as error:
                     errors.append(error)
                     return build_response(None, errors)
