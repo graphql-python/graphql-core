@@ -5,7 +5,7 @@ from typing import Any, Collection, Dict, List, NamedTuple, Optional, Set, Tuple
 
 from ..error import GraphQLError
 from ..language import OperationType, ast
-from ..pyutils import inspect, is_collection, is_description
+from ..pyutils import inspect
 from .definition import (
     GraphQLAbstractType,
     GraphQLCompositeType,
@@ -149,62 +149,19 @@ class GraphQLSchema:
         """
         self._validation_errors = [] if assume_valid else None
 
-        # Check for common mistakes during construction to produce clear and early
-        # error messages, but we leave the specific tests for the validation.
-        if query and not isinstance(query, GraphQLType):
-            raise TypeError("Expected query to be a GraphQL type.")
-        if mutation and not isinstance(mutation, GraphQLType):
-            raise TypeError("Expected mutation to be a GraphQL type.")
-        if subscription and not isinstance(subscription, GraphQLType):
-            raise TypeError("Expected subscription to be a GraphQL type.")
-        if types is None:
-            types = []
-        else:
-            if not is_collection(types) or not all(
-                isinstance(type_, GraphQLType) for type_ in types
-            ):
-                raise TypeError(
-                    "Schema types must be specified as a collection of GraphQL types."
-                )
-        if directives is not None:
-            # noinspection PyUnresolvedReferences
-            if not is_collection(directives):
-                raise TypeError("Schema directives must be a collection.")
-            if not isinstance(directives, tuple):
-                directives = tuple(directives)
-        if description is not None and not is_description(description):
-            raise TypeError("Schema description must be a string.")
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError("Schema extensions must be a dictionary with string keys.")
-        if ast_node and not isinstance(ast_node, ast.SchemaDefinitionNode):
-            raise TypeError("Schema AST node must be a SchemaDefinitionNode.")
-        if extension_ast_nodes:
-            if not is_collection(extension_ast_nodes) or not all(
-                isinstance(node, ast.SchemaExtensionNode)
-                for node in extension_ast_nodes
-            ):
-                raise TypeError(
-                    "Schema extension AST nodes must be specified"
-                    " as a collection of SchemaExtensionNode instances."
-                )
-            if not isinstance(extension_ast_nodes, tuple):
-                extension_ast_nodes = tuple(extension_ast_nodes)
-        else:
-            extension_ast_nodes = ()
-
         self.description = description
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
-        self.extension_ast_nodes = extension_ast_nodes
+        self.extension_ast_nodes = (
+            tuple(extension_ast_nodes) if extension_ast_nodes else ()
+        )
         self.query_type = query
         self.mutation_type = mutation
         self.subscription_type = subscription
         # Provide specified directives (e.g. @include and @skip) by default
-        self.directives = specified_directives if directives is None else directives
+        self.directives = (
+            specified_directives if directives is None else tuple(directives)
+        )
 
         # To preserve order of user-provided types, we first add them to the set
         # of "collected" types, so `collect_referenced_types` ignores them.

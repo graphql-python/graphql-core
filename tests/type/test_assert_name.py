@@ -8,13 +8,6 @@ def describe_assert_name():
     def pass_through_valid_name():
         assert assert_name("_ValidName123") == "_ValidName123"
 
-    def throws_for_non_strings():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert_name({})  # type: ignore
-        msg = str(exc_info.value)
-        assert msg == "Expected name to be a string."
-
     def throws_on_empty_strings():
         with raises(GraphQLError) as exc_info:
             assert_name("")

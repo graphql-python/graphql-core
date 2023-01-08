@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any, Awaitable, Optional, cast
 
-from pytest import mark, raises
+from pytest import mark
 
 from graphql.error import GraphQLError
 from graphql.execution import execute, execute_sync
@@ -26,59 +26,6 @@ from graphql.type import (
 
 
 def describe_execute_handles_basic_execution_tasks():
-    # noinspection PyTypeChecker
-    def throws_if_no_document_is_provided():
-        schema = GraphQLSchema(
-            GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
-        )
-
-        with raises(TypeError) as exc_info:
-            assert execute_sync(schema=schema, document=None)  # type: ignore
-
-        assert str(exc_info.value) == "Must provide document."
-
-    # noinspection PyTypeChecker
-    def throws_if_no_schema_is_provided():
-        document = parse("{ field }")
-
-        with raises(TypeError) as exc_info:
-            assert execute_sync(schema=None, document=document)  # type: ignore
-
-        assert str(exc_info.value) == "Expected None to be a GraphQL schema."
-
-    def throws_on_invalid_variables():
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Type",
-                {
-                    "fieldA": GraphQLField(
-                        GraphQLString, args={"argA": GraphQLArgument(GraphQLInt)}
-                    )
-                },
-            )
-        )
-        document = parse(
-            """
-            query ($a: Int) {
-              fieldA(argA: $a)
-            }
-            """
-        )
-        variable_values = "{'a': 1}"
-
-        with raises(TypeError) as exc_info:
-            assert execute_sync(
-                schema=schema,
-                document=document,
-                variable_values=variable_values,  # type: ignore
-            )
-
-        assert str(exc_info.value) == (
-            "Variable values must be provided as a dictionary"
-            " with variable names as keys. Perhaps look to see"
-            " if an unparsed JSON string was provided."
-        )
-
     def accepts_positional_arguments():
         schema = GraphQLSchema(
             GraphQLObjectType(

@@ -1,5 +1,5 @@
 from operator import attrgetter
-from typing import Any, List, Union
+from typing import List, Union
 
 from pytest import mark, raises
 
@@ -13,7 +13,6 @@ from graphql.type import (
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInputType,
-    GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
@@ -31,8 +30,6 @@ from graphql.type import (
     assert_scalar_type,
     assert_union_type,
     assert_valid_schema,
-    is_input_type,
-    is_output_type,
     validate_schema,
 )
 from graphql.utilities import build_schema, extend_schema
@@ -422,15 +419,6 @@ def describe_type_system_a_schema_must_have_object_root_types():
 
     def rejects_a_schema_whose_types_are_incorrectly_type():
         # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            GraphQLSchema(
-                SomeObjectType,
-                types=[{"name": "SomeType"}, SomeDirective],  # type: ignore
-            )
-        assert str(exc_info.value) == (
-            "Schema types must be specified as a collection of GraphQL types."
-        )
         # construct invalid schema manually
         schema = GraphQLSchema(SomeObjectType)
         schema.type_map = {
@@ -713,32 +701,6 @@ def describe_type_system_union_types_must_be_valid():
 
     def rejects_a_union_type_with_non_object_member_types():
         # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  test: BadUnion
-                }
-
-                type TypeA {
-                  field: String
-                }
-
-                type TypeB {
-                  field: String
-                }
-
-                union BadUnion =
-                  | TypeA
-                  | String
-                  | TypeB
-                """
-            )
-        assert str(exc_info.value) == (
-            "BadUnion types must be specified"
-            " as a collection of GraphQLObjectType instances."
-        )
-        # construct invalid schema manually
         schema = build_schema(
             """
             type Query {
@@ -755,28 +717,13 @@ def describe_type_system_union_types_must_be_valid():
 
             union BadUnion =
               | TypeA
-              | TypeA
+              | String
               | TypeB
             """
         )
-        with raises(TypeError) as exc_info:
-            extend_schema(schema, parse("extend union BadUnion = Int"))
-        assert str(exc_info.value) == (
-            "BadUnion types must be specified"
-            " as a collection of GraphQLObjectType instances."
-        )
-        schema = extend_schema(schema, parse("extend union BadUnion = TypeB"))
-        bad_union: Any = schema.get_type("BadUnion")
-        types = bad_union.types
-        assert isinstance(types, tuple)
-        types = list(types)
-        assert types[1].name == "TypeA"
-        types[1] = GraphQLString
-        assert types[3].name == "TypeB"
-        types[3] = GraphQLInt
-        bad_union.types = tuple(types)
-        bad_union.ast_node.types[1].name.value = "String"
-        bad_union.extension_ast_nodes[0].types[0].name.value = "Int"
+
+        schema = extend_schema(schema, parse("extend union BadUnion = Int"))
+
         assert validate_schema(schema) == [
             {
                 "message": "Union type BadUnion can only include Object types,"
@@ -804,17 +751,7 @@ def describe_type_system_union_types_must_be_valid():
             bad_union = GraphQLUnionType(
                 "BadUnion", types=[member_type]  # type: ignore
             )
-            with raises(TypeError) as exc_info:
-                schema_with_field_type(bad_union)
-            assert str(exc_info.value) == (
-                "BadUnion types must be specified"
-                " as a collection of GraphQLObjectType instances."
-            )
-            # noinspection PyPropertyAccess
-            bad_union.types = []
             bad_schema = schema_with_field_type(bad_union)
-            # noinspection PyPropertyAccess
-            bad_union.types = [member_type]
             assert validate_schema(bad_schema) == [
                 {
                     "message": "Union type BadUnion can only include Object types,"
@@ -961,32 +898,6 @@ def describe_type_system_input_objects_must_have_fields():
         ]
 
     def rejects_an_input_object_type_with_incorrectly_typed_fields():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  field(arg: SomeInputObject): String
-                }
-
-                type SomeObject {
-                  field: String
-                }
-
-                union SomeUnion = SomeObject
-
-                input SomeInputObject {
-                  badObject: SomeObject
-                  badUnion: SomeUnion
-                  goodInputObject: SomeInputObject
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "SomeInputObject fields cannot be resolved."
-            " Input field type must be a GraphQL input type."
-        )
-        # construct invalid schema manually
         schema = build_schema(
             """
             type Query {
@@ -1000,15 +911,12 @@ def describe_type_system_input_objects_must_have_fields():
             union SomeUnion = SomeObject
 
             input SomeInputObject {
-              badObject: SomeInputObject
-              badUnion: SomeInputObject
+              badObject: SomeObject
+              badUnion: SomeUnion
               goodInputObject: SomeInputObject
             }
             """
         )
-        some_input_obj: Any = schema.get_type("SomeInputObject")
-        some_input_obj.fields["badObject"].type = schema.get_type("SomeObject")
-        some_input_obj.fields["badUnion"].type = schema.get_type("SomeUnion")
         assert validate_schema(schema) == [
             {
                 "message": "The type of SomeInputObject.badObject must be Input Type"
@@ -1090,17 +998,9 @@ def describe_type_system_enum_types_must_be_well_defined():
 
 def describe_type_system_object_fields_must_have_output_types():
     def _schema_with_object_field(type_: GraphQLOutputType) -> GraphQLSchema:
-        if is_output_type(type_):
-            field = GraphQLField(type_)
-        else:
-            # invalid field cannot be built with Python directly
-            with raises(TypeError) as exc_info:
-                GraphQLField(type_)
-            assert str(exc_info.value) == "Field type must be an output type."
-            # therefore we need to monkey-patch a valid field
-            field = GraphQLField(GraphQLString)
-            field.type = type_
-        bad_object_type = GraphQLObjectType("BadObject", {"badField": field})
+        bad_object_type = GraphQLObjectType(
+            "BadObject", {"badField": GraphQLField(type_)}
+        )
         return GraphQLSchema(
             GraphQLObjectType("Query", {"f": GraphQLField(bad_object_type)}),
             types=[SomeObjectType],
@@ -1143,27 +1043,10 @@ def describe_type_system_object_fields_must_have_output_types():
         ]
 
     def rejects_with_relevant_locations_for_a_non_output_type():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  field: [SomeInputObject]
-                }
-
-                input SomeInputObject {
-                  field: String
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "Query fields cannot be resolved. Field type must be an output type."
-        )
-        # therefore we need to monkey-patch a valid schema
         schema = build_schema(
             """
             type Query {
-              field: [String]
+              field: [SomeInputObject]
             }
 
             input SomeInputObject {
@@ -1171,8 +1054,6 @@ def describe_type_system_object_fields_must_have_output_types():
             }
             """
         )
-        some_input_obj = schema.get_type("SomeInputObject")
-        schema.query_type.fields["field"].type.of_type = some_input_obj  # type: ignore
         assert validate_schema(schema) == [
             {
                 "message": "The type of Query.field must be Output Type"
@@ -1200,27 +1081,27 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
         ]
 
     def rejects_an_object_implementing_a_non_interface_type():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  test: BadObject
-                }
+        schema = build_schema(
+            """
+            type Query {
+              test: BadObject
+            }
 
-                input SomeInputObject {
-                  field: String
-                }
+            input SomeInputObject {
+              field: String
+            }
 
-                type BadObject implements SomeInputObject {
-                  field: String
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "BadObject interfaces must be specified"
-            " as a collection of GraphQLInterfaceType instances."
+            type BadObject implements SomeInputObject {
+              field: String
+            }
+            """
         )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type BadObject must only implement Interface types,"
+                " it cannot implement SomeInputObject."
+            }
+        ]
 
     def rejects_an_object_implementing_the_same_interface_twice():
         schema = build_schema(
@@ -1408,18 +1289,7 @@ def describe_type_system_interface_extensions_should_be_valid():
 
 def describe_type_system_interface_fields_must_have_output_types():
     def _schema_with_interface_field(type_: GraphQLOutputType) -> GraphQLSchema:
-        if is_output_type(type_):
-            field = GraphQLField(type_)
-        else:
-            # invalid field cannot be built with Python directly
-            with raises(TypeError) as exc_info:
-                GraphQLField(type_)
-            assert str(exc_info.value) == "Field type must be an output type."
-            # therefore we need to monkey-patch a valid field
-            field = GraphQLField(GraphQLString)
-            field.type = type_
-        fields = {"badField": field}
-
+        fields = {"badField": GraphQLField(type_)}
         bad_interface_type = GraphQLInterfaceType("BadInterface", fields)
         bad_implementing_type = GraphQLObjectType(
             "BadImplementing",
@@ -1480,32 +1350,6 @@ def describe_type_system_interface_fields_must_have_output_types():
         ]
 
     def rejects_a_non_output_type_as_an_interface_field_with_locations():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  test: SomeInterface
-                }
-
-                interface SomeInterface {
-                  field: SomeInputObject
-                }
-
-                input SomeInputObject {
-                  foo: String
-                }
-
-                type SomeObject implements SomeInterface {
-                  field: SomeInputObject
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "SomeInterface fields cannot be resolved."
-            " Field type must be an output type."
-        )
-        # therefore we need to monkey-patch a valid schema
         schema = build_schema(
             """
             type Query {
@@ -1513,7 +1357,7 @@ def describe_type_system_interface_fields_must_have_output_types():
             }
 
             interface SomeInterface {
-              field: String
+              field: SomeInputObject
             }
 
             input SomeInputObject {
@@ -1521,16 +1365,10 @@ def describe_type_system_interface_fields_must_have_output_types():
             }
 
             type SomeObject implements SomeInterface {
-              field: String
+              field: SomeInputObject
             }
             """
         )
-        # therefore we need to monkey-patch a valid schema
-        some_input_obj = schema.get_type("SomeInputObject")
-        some_interface: Any = schema.get_type("SomeInterface")
-        some_interface.fields["field"].type = some_input_obj
-        some_object: Any = schema.get_type("SomeObject")
-        some_object.fields["field"].type = some_input_obj
         assert validate_schema(schema) == [
             {
                 "message": "The type of SomeInterface.field must be Output Type"
@@ -1561,17 +1399,7 @@ def describe_type_system_interface_fields_must_have_output_types():
 
 def describe_type_system_arguments_must_have_input_types():
     def _schema_with_arg(type_: GraphQLInputType) -> GraphQLSchema:
-        if is_input_type(type_):
-            argument = GraphQLArgument(type_)
-        else:
-            # invalid argument cannot be built with Python directly
-            with raises(TypeError) as exc_info:
-                GraphQLArgument(type_)
-            assert str(exc_info.value) == "Argument type must be a GraphQL input type."
-            # therefore we need to monkey-patch a valid argument
-            argument = GraphQLArgument(GraphQLString)
-            argument.type = type_
-        args = {"badArg": argument}
+        args = {"badArg": GraphQLArgument(type_)}
         bad_object_type = GraphQLObjectType(
             "BadObject",
             {"badField": GraphQLField(GraphQLString, args)},
@@ -1667,28 +1495,10 @@ def describe_type_system_arguments_must_have_input_types():
         ]
 
     def rejects_a_non_input_type_as_a_field_arg_with_locations():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  test(arg: SomeObject): String
-                }
-
-                type SomeObject {
-                  foo: String
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "Query fields cannot be resolved."
-            " Argument type must be a GraphQL input type."
-        )
-        # therefore we need to monkey-patch a valid schema
         schema = build_schema(
             """
             type Query {
-              test(arg: String): String
+              test(arg: SomeObject): String
             }
 
             type SomeObject {
@@ -1696,8 +1506,6 @@ def describe_type_system_arguments_must_have_input_types():
             }
             """
         )
-        some_object = schema.get_type("SomeObject")
-        schema.query_type.fields["test"].args["arg"].type = some_object  # type: ignore
         assert validate_schema(schema) == [
             {
                 "message": "The type of Query.test(arg:) must be Input Type"
@@ -1709,20 +1517,8 @@ def describe_type_system_arguments_must_have_input_types():
 
 def describe_type_system_input_object_fields_must_have_input_types():
     def _schema_with_input_field(type_: GraphQLInputType) -> GraphQLSchema:
-        if is_input_type(type_):
-            input_field = GraphQLInputField(type_)
-        else:
-            # invalid input field cannot be built with Python directly
-            with raises(TypeError) as exc_info:
-                GraphQLInputField(type_)
-            assert str(exc_info.value) == (
-                "Input field type must be a GraphQL input type."
-            )
-            # therefore we need to monkey-patch a valid input field
-            input_field = GraphQLInputField(GraphQLString)
-            input_field.type = type_
         bad_input_object_type = GraphQLInputObjectType(
-            "BadInputObject", {"badField": input_field}
+            "BadInputObject", {"badField": GraphQLInputField(type_)}
         )
         return GraphQLSchema(
             GraphQLObjectType(
@@ -1773,28 +1569,6 @@ def describe_type_system_input_object_fields_must_have_input_types():
         ]
 
     def rejects_with_relevant_locations_for_a_non_input_type():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  test(arg: SomeInputObject): String
-                }
-
-                input SomeInputObject {
-                  foo: SomeObject
-                }
-
-                type SomeObject {
-                  bar: String
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "SomeInputObject fields cannot be resolved."
-            " Input field type must be a GraphQL input type."
-        )
-        # therefore we need to monkey-patch a valid schema
         schema = build_schema(
             """
             type Query {
@@ -1802,7 +1576,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
             }
 
             input SomeInputObject {
-              foo: String
+              foo: SomeObject
             }
 
             type SomeObject {
@@ -1810,9 +1584,6 @@ def describe_type_system_input_object_fields_must_have_input_types():
             }
             """
         )
-        some_object = schema.get_type("SomeObject")
-        some_input_object: Any = schema.get_type("SomeInputObject")
-        some_input_object.fields["foo"].type = some_object
         assert validate_schema(schema) == [
             {
                 "message": "The type of SomeInputObject.foo must be Input Type"
@@ -2417,39 +2188,20 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
         assert validate_schema(schema) == []
 
     def rejects_an_interface_implementing_a_non_interface_type():
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                type Query {
-                  field: String
-                }
+        schema = build_schema(
+            """
+            type Query {
+              field: String
+            }
 
-                input SomeInputObject {
-                  field: String
-                }
+            input SomeInputObject {
+              field: String
+            }
 
-                interface BadInterface implements SomeInputObject {
-                  field: String
-                }
-                """
-            )
-        assert str(exc_info.value) == (
-            "BadInterface interfaces must be specified as a collection"
-            " of GraphQLInterfaceType instances."
-        )
-        # therefore we construct the invalid schema manually
-        some_input_obj = GraphQLInputObjectType(
-            "SomeInputObject", {"field": GraphQLInputField(GraphQLString)}
-        )
-        bad_interface = GraphQLInterfaceType(
-            "BadInterface", {"field": GraphQLField(GraphQLString)}
-        )
-        # noinspection PyTypeChecker
-        bad_interface.interfaces = (some_input_obj,)
-        schema = GraphQLSchema(
-            GraphQLObjectType("Query", {"field": GraphQLField(GraphQLString)}),
-            types=[bad_interface],
+            interface BadInterface implements SomeInputObject {
+              field: String
+            }
+            """
         )
         assert validate_schema(schema) == [
             {

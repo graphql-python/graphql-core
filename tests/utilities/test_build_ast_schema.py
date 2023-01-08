@@ -494,20 +494,17 @@ def describe_schema_builder():
 
     def can_build_recursive_union():
         # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            build_schema(
-                """
-                union Hello = Hello
+        schema = build_schema(
+            """
+            union Hello = Hello
 
-                type Query {
-                  hello: Hello
-                }
-                """
-            )
-        assert (
-            str(exc_info.value) == "Hello types must be specified"
-            " as a collection of GraphQLObjectType instances."
+            type Query {
+              hello: Hello
+            }
+            """
         )
+        errors = validate_schema(schema)
+        assert errors and isinstance(errors, list)
 
     def custom_scalar():
         sdl = dedent(
@@ -1187,14 +1184,6 @@ def describe_schema_builder():
         with raises(TypeError) as exc_info:
             build_schema(sdl, assume_valid_sdl=True)
         assert str(exc_info.value).endswith("Unknown type: 'UnknownType'.")
-
-    def rejects_invalid_ast():
-        with raises(TypeError) as exc_info:
-            build_ast_schema(None)  # type: ignore
-        assert str(exc_info.value) == "Must provide valid Document AST."
-        with raises(TypeError) as exc_info:
-            build_ast_schema({})  # type: ignore
-        assert str(exc_info.value) == "Must provide valid Document AST."
 
     def describe_deepcopy_and_pickle():  # pragma: no cover
         sdl = print_schema(star_wars_schema)

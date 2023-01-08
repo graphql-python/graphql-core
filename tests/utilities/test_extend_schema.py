@@ -314,12 +314,17 @@ def describe_extend_schema():
             extend union SomeUnion = SomeUnion
             """
         )
-        # invalid schema cannot be built with Python
-        with raises(TypeError) as exc_info:
-            extend_schema(schema, extend_ast)
-        assert str(exc_info.value) == (
-            "SomeUnion types must be specified"
-            " as a collection of GraphQLObjectType instances."
+        extended_schema = extend_schema(schema, extend_ast)
+
+        assert validate_schema(extended_schema)
+        expect_schema_changes(
+            schema,
+            extended_schema,
+            dedent(
+                """
+                union SomeUnion = SomeUnion
+                """
+            ),
         )
 
     def extends_inputs_by_adding_new_fields():
@@ -1333,19 +1338,6 @@ def describe_extend_schema():
         with raises(TypeError) as exc_info:
             extend_schema(schema, ast, assume_valid_sdl=True)
         assert str(exc_info.value).endswith("Unknown type: 'UnknownType'.")
-
-    def rejects_invalid_ast():
-        schema = GraphQLSchema()
-
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            extend_schema(schema, None)  # type: ignore
-        assert str(exc_info.value) == "Must provide valid Document AST."
-
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            extend_schema(schema, {})  # type: ignore
-        assert str(exc_info.value) == "Must provide valid Document AST."
 
     def does_not_allow_replacing_a_default_directive():
         schema = GraphQLSchema()

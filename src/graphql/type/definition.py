@@ -53,8 +53,6 @@ from ..pyutils import (
     cached_property,
     did_you_mean,
     inspect,
-    is_collection,
-    is_description,
     suggestion_list,
 )
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
@@ -199,11 +197,7 @@ class GraphQLWrappingType(GraphQLType, Generic[GT]):
     of_type: GT
 
     def __init__(self, type_: GT) -> None:
-        if not is_type(type_):
-            raise TypeError(
-                f"Can only create a wrapper for a GraphQLType, but got: {type_}."
-            )
-        self.of_type = cast(GT, type_)
+        self.of_type = type_
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.of_type!r}>"
@@ -264,33 +258,13 @@ class GraphQLNamedType(GraphQLType):
         extension_ast_nodes: Optional[Collection[TypeExtensionNode]] = None,
     ) -> None:
         assert_name(name)
-        if description is not None and not is_description(description):
-            raise TypeError("The description must be a string.")
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError(f"{name} extensions must be a dictionary with string keys.")
-        if ast_node and not isinstance(ast_node, TypeDefinitionNode):
-            raise TypeError(f"{name} AST node must be a TypeDefinitionNode.")
-        if extension_ast_nodes:
-            if not is_collection(extension_ast_nodes) or not all(
-                isinstance(node, TypeExtensionNode) for node in extension_ast_nodes
-            ):
-                raise TypeError(
-                    f"{name} extension AST nodes must be specified"
-                    " as a collection of TypeExtensionNode instances."
-                )
-            if not isinstance(extension_ast_nodes, tuple):
-                extension_ast_nodes = tuple(extension_ast_nodes)
-        else:
-            extension_ast_nodes = ()
         self.name = name
         self.description = description
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
-        self.extension_ast_nodes = extension_ast_nodes
+        self.extension_ast_nodes = (
+            tuple(extension_ast_nodes) if extension_ast_nodes else ()
+        )
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.name!r}>"
@@ -392,41 +366,19 @@ class GraphQLScalarType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
-        if specified_by_url is not None and not isinstance(specified_by_url, str):
-            raise TypeError(
-                f"{name} must provide 'specified_by_url' as a string,"
-                f" but got: {inspect(specified_by_url)}."
-            )
-        if serialize is not None and not callable(serialize):
-            raise TypeError(
-                f"{name} must provide 'serialize' as a function."
-                " If this custom Scalar is also used as an input type,"
-                " ensure 'parse_value' and 'parse_literal' functions"
-                " are also provided."
-            )
-        if parse_literal is not None and (
-            not callable(parse_literal)
-            or (parse_value is None or not callable(parse_value))
-        ):
-            raise TypeError(
-                f"{name} must provide"
-                " both 'parse_value' and 'parse_literal' as functions."
-            )
-        if ast_node and not isinstance(ast_node, ScalarTypeDefinitionNode):
-            raise TypeError(f"{name} AST node must be a ScalarTypeDefinitionNode.")
-        if extension_ast_nodes and not all(
-            isinstance(node, ScalarTypeExtensionNode) for node in extension_ast_nodes
-        ):
-            raise TypeError(
-                f"{name} extension AST nodes must be specified"
-                " as a collection of ScalarTypeExtensionNode instances."
-            )
+
         if serialize is not None:
             self.serialize = serialize  # type: ignore
         if parse_value is not None:
             self.parse_value = parse_value  # type: ignore
         if parse_literal is not None:
             self.parse_literal = parse_literal  # type: ignore
+        if parse_literal is not None:
+            if parse_value is None:
+                raise TypeError(
+                    f"{name} must provide"
+                    " both 'parse_value' and 'parse_literal' functions."
+                )
         self.specified_by_url = specified_by_url
 
     def __repr__(self) -> str:
@@ -531,50 +483,22 @@ class GraphQLField:
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[FieldDefinitionNode] = None,
     ) -> None:
-        if not is_output_type(type_):
-            raise TypeError("Field type must be an output type.")
-        if args is None:
-            args = {}
-        elif not isinstance(args, dict):
-            raise TypeError("Field args must be a dict with argument names as keys.")
-        elif not all(
-            isinstance(value, GraphQLArgument) or is_input_type(value)
-            for value in args.values()
-        ):
-            raise TypeError(
-                "Field args must be GraphQLArguments or input type objects."
-            )
-        else:
+        if args:
             args = {
                 assert_name(name): value
                 if isinstance(value, GraphQLArgument)
                 else GraphQLArgument(cast(GraphQLInputType, value))
                 for name, value in args.items()
             }
-        if resolve is not None and not callable(resolve):
-            raise TypeError(
-                "Field resolver must be a function if provided, "
-                f" but got: {inspect(resolve)}."
-            )
-        if description is not None and not is_description(description):
-            raise TypeError("The description must be a string.")
-        if deprecation_reason is not None and not is_description(deprecation_reason):
-            raise TypeError("The deprecation reason must be a string.")
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError("Field extensions must be a dictionary with string keys.")
-        if ast_node and not isinstance(ast_node, FieldDefinitionNode):
-            raise TypeError("Field AST node must be a FieldDefinitionNode.")
+        else:
+            args = {}
         self.type = type_
         self.args = args or {}
         self.resolve = resolve
         self.subscribe = subscribe
         self.description = description
         self.deprecation_reason = deprecation_reason
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
 
     def __repr__(self) -> str:
@@ -689,30 +613,12 @@ class GraphQLArgument:
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[InputValueDefinitionNode] = None,
     ) -> None:
-        if not is_input_type(type_):
-            raise TypeError("Argument type must be a GraphQL input type.")
-        if description is not None and not is_description(description):
-            raise TypeError("Argument description must be a string.")
-        if deprecation_reason is not None and not is_description(deprecation_reason):
-            raise TypeError("Argument deprecation reason must be a string.")
-        if out_name is not None and not isinstance(out_name, str):
-            raise TypeError("Argument out name must be a string.")
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError(
-                "Argument extensions must be a dictionary with string keys."
-            )
-        if ast_node and not isinstance(ast_node, InputValueDefinitionNode):
-            raise TypeError("Argument AST node must be an InputValueDefinitionNode.")
         self.type = type_
         self.default_value = default_value
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.out_name = out_name
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
 
     def __eq__(self, other: Any) -> bool:
@@ -802,20 +708,6 @@ class GraphQLObjectType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
-        if is_type_of is not None and not callable(is_type_of):
-            raise TypeError(
-                f"{name} must provide 'is_type_of' as a function,"
-                f" but got: {inspect(is_type_of)}."
-            )
-        if ast_node and not isinstance(ast_node, ObjectTypeDefinitionNode):
-            raise TypeError(f"{name} AST node must be an ObjectTypeDefinitionNode.")
-        if extension_ast_nodes and not all(
-            isinstance(node, ObjectTypeExtensionNode) for node in extension_ast_nodes
-        ):
-            raise TypeError(
-                f"{name} extension AST nodes must be specified"
-                " as a collection of ObjectTypeExtensionNode instances."
-            )
         self._fields = fields
         self._interfaces = interfaces
         self.is_type_of = is_type_of
@@ -840,20 +732,6 @@ class GraphQLObjectType(GraphQLNamedType):
         except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} fields cannot be resolved. {error}") from error
-        if not isinstance(fields, Mapping) or not all(
-            isinstance(key, str) for key in fields
-        ):
-            raise TypeError(
-                f"{self.name} fields must be specified"
-                " as a mapping with field names as keys."
-            )
-        if not all(
-            isinstance(value, GraphQLField) or is_output_type(value)
-            for value in fields.values()
-        ):
-            raise TypeError(
-                f"{self.name} fields must be GraphQLField or output type objects."
-            )
         return {
             assert_name(name): value
             if isinstance(value, GraphQLField)
@@ -871,16 +749,7 @@ class GraphQLObjectType(GraphQLNamedType):
         except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} interfaces cannot be resolved. {error}") from error
-        if interfaces is None:
-            interfaces = ()
-        elif not is_collection(interfaces) or not all(
-            isinstance(value, GraphQLInterfaceType) for value in interfaces
-        ):
-            raise TypeError(
-                f"{self.name} interfaces must be specified"
-                " as a collection of GraphQLInterfaceType instances."
-            )
-        return tuple(interfaces)
+        return tuple(interfaces) if interfaces else ()
 
 
 def is_object_type(type_: Any) -> TypeGuard[GraphQLObjectType]:
@@ -936,20 +805,6 @@ class GraphQLInterfaceType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
-        if resolve_type is not None and not callable(resolve_type):
-            raise TypeError(
-                f"{name} must provide 'resolve_type' as a function,"
-                f" but got: {inspect(resolve_type)}."
-            )
-        if ast_node and not isinstance(ast_node, InterfaceTypeDefinitionNode):
-            raise TypeError(f"{name} AST node must be an InterfaceTypeDefinitionNode.")
-        if extension_ast_nodes and not all(
-            isinstance(node, InterfaceTypeExtensionNode) for node in extension_ast_nodes
-        ):
-            raise TypeError(
-                f"{name} extension AST nodes must be specified"
-                " as a collection of InterfaceTypeExtensionNode instances."
-            )
         self._fields = fields
         self._interfaces = interfaces
         self.resolve_type = resolve_type
@@ -974,20 +829,6 @@ class GraphQLInterfaceType(GraphQLNamedType):
         except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} fields cannot be resolved. {error}") from error
-        if not isinstance(fields, Mapping) or not all(
-            isinstance(key, str) for key in fields
-        ):
-            raise TypeError(
-                f"{self.name} fields must be specified"
-                " as a mapping with field names as keys."
-            )
-        if not all(
-            isinstance(value, GraphQLField) or is_output_type(value)
-            for value in fields.values()
-        ):
-            raise TypeError(
-                f"{self.name} fields must be GraphQLField or output type objects."
-            )
         return {
             assert_name(name): value
             if isinstance(value, GraphQLField)
@@ -1005,16 +846,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} interfaces cannot be resolved. {error}") from error
-        if interfaces is None:
-            interfaces = ()
-        elif not is_collection(interfaces) or not all(
-            isinstance(value, GraphQLInterfaceType) for value in interfaces
-        ):
-            raise TypeError(
-                f"{self.name} interfaces must be specified"
-                " as a collection of GraphQLInterfaceType instances."
-            )
-        return tuple(interfaces)
+        return tuple(interfaces) if interfaces else ()
 
 
 def is_interface_type(type_: Any) -> TypeGuard[GraphQLInterfaceType]:
@@ -1071,20 +903,6 @@ class GraphQLUnionType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
-        if resolve_type is not None and not callable(resolve_type):
-            raise TypeError(
-                f"{name} must provide 'resolve_type' as a function,"
-                f" but got: {inspect(resolve_type)}."
-            )
-        if ast_node and not isinstance(ast_node, UnionTypeDefinitionNode):
-            raise TypeError(f"{name} AST node must be a UnionTypeDefinitionNode.")
-        if extension_ast_nodes and not all(
-            isinstance(node, UnionTypeExtensionNode) for node in extension_ast_nodes
-        ):
-            raise TypeError(
-                f"{name} extension AST nodes must be specified"
-                " as a collection of UnionTypeExtensionNode instances."
-            )
         self._types = types
         self.resolve_type = resolve_type
 
@@ -1105,16 +923,7 @@ class GraphQLUnionType(GraphQLNamedType):
         except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} types cannot be resolved. {error}") from error
-        if types is None:
-            types = ()
-        elif not is_collection(types) or not all(
-            isinstance(value, GraphQLObjectType) for value in types
-        ):
-            raise TypeError(
-                f"{self.name} types must be specified"
-                " as a collection of GraphQLObjectType instances."
-            )
-        return tuple(types)
+        return tuple(types) if types else ()
 
 
 def is_union_type(type_: Any) -> TypeGuard[GraphQLUnionType]:
@@ -1217,15 +1026,6 @@ class GraphQLEnumType(GraphQLNamedType):
             else GraphQLEnumValue(value)
             for key, value in values.items()
         }
-        if ast_node and not isinstance(ast_node, EnumTypeDefinitionNode):
-            raise TypeError(f"{name} AST node must be an EnumTypeDefinitionNode.")
-        if extension_ast_nodes and not all(
-            isinstance(node, EnumTypeExtensionNode) for node in extension_ast_nodes
-        ):
-            raise TypeError(
-                f"{name} extension AST nodes must be specified"
-                " as a collection of EnumTypeExtensionNode instances."
-            )
         self.values = values
 
     def to_kwargs(self) -> GraphQLEnumTypeKwargs:
@@ -1343,26 +1143,10 @@ class GraphQLEnumValue:
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[EnumValueDefinitionNode] = None,
     ) -> None:
-        if description is not None and not is_description(description):
-            raise TypeError("The description of the enum value must be a string.")
-        if deprecation_reason is not None and not is_description(deprecation_reason):
-            raise TypeError(
-                "The deprecation reason for the enum value must be a string."
-            )
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError(
-                "Enum value extensions must be a dictionary with string keys."
-            )
-        if ast_node and not isinstance(ast_node, EnumValueDefinitionNode):
-            raise TypeError("AST node must be an EnumValueDefinitionNode.")
         self.value = value
         self.description = description
         self.deprecation_reason = deprecation_reason
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
 
     def __eq__(self, other: Any) -> bool:
@@ -1441,20 +1225,6 @@ class GraphQLInputObjectType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
-        if out_type is not None and not callable(out_type):
-            raise TypeError(f"The out type for {name} must be a function or a class.")
-        if ast_node and not isinstance(ast_node, InputObjectTypeDefinitionNode):
-            raise TypeError(
-                f"{name} AST node must be an InputObjectTypeDefinitionNode."
-            )
-        if extension_ast_nodes and not all(
-            isinstance(node, InputObjectTypeExtensionNode)
-            for node in extension_ast_nodes
-        ):
-            raise TypeError(
-                f"{name} extension AST nodes must be specified"
-                " as a collection of InputObjectTypeExtensionNode instances."
-            )
         self._fields = fields
         if out_type is not None:
             self.out_type = out_type  # type: ignore
@@ -1488,21 +1258,6 @@ class GraphQLInputObjectType(GraphQLNamedType):
         except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             raise cls(f"{self.name} fields cannot be resolved. {error}") from error
-        if not isinstance(fields, Mapping) or not all(
-            isinstance(key, str) for key in fields
-        ):
-            raise TypeError(
-                f"{self.name} fields must be specified"
-                " as a mapping with field names as keys."
-            )
-        if not all(
-            isinstance(value, GraphQLInputField) or is_input_type(value)
-            for value in fields.values()
-        ):
-            raise TypeError(
-                f"{self.name} fields must be"
-                " GraphQLInputField or input type objects."
-            )
         return {
             assert_name(name): value
             if isinstance(value, GraphQLInputField)
@@ -1552,30 +1307,12 @@ class GraphQLInputField:
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[InputValueDefinitionNode] = None,
     ) -> None:
-        if not is_input_type(type_):
-            raise TypeError("Input field type must be a GraphQL input type.")
-        if description is not None and not is_description(description):
-            raise TypeError("Input field description must be a string.")
-        if deprecation_reason is not None and not is_description(deprecation_reason):
-            raise TypeError("Input field deprecation reason must be a string.")
-        if out_name is not None and not isinstance(out_name, str):
-            raise TypeError("Input field out name must be a string.")
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError(
-                "Input field extensions must be a dictionary with string keys."
-            )
-        if ast_node and not isinstance(ast_node, InputValueDefinitionNode):
-            raise TypeError("Input field AST node must be an InputValueDefinitionNode.")
         self.type = type_
         self.default_value = default_value
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.out_name = out_name
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
 
     def __eq__(self, other: Any) -> bool:
@@ -1672,11 +1409,6 @@ class GraphQLNonNull(GraphQLWrappingType[GNT]):
 
     def __init__(self, type_: GNT):
         super().__init__(type_=type_)
-        if isinstance(type_, GraphQLNonNull):
-            raise TypeError(
-                "Can only create NonNull of a Nullable GraphQLType but got:"
-                f" {type_}."
-            )
 
     def __str__(self) -> str:
         return f"{self.of_type}!"

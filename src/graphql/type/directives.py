@@ -3,9 +3,9 @@ from __future__ import annotations  # Python < 3.10
 from typing import Any, Collection, Dict, Optional, Tuple, cast
 
 from ..language import DirectiveLocation, ast
-from ..pyutils import inspect, is_description
+from ..pyutils import inspect
 from .assert_name import assert_name
-from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
+from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull
 from .scalars import GraphQLBoolean, GraphQLString
 
 
@@ -82,44 +82,21 @@ class GraphQLDirective:
                 f"{name} locations must be specified"
                 " as a collection of DirectiveLocation enum values."
             )
-        if args is None:
-            args = {}
-        elif not isinstance(args, dict) or not all(
-            isinstance(key, str) for key in args
-        ):
-            raise TypeError(f"{name} args must be a dict with argument names as keys.")
-        elif not all(
-            isinstance(value, GraphQLArgument) or is_input_type(value)
-            for value in args.values()
-        ):
-            raise TypeError(
-                f"{name} args must be GraphQLArgument or input type objects."
-            )
-        else:
+        if args:
             args = {
                 assert_name(name): value
                 if isinstance(value, GraphQLArgument)
                 else GraphQLArgument(cast(GraphQLInputType, value))
                 for name, value in args.items()
             }
-        if not isinstance(is_repeatable, bool):
-            raise TypeError(f"{name} is_repeatable flag must be True or False.")
-        if ast_node and not isinstance(ast_node, ast.DirectiveDefinitionNode):
-            raise TypeError(f"{name} AST node must be a DirectiveDefinitionNode.")
-        if description is not None and not is_description(description):
-            raise TypeError(f"{name} description must be a string.")
-        if extensions is None:
-            extensions = {}
-        elif not isinstance(extensions, dict) or not all(
-            isinstance(key, str) for key in extensions
-        ):
-            raise TypeError(f"{name} extensions must be a dictionary with string keys.")
+        else:
+            args = {}
         self.name = name
         self.locations = locations
         self.args = args
         self.is_repeatable = is_repeatable
         self.description = description
-        self.extensions = extensions
+        self.extensions = extensions or {}
         self.ast_node = ast_node
 
     def __str__(self) -> str:

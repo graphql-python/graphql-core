@@ -119,9 +119,6 @@ def extend_schema(
     """
     assert_schema(schema)
 
-    if not isinstance(document_ast, DocumentNode):
-        raise TypeError("Must provide valid Document AST.")
-
     if not (assume_valid or assume_valid_sdl):
         from ..validation.validate import assert_valid_sdl_extension
 

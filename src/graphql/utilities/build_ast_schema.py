@@ -37,9 +37,6 @@ def build_ast_schema(
     the produced schema is valid. Set ``assume_valid_sdl`` to ``True`` to assume it is
     already a valid SDL document.
     """
-    if not isinstance(document_ast, DocumentNode):
-        raise TypeError("Must provide valid Document AST.")
-
     if not (assume_valid or assume_valid_sdl):
         from ..validation.validate import assert_valid_sdl
 

@@ -251,7 +251,7 @@ class ExecutionContext:
         For internal use only.
         """
         # If arguments are missing or incorrect, throw an error.
-        assert_valid_execution_arguments(schema, document, raw_variable_values)
+        assert_valid_execution_arguments(schema)
 
         operation: Optional[OperationDefinitionNode] = None
         fragments: Dict[str, FragmentDefinitionNode] = {}
@@ -1104,8 +1104,6 @@ def execute_sync(
 
 def assert_valid_execution_arguments(
     schema: GraphQLSchema,
-    document: DocumentNode,
-    raw_variable_values: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Check that the arguments are acceptable.
 
@@ -1114,19 +1112,8 @@ def assert_valid_execution_arguments(
 
     For internal use only.
     """
-    if not document:
-        raise TypeError("Must provide document.")
-
     # If the schema used for execution is invalid, throw an error.
     assert_valid_schema(schema)
-
-    # Variables, if provided, must be a dictionary.
-    if not (raw_variable_values is None or isinstance(raw_variable_values, dict)):
-        raise TypeError(
-            "Variable values must be provided as a dictionary"
-            " with variable names as keys. Perhaps look to see"
-            " if an unparsed JSON string was provided."
-        )
 
 
 def invalid_return_type_error(
@@ -1345,7 +1332,7 @@ def create_source_event_stream(
     """
     # If arguments are missing or incorrectly typed, this is an internal developer
     # mistake which should throw an early error.
-    assert_valid_execution_arguments(schema, document, variable_values)
+    assert_valid_execution_arguments(schema)
 
     if not execution_context_class:
         execution_context_class = ExecutionContext

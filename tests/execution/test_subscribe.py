@@ -6,6 +6,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     TypeVar,
     Union,
     cast,
@@ -19,7 +20,7 @@ from graphql.execution import (
     create_source_event_stream,
     subscribe,
 )
-from graphql.language import parse
+from graphql.language import DocumentNode, parse
 from graphql.pyutils import AwaitableOrValue, SimplePubSub, is_awaitable
 from graphql.type import (
     GraphQLArgument,
@@ -181,9 +182,17 @@ def subscribe_with_bad_fn(
         ),
     )
     document = parse("subscription { foo }")
+    return subscribe_with_bad_args(schema, document)
 
+
+def subscribe_with_bad_args(
+    schema: GraphQLSchema,
+    document: DocumentNode,
+    variable_values: Optional[Dict[str, Any]] = None,
+):
     return assert_equal_awaitables_or_values(
-        subscribe(schema, document), create_source_event_stream(schema, document)
+        subscribe(schema, document, variable_values=variable_values),
+        create_source_event_stream(schema, document, variable_values=variable_values),
     )
 
 
@@ -318,34 +327,11 @@ def describe_subscription_initialization_phase():
         await subscription.aclose()
 
     @mark.asyncio
-    async def throws_an_error_if_some_of_required_arguments_are_missing():
-        document = parse("subscription { foo }")
-
-        schema = GraphQLSchema(
-            query=DummyQueryType,
-            subscription=GraphQLObjectType(
-                "Subscription", {"foo": GraphQLField(GraphQLString)}
-            ),
-        )
-
-        with raises(TypeError, match="^Expected None to be a GraphQL schema\\.$"):
-            subscribe(None, document)  # type: ignore
-
-        with raises(TypeError, match="missing .* positional argument: 'schema'"):
-            subscribe(document=document)  # type: ignore
-
-        with raises(TypeError, match="^Must provide document\\.$"):
-            subscribe(schema, None)  # type: ignore
-
-        with raises(TypeError, match="missing .* positional argument: 'document'"):
-            subscribe(schema=schema)  # type: ignore
-
-    @mark.asyncio
     async def resolves_to_an_error_if_schema_does_not_support_subscriptions():
         schema = GraphQLSchema(query=DummyQueryType)
         document = parse("subscription { unknownField }")
 
-        result = subscribe(schema, document)
+        result = subscribe_with_bad_args(schema, document)
 
         assert result == (
             None,
@@ -368,7 +354,7 @@ def describe_subscription_initialization_phase():
         )
         document = parse("subscription { unknownField }")
 
-        result = subscribe(schema, document)
+        result = subscribe_with_bad_args(schema, document)
         assert result == (
             None,
             [
@@ -387,8 +373,8 @@ def describe_subscription_initialization_phase():
                 "Subscription", {"foo": GraphQLField(GraphQLString)}
             ),
         )
-        with raises(TypeError, match="^Must provide document\\.$"):
-            subscribe(schema=schema, document={})  # type: ignore
+        with raises(AttributeError):
+            subscribe_with_bad_args(schema=schema, document={})  # type: ignore
 
     @mark.asyncio
     @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
@@ -484,7 +470,9 @@ def describe_subscription_initialization_phase():
 
         # If we receive variables that cannot be coerced correctly, subscribe() will
         # resolve to an ExecutionResult that contains an informative error description.
-        result = subscribe(schema, document, variable_values=variable_values)
+        result = subscribe_with_bad_args(
+            schema, document, variable_values=variable_values
+        )
 
         assert result == (
             None,
@@ -497,7 +485,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-        assert result.errors[0].original_error is None  # type: ignore
+        assert result.errors[0].original_error is None
 
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.

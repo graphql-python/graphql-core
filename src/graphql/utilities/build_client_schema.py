@@ -63,6 +63,8 @@ def build_client_schema(
     This function expects a complete introspection result. Don't forget to check the
     "errors" field of a server response before calling this function.
     """
+    # Even though the `introspection` argument is typed, in most cases it's received
+    # as an untyped value from the server, so we will do an additional check here.
     if not isinstance(introspection, dict) or not isinstance(
         introspection.get("__schema"), dict
     ):

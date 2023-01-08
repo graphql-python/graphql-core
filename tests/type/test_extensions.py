@@ -1,6 +1,4 @@
-from typing import Any, Dict, cast
-
-from pytest import mark, param, raises
+from pytest import param
 
 from graphql.type import (
     GraphQLArgument,
@@ -23,10 +21,6 @@ dummy_type = GraphQLScalarType("DummyScalar")
 bad_extensions = [param([], id="list"), param({1: "ext"}, id="non_string_key")]
 
 
-def bad_extensions_msg(name: str) -> str:
-    return f"{name} extensions must be a dictionary with string keys."
-
-
 def describe_type_system_extensions():
     def describe_graphql_scalar_type():
         def without_extensions():
@@ -40,12 +34,6 @@ def describe_type_system_extensions():
 
             assert some_scalar.extensions is scalar_extensions
             assert some_scalar.to_kwargs()["extensions"] is scalar_extensions
-
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("SomeScalar")):
-                # noinspection PyTypeChecker
-                GraphQLScalarType("SomeScalar", extensions=extensions)
 
     def describe_graphql_object_type():
         def without_extensions():
@@ -99,18 +87,6 @@ def describe_type_system_extensions():
             assert some_field.to_kwargs()["extensions"] is field_extensions
             assert some_arg.to_kwargs()["extensions"] is arg_extensions
 
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("SomeObject")):
-                # noinspection PyTypeChecker
-                GraphQLObjectType("SomeObject", {}, extensions=extensions)
-            with raises(TypeError, match=bad_extensions_msg("Field")):
-                # noinspection PyTypeChecker
-                GraphQLField(dummy_type, extensions=extensions)
-            with raises(TypeError, match=bad_extensions_msg("Argument")):
-                # noinspection PyTypeChecker
-                GraphQLArgument(dummy_type, extensions=extensions)
-
     def describe_graphql_interface_type():
         def without_extensions():
             some_interface = GraphQLInterfaceType(
@@ -163,12 +139,6 @@ def describe_type_system_extensions():
             assert some_field.to_kwargs()["extensions"] is field_extensions
             assert some_arg.to_kwargs()["extensions"] is arg_extensions
 
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("SomeInterface")):
-                # noinspection PyTypeChecker
-                GraphQLInterfaceType("SomeInterface", {}, extensions=extensions)
-
     def describe_graphql_union_type():
         def without_extensions():
             some_union = GraphQLUnionType("SomeUnion", [])
@@ -185,12 +155,6 @@ def describe_type_system_extensions():
             assert some_union.extensions is union_extensions
 
             assert some_union.to_kwargs()["extensions"] is union_extensions
-
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("SomeUnion")):
-                # noinspection PyTypeChecker
-                GraphQLUnionType("SomeUnion", [], extensions=extensions)
 
     def describe_graphql_enum_type():
         def without_extensions():
@@ -219,17 +183,6 @@ def describe_type_system_extensions():
 
             assert some_enum.to_kwargs()["extensions"] is enum_extensions
             assert some_value.to_kwargs()["extensions"] is value_extensions
-
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("SomeEnum")):
-                # noinspection PyTypeChecker
-                GraphQLEnumType(
-                    "SomeEnum", cast(Dict[str, Any], {}), extensions=extensions
-                )
-            with raises(TypeError, match=bad_extensions_msg("Enum value")):
-                # noinspection PyTypeChecker
-                GraphQLEnumValue(extensions=extensions)
 
     def describe_graphql_input_object_type():
         def without_extensions():
@@ -267,15 +220,6 @@ def describe_type_system_extensions():
             )
             assert some_input_field.to_kwargs()["extensions"] is input_field_extensions
 
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("SomeInputObject")):
-                # noinspection PyTypeChecker
-                GraphQLInputObjectType("SomeInputObject", {}, extensions=extensions)
-            with raises(TypeError, match=bad_extensions_msg("Input field")):
-                # noinspection PyTypeChecker
-                GraphQLInputField(dummy_type, extensions=extensions)
-
     def describe_graphql_directive():
         def without_extensions():
             some_directive = GraphQLDirective(
@@ -307,12 +251,6 @@ def describe_type_system_extensions():
             assert some_directive.to_kwargs()["extensions"] is directive_extensions
             assert some_arg.to_kwargs()["extensions"] is arg_extensions
 
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("Directive")):
-                # noinspection PyTypeChecker
-                GraphQLDirective("SomeDirective", [], extensions=extensions)
-
     def describe_graphql_schema():
         def without_extensions():
             schema = GraphQLSchema()
@@ -328,9 +266,3 @@ def describe_type_system_extensions():
             assert schema.extensions is schema_extensions
 
             assert schema.to_kwargs()["extensions"] is schema_extensions
-
-        @mark.parametrize("extensions", bad_extensions)
-        def with_bad_extensions(extensions):
-            with raises(TypeError, match=bad_extensions_msg("Schema")):
-                # noinspection PyTypeChecker
-                GraphQLSchema(extensions=extensions)

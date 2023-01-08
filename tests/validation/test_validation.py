@@ -9,42 +9,6 @@ from .harness import test_schema
 
 
 def describe_validate_supports_full_validation():
-    def rejects_invalid_documents():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert validate(test_schema, None)  # type: ignore
-        assert str(exc_info.value) == "Must provide document."
-
-    def rejects_invalid_type_info():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert validate(
-                test_schema, parse("query { name }"), type_info={}  # type: ignore
-            )
-        assert str(exc_info.value) == "Not a TypeInfo object: {}."
-
-    def rejects_invalid_rules():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert validate(
-                test_schema, parse("query { name }"), rules=[None]  # type: ignore
-            )
-        assert (
-            str(exc_info.value) == "Rules must be specified as a collection"
-            " of ASTValidationRule subclasses."
-        )
-
-    def rejects_invalid_max_errors():
-        with raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
-            assert validate(
-                test_schema, parse("query { name }"), max_errors=2.5  # type: ignore
-            )
-        assert (
-            str(exc_info.value)
-            == "The maximum number of errors must be passed as an int."
-        )
-
     def validates_queries():
         doc = parse(
             """
