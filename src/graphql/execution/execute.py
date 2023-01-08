@@ -250,6 +250,9 @@ class ExecutionContext:
 
         For internal use only.
         """
+        # If arguments are missing or incorrect, throw an error.
+        assert_valid_execution_arguments(schema, document, raw_variable_values)
+
         operation: Optional[OperationDefinitionNode] = None
         fragments: Dict[str, FragmentDefinitionNode] = {}
         middleware_manager: Optional[MiddlewareManager] = None
@@ -988,9 +991,6 @@ def execute(
     If the arguments to this function do not result in a legal execution context,
     a GraphQLError will be thrown immediately explaining the invalid input.
     """
-    # If arguments are missing or incorrect, throw an error.
-    assert_valid_execution_arguments(schema, document, variable_values)
-
     if execution_context_class is None:
         execution_context_class = ExecutionContext
 
