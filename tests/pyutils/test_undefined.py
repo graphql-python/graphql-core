@@ -21,15 +21,22 @@ def describe_Undefined():
     def as_bool_is_false():
         assert bool(Undefined) is False
 
-    def only_equal_to_itself():
+    def only_equal_to_itself_and_none():
+        # because we want it to behave similarly to JavaScript
         assert Undefined == Undefined
         assert not Undefined != Undefined
         none_object = None
-        assert Undefined != none_object
-        assert not Undefined == none_object
+        assert Undefined == none_object
+        assert not Undefined != none_object
         false_object = False
         assert Undefined != false_object
         assert not Undefined == false_object
+
+    def should_not_be_an_exception():
+        # because we want to create similar code to JavaScript where
+        # undefined return values are different from exceptions
+        # (for instance, this is used in the completeValue function)
+        assert not isinstance(Undefined, Exception)
 
     def cannot_be_redefined():
         with warns(RuntimeWarning, match="Redefinition of 'Undefined'"):

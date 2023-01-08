@@ -7,7 +7,7 @@ from typing import Any, Optional
 __all__ = ["Undefined", "UndefinedType"]
 
 
-class UndefinedType(ValueError):
+class UndefinedType:
     """Auxiliary class for creating the Undefined singleton."""
 
     _instance: Optional[UndefinedType] = None
@@ -34,7 +34,7 @@ class UndefinedType(ValueError):
         return False
 
     def __eq__(self, other: Any) -> bool:
-        return other is Undefined
+        return other is Undefined or other is None
 
     def __ne__(self, other: Any) -> bool:
         return not self == other
