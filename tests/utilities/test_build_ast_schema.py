@@ -39,7 +39,7 @@ from graphql.utilities import build_ast_schema, build_schema, print_schema, prin
 
 from ..fixtures import big_schema_sdl  # noqa: F401
 from ..star_wars_schema import star_wars_schema
-from ..utils import dedent, timeout_factor
+from ..utils import dedent
 
 
 try:
@@ -1228,7 +1228,7 @@ def describe_schema_builder():
 
     @mark.slow
     def describe_deepcopy_and_pickle_big():  # pragma: no cover
-        @mark.timeout(20 * timeout_factor)
+        @mark.timeout(20)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811
             # use our printing conventions
             big_schema_sdl = cycle_sdl(big_schema_sdl)
@@ -1240,7 +1240,7 @@ def describe_schema_builder():
             # check that printing the copied schema gives the same SDL
             assert print_schema(copied) == big_schema_sdl
 
-        @mark.timeout(60 * timeout_factor)
+        @mark.timeout(60)
         def can_pickle_and_unpickle_big_schema(big_schema_sdl):  # noqa: F811
             # use our printing conventions
             big_schema_sdl = cycle_sdl(big_schema_sdl)
@@ -1272,7 +1272,7 @@ def describe_schema_builder():
             finally:
                 sys.setrecursionlimit(limit)
 
-        @mark.timeout(60 * timeout_factor)
+        @mark.timeout(60)
         def can_deep_copy_pickled_big_schema(big_schema_sdl):  # noqa: F811
             # use our printing conventions
             big_schema_sdl = cycle_sdl(big_schema_sdl)

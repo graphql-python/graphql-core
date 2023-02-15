@@ -14,7 +14,7 @@ from graphql.utilities import (
 )
 
 from ..fixtures import big_schema_introspection_result, big_schema_sdl  # noqa: F401
-from ..utils import dedent, timeout_factor
+from ..utils import dedent
 
 
 def introspection_to_sdl(introspection: IntrospectionQuery) -> str:
@@ -108,7 +108,7 @@ def describe_introspection_from_schema():
 
     @mark.slow
     def describe_deepcopy_and_pickle_big():  # pragma: no cover
-        @mark.timeout(20 * timeout_factor)
+        @mark.timeout(20)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811
             # introspect the original big schema
             big_schema = build_schema(big_schema_sdl)
@@ -119,7 +119,7 @@ def describe_introspection_from_schema():
             # check that introspecting the copied schema gives the same result
             assert introspection_from_schema(copied) == expected_introspection
 
-        @mark.timeout(60 * timeout_factor)
+        @mark.timeout(60)
         def can_pickle_and_unpickle_big_schema(big_schema_sdl):  # noqa: F811
             # introspect the original big schema
             big_schema = build_schema(big_schema_sdl)
@@ -153,7 +153,7 @@ def describe_introspection_from_schema():
             finally:
                 sys.setrecursionlimit(limit)
 
-        @mark.timeout(60 * timeout_factor)
+        @mark.timeout(60)
         def can_deep_copy_pickled_big_schema(big_schema_sdl):  # noqa: F811
             # introspect the original big schema
             big_schema = build_schema(big_schema_sdl)
