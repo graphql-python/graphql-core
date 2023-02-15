@@ -364,7 +364,6 @@ class ParallelVisitor(Visitor):
                     return None
 
             else:
-
                 enter = leave = None
 
             enter_leave = EnterLeaveVisitor(enter, leave)

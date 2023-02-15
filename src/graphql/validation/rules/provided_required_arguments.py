@@ -60,7 +60,6 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
         directive_name = directive_node.name.value
         required_args = self.required_args_map.get(directive_name)
         if required_args:
-
             arg_nodes = directive_node.arguments or ()
             arg_node_set = {arg.name.value for arg in arg_nodes}
             for arg_name in required_args:

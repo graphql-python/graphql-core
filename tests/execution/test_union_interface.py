@@ -17,7 +17,6 @@ from graphql.type import (
 
 
 class Dog:
-
     name: str
     barks: bool
     mother: Optional[Dog]
@@ -33,7 +32,6 @@ class Dog:
 
 
 class Cat:
-
     name: str
     meows: bool
     mother: Optional[Cat]
@@ -49,7 +47,6 @@ class Cat:
 
 
 class Person:
-
     name: str
     pets: Optional[List[Union[Dog, Cat]]]
     friends: Optional[List[Union[Dog, Cat, Person]]]

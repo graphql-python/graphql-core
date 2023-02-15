@@ -141,7 +141,6 @@ def describe_middleware():
             )
 
             class ReverseMiddleware:
-
                 # noinspection PyMethodMayBeStatic
                 def resolve(self, next_, *args, **kwargs):
                     return next_(*args, **kwargs)[::-1]
@@ -185,7 +184,6 @@ def describe_middleware():
                 return next_(*args, **kwargs)[::-1]
 
             class CaptitalizeMiddleware:
-
                 # noinspection PyMethodMayBeStatic
                 def resolve(self, next_, *args, **kwargs):
                     return next_(*args, **kwargs).capitalize()
@@ -219,7 +217,6 @@ def describe_middleware():
                 return (await next_(*args, **kwargs))[::-1]
 
             class CaptitalizeMiddleware:
-
                 # noinspection PyMethodMayBeStatic
                 async def resolve(self, next_, *args, **kwargs):
                     return (await next_(*args, **kwargs)).capitalize()

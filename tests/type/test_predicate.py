@@ -543,7 +543,6 @@ def describe_type_predicates():
 
 
 def describe_schema_predicates():
-
     schema = GraphQLSchema()
 
     def describe_is_schema_and_assert_schema():

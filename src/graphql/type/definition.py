@@ -652,7 +652,6 @@ def is_required_argument(arg: GraphQLArgument) -> bool:
 
 
 class GraphQLObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
-
     fields: GraphQLFieldMap
     interfaces: Tuple[GraphQLInterfaceType, ...]
     is_type_of: Optional[GraphQLIsTypeOfFn]
@@ -1128,7 +1127,6 @@ class GraphQLEnumValueKwargs(TypedDict, total=False):
 
 
 class GraphQLEnumValue:
-
     value: Any
     description: Optional[str]
     deprecation_reason: Optional[str]

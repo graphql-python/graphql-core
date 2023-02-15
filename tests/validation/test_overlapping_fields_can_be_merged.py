@@ -577,7 +577,6 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def describe_return_types_must_be_unambiguous():
-
         schema = build_schema(
             """
             interface SomeBox {

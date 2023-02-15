@@ -240,7 +240,6 @@ class Location:
 
 
 class OperationType(Enum):
-
     QUERY = "query"
     MUTATION = "mutation"
     SUBSCRIPTION = "subscription"
@@ -479,7 +478,6 @@ class ArgumentNode(Node):
 
 
 class ConstArgumentNode(ArgumentNode):
-
     value: ConstValueNode
 
 
@@ -561,7 +559,6 @@ class ListValueNode(ValueNode):
 
 
 class ConstListValueNode(ListValueNode):
-
     values: Tuple[ConstValueNode, ...]
 
 
@@ -572,7 +569,6 @@ class ObjectValueNode(ValueNode):
 
 
 class ConstObjectValueNode(ObjectValueNode):
-
     fields: Tuple[ConstObjectFieldNode, ...]
 
 
@@ -584,7 +580,6 @@ class ObjectFieldNode(Node):
 
 
 class ConstObjectFieldNode(ObjectFieldNode):
-
     value: ConstValueNode
 
 
@@ -611,7 +606,6 @@ class DirectiveNode(Node):
 
 
 class ConstDirectiveNode(DirectiveNode):
-
     arguments: Tuple[ConstArgumentNode, ...]
 
 

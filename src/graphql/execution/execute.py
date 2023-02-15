@@ -1418,7 +1418,6 @@ def execute_subscription(
 
         result = resolve_fn(context.root_value, info, **args)
         if context.is_awaitable(result):
-
             # noinspection PyShadowingNames
             async def await_result() -> AsyncIterable[Any]:
                 try:

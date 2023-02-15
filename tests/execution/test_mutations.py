@@ -16,7 +16,6 @@ from graphql.type import (
 
 # noinspection PyPep8Naming
 class NumberHolder:
-
     theNumber: int
 
     def __init__(self, originalNumber: int):
@@ -25,7 +24,6 @@ class NumberHolder:
 
 # noinspection PyPep8Naming
 class Root:
-
     numberHolder: NumberHolder
 
     def __init__(self, originalNumber: int):

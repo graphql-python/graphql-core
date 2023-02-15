@@ -47,7 +47,6 @@ TypeMap: TypeAlias = Dict[str, GraphQLNamedType]
 
 
 class InterfaceImplementations(NamedTuple):
-
     objects: List[GraphQLObjectType]
     interfaces: List[GraphQLInterfaceType]
 

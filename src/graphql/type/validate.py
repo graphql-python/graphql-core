@@ -57,7 +57,6 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
     # noinspection PyProtectedMember
     errors = schema._validation_errors
     if errors is None:
-
         # Validate the schema, producing a list of errors.
         context = SchemaValidationContext(schema)
         context.validate_root_types()
@@ -196,7 +195,6 @@ class SchemaValidationContext:
     def validate_types(self) -> None:
         validate_input_object_circular_refs = InputObjectCircularRefsValidator(self)
         for type_ in self.schema.type_map.values():
-
             # Ensure all provided types are in fact GraphQL type.
             if not is_named_type(type_):
                 self.report_error(
@@ -247,7 +245,6 @@ class SchemaValidationContext:
             )
 
         for field_name, field in fields.items():
-
             # Ensure they are named correctly.
             self.validate_name(field, field_name)
 
@@ -463,7 +460,6 @@ class SchemaValidationContext:
 
         # Ensure the arguments are valid
         for field_name, field in fields.items():
-
             # Ensure they are named correctly.
             self.validate_name(field, field_name)
 

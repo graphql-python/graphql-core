@@ -19,7 +19,6 @@ from graphql.type import (
 def describe_execute_handles_execution_with_a_complex_schema():
     def executes_using_a_schema():
         class Article:
-
             # noinspection PyShadowingBuiltins
             def __init__(self, id: int):
                 self.id = id

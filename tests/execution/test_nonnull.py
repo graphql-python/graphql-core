@@ -147,7 +147,6 @@ def describe_execute_handles_non_nullable_types():
             )
 
     def describe_nulls_a_returned_object_that_contains_a_non_null_field():
-
         query = """
             {
               syncNest {
@@ -512,7 +511,6 @@ def describe_execute_handles_non_nullable_types():
             )
 
     def describe_handles_non_null_argument():
-
         # noinspection PyPep8Naming
         schema_with_non_null_arg = GraphQLSchema(
             GraphQLObjectType(

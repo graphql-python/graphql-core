@@ -81,13 +81,11 @@ def get_type_error(sync=True):
 
 
 class Dog(NamedTuple):
-
     name: str
     woofs: bool
 
 
 class Cat(NamedTuple):
-
     name: str
     meows: bool
 
@@ -412,7 +410,6 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
         )
 
     def describe_using_typename_on_source_object():
-
         expected = (
             {
                 "pets": [
@@ -483,7 +480,6 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             assert False, f"Unknown access variant: {access}"  # pragma: no cover
 
         def describe_union_type():
-
             schema = build_schema(
                 """
                 type Query {

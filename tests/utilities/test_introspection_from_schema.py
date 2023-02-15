@@ -22,7 +22,6 @@ def introspection_to_sdl(introspection: IntrospectionQuery) -> str:
 
 
 def describe_introspection_from_schema():
-
     schema = GraphQLSchema(
         GraphQLObjectType(
             "Simple",

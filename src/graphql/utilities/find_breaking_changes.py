@@ -140,7 +140,7 @@ def find_directive_changes(
             )
         )
 
-    for (old_directive, new_directive) in directives_diff.persisted:
+    for old_directive, new_directive in directives_diff.persisted:
         args_diff = dict_diff(old_directive.args, new_directive.args)
 
         for arg_name, new_arg in args_diff.added.items():
@@ -506,7 +506,6 @@ def is_change_safe_for_input_object_field_or_field_arg(
     old_type: GraphQLType, new_type: GraphQLType
 ) -> bool:
     if is_list_type(old_type):
-
         return is_list_type(
             # if they're both lists, make sure underlying types are compatible
             new_type

@@ -5,7 +5,6 @@ from graphql.execution import ExecutionResult
 
 
 def describe_execution_result():
-
     data = {"foo": "Some data"}
     error = GraphQLError("Some error")
     errors = [error]
