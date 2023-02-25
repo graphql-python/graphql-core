@@ -331,6 +331,23 @@ class ExecutionContext:
         )
         return ExecutionResult(data, errors)
 
+    def build_per_event_execution_context(self, payload: Any) -> ExecutionContext:
+        """Create a copy of the execution context for usage with subscribe events."""
+        return self.__class__(
+            self.schema,
+            self.fragments,
+            payload,
+            self.context_value,
+            self.operation,
+            self.variable_values,
+            self.field_resolver,
+            self.type_resolver,
+            self.subscribe_field_resolver,
+            [],
+            self.middleware_manager,
+            self.is_awaitable,
+        )
+
     def execute_operation(self) -> AwaitableOrValue[Any]:
         """Execute an operation.
 
@@ -1003,7 +1020,7 @@ def execute(
 
     # If a valid execution context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
-    exe_context = execution_context_class.build(
+    context = execution_context_class.build(
         schema,
         document,
         root_value,
@@ -1018,9 +1035,14 @@ def execute(
     )
 
     # Return early errors if execution context failed.
-    if isinstance(exe_context, list):
-        return ExecutionResult(data=None, errors=exe_context)
+    if isinstance(context, list):
+        return ExecutionResult(data=None, errors=context)
 
+    return execute_impl(context)
+
+
+def execute_impl(context: ExecutionContext) -> AwaitableOrValue[ExecutionResult]:
+    """Execute GraphQL operation (internal implementation)."""
     # Return a possible coroutine object that will eventually yield the data described
     # by the "Response" section of the GraphQL specification.
     #
@@ -1032,12 +1054,12 @@ def execute(
     # Errors from sub-fields of a NonNull type may propagate to the top level,
     # at which point we still log the error and null the parent field, which
     # in this case is the entire response.
-    errors = exe_context.errors
-    build_response = exe_context.build_response
+    errors = context.errors
+    build_response = context.build_response
     try:
-        result = exe_context.execute_operation()
+        result = context.execute_operation()
 
-        if exe_context.is_awaitable(result):
+        if context.is_awaitable(result):
             # noinspection PyShadowingNames
             async def await_result() -> Any:
                 try:
@@ -1215,6 +1237,7 @@ def subscribe(
     variable_values: Optional[Dict[str, Any]] = None,
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
+    type_resolver: Optional[GraphQLTypeResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
 ) -> AwaitableOrValue[Union[AsyncIterator[ExecutionResult], ExecutionResult]]:
@@ -1237,16 +1260,30 @@ def subscribe(
     If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
     a stream of ExecutionResults representing the response stream.
     """
-    result_or_stream = create_source_event_stream(
+    if execution_context_class is None:
+        execution_context_class = ExecutionContext
+
+    # If a valid context cannot be created due to incorrect arguments,
+    # a "Response" with only errors is returned.
+    context = execution_context_class.build(
         schema,
         document,
         root_value,
         context_value,
         variable_values,
         operation_name,
+        field_resolver,
+        type_resolver,
         subscribe_field_resolver,
-        execution_context_class,
     )
+
+    # Return early errors if execution context failed.
+    if isinstance(context, list):
+        return ExecutionResult(data=None, errors=context)
+
+    result_or_stream = create_source_event_stream_impl(context)
+
+    build_context = context.build_per_event_execution_context
 
     async def map_source_to_response(payload: Any) -> ExecutionResult:
         """Map source to response.
@@ -1258,19 +1295,10 @@ def subscribe(
         "ExecuteSubscriptionEvent" algorithm, as it is nearly identical to the
         "ExecuteQuery" algorithm, for which :func:`~graphql.execute` is also used.
         """
-        result = execute(
-            schema,
-            document,
-            payload,
-            context_value,
-            variable_values,
-            operation_name,
-            field_resolver,
-            execution_context_class=execution_context_class,
-        )
+        result = execute_impl(build_context(payload))
         return await result if isawaitable(result) else result
 
-    if (execution_context_class or ExecutionContext).is_awaitable(result_or_stream):
+    if execution_context_class.is_awaitable(result_or_stream):
         awaitable_result_or_stream = cast(Awaitable, result_or_stream)
 
         # noinspection PyShadowingNames
@@ -1298,6 +1326,8 @@ def create_source_event_stream(
     context_value: Any = None,
     variable_values: Optional[Dict[str, Any]] = None,
     operation_name: Optional[str] = None,
+    field_resolver: Optional[GraphQLFieldResolver] = None,
+    type_resolver: Optional[GraphQLTypeResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
 ) -> AwaitableOrValue[Union[AsyncIterable[Any], ExecutionResult]]:
@@ -1336,13 +1366,22 @@ def create_source_event_stream(
         context_value,
         variable_values,
         operation_name,
-        subscribe_field_resolver=subscribe_field_resolver,
+        field_resolver,
+        type_resolver,
+        subscribe_field_resolver,
     )
 
     # Return early errors if execution context failed.
     if isinstance(context, list):
         return ExecutionResult(data=None, errors=context)
 
+    return create_source_event_stream_impl(context)
+
+
+def create_source_event_stream_impl(
+    context: ExecutionContext,
+) -> AwaitableOrValue[Union[AsyncIterable[Any], ExecutionResult]]:
+    """Create source event stream (internal implementation)."""
     try:
         event_stream = execute_subscription(context)
     except GraphQLError as error:
