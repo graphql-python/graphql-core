@@ -33,6 +33,27 @@ class Barrier:
 
 def describe_parallel_execution():
     @mark.asyncio
+    async def resolve_single_field():
+        # make sure that the special case of resolving a single field works
+        async def resolve(*_args):
+            return True
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(GraphQLBoolean, resolve=resolve),
+                },
+            )
+        )
+
+        awaitable_result = execute(schema, parse("{foo}"))
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
+
+        assert result == ({"foo": True}, None)
+
+    @mark.asyncio
     async def resolve_fields_in_parallel():
         barrier = Barrier(2)
 
@@ -57,6 +78,25 @@ def describe_parallel_execution():
         result = await asyncio.wait_for(awaitable_result, 1.0)
 
         assert result == ({"foo": True, "bar": True}, None)
+
+    @mark.asyncio
+    async def resolve_single_element_list():
+        # make sure that the special case of resolving a single element list works
+        async def resolve(*_args):
+            return [True]
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {"foo": GraphQLField(GraphQLList(GraphQLBoolean), resolve=resolve)},
+            )
+        )
+
+        awaitable_result = execute(schema, parse("{foo}"))
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
+
+        assert result == ({"foo": [True]}, None)
 
     @mark.asyncio
     async def resolve_list_in_parallel():

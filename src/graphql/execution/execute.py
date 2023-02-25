@@ -441,7 +441,7 @@ class ExecutionContext:
                 if is_awaitable(result):
                     append_awaitable(response_name)
 
-        #  If there are no coroutines, we can just return the object
+        # If there are no coroutines, we can just return the object.
         if not awaitable_fields:
             return results
 
@@ -450,12 +450,17 @@ class ExecutionContext:
         # will yield this same map, but with any coroutines awaited in parallel and
         # replaced with the values they yielded.
         async def get_results() -> Dict[str, Any]:
-            results.update(
-                zip(
-                    awaitable_fields,
-                    await gather(*(results[field] for field in awaitable_fields)),
+            if len(awaitable_fields) == 1:
+                # If there is only one field, avoid the overhead of parallelization.
+                field = awaitable_fields[0]
+                results[field] = await results[field]
+            else:
+                results.update(
+                    zip(
+                        awaitable_fields,
+                        await gather(*(results[field] for field in awaitable_fields)),
+                    )
                 )
-            )
             return results
 
         return get_results()
@@ -758,13 +763,18 @@ class ExecutionContext:
 
         # noinspection PyShadowingNames
         async def get_completed_results() -> List[Any]:
-            for index, result in zip(
-                awaitable_indices,
-                await gather(
-                    *(completed_results[index] for index in awaitable_indices)
-                ),
-            ):
-                completed_results[index] = result
+            if len(awaitable_indices) == 1:
+                # If there is only one index, avoid the overhead of parallelization.
+                index = awaitable_indices[0]
+                completed_results[index] = await completed_results[index]
+            else:
+                for index, result in zip(
+                    awaitable_indices,
+                    await gather(
+                        *(completed_results[index] for index in awaitable_indices)
+                    ),
+                ):
+                    completed_results[index] = result
             return completed_results
 
         return get_completed_results()
@@ -907,7 +917,7 @@ class ExecutionContext:
 
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
-        #  continuing execution.
+        # continuing execution.
         if return_type.is_type_of:
             is_type_of = return_type.is_type_of(result, info)
 
@@ -943,7 +953,7 @@ class ExecutionContext:
         # We cannot use the field_nodes themselves as key for the cache, since they
         # are not hashable as a list. We also do not want to use the field_nodes
         # themselves (converted to a tuple) as keys, since hashing them is slow.
-        # Therefore we use the ids of the field_nodes as keys. Note that we do not
+        # Therefore, we use the ids of the field_nodes as keys. Note that we do not
         # use the id of the list, since we want to hit the cache for all lists of
         # the same nodes, not only for the same list of nodes. Also, the list id may
         # even be reused, in which case we would get wrong results from the cache.

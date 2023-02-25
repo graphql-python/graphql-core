@@ -313,7 +313,7 @@ from .type import (
     # Validate GraphQL schema.
     validate_schema,
     assert_valid_schema,
-    #  Uphold the spec rules about naming
+    # Uphold the spec rules about naming
     assert_name,
     assert_enum_value_name,
     # Types

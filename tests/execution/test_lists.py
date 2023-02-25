@@ -25,6 +25,21 @@ def describe_execute_accepts_any_iterable_as_list_value():
             Data(list_field),
         )
 
+    def accepts_a_list_as_a_list_value():
+        result = _complete([])
+        assert result == ({"listField": []}, None)
+        list_field = ["just an apple"]
+        result = _complete(list_field)
+        assert result == ({"listField": list_field}, None)
+        list_field = ["apple", "banana", "coconut"]
+        result = _complete(list_field)
+        assert result == ({"listField": list_field}, None)
+
+    def accepts_a_tuple_as_a_list_value():
+        list_field = ("apple", "banana", "coconut")
+        result = _complete(list_field)
+        assert result == ({"listField": list(list_field)}, None)
+
     def accepts_a_set_as_a_list_value():
         # Note that sets are not ordered in Python.
         list_field = {"apple", "banana", "coconut"}
