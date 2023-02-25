@@ -1354,12 +1354,9 @@ def create_source_event_stream(
     separating these two steps. For more on this, see the "Supporting Subscriptions
     at Scale" information in the GraphQL spec.
     """
-    if not execution_context_class:
-        execution_context_class = ExecutionContext
-
     # If a valid context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
-    context = execution_context_class.build(
+    context = (execution_context_class or ExecutionContext).build(
         schema,
         document,
         root_value,
