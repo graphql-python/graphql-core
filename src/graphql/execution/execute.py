@@ -65,7 +65,6 @@ from .values import get_argument_values, get_variable_values
 
 
 __all__ = [
-    "assert_valid_execution_arguments",
     "create_source_event_stream",
     "default_field_resolver",
     "default_type_resolver",
@@ -250,8 +249,8 @@ class ExecutionContext:
 
         For internal use only.
         """
-        # If arguments are missing or incorrect, throw an error.
-        assert_valid_execution_arguments(schema)
+        # If the schema used for execution is invalid, raise an error.
+        assert_valid_schema(schema)
 
         operation: Optional[OperationDefinitionNode] = None
         fragments: Dict[str, FragmentDefinitionNode] = {}
@@ -1112,20 +1111,6 @@ def execute_sync(
     return cast(ExecutionResult, result)
 
 
-def assert_valid_execution_arguments(
-    schema: GraphQLSchema,
-) -> None:
-    """Check that the arguments are acceptable.
-
-    Essential assertions before executing to provide developer feedback for improper use
-    of the GraphQL library.
-
-    For internal use only.
-    """
-    # If the schema used for execution is invalid, throw an error.
-    assert_valid_schema(schema)
-
-
 def invalid_return_type_error(
     return_type: GraphQLObjectType, result: Any, field_nodes: List[FieldNode]
 ) -> GraphQLError:
@@ -1340,10 +1325,6 @@ def create_source_event_stream(
     separating these two steps. For more on this, see the "Supporting Subscriptions
     at Scale" information in the GraphQL spec.
     """
-    # If arguments are missing or incorrectly typed, this is an internal developer
-    # mistake which should throw an early error.
-    assert_valid_execution_arguments(schema)
-
     if not execution_context_class:
         execution_context_class = ExecutionContext
 
