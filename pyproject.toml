@@ -72,7 +72,7 @@ isort = [
     { version = "^5.12", python = ">=3.8" },
     { version = "^5.11", python = "<3.8" }
 ]
-mypy = "1.0.0"
+mypy = "1.0.1"
 bump2version = ">=1.0,<2"
 
 [tool.poetry.group.doc]
