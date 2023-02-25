@@ -336,8 +336,9 @@ class ExecutionContext:
 
         Implements the "Executing operations" section of the spec.
         """
+        schema = self.schema
         operation = self.operation
-        root_type = self.schema.get_root_type(operation.operation)
+        root_type = schema.get_root_type(operation.operation)
         if root_type is None:
             raise GraphQLError(
                 "Schema is not configured to execute"
@@ -346,7 +347,7 @@ class ExecutionContext:
             )
 
         root_fields = collect_fields(
-            self.schema,
+            schema,
             self.fragments,
             self.variable_values,
             root_type,
