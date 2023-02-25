@@ -331,13 +331,12 @@ class ExecutionContext:
         )
         return ExecutionResult(data, errors)
 
-    def execute_operation(
-        self, operation: OperationDefinitionNode
-    ) -> AwaitableOrValue[Any]:
+    def execute_operation(self) -> AwaitableOrValue[Any]:
         """Execute an operation.
 
         Implements the "Executing operations" section of the spec.
         """
+        operation = self.operation
         root_type = self.schema.get_root_type(operation.operation)
         if root_type is None:
             raise GraphQLError(
@@ -1035,8 +1034,7 @@ def execute(
     errors = exe_context.errors
     build_response = exe_context.build_response
     try:
-        operation = exe_context.operation
-        result = exe_context.execute_operation(operation)
+        result = exe_context.execute_operation()
 
         if exe_context.is_awaitable(result):
             # noinspection PyShadowingNames
