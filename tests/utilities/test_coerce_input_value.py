@@ -352,13 +352,24 @@ def describe_coerce_input_value():
             result = _coerce_value(None, TestNestedList)
             assert expect_value(result) is None
 
-        def returns_nested_list_for_nested_non_list_values():
+        def returns_error_for_nested_non_list_values():
             result = _coerce_value([1, 2, 3], TestNestedList)
-            assert expect_value(result) == [[1], [2], [3]]
+            assert expect_errors(result) == [
+                ("Expected type '[Int]' to be a list.", [0], 1),
+                ("Expected type '[Int]' to be a list.", [1], 2),
+                ("Expected type '[Int]' to be a list.", [2], 3),
+            ]
 
         def returns_nested_null_for_nested_null_values():
+            result = _coerce_value([[None], [None]], TestNestedList)
+            assert expect_value(result) == [[None], [None]]
+
+        def returns_errors_for_null_values():
             result = _coerce_value([42, [None], None], TestNestedList)
-            assert expect_value(result) == [[42], [None], None]
+            assert expect_errors(result) == [
+                ("Expected type '[Int]' to be a list.", [0], 42),
+                ("Expected type '[Int]' to be a list.", [2], None),
+            ]
 
     def describe_with_default_on_error():
         def throw_error_without_path():
