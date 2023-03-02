@@ -70,7 +70,15 @@ def coerce_input_value(
         if is_iterable(input_value):
             coerced_list: List[Any] = []
             append_item = coerced_list.append
+            is_nested_list = bool(is_list_type(item_type) and len(input_value) > 1)
             for index, item_value in enumerate(input_value):
+                if is_nested_list and not is_iterable(item_value):
+                    # All input values should be iterable for multivalued nested list types
+                    on_error(
+                        path.as_list() if path else Path(path, index, None).as_list(),
+                        item_value,
+                        GraphQLError(f"Expected type '{inspect(item_type)}' to be a list."),
+                    )
                 append_item(
                     coerce_input_value(
                         item_value, item_type, on_error, Path(path, index, None)
