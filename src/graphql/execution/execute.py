@@ -64,6 +64,15 @@ from .middleware import MiddlewareManager
 from .values import get_argument_values, get_variable_values
 
 
+try:  # pragma: no cover
+    anext
+except NameError:  # pragma: no cover (Python < 3.10)
+    # noinspection PyShadowingBuiltins
+    async def anext(iterator: AsyncIterator) -> Any:
+        """Return the next item from an async iterator."""
+        return await iterator.__anext__()
+
+
 __all__ = [
     "create_source_event_stream",
     "default_field_resolver",
@@ -684,6 +693,67 @@ class ExecutionContext:
             f" '{inspect(return_type)}'."
         )
 
+    async def complete_async_iterator_value(
+        self,
+        item_type: GraphQLOutputType,
+        field_nodes: List[FieldNode],
+        info: GraphQLResolveInfo,
+        path: Path,
+        iterator: AsyncIterator[Any],
+    ) -> List[Any]:
+        """Complete an async iterator.
+
+        Complete a async iterator value by completing the result and calling
+        recursively until all the results are completed.
+        """
+        is_awaitable = self.is_awaitable
+        awaitable_indices: List[int] = []
+        append_awaitable = awaitable_indices.append
+        completed_results: List[Any] = []
+        append_result = completed_results.append
+        index = 0
+        while True:
+            field_path = path.add_key(index, None)
+            try:
+                try:
+                    value = await anext(iterator)
+                except StopAsyncIteration:
+                    break
+                try:
+                    completed_item = self.complete_value(
+                        item_type, field_nodes, info, field_path, value
+                    )
+                    if is_awaitable(completed_item):
+                        append_awaitable(index)
+                    append_result(completed_item)
+                except Exception as raw_error:
+                    append_result(None)
+                    error = located_error(raw_error, field_nodes, field_path.as_list())
+                    self.handle_field_error(error, item_type)
+            except Exception as raw_error:
+                append_result(None)
+                error = located_error(raw_error, field_nodes, field_path.as_list())
+                self.handle_field_error(error, item_type)
+                break
+            index += 1
+
+        if not awaitable_indices:
+            return completed_results
+
+        if len(awaitable_indices) == 1:
+            # If there is only one index, avoid the overhead of parallelization.
+            index = awaitable_indices[0]
+            completed_results[index] = await completed_results[index]
+        else:
+            for index, result in zip(
+                awaitable_indices,
+                await gather(
+                    *(completed_results[index] for index in awaitable_indices)
+                ),
+            ):
+                completed_results[index] = result
+        return completed_results
+
     def complete_list_value(
         self,
         return_type: GraphQLList[GraphQLOutputType],
@@ -696,20 +766,16 @@ class ExecutionContext:
 
         Complete a list value by completing each item in the list with the inner type.
         """
+        item_type = return_type.of_type
+
+        if isinstance(result, AsyncIterable):
+            iterator = result.__aiter__()
+
+            return self.complete_async_iterator_value(
+                item_type, field_nodes, info, path, iterator
+            )
+
         if not is_iterable(result):
-            # experimental: allow async iterables
-            if isinstance(result, AsyncIterable):
-                # noinspection PyShadowingNames
-                async def async_iterable_to_list(
-                    async_result: AsyncIterable[Any],
-                ) -> Any:
-                    sync_result = [item async for item in async_result]
-                    return self.complete_list_value(
-                        return_type, field_nodes, info, path, sync_result
-                    )
-
-                return async_iterable_to_list(result)
-
             raise GraphQLError(
                 "Expected Iterable, but did not find one for field"
                 f" '{info.parent_type.name}.{info.field_name}'."
@@ -718,7 +784,6 @@ class ExecutionContext:
         # This is specified as a simple map, however we're optimizing the path where
         # the list contains no coroutine objects by avoiding creating another coroutine
         # object.
-        item_type = return_type.of_type
         is_awaitable = self.is_awaitable
         awaitable_indices: List[int] = []
         append_awaitable = awaitable_indices.append
