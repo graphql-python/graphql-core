@@ -129,6 +129,7 @@ __all__ = [
     "GraphQLInputField",
     "GraphQLInputFieldKwargs",
     "GraphQLInputFieldMap",
+    "GraphQLInputFieldOutType",
     "GraphQLInputObjectType",
     "GraphQLInputObjectTypeKwargs",
     "GraphQLInputType",
