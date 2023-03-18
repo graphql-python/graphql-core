@@ -7,13 +7,17 @@ from graphql.language import (
     ArgumentNode,
     DefinitionNode,
     DocumentNode,
+    ErrorBoundaryNode,
     FieldNode,
     IntValueNode,
+    ListNullabilityOperatorNode,
     ListTypeNode,
     ListValueNode,
     NamedTypeNode,
     NameNode,
+    NonNullAssertionNode,
     NonNullTypeNode,
+    NullabilityAssertionNode,
     NullValueNode,
     ObjectFieldNode,
     ObjectValueNode,
@@ -46,9 +50,22 @@ except ImportError:  # Python < 3.10
 Location: TypeAlias = Optional[Tuple[int, int]]
 
 
+def parse_ccn(source: str) -> DocumentNode:
+    return parse(source, experimental_client_controlled_nullability=True)
+
+
 def assert_syntax_error(text: str, message: str, location: Location) -> None:
     with raises(GraphQLSyntaxError) as exc_info:
         parse(text)
+    error = exc_info.value
+    assert error.message == f"Syntax Error: {message}"
+    assert error.description == message
+    assert error.locations == [location]
+
+
+def assert_syntax_error_ccn(text: str, message: str, location: Location) -> None:
+    with raises(GraphQLSyntaxError) as exc_info:
+        parse_ccn(text)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"
     assert error.description == message
@@ -160,7 +177,7 @@ def describe_parser():
 
     # noinspection PyShadowingNames
     def parses_kitchen_sink(kitchen_sink_query):  # noqa: F811
-        parse(kitchen_sink_query)
+        parse_ccn(kitchen_sink_query)
 
     def allows_non_keywords_anywhere_a_name_is_allowed():
         non_keywords = (
@@ -223,6 +240,214 @@ def describe_parser():
             """
         )
 
+    def parses_required_field():
+        doc = parse_ccn("{ requiredField! }")
+        assert isinstance(doc, DocumentNode)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = cast(OperationDefinitionNode, definitions[0])
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        nullability_assertion = field.nullability_assertion
+        assert isinstance(nullability_assertion, NonNullAssertionNode)
+        assert nullability_assertion.loc == (15, 16)
+        assert nullability_assertion.nullability_assertion is None
+
+    def parses_optional_field():
+        parse_ccn("{ optionalField? }")
+
+    def does_not_parse_field_with_multiple_designators():
+        assert_syntax_error_ccn(
+            "{ optionalField?! }", "Expected Name, found '!'.", (1, 17)
+        )
+        assert_syntax_error_ccn(
+            "{ optionalField!? }", "Expected Name, found '?'.", (1, 17)
+        )
+
+    def parses_required_with_alias():
+        parse_ccn("{ requiredField: field! }")
+
+    def parses_optional_with_alias():
+        parse_ccn("{ requiredField: field? }")
+
+    def does_not_parse_aliased_field_with_bang_on_left_of_colon():
+        assert_syntax_error_ccn(
+            "{ requiredField!: field }", "Expected Name, found ':'.", (1, 17)
+        )
+
+    def does_not_parse_aliased_field_with_question_mark_on_left_of_colon():
+        assert_syntax_error_ccn(
+            "{ requiredField?: field }", "Expected Name, found ':'.", (1, 17)
+        )
+
+    def does_not_parse_aliased_field_with_bang_on_left_and_right_of_colon():
+        assert_syntax_error_ccn(
+            "{ requiredField!: field! }", "Expected Name, found ':'.", (1, 17)
+        )
+
+    def does_not_parse_aliased_field_with_question_mark_on_left_and_right_of_colon():
+        assert_syntax_error_ccn(
+            "{ requiredField?: field? }", "Expected Name, found ':'.", (1, 17)
+        )
+
+    def does_not_parse_designator_on_query():
+        assert_syntax_error_ccn("query? { field }", "Expected '{', found '?'.", (1, 6))
+
+    def parses_required_within_fragment():
+        parse_ccn("fragment MyFragment on Query { field! }")
+
+    def parses_optional_within_fragment():
+        parse_ccn("fragment MyFragment on Query { field? }")
+
+    def parses_field_with_required_list_elements():
+        doc = parse_ccn("{ field[!] }")
+        assert isinstance(doc, DocumentNode)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = cast(OperationDefinitionNode, definitions[0])
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        nullability_assertion: Optional[
+            NullabilityAssertionNode
+        ] = field.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (7, 10)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, NonNullAssertionNode)
+        assert nullability_assertion.loc == (8, 9)
+        assert nullability_assertion.nullability_assertion is None
+
+    def parses_field_with_optional_list_elements():
+        doc = parse_ccn("{ field[?] }")
+        assert isinstance(doc, DocumentNode)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = cast(OperationDefinitionNode, definitions[0])
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        nullability_assertion: Optional[
+            NullabilityAssertionNode
+        ] = field.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (7, 10)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ErrorBoundaryNode)
+        assert nullability_assertion.loc == (8, 9)
+        assert nullability_assertion.nullability_assertion is None
+
+    def parses_field_with_required_list():
+        doc = parse_ccn("{ field[]! }")
+        assert isinstance(doc, DocumentNode)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = cast(OperationDefinitionNode, definitions[0])
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        nullability_assertion: Optional[
+            NullabilityAssertionNode
+        ] = field.nullability_assertion
+        assert isinstance(nullability_assertion, NonNullAssertionNode)
+        assert nullability_assertion.loc == (7, 10)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (7, 9)
+        assert nullability_assertion.nullability_assertion is None
+
+    def parses_field_with_optional_list():
+        doc = parse_ccn("{ field[]? }")
+        assert isinstance(doc, DocumentNode)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = cast(OperationDefinitionNode, definitions[0])
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        nullability_assertion: Optional[
+            NullabilityAssertionNode
+        ] = field.nullability_assertion
+        assert isinstance(nullability_assertion, ErrorBoundaryNode)
+        assert nullability_assertion.loc == (7, 10)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (7, 9)
+        assert nullability_assertion.nullability_assertion is None
+
+    def parses_field_with_mixed_list_elements():
+        doc = parse_ccn("{ field[[[?]!]]! }")
+        assert isinstance(doc, DocumentNode)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = cast(OperationDefinitionNode, definitions[0])
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        nullability_assertion: Optional[
+            NullabilityAssertionNode
+        ] = field.nullability_assertion
+        assert isinstance(nullability_assertion, NonNullAssertionNode)
+        assert nullability_assertion.loc == (7, 16)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (7, 15)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (8, 14)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, NonNullAssertionNode)
+        assert nullability_assertion.loc == (9, 13)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
+        assert nullability_assertion.loc == (9, 12)
+        nullability_assertion = nullability_assertion.nullability_assertion
+        assert isinstance(nullability_assertion, ErrorBoundaryNode)
+        assert nullability_assertion.loc == (10, 11)
+        assert nullability_assertion.nullability_assertion is None
+
+    def does_not_parse_field_with_unbalanced_brackets():
+        assert_syntax_error_ccn("{ field[[] }", "Expected ']', found '}'.", (1, 12))
+        assert_syntax_error_ccn("{ field[]] }", "Expected Name, found ']'.", (1, 10))
+        assert_syntax_error_ccn("{ field] }", "Expected Name, found ']'.", (1, 8))
+        assert_syntax_error_ccn("{ field[ }", "Expected ']', found '}'.", (1, 10))
+
+    def does_not_parse_field_with_assorted_invalid_nullability_designators():
+        assert_syntax_error_ccn("{ field[][] }", "Expected Name, found '['.", (1, 10))
+        assert_syntax_error_ccn("{ field[!!] }", "Expected ']', found '!'.", (1, 10))
+        assert_syntax_error_ccn("{ field[]?! }", "Expected Name, found '!'.", (1, 11))
+
     def creates_ast():
         doc = parse(
             dedent(
@@ -277,6 +502,7 @@ def describe_parser():
         assert value.loc == (13, 14)
         assert value.value == "4"
         assert argument.loc == (9, 14)
+        assert field.nullability_assertion is None
         assert field.directives == ()
         selection_set = field.selection_set
         assert isinstance(selection_set, SelectionSetNode)
@@ -292,17 +518,7 @@ def describe_parser():
         assert name.loc == (22, 24)
         assert name.value == "id"
         assert field.arguments == ()
-        assert field.directives == ()
-        assert field.selection_set is None
-        field = selections[0]
-        assert isinstance(field, FieldNode)
-        assert field.loc == (22, 24)
-        assert field.alias is None
-        name = field.name
-        assert isinstance(name, NameNode)
-        assert name.loc == (22, 24)
-        assert name.value == "id"
-        assert field.arguments == ()
+        assert field.nullability_assertion is None
         assert field.directives == ()
         assert field.selection_set is None
         field = selections[1]
@@ -314,6 +530,7 @@ def describe_parser():
         assert name.loc == (30, 34)
         assert name.value == "name"
         assert field.arguments == ()
+        assert field.nullability_assertion is None
         assert field.directives == ()
         assert field.selection_set is None
 
@@ -356,6 +573,7 @@ def describe_parser():
         assert name.loc == (10, 14)
         assert name.value == "node"
         assert field.arguments == ()
+        assert field.nullability_assertion is None
         assert field.directives == ()
         selection_set = field.selection_set
         assert isinstance(selection_set, SelectionSetNode)
@@ -372,6 +590,7 @@ def describe_parser():
         assert name.loc == (21, 23)
         assert name.value == "id"
         assert field.arguments == ()
+        assert field.nullability_assertion is None
         assert field.directives == ()
         assert field.selection_set is None
 

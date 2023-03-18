@@ -34,6 +34,7 @@ class PrintedNode:
     interfaces: Strings
     locations: Strings
     name: str
+    nullability_assertion: str
     operation: OperationType
     operation_types: Strings
     repeatable: bool
@@ -100,17 +101,40 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_field(node: PrintedNode, *_args: Any) -> str:
-        prefix = wrap("", node.alias, ": ") + node.name
+        prefix = join((wrap("", node.alias, ": "), node.name))
         args_line = prefix + wrap("(", join(node.arguments, ", "), ")")
 
         if len(args_line) > MAX_LINE_LENGTH:
             args_line = prefix + wrap("(\n", indent(join(node.arguments, "\n")), "\n)")
 
-        return join((args_line, join(node.directives, " "), node.selection_set), " ")
+        return join(
+            (
+                args_line,
+                #  Note: Client Controlled Nullability is experimental and may be
+                #  changed or removed in the future.
+                node.nullability_assertion,
+                wrap(" ", join(node.directives, " ")),
+                wrap(" ", node.selection_set),
+            ),
+        )
 
     @staticmethod
     def leave_argument(node: PrintedNode, *_args: Any) -> str:
         return f"{node.name}: {node.value}"
+
+    # Nullability Modifiers
+
+    @staticmethod
+    def leave_list_nullability_operator(node: PrintedNode, *_args: Any) -> str:
+        return join(("[", node.nullability_assertion, "]"))
+
+    @staticmethod
+    def leave_non_null_assertion(node: PrintedNode, *_args: Any) -> str:
+        return join((node.nullability_assertion, "!"))
+
+    @staticmethod
+    def leave_error_boundary(node: PrintedNode, *_args: Any) -> str:
+        return join((node.nullability_assertion, "?"))
 
     # Fragments
 

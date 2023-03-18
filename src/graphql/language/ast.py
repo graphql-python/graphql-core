@@ -28,6 +28,10 @@ __all__ = [
     "SelectionSetNode",
     "SelectionNode",
     "FieldNode",
+    "NullabilityAssertionNode",
+    "NonNullAssertionNode",
+    "ErrorBoundaryNode",
+    "ListNullabilityOperatorNode",
     "ArgumentNode",
     "ConstArgumentNode",
     "FragmentSpreadNode",
@@ -258,8 +262,22 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
     "variable_definition": ("variable", "type", "default_value", "directives"),
     "variable": ("name",),
     "selection_set": ("selections",),
-    "field": ("alias", "name", "arguments", "directives", "selection_set"),
+    "field": (
+        "alias",
+        "name",
+        "arguments",
+        "directives",
+        "selection_set",
+        # note: Client controlled Nullability is experimental and may be changed
+        # or removed in the future.
+        "nullability_assertion",
+    ),
     "argument": ("name", "value"),
+    # note: Client controlled Nullability is experimental and may be changed
+    # or removed in the future.
+    "list_nullability_operator": ("nullability_assertion",),
+    "non_null_assertion": ("nullability_assertion",),
+    "error_boundary": ("nullability_assertion",),
     "fragment_spread": ("name", "directives"),
     "inline_fragment": ("type_condition", "directives", "selection_set"),
     "fragment_definition": (
@@ -462,12 +480,32 @@ class SelectionNode(Node):
 
 
 class FieldNode(SelectionNode):
-    __slots__ = "alias", "name", "arguments", "selection_set"
+    __slots__ = "alias", "name", "arguments", "nullability_assertion", "selection_set"
 
     alias: Optional[NameNode]
     name: NameNode
     arguments: Tuple[ArgumentNode, ...]
+    # Note: Client Controlled Nullability is experimental
+    # and may be changed or removed in the future.
+    nullability_assertion: NullabilityAssertionNode
     selection_set: Optional[SelectionSetNode]
+
+
+class NullabilityAssertionNode(Node):
+    __slots__ = ("nullability_assertion",)
+    nullability_assertion: Optional["NullabilityAssertionNode"]
+
+
+class ListNullabilityOperatorNode(NullabilityAssertionNode):
+    pass
+
+
+class NonNullAssertionNode(NullabilityAssertionNode):
+    nullability_assertion: ListNullabilityOperatorNode
+
+
+class ErrorBoundaryNode(NullabilityAssertionNode):
+    nullability_assertion: ListNullabilityOperatorNode
 
 
 class ArgumentNode(Node):
