@@ -177,10 +177,11 @@ def describe_map_async_iterable():
         assert await anext(doubles) == 4
 
         # Throw error
-        with raises(RuntimeError, match="Ouch") as exc_info:
-            await doubles.athrow(RuntimeError("Ouch"))
+        message = "allows throwing errors when mapping async iterable"
+        with raises(RuntimeError) as exc_info:
+            await doubles.athrow(RuntimeError(message))
 
-        assert str(exc_info.value) == "Ouch"
+        assert str(exc_info.value) == message
 
         with raises(StopAsyncIteration):
             await anext(doubles)
