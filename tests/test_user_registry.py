@@ -29,7 +29,7 @@ from graphql import (
     parse,
     subscribe,
 )
-from graphql.execution.map_async_iterator import MapAsyncIterator
+from graphql.execution.map_async_iterable import MapAsyncIterable
 from graphql.pyutils import SimplePubSub, SimplePubSubIterator
 
 
@@ -413,7 +413,7 @@ def describe_subscription():
         subscription_one = subscribe(
             schema, parse(query), context_value=context, variable_values=variables
         )
-        assert isinstance(subscription_one, MapAsyncIterator)
+        assert isinstance(subscription_one, MapAsyncIterable)
 
         query = """
             subscription {
@@ -425,7 +425,7 @@ def describe_subscription():
             """
 
         subscription_all = subscribe(schema, parse(query), context_value=context)
-        assert isinstance(subscription_all, MapAsyncIterator)
+        assert isinstance(subscription_all, MapAsyncIterable)
 
         received_one = []
         received_all = []

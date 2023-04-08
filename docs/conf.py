@@ -148,7 +148,7 @@ GraphQLTypeResolver
 GraphQLOutputType
 Middleware
 asyncio.events.AbstractEventLoop
-graphql.execution.map_async_iterator.MapAsyncIterator
+graphql.execution.map_async_iterable.MapAsyncIterable
 graphql.execution.Middleware
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor

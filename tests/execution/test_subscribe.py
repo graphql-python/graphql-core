@@ -5,7 +5,7 @@ from pytest import mark, raises
 
 from graphql.execution import (
     ExecutionResult,
-    MapAsyncIterator,
+    MapAsyncIterable,
     create_source_event_stream,
     subscribe,
 )
@@ -178,11 +178,11 @@ def describe_subscription_initialization_phase():
             """
         )
 
-        async def empty_async_iterator(_info):
+        async def empty_async_iterable(_info):
             for value in ():  # type: ignore
                 yield value  # pragma: no cover
 
-        ai = subscribe(email_schema, document, {"importantEmail": empty_async_iterator})
+        ai = subscribe(email_schema, document, {"importantEmail": empty_async_iterable})
 
         with raises(StopAsyncIteration):
             await anext(ai)
@@ -207,7 +207,7 @@ def describe_subscription_initialization_phase():
         subscription = subscribe(
             schema, parse("subscription { foo }"), {"foo": foo_generator}
         )
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
@@ -227,7 +227,7 @@ def describe_subscription_initialization_phase():
         )
 
         subscription = subscribe(schema, parse("subscription { foo }"))
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
@@ -255,7 +255,7 @@ def describe_subscription_initialization_phase():
         assert is_awaitable(awaitable)
 
         subscription = await awaitable
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
@@ -285,7 +285,7 @@ def describe_subscription_initialization_phase():
         )
 
         subscription = subscribe(schema, parse("subscription { foo bar }"))
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == (
             {"foo": "FooValue", "bar": None},
@@ -465,10 +465,10 @@ def describe_subscription_publish_phase():
         pubsub = SimplePubSub()
 
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         second_subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         payload1 = anext(subscription)
         payload2 = anext(second_subscription)
@@ -499,7 +499,7 @@ def describe_subscription_publish_phase():
     async def produces_a_payload_per_subscription_event():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         # Wait for the next subscription payload.
         payload = anext(subscription)
@@ -577,7 +577,7 @@ def describe_subscription_publish_phase():
     async def produces_a_payload_when_there_are_multiple_events():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         payload = anext(subscription)
 
@@ -633,7 +633,7 @@ def describe_subscription_publish_phase():
     async def should_not_trigger_when_subscription_is_already_done():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         payload = anext(subscription)
 
@@ -683,7 +683,7 @@ def describe_subscription_publish_phase():
     async def should_not_trigger_when_subscription_is_thrown():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         payload = anext(subscription)
 
@@ -724,7 +724,7 @@ def describe_subscription_publish_phase():
     async def event_order_is_correct_for_multiple_publishes():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         payload = anext(subscription)
 
@@ -804,7 +804,7 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
@@ -849,7 +849,7 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
@@ -885,7 +885,7 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
@@ -915,6 +915,6 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterator)
+        assert isinstance(subscription, MapAsyncIterable)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)

@@ -16,7 +16,7 @@ from .execute import (
     FormattedExecutionResult,
     Middleware,
 )
-from .map_async_iterator import MapAsyncIterator
+from .map_async_iterable import MapAsyncIterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
@@ -30,7 +30,7 @@ __all__ = [
     "ExecutionContext",
     "ExecutionResult",
     "FormattedExecutionResult",
-    "MapAsyncIterator",
+    "MapAsyncIterable",
     "Middleware",
     "MiddlewareManager",
     "get_argument_values",

@@ -7,11 +7,11 @@ from types import TracebackType
 from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union, cast
 
 
-__all__ = ["MapAsyncIterator"]
+__all__ = ["MapAsyncIterable"]
 
 
 # noinspection PyAttributeOutsideInit
-class MapAsyncIterator:
+class MapAsyncIterable:
     """Map an AsyncIterable over a callback function.
 
     Given an AsyncIterable and a callback function, return an AsyncIterator which
@@ -26,7 +26,7 @@ class MapAsyncIterator:
         self.callback = callback
         self._close_event = Event()
 
-    def __aiter__(self) -> MapAsyncIterator:
+    def __aiter__(self) -> MapAsyncIterable:
         """Get the iterator object."""
         return self
 

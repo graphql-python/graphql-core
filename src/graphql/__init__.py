@@ -437,7 +437,7 @@ from .execution import (
     # Subscription
     subscribe,
     create_source_event_stream,
-    MapAsyncIterator,
+    MapAsyncIterable,
     # Middleware
     Middleware,
     MiddlewareManager,
@@ -703,7 +703,7 @@ __all__ = [
     "MiddlewareManager",
     "subscribe",
     "create_source_event_stream",
-    "MapAsyncIterator",
+    "MapAsyncIterable",
     "validate",
     "ValidationContext",
     "ValidationRule",

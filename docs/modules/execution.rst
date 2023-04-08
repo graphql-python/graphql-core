@@ -26,7 +26,7 @@ Execution
 
 .. autofunction:: create_source_event_stream
 
-.. autoclass:: MapAsyncIterator
+.. autoclass:: MapAsyncIterable
 
 .. autoclass:: Middleware
 

@@ -59,7 +59,7 @@ from ..type import (
     is_object_type,
 )
 from .collect_fields import collect_fields, collect_subfields
-from .map_async_iterator import MapAsyncIterator
+from .map_async_iterable import MapAsyncIterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_variable_values
 
@@ -1371,7 +1371,7 @@ def subscribe(
             result_or_stream = await awaitable_result_or_stream
             if isinstance(result_or_stream, ExecutionResult):
                 return result_or_stream
-            return MapAsyncIterator(result_or_stream, map_source_to_response)
+            return MapAsyncIterable(result_or_stream, map_source_to_response)
 
         return await_result()
 
@@ -1379,7 +1379,7 @@ def subscribe(
         return result_or_stream
 
     # Map every source value to a ExecutionResult value as described above.
-    return MapAsyncIterator(
+    return MapAsyncIterable(
         cast(AsyncIterable[Any], result_or_stream), map_source_to_response
     )
 
