@@ -1483,7 +1483,8 @@ def execute_subscription(
         root_type,
         context.operation.selection_set,
     )
-    response_name, field_nodes = next(iter(root_fields.items()))
+    first_root_field = next(iter(root_fields.items()))
+    response_name, field_nodes = first_root_field
     field_name = field_nodes[0].name.value
     field_def = schema.get_field(root_type, field_name)
 

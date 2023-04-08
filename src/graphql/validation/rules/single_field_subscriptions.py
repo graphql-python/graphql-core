@@ -70,8 +70,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                     )
                 )
             for field_nodes in fields.values():
-                field = field_nodes[0]
-                field_name = field.name.value
+                field_name = field_nodes[0].name.value
                 if field_name.startswith("__"):
                     self.report_error(
                         GraphQLError(
