@@ -193,8 +193,6 @@ class ExtendSchemaImpl:
 
         For internal use only.
         """
-        # Note: schema_kwargs should become a TypedDict once we require Python 3.8
-
         # Collect the type definitions and extensions found in the document.
         type_defs: List[TypeDefinitionNode] = []
 
