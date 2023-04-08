@@ -1,16 +1,5 @@
 import asyncio
-from typing import (
-    Any,
-    AsyncIterable,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, AsyncIterable, Callable, Dict, List, Optional, TypeVar, Union
 
 from pytest import mark, raises
 
@@ -32,6 +21,8 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
+
+from ..utils.assert_equal_awaitables_or_values import assert_equal_awaitables_or_values
 
 
 try:
@@ -148,27 +139,6 @@ def create_subscription(pubsub: SimplePubSub):
 
 
 DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)})
-
-
-def assert_equal_awaitables_or_values(
-    value1: AwaitableOrValue[T], value2: AwaitableOrValue[T]
-) -> AwaitableOrValue[T]:
-    if is_awaitable(value1):
-        awaitable1 = cast(Awaitable[T], value1)
-        assert is_awaitable(value2)
-        awaitable2 = cast(Awaitable[T], value2)
-
-        # noinspection PyShadowingNames
-        async def awaited_equal_value():
-            value1 = await awaitable1
-            value2 = await awaitable2
-            assert value1 == value2
-            return value1
-
-        return awaited_equal_value()
-    assert not is_awaitable(value2)
-    assert value1 == value2
-    return value1
 
 
 def subscribe_with_bad_fn(
