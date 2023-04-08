@@ -130,8 +130,9 @@ def coerce_input_value(
         return type_.out_type(coerced_dict)
 
     if is_leaf_type(type_):
-        # Scalars determine if a value is valid via `parse_value()`, which can throw to
-        # indicate failure. If it throws, maintain a reference to the original error.
+        # Scalars and Enums determine if an input value is valid via `parse_value()`,
+        # which can throw to indicate failure. If it throws, maintain a reference
+        # to the original error.
         type_ = cast(GraphQLScalarType, type_)
         try:
             parse_result = type_.parse_value(input_value)
