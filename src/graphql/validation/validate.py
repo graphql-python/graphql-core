@@ -12,8 +12,13 @@ from .validation_context import SDLValidationContext, ValidationContext
 __all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
 
 
-class ValidationAbortedError(RuntimeError):
+class ValidationAbortedError(GraphQLError):
     """Error when a validation has been aborted (error limit reached)."""
+
+
+validation_aborted_error = ValidationAbortedError(
+    "Too many validation errors, error limit reached. Validation aborted."
+)
 
 
 def validate(
@@ -54,13 +59,7 @@ def validate(
 
     def on_error(error: GraphQLError) -> None:
         if len(errors) >= max_errors:  # type: ignore
-            errors.append(
-                GraphQLError(
-                    "Too many validation errors, error limit reached."
-                    " Validation aborted."
-                )
-            )
-            raise ValidationAbortedError
+            raise validation_aborted_error
         errors.append(error)
 
     context = ValidationContext(schema, document_ast, type_info, on_error)
@@ -73,7 +72,7 @@ def validate(
     try:
         visit(document_ast, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
     except ValidationAbortedError:
-        pass
+        errors.append(validation_aborted_error)
     return errors
 
 
