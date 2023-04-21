@@ -32,7 +32,7 @@ from .execute import (
     FormattedIncrementalResult,
     Middleware,
 )
-from .map_async_iterable import MapAsyncIterable
+from .map_async_iterable import map_async_iterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
@@ -62,7 +62,7 @@ __all__ = [
     "FormattedIncrementalDeferResult",
     "FormattedIncrementalStreamResult",
     "FormattedIncrementalResult",
-    "MapAsyncIterable",
+    "map_async_iterable",
     "Middleware",
     "MiddlewareManager",
     "get_argument_values",

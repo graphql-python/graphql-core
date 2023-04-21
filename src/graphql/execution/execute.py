@@ -70,7 +70,7 @@ from ..type import (
 )
 from .collect_fields import FieldsAndPatches, collect_fields, collect_subfields
 from .flatten_async_iterable import flatten_async_iterable
-from .map_async_iterable import MapAsyncIterable
+from .map_async_iterable import map_async_iterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
@@ -1654,7 +1654,7 @@ class ExecutionContext:
                 await result if isawaitable(result) else result  # type: ignore
             )
 
-        return flatten_async_iterable(MapAsyncIterable(result_or_stream, callback))
+        return flatten_async_iterable(map_async_iterable(result_or_stream, callback))
 
     def execute_deferred_fragment(
         self,
@@ -2319,18 +2319,20 @@ def subscribe(
     if isinstance(result, ExecutionResult):
         return result
     if isinstance(result, AsyncIterable):
-        return MapAsyncIterable(result, ensure_single_execution_result)
+        return map_async_iterable(result, ensure_single_execution_result)
 
     async def await_result() -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
         result_or_iterable = await result  # type: ignore
         if isinstance(result_or_iterable, AsyncIterable):
-            return MapAsyncIterable(result_or_iterable, ensure_single_execution_result)
+            return map_async_iterable(
+                result_or_iterable, ensure_single_execution_result
+            )
         return result_or_iterable
 
     return await_result()
 
 
-def ensure_single_execution_result(
+async def ensure_single_execution_result(
     result: Union[
         ExecutionResult,
         InitialIncrementalExecutionResult,

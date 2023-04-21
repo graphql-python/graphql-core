@@ -151,7 +151,7 @@ GraphQLOutputType
 Middleware
 asyncio.events.AbstractEventLoop
 graphql.execution.collect_fields.FieldsAndPatches
-graphql.execution.map_async_iterable.MapAsyncIterable
+graphql.execution.map_async_iterable.map_async_iterable
 graphql.execution.Middleware
 graphql.execution.execute.DeferredFragmentRecord
 graphql.execution.execute.ExperimentalExecuteMultipleResults
