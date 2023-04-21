@@ -1,14 +1,15 @@
 from __future__ import annotations  # Python < 3.10
 
-from asyncio import CancelledError, Event, Task, ensure_future, wait
-from concurrent.futures import FIRST_COMPLETED
-from inspect import isasyncgen, isawaitable
+from inspect import isawaitable
 from types import TracebackType
-from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union, cast
+from typing import Any, AsyncIterable, Callable, Optional, Type, Union
 
 
 __all__ = ["MapAsyncIterable"]
 
+
+# The following is a class because its type is checked in the code.
+# otherwise, it could be implemented as a simple async generator function
 
 # noinspection PyAttributeOutsideInit
 class MapAsyncIterable:
@@ -22,9 +23,10 @@ class MapAsyncIterable:
     """
 
     def __init__(self, iterable: AsyncIterable, callback: Callable) -> None:
-        self.iterator = iterable.__aiter__()
+        self.iterable = iterable
         self.callback = callback
-        self._close_event = Event()
+        self._ageniter = self._agen()
+        self.is_closed = False  # used by unittests
 
     def __aiter__(self) -> MapAsyncIterable:
         """Get the iterator object."""
@@ -32,41 +34,19 @@ class MapAsyncIterable:
 
     async def __anext__(self) -> Any:
         """Get the next value of the iterator."""
-        if self.is_closed:
-            if not isasyncgen(self.iterator):
-                raise StopAsyncIteration
-            value = await self.iterator.__anext__()
-        else:
-            aclose = ensure_future(self._close_event.wait())
-            anext = ensure_future(self.iterator.__anext__())
+        return await self._ageniter.__anext__()
 
-            try:
-                pending: Set[Task] = (
-                    await wait([aclose, anext], return_when=FIRST_COMPLETED)
-                )[1]
-            except CancelledError:
-                # cancel underlying tasks and close
-                aclose.cancel()
-                anext.cancel()
-                await self.aclose()
-                raise  # re-raise the cancellation
+    async def _agen(self) -> Any:
+        try:
+            async for v in self.iterable:
+                result = self.callback(v)
+                yield (await result) if isawaitable(result) else result
+        finally:
+            self.is_closed = True
+            if hasattr(self.iterable, "aclose"):
+                await self.iterable.aclose()
 
-            for task in pending:
-                task.cancel()
-
-            if aclose.done():
-                raise StopAsyncIteration
-
-            error = anext.exception()
-            if error:
-                raise error
-
-            value = anext.result()
-
-        result = self.callback(value)
-
-        return await result if isawaitable(result) else result
-
+    # This is not a standard method and is only used in unittests.  Should be removed.
     async def athrow(
         self,
         type_: Union[BaseException, Type[BaseException]],
@@ -74,45 +54,8 @@ class MapAsyncIterable:
         traceback: Optional[TracebackType] = None,
     ) -> None:
         """Throw an exception into the asynchronous iterator."""
-        if self.is_closed:
-            return
-        athrow = getattr(self.iterator, "athrow", None)
-        if athrow:
-            await athrow(type_, value, traceback)
-        else:
-            await self.aclose()
-            if value is None:
-                if traceback is None:
-                    raise type_
-                value = (
-                    type_
-                    if isinstance(value, BaseException)
-                    else cast(Type[BaseException], type_)()
-                )
-            if traceback is not None:
-                value = value.with_traceback(traceback)
-            raise value
+        await self._ageniter.athrow(type_, value, traceback)
 
     async def aclose(self) -> None:
         """Close the iterator."""
-        if not self.is_closed:
-            aclose = getattr(self.iterator, "aclose", None)
-            if aclose:
-                try:
-                    await aclose()
-                except RuntimeError:
-                    pass
-            self.is_closed = True
-
-    @property
-    def is_closed(self) -> bool:
-        """Check whether the iterator is closed."""
-        return self._close_event.is_set()
-
-    @is_closed.setter
-    def is_closed(self, value: bool) -> None:
-        """Mark the iterator as closed."""
-        if value:
-            self._close_event.set()
-        else:
-            self._close_event.clear()
+        await self._ageniter.aclose()

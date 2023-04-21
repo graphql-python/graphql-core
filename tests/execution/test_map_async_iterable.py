@@ -133,8 +133,9 @@ def describe_map_async_iterable():
         with raises(StopAsyncIteration):
             await anext(doubles)
 
+    # async iterators must not yield after aclose() is called
     @mark.asyncio
-    async def passes_through_early_return_from_async_values():
+    async def ignored_generator_exit():
         async def source():
             try:
                 yield 1
@@ -142,20 +143,16 @@ def describe_map_async_iterable():
                 yield 3  # pragma: no cover
             finally:
                 yield "Done"
-                yield "Last"
+                yield "Last"  # pragma: no cover
 
         doubles = MapAsyncIterable(source(), lambda x: x + x)
 
         assert await anext(doubles) == 2
         assert await anext(doubles) == 4
 
-        # Early return
-        await doubles.aclose()
-
-        # Subsequent next calls may yield from finally block
-        assert await anext(doubles) == "LastLast"
-        with raises(GeneratorExit):
-            assert await anext(doubles)
+        with raises(RuntimeError) as exc_info:
+            await doubles.aclose()
+        assert str(exc_info.value) == "async generator ignored GeneratorExit"
 
     @mark.asyncio
     async def allows_throwing_errors_through_async_iterable():
@@ -256,12 +253,8 @@ def describe_map_async_iterable():
         assert await anext(doubles) == 4
 
         # Throw error
-        await doubles.athrow(RuntimeError("ouch"))
-
-        with raises(StopAsyncIteration):
-            await anext(doubles)
-        with raises(StopAsyncIteration):
-            await anext(doubles)
+        with raises(RuntimeError):
+            await doubles.athrow(RuntimeError("ouch"))
 
     @mark.asyncio
     async def does_not_normally_map_over_thrown_errors():
@@ -394,64 +387,27 @@ def describe_map_async_iterable():
         await sleep(0.05)
         assert not doubles_future.done()
 
-        # Unblock and watch StopAsyncIteration propagate
-        await doubles.aclose()
-        await sleep(0.05)
-        assert doubles_future.done()
-        assert isinstance(doubles_future.exception(), StopAsyncIteration)
+        # with python 3.8 and higher, close() cannot be used to unblock a generator.
+        # instead, the task should be killed.  AsyncGenerators are not re-entrant.
+        if sys.version_info[:2] >= (3, 8):
+            with raises(RuntimeError):
+                await doubles.aclose()
+            doubles_future.cancel()
+            await sleep(0.05)
+            assert doubles_future.done()
+            with raises(CancelledError):
+                doubles_future.exception()
+
+        else:
+            # old behaviour, where aclose() could unblock a Task
+            # Unblock and watch StopAsyncIteration propagate
+            await doubles.aclose()
+            await sleep(0.05)
+            assert doubles_future.done()
+            assert isinstance(doubles_future.exception(), StopAsyncIteration)
 
         with raises(StopAsyncIteration):
             await anext(singles)
-
-    @mark.asyncio
-    async def can_unset_closed_state_of_async_iterable():
-        items = [1, 2, 3]
-
-        class Iterable:
-            def __init__(self):
-                self.is_closed = False
-
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                if self.is_closed:
-                    raise StopAsyncIteration
-                try:
-                    return items.pop(0)
-                except IndexError:
-                    raise StopAsyncIteration
-
-            async def aclose(self):
-                self.is_closed = True
-
-        iterable = Iterable()
-        doubles = MapAsyncIterable(iterable, lambda x: x + x)
-
-        assert await anext(doubles) == 2
-        assert await anext(doubles) == 4
-        assert not iterable.is_closed
-        await doubles.aclose()
-        assert iterable.is_closed
-        with raises(StopAsyncIteration):
-            await anext(iterable)
-        with raises(StopAsyncIteration):
-            await anext(doubles)
-        assert doubles.is_closed
-
-        iterable.is_closed = False
-        doubles.is_closed = False
-        assert not doubles.is_closed
-
-        assert await anext(doubles) == 6
-        assert not doubles.is_closed
-        assert not iterable.is_closed
-        with raises(StopAsyncIteration):
-            await anext(iterable)
-        with raises(StopAsyncIteration):
-            await anext(doubles)
-        assert not doubles.is_closed
-        assert not iterable.is_closed
 
     @mark.asyncio
     async def can_cancel_async_iterable_while_waiting():
