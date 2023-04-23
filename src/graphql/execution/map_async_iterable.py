@@ -23,7 +23,7 @@ class MapAsyncIterable:
     """
 
     def __init__(self, iterable: AsyncIterable, callback: Callable) -> None:
-        self.iterable = iterable
+        self.iterator = iterable.__aiter__()
         self.callback = callback
         self._ageniter = self._agen()
         self.is_closed = False  # used by unittests
@@ -38,13 +38,13 @@ class MapAsyncIterable:
 
     async def _agen(self) -> Any:
         try:
-            async for v in self.iterable:
+            async for v in self.iterator:
                 result = self.callback(v)
                 yield (await result) if isawaitable(result) else result
         finally:
             self.is_closed = True
-            if hasattr(self.iterable, "aclose"):
-                await self.iterable.aclose()
+            if hasattr(self.iterator, "aclose"):
+                await self.iterator.aclose()
 
     # This is not a standard method and is only used in unittests.  Should be removed.
     async def athrow(
