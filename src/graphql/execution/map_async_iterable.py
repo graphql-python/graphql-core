@@ -1,8 +1,7 @@
 from __future__ import annotations  # Python < 3.10
 
-from inspect import isawaitable
 from types import TracebackType
-from typing import Any, AsyncIterable, Callable, Optional, Type, Union
+from typing import Any, AsyncIterable, Awaitable, Callable, Optional, Type, Union
 
 
 __all__ = ["MapAsyncIterable"]
@@ -11,18 +10,21 @@ __all__ = ["MapAsyncIterable"]
 # The following is a class because its type is checked in the code.
 # otherwise, it could be implemented as a simple async generator function
 
+
 # noinspection PyAttributeOutsideInit
 class MapAsyncIterable:
     """Map an AsyncIterable over a callback function.
 
     Given an AsyncIterable and a callback function, return an AsyncIterator which
-    produces values mapped via calling the callback function.
+    produces values mapped via calling the callback async function.
 
-    When the resulting AsyncIterator is closed, the underlying AsyncIterable will also
-    be closed.
+    Similar to an AsyncGenerator, an `aclose()` method is provivde which
+    will close the underlying AsyncIterable be if it has an `aclose()` method.
     """
 
-    def __init__(self, iterable: AsyncIterable, callback: Callable) -> None:
+    def __init__(
+        self, iterable: AsyncIterable[Any], callback: Callable[[Any], Awaitable[Any]]
+    ) -> None:
         self.iterator = iterable.__aiter__()
         self.callback = callback
         self._ageniter = self._agen()
@@ -39,8 +41,7 @@ class MapAsyncIterable:
     async def _agen(self) -> Any:
         try:
             async for v in self.iterator:
-                result = self.callback(v)
-                yield (await result) if isawaitable(result) else result
+                yield await self.callback(v)
         finally:
             self.is_closed = True
             if hasattr(self.iterator, "aclose"):
