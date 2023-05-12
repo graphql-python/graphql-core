@@ -57,12 +57,37 @@ def describe_map_async_iterable():
                 return 1
 
         async def callback(v):
-            raise RuntimeError
+            raise RuntimeError()
 
         inner = Inner()
         outer = map_async_iterable(inner, callback)
-        it = outer.__aiter__()
-        assert not inner.closed
         with raises(RuntimeError):
-            await it.__anext__()
+            async for _ in outer:
+                pass
         assert inner.closed
+
+    @mark.asyncio
+    async def test_inner_exit_on_callback_err():
+        """
+        Test that a custom iterator with aclose() gets an aclose() call
+        when the callback errors and the outer iterator aborts.
+        """
+
+        inner_exit = False
+
+        async def inner():
+            nonlocal inner_exit
+            try:
+                while True:
+                    yield 1
+            except GeneratorExit:
+                inner_exit = True
+
+        async def callback(v):
+            raise RuntimeError
+
+        outer = map_async_iterable(inner(), callback)
+        with raises(RuntimeError):
+            async for _ in outer:
+                pass
+        assert inner_exit
