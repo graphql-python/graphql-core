@@ -133,6 +133,8 @@ from .directives import (
     specified_directives,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    GraphQLDeferDirective,
+    GraphQLStreamDirective,
     GraphQLDeprecatedDirective,
     GraphQLSpecifiedByDirective,
     # Keyword Args
@@ -280,6 +282,8 @@ __all__ = [
     "GraphQLDirective",
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
+    "GraphQLDeferDirective",
+    "GraphQLStreamDirective",
     "GraphQLDeprecatedDirective",
     "GraphQLSpecifiedByDirective",
     "GraphQLDirectiveKwargs",

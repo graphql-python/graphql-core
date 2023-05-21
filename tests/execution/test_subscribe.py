@@ -1,12 +1,22 @@
 import asyncio
-from typing import Any, AsyncIterable, Callable, Dict, List, Optional, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterable,
+    AsyncIterator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from pytest import mark, raises
 
 from graphql.execution import (
     ExecutionResult,
-    MapAsyncIterable,
     create_source_event_stream,
+    experimental_subscribe_incrementally,
     subscribe,
 )
 from graphql.language import DocumentNode, parse
@@ -18,6 +28,7 @@ from graphql.type import (
     GraphQLInt,
     GraphQLList,
     GraphQLObjectType,
+    GraphQLResolveInfo,
     GraphQLSchema,
     GraphQLString,
 )
@@ -51,11 +62,17 @@ Email = TypedDict(
     },
 )
 
+
+async def async_subject(email: Email, _info: GraphQLResolveInfo) -> str:
+    return email["subject"]
+
+
 EmailType = GraphQLObjectType(
     "Email",
     {
         "from": GraphQLField(GraphQLString),
         "subject": GraphQLField(GraphQLString),
+        "asyncSubject": GraphQLField(GraphQLString, resolve=async_subject),
         "message": GraphQLField(GraphQLString),
         "unread": GraphQLField(GraphQLBoolean),
     },
@@ -98,18 +115,29 @@ email_schema = GraphQLSchema(
 )
 
 
-def create_subscription(pubsub: SimplePubSub):
+def create_subscription(
+    pubsub: SimplePubSub,
+    variable_values: Optional[Dict[str, Any]] = None,
+    original_subscribe: bool = False,
+) -> AwaitableOrValue[Union[AsyncIterator[ExecutionResult], ExecutionResult]]:
     document = parse(
         """
-        subscription ($priority: Int = 0) {
+        subscription ($priority: Int = 0,
+                      $shouldDefer: Boolean = false
+                      $asyncResolver: Boolean = false) {
           importantEmail(priority: $priority) {
             email {
               from
               subject
+              ... @include(if: $asyncResolver) {
+                asyncSubject
+              }
             }
-            inbox {
-              unread
-              total
+            ... @defer(if: $shouldDefer) {
+              inbox {
+                unread
+                total
+              }
             }
           }
         }
@@ -135,7 +163,11 @@ def create_subscription(pubsub: SimplePubSub):
         "importantEmail": pubsub.get_subscriber(transform),
     }
 
-    return subscribe(email_schema, document, data)
+    return (
+        subscribe if original_subscribe else experimental_subscribe_incrementally
+    )(  # type: ignore
+        email_schema, document, data, variable_values=variable_values
+    )
 
 
 DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)})
@@ -207,11 +239,11 @@ def describe_subscription_initialization_phase():
         subscription = subscribe(
             schema, parse("subscription { foo }"), {"foo": foo_generator}
         )
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
-        await subscription.aclose()
+        await subscription.aclose()  # type: ignore
 
     @mark.asyncio
     async def accepts_type_definition_with_sync_subscribe_function():
@@ -227,11 +259,11 @@ def describe_subscription_initialization_phase():
         )
 
         subscription = subscribe(schema, parse("subscription { foo }"))
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
-        await subscription.aclose()
+        await subscription.aclose()  # type: ignore
 
     @mark.asyncio
     async def accepts_type_definition_with_async_subscribe_function():
@@ -255,11 +287,11 @@ def describe_subscription_initialization_phase():
         assert is_awaitable(awaitable)
 
         subscription = await awaitable
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
-        await subscription.aclose()
+        await subscription.aclose()  # type: ignore
 
     @mark.asyncio
     async def should_only_resolve_the_first_field_of_invalid_multi_field():
@@ -285,7 +317,7 @@ def describe_subscription_initialization_phase():
         )
 
         subscription = subscribe(schema, parse("subscription { foo bar }"))
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == (
             {"foo": "FooValue", "bar": None},
@@ -294,7 +326,7 @@ def describe_subscription_initialization_phase():
 
         assert did_resolve == {"foo": True, "bar": False}
 
-        await subscription.aclose()
+        await subscription.aclose()  # type: ignore
 
     @mark.asyncio
     async def resolves_to_an_error_if_schema_does_not_support_subscriptions():
@@ -465,10 +497,10 @@ def describe_subscription_publish_phase():
         pubsub = SimplePubSub()
 
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         second_subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         payload1 = anext(subscription)
         payload2 = anext(second_subscription)
@@ -496,10 +528,49 @@ def describe_subscription_publish_phase():
         assert await payload2 == (expected_payload, None)
 
     @mark.asyncio
+    async def produces_a_payload_when_queried_fields_are_async():
+        pubsub = SimplePubSub()
+        subscription = create_subscription(pubsub, {"asyncResolver": True})
+        assert isinstance(subscription, AsyncIterator)
+
+        assert (
+            pubsub.emit(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright",
+                    "message": "Tests are good",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        assert await anext(subscription) == (
+            {
+                "importantEmail": {
+                    "email": {
+                        "from": "yuzhi@graphql.org",
+                        "subject": "Alright",
+                        "asyncSubject": "Alright",
+                    },
+                    "inbox": {"unread": 1, "total": 2},
+                }
+            },
+            None,
+        )
+
+        try:
+            await subscription.aclose()  # type: ignore
+        except RuntimeError:  # Python < 3.8
+            pass
+        with raises(StopAsyncIteration):
+            await anext(subscription)
+
+    @mark.asyncio
     async def produces_a_payload_per_subscription_event():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         # Wait for the next subscription payload.
         payload = anext(subscription)
@@ -554,7 +625,10 @@ def describe_subscription_publish_phase():
 
         # The client decides to disconnect.
         # noinspection PyUnresolvedReferences
-        await subscription.aclose()
+        try:
+            await subscription.aclose()  # type: ignore
+        except RuntimeError:  # Python < 3.8
+            pass
 
         # Which may result in disconnecting upstream services as well.
         assert (
@@ -574,10 +648,202 @@ def describe_subscription_publish_phase():
             assert await anext(subscription)
 
     @mark.asyncio
+    async def produces_additional_payloads_for_subscriptions_with_defer():
+        pubsub = SimplePubSub()
+        subscription = create_subscription(pubsub, {"shouldDefer": True})
+        assert isinstance(subscription, AsyncIterator)
+
+        # Wait for the next subscription payload.
+        payload = anext(subscription)
+
+        # A new email arrives!
+        assert (
+            pubsub.emit(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright",
+                    "message": "Tests are good",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        # The previously waited on payload now has a value.
+        result = await payload
+        assert result.formatted == {
+            "data": {
+                "importantEmail": {
+                    "email": {
+                        "from": "yuzhi@graphql.org",
+                        "subject": "Alright",
+                    },
+                },
+            },
+            "hasNext": True,
+        }
+
+        # Wait for the next payload from @defer
+        result = await anext(subscription)
+        assert result.formatted == {
+            "incremental": [
+                {
+                    "data": {"inbox": {"total": 2, "unread": 1}},
+                    "path": ["importantEmail"],
+                }
+            ],
+            "hasNext": False,
+        }
+
+        # Another new email arrives,
+        # after all incrementally delivered payloads are received.
+        assert (
+            pubsub.emit(
+                {
+                    "from": "hyo@graphql.org",
+                    "subject": "Tools",
+                    "message": "I <3 making things",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        # The next waited on payload will have a value.
+        result = await anext(subscription)
+        assert result.formatted == {
+            "data": {
+                "importantEmail": {
+                    "email": {
+                        "from": "hyo@graphql.org",
+                        "subject": "Tools",
+                    },
+                },
+            },
+            "hasNext": True,
+        }
+
+        # Another new email arrives,
+        # before the incrementally delivered payloads from the last email was received.
+        assert (
+            pubsub.emit(
+                {
+                    "from": "adam@graphql.org",
+                    "subject": "Important",
+                    "message": "Read me please",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        # Deferred payload from previous event is received.
+        result = await anext(subscription)
+        assert result.formatted == {
+            "incremental": [
+                {
+                    "data": {"inbox": {"total": 3, "unread": 2}},
+                    "path": ["importantEmail"],
+                }
+            ],
+            "hasNext": False,
+        }
+
+        # Next payload from last event
+        result = await anext(subscription)
+        assert result.formatted == {
+            "data": {
+                "importantEmail": {
+                    "email": {
+                        "from": "adam@graphql.org",
+                        "subject": "Important",
+                    },
+                },
+            },
+            "hasNext": True,
+        }
+
+        # The client disconnects before the deferred payload is consumed.
+        try:
+            await subscription.aclose()  # type: ignore
+        except RuntimeError:  # Python < 3.8
+            pass
+
+        # Awaiting a subscription after closing it results in completed results.
+        with raises(StopAsyncIteration):
+            assert await anext(subscription)
+
+    @mark.asyncio
+    async def original_subscribe_function_returns_errors_with_defer():
+        pubsub = SimplePubSub()
+        subscription = create_subscription(pubsub, {"shouldDefer": True}, True)
+        assert isinstance(subscription, AsyncIterator)
+
+        # Wait for the next subscription payload.
+        payload = anext(subscription)
+
+        # A new email arrives!
+        assert (
+            pubsub.emit(
+                {
+                    "from": "yuzhi@graphql.org",
+                    "subject": "Alright",
+                    "message": "Tests are good",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        error_payload = (
+            None,
+            [
+                {
+                    "message": "Executing this GraphQL operation would unexpectedly"
+                    " produce multiple payloads"
+                    " (due to @defer or @stream directive)",
+                }
+            ],
+        )
+
+        # The previously waited on payload now has a value.
+        assert await payload == error_payload
+
+        # Wait for the next payload from @defer
+        assert await anext(subscription) == error_payload
+
+        # Another new email arrives,
+        # after all incrementally delivered payloads are received.
+        assert (
+            pubsub.emit(
+                {
+                    "from": "hyo@graphql.org",
+                    "subject": "Tools",
+                    "message": "I <3 making things",
+                    "unread": True,
+                }
+            )
+            is True
+        )
+
+        # The next waited on payload will have a value.
+        assert await anext(subscription) == error_payload
+
+        # The next waited on payload will have a value.
+        assert await anext(subscription) == error_payload
+
+        # The client disconnects before the deferred payload is consumed.
+        await subscription.aclose()  # type: ignore
+
+        # Awaiting a subscription after closing it results in completed results.
+        with raises(StopAsyncIteration):
+            assert await anext(subscription)
+
+    @mark.asyncio
     async def produces_a_payload_when_there_are_multiple_events():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         payload = anext(subscription)
 
@@ -633,7 +899,7 @@ def describe_subscription_publish_phase():
     async def should_not_trigger_when_subscription_is_already_done():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         payload = anext(subscription)
 
@@ -661,7 +927,10 @@ def describe_subscription_publish_phase():
         )
 
         payload = anext(subscription)
-        await subscription.aclose()
+        try:
+            await subscription.aclose()  # type: ignore
+        except RuntimeError:  # Python < 3.8
+            pass
 
         # A new email arrives!
         assert (
@@ -683,7 +952,7 @@ def describe_subscription_publish_phase():
     async def should_not_trigger_when_subscription_is_thrown():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         payload = anext(subscription)
 
@@ -714,7 +983,7 @@ def describe_subscription_publish_phase():
 
         # Throw error
         with raises(RuntimeError) as exc_info:
-            await subscription.athrow(RuntimeError("ouch"))
+            await subscription.athrow(RuntimeError("ouch"))  # type: ignore
         assert str(exc_info.value) == "ouch"
 
         with raises(StopAsyncIteration):
@@ -724,7 +993,7 @@ def describe_subscription_publish_phase():
     async def event_order_is_correct_for_multiple_publishes():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         payload = anext(subscription)
 
@@ -804,7 +1073,7 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
@@ -849,7 +1118,7 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
@@ -885,7 +1154,7 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
@@ -915,6 +1184,6 @@ def describe_subscription_publish_phase():
 
         document = parse("subscription { newMessage }")
         subscription = subscribe(schema, document)
-        assert isinstance(subscription, MapAsyncIterable)
+        assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)

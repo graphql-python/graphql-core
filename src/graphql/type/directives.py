@@ -6,7 +6,7 @@ from ..language import DirectiveLocation, ast
 from ..pyutils import inspect
 from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull
-from .scalars import GraphQLBoolean, GraphQLString
+from .scalars import GraphQLBoolean, GraphQLInt, GraphQLString
 
 
 try:
@@ -23,10 +23,12 @@ __all__ = [
     "assert_directive",
     "is_specified_directive",
     "specified_directives",
+    "GraphQLDeferDirective",
     "GraphQLDirective",
     "GraphQLDirectiveKwargs",
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
+    "GraphQLStreamDirective",
     "GraphQLDeprecatedDirective",
     "GraphQLSpecifiedByDirective",
     "DirectiveLocation",
@@ -175,6 +177,43 @@ GraphQLSkipDirective = GraphQLDirective(
     },
     description="Directs the executor to skip this field or fragment"
     " when the `if` argument is true.",
+)
+
+# Used to conditionally defer fragments:
+GraphQLDeferDirective = GraphQLDirective(
+    name="defer",
+    description="Directs the executor to defer this fragment"
+    " when the `if` argument is true or undefined.",
+    locations=[DirectiveLocation.FRAGMENT_SPREAD, DirectiveLocation.INLINE_FRAGMENT],
+    args={
+        "if": GraphQLArgument(
+            GraphQLNonNull(GraphQLBoolean),
+            description="Deferred when true or undefined.",
+            default_value=True,
+        ),
+        "label": GraphQLArgument(GraphQLString, description="Unique name"),
+    },
+)
+
+# Used to conditionally stream list fields:
+GraphQLStreamDirective = GraphQLDirective(
+    name="stream",
+    description="Directs the executor to stream plural fields"
+    " when the `if` argument is true or undefined.",
+    locations=[DirectiveLocation.FIELD],
+    args={
+        "if": GraphQLArgument(
+            GraphQLNonNull(GraphQLBoolean),
+            description="Stream when true or undefined.",
+            default_value=True,
+        ),
+        "label": GraphQLArgument(GraphQLString, description="Unique name"),
+        "initialCount": GraphQLArgument(
+            GraphQLInt,
+            description="Number of items to return immediately",
+            default_value=0,
+        ),
+    },
 )
 
 

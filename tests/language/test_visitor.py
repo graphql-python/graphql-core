@@ -1,6 +1,6 @@
 from copy import copy
 from functools import partial
-from typing import List, Optional, cast
+from typing import Any, List, Optional, cast
 
 from pytest import mark, raises
 
@@ -733,9 +733,9 @@ def describe_visitor():
     # noinspection PyShadowingNames
     def visits_kitchen_sink(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query, experimental_client_controlled_nullability=True)
-        visited: List = []
+        visited: List[Any] = []
         record = visited.append
-        arg_stack: List = []
+        arg_stack: List[Any] = []
         push = arg_stack.append
         pop = arg_stack.pop
 

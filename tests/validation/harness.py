@@ -62,7 +62,7 @@ test_schema = build_schema(
     type Human {
       name(surname: Boolean): String
       pets: [Pet]
-      relatives: [Human]
+      relatives: [Human]!
     }
 
     enum FurColor {

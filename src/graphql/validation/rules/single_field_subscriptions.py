@@ -45,7 +45,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 variable_values,
                 subscription_type,
                 node.selection_set,
-            )
+            ).fields
             if len(fields) > 1:
                 field_selection_lists = list(fields.values())
                 extra_field_selection_lists = field_selection_lists[1:]

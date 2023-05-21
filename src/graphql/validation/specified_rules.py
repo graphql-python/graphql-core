@@ -2,6 +2,12 @@ from typing import Tuple, Type
 
 from .rules import ASTValidationRule
 
+# Spec Section: "Defer And Stream Directive Labels Are Unique"
+from .rules.defer_stream_directive_label import DeferStreamDirectiveLabel
+
+# Spec Section: "Defer And Stream Directives Are Used On Valid Root Field"
+from .rules.defer_stream_directive_on_root_field import DeferStreamDirectiveOnRootField
+
 # Spec Section: "Executable Definitions"
 from .rules.executable_definitions import ExecutableDefinitionsRule
 
@@ -62,9 +68,12 @@ from .rules.scalar_leafs import ScalarLeafsRule
 
 # Spec Section: "Subscriptions with Single Root Field"
 from .rules.single_field_subscriptions import SingleFieldSubscriptionsRule
-from .rules.unique_argument_definition_names import UniqueArgumentDefinitionNamesRule
+
+# Spec Section: "Stream Directives Are Used On List Fields"
+from .rules.stream_directive_on_list_field import StreamDirectiveOnListField
 
 # Spec Section: "Argument Uniqueness"
+from .rules.unique_argument_definition_names import UniqueArgumentDefinitionNamesRule
 from .rules.unique_argument_names import UniqueArgumentNamesRule
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
 
@@ -125,6 +134,9 @@ specified_rules: Tuple[Type[ASTValidationRule], ...] = (
     NoUnusedVariablesRule,
     KnownDirectivesRule,
     UniqueDirectivesPerLocationRule,
+    DeferStreamDirectiveOnRootField,
+    DeferStreamDirectiveLabel,
+    StreamDirectiveOnListField,
     KnownArgumentNamesRule,
     UniqueArgumentNamesRule,
     ValuesOfCorrectTypeRule,

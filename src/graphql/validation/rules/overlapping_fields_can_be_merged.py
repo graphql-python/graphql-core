@@ -1,8 +1,9 @@
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
+    DirectiveNode,
     FieldNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
@@ -120,7 +121,7 @@ NodeAndDefCollection: TypeAlias = Dict[str, List[NodeAndDef]]
 # A) Each selection set represented in the document first compares "within" its
 # collected set of fields, finding any conflicts between every pair of
 # overlapping fields.
-# Note: This is the#only time* that a the fields "within" a set are compared
+# Note: This is the *only time* that the fields "within" a set are compared
 # to each other. After this only fields "between" sets are compared.
 #
 # B) Also, if any fragment is referenced in a selection set, then a
@@ -132,7 +133,7 @@ NodeAndDefCollection: TypeAlias = Dict[str, List[NodeAndDef]]
 #
 # D) When comparing "between" a set of fields and a referenced fragment, first
 # a comparison is made between each field in the original set of fields and
-# each field in the the referenced set of fields.
+# each field in the referenced set of fields.
 #
 # E) Also, if any fragment is referenced in the referenced selection set,
 # then a comparison is made "between" the original set of fields and the
@@ -559,6 +560,15 @@ def find_conflict(
         if stringify_arguments(node1) != stringify_arguments(node2):
             return (response_name, "they have differing arguments"), [node1], [node2]
 
+    directives1 = node1.directives
+    directives2 = node2.directives
+    if not same_streams(directives1, directives2):
+        return (
+            (response_name, "they have differing stream directives"),
+            [node1],
+            [node2],
+        )
+
     if type1 and type2 and do_types_conflict(type1, type2):
         return (
             (response_name, f"they return conflicting types '{type1}' and '{type2}'"),
@@ -587,7 +597,7 @@ def find_conflict(
     return None  # no conflict
 
 
-def stringify_arguments(field_node: FieldNode) -> str:
+def stringify_arguments(field_node: Union[FieldNode, DirectiveNode]) -> str:
     input_object_with_args = ObjectValueNode(
         fields=tuple(
             ObjectFieldNode(name=arg_node.name, value=arg_node.value)
@@ -595,6 +605,30 @@ def stringify_arguments(field_node: FieldNode) -> str:
         )
     )
     return print_ast(sort_value_node(input_object_with_args))
+
+
+def get_stream_directive(
+    directives: Sequence[DirectiveNode],
+) -> Optional[DirectiveNode]:
+    for directive in directives:
+        if directive.name.value == "stream":
+            return directive
+    return None
+
+
+def same_streams(
+    directives1: Sequence[DirectiveNode], directives2: Sequence[DirectiveNode]
+) -> bool:
+    stream1 = get_stream_directive(directives1)
+    stream2 = get_stream_directive(directives2)
+    if not stream1 and not stream2:
+        # both fields do not have streams
+        return True
+    if stream1 and stream2:
+        # check if both fields have equivalent streams
+        return stringify_arguments(stream1) == stringify_arguments(stream2)
+    # fields have a mix of stream and no stream
+    return False
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:

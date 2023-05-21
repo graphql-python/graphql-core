@@ -49,7 +49,7 @@ class VisitorActionEnum(Enum):
 
 VisitorAction: TypeAlias = Optional[VisitorActionEnum]
 
-# Note that in GraphQL.js these are defined differently:
+# Note that in GraphQL.js these are defined *differently*:
 # BREAK = {}, SKIP = false, REMOVE = null, IDLE = undefined
 
 BREAK = VisitorActionEnum.BREAK
@@ -103,7 +103,7 @@ class Visitor:
 
     You can also define node kind specific methods by suffixing them with an underscore
     followed by the kind of the node to be visited. For instance, to visit ``field``
-    nodes, you would defined the methods ``enter_field()`` and/or ``leave_field()``,
+    nodes, you would define the methods ``enter_field()`` and/or ``leave_field()``,
     with the same signature as above. If no kind specific method has been defined
     for a given node, the generic method is called.
     """

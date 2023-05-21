@@ -112,6 +112,40 @@ def describe_execute_synchronously_when_possible():
             del result
             collect()
 
+        @mark.asyncio
+        @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+        async def throws_if_encountering_async_iterable_execution_with_check_sync():
+            doc = """
+                query Example {
+                  ...deferFrag @defer(label: "deferLabel")
+                }
+                fragment deferFrag on Query {
+                  syncField
+                }
+            """
+            with raises(RuntimeError) as exc_info:
+                execute_sync(
+                    schema, document=parse(doc), root_value="rootValue", check_sync=True
+                )
+            msg = str(exc_info.value)
+            assert msg == "GraphQL execution failed to complete synchronously."
+
+        @mark.asyncio
+        @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+        async def throws_if_encountering_async_iterable_execution_without_check_sync():
+            doc = """
+                query Example {
+                  ...deferFrag @defer(label: "deferLabel")
+                }
+                fragment deferFrag on Query {
+                  syncField
+                }
+            """
+            with raises(RuntimeError) as exc_info:
+                execute_sync(schema, document=parse(doc), root_value="rootValue")
+            msg = str(exc_info.value)
+            assert msg == "GraphQL execution failed to complete synchronously."
+
     def describe_graphql_sync():
         def reports_errors_raised_during_schema_validation():
             bad_schema = GraphQLSchema()

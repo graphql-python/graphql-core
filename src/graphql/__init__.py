@@ -253,6 +253,8 @@ from .type import (
     specified_directives,
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
+    GraphQLDeferDirective,
+    GraphQLStreamDirective,
     GraphQLDeprecatedDirective,
     GraphQLSpecifiedByDirective,
     # "Enum" of Type Kinds
@@ -485,6 +487,8 @@ __all__ = [
     "specified_directives",
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
+    "GraphQLDeferDirective",
+    "GraphQLStreamDirective",
     "GraphQLDeprecatedDirective",
     "GraphQLSpecifiedByDirective",
     "TypeKind",

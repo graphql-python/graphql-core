@@ -8,6 +8,7 @@ Each utility should belong in its own file and be the default export.
 These functions are not part of the module interface and are subject to change.
 """
 
+from .async_reduce import async_reduce
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
 from .description import (
@@ -34,6 +35,7 @@ from .simple_pub_sub import SimplePubSub, SimplePubSubIterator
 from .undefined import Undefined, UndefinedType
 
 __all__ = [
+    "async_reduce",
     "camel_to_snake",
     "snake_to_camel",
     "cached_property",

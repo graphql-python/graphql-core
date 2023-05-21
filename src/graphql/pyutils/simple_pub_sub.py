@@ -1,6 +1,6 @@
 from __future__ import annotations  # Python < 3.10
 
-from asyncio import Future, Queue, ensure_future, get_running_loop, sleep
+from asyncio import Future, Queue, create_task, get_running_loop, sleep
 from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
 
@@ -26,7 +26,7 @@ class SimplePubSub:
         for subscriber in self.subscribers:
             result = subscriber(event)
             if isawaitable(result):
-                ensure_future(result)
+                create_task(result)  # type: ignore
         return bool(self.subscribers)
 
     def get_subscriber(

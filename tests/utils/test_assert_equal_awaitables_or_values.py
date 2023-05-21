@@ -38,6 +38,7 @@ def describe_assert_equal_awaitables_or_values():
             )
 
     @mark.asyncio
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_when_given_mixture_of_equal_values_and_awaitables():
         async def test_value():
             return {"test": "test"}

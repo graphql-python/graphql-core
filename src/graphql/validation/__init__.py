@@ -17,6 +17,12 @@ from .rules import ValidationRule, ASTValidationRule, SDLValidationRule
 # All validation rules in the GraphQL Specification.
 from .specified_rules import specified_rules
 
+# Spec Section: "Defer And Stream Directive Labels Are Unique"
+from .rules.defer_stream_directive_label import DeferStreamDirectiveLabel
+
+# Spec Section: "Defer And Stream Directives Are Used On Valid Root Field"
+from .rules.defer_stream_directive_on_root_field import DeferStreamDirectiveOnRootField
+
 # Spec Section: "Executable Definitions"
 from .rules.executable_definitions import ExecutableDefinitionsRule
 
@@ -68,6 +74,9 @@ from .rules.scalar_leafs import ScalarLeafsRule
 # Spec Section: "Subscriptions with Single Root Field"
 from .rules.single_field_subscriptions import SingleFieldSubscriptionsRule
 
+# Spec Section: "Stream Directives Are Used On List Fields"
+from .rules.stream_directive_on_list_field import StreamDirectiveOnListField
+
 # Spec Section: "Argument Uniqueness"
 from .rules.unique_argument_names import UniqueArgumentNamesRule
 
@@ -118,6 +127,8 @@ __all__ = [
     "ValidationContext",
     "ValidationRule",
     "specified_rules",
+    "DeferStreamDirectiveLabel",
+    "DeferStreamDirectiveOnRootField",
     "ExecutableDefinitionsRule",
     "FieldsOnCorrectTypeRule",
     "FragmentsOnCompositeTypesRule",
@@ -135,6 +146,7 @@ __all__ = [
     "ProvidedRequiredArgumentsRule",
     "ScalarLeafsRule",
     "SingleFieldSubscriptionsRule",
+    "StreamDirectiveOnListField",
     "UniqueArgumentNamesRule",
     "UniqueDirectivesPerLocationRule",
     "UniqueFragmentNamesRule",

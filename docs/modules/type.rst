@@ -122,7 +122,10 @@ Definitions
 .. autoclass:: GraphQLDirective
 .. autoclass:: GraphQLIncludeDirective
 .. autoclass:: GraphQLSkipDirective
+.. autoclass:: GraphQLDeferDirective
+.. autoclass:: GraphQLStreamDirective
 .. autoclass:: GraphQLDeprecatedDirective
+.. autoclass:: GraphQLSpecifiedByDirective
 
 .. data:: specified_directives
 
