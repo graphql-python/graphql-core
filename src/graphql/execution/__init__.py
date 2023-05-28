@@ -32,7 +32,7 @@ from .execute import (
     FormattedIncrementalResult,
     Middleware,
 )
-from .map_async_iterable import map_async_iterable
+from .iterators import map_async_iterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
