@@ -63,7 +63,21 @@ query = GraphQLObjectType(
                 "NestedObject",
                 {
                     "scalarField": GraphQLField(GraphQLString),
+                    "nonNullScalarField": GraphQLField(GraphQLNonNull(GraphQLString)),
                     "nestedFriendList": GraphQLField(GraphQLList(friend_type)),
+                    "deeperNestedObject": GraphQLField(
+                        GraphQLObjectType(
+                            "DeeperNestedObject",
+                            {
+                                "nonNullScalarField": GraphQLField(
+                                    GraphQLNonNull(GraphQLString)
+                                ),
+                                "deeperNestedFriendList": GraphQLField(
+                                    GraphQLList(friend_type)
+                                ),
+                            },
+                        )
+                    ),
                 },
             )
         ),
@@ -932,9 +946,13 @@ def describe_execute_stream_directive():
         )
 
         async def friend_list(_info):
-            for i in range(3):
+            try:
                 await sleep(0)
-                yield None if i & 1 else friends[i >> 1]
+                yield friends[0]
+                await sleep(0)
+                yield None
+            finally:
+                raise RuntimeError("Oops")
 
         result = await complete(document, {"nonNullFriendList": friend_list})
         assert result == [
@@ -957,15 +975,6 @@ def describe_execute_stream_directive():
                                 "path": ["nonNullFriendList", 1],
                             },
                         ],
-                    },
-                ],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "items": [{"name": "Han"}],
-                        "path": ["nonNullFriendList", 2],
                     },
                 ],
                 "hasNext": False,
@@ -1063,15 +1072,6 @@ def describe_execute_stream_directive():
                         ],
                     },
                 ],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "items": [{"nonNullName": "Han"}],
-                        "path": ["nonNullFriendList", 2],
-                    },
-                ],
                 "hasNext": False,
             },
         ]
@@ -1139,6 +1139,335 @@ def describe_execute_stream_directive():
                 "hasNext": False,
             },
         ]
+
+    @mark.asyncio
+    async def filters_payloads_that_are_nulled():
+        document = parse(
+            """
+            query {
+              nestedObject {
+                nonNullScalarField
+                nestedFriendList @stream(initialCount: 0) {
+                  name
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve_null(_info):
+            await sleep(0)
+            return None
+
+        async def friend_list(_info):
+            await sleep(0)
+            yield friends[0]
+
+        result = await complete(
+            document,
+            {
+                "nestedObject": {
+                    "nonNullScalarField": resolve_null,
+                    "nestedFriendList": friend_list,
+                }
+            },
+        )
+
+        assert result == {
+            "errors": [
+                {
+                    "message": "Cannot return null for non-nullable field"
+                    " NestedObject.nonNullScalarField.",
+                    "locations": [
+                        {
+                            "line": 4,
+                            "column": 17,
+                        }
+                    ],
+                    "path": ["nestedObject", "nonNullScalarField"],
+                },
+            ],
+            "data": {
+                "nestedObject": None,
+            },
+        }
+
+    @mark.asyncio
+    async def does_not_filter_payloads_when_null_error_is_in_a_different_path():
+        document = parse(
+            """
+            query {
+              otherNestedObject: nestedObject {
+                ... @defer {
+                  scalarField
+                }
+              }
+              nestedObject {
+                nestedFriendList @stream(initialCount: 0) {
+                  name
+                }
+              }
+            }
+            """
+        )
+
+        async def error_field(_info):
+            await sleep(0)
+            raise RuntimeError("Oops")
+
+        async def friend_list(_info):
+            await sleep(0)
+            yield friends[0]
+
+        result = await complete(
+            document,
+            {
+                "nestedObject": {
+                    "scalarField": error_field,
+                    "nestedFriendList": friend_list,
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {
+                    "otherNestedObject": {},
+                    "nestedObject": {"nestedFriendList": []},
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"scalarField": None},
+                        "path": ["otherNestedObject"],
+                        "errors": [
+                            {
+                                "message": "Oops",
+                                "locations": [{"line": 5, "column": 19}],
+                                "path": ["otherNestedObject", "scalarField"],
+                            },
+                        ],
+                    },
+                    {
+                        "items": [{"name": "Luke"}],
+                        "path": ["nestedObject", "nestedFriendList", 0],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @mark.asyncio
+    async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
+        document = parse(
+            """
+            query {
+              nestedObject {
+                ... @defer {
+                  deeperNestedObject {
+                    nonNullScalarField
+                    deeperNestedFriendList @stream(initialCount: 0) {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve_null(_info):
+            await sleep(0)
+            return None
+
+        async def friend_list(_info):
+            await sleep(0)
+            yield friends[0]
+
+        result = await complete(
+            document,
+            {
+                "nestedObject": {
+                    "deeperNestedObject": {
+                        "nonNullScalarField": resolve_null,
+                        "deeperNestedFriendList": friend_list,
+                    }
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {
+                    "nestedObject": {},
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "deeperNestedObject": None,
+                        },
+                        "path": ["nestedObject"],
+                        "errors": [
+                            {
+                                "message": "Cannot return null for non-nullable field"
+                                " DeeperNestedObject.nonNullScalarField.",
+                                "locations": [{"line": 6, "column": 21}],
+                                "path": [
+                                    "nestedObject",
+                                    "deeperNestedObject",
+                                    "nonNullScalarField",
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @mark.asyncio
+    async def filters_defer_payloads_that_are_nulled_in_a_stream_response():
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                nonNullName
+                ... @defer {
+                  name
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve_null(_info):
+            await sleep(0)
+            return None
+
+        async def friend():
+            await sleep(0)
+            return {
+                "name": friends[0].name,
+                "nonNullName": resolve_null,
+            }
+
+        async def friend_list(_info):
+            await sleep(0)
+            yield await friend()
+
+        result = await complete(document, {"friendList": friend_list})
+
+        assert result == [
+            {
+                "data": {
+                    "friendList": [],
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [None],
+                        "path": ["friendList", 0],
+                        "errors": [
+                            {
+                                "message": "Cannot return null for non-nullable field"
+                                " Friend.nonNullName.",
+                                "locations": [{"line": 4, "column": 17}],
+                                "path": ["friendList", 0, "nonNullName"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @mark.timeout(1)
+    @mark.asyncio
+    async def returns_iterator_and_ignores_error_when_stream_payloads_are_filtered():
+        finished = False
+
+        async def resolve_null(_info):
+            await sleep(0)
+            return None
+
+        async def iterable(_info):
+            nonlocal finished
+            for i in range(3):
+                await sleep(0)
+                friend = friends[i]
+                yield {"name": friend.name, "nonNullName": None}
+            finished = True  # pragma: no cover
+
+        document = parse(
+            """
+            query {
+              nestedObject {
+                ... @defer {
+                  deeperNestedObject {
+                    nonNullScalarField
+                    deeperNestedFriendList @stream(initialCount: 0) {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        execute_result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "nestedObject": {
+                    "deeperNestedObject": {
+                        "nonNullScalarField": resolve_null,
+                        "deeperNestedFriendList": iterable,
+                    }
+                }
+            },
+        )
+
+        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        iterator = execute_result.subsequent_results
+
+        result1 = execute_result.initial_result
+        assert result1 == {"data": {"nestedObject": {}}, "hasNext": True}
+
+        result2 = await anext(iterator)
+        assert result2.formatted == {
+            "incremental": [
+                {
+                    "data": {"deeperNestedObject": None},
+                    "path": ["nestedObject"],
+                    "errors": [
+                        {
+                            "message": "Cannot return null for non-nullable field"
+                            " DeeperNestedObject.nonNullScalarField.",
+                            "locations": [{"line": 6, "column": 21}],
+                            "path": [
+                                "nestedObject",
+                                "deeperNestedObject",
+                                "nonNullScalarField",
+                            ],
+                        },
+                    ],
+                },
+            ],
+            "hasNext": False,
+        }
+
+        with raises(StopAsyncIteration):
+            await anext(iterator)
+
+        assert not finished  # running iterator cannot be canceled
 
     @mark.asyncio
     async def handles_awaitables_from_complete_value_after_initial_count_is_reached():
@@ -1281,6 +1610,7 @@ def describe_execute_stream_directive():
         with raises(StopAsyncIteration):
             await anext(iterator)
 
+    @mark.timeout(1)
     @mark.asyncio
     async def can_defer_fields_that_are_resolved_after_async_iterable_is_complete():
         resolve_slow_field = Event()
@@ -1445,14 +1775,14 @@ def describe_execute_stream_directive():
 
     @mark.asyncio
     async def finishes_async_iterable_when_returned_generator_is_closed():
-        returned = False
+        finished = False
 
         async def iterable(_info):
-            nonlocal returned
+            nonlocal finished
             for i in range(3):
                 await sleep(0)
                 yield friends[i]
-            returned = True
+            finished = True
 
         document = parse(
             """
@@ -1480,7 +1810,7 @@ def describe_execute_stream_directive():
         with raises(StopAsyncIteration):
             await anext(iterator)
 
-        assert returned
+        assert finished
 
     @mark.asyncio
     async def finishes_async_iterable_when_underlying_iterator_has_no_close_method():
@@ -1533,14 +1863,14 @@ def describe_execute_stream_directive():
 
     @mark.asyncio
     async def finishes_async_iterable_when_error_is_raised_in_returned_generator():
-        returned = False
+        finished = False
 
         async def iterable(_info):
-            nonlocal returned
+            nonlocal finished
             for i in range(3):
                 await sleep(0)
                 yield friends[i]
-            returned = True
+            finished = True
 
         document = parse(
             """
@@ -1570,4 +1900,4 @@ def describe_execute_stream_directive():
         with raises(StopAsyncIteration):
             await anext(iterator)
 
-        assert returned
+        assert finished

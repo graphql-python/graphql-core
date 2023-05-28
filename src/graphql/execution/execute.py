@@ -2,6 +2,7 @@ from __future__ import annotations  # Python < 3.10
 
 from asyncio import Event, as_completed, ensure_future, gather, shield, sleep, wait_for
 from collections.abc import Mapping
+from contextlib import suppress
 from inspect import isawaitable
 from typing import (
     Any,
@@ -17,6 +18,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     Union,
@@ -673,6 +675,7 @@ class ExecutionContext:
         self.middleware_manager = middleware_manager
         if is_awaitable:
             self.is_awaitable = is_awaitable
+        self._canceled_iterators: Set[AsyncIterator] = set()
         self._subfields_cache: Dict[Tuple, FieldsAndPatches] = {}
 
     @classmethod
@@ -1006,6 +1009,7 @@ class ExecutionContext:
                     except Exception as raw_error:
                         error = located_error(raw_error, field_nodes, path.as_list())
                         handle_field_error(error, return_type, errors)
+                        self.filter_subsequent_payloads(path)
                         return None
 
                 return await_completed()
@@ -1014,6 +1018,7 @@ class ExecutionContext:
         except Exception as raw_error:
             error = located_error(raw_error, field_nodes, path.as_list())
             handle_field_error(error, return_type, errors)
+            self.filter_subsequent_payloads(path)
             return None
 
     def build_resolve_info(
@@ -1305,6 +1310,7 @@ class ExecutionContext:
                 and index >= stream.initial_count
             ):
                 previous_async_payload_record = self.execute_stream_field(
+                    path,
                     item_path,
                     item,
                     field_nodes,
@@ -1334,6 +1340,7 @@ class ExecutionContext:
                             raw_error, field_nodes, item_path.as_list()
                         )
                         handle_field_error(error, item_type, errors)
+                        self.filter_subsequent_payloads(item_path)
                         return None
 
                 completed_item = await_completed(item, item_path)
@@ -1357,12 +1364,14 @@ class ExecutionContext:
                                     raw_error, field_nodes, item_path.as_list()
                                 )
                                 handle_field_error(error, item_type, errors)
+                                self.filter_subsequent_payloads(item_path)
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)
                 except Exception as raw_error:
                     error = located_error(raw_error, field_nodes, item_path.as_list())
                     handle_field_error(error, item_type, errors)
+                    self.filter_subsequent_payloads(item_path)
                     completed_item = None
 
             if is_awaitable(completed_item):
@@ -1694,6 +1703,7 @@ class ExecutionContext:
     def execute_stream_field(
         self,
         path: Path,
+        item_path: Path,
         item: AwaitableOrValue[Any],
         field_nodes: List[FieldNode],
         info: GraphQLResolveInfo,
@@ -1701,7 +1711,9 @@ class ExecutionContext:
         label: Optional[str] = None,
         parent_context: Optional[AsyncPayloadRecord] = None,
     ) -> AsyncPayloadRecord:
-        async_payload_record = StreamRecord(label, path, None, parent_context, self)
+        async_payload_record = StreamRecord(
+            label, item_path, None, parent_context, self
+        )
         completed_item: Any
         completed_items: Any
         try:
@@ -1713,7 +1725,7 @@ class ExecutionContext:
                             item_type,
                             field_nodes,
                             info,
-                            path,
+                            item_path,
                             await item,
                             async_payload_record,
                         )
@@ -1727,7 +1739,12 @@ class ExecutionContext:
 
                 else:
                     completed_item = self.complete_value(
-                        item_type, field_nodes, info, path, item, async_payload_record
+                        item_type,
+                        field_nodes,
+                        info,
+                        item_path,
+                        item,
+                        async_payload_record,
                     )
 
                 if self.is_awaitable(completed_item):
@@ -1739,10 +1756,13 @@ class ExecutionContext:
                         except Exception as raw_error:
                             # noinspection PyShadowingNames
                             error = located_error(
-                                raw_error, field_nodes, path.as_list()
+                                raw_error, field_nodes, item_path.as_list()
                             )
                             handle_field_error(
                                 error, item_type, async_payload_record.errors
+                            )
+                            self.filter_subsequent_payloads(
+                                item_path, async_payload_record
                             )
                             return None
 
@@ -1751,12 +1771,16 @@ class ExecutionContext:
                 else:
                     complete_item = completed_item
             except Exception as raw_error:
-                error = located_error(raw_error, field_nodes, path.as_list())
+                error = located_error(raw_error, field_nodes, item_path.as_list())
                 handle_field_error(error, item_type, async_payload_record.errors)
+                self.filter_subsequent_payloads(  # pragma: no cover
+                    item_path, async_payload_record
+                )
                 complete_item = None  # pragma: no cover
 
         except GraphQLError as error:
             async_payload_record.errors.append(error)
+            self.filter_subsequent_payloads(item_path, async_payload_record)
             async_payload_record.add_items(None)
             return async_payload_record
 
@@ -1768,6 +1792,7 @@ class ExecutionContext:
                     return [await complete_item]  # type: ignore
                 except GraphQLError as error:
                     async_payload_record.errors.append(error)
+                    self.filter_subsequent_payloads(path, async_payload_record)
                     return None
 
             completed_items = await_completed_items()
@@ -1786,6 +1811,8 @@ class ExecutionContext:
         async_payload_record: StreamRecord,
         field_path: Path,
     ) -> Any:
+        if iterator in self._canceled_iterators:
+            raise StopAsyncIteration
         try:
             item = await anext(iterator)
             completed_item = self.complete_value(
@@ -1799,12 +1826,13 @@ class ExecutionContext:
             )
 
         except StopAsyncIteration as raw_error:
-            async_payload_record.set_ist_completed_iterator()
+            async_payload_record.set_is_completed_iterator()
             raise StopAsyncIteration from raw_error
 
         except Exception as raw_error:
             error = located_error(raw_error, field_nodes, field_path.as_list())
             handle_field_error(error, item_type, async_payload_record.errors)
+            self.filter_subsequent_payloads(field_path, async_payload_record)
 
     async def execute_stream_iterator(
         self,
@@ -1830,29 +1858,49 @@ class ExecutionContext:
                 iterator, field_modes, info, item_type, async_payload_record, field_path
             )
 
-            # noinspection PyShadowingNames
-            async def items(
-                data: Awaitable[Any], async_payload_record: StreamRecord
-            ) -> AwaitableOrValue[Optional[List[Any]]]:
-                try:
-                    return [await data]
-                except GraphQLError as error:
-                    async_payload_record.errors.append(error)
-                    return None
-
             try:
-                async_payload_record.add_items(
-                    await items(awaitable_data, async_payload_record)
-                )
+                data = await awaitable_data
             except StopAsyncIteration:
                 if async_payload_record.errors:
-                    async_payload_record.add_items([None])  # pragma: no cover
+                    async_payload_record.add_items(None)  # pragma: no cover
                 else:
                     del self.subsequent_payloads[async_payload_record]
                 break
+            except GraphQLError as error:
+                # entire stream has errored and bubbled upwards
+                self.filter_subsequent_payloads(path, async_payload_record)
+                if iterator:  # pragma: no cover else
+                    with suppress(Exception):
+                        await iterator.aclose()  # type: ignore
+                    # running generators cannot be closed since Python 3.8,
+                    # so we need to remember that this iterator is already canceled
+                    self._canceled_iterators.add(iterator)
+                async_payload_record.add_items(None)
+                async_payload_record.errors.append(error)
+                break
+
+            async_payload_record.add_items([data])
 
             previous_async_payload_record = async_payload_record
             index += 1
+
+    def filter_subsequent_payloads(
+        self,
+        null_path: Optional[Path] = None,
+        current_async_record: Optional[AsyncPayloadRecord] = None,
+    ) -> None:
+        null_path_list = null_path.as_list() if null_path else []
+        for async_record in list(self.subsequent_payloads):
+            if async_record is current_async_record:
+                # don't remove payload from where error originates
+                continue
+            if async_record.path[: len(null_path_list)] != null_path_list:
+                # async_record points to a path unaffected by this payload
+                continue
+            # async_record path points to nulled error field
+            if isinstance(async_record, StreamRecord) and async_record.iterator:
+                self._canceled_iterators.add(async_record.iterator)
+            del self.subsequent_payloads[async_record]
 
     def get_completed_incremental_results(self) -> List[IncrementalResult]:
         incremental_results: List[IncrementalResult] = []
@@ -2661,12 +2709,16 @@ class DeferredFragmentRecord:
         if self.parent_context:
             await self.parent_context.completed.wait()
         _data = self._data
-        data = (
-            await _data if self._context.is_awaitable(_data) else _data  # type: ignore
-        )
-        self.data = data
-        await sleep(ASYNC_DELAY)  # always defer completion a little bit
-        self.completed.set()
+        try:
+            data = (
+                await _data  # type: ignore
+                if self._context.is_awaitable(_data)
+                else _data
+            )
+        finally:
+            await sleep(ASYNC_DELAY)  # always defer completion a little bit
+            self.data = data
+            self.completed.set()
         return data
 
     def add_data(self, data: AwaitableOrValue[Optional[Dict[str, Any]]]) -> None:
@@ -2728,21 +2780,23 @@ class StreamRecord:
         if self.parent_context:
             await self.parent_context.completed.wait()
         _items = self._items
-        items = (
-            await _items  # type: ignore
-            if self._context.is_awaitable(_items)
-            else _items
-        )
-        self.items = items
-        await sleep(ASYNC_DELAY)  # always defer completion a little bit
-        self.completed.set()
+        try:
+            items = (
+                await _items  # type: ignore
+                if self._context.is_awaitable(_items)
+                else _items
+            )
+        finally:
+            await sleep(ASYNC_DELAY)  # always defer completion a little bit
+            self.items = items
+            self.completed.set()
         return items
 
     def add_items(self, items: AwaitableOrValue[Optional[List[Any]]]) -> None:
         self._items = items
         self._items_added.set()
 
-    def set_ist_completed_iterator(self) -> None:
+    def set_is_completed_iterator(self) -> None:
         self.is_completed_iterator = True
         self._items_added.set()
 
