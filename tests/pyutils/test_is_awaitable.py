@@ -82,7 +82,7 @@ def describe_is_awaitable():
         reason="Generator-based coroutines not supported any more since Python 3.11",
     )
     def recognizes_an_old_style_coroutine():  # pragma: no cover
-        @asyncio.coroutine
+        @asyncio.coroutine  # type: ignore
         def some_old_style_coroutine():
             yield False  # pragma: no cover
 
