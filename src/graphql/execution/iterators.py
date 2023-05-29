@@ -25,6 +25,7 @@ except ImportError:  # python < 3.10
 
 
 T = TypeVar("T")
+V = TypeVar("V")
 
 AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
 
@@ -47,8 +48,8 @@ async def flatten_async_iterable(
 
 
 async def map_async_iterable(
-    iterable: AsyncIterable[T], callback: Callable[[T], Awaitable[Any]]
-) -> None:
+    iterable: AsyncIterable[T], callback: Callable[[T], Awaitable[V]]
+) -> AsyncGenerator[V, None]:
     """Map an AsyncIterable over a callback function.
 
     Given an AsyncIterable and an async callback callable, return an AsyncGenerator

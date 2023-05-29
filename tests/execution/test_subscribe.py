@@ -1229,9 +1229,10 @@ def describe_subscription_publish_phase():
         assert isinstance(subscription, AsyncIterator)
 
         msgs = []
-        async for msg in subscription:
-            a, b = msg
-            assert b is None
-            msgs.append(a["newMessage"])
+        async for result in subscription:
+            assert result.errors is None
+            assert result.data is not None
+            msgs.append(result.data["newMessage"])
         assert msgs == ["Hello", "Dolly"]
-        await subscription.aclose()
+        if hasattr(subscription, "aclose"):
+            await subscription.aclose()
