@@ -1187,3 +1187,51 @@ def describe_subscription_publish_phase():
         assert isinstance(subscription, AsyncIterator)
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
+
+    @mark.asyncio
+    async def custom_async_iterator():
+        class CustomAsyncIterator:
+            def __init__(self, events):
+                self.events = events
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                await asyncio.sleep(0)
+                if not self.events:
+                    raise StopAsyncIteration
+                return self.events.pop(0)
+
+        def generate_messages(_obj, _info):
+            return CustomAsyncIterator(["Hello", "Dolly"])
+
+        async def resolve_message(message, _info):
+            await asyncio.sleep(0)
+            return message
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=resolve_message,
+                        subscribe=generate_messages,
+                    )
+                },
+            ),
+        )
+
+        document = parse("subscription { newMessage }")
+        subscription = subscribe(schema, document)
+        assert isinstance(subscription, AsyncIterator)
+
+        msgs = []
+        async for msg in subscription:
+            a, b = msg
+            assert b is None
+            msgs.append(a["newMessage"])
+        assert msgs == ["Hello", "Dolly"]
+        await subscription.aclose()
