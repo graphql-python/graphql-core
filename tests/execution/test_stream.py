@@ -992,10 +992,7 @@ def describe_execute_stream_directive():
         )
 
         async def scalar_list(_info):
-            await sleep(0)
-            yield friends[0].name
-            await sleep(0)
-            yield {}
+            return [friends[0].name, {}]
 
         result = await complete(document, {"scalarList": scalar_list})
         assert result == [

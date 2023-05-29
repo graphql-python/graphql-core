@@ -1702,7 +1702,6 @@ class ExecutionContext:
             label, item_path, None, parent_context, self
         )
         completed_item: Any
-        completed_items: Any
         try:
             try:
                 if self.is_awaitable(item):
@@ -1771,6 +1770,7 @@ class ExecutionContext:
             async_payload_record.add_items(None)
             return async_payload_record
 
+        completed_items: AwaitableOrValue[Optional[List[Any]]]
         if self.is_awaitable(complete_item):
 
             async def await_completed_items() -> Optional[List[Any]]:
