@@ -6,8 +6,8 @@ from pytest import mark, raises
 from graphql.error import GraphQLError
 from graphql.execution import (
     ExecutionContext,
-    ExperimentalExecuteMultipleResults,
-    ExperimentalExecuteSingleResult,
+    ExecutionResult,
+    ExperimentalIncrementalExecutionResults,
     IncrementalDeferResult,
     InitialIncrementalExecutionResult,
     SubsequentIncrementalExecutionResult,
@@ -93,14 +93,14 @@ schema = GraphQLSchema(query)
 async def complete(document: DocumentNode, root_value: Any = None) -> Any:
     result = experimental_execute_incrementally(schema, document, root_value)
 
-    if isinstance(result, ExperimentalExecuteMultipleResults):
+    if isinstance(result, ExperimentalIncrementalExecutionResults):
         results: List[Any] = [result.initial_result.formatted]
         async for patch in result.subsequent_results:
             results.append(patch.formatted)
         return results
 
-    assert isinstance(result, ExperimentalExecuteSingleResult)
-    return result.single_result.formatted
+    assert isinstance(result, ExecutionResult)
+    return result.formatted
 
 
 def modified_args(args: Dict[str, Any], **modifications: Any) -> Dict[str, Any]:

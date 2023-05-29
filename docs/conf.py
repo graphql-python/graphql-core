@@ -141,7 +141,7 @@ TypeMap
 AsyncPayloadRecord
 AwaitableOrValue
 EnterLeaveVisitor
-ExperimentalExecuteIncrementallyResults
+ExperimentalIncrementalExecutionResults
 FormattedSourceLocation
 GraphQLAbstractType
 GraphQLErrorExtensions
@@ -154,8 +154,7 @@ graphql.execution.collect_fields.FieldsAndPatches
 graphql.execution.map_async_iterable.MapAsyncIterable
 graphql.execution.Middleware
 graphql.execution.execute.DeferredFragmentRecord
-graphql.execution.execute.ExperimentalExecuteMultipleResults
-graphql.execution.execute.ExperimentalExecuteSingleResult
+graphql.execution.execute.ExperimentalIncrementalExecutionResults
 graphql.execution.execute.StreamArguments
 graphql.execution.execute.StreamRecord
 graphql.language.lexer.EscapeSequence

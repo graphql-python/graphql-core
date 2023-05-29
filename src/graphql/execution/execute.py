@@ -104,9 +104,7 @@ __all__ = [
     "StreamRecord",
     "ExecutionResult",
     "ExecutionContext",
-    "ExperimentalExecuteIncrementallyResults",
-    "ExperimentalExecuteMultipleResults",
-    "ExperimentalExecuteSingleResult",
+    "ExperimentalIncrementalExecutionResults",
     "FormattedExecutionResult",
     "FormattedIncrementalDeferResult",
     "FormattedIncrementalResult",
@@ -600,22 +598,11 @@ class StreamArguments(NamedTuple):
     label: Optional[str]
 
 
-class ExperimentalExecuteSingleResult(NamedTuple):
-    """Execution result when retrieved at once."""
-
-    single_result: ExecutionResult
-
-
-class ExperimentalExecuteMultipleResults(NamedTuple):
+class ExperimentalIncrementalExecutionResults(NamedTuple):
     """Execution results when retrieved incrementally."""
 
     initial_result: InitialIncrementalExecutionResult
     subsequent_results: AsyncGenerator[SubsequentIncrementalExecutionResult, None]
-
-
-ExperimentalExecuteIncrementallyResults = Union[
-    ExperimentalExecuteSingleResult, ExperimentalExecuteMultipleResults
-]
 
 
 Middleware: TypeAlias = Optional[Union[Tuple, List, MiddlewareManager]]
@@ -2012,15 +1999,15 @@ def execute(
         execution_context_class,
         is_awaitable,
     )
-    if isinstance(result, ExperimentalExecuteSingleResult):
-        return result.single_result
-    if isinstance(result, ExperimentalExecuteMultipleResults):
+    if isinstance(result, ExecutionResult):
+        return result
+    if isinstance(result, ExperimentalIncrementalExecutionResults):
         raise GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS)
 
     async def await_result() -> Any:
         awaited_result = await result  # type: ignore
-        if isinstance(awaited_result, ExperimentalExecuteSingleResult):
-            return awaited_result.single_result
+        if isinstance(awaited_result, ExecutionResult):
+            return awaited_result
         return ExecutionResult(
             None, errors=[GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS)]
         )
@@ -2041,16 +2028,16 @@ def experimental_execute_incrementally(
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
     is_awaitable: Optional[Callable[[Any], bool]] = None,
-) -> AwaitableOrValue[ExperimentalExecuteIncrementallyResults]:
+) -> AwaitableOrValue[Union[ExecutionResult, ExperimentalIncrementalExecutionResults]]:
     """Execute GraphQL operation incrementally (internal implementation).
 
      Implements the "Executing requests" section of the GraphQL specification,
      including `@defer` and `@stream` as proposed in
      https://github.com/graphql/graphql-spec/pull/742
 
-    This function returns an awaitable of an ExperimentalExecuteIncrementallyResults
-    object. This object either contains a single ExecutionResult as
-    `single_result`, or an `initial_result` and a stream of `subsequent_results`.
+    This function returns an awaitable that is either a single ExecutionResult or
+    an ExperimentalIncrementalExecutionResults object, containing an `initialResult`
+    and a stream of `subsequent_results`.
     """
     if execution_context_class is None:
         execution_context_class = ExecutionContext
@@ -2073,16 +2060,14 @@ def experimental_execute_incrementally(
 
     # Return early errors if execution context failed.
     if isinstance(context, list):
-        return ExperimentalExecuteSingleResult(
-            single_result=ExecutionResult(None, errors=context)
-        )
+        return ExecutionResult(None, errors=context)
 
     return execute_impl(context)
 
 
 def execute_impl(
     context: ExecutionContext,
-) -> AwaitableOrValue[ExperimentalExecuteIncrementallyResults]:
+) -> AwaitableOrValue[Union[ExecutionResult, ExperimentalIncrementalExecutionResults]]:
     """Execute GraphQL operation (internal implementation)."""
     # Return a possible coroutine object that will eventually yield the data described
     # by the "Response" section of the GraphQL specification.
@@ -2108,7 +2093,7 @@ def execute_impl(
                         await result, errors  # type: ignore
                     )
                     if context.subsequent_payloads:
-                        return ExperimentalExecuteMultipleResults(
+                        return ExperimentalIncrementalExecutionResults(
                             initial_result=InitialIncrementalExecutionResult(
                                 initial_result.data,
                                 initial_result.errors,
@@ -2116,18 +2101,16 @@ def execute_impl(
                             ),
                             subsequent_results=context.yield_subsequent_payloads(),
                         )
-                    return ExperimentalExecuteSingleResult(single_result=initial_result)
+                    return initial_result
                 except GraphQLError as error:
                     errors.append(error)
-                    return ExperimentalExecuteSingleResult(
-                        single_result=build_response(None, errors)
-                    )
+                    return build_response(None, errors)
 
             return await_result()
 
         initial_result = build_response(result, errors)  # type: ignore
         if context.subsequent_payloads:
-            return ExperimentalExecuteMultipleResults(
+            return ExperimentalIncrementalExecutionResults(
                 initial_result=InitialIncrementalExecutionResult(
                     initial_result.data,
                     initial_result.errors,
@@ -2135,12 +2118,10 @@ def execute_impl(
                 ),
                 subsequent_results=context.yield_subsequent_payloads(),
             )
-        return ExperimentalExecuteSingleResult(single_result=initial_result)
+        return initial_result
     except GraphQLError as error:
         errors.append(error)
-        return ExperimentalExecuteSingleResult(
-            single_result=build_response(None, errors)
-        )
+        return build_response(None, errors)
 
 
 def assume_not_awaitable(_value: Any) -> bool:
@@ -2192,12 +2173,14 @@ def execute_sync(
     )
 
     # Assert that the execution was synchronous.
-    if isawaitable(result) or isinstance(result, ExperimentalExecuteMultipleResults):
+    if isawaitable(result) or isinstance(
+        result, ExperimentalIncrementalExecutionResults
+    ):
         if isawaitable(result):
             ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
-    return cast(ExperimentalExecuteSingleResult, result).single_result
+    return cast(ExecutionResult, result)
 
 
 def handle_field_error(
@@ -2489,7 +2472,9 @@ def experimental_subscribe_incrementally(
 
 
 async def ensure_async_iterable(
-    some_execution_result: ExperimentalExecuteIncrementallyResults,
+    some_execution_result: Union[
+        ExecutionResult, ExperimentalIncrementalExecutionResults
+    ],
 ) -> AsyncGenerator[
     Union[
         ExecutionResult,
@@ -2498,8 +2483,8 @@ async def ensure_async_iterable(
     ],
     None,
 ]:
-    if isinstance(some_execution_result, ExperimentalExecuteSingleResult):
-        yield some_execution_result.single_result
+    if isinstance(some_execution_result, ExecutionResult):
+        yield some_execution_result
     else:
         yield some_execution_result.initial_result
         async for result in some_execution_result.subsequent_results:

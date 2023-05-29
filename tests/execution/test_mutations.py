@@ -4,7 +4,7 @@ from typing import Any, Awaitable, List
 from pytest import mark
 
 from graphql.execution import (
-    ExperimentalExecuteMultipleResults,
+    ExperimentalIncrementalExecutionResults,
     execute,
     execute_sync,
     experimental_execute_incrementally,
@@ -234,7 +234,7 @@ def describe_execute_handles_mutation_execution_ordering():
         )
 
         patches: List[Any] = []
-        assert isinstance(mutation_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(mutation_result, ExperimentalIncrementalExecutionResults)
         patches.append(mutation_result.initial_result.formatted)
         async for patch in mutation_result.subsequent_results:
             patches.append(patch.formatted)
@@ -305,7 +305,7 @@ def describe_execute_handles_mutation_execution_ordering():
         )
 
         patches: List[Any] = []
-        assert isinstance(mutation_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(mutation_result, ExperimentalIncrementalExecutionResults)
         patches.append(mutation_result.initial_result.formatted)
         async for patch in mutation_result.subsequent_results:
             patches.append(patch.formatted)

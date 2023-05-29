@@ -24,7 +24,7 @@ Execution
 .. autoclass:: FormattedExecutionResult
    :no-inherited-members:
 
-.. autoclass:: ExperimentalExecuteIncrementallyResults
+.. autoclass:: ExperimentalIncrementalExecutionResults
 
 .. autoclass:: InitialIncrementalExecutionResult
 

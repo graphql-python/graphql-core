@@ -6,8 +6,8 @@ from pytest import mark, raises
 from graphql.error import GraphQLError
 from graphql.execution import (
     ExecutionContext,
-    ExperimentalExecuteMultipleResults,
-    ExperimentalExecuteSingleResult,
+    ExecutionResult,
+    ExperimentalIncrementalExecutionResults,
     IncrementalStreamResult,
     experimental_execute_incrementally,
 )
@@ -92,14 +92,14 @@ async def complete(document: DocumentNode, root_value: Any = None) -> Any:
     if isinstance(result, Awaitable):
         result = await result
 
-    if isinstance(result, ExperimentalExecuteMultipleResults):
+    if isinstance(result, ExperimentalIncrementalExecutionResults):
         results: List[Any] = [result.initial_result.formatted]
         async for patch in result.subsequent_results:
             results.append(patch.formatted)
         return results
 
-    assert isinstance(result, ExperimentalExecuteSingleResult)
-    return result.single_result.formatted
+    assert isinstance(result, ExecutionResult)
+    return result.formatted
 
 
 async def complete_async(
@@ -108,7 +108,7 @@ async def complete_async(
     result = experimental_execute_incrementally(schema, document, root_value)
     assert isinstance(result, Awaitable)
     result = await result
-    assert isinstance(result, ExperimentalExecuteMultipleResults)
+    assert isinstance(result, ExperimentalIncrementalExecutionResults)
 
     class IteratorResult:
         """Iterator result with formatted output."""
@@ -1435,7 +1435,7 @@ def describe_execute_stream_directive():
             },
         )
 
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
@@ -1569,7 +1569,7 @@ def describe_execute_stream_directive():
             },
         )
 
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
@@ -1649,7 +1649,7 @@ def describe_execute_stream_directive():
             },
         )
 
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
@@ -1728,7 +1728,7 @@ def describe_execute_stream_directive():
             },
         )
 
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
@@ -1800,7 +1800,7 @@ def describe_execute_stream_directive():
         execute_result = await experimental_execute_incrementally(  # type: ignore
             schema, document, {"friendList": iterable}
         )
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
@@ -1846,7 +1846,7 @@ def describe_execute_stream_directive():
         execute_result = await experimental_execute_incrementally(  # type: ignore
             schema, document, {"friendList": iterable}
         )
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
@@ -1888,7 +1888,7 @@ def describe_execute_stream_directive():
         execute_result = await experimental_execute_incrementally(  # type: ignore
             schema, document, {"friendList": iterable}
         )
-        assert isinstance(execute_result, ExperimentalExecuteMultipleResults)
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
