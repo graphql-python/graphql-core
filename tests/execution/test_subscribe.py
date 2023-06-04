@@ -1189,26 +1189,27 @@ def describe_subscription_publish_phase():
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
     @mark.asyncio
-    async def custom_async_iterator():
-        class CustomAsyncIterator:
-            def __init__(self, events):
-                self.events = events
+    async def should_work_with_custom_async_iterator():
+        class MessageGenerator:
+            resolved: List[str] = []
+
+            def __init__(self, values, _info):
+                self.values = values
 
             def __aiter__(self):
                 return self
 
             async def __anext__(self):
-                await asyncio.sleep(0)
-                if not self.events:
+                if not self.values:
                     raise StopAsyncIteration
-                return self.events.pop(0)
+                await asyncio.sleep(0)
+                return self.values.pop(0)
 
-        def generate_messages(_obj, _info):
-            return CustomAsyncIterator(["Hello", "Dolly"])
-
-        async def resolve_message(message, _info):
-            await asyncio.sleep(0)
-            return message
+            @classmethod
+            async def resolve(cls, message, _info):
+                await asyncio.sleep(0)
+                cls.resolved.append(message)
+                return message + "!"
 
         schema = GraphQLSchema(
             query=QueryType,
@@ -1217,22 +1218,80 @@ def describe_subscription_publish_phase():
                 {
                     "newMessage": GraphQLField(
                         GraphQLString,
-                        resolve=resolve_message,
-                        subscribe=generate_messages,
+                        resolve=MessageGenerator.resolve,
+                        subscribe=MessageGenerator,
                     )
                 },
             ),
         )
 
         document = parse("subscription { newMessage }")
-        subscription = subscribe(schema, document)
+        subscription = subscribe(schema, document, ["Hello", "Dolly"])
         assert isinstance(subscription, AsyncIterator)
 
-        msgs = []
-        async for result in subscription:
-            assert result.errors is None
-            assert result.data is not None
-            msgs.append(result.data["newMessage"])
-        assert msgs == ["Hello", "Dolly"]
-        if hasattr(subscription, "aclose"):
-            await subscription.aclose()
+        assert [result async for result in subscription] == [
+            ({"newMessage": "Hello!"}, None),
+            ({"newMessage": "Dolly!"}, None),
+        ]
+
+        assert MessageGenerator.resolved == ["Hello", "Dolly"]
+
+        await subscription.aclose()  # type: ignore
+
+    @mark.asyncio
+    async def should_close_custom_async_iterator():
+        class MessageGenerator:
+            closed: bool = False
+            resolved: List[str] = []
+
+            def __init__(self, values, _info):
+                self.values = values
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if not self.values:
+                    raise StopAsyncIteration
+                await asyncio.sleep(0)
+                return self.values.pop(0)
+
+            @classmethod
+            async def resolve(cls, message, _info):
+                await asyncio.sleep(0)
+                cls.resolved.append(message)
+                return message + "!"
+
+            @classmethod
+            async def aclose(cls):
+                cls.closed = True
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=MessageGenerator.resolve,
+                        subscribe=MessageGenerator,
+                    )
+                },
+            ),
+        )
+
+        document = parse("subscription { newMessage }")
+        subscription = subscribe(schema, document, ["Hello", "Dolly"])
+        assert isinstance(subscription, AsyncIterator)
+
+        assert not MessageGenerator.closed
+
+        assert [result async for result in subscription] == [
+            ({"newMessage": "Hello!"}, None),
+            ({"newMessage": "Dolly!"}, None),
+        ]
+
+        assert MessageGenerator.closed
+        assert MessageGenerator.resolved == ["Hello", "Dolly"]
+
+        await subscription.aclose()

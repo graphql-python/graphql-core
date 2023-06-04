@@ -2,7 +2,7 @@ from typing import AsyncGenerator
 
 from pytest import mark, raises
 
-from graphql.execution.iterators import flatten_async_iterable
+from graphql.execution import flatten_async_iterable
 
 
 try:  # pragma: no cover
@@ -129,3 +129,85 @@ def describe_flatten_async_iterable():
         assert await anext(doubles) == 2.2
         with raises(StopAsyncIteration):
             assert await anext(doubles)
+
+    @mark.asyncio
+    async def closes_nested_async_iterators():
+        closed = []
+
+        class Source:
+            def __init__(self):
+                self.counter = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.counter == 2:
+                    raise StopAsyncIteration
+                self.counter += 1
+                return Nested(self.counter)
+
+            async def aclose(self):
+                nonlocal closed
+                closed.append(self.counter)
+
+        class Nested:
+            def __init__(self, value):
+                self.value = value
+                self.counter = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.counter == 2:
+                    raise StopAsyncIteration
+                self.counter += 1
+                return self.value + self.counter / 10
+
+            async def aclose(self):
+                nonlocal closed
+                closed.append(self.value + self.counter / 10)
+
+        doubles = flatten_async_iterable(Source())
+
+        result = [x async for x in doubles]
+
+        assert result == [1.1, 1.2, 2.1, 2.2]
+
+        assert closed == [1.2, 2.2, 2]
+
+    @mark.asyncio
+    async def works_with_nested_async_iterators_that_have_no_close_method():
+        class Source:
+            def __init__(self):
+                self.counter = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.counter == 2:
+                    raise StopAsyncIteration
+                self.counter += 1
+                return Nested(self.counter)
+
+        class Nested:
+            def __init__(self, value):
+                self.value = value
+                self.counter = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.counter == 2:
+                    raise StopAsyncIteration
+                self.counter += 1
+                return self.value + self.counter / 10
+
+        doubles = flatten_async_iterable(Source())
+
+        result = [x async for x in doubles]
+
+        assert result == [1.1, 1.2, 2.1, 2.2]

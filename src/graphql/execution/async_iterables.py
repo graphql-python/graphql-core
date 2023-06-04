@@ -1,5 +1,6 @@
 from __future__ import annotations  # Python < 3.10
 
+from contextlib import AbstractAsyncContextManager
 from typing import (
     Any,
     AsyncGenerator,
@@ -11,25 +12,34 @@ from typing import (
 )
 
 
-try:
-    from contextlib import aclosing
-except ImportError:  # python < 3.10
-    from contextlib import asynccontextmanager
-
-    @asynccontextmanager  # type: ignore
-    async def aclosing(thing):
-        try:
-            yield thing
-        finally:
-            await thing.aclose()
-
+__all__ = ["aclosing", "flatten_async_iterable", "map_async_iterable"]
 
 T = TypeVar("T")
 V = TypeVar("V")
 
 AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
 
-__all__ = ["flatten_async_iterable", "map_async_iterable"]
+
+class aclosing(AbstractAsyncContextManager):
+    """Async context manager for safely finalizing an async iterator or generator.
+
+    Contrary to the function available via the standard library, this one silently
+    ignores the case that custom iterators have no aclose() method.
+    """
+
+    def __init__(self, iterable: AsyncIterableOrGenerator[T]) -> None:
+        self.iterable = iterable
+
+    async def __aenter__(self) -> AsyncIterableOrGenerator[T]:
+        return self.iterable
+
+    async def __aexit__(self, *_exc_info: Any) -> None:
+        try:
+            aclose = self.iterable.aclose  # type: ignore
+        except AttributeError:
+            pass  # do not complain if the iterator has no aclose() method
+        else:
+            await aclose()
 
 
 async def flatten_async_iterable(
@@ -48,7 +58,7 @@ async def flatten_async_iterable(
 
 
 async def map_async_iterable(
-    iterable: AsyncIterable[T], callback: Callable[[T], Awaitable[V]]
+    iterable: AsyncIterableOrGenerator[T], callback: Callable[[T], Awaitable[V]]
 ) -> AsyncGenerator[V, None]:
     """Map an AsyncIterable over a callback function.
 
@@ -58,10 +68,6 @@ async def map_async_iterable(
     the generator finishes or closes.
     """
 
-    aiter = iterable.__aiter__()
-    try:
-        async for element in aiter:
-            yield await callback(element)
-    finally:
-        if hasattr(aiter, "aclose"):
-            await aiter.aclose()
+    async with aclosing(iterable) as items:  # type: ignore
+        async for item in items:
+            yield await callback(item)

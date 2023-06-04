@@ -70,8 +70,8 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
+from .async_iterables import flatten_async_iterable, map_async_iterable
 from .collect_fields import FieldsAndPatches, collect_fields, collect_subfields
-from .iterators import flatten_async_iterable, map_async_iterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
