@@ -9,6 +9,7 @@ from graphql.type import (
     GraphQLField,
     GraphQLFieldResolver,
     GraphQLList,
+    GraphQLNonNull,
     GraphQLObjectType,
     GraphQLResolveInfo,
     GraphQLSchema,
@@ -155,7 +156,11 @@ def describe_execute_accepts_async_iterables_as_list_value():
                         GraphQLList(
                             GraphQLObjectType(
                                 "ObjectWrapper",
-                                {"index": GraphQLField(GraphQLString, resolve=resolve)},
+                                {
+                                    "index": GraphQLField(
+                                        GraphQLNonNull(GraphQLString), resolve=resolve
+                                    )
+                                },
                             )
                         ),
                         resolve=_list_field,
@@ -274,7 +279,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             return index
 
         assert await _complete_object_lists(resolve) == (
-            {"listField": [{"index": "0"}, {"index": "1"}, {"index": None}]},
+            {"listField": [{"index": "0"}, {"index": "1"}, None]},
             [
                 {
                     "message": "bad",

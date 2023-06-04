@@ -1213,8 +1213,23 @@ class ExecutionContext:
                         async_payload_record,
                     )
                     if is_awaitable(completed_item):
+                        # noinspection PyShadowingNames
+                        async def catch_error(
+                            completed_item: Awaitable[Any], field_path: Path
+                        ) -> Any:
+                            try:
+                                return await completed_item
+                            except Exception as raw_error:
+                                error = located_error(
+                                    raw_error, field_nodes, field_path.as_list()
+                                )
+                                handle_field_error(error, item_type, errors)
+                                return None
+
+                        append_result(catch_error(completed_item, field_path))
                         append_awaitable(index)
-                    append_result(completed_item)
+                    else:
+                        append_result(completed_item)
                 except Exception as raw_error:
                     append_result(None)
                     error = located_error(raw_error, field_nodes, field_path.as_list())
