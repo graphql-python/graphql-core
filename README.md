@@ -14,12 +14,20 @@ An extensive test suite with over 2300 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
 reliable and compatible with GraphQL.js.
 
-The current stable version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js version 16.6.0.
+The current stable version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js
+version 16.6.0 and supports Python version 3.6 and newer.
 
-You can also try out the latest alpha version 3.3.0a2 of GraphQL-core that is up-to-date with GraphQL.js version 17.0.0a1.
-Please note that this new minor version of GraphQL-core does not support Python 3.7 anymore.
+You can also try out the latest alpha version 3.3.0a3 of GraphQL-core
+which is up-to-date with GraphQL.js version 17.0.0a2.
+Please note that this new minor version of GraphQL-core does not support
+Python 3.6 anymore.
 
-Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js. Changes in the major version of GraphQL.js are reflected in the minor version of GraphQL-core instead. This means there can be breaking changes in the API when the minor version changes, and only patch releases are fully backward compatible. Therefore, we recommend something like `=~ 3.2.0` as version specifier when including GraphQL-core as a dependency.
+Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
+Changes in the major version of GraphQL.js are reflected in the minor version of
+GraphQL-core instead. This means there can be breaking changes in the API
+when the minor version changes, and only patch releases are fully backward compatible.
+Therefore, we recommend something like `=~ 3.2.0` as version specifier
+when including GraphQL-core as a dependency.
 
 
 ## Documentation
@@ -129,9 +137,9 @@ ExecutionResult(data=None, errors=[GraphQLError(
     locations=[SourceLocation(line=1, column=3)])])
 ```
 
-The `graphql_sync` function assumes that all resolvers return values synchronously. By
-using coroutines as resolvers, you can also create results in an asynchronous fashion
-with the `graphql` function.
+The `graphql_sync` function assumes that all resolvers return values synchronously.
+By  using coroutines as resolvers, you can also create results in an asynchronous
+fashion with the `graphql` function.
 
 ```python
 import asyncio
