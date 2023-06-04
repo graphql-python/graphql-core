@@ -1,4 +1,3 @@
-from gc import collect
 from inspect import isawaitable
 
 from pytest import mark, raises
@@ -8,6 +7,8 @@ from graphql.execution import execute, execute_sync
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.validation import validate
+
+from ..fixtures import cleanup
 
 
 def describe_execute_synchronously_when_possible():
@@ -91,6 +92,8 @@ def describe_execute_synchronously_when_possible():
                 )
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
+            del exc_info
+            cleanup()
 
         @mark.asyncio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
@@ -108,9 +111,8 @@ def describe_execute_synchronously_when_possible():
                     }
                 ],
             )
-            # garbage collect coroutine in order to not postpone the warning
             del result
-            collect()
+            cleanup()
 
         @mark.asyncio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
@@ -129,6 +131,8 @@ def describe_execute_synchronously_when_possible():
                 )
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
+            del exc_info
+            cleanup()
 
         @mark.asyncio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
@@ -145,6 +149,8 @@ def describe_execute_synchronously_when_possible():
                 execute_sync(schema, document=parse(doc), root_value="rootValue")
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
+            del exc_info
+            cleanup()
 
     def describe_graphql_sync():
         def reports_errors_raised_during_schema_validation():
@@ -192,6 +198,8 @@ def describe_execute_synchronously_when_possible():
                 graphql_sync(schema, doc, "rootValue", check_sync=True)
             msg = str(exc_info.value)
             assert msg == "GraphQL execution failed to complete synchronously."
+            del exc_info
+            cleanup()
 
         @mark.asyncio
         @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
@@ -209,6 +217,5 @@ def describe_execute_synchronously_when_possible():
                     }
                 ],
             )
-            # garbage collect coroutine in order to not postpone the warning
             del result
-            collect()
+            cleanup()

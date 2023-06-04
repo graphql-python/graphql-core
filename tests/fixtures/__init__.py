@@ -1,16 +1,27 @@
 """Fixtures for graphql tests"""
 import json
+from gc import collect
 from os.path import dirname, join
 
 from pytest import fixture
 
 
 __all__ = [
+    "cleanup",
     "kitchen_sink_query",
     "kitchen_sink_sdl",
     "big_schema_sdl",
     "big_schema_introspection_result",
 ]
+
+
+def cleanup(rounds=5):
+    """Run garbage collector.
+
+    This can be used to remove coroutines that were not awaited after running tests.
+    """
+    for _generation in range(rounds):
+        collect()
 
 
 def read_graphql(name):

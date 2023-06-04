@@ -33,6 +33,7 @@ from graphql.type import (
     GraphQLString,
 )
 
+from ..fixtures import cleanup
 from ..utils.assert_equal_awaitables_or_values import assert_equal_awaitables_or_values
 
 
@@ -404,6 +405,9 @@ def describe_subscription_initialization_phase():
         result = subscribe_with_bad_fn(async_fn)
         assert is_awaitable(result)
         assert await result == expected_result
+
+        del result
+        cleanup()
 
     @mark.asyncio
     async def resolves_to_an_error_for_subscription_resolver_errors():
