@@ -7,7 +7,6 @@ operations on a simulated user registry database backend.
 from asyncio import create_task, sleep, wait
 from collections import defaultdict
 from enum import Enum
-from inspect import isawaitable
 from typing import Any, AsyncIterable, Dict, List, NamedTuple, Optional
 
 from pytest import fixture, mark
@@ -29,7 +28,7 @@ from graphql import (
     parse,
     subscribe,
 )
-from graphql.pyutils import SimplePubSub, SimplePubSubIterator
+from graphql.pyutils import SimplePubSub, SimplePubSubIterator, is_awaitable
 
 
 class User(NamedTuple):
@@ -157,7 +156,7 @@ async def subscribe_user(_root, info, id=None):
     """Subscribe to mutations of a specific user object or all user objects"""
     async_iterator = info.context["registry"].event_iterator(id)
     async for event in async_iterator:
-        yield await event if isawaitable(event) else event  # pragma: no cover exit
+        yield await event if is_awaitable(event) else event  # pragma: no cover exit
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal

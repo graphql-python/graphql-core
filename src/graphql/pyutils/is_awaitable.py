@@ -15,10 +15,10 @@ CO_ITERABLE_COROUTINE = inspect.CO_ITERABLE_COROUTINE
 
 
 def is_awaitable(value: Any) -> TypeGuard[Awaitable]:
-    """Return true if object can be passed to an ``await`` expression.
+    """Return True if object can be passed to an ``await`` expression.
 
-    Instead of testing if the object is an instance of abc.Awaitable, it checks
-    the existence of an `__await__` attribute. This is much faster.
+    Instead of testing whether the object is an instance of abc.Awaitable, we
+    check the existence of an `__await__` attribute. This is much faster.
     """
     return (
         # check for coroutine objects

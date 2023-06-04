@@ -1,7 +1,7 @@
 import asyncio
-from inspect import isawaitable
 
 from graphql import ExecutionResult, build_schema, execute, parse
+from graphql.pyutils import is_awaitable
 
 
 schema = build_schema("type Query { listField: [String] }")
@@ -18,7 +18,7 @@ class Data:
 
 async def execute_async() -> ExecutionResult:
     result = execute(schema, document, Data())
-    assert isawaitable(result)
+    assert is_awaitable(result)
     return await result
 
 

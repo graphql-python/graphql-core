@@ -1,10 +1,10 @@
-from inspect import isawaitable
 from typing import Any, NamedTuple, Optional
 
 from pytest import mark
 
 from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
+from graphql.pyutils import is_awaitable
 from graphql.type import (
     GraphQLBoolean,
     GraphQLField,
@@ -43,7 +43,7 @@ async def execute_query(
     result = (execute_sync if sync else execute)(
         schema, document, root_value
     )  # type: ignore
-    if not sync and isawaitable(result):
+    if not sync and is_awaitable(result):
         result = await result
     assert isinstance(result, ExecutionResult)
     return result

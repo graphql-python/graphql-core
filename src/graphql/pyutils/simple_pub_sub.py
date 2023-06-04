@@ -1,8 +1,9 @@
 from __future__ import annotations  # Python < 3.10
 
 from asyncio import Future, Queue, create_task, get_running_loop, sleep
-from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
+
+from .is_awaitable import is_awaitable
 
 
 __all__ = ["SimplePubSub", "SimplePubSubIterator"]
@@ -25,7 +26,7 @@ class SimplePubSub:
         """Emit an event."""
         for subscriber in self.subscribers:
             result = subscriber(event)
-            if isawaitable(result):
+            if is_awaitable(result):
                 create_task(result)  # type: ignore
         return bool(self.subscribers)
 

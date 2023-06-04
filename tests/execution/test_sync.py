@@ -1,10 +1,9 @@
-from inspect import isawaitable
-
 from pytest import mark, raises
 
 from graphql import graphql_sync
 from graphql.execution import execute, execute_sync
 from graphql.language import parse
+from graphql.pyutils import is_awaitable
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.validation import validate
 
@@ -57,7 +56,7 @@ def describe_execute_synchronously_when_possible():
     async def returns_an_awaitable_if_any_field_is_asynchronous():
         doc = "query Example { syncField, asyncField }"
         result = execute(schema, parse(doc), "rootValue")
-        assert isawaitable(result)
+        assert is_awaitable(result)
         assert await result == (
             {"syncField": "rootValue", "asyncField": "rootValue"},
             None,

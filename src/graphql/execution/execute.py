@@ -3,7 +3,6 @@ from __future__ import annotations  # Python < 3.10
 from asyncio import Event, as_completed, ensure_future, gather, shield, sleep, wait_for
 from collections.abc import Mapping
 from contextlib import suppress
-from inspect import isawaitable
 from typing import (
     Any,
     AsyncGenerator,
@@ -1646,7 +1645,7 @@ class ExecutionContext:
         async def callback(payload: Any) -> AsyncGenerator:
             result = execute_impl(self.build_per_event_execution_context(payload))
             return ensure_async_iterable(
-                await result if isawaitable(result) else result  # type: ignore
+                await result if self.is_awaitable(result) else result  # type: ignore
             )
 
         return flatten_async_iterable(map_async_iterable(result_or_stream, callback))
@@ -2124,7 +2123,7 @@ def execute_impl(
 
 
 def assume_not_awaitable(_value: Any) -> bool:
-    """Replacement for isawaitable if everything is assumed to be synchronous."""
+    """Replacement for is_awaitable if everything is assumed to be synchronous."""
     return False
 
 
@@ -2172,10 +2171,10 @@ def execute_sync(
     )
 
     # Assert that the execution was synchronous.
-    if isawaitable(result) or isinstance(
+    if default_is_awaitable(result) or isinstance(
         result, ExperimentalIncrementalExecutionResults
     ):
-        if isawaitable(result):
+        if default_is_awaitable(result):
             ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 

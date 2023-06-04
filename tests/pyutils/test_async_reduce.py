@@ -1,9 +1,8 @@
 from functools import reduce
-from inspect import isawaitable
 
 from pytest import mark
 
-from graphql.pyutils import async_reduce
+from graphql.pyutils import async_reduce, is_awaitable
 
 
 def describe_async_reduce():
@@ -25,7 +24,7 @@ def describe_async_reduce():
 
         values = ["bar", "baz"]
         result = async_reduce(callback, values, "foo")
-        assert not isawaitable(result)
+        assert not is_awaitable(result)
         assert result == "foo-bar-baz"
 
     @mark.asyncio
@@ -38,7 +37,7 @@ def describe_async_reduce():
 
         values = ["bar", "baz"]
         result = async_reduce(callback, values, async_initial_value())
-        assert isawaitable(result)
+        assert is_awaitable(result)
         assert await result == "foo-bar-baz"
 
     @mark.asyncio
@@ -48,7 +47,7 @@ def describe_async_reduce():
 
         values = ["bar", "baz"]
         result = async_reduce(async_callback, values, "foo")
-        assert isawaitable(result)
+        assert is_awaitable(result)
         assert await result == "foo-bar-baz"
 
     @mark.asyncio
@@ -60,5 +59,5 @@ def describe_async_reduce():
             return accumulator * current_value
 
         result = async_reduce(async_callback, range(6, 9), async_initial_value())
-        assert isawaitable(result)
+        assert is_awaitable(result)
         assert await result == 42

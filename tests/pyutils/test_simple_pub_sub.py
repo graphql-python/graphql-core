@@ -1,9 +1,8 @@
 from asyncio import sleep
-from inspect import isawaitable
 
 from pytest import mark, raises
 
-from graphql.pyutils import SimplePubSub
+from graphql.pyutils import SimplePubSub, is_awaitable
 
 
 def describe_simple_pub_sub():
@@ -22,9 +21,9 @@ def describe_simple_pub_sub():
 
         # Read ahead
         i3 = await iterator.__anext__()
-        assert isawaitable(i3)
+        assert is_awaitable(i3)
         i4 = await iterator.__anext__()
-        assert isawaitable(i4)
+        assert is_awaitable(i4)
 
         # Publish
         assert pubsub.emit("Coconut") is True
