@@ -1,4 +1,14 @@
-from typing import AsyncGenerator, AsyncIterable, TypeVar, Union
+from __future__ import annotations  # Python < 3.10
+
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterable,
+    Awaitable,
+    Callable,
+    TypeVar,
+    Union,
+)
 
 
 try:
@@ -15,10 +25,11 @@ except ImportError:  # python < 3.10
 
 
 T = TypeVar("T")
+V = TypeVar("V")
 
 AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
 
-__all__ = ["flatten_async_iterable"]
+__all__ = ["flatten_async_iterable", "map_async_iterable"]
 
 
 async def flatten_async_iterable(
@@ -34,3 +45,23 @@ async def flatten_async_iterable(
             async with aclosing(sub_iterator) as items:  # type: ignore
                 async for item in items:
                     yield item
+
+
+async def map_async_iterable(
+    iterable: AsyncIterable[T], callback: Callable[[T], Awaitable[V]]
+) -> AsyncGenerator[V, None]:
+    """Map an AsyncIterable over a callback function.
+
+    Given an AsyncIterable and an async callback callable, return an AsyncGenerator
+    which produces values mapped via calling the callback.
+    If the inner iterator supports an `aclose()` method, it will be called when
+    the generator finishes or closes.
+    """
+
+    aiter = iterable.__aiter__()
+    try:
+        async for element in aiter:
+            yield await callback(element)
+    finally:
+        if hasattr(aiter, "aclose"):
+            await aiter.aclose()
