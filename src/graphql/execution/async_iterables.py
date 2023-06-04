@@ -62,8 +62,8 @@ async def map_async_iterable(
 ) -> AsyncGenerator[V, None]:
     """Map an AsyncIterable over a callback function.
 
-    Given an AsyncIterable and an async callback callable, return an AsyncGenerator
-    which produces values mapped via calling the callback.
+    Given an AsyncIterable and an async callback function, return an AsyncGenerator
+    that produces values mapped via calling the callback function.
     If the inner iterator supports an `aclose()` method, it will be called when
     the generator finishes or closes.
     """
