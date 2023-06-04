@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "graphql-core"
 version = "3.3.0a2"
-description = """
+description = """\
 GraphQL-core is a Python port of GraphQL.js,\
  the JavaScript reference implementation for GraphQL."""
 license = "MIT"

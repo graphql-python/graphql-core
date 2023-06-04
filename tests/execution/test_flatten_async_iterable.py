@@ -2,7 +2,7 @@ from typing import AsyncGenerator
 
 from pytest import mark, raises
 
-from graphql.execution.flatten_async_iterable import flatten_async_iterable
+from graphql.execution.iterators import flatten_async_iterable
 
 
 try:  # pragma: no cover
