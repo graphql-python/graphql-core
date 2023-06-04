@@ -359,8 +359,17 @@ class Node:
 
     def __repr__(self) -> str:
         """Get a simple representation of the node."""
-        name, loc = self.__class__.__name__, getattr(self, "loc", None)
-        return f"{name} at {loc}" if loc else name
+        rep = self.__class__.__name__
+        if isinstance(self, NameNode):
+            rep += f"({self.value!r})"
+        else:
+            name = getattr(self, "name", None)
+            if name:
+                rep += f"(name={name.value!r})"
+        loc = getattr(self, "loc", None)
+        if loc:
+            rep += f" at {loc}"
+        return rep
 
     def __eq__(self, other: Any) -> bool:
         """Test whether two nodes are equal (recursively)."""

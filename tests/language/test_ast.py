@@ -1,7 +1,8 @@
 import weakref
 from copy import copy, deepcopy
+from typing import Optional
 
-from graphql.language import Location, Node, Source, Token, TokenKind
+from graphql.language import Location, NameNode, Node, Source, Token, TokenKind
 from graphql.pyutils import inspect
 
 
@@ -10,6 +11,13 @@ class SampleTestNode(Node):
 
     alpha: int
     beta: int
+
+
+class SampleNamedNode(Node):
+    __slots__ = "foo", "name"
+
+    foo: str
+    name: Optional[str]
 
 
 def describe_token_class():
@@ -159,6 +167,25 @@ def describe_node_class():
         assert repr(node) == "SampleTestNode"
         node = SampleTestNode(alpha=1, beta=2, loc=3)
         assert repr(node) == "SampleTestNode at 3"
+
+    def has_representation_when_named():
+        name_node = NameNode(value="baz")
+        node = SampleNamedNode(foo="bar", name=name_node)
+        assert repr(node) == "SampleNamedNode(name='baz')"
+        node = SampleNamedNode(alpha=1, beta=2, name=name_node, loc=3)
+        assert repr(node) == "SampleNamedNode(name='baz') at 3"
+
+    def has_representation_when_named_but_name_is_none():
+        node = SampleNamedNode(alpha=1, beta=2, name=None)
+        assert repr(node) == "SampleNamedNode"
+        node = SampleNamedNode(alpha=1, beta=2, name=None, loc=3)
+        assert repr(node) == "SampleNamedNode at 3"
+
+    def has_special_representation_when_it_is_a_name_node():
+        node = NameNode(value="foo")
+        assert repr(node) == "NameNode('foo')"
+        node = NameNode(value="foo", loc=3)
+        assert repr(node) == "NameNode('foo') at 3"
 
     def can_check_equality():
         node = SampleTestNode(alpha=1, beta=2)
