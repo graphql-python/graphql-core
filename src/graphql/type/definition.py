@@ -1620,7 +1620,7 @@ def is_composite_type(type_: Any) -> TypeGuard[GraphQLCompositeType]:
     )
 
 
-def assert_composite_type(type_: Any) -> GraphQLType:
+def assert_composite_type(type_: Any) -> GraphQLCompositeType:
     if not is_composite_type(type_):
         raise TypeError(f"Expected {type_} to be a GraphQL composite type.")
     return type_
