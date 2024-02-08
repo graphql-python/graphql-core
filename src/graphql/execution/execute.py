@@ -2039,7 +2039,7 @@ def execute(
         raise GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS)
 
     async def await_result() -> Any:
-        awaited_result = await result  # type: ignore
+        awaited_result = await result
         if isinstance(awaited_result, ExecutionResult):
             return awaited_result
         return ExecutionResult(
@@ -2388,7 +2388,7 @@ def subscribe(
         return map_async_iterable(result, ensure_single_execution_result)
 
     async def await_result() -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
-        result_or_iterable = await result  # type: ignore
+        result_or_iterable = await result
         if isinstance(result_or_iterable, AsyncIterable):
             return map_async_iterable(
                 result_or_iterable, ensure_single_execution_result
@@ -2496,9 +2496,7 @@ def experimental_subscribe_incrementally(
             awaited_result_or_stream = await result_or_stream  # type: ignore
             if isinstance(awaited_result_or_stream, ExecutionResult):
                 return awaited_result_or_stream
-            return context.map_source_to_response(  # type: ignore
-                awaited_result_or_stream
-            )
+            return context.map_source_to_response(awaited_result_or_stream)
 
         return await_result()
 

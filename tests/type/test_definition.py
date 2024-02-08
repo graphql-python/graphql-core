@@ -735,7 +735,7 @@ def describe_type_system_enums():
         description = "nice enum"
         enum_type = GraphQLEnumType(
             "SomeEnum",
-            {},  # type: ignore
+            {},
             description=description,
         )
         assert enum_type.description is description
@@ -887,7 +887,7 @@ def describe_type_system_enums():
         extension_ast_nodes = [EnumTypeExtensionNode()]
         enum_type = GraphQLEnumType(
             "SomeEnum",
-            {},  # type: ignore
+            {},
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )

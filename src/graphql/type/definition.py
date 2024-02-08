@@ -1055,7 +1055,7 @@ class GraphQLEnumType(GraphQLNamedType):
                 isinstance(name, str) for name in values
             ):
                 try:
-                    values = dict(values)  # type: ignore
+                    values = dict(values)
                 except (TypeError, ValueError) as error:
                     msg = (
                         f"{name} values must be an Enum or a mapping"

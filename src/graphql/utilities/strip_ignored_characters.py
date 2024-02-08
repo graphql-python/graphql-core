@@ -11,7 +11,7 @@ __all__ = ["strip_ignored_characters"]
 
 
 def strip_ignored_characters(source: Union[str, Source]) -> str:
-    """Strip characters that are ignored anyway.
+    '''Strip characters that are ignored anyway.
 
     Strips characters that are not significant to the validity or execution
     of a GraphQL document:
@@ -51,20 +51,20 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
 
     SDL example::
 
-        \"\"\"
+        """
         Type description
-        \"\"\"
+        """
         type Foo {
-          \"\"\"
+          """
           Field description
-          \"\"\"
+          """
           bar: String
         }
 
     Becomes::
 
-        \"\"\"Type description\"\"\" type Foo{\"\"\"Field description\"\"\" bar:String}
-    """
+        """Type description""" type Foo{"""Field description""" bar:String}
+    '''
     if not is_source(source):
         source = Source(cast(str, source))
 

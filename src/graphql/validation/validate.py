@@ -59,7 +59,7 @@ def validate(
     errors: List[GraphQLError] = []
 
     def on_error(error: GraphQLError) -> None:
-        if len(errors) >= max_errors:  # type: ignore
+        if len(errors) >= max_errors:
             raise validation_aborted_error
         errors.append(error)
 
