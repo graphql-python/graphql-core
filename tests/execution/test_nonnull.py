@@ -2,8 +2,7 @@ import asyncio
 import re
 from typing import Any, Awaitable, cast
 
-from pytest import mark
-
+import pytest
 from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.pyutils import AwaitableOrValue
@@ -16,7 +15,6 @@ from graphql.type import (
     GraphQLString,
 )
 from graphql.utilities import build_schema
-
 
 sync_error = RuntimeError("sync")
 sync_non_null_error = RuntimeError("syncNonNull")
@@ -127,12 +125,12 @@ def describe_execute_handles_non_nullable_types():
             }
             """
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def returns_null():
             result = await execute_sync_and_async(query, NullingData())
             assert result == ({"sync": None}, None)
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def throws():
             result = await execute_sync_and_async(query, ThrowingData())
             assert result == (
@@ -155,7 +153,7 @@ def describe_execute_handles_non_nullable_types():
             }
             """
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def that_returns_null():
             result = await execute_sync_and_async(query, NullingData())
             assert result == (
@@ -170,7 +168,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def that_throws():
             result = await execute_sync_and_async(query, ThrowingData())
             assert result == (
@@ -216,14 +214,14 @@ def describe_execute_handles_non_nullable_types():
             },
         }
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def returns_null():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, NullingData())
             )
             assert result == (data, None)
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def throws():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, ThrowingData())
@@ -350,7 +348,7 @@ def describe_execute_handles_non_nullable_types():
             "anotherPromiseNest": None,
         }
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def returns_null():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, NullingData())
@@ -413,7 +411,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def throws():
             result = await cast(
                 Awaitable[ExecutionResult], execute_query(query, ThrowingData())
@@ -479,7 +477,7 @@ def describe_execute_handles_non_nullable_types():
             }
             """
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def returns_null():
             result = await execute_sync_and_async(query, NullingData())
             await asyncio.sleep(0)  # strangely needed to get coverage on Python 3.11
@@ -495,7 +493,7 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def throws():
             result = await execute_sync_and_async(query, ThrowingData())
             await asyncio.sleep(0)  # strangely needed to get coverage on Python 3.11

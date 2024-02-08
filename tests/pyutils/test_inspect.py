@@ -3,8 +3,7 @@ from importlib import import_module
 from math import inf, nan
 from typing import Any, Dict, FrozenSet, List, Set, Tuple
 
-from pytest import mark
-
+import pytest
 from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLDirective,
@@ -15,7 +14,6 @@ from graphql.type import (
     GraphQLObjectType,
     GraphQLString,
 )
-
 
 inspect_module = import_module(inspect.__module__)
 
@@ -138,7 +136,7 @@ def describe_inspect():
         assert inspect(test_generator) == "<generator function test_generator>"
         assert inspect(test_generator()) == "<generator test_generator>"
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def inspect_coroutine():
         async def test_coroutine():
             pass
@@ -260,8 +258,10 @@ def describe_inspect():
     def inspect_overly_large_set():
         s = set(range(20))
         r = inspect(s)
-        assert r.startswith("{") and r.endswith("}")
-        assert "..., " in r and "5" not in s  # sets are unordered
+        assert r.startswith("{")
+        assert r.endswith("}")
+        assert "..., " in r
+        assert "5" not in s  # sets are unordered
         assert len(r) == 36
         with increased_list_size():
             assert inspect(s) == repr(s)
@@ -285,8 +285,10 @@ def describe_inspect():
     def inspect_overly_large_frozenset():
         s = frozenset(range(20))
         r = inspect(s)
-        assert r.startswith("frozenset({") and r.endswith("})")
-        assert "..., " in r and "5" not in s  # frozensets are unordered
+        assert r.startswith("frozenset({")
+        assert r.endswith("})")
+        assert "..., " in r
+        assert "5" not in s  # frozensets are unordered
         assert len(r) == 47
         with increased_list_size():
             assert inspect(s) == repr(s)

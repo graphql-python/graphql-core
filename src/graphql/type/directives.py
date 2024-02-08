@@ -1,3 +1,5 @@
+"""GraphQL directives"""
+
 from __future__ import annotations  # Python < 3.10
 
 from typing import Any, Collection, Dict, Optional, Tuple, cast
@@ -7,7 +9,6 @@ from ..pyutils import inspect
 from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull
 from .scalars import GraphQLBoolean, GraphQLInt, GraphQLString
-
 
 try:
     from typing import TypedDict
@@ -37,6 +38,8 @@ __all__ = [
 
 
 class GraphQLDirectiveKwargs(TypedDict, total=False):
+    """Arguments for GraphQL directives"""
+
     name: str
     locations: Tuple[DirectiveLocation, ...]
     args: Dict[str, GraphQLArgument]
@@ -79,11 +82,12 @@ class GraphQLDirective:
                 else DirectiveLocation[cast(str, value)]
                 for value in locations
             )
-        except (KeyError, TypeError):
-            raise TypeError(
+        except (KeyError, TypeError) as error:
+            msg = (
                 f"{name} locations must be specified"
                 " as a collection of DirectiveLocation enum values."
             )
+            raise TypeError(msg) from error
         if args:
             args = {
                 assert_name(name): value
@@ -107,7 +111,7 @@ class GraphQLDirective:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}({self})>"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return self is other or (
             isinstance(other, GraphQLDirective)
             and self.name == other.name
@@ -119,6 +123,7 @@ class GraphQLDirective:
         )
 
     def to_kwargs(self) -> GraphQLDirectiveKwargs:
+        """Get corresponding arguments."""
         return GraphQLDirectiveKwargs(
             name=self.name,
             locations=self.locations,
@@ -134,13 +139,15 @@ class GraphQLDirective:
 
 
 def is_directive(directive: Any) -> TypeGuard[GraphQLDirective]:
-    """Test if the given value is a GraphQL directive."""
+    """Check whether this is a GraphQL directive."""
     return isinstance(directive, GraphQLDirective)
 
 
 def assert_directive(directive: Any) -> GraphQLDirective:
+    """Assert that this is a GraphQL directive."""
     if not is_directive(directive):
-        raise TypeError(f"Expected {inspect(directive)} to be a GraphQL directive.")
+        msg = f"Expected {inspect(directive)} to be a GraphQL directive."
+        raise TypeError(msg)
     return directive
 
 
@@ -160,7 +167,6 @@ GraphQLIncludeDirective = GraphQLDirective(
     description="Directs the executor to include this field or fragment"
     " only when the `if` argument is true.",
 )
-
 
 # Used to conditionally skip (exclude) fields or fragments:
 GraphQLSkipDirective = GraphQLDirective(
@@ -216,7 +222,6 @@ GraphQLStreamDirective = GraphQLDirective(
     },
 )
 
-
 # Constant string used for default reason for a deprecation:
 DEFAULT_DEPRECATION_REASON = "No longer supported"
 
@@ -255,7 +260,6 @@ GraphQLSpecifiedByDirective = GraphQLDirective(
     },
     description="Exposes a URL that specifies the behaviour of this scalar.",
 )
-
 
 specified_directives: Tuple[GraphQLDirective, ...] = (
     GraphQLIncludeDirective,

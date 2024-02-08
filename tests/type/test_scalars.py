@@ -2,8 +2,7 @@ import pickle
 from math import inf, nan, pi
 from typing import Any
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
 from graphql.pyutils import Undefined
@@ -23,7 +22,7 @@ def describe_type_system_specified_scalar_types():
             _parse_value = GraphQLInt.parse_value
 
             def _parse_value_raises(s: Any, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
 
@@ -60,7 +59,7 @@ def describe_type_system_specified_scalar_types():
                 return GraphQLInt.parse_literal(parse_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
 
@@ -118,64 +117,64 @@ def describe_type_system_specified_scalar_types():
 
             # The GraphQL specification does not allow serializing non-integer
             # values as Int to avoid accidental data loss.
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(0.1)
             assert str(exc_info.value) == "Int cannot represent non-integer value: 0.1"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(1.1)
             assert str(exc_info.value) == "Int cannot represent non-integer value: 1.1"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(-1.1)
             assert str(exc_info.value) == "Int cannot represent non-integer value: -1.1"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("-1.1")
             assert (
                 str(exc_info.value) == "Int cannot represent non-integer value: '-1.1'"
             )
             # Maybe a safe JavaScript int, but bigger than 2^32, so not
             # representable as a GraphQL Int
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(9876504321)
             assert str(exc_info.value) == (
                 "Int cannot represent non 32-bit signed integer value: 9876504321"
             )
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(-9876504321)
             assert str(exc_info.value) == (
                 "Int cannot represent non 32-bit signed integer value: -9876504321"
             )
             # Too big to represent as an Int in JavaScript or GraphQL
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(1e100)
             assert str(exc_info.value) == (
                 "Int cannot represent non 32-bit signed integer value: 1e+100"
             )
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(-1e100)
             assert str(exc_info.value) == (
                 "Int cannot represent non 32-bit signed integer value: -1e+100"
             )
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("one")
             assert (
                 str(exc_info.value) == "Int cannot represent non-integer value: 'one'"
             )
             # Doesn't represent number
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("")
             assert str(exc_info.value) == "Int cannot represent non-integer value: ''"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(nan)
             assert str(exc_info.value) == "Int cannot represent non-integer value: nan"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(inf)
             assert str(exc_info.value) == "Int cannot represent non-integer value: inf"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize([5])
             assert str(exc_info.value) == "Int cannot represent non-integer value: [5]"
 
         def cannot_be_redefined():
-            with raises(TypeError, match="Redefinition of reserved type 'Int'"):
+            with pytest.raises(TypeError, match="Redefinition of reserved type 'Int'"):
                 GraphQLScalarType(name="Int")
 
         def pickles():
@@ -186,7 +185,7 @@ def describe_type_system_specified_scalar_types():
             _parse_value = GraphQLFloat.parse_value
 
             def _parse_value_raises(s: Any, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
 
@@ -222,7 +221,7 @@ def describe_type_system_specified_scalar_types():
                 return GraphQLFloat.parse_literal(parse_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
 
@@ -280,32 +279,34 @@ def describe_type_system_specified_scalar_types():
             assert serialize(True) == 1
             assert serialize(type("Float", (float,), {})(5.5)) == 5.5
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(nan)
             assert (
                 str(exc_info.value) == "Float cannot represent non numeric value: nan"
             )
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(inf)
             assert (
                 str(exc_info.value) == "Float cannot represent non numeric value: inf"
             )
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("one")
             assert str(exc_info.value) == (
                 "Float cannot represent non numeric value: 'one'"
             )
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("")
             assert str(exc_info.value) == "Float cannot represent non numeric value: ''"
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize([5])
             assert (
                 str(exc_info.value) == "Float cannot represent non numeric value: [5]"
             )
 
         def cannot_be_redefined():
-            with raises(TypeError, match="Redefinition of reserved type 'Float'"):
+            with pytest.raises(
+                TypeError, match="Redefinition of reserved type 'Float'"
+            ):
                 GraphQLScalarType(name="Float")
 
         def pickles():
@@ -316,7 +317,7 @@ def describe_type_system_specified_scalar_types():
             _parse_value = GraphQLString.parse_value
 
             def _parse_value_raises(s: Any, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
 
@@ -346,7 +347,7 @@ def describe_type_system_specified_scalar_types():
                 return GraphQLString.parse_literal(parse_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
 
@@ -398,19 +399,19 @@ def describe_type_system_specified_scalar_types():
 
             assert serialize(StringableObjValue()) == "something useful"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(nan)
             assert str(exc_info.value) == "String cannot represent value: nan"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize([1])
             assert str(exc_info.value) == "String cannot represent value: [1]"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize({})
             assert str(exc_info.value) == "String cannot represent value: {}"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize({"value_of": "value_of string"})
             assert (
                 str(exc_info.value) == "String cannot represent value:"
@@ -418,7 +419,9 @@ def describe_type_system_specified_scalar_types():
             )
 
         def cannot_be_redefined():
-            with raises(TypeError, match="Redefinition of reserved type 'String'"):
+            with pytest.raises(
+                TypeError, match="Redefinition of reserved type 'String'"
+            ):
                 GraphQLScalarType(name="String")
 
         def pickles():
@@ -429,7 +432,7 @@ def describe_type_system_specified_scalar_types():
             _parse_value = GraphQLBoolean.parse_value
 
             def _parse_value_raises(s: Any, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
 
@@ -467,7 +470,7 @@ def describe_type_system_specified_scalar_types():
                 return GraphQLBoolean.parse_literal(parse_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
 
@@ -532,42 +535,44 @@ def describe_type_system_specified_scalar_types():
             assert serialize(0) is False
             assert serialize(True) is True
             assert serialize(False) is False
-            with raises(TypeError, match="not an acceptable base type"):
+            with pytest.raises(TypeError, match="not an acceptable base type"):
                 # you can't subclass bool in Python
                 assert serialize(type("Boolean", (bool,), {})(True)) is True
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(nan)
             assert str(exc_info.value) == (
                 "Boolean cannot represent a non boolean value: nan"
             )
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("")
             assert str(exc_info.value) == (
                 "Boolean cannot represent a non boolean value: ''"
             )
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize("True")
             assert str(exc_info.value) == (
                 "Boolean cannot represent a non boolean value: 'True'"
             )
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize([False])
             assert str(exc_info.value) == (
                 "Boolean cannot represent a non boolean value: [False]"
             )
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize({})
             assert str(exc_info.value) == (
                 "Boolean cannot represent a non boolean value: {}"
             )
 
         def cannot_be_redefined():
-            with raises(TypeError, match="Redefinition of reserved type 'Boolean'"):
+            with pytest.raises(
+                TypeError, match="Redefinition of reserved type 'Boolean'"
+            ):
                 GraphQLScalarType(name="Boolean")
 
         def pickles():
@@ -578,7 +583,7 @@ def describe_type_system_specified_scalar_types():
             _parse_value = GraphQLID.parse_value
 
             def _parse_value_raises(s: Any, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_value(s)
                 assert str(exc_info.value) == message
 
@@ -610,7 +615,7 @@ def describe_type_system_specified_scalar_types():
                 return GraphQLID.parse_literal(parse_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
-                with raises(GraphQLError) as exc_info:
+                with pytest.raises(GraphQLError) as exc_info:
                     _parse_literal(s)
                 assert str(exc_info.value).startswith(message + "\n")
 
@@ -678,24 +683,24 @@ def describe_type_system_specified_scalar_types():
             obj_value = ObjValue(123)
             assert serialize(obj_value) == "123"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(True)
             assert str(exc_info.value) == "ID cannot represent value: True"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(3.14)
             assert str(exc_info.value) == "ID cannot represent value: 3.14"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize({})
             assert str(exc_info.value) == "ID cannot represent value: {}"
 
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 serialize(["abc"])
             assert str(exc_info.value) == "ID cannot represent value: ['abc']"
 
         def cannot_be_redefined():
-            with raises(TypeError, match="Redefinition of reserved type 'ID'"):
+            with pytest.raises(TypeError, match="Redefinition of reserved type 'ID'"):
                 GraphQLScalarType(name="ID")
 
         def pickles():

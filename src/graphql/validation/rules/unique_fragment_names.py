@@ -1,9 +1,10 @@
+"""Unique fragment names rule"""
+
 from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import SKIP, FragmentDefinitionNode, NameNode, VisitorAction
 from . import ASTValidationContext, ASTValidationRule
-
 
 __all__ = ["UniqueFragmentNamesRule"]
 
@@ -16,7 +17,7 @@ class UniqueFragmentNamesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Fragment-Name-Uniqueness
     """
 
-    def __init__(self, context: ASTValidationContext):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         self.known_fragment_names: Dict[str, NameNode] = {}
 

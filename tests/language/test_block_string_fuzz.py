@@ -1,5 +1,4 @@
-from pytest import mark
-
+import pytest
 from graphql.language import Lexer, Source, TokenKind
 from graphql.language.block_string import (
     is_printable_as_block_string,
@@ -41,8 +40,8 @@ def assert_non_printable_block_string(test_value: str) -> None:
 
 
 def describe_print_block_string():
-    @mark.slow
-    @mark.timeout(80)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(80)
     def correctly_print_random_strings():
         # Testing with length >7 is taking exponentially more time. However, it is
         # highly recommended testing with increased limit if you make any change.

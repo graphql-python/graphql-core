@@ -1,7 +1,6 @@
 from typing import Awaitable, cast
 
-from pytest import mark, raises
-
+import pytest
 from graphql.execution import Middleware, MiddlewareManager, execute
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
@@ -90,7 +89,7 @@ def describe_middleware():
 
             assert result.data == {"first": "Eno", "second": "Owt"}  # type: ignore
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def single_async_function():
             doc = parse("{ first second }")
 
@@ -200,7 +199,7 @@ def describe_middleware():
             )
             assert result.data == {"field": "devloseR"}  # type: ignore
 
-        @mark.asyncio
+        @pytest.mark.asyncio()
         async def with_async_function_and_object():
             doc = parse("{ field }")
 
@@ -277,7 +276,7 @@ def describe_middleware():
                 "TestType", {"field": GraphQLField(GraphQLString)}
             )
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
                 execute(
                     GraphQLSchema(test_type),

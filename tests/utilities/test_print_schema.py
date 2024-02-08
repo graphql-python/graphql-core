@@ -87,7 +87,7 @@ def describe_type_system_printer():
 
     def prints_list_of_non_null_string_field():
         schema = build_single_field_schema(
-            GraphQLField((GraphQLList(GraphQLNonNull(GraphQLString))))
+            GraphQLField(GraphQLList(GraphQLNonNull(GraphQLString)))
         )
         assert expect_printed_schema(schema) == dedent(
             """

@@ -1,3 +1,5 @@
+"""Fragments on composite type rule"""
+
 from typing import Any
 
 from ...error import GraphQLError
@@ -5,7 +7,6 @@ from ...language import FragmentDefinitionNode, InlineFragmentNode, print_ast
 from ...type import is_composite_type
 from ...utilities import type_from_ast
 from . import ValidationRule
-
 
 __all__ = ["FragmentsOnCompositeTypesRule"]
 

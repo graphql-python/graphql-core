@@ -1,3 +1,5 @@
+"""Unique enum value names rule"""
+
 from collections import defaultdict
 from typing import Any, Dict
 
@@ -5,7 +7,6 @@ from ...error import GraphQLError
 from ...language import SKIP, EnumTypeDefinitionNode, NameNode, VisitorAction
 from ...type import is_enum_type
 from . import SDLValidationContext, SDLValidationRule
-
 
 __all__ = ["UniqueEnumValueNamesRule"]
 
@@ -16,7 +17,7 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
     A GraphQL enum type is only valid if all its values are uniquely named.
     """
 
-    def __init__(self, context: SDLValidationContext):
+    def __init__(self, context: SDLValidationContext) -> None:
         super().__init__(context)
         schema = context.schema
         self.existing_type_map = schema.type_map if schema else {}

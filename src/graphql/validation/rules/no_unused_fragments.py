@@ -1,3 +1,5 @@
+"""No unused fragments rule"""
+
 from typing import Any, List
 
 from ...error import GraphQLError
@@ -8,7 +10,6 @@ from ...language import (
     VisitorAction,
 )
 from . import ASTValidationContext, ASTValidationRule
-
 
 __all__ = ["NoUnusedFragmentsRule"]
 
@@ -22,7 +23,7 @@ class NoUnusedFragmentsRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Fragments-Must-Be-Used
     """
 
-    def __init__(self, context: ASTValidationContext):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         self.operation_defs: List[OperationDefinitionNode] = []
         self.fragment_defs: List[FragmentDefinitionNode] = []

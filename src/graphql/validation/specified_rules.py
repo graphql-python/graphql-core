@@ -1,3 +1,5 @@
+"""Specified rules"""
+
 from typing import Tuple, Type
 
 from .rules import ASTValidationRule
@@ -104,7 +106,6 @@ from .rules.variables_are_input_types import VariablesAreInputTypesRule
 
 # Spec Section: "All Variable Usages Are Allowed"
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
-
 
 __all__ = ["specified_rules", "specified_sdl_rules"]
 

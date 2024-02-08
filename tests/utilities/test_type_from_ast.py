@@ -1,5 +1,4 @@
-from pytest import raises
-
+import pytest
 from graphql.language import TypeNode, parse_type
 from graphql.type import GraphQLList, GraphQLNonNull, GraphQLObjectType
 from graphql.utilities import type_from_ast
@@ -32,7 +31,7 @@ def describe_type_from_ast():
 
     def for_unspecified_type_node():
         node = TypeNode()
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             type_from_ast(test_schema, node)
         msg = str(exc_info.value)
         assert msg == "Unexpected type node: <TypeNode instance>."

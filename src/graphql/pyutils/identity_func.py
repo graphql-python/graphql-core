@@ -1,7 +1,8 @@
+"""Identity function"""
+
 from typing import Any, TypeVar, cast
 
 from .undefined import Undefined
-
 
 __all__ = ["identity_func"]
 

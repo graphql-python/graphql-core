@@ -1,3 +1,5 @@
+"""Unique field definition names rule"""
+
 from collections import defaultdict
 from typing import Any, Dict
 
@@ -5,7 +7,6 @@ from ...error import GraphQLError
 from ...language import SKIP, NameNode, ObjectTypeDefinitionNode, VisitorAction
 from ...type import is_input_object_type, is_interface_type, is_object_type
 from . import SDLValidationContext, SDLValidationRule
-
 
 __all__ = ["UniqueFieldDefinitionNamesRule"]
 
@@ -16,7 +17,7 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
     A GraphQL complex type is only valid if all its fields are uniquely named.
     """
 
-    def __init__(self, context: SDLValidationContext):
+    def __init__(self, context: SDLValidationContext) -> None:
         super().__init__(context)
         schema = context.schema
         self.existing_type_map = schema.type_map if schema else {}

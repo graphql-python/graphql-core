@@ -1,3 +1,5 @@
+"""Collect fields"""
+
 from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Optional, Set, Union
 
@@ -18,7 +20,6 @@ from ..type import (
 )
 from ..utilities.type_from_ast import type_from_ast
 from .values import get_directive_values
-
 
 __all__ = ["collect_fields", "collect_subfields", "FieldsAndPatches"]
 
@@ -264,5 +265,5 @@ def does_fragment_condition_match(
 
 
 def get_field_entry_key(node: FieldNode) -> str:
-    """Implements the logic to compute the key of a given field's entry"""
+    """Implement the logic to compute the key of a given field's entry"""
     return node.alias.value if node.alias else node.name.value

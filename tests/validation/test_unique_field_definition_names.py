@@ -7,7 +7,6 @@ from graphql.validation.rules.unique_field_definition_names import (
 
 from .harness import assert_sdl_validation_errors
 
-
 assert_errors = partial(assert_sdl_validation_errors, UniqueFieldDefinitionNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])

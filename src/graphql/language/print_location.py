@@ -1,10 +1,11 @@
+"""Print location in GraphQL source"""
+
 import re
 from typing import Optional, Tuple, cast
 
 from .ast import Location
 from .location import SourceLocation, get_location
 from .source import Source
-
 
 __all__ = ["print_location", "print_source_location"]
 

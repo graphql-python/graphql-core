@@ -1,6 +1,5 @@
 from graphql.pyutils import merge_kwargs
 
-
 try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8

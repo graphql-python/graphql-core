@@ -1,3 +1,5 @@
+"""GraphQL AST creation from Python"""
+
 import re
 from math import isfinite
 from typing import Any, Mapping, Optional
@@ -25,7 +27,6 @@ from ..type import (
     is_list_type,
     is_non_null_type,
 )
-
 
 __all__ = ["ast_from_value"]
 
@@ -128,7 +129,9 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
 
             return StringValueNode(value=serialized)
 
-        raise TypeError(f"Cannot convert value to AST: {inspect(serialized)}.")
+        msg = f"Cannot convert value to AST: {inspect(serialized)}."
+        raise TypeError(msg)
 
     # Not reachable. All possible input types have been considered.
-    raise TypeError(f"Unexpected input type: {inspect(type_)}.")
+    msg = f"Unexpected input type: {inspect(type_)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover

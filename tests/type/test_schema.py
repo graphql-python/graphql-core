@@ -1,7 +1,6 @@
 from copy import deepcopy
 
-from pytest import raises
-
+import pytest
 from graphql.language import (
     DirectiveLocation,
     SchemaDefinitionNode,
@@ -369,7 +368,7 @@ def describe_type_system_schema():
                 },
             )
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 GraphQLSchema(QueryType)
             msg = str(exc_info.value)
             assert msg == (
@@ -381,7 +380,7 @@ def describe_type_system_schema():
             query = GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)})
             types = [GraphQLType(), query, GraphQLType()]
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 GraphQLSchema(query, types=types)  # type: ignore
             msg = str(exc_info.value)
             assert msg == (
@@ -394,7 +393,7 @@ def describe_type_system_schema():
                 GraphQLObjectType("SameName", {}),
             ]
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 GraphQLSchema(types=types)
             msg = str(exc_info.value)
             assert msg == (
@@ -412,7 +411,7 @@ def describe_type_system_schema():
                 },
             )
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 GraphQLSchema(QueryType)
             msg = str(exc_info.value)
             assert msg == (

@@ -5,7 +5,6 @@ from typing import Any, Dict, List
 
 from .utils import dedent
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -20,7 +19,8 @@ def get_snippets(source, indent=4):
     if not source.endswith(".rst"):  # pragma: no cover
         source += ".rst"
     source_path = Path(__file__).parents[1] / "docs" / source
-    lines = open(source_path).readlines()
+    with source_path.open() as source_file:
+        lines = source_file.readlines()
     snippets: List[str] = []
     snippet: List[str] = []
     snippet_start = " " * indent
@@ -29,10 +29,9 @@ def get_snippets(source, indent=4):
             snippet.append(line)
         elif line.startswith(snippet_start):
             snippet.append(line[indent:])
-        else:
-            if snippet:
-                snippets.append("".join(snippet).rstrip() + "\n")
-                snippet = []
+        elif snippet:
+            snippets.append("".join(snippet).rstrip() + "\n")
+            snippet = []
     if snippet:
         snippets.append("".join(snippet).rstrip() + "\n")
     return snippets
@@ -56,7 +55,8 @@ def describe_introduction():
     def getting_started(capsys):
         intro = get_snippets("intro")
         pip_install = intro.pop(0)
-        assert "pip install" in pip_install and "graphql-core" in pip_install
+        assert "pip install" in pip_install
+        assert "graphql-core" in pip_install
         poetry_install = intro.pop(0)
         assert "poetry install" in poetry_install
         create_schema = intro.pop(0)
@@ -65,7 +65,9 @@ def describe_introduction():
         exec(create_schema, scope)
         schema = scope.get("schema")
         schema_class = scope.get("GraphQLSchema")
-        assert schema and schema_class and isinstance(schema, schema_class)
+        assert schema
+        assert schema_class
+        assert isinstance(schema, schema_class)
         query = intro.pop(0)
         assert "graphql_sync" in query
         exec(query, scope)
@@ -140,7 +142,8 @@ def describe_usage():
         queries = get_snippets("usage/queries")
 
         async_query = queries.pop(0)
-        assert "asyncio" in async_query and "graphql_sync" not in async_query
+        assert "asyncio" in async_query
+        assert "graphql_sync" not in async_query
         assert "asyncio.run" in async_query
         from asyncio import run  # noqa: F401
 
@@ -151,7 +154,8 @@ def describe_usage():
         assert out == expected_result(queries)
 
         sync_query = queries.pop(0)
-        assert "graphql_sync" in sync_query and "asyncio" not in sync_query
+        assert "graphql_sync" in sync_query
+        assert "asyncio" not in sync_query
         exec(sync_query, scope)
         out, err = capsys.readouterr()
         assert not err
@@ -171,7 +175,8 @@ def describe_usage():
         exec(typename_query, scope)
         out, err = capsys.readouterr()
         assert not err
-        assert "__typename" in out and "Human" in out
+        assert "__typename" in out
+        assert "Human" in out
         assert out == expected_result(queries)
 
         backstory_query = queries.pop(0)
@@ -179,7 +184,8 @@ def describe_usage():
         exec(backstory_query, scope)
         out, err = capsys.readouterr()
         assert not err
-        assert "errors" in out and "secretBackstory" in out
+        assert "errors" in out
+        assert "secretBackstory" in out
         assert out == expected_result(queries)
 
     def using_the_sdl(capsys):
@@ -208,11 +214,14 @@ def describe_usage():
         assert schema.get_type("Episode").values["EMPIRE"].value == 5
 
         query = use_sdl.pop(0)
-        assert "graphql_sync" in query and "print(result)" in query
+        assert "graphql_sync" in query
+        assert "print(result)" in query
         exec(query, scope)
         out, err = capsys.readouterr()
         assert not err
-        assert "Luke" in out and "appearsIn" in out and "EMPIRE" in out
+        assert "Luke" in out
+        assert "appearsIn" in out
+        assert "EMPIRE" in out
         assert out == expected_result(use_sdl)
 
     def using_resolver_methods(capsys):
@@ -229,11 +238,14 @@ def describe_usage():
         assert "Root" in scope
 
         query = methods.pop(0)
-        assert "graphql_sync" in query and "Root()" in query
+        assert "graphql_sync" in query
+        assert "Root()" in query
         exec(query, scope)
         out, err = capsys.readouterr()
         assert not err
-        assert "R2-D2" in out and "primaryFunction" in out and "Astromech" in out
+        assert "R2-D2" in out
+        assert "primaryFunction" in out
+        assert "Astromech" in out
         assert out == expected_result(methods)
 
     def using_introspection(capsys):
@@ -343,7 +355,8 @@ def describe_usage():
         exec(query, scope)
         out, err = capsys.readouterr()
         assert not err
-        assert "lastName" in out and "Skywalker" in out
+        assert "lastName" in out
+        assert "Skywalker" in out
         assert out == expected_result(extension)
 
     def validating_queries():

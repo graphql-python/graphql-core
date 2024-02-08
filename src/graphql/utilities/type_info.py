@@ -1,3 +1,5 @@
+"""Managing type information"""
+
 from __future__ import annotations  # Python < 3.10
 
 from typing import Any, Callable, List, Optional
@@ -38,7 +40,6 @@ from ..type import (
     is_output_type,
 )
 from .type_from_ast import type_from_ast
-
 
 try:
     from typing import TypeAlias
@@ -144,7 +145,7 @@ class TypeInfo:
             method()
 
     # noinspection PyUnusedLocal
-    def enter_selection_set(self, node: SelectionSetNode) -> None:
+    def enter_selection_set(self, _node: SelectionSetNode) -> None:
         named_type = get_named_type(self.get_type())
         self._parent_type_stack.append(
             named_type if is_composite_type(named_type) else None
@@ -196,7 +197,7 @@ class TypeInfo:
         self._input_type_stack.append(arg_type if is_input_type(arg_type) else None)
 
     # noinspection PyUnusedLocal
-    def enter_list_value(self, node: ListValueNode) -> None:
+    def enter_list_value(self, _node: ListValueNode) -> None:
         list_type = get_nullable_type(self.get_input_type())
         item_type = list_type.of_type if is_list_type(list_type) else list_type
         # List positions never have a default value.
@@ -268,7 +269,7 @@ def get_field_def(
 class TypeInfoVisitor(Visitor):
     """A visitor which maintains a provided TypeInfo."""
 
-    def __init__(self, type_info: TypeInfo, visitor: Visitor):
+    def __init__(self, type_info: TypeInfo, visitor: Visitor) -> None:
         super().__init__()
         self.type_info = type_info
         self.visitor = visitor
@@ -276,13 +277,14 @@ class TypeInfoVisitor(Visitor):
     def enter(self, node: Node, *args: Any) -> Any:
         self.type_info.enter(node)
         fn = self.visitor.get_enter_leave_for_kind(node.kind).enter
-        if fn:
-            result = fn(node, *args)
-            if result is not None:
-                self.type_info.leave(node)
-                if isinstance(result, Node):
-                    self.type_info.enter(result)
-            return result
+        if not fn:
+            return None
+        result = fn(node, *args)
+        if result is not None:
+            self.type_info.leave(node)
+            if isinstance(result, Node):
+                self.type_info.enter(result)
+        return result
 
     def leave(self, node: Node, *args: Any) -> Any:
         fn = self.visitor.get_enter_leave_for_kind(node.kind).leave

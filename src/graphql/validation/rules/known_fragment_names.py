@@ -1,9 +1,10 @@
+"""Known fragment names rule"""
+
 from typing import Any
 
 from ...error import GraphQLError
 from ...language import FragmentSpreadNode
 from . import ValidationRule
-
 
 __all__ = ["KnownFragmentNamesRule"]
 

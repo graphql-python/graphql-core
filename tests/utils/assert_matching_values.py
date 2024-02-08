@@ -1,6 +1,5 @@
 from typing import TypeVar
 
-
 __all__ = ["assert_matching_values"]
 
 T = TypeVar("T")

@@ -13,7 +13,6 @@ from graphql.validation import ValuesOfCorrectTypeRule
 
 from .harness import assert_validation_errors
 
-
 assert_errors = partial(assert_validation_errors, ValuesOfCorrectTypeRule)
 
 assert_valid = partial(assert_errors, errors=[])
@@ -1048,7 +1047,7 @@ def describe_validate_values_of_correct_type():
 
         def reports_error_for_custom_scalar_that_returns_undefined():
             custom_scalar = GraphQLScalarType(
-                "CustomScalar", parse_value=lambda value: Undefined
+                "CustomScalar", parse_value=lambda _value: Undefined
             )
 
             schema = GraphQLSchema(

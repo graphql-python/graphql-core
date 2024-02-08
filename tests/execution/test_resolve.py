@@ -54,7 +54,7 @@ def describe_execute_resolve_function():
 
     def default_function_calls_methods():
         class RootValue:
-            _secret = "secretValue"
+            _secret = "secretValue"  # noqa: S105
 
             def test(self, _info):
                 return self._secret
@@ -108,7 +108,7 @@ def describe_execute_resolve_function():
                     "aStr": GraphQLArgument(GraphQLString),
                     "aInt": GraphQLArgument(GraphQLInt),
                 },
-                resolve=lambda source, info, **args: repr([source, args]),
+                resolve=lambda source, _info, **args: repr([source, args]),
             )
         )
 
@@ -146,7 +146,7 @@ def describe_execute_resolve_function():
                     "aStr": GraphQLArgument(GraphQLString, out_name="a_str"),
                     "aInt": GraphQLArgument(GraphQLInt, out_name="a_int"),
                 },
-                resolve=lambda source, info, **args: repr([source, args]),
+                resolve=lambda source, _info, **args: repr([source, args]),
             )
         )
 
@@ -187,7 +187,7 @@ def describe_execute_resolve_function():
             GraphQLField(
                 GraphQLString,
                 args={"aInput": GraphQLArgument(TestInputObject, out_name="a_input")},
-                resolve=lambda source, info, **args: repr([source, args]),
+                resolve=lambda source, _info, **args: repr([source, args]),
             )
         )
 

@@ -1,7 +1,8 @@
+"""Generating suggestions"""
+
 from typing import Optional, Sequence
 
 from .format_list import or_list
-
 
 __all__ = ["did_you_mean"]
 

@@ -1,7 +1,6 @@
 from typing import Optional
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind, parse
 from graphql.utilities import strip_ignored_characters
@@ -89,7 +88,7 @@ def describe_strip_ignored_characters():
         assert strip_ignored_characters(source) == "{foo{bar}}"
 
     def report_document_with_invalid_token():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             strip_ignored_characters('{ foo(arg: "\n"')
 
         assert str(exc_info.value) == dedent(

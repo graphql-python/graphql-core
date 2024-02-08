@@ -1,5 +1,6 @@
-from typing import Awaitable, TypeVar, Union
+"""Awaitable or value type"""
 
+from typing import Awaitable, TypeVar, Union
 
 try:
     from typing import TypeAlias

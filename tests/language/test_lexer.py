@@ -1,14 +1,12 @@
 from typing import List, Optional, Tuple
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
 from graphql.language.lexer import is_punctuator_token_kind
 from graphql.pyutils import inspect
 
 from ..utils import dedent
-
 
 try:
     from typing import TypeAlias
@@ -31,7 +29,7 @@ def lex_second(s: str) -> Token:
 
 
 def assert_syntax_error(text: str, message: str, location: Location) -> None:
-    with raises(GraphQLSyntaxError) as exc_info:
+    with pytest.raises(GraphQLSyntaxError) as exc_info:
         lex_second(text)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"
@@ -79,7 +77,7 @@ def describe_lexer():
         assert token == Token(TokenKind.NAME, 3, 6, 1, 4, "foo")
 
     def errors_respect_whitespace():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             lex_one("\n\n ~\n")
 
         assert str(exc_info.value) == dedent(
@@ -97,7 +95,7 @@ def describe_lexer():
     def updates_line_numbers_in_error_for_file_context():
         s = "\n\n     ~\n\n"
         source = Source(s, "foo.js", SourceLocation(11, 12))
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
         assert str(exc_info.value) == dedent(
             """
@@ -113,7 +111,7 @@ def describe_lexer():
 
     def updates_column_numbers_in_error_for_file_context():
         source = Source("~", "foo.js", SourceLocation(1, 5))
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
         assert str(exc_info.value) == dedent(
             """
@@ -398,18 +396,15 @@ def describe_lexer():
         ) == Token(TokenKind.BLOCK_STRING, 0, 68, 1, 1, "spans\n  multiple\n    lines")
 
     def advance_line_after_lexing_multiline_block_string():
-        assert (
-            lex_second(
-                '''"""
+        assert lex_second(
+            '''"""
 
         spans
           multiple
             lines
 
         \n """ second_token'''
-            )
-            == Token(TokenKind.NAME, 71, 83, 8, 6, "second_token")
-        )
+        ) == Token(TokenKind.NAME, 71, 83, 8, 6, "second_token")
 
     def lex_reports_useful_block_string_errors():
         assert_syntax_error('"""', "Unterminated string.", (1, 4))
@@ -555,7 +550,7 @@ def describe_lexer():
         lexer = Lexer(source)
         first_token = lexer.advance()
         assert first_token == Token(TokenKind.NAME, 0, 1, 1, 1, "a")
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             lexer.advance()
         error = exc_info.value
         assert error.message == (

@@ -1,7 +1,6 @@
 from typing import Optional, Tuple, cast
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,
@@ -40,7 +39,6 @@ from graphql.pyutils import inspect
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -55,7 +53,7 @@ def parse_ccn(source: str) -> DocumentNode:
 
 
 def assert_syntax_error(text: str, message: str, location: Location) -> None:
-    with raises(GraphQLSyntaxError) as exc_info:
+    with pytest.raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"
@@ -64,7 +62,7 @@ def assert_syntax_error(text: str, message: str, location: Location) -> None:
 
 
 def assert_syntax_error_ccn(text: str, message: str, location: Location) -> None:
-    with raises(GraphQLSyntaxError) as exc_info:
+    with pytest.raises(GraphQLSyntaxError) as exc_info:
         parse_ccn(text)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"
@@ -74,7 +72,7 @@ def assert_syntax_error_ccn(text: str, message: str, location: Location) -> None
 
 def describe_parser():
     def parse_provides_useful_errors():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse("{")
         error = exc_info.value
         assert error.message == "Syntax Error: Expected Name, found <EOF>."
@@ -102,7 +100,7 @@ def describe_parser():
         assert_syntax_error('{ ""', "Expected Name, found String ''.", (1, 3))
 
     def parse_provides_useful_error_when_using_source():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse(Source("query", "MyQuery.graphql"))
         error = exc_info.value
         assert str(error) == dedent(
@@ -117,14 +115,14 @@ def describe_parser():
 
     def limits_maximum_number_of_tokens():
         parse("{ foo }", max_tokens=3)
-        with raises(
+        with pytest.raises(
             GraphQLSyntaxError,
             match="Syntax Error:"
             r" Document contains more that 2 tokens\. Parsing aborted\.",
         ):
             parse("{ foo }", max_tokens=2)
         parse('{ foo(bar: "baz") }', max_tokens=8)
-        with raises(
+        with pytest.raises(
             GraphQLSyntaxError,
             match="Syntax Error:"
             r" Document contains more that 7 tokens\. Parsing aborted\.",
@@ -617,7 +615,7 @@ def describe_parser():
     def legacy_allows_parsing_fragment_defined_variables():
         document = "fragment a($v: Boolean = false) on t { f(v: $v) }"
         parse(document, allow_legacy_fragment_variables=True)
-        with raises(GraphQLSyntaxError):
+        with pytest.raises(GraphQLSyntaxError):
             parse(document)
 
     def contains_location_information_that_only_stringifies_start_end():
@@ -629,7 +627,8 @@ def describe_parser():
     def contains_references_to_source():
         source = Source("{ id }")
         result = parse(source)
-        assert result.loc and result.loc.source is source
+        assert result.loc
+        assert result.loc.source is source
 
     def contains_references_to_start_and_end_tokens():
         result = parse("{ id }")
@@ -650,13 +649,16 @@ def describe_parser():
             # bottom comment"""
         )
         top_comment = result.loc and result.loc.start_token.next
-        assert top_comment and top_comment.kind is TokenKind.COMMENT
+        assert top_comment
+        assert top_comment.kind is TokenKind.COMMENT
         assert top_comment.value == " top comment"
         field_comment = top_comment.next.next.next  # type: ignore
-        assert field_comment and field_comment.kind is TokenKind.COMMENT
+        assert field_comment
+        assert field_comment.kind is TokenKind.COMMENT
         assert field_comment.value == " field comment"
         bottom_comment = field_comment.next.next  # type: ignore
-        assert bottom_comment and bottom_comment.kind is TokenKind.COMMENT
+        assert bottom_comment
+        assert bottom_comment.kind is TokenKind.COMMENT
         assert bottom_comment.value == " bottom comment"
 
 
@@ -728,7 +730,7 @@ def describe_parse_value():
         assert name.value == "var"
 
     def correct_message_for_incomplete_variable():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse_value("$")
         assert exc_info.value == {
             "message": "Syntax Error: Expected Name, found <EOF>.",
@@ -736,7 +738,7 @@ def describe_parse_value():
         }
 
     def correct_message_for_unexpected_token():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse_value(":")
         assert exc_info.value == {
             "message": "Syntax Error: Unexpected ':'.",
@@ -762,7 +764,7 @@ def describe_parse_const_value():
         assert value.block is False
 
     def does_not_allow_variables():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse_const_value("{ field: $var }")
         assert exc_info.value == {
             "message": "Syntax Error: Unexpected variable '$var' in constant value.",
@@ -770,7 +772,7 @@ def describe_parse_const_value():
         }
 
     def correct_message_for_unexpected_token():
-        with raises(GraphQLSyntaxError) as exc_info:
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse_const_value("$$")
         assert exc_info.value == {
             "message": "Syntax Error: Unexpected '$'.",

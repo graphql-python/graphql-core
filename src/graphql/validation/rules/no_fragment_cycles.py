@@ -1,9 +1,10 @@
+"""No fragment cycles rule"""
+
 from typing import Any, Dict, List, Set
 
 from ...error import GraphQLError
 from ...language import SKIP, FragmentDefinitionNode, FragmentSpreadNode, VisitorAction
 from . import ASTValidationContext, ASTValidationRule
-
 
 __all__ = ["NoFragmentCyclesRule"]
 
@@ -18,7 +19,7 @@ class NoFragmentCyclesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Fragment-spreads-must-not-form-cycles
     """
 
-    def __init__(self, context: ASTValidationContext):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         # Tracks already visited fragments to maintain O(N) and to ensure that
         # cycles are not redundantly reported.

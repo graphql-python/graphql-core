@@ -5,7 +5,6 @@ from graphql.validation.rules.unique_enum_value_names import UniqueEnumValueName
 
 from .harness import assert_sdl_validation_errors
 
-
 assert_errors = partial(assert_sdl_validation_errors, UniqueEnumValueNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])

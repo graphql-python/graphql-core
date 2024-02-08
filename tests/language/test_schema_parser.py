@@ -3,8 +3,7 @@ from copy import deepcopy
 from textwrap import dedent
 from typing import List, Optional, Tuple
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,
@@ -39,7 +38,6 @@ from graphql.language import (
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -50,7 +48,7 @@ Location: TypeAlias = Optional[Tuple[int, int]]
 
 
 def assert_syntax_error(text: str, message: str, location: Location) -> None:
-    with raises(GraphQLSyntaxError) as exc_info:
+    with pytest.raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"

@@ -1,3 +1,5 @@
+"""Conversion from GraphQL value AST to Python values without type."""
+
 from math import nan
 from typing import Any, Callable, Dict, Optional, Union
 
@@ -14,7 +16,6 @@ from ..language import (
     VariableNode,
 )
 from ..pyutils import Undefined, inspect
-
 
 __all__ = ["value_from_ast_untyped"]
 
@@ -44,9 +45,8 @@ def value_from_ast_untyped(
         return func(value_node, variables)
 
     # Not reachable. All possible value nodes have been considered.
-    raise TypeError(  # pragma: no cover
-        f"Unexpected value node: {inspect(value_node)}."
-    )
+    msg = f"Unexpected value node: {inspect(value_node)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 def value_from_null(_value_node: NullValueNode, _variables: Any) -> Any:

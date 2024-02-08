@@ -1,10 +1,11 @@
+"""Defer stream directive label rule"""
+
 from typing import Any, Dict, List
 
 from ...error import GraphQLError
 from ...language import DirectiveNode, Node, StringValueNode
 from ...type import GraphQLDeferDirective, GraphQLStreamDirective
 from . import ASTValidationRule, ValidationContext
-
 
 __all__ = ["DeferStreamDirectiveLabel"]
 
@@ -16,7 +17,7 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
     is static and unique.
     """
 
-    def __init__(self, context: ValidationContext):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         self.known_labels: Dict[str, Node] = {}
 

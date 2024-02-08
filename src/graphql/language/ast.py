@@ -1,18 +1,21 @@
+"""GraphQL Abstract Syntax Tree"""
+
 from __future__ import annotations  # Python < 3.10
 
 from copy import copy, deepcopy
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-from ..pyutils import camel_to_snake
-from .source import Source
-from .token_kind import TokenKind
-
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias
+
+from ..pyutils import camel_to_snake
+
+if TYPE_CHECKING:
+    from .source import Source
+    from .token_kind import TokenKind
 
 
 __all__ = [
@@ -131,7 +134,7 @@ class Token:
     def __inspect__(self) -> str:
         return repr(self)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Token):
             return (
                 self.kind == other.kind
@@ -141,7 +144,7 @@ class Token:
                 and self.column == other.column
                 and self.value == other.value
             )
-        elif isinstance(other, str):
+        if isinstance(other, str):
             return other == self.desc
         return False
 
@@ -229,14 +232,14 @@ class Location:
     def __inspect__(self) -> str:
         return repr(self)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, Location):
             return self.start == other.start and self.end == other.end
-        elif isinstance(other, (list, tuple)) and len(other) == 2:
+        if isinstance(other, (list, tuple)) and len(other) == 2:
             return self.start == other[0] and self.end == other[1]
         return False
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
     def __hash__(self) -> int:
@@ -371,7 +374,7 @@ class Node:
             rep += f" at {loc}"
         return rep
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Test whether two nodes are equal (recursively)."""
         return (
             isinstance(other, Node)
@@ -425,6 +428,7 @@ class Node:
         cls.keys = tuple(keys)
 
     def to_dict(self, locations: bool = False) -> Dict:
+        """Concert node to a dictionary."""
         from ..utilities import ast_to_dict
 
         return ast_to_dict(self, locations)
@@ -502,7 +506,7 @@ class FieldNode(SelectionNode):
 
 class NullabilityAssertionNode(Node):
     __slots__ = ("nullability_assertion",)
-    nullability_assertion: Optional["NullabilityAssertionNode"]
+    nullability_assertion: Optional[NullabilityAssertionNode]
 
 
 class ListNullabilityOperatorNode(NullabilityAssertionNode):

@@ -7,7 +7,6 @@ from graphql.utilities import build_schema
 from graphql.validation import SDLValidationRule, ValidationRule
 from graphql.validation.validate import validate, validate_sdl
 
-
 __all__ = [
     "test_schema",
     "assert_validation_errors",

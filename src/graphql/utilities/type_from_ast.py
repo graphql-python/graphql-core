@@ -1,3 +1,5 @@
+"""Generating GraphQL types from AST nodes"""
+
 from typing import Optional, cast, overload
 
 from ..language import ListTypeNode, NamedTypeNode, NonNullTypeNode, TypeNode
@@ -10,7 +12,6 @@ from ..type import (
     GraphQLSchema,
     GraphQLType,
 )
-
 
 __all__ = ["type_from_ast"]
 
@@ -65,4 +66,5 @@ def type_from_ast(
         return schema.get_type(type_node.name.value)
 
     # Not reachable. All possible type nodes have been considered.
-    raise TypeError(f"Unexpected type node: {inspect(type_node)}.")
+    msg = f"Unexpected type node: {inspect(type_node)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover

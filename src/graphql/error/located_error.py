@@ -1,11 +1,13 @@
+"""Located GraphQL Error"""
+
+from contextlib import suppress
 from typing import TYPE_CHECKING, Collection, Optional, Union
 
 from ..pyutils import inspect
 from .graphql_error import GraphQLError
 
-
 if TYPE_CHECKING:
-    from ..language.ast import Node  # noqa: F401
+    from ..language.ast import Node
 
 __all__ = ["located_error"]
 
@@ -29,23 +31,18 @@ def located_error(
     if isinstance(original_error, GraphQLError) and original_error.path is not None:
         return original_error
     try:
-        # noinspection PyUnresolvedReferences
         message = str(original_error.message)  # type: ignore
     except AttributeError:
         message = str(original_error)
     try:
-        # noinspection PyUnresolvedReferences
         source = original_error.source  # type: ignore
     except AttributeError:
         source = None
     try:
-        # noinspection PyUnresolvedReferences
         positions = original_error.positions  # type: ignore
     except AttributeError:
         positions = None
-    try:
-        # noinspection PyUnresolvedReferences
+
+    with suppress(AttributeError):
         nodes = original_error.nodes or nodes  # type: ignore
-    except AttributeError:
-        pass
     return GraphQLError(message, nodes, source, positions, path, original_error)

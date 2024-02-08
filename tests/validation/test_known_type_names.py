@@ -5,7 +5,6 @@ from graphql.validation import KnownTypeNamesRule
 
 from .harness import assert_sdl_validation_errors, assert_validation_errors
 
-
 assert_errors = partial(assert_validation_errors, KnownTypeNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])

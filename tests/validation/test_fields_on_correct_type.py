@@ -7,7 +7,6 @@ from graphql.validation import FieldsOnCorrectTypeRule, validate
 
 from .harness import assert_validation_errors
 
-
 test_schema = build_schema(
     """
     interface Pet {

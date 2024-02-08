@@ -1,4 +1,6 @@
-from typing import Any, Dict, Optional, Union
+"""Unique operation types rule"""
+
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -9,9 +11,10 @@ from ...language import (
     SchemaExtensionNode,
     VisitorAction,
 )
-from ...type import GraphQLObjectType
-from . import SDLValidationContext, SDLValidationRule
 
+if TYPE_CHECKING:
+    from ...type import GraphQLObjectType
+from . import SDLValidationContext, SDLValidationRule
 
 __all__ = ["UniqueOperationTypesRule"]
 
@@ -22,7 +25,7 @@ class UniqueOperationTypesRule(SDLValidationRule):
     A GraphQL document is only valid if it has only one type per operation.
     """
 
-    def __init__(self, context: SDLValidationContext):
+    def __init__(self, context: SDLValidationContext) -> None:
         super().__init__(context)
         schema = context.schema
         self.defined_operation_types: Dict[

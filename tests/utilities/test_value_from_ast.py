@@ -112,15 +112,15 @@ def describe_value_from_ast():
         assert isnan(_value_from("NAN", test_enum))
         assert _value_from("NO_CUSTOM_VALUE", test_enum) is Undefined
 
-    # Boolean!
+    # make a Boolean!
     non_null_bool = GraphQLNonNull(GraphQLBoolean)
-    # [Boolean]
+    # make a [Boolean]
     list_of_bool = GraphQLList(GraphQLBoolean)
-    # [Boolean!]
+    # make a [Boolean!]
     list_of_non_null_bool = GraphQLList(non_null_bool)
-    # [Boolean]!
+    # make a [Boolean]!
     non_null_list_of_bool = GraphQLNonNull(list_of_bool)
-    # [Boolean!]!
+    # make a [Boolean!]!
     non_null_list_of_non_mull_bool = GraphQLNonNull(list_of_non_null_bool)
 
     def coerces_to_null_unless_non_null():

@@ -1,3 +1,5 @@
+"""Known directives rule"""
+
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from ...error import GraphQLError
@@ -10,7 +12,6 @@ from ...language import (
 )
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
-
 
 __all__ = ["KnownDirectivesRule"]
 
@@ -26,7 +27,7 @@ class KnownDirectivesRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
         locations_map: Dict[str, Tuple[DirectiveLocation, ...]] = {}
 
@@ -104,17 +105,17 @@ def get_directive_location_for_ast_path(
 ) -> Optional[DirectiveLocation]:
     applied_to = ancestors[-1]
     if not isinstance(applied_to, Node):  # pragma: no cover
-        raise TypeError("Unexpected error in directive.")
+        msg = "Unexpected error in directive."
+        raise TypeError(msg)
     kind = applied_to.kind
     if kind == "operation_definition":
         applied_to = cast(OperationDefinitionNode, applied_to)
         return _operation_location[applied_to.operation.value]
-    elif kind == "input_value_definition":
+    if kind == "input_value_definition":
         parent_node = ancestors[-3]
         return (
             DirectiveLocation.INPUT_FIELD_DEFINITION
             if parent_node.kind == "input_object_type_definition"
             else DirectiveLocation.ARGUMENT_DEFINITION
         )
-    else:
-        return _directive_location.get(kind)
+    return _directive_location.get(kind)

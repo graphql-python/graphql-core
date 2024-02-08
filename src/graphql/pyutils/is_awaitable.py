@@ -1,7 +1,8 @@
+"""Check whether objects are awaitable"""
+
 import inspect
 from types import CoroutineType, GeneratorType
 from typing import Any, Awaitable
-
 
 try:
     from typing import TypeGuard

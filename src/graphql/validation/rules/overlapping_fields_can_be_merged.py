@@ -1,3 +1,5 @@
+"""Overlapping fields can be merged rule"""
+
 from itertools import chain
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
@@ -29,7 +31,6 @@ from ...utilities import type_from_ast
 from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -60,7 +61,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     See https://spec.graphql.org/draft/#sec-Field-Selection-Merging
     """
 
-    def __init__(self, context: ValidationContext):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         # A memoization for when two fragments are compared "between" each other for
         # conflicts. Two fragments may be compared many times, so memoizing this can
@@ -236,7 +237,7 @@ def collect_conflicts_between_fields_and_fragment(
     """
     fragment = context.get_fragment(fragment_name)
     if not fragment:
-        return None
+        return
 
     field_map2, referenced_fragment_names = get_referenced_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, fragment
@@ -309,7 +310,7 @@ def collect_conflicts_between_fragments(
     fragment1 = context.get_fragment(fragment_name1)
     fragment2 = context.get_fragment(fragment_name2)
     if not fragment1 or not fragment2:
-        return None
+        return
 
     field_map1, referenced_fragment_names1 = get_referenced_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, fragment1

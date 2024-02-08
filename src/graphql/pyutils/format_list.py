@@ -1,5 +1,6 @@
-from typing import Sequence
+"""List formatting"""
 
+from typing import Sequence
 
 __all__ = ["or_list", "and_list"]
 
@@ -17,7 +18,8 @@ def and_list(items: Sequence[str]) -> str:
 def format_list(conjunction: str, items: Sequence[str]) -> str:
     """Given [ A, B, C ] return 'A, B, (conjunction) C'"""
     if not items:
-        raise ValueError("Missing list items to be formatted.")
+        msg = "Missing list items to be formatted."
+        raise ValueError(msg)
 
     n = len(items)
     if n == 1:

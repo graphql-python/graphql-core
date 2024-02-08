@@ -2,7 +2,6 @@ from graphql.execution import ExecutionResult, execute_sync
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
-
 schema = GraphQLSchema(
     GraphQLObjectType(
         "TestType", {"a": GraphQLField(GraphQLString), "b": GraphQLField(GraphQLString)}

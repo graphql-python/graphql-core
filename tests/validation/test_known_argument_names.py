@@ -8,7 +8,6 @@ from graphql.validation.rules.known_argument_names import (
 
 from .harness import assert_sdl_validation_errors, assert_validation_errors
 
-
 assert_errors = partial(assert_validation_errors, KnownArgumentNamesRule)
 
 assert_valid = partial(assert_errors, errors=[])

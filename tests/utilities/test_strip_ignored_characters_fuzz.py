@@ -1,14 +1,12 @@
 from json import dumps
 from typing import Optional
 
-from pytest import mark
-
+import pytest
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind
 from graphql.utilities import strip_ignored_characters
 
 from ..utils import dedent, gen_fuzz_strings
-
 
 ignored_tokens = [
     # UnicodeBOM
@@ -75,8 +73,8 @@ def lex_value(s: str) -> Optional[str]:
 
 
 def describe_strip_ignored_characters():
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def strips_documents_with_random_combination_of_ignored_characters():
         for ignored in ignored_tokens:
             ExpectStripped(ignored).to_equal("")
@@ -86,8 +84,8 @@ def describe_strip_ignored_characters():
 
         ExpectStripped("".join(ignored_tokens)).to_equal("")
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def strips_random_leading_and_trailing_ignored_tokens():
         for token in punctuator_tokens + non_punctuator_tokens:
             for ignored in ignored_tokens:
@@ -101,8 +99,8 @@ def describe_strip_ignored_characters():
             ExpectStripped("".join(ignored_tokens) + token).to_equal(token)
             ExpectStripped(token + "".join(ignored_tokens)).to_equal(token)
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def strips_random_ignored_tokens_between_punctuator_tokens():
         for left in punctuator_tokens:
             for right in punctuator_tokens:
@@ -118,8 +116,8 @@ def describe_strip_ignored_characters():
                     left + right
                 )
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def strips_random_ignored_tokens_between_punctuator_and_non_punctuator_tokens():
         for non_punctuator in non_punctuator_tokens:
             for punctuator in punctuator_tokens:
@@ -137,8 +135,8 @@ def describe_strip_ignored_characters():
                     punctuator + "".join(ignored_tokens) + non_punctuator
                 ).to_equal(punctuator + non_punctuator)
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def strips_random_ignored_tokens_between_non_punctuator_and_punctuator_tokens():
         for non_punctuator in non_punctuator_tokens:
             for punctuator in punctuator_tokens:
@@ -160,8 +158,8 @@ def describe_strip_ignored_characters():
                     non_punctuator + "".join(ignored_tokens) + punctuator
                 ).to_equal(non_punctuator + punctuator)
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def replace_random_ignored_tokens_between_non_punctuator_and_spread_with_space():
         for non_punctuator in non_punctuator_tokens:
             for ignored in ignored_tokens:
@@ -178,8 +176,8 @@ def describe_strip_ignored_characters():
                 non_punctuator + " ..."
             )
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def replace_random_ignored_tokens_between_non_punctuator_tokens_with_space():
         for left in non_punctuator_tokens:
             for right in non_punctuator_tokens:
@@ -195,8 +193,8 @@ def describe_strip_ignored_characters():
                     left + " " + right
                 )
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def does_not_strip_random_ignored_tokens_embedded_in_the_string():
         for ignored in ignored_tokens:
             ExpectStripped(dumps(ignored)).to_stay_the_same()
@@ -206,8 +204,8 @@ def describe_strip_ignored_characters():
 
         ExpectStripped(dumps("".join(ignored_tokens))).to_stay_the_same()
 
-    @mark.slow
-    @mark.timeout(10)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(10)
     def does_not_strip_random_ignored_tokens_embedded_in_the_block_string():
         ignored_tokens_without_formatting = [
             token
@@ -227,8 +225,8 @@ def describe_strip_ignored_characters():
             '"""|' + "".join(ignored_tokens_without_formatting) + '|"""'
         ).to_stay_the_same()
 
-    @mark.slow
-    @mark.timeout(80)
+    @pytest.mark.slow()
+    @pytest.mark.timeout(80)
     def strips_ignored_characters_inside_random_block_strings():
         # Testing with length >7 is taking exponentially more time. However it is
         # highly recommended to test with increased limit if you make any change.

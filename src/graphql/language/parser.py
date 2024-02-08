@@ -1,5 +1,7 @@
+"""GraphQL parser"""
+
 from functools import partial
-from typing import Callable, Dict, List, Optional, TypeVar, Union, cast
+from typing import Callable, List, Mapping, Optional, TypeVar, Union, cast
 
 from ..error import GraphQLError, GraphQLSyntaxError
 from .ast import (
@@ -66,7 +68,6 @@ from .directive_locations import DirectiveLocation
 from .lexer import Lexer, is_punctuator_token_kind
 from .source import Source, is_source
 from .token_kind import TokenKind
-
 
 try:
     from typing import TypeAlias
@@ -140,7 +141,7 @@ def parse(
         no_location=no_location,
         max_tokens=max_tokens,
         allow_legacy_fragment_variables=allow_legacy_fragment_variables,
-        experimental_client_controlled_nullability=experimental_client_controlled_nullability,  # noqa
+        experimental_client_controlled_nullability=experimental_client_controlled_nullability,
     )
     return parser.parse_document()
 
@@ -250,7 +251,7 @@ class Parser:
         max_tokens: Optional[int] = None,
         allow_legacy_fragment_variables: bool = False,
         experimental_client_controlled_nullability: bool = False,
-    ):
+    ) -> None:
         if not is_source(source):
             source = Source(cast(str, source))
 
@@ -278,7 +279,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    _parse_type_system_definition_method_names: Dict[str, str] = {
+    _parse_type_system_definition_method_names: Mapping[str, str] = {
         "schema": "schema_definition",
         "scalar": "scalar_type_definition",
         "type": "object_type_definition",
@@ -289,7 +290,7 @@ class Parser:
         "directive": "directive_definition",
     }
 
-    _parse_other_definition_method_names: Dict[str, str] = {
+    _parse_other_definition_method_names: Mapping[str, str] = {
         **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
         "fragment": "fragment_definition",
         "extend": "type_system_extension",
@@ -367,8 +368,8 @@ class Parser:
         operation_token = self.expect_token(TokenKind.NAME)
         try:
             return OperationType(operation_token.value)
-        except ValueError:
-            raise self.unexpected(operation_token)
+        except ValueError as error:
+            raise self.unexpected(operation_token) from error
 
     def parse_variable_definitions(self) -> List[VariableDefinitionNode]:
         """VariableDefinitions: (VariableDefinition+)"""
@@ -546,7 +547,7 @@ class Parser:
 
     # Implement the parsing rules in the Values section.
 
-    _parse_value_literal_method_names: Dict[TokenKind, str] = {
+    _parse_value_literal_method_names: Mapping[TokenKind, str] = {
         TokenKind.BRACKET_L: "list",
         TokenKind.BRACE_L: "object",
         TokenKind.INT: "int",
@@ -685,7 +686,7 @@ class Parser:
 
     # Implement the parsing rules in the Type Definition section.
 
-    _parse_type_extension_method_names: Dict[str, str] = {
+    _parse_type_extension_method_names: Mapping[str, str] = {
         "schema": "schema_extension",
         "scalar": "scalar_type_extension",
         "type": "object_type_extension",

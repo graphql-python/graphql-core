@@ -5,7 +5,6 @@ from graphql.validation import SingleFieldSubscriptionsRule
 
 from .harness import assert_validation_errors
 
-
 schema = build_schema(
     """
     type Message {

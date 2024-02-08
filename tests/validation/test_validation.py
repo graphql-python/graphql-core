@@ -1,5 +1,4 @@
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.utilities import TypeInfo, build_schema
@@ -46,7 +45,7 @@ def describe_validate_supports_full_validation():
 
     def deprecated_validates_using_a_custom_type_info():
         # This TypeInfo will never return a valid field.
-        type_info = TypeInfo(test_schema, None, lambda *args: None)
+        type_info = TypeInfo(test_schema, None, lambda *_args: None)
 
         doc = parse(
             """
@@ -164,5 +163,5 @@ def describe_validate_limit_maximum_number_of_validation_errors():
             def enter_field(self, *_args):
                 raise RuntimeError("Error from custom rule!")
 
-        with raises(RuntimeError, match="^Error from custom rule!$"):
+        with pytest.raises(RuntimeError, match="^Error from custom rule!$"):
             validate(test_schema, doc, [CustomRule], max_errors=1)

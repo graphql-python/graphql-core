@@ -1,7 +1,6 @@
 from typing import Any, NamedTuple, Optional
 
-from pytest import mark
-
+import pytest
 from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.pyutils import is_awaitable
@@ -20,15 +19,15 @@ from graphql.utilities import build_schema
 
 def sync_and_async(spec):
     """Decorator for running a test synchronously and asynchronously."""
-    return mark.asyncio(
-        mark.parametrize("sync", (True, False), ids=("sync", "async"))(spec)
+    return pytest.mark.asyncio(
+        pytest.mark.parametrize("sync", (True, False), ids=("sync", "async"))(spec)
     )
 
 
 def access_variants(spec):
     """Decorator for tests with dict and object access, including inheritance."""
-    return mark.asyncio(
-        mark.parametrize("access", ("dict", "object", "inheritance"))(spec)
+    return pytest.mark.asyncio(
+        pytest.mark.parametrize("access", ("dict", "object", "inheritance"))(spec)
     )
 
 
@@ -40,9 +39,7 @@ async def execute_query(
     assert isinstance(schema, GraphQLSchema)
     assert isinstance(query, str)
     document = parse(query)
-    result = (execute_sync if sync else execute)(
-        schema, document, root_value
-    )  # type: ignore
+    result = (execute_sync if sync else execute)(schema, document, root_value)  # type: ignore
     if not sync and is_awaitable(result):
         result = await result
     assert isinstance(result, ExecutionResult)

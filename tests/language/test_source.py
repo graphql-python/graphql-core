@@ -1,8 +1,7 @@
 import weakref
 from typing import Tuple, cast
 
-from pytest import raises
-
+import pytest
 from graphql.language import Source, SourceLocation
 
 from ..utils import dedent
@@ -54,17 +53,17 @@ def describe_source():
 
     def can_be_compared():
         source = Source("foo")
-        assert source == source
-        assert not source != source
+        assert source == source  # noqa: PLR0124
+        assert not source != source  # noqa: PLR0124, SIM202
         assert source == "foo"
-        assert not source != "foo"
+        assert not source != "foo"  # noqa: SIM202
         same_source = Source("foo")
         assert source == same_source
-        assert not source != same_source
+        assert not source != same_source  # noqa: SIM202
         different_source = Source("bar")
-        assert not source == different_source
+        assert not source == different_source  # noqa: SIM201
         assert source != different_source
-        assert not source == "bar"
+        assert not source == "bar"  # noqa: SIM201
         assert source != "bar"
 
     def can_create_weak_reference():
@@ -81,32 +80,32 @@ def describe_source():
         def create_source(location_offset: Tuple[int, int]) -> Source:
             return Source("", "", cast(SourceLocation, location_offset))
 
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             create_source(None)  # type: ignore
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             create_source(1)  # type: ignore
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             create_source((1,))  # type: ignore
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             create_source((1, 2, 3))  # type: ignore
 
-        with raises(
+        with pytest.raises(
             ValueError,
             match="line in location_offset is 1-indexed and must be positive\\.",
         ):
             create_source((0, 1))
-        with raises(
+        with pytest.raises(
             ValueError,
             match="line in location_offset is 1-indexed and must be positive\\.",
         ):
             create_source((-1, 1))
 
-        with raises(
+        with pytest.raises(
             ValueError,
             match="column in location_offset is 1-indexed and must be positive\\.",
         ):
             create_source((1, 0))
-        with raises(
+        with pytest.raises(
             ValueError,
             match="column in location_offset is 1-indexed and must be positive\\.",
         ):

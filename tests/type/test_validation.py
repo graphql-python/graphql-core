@@ -1,8 +1,7 @@
 from operator import attrgetter
 from typing import List, Union
 
-from pytest import mark, raises
-
+import pytest
 from graphql.language import DirectiveLocation, parse
 from graphql.pyutils import inspect
 from graphql.type import (
@@ -35,7 +34,6 @@ from graphql.type import (
 from graphql.utilities import build_schema, extend_schema
 
 from ..utils import dedent
-
 
 SomeSchema = build_schema(
     """
@@ -555,7 +553,7 @@ def describe_type_system_objects_must_have_fields():
         assert msg == "Type IncompleteObject must define one or more fields."
 
         manual_schema_2 = schema_with_field_type(
-            GraphQLObjectType("IncompleteObject", lambda: {})
+            GraphQLObjectType("IncompleteObject", dict)
         )
         msg = validate_schema(manual_schema_2)[0].message
         assert msg == "Type IncompleteObject must define one or more fields."
@@ -749,13 +747,14 @@ def describe_type_system_union_types_must_be_valid():
         for member_type in bad_union_member_types:
             # invalid union type cannot be built with Python
             bad_union = GraphQLUnionType(
-                "BadUnion", types=[member_type]  # type: ignore
+                "BadUnion",
+                types=[member_type],  # type: ignore
             )
             bad_schema = schema_with_field_type(bad_union)
             assert validate_schema(bad_schema) == [
                 {
                     "message": "Union type BadUnion can only include Object types,"
-                    + f" it cannot include {inspect(member_type)}."
+                    f" it cannot include {inspect(member_type)}."
                 }
             ]
 
@@ -1006,7 +1005,7 @@ def describe_type_system_object_fields_must_have_output_types():
             types=[SomeObjectType],
         )
 
-    @mark.parametrize("type_", output_types, ids=get_name)
+    @pytest.mark.parametrize("type_", output_types, ids=get_name)
     def accepts_an_output_type_as_an_object_field_type(type_):
         schema = _schema_with_object_field(type_)
         assert validate_schema(schema) == []
@@ -1021,7 +1020,7 @@ def describe_type_system_object_fields_must_have_output_types():
             }
         ]
 
-    @mark.parametrize("type_", not_output_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_output_types, ids=get_name)
     def rejects_a_non_output_type_as_an_object_field_type(type_):
         schema = _schema_with_object_field(type_)
         assert validate_schema(schema) == [
@@ -1031,7 +1030,7 @@ def describe_type_system_object_fields_must_have_output_types():
             }
         ]
 
-    @mark.parametrize("type_", not_graphql_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_graphql_types, ids=get_name)
     def rejects_a_non_type_value_as_an_object_field_type(type_):
         schema = _schema_with_object_field(type_)
         assert validate_schema(schema) == [
@@ -1301,7 +1300,7 @@ def describe_type_system_interface_fields_must_have_output_types():
             types=[bad_implementing_type, SomeObjectType],
         )
 
-    @mark.parametrize("type_", output_types, ids=get_name)
+    @pytest.mark.parametrize("type_", output_types, ids=get_name)
     def accepts_an_output_type_as_an_interface_field_type(type_):
         schema = _schema_with_interface_field(type_)
         assert validate_schema(schema) == []
@@ -1320,7 +1319,7 @@ def describe_type_system_interface_fields_must_have_output_types():
             },
         ]
 
-    @mark.parametrize("type_", not_output_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_output_types, ids=get_name)
     def rejects_a_non_output_type_as_an_interface_field_type(type_):
         schema = _schema_with_interface_field(type_)
         assert validate_schema(schema) == [
@@ -1334,7 +1333,7 @@ def describe_type_system_interface_fields_must_have_output_types():
             },
         ]
 
-    @mark.parametrize("type_", not_graphql_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_graphql_types, ids=get_name)
     def rejects_a_non_type_value_as_an_interface_field_type(type_):
         schema = _schema_with_interface_field(type_)
         assert validate_schema(schema) == [
@@ -1415,7 +1414,7 @@ def describe_type_system_arguments_must_have_input_types():
             ],
         )
 
-    @mark.parametrize("type_", input_types, ids=get_name)
+    @pytest.mark.parametrize("type_", input_types, ids=get_name)
     def accepts_an_input_type_as_a_field_arg_type(type_):
         schema = _schema_with_arg(type_)
         assert validate_schema(schema) == []
@@ -1434,7 +1433,7 @@ def describe_type_system_arguments_must_have_input_types():
             },
         ]
 
-    @mark.parametrize("type_", not_input_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_input_types, ids=get_name)
     def rejects_a_non_input_type_as_a_field_arg_type(type_):
         schema = _schema_with_arg(type_)
         assert validate_schema(schema) == [
@@ -1448,7 +1447,7 @@ def describe_type_system_arguments_must_have_input_types():
             },
         ]
 
-    @mark.parametrize("type_", not_graphql_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_graphql_types, ids=get_name)
     def rejects_a_non_type_value_as_a_field_arg_type(type_):
         schema = _schema_with_arg(type_)
         assert validate_schema(schema) == [
@@ -1532,7 +1531,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
             )
         )
 
-    @mark.parametrize("type_", input_types, ids=get_name)
+    @pytest.mark.parametrize("type_", input_types, ids=get_name)
     def accepts_an_input_type_as_an_input_field_type(type_):
         schema = _schema_with_input_field(type_)
         assert validate_schema(schema) == []
@@ -1547,7 +1546,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
             }
         ]
 
-    @mark.parametrize("type_", not_input_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_input_types, ids=get_name)
     def rejects_a_non_input_type_as_an_input_field_type(type_):
         schema = _schema_with_input_field(type_)
         assert validate_schema(schema) == [
@@ -1557,7 +1556,7 @@ def describe_type_system_input_object_fields_must_have_input_types():
             }
         ]
 
-    @mark.parametrize("type_", not_graphql_types, ids=get_name)
+    @pytest.mark.parametrize("type_", not_graphql_types, ids=get_name)
     def rejects_a_non_type_value_as_an_input_field_type(type_):
         schema = _schema_with_input_field(type_)
         assert validate_schema(schema) == [
@@ -2506,19 +2505,17 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
 def describe_assert_valid_schema():
     def does_not_throw_on_valid_schemas():
         schema = build_schema(
-            (
-                """
+            """
              type Query {
                foo: String
              }
             """
-            )
         )
         assert_valid_schema(schema)
 
     def combines_multiple_errors():
         schema = build_schema("type SomeType")
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             assert_valid_schema(schema)
         assert (
             str(exc_info.value)

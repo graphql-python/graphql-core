@@ -9,7 +9,6 @@ from graphql.version import (
     version_js,
 )
 
-
 _re_version = re.compile(r"(\d+)\.(\d+)\.(\d+)(?:(a|b|r?c)(\d+))?$")
 
 

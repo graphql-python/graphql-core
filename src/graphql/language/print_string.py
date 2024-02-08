@@ -1,10 +1,12 @@
+"""Print a string as a GraphQL expression."""
+
 __all__ = ["print_string"]
 
 
 def print_string(s: str) -> str:
-    """Print a string as a GraphQL StringValue literal.
+    r"""Print a string as a GraphQL StringValue literal.
 
-    Replaces control characters and excluded characters (" U+0022 and \\ U+005C)
+    Replaces control characters and excluded characters (" U+0022 and \ U+005C)
     with escape sequences.
     """
     if not isinstance(s, str):

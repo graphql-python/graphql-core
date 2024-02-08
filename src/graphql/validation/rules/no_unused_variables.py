@@ -1,9 +1,10 @@
+"""No unused variables rule"""
+
 from typing import Any, List, Set
 
 from ...error import GraphQLError
 from ...language import OperationDefinitionNode, VariableDefinitionNode
 from . import ValidationContext, ValidationRule
-
 
 __all__ = ["NoUnusedVariablesRule"]
 
@@ -17,7 +18,7 @@ class NoUnusedVariablesRule(ValidationRule):
     See https://spec.graphql.org/draft/#sec-All-Variables-Used
     """
 
-    def __init__(self, context: ValidationContext):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         self.variable_defs: List[VariableDefinitionNode] = []
 

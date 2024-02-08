@@ -1,3 +1,5 @@
+"""Character classes"""
+
 __all__ = ["is_digit", "is_letter", "is_name_start", "is_name_continue"]
 
 

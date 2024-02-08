@@ -1,3 +1,5 @@
+"""AST Visitor"""
+
 from copy import copy
 from enum import Enum
 from typing import (
@@ -15,7 +17,6 @@ from typing import (
 from ..pyutils import inspect, snake_to_camel
 from . import ast
 from .ast import QUERY_DOCUMENT_KEYS, Node
-
 
 try:
     from typing import TypeAlias
@@ -123,7 +124,7 @@ class Visitor:
             if len(attr_kind) < 2:
                 kind: Optional[str] = None
             else:
-                attr, kind = attr_kind
+                attr, kind = attr_kind  # noqa: PLW2901
             if attr in ("enter", "leave") and kind:
                 name = snake_to_camel(kind) + "Node"
                 node_cls = getattr(ast, name, None)
@@ -132,7 +133,8 @@ class Visitor:
                     or not isinstance(node_cls, type)
                     or not issubclass(node_cls, Node)
                 ):
-                    raise TypeError(f"Invalid AST node kind: {kind}.")
+                    msg = f"Invalid AST node kind: {kind}."
+                    raise TypeError(msg)
 
     def __init__(self) -> None:
         self.enter_leave_map = {}
@@ -185,9 +187,11 @@ def visit(
     dictionary visitor_keys mapping node kinds to node attributes.
     """
     if not isinstance(root, Node):
-        raise TypeError(f"Not an AST Node: {inspect(root)}.")
+        msg = f"Not an AST Node: {inspect(root)}."
+        raise TypeError(msg)
     if not isinstance(visitor, Visitor):
-        raise TypeError(f"Not an AST Visitor: {inspect(visitor)}.")
+        msg = f"Not an AST Visitor: {inspect(visitor)}."
+        raise TypeError(msg)
     if visitor_keys is None:
         visitor_keys = QUERY_DOCUMENT_KEYS
 
@@ -250,7 +254,8 @@ def visit(
             result = None
         else:
             if not isinstance(node, Node):
-                raise TypeError(f"Invalid AST Node: {inspect(node)}.")
+                msg = f"Invalid AST Node: {inspect(node)}."
+                raise TypeError(msg)
             enter_leave = visitor.get_enter_leave_for_kind(node.kind)
             visit_fn = enter_leave.leave if is_leaving else enter_leave.enter
             if visit_fn:
@@ -308,7 +313,7 @@ class ParallelVisitor(Visitor):
     If a prior visitor edits a node, no following visitors will see that node.
     """
 
-    def __init__(self, visitors: Collection[Visitor]):
+    def __init__(self, visitors: Collection[Visitor]) -> None:
         """Create a new visitor from the given list of parallel visitors."""
         super().__init__()
         self.visitors = visitors
@@ -334,15 +339,14 @@ class ParallelVisitor(Visitor):
                 def enter(node: Node, *args: Any) -> Optional[VisitorAction]:
                     skipping = self.skipping
                     for i, fn in enumerate(enter_list):
-                        if not skipping[i]:
-                            if fn:
-                                result = fn(node, *args)
-                                if result is SKIP or result is False:
-                                    skipping[i] = node
-                                elif result is BREAK or result is True:
-                                    skipping[i] = BREAK
-                                elif result is not None:
-                                    return result
+                        if not skipping[i] and fn:
+                            result = fn(node, *args)
+                            if result is SKIP or result is False:
+                                skipping[i] = node
+                            elif result is BREAK or result is True:
+                                skipping[i] = BREAK
+                            elif result is not None:
+                                return result
                     return None
 
                 def leave(node: Node, *args: Any) -> Optional[VisitorAction]:

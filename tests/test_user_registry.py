@@ -9,8 +9,7 @@ from collections import defaultdict
 from enum import Enum
 from typing import Any, AsyncIterable, Dict, List, NamedTuple, Optional
 
-from pytest import fixture, mark
-
+import pytest
 from graphql import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -132,19 +131,17 @@ async def resolve_user(_root, info, **args):
 
 async def resolve_create_user(_root, info, data):
     """Resolver function for creating a user object"""
-    user = await info.context["registry"].create(**data)
-    return user
+    return await info.context["registry"].create(**data)
 
 
 # noinspection PyShadowingBuiltins
-async def resolve_update_user(_root, info, id, data):
+async def resolve_update_user(_root, info, id, data):  # noqa: A002
     """Resolver function for updating a user object"""
-    user = await info.context["registry"].update(id, **data)
-    return user
+    return await info.context["registry"].update(id, **data)
 
 
 # noinspection PyShadowingBuiltins
-async def resolve_delete_user(_root, info, id):
+async def resolve_delete_user(_root, info, id):  # noqa: A002
     """Resolver function for deleting a user object"""
     user = await info.context["registry"].get(id)
     await info.context["registry"].delete(user.id)
@@ -152,7 +149,7 @@ async def resolve_delete_user(_root, info, id):
 
 
 # noinspection PyShadowingBuiltins
-async def subscribe_user(_root, info, id=None):
+async def subscribe_user(_root, info, id=None):  # noqa: A002
     """Subscribe to mutations of a specific user object or all user objects"""
     async_iterator = info.context["registry"].event_iterator(id)
     async for event in async_iterator:
@@ -160,7 +157,7 @@ async def subscribe_user(_root, info, id=None):
 
 
 # noinspection PyShadowingBuiltins,PyUnusedLocal
-async def resolve_subscription_user(event, info, id):
+async def resolve_subscription_user(event, info, id):  # noqa: ARG001, A002
     """Resolver function for user subscriptions"""
     user = event["user"]
     mutation = MutationEnum(event["mutation"]).value
@@ -213,13 +210,13 @@ schema = GraphQLSchema(
 )
 
 
-@fixture
+@pytest.fixture()
 def context():
     return {"registry": UserRegistry()}
 
 
 def describe_query():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def query_user(context):
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
@@ -251,7 +248,7 @@ def describe_query():
 
 
 def describe_mutation():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def create_user(context):
         received = {}
 
@@ -262,7 +259,7 @@ def describe_mutation():
             return receive
 
         # noinspection PyProtectedMember
-        pubsub = context["registry"]._pubsub
+        pubsub = context["registry"]._pubsub  # noqa: SLF001s
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))
 
@@ -273,7 +270,12 @@ def describe_mutation():
                 }
             }
             """
-        user_data = dict(firstName="John", lastName="Doe", tweets=42, verified=True)
+        user_data = {
+            "firstName": "John",
+            "lastName": "Doe",
+            "tweets": 42,
+            "verified": True,
+        }
         variables = {"userData": user_data}
         result = await graphql(
             schema, query, context_value=context, variable_values=variables
@@ -298,7 +300,7 @@ def describe_mutation():
             "User 0": {"user": user, "mutation": MutationEnum.CREATED.value},
         }
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def update_user(context):
         received = {}
 
@@ -309,7 +311,7 @@ def describe_mutation():
             return receive
 
         # noinspection PyProtectedMember
-        pubsub = context["registry"]._pubsub
+        pubsub = context["registry"]._pubsub  # noqa: SLF001
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))
 
@@ -354,7 +356,7 @@ def describe_mutation():
             "User 0": {"user": user, "mutation": MutationEnum.UPDATED.value},
         }
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def delete_user(context):
         received = {}
 
@@ -365,7 +367,7 @@ def describe_mutation():
             return receive
 
         # noinspection PyProtectedMember
-        pubsub = context["registry"]._pubsub
+        pubsub = context["registry"]._pubsub  # noqa: SLF001
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))
 
@@ -396,7 +398,7 @@ def describe_mutation():
 
 
 def describe_subscription():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def subscribe_to_user_mutations(context):
         query = """
             subscription ($userId: ID!) {

@@ -54,6 +54,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
+
 from tests.star_wars_data import (
     get_droid,
     get_friends,
@@ -61,7 +62,6 @@ from tests.star_wars_data import (
     get_human,
     get_secret_backstory,
 )
-
 
 __all__ = ["star_wars_schema"]
 

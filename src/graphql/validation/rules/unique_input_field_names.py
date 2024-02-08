@@ -1,9 +1,10 @@
+"""Unique input field names rule"""
+
 from typing import Any, Dict, List
 
 from ...error import GraphQLError
 from ...language import NameNode, ObjectFieldNode
 from . import ASTValidationContext, ASTValidationRule
-
 
 __all__ = ["UniqueInputFieldNamesRule"]
 
@@ -17,7 +18,7 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Input-Object-Field-Uniqueness
     """
 
-    def __init__(self, context: ASTValidationContext):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         self.known_names_stack: List[Dict[str, NameNode]] = []
         self.known_names: Dict[str, NameNode] = {}

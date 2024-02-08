@@ -1,7 +1,6 @@
 from copy import deepcopy
 
-from pytest import raises
-
+import pytest
 from graphql.language import NameNode, ScalarTypeDefinitionNode, parse, print_ast
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
@@ -15,7 +14,7 @@ def describe_printer_sdl_document():
 
     def produces_helpful_error_messages():
         bad_ast = {"random": "Data"}
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             print_ast(bad_ast)  # type: ignore
         msg = str(exc_info.value)

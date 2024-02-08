@@ -1,3 +1,5 @@
+"""Execute a GraphQL operation"""
+
 from asyncio import ensure_future
 from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union, cast
 
@@ -12,7 +14,6 @@ from .type import (
     GraphQLTypeResolver,
     validate_schema,
 )
-
 
 __all__ = ["graphql", "graphql_sync"]
 
@@ -147,7 +148,8 @@ def graphql_sync(
     # Assert that the execution was synchronous.
     if default_is_awaitable(result):
         ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
-        raise RuntimeError("GraphQL execution failed to complete synchronously.")
+        msg = "GraphQL execution failed to complete synchronously."
+        raise RuntimeError(msg)
 
     return cast(ExecutionResult, result)
 

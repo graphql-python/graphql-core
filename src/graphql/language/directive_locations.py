@@ -1,5 +1,6 @@
-from enum import Enum
+"""Directive locations"""
 
+from enum import Enum
 
 __all__ = ["DirectiveLocation"]
 

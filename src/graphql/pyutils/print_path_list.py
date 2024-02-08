@@ -1,3 +1,6 @@
+"""Path printing"""
+
+
 from typing import Collection, Union
 
 

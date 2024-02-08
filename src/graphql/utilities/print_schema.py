@@ -1,3 +1,5 @@
+"""Printing GraphQL Schemas in SDL format"""
+
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from ..language import StringValueNode, print_ast
@@ -28,21 +30,23 @@ from ..type import (
 )
 from .ast_from_value import ast_from_value
 
-
 __all__ = ["print_schema", "print_introspection_schema", "print_type", "print_value"]
 
 
 def print_schema(schema: GraphQLSchema) -> str:
+    """Print the given GraphQL schema in SDL format."""
     return print_filtered_schema(
         schema, lambda n: not is_specified_directive(n), is_defined_type
     )
 
 
 def print_introspection_schema(schema: GraphQLSchema) -> str:
+    """Print the built-in introspection schema in SDL format."""
     return print_filtered_schema(schema, is_specified_directive, is_introspection_type)
 
 
 def is_defined_type(type_: GraphQLNamedType) -> bool:
+    """Check if the given named GraphQL type is a defined type."""
     return type_.name not in GraphQLNamedType.reserved_types
 
 
@@ -51,6 +55,7 @@ def print_filtered_schema(
     directive_filter: Callable[[GraphQLDirective], bool],
     type_filter: Callable[[GraphQLNamedType], bool],
 ) -> str:
+    """Print a GraphQL schema filtered by the specified directives and types."""
     directives = filter(directive_filter, schema.directives)
     types = filter(type_filter, schema.type_map.values())
 
@@ -64,6 +69,7 @@ def print_filtered_schema(
 
 
 def print_schema_definition(schema: GraphQLSchema) -> Optional[str]:
+    """Print GraphQL schema definitions."""
     if schema.description is None and is_schema_of_common_names(schema):
         return None
 
@@ -112,6 +118,7 @@ def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
 
 
 def print_type(type_: GraphQLNamedType) -> str:
+    """Print a named GraphQL type."""
     if is_scalar_type(type_):
         return print_scalar(type_)
     if is_object_type(type_):
@@ -126,10 +133,12 @@ def print_type(type_: GraphQLNamedType) -> str:
         return print_input_object(type_)
 
     # Not reachable. All possible types have been considered.
-    raise TypeError(f"Unexpected type: {inspect(type_)}.")
+    msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 def print_scalar(type_: GraphQLScalarType) -> str:
+    """Print a GraphQL scalar type."""
     return (
         print_description(type_)
         + f"scalar {type_.name}"
@@ -138,13 +147,15 @@ def print_scalar(type_: GraphQLScalarType) -> str:
 
 
 def print_implemented_interfaces(
-    type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+    type_: Union[GraphQLObjectType, GraphQLInterfaceType],
 ) -> str:
+    """Print the interfaces implemented by a GraphQL object or interface type."""
     interfaces = type_.interfaces
     return " implements " + " & ".join(i.name for i in interfaces) if interfaces else ""
 
 
 def print_object(type_: GraphQLObjectType) -> str:
+    """Print a GraphQL object type."""
     return (
         print_description(type_)
         + f"type {type_.name}"
@@ -154,6 +165,7 @@ def print_object(type_: GraphQLObjectType) -> str:
 
 
 def print_interface(type_: GraphQLInterfaceType) -> str:
+    """Print a GraphQL interface type."""
     return (
         print_description(type_)
         + f"interface {type_.name}"
@@ -163,12 +175,14 @@ def print_interface(type_: GraphQLInterfaceType) -> str:
 
 
 def print_union(type_: GraphQLUnionType) -> str:
+    """Print a GraphQL union type."""
     types = type_.types
     possible_types = " = " + " | ".join(t.name for t in types) if types else ""
     return print_description(type_) + f"union {type_.name}" + possible_types
 
 
 def print_enum(type_: GraphQLEnumType) -> str:
+    """Print a GraphQL enum type."""
     values = [
         print_description(value, "  ", not i)
         + f"  {name}"
@@ -179,6 +193,7 @@ def print_enum(type_: GraphQLEnumType) -> str:
 
 
 def print_input_object(type_: GraphQLInputObjectType) -> str:
+    """Print a GraphQL input object type."""
     fields = [
         print_description(field, "  ", not i) + "  " + print_input_value(name, field)
         for i, (name, field) in enumerate(type_.fields.items())
@@ -187,6 +202,7 @@ def print_input_object(type_: GraphQLInputObjectType) -> str:
 
 
 def print_fields(type_: Union[GraphQLObjectType, GraphQLInterfaceType]) -> str:
+    """Print the fields of a GraphQL object or interface type."""
     fields = [
         print_description(field, "  ", not i)
         + f"  {name}"
@@ -199,10 +215,12 @@ def print_fields(type_: Union[GraphQLObjectType, GraphQLInterfaceType]) -> str:
 
 
 def print_block(items: List[str]) -> str:
+    """Print a block with the given items."""
     return " {\n" + "\n".join(items) + "\n}" if items else ""
 
 
 def print_args(args: Dict[str, GraphQLArgument], indentation: str = "") -> str:
+    """Print the given GraphQL arguments."""
     if not args:
         return ""
 
@@ -227,6 +245,7 @@ def print_args(args: Dict[str, GraphQLArgument], indentation: str = "") -> str:
 
 
 def print_input_value(name: str, arg: GraphQLArgument) -> str:
+    """Print an input value."""
     default_ast = ast_from_value(arg.default_value, arg.type)
     arg_decl = f"{name}: {arg.type}"
     if default_ast:
@@ -235,6 +254,7 @@ def print_input_value(name: str, arg: GraphQLArgument) -> str:
 
 
 def print_directive(directive: GraphQLDirective) -> str:
+    """Print a GraphQL directive."""
     return (
         print_description(directive)
         + f"directive @{directive.name}"
@@ -246,6 +266,7 @@ def print_directive(directive: GraphQLDirective) -> str:
 
 
 def print_deprecated(reason: Optional[str]) -> str:
+    """Print a deprecation reason."""
     if reason is None:
         return ""
     if reason != DEFAULT_DEPRECATION_REASON:
@@ -255,6 +276,7 @@ def print_deprecated(reason: Optional[str]) -> str:
 
 
 def print_specified_by_url(scalar: GraphQLScalarType) -> str:
+    """Print a specification URL."""
     if scalar.specified_by_url is None:
         return ""
     ast_value = print_ast(StringValueNode(value=scalar.specified_by_url))
@@ -272,6 +294,7 @@ def print_description(
     indentation: str = "",
     first_in_block: bool = True,
 ) -> str:
+    """Print a description."""
     description = def_.description
     if description is None:
         return ""

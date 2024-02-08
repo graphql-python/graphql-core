@@ -6,7 +6,6 @@ from graphql.validation import UniqueDirectivesPerLocationRule
 
 from .harness import assert_sdl_validation_errors, assert_validation_errors, test_schema
 
-
 extension_sdl = """
   directive @directive on FIELD | FRAGMENT_DEFINITION
   directive @directiveA on FIELD | FRAGMENT_DEFINITION

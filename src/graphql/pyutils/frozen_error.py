@@ -1,3 +1,5 @@
+"""Error when changing immutable values"""
+
 __all__ = ["FrozenError"]
 
 

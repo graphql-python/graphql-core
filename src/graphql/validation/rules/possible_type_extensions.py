@@ -1,3 +1,5 @@
+"""Possible type extension rule"""
+
 import re
 from functools import partial
 from typing import Any, Optional
@@ -15,7 +17,6 @@ from ...type import (
 )
 from . import SDLValidationContext, SDLValidationRule
 
-
 __all__ = ["PossibleTypeExtensionsRule"]
 
 
@@ -25,7 +26,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
     A type extension is only valid if the type is defined and has the same kind.
     """
 
-    def __init__(self, context: SDLValidationContext):
+    def __init__(self, context: SDLValidationContext) -> None:
         super().__init__(context)
         self.schema = context.schema
         self.defined_types = {
@@ -93,7 +94,8 @@ def type_to_ext_kind(type_: Any) -> str:
         return "input_object_type_extension"
 
     # Not reachable. All possible types have been considered.
-    raise TypeError(f"Unexpected type: {inspect(type_)}.")
+    msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 _type_names_for_extension_kinds = {

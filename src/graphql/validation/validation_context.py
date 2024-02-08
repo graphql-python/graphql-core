@@ -1,3 +1,5 @@
+"""Validation context"""
+
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
 
 from ..error import GraphQLError
@@ -24,7 +26,6 @@ from ..type import (
 )
 from ..utilities import TypeInfo, TypeInfoVisitor
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -43,6 +44,8 @@ NodeWithSelectionSet: TypeAlias = Union[OperationDefinitionNode, FragmentDefinit
 
 
 class VariableUsage(NamedTuple):
+    """Variable usage"""
+
     node: VariableNode
     type: Optional[GraphQLInputType]
     default_value: Any
@@ -53,7 +56,7 @@ class VariableUsageVisitor(Visitor):
 
     usages: List[VariableUsage]
 
-    def __init__(self, type_info: TypeInfo):
+    def __init__(self, type_info: TypeInfo) -> None:
         super().__init__()
         self.usages = []
         self._append_usage = self.usages.append

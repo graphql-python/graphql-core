@@ -1,10 +1,11 @@
+"""Defer stream directive on root field rule"""
+
 from typing import Any, List, cast
 
 from ...error import GraphQLError
 from ...language import DirectiveNode, Node
 from ...type import GraphQLDeferDirective, GraphQLStreamDirective
 from . import ASTValidationRule, ValidationContext
-
 
 __all__ = ["DeferStreamDirectiveOnRootField"]
 

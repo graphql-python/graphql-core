@@ -1,3 +1,5 @@
+"""Schema validation"""
+
 from collections import defaultdict
 from operator import attrgetter, itemgetter
 from typing import Any, Collection, Dict, List, Optional, Set, Tuple, Union, cast
@@ -37,7 +39,6 @@ from .directives import GraphQLDeprecatedDirective, is_directive
 from .introspection import is_introspection_type
 from .schema import GraphQLSchema, assert_schema
 
-
 __all__ = ["validate_schema", "assert_valid_schema"]
 
 
@@ -55,7 +56,7 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
 
     # If this Schema has already been validated, return the previous results.
     # noinspection PyProtectedMember
-    errors = schema._validation_errors
+    errors = schema._validation_errors  # noqa: SLF001
     if errors is None:
         # Validate the schema, producing a list of errors.
         context = SchemaValidationContext(schema)
@@ -66,7 +67,7 @@ def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
         # Persist the results of validation before returning to ensure validation does
         # not run multiple times for this schema.
         errors = context.errors
-        schema._validation_errors = errors
+        schema._validation_errors = errors  # noqa: SLF001
 
     return errors
 
@@ -87,7 +88,7 @@ class SchemaValidationContext:
     errors: List[GraphQLError]
     schema: GraphQLSchema
 
-    def __init__(self, schema: GraphQLSchema):
+    def __init__(self, schema: GraphQLSchema) -> None:
         self.errors = []
         self.schema = schema
 
@@ -499,7 +500,7 @@ def get_operation_type_node(
 class InputObjectCircularRefsValidator:
     """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
 
-    def __init__(self, context: SchemaValidationContext):
+    def __init__(self, context: SchemaValidationContext) -> None:
         self.context = context
         # Tracks already visited types to maintain O(N) and to ensure that cycles
         # are not redundantly reported.

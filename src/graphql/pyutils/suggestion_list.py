@@ -1,7 +1,8 @@
+"""List with suggestions"""
+
 from typing import Collection, List, Optional
 
 from .natural_compare import natural_comparison_key
-
 
 __all__ = ["suggestion_list"]
 
@@ -46,7 +47,7 @@ class LexicalDistance:
     _input_list: List[int]
     _rows: List[List[int]]
 
-    def __init__(self, input_: str):
+    def __init__(self, input_: str) -> None:
         self._input = input_
         self._input_lower_case = input_.lower()
         row_size = len(input_) + 1

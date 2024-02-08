@@ -1,10 +1,10 @@
 """Fixtures for graphql tests"""
+
 import json
 from gc import collect
-from os.path import dirname, join
+from pathlib import Path
 
-from pytest import fixture
-
+import pytest
 
 __all__ = [
     "cleanup",
@@ -25,30 +25,32 @@ def cleanup(rounds=5):
 
 
 def read_graphql(name):
-    path = join(dirname(__file__), name + ".graphql")
-    return open(path, encoding="utf-8").read()
+    path = (Path(__file__).parent / name).with_suffix(".graphql")
+    with path.open(encoding="utf-8") as file:
+        return file.read()
 
 
 def read_json(name):
-    path = join(dirname(__file__), name + ".json")
-    return json.load(open(path, encoding="utf-8"))
+    path = (Path(__file__).parent / name).with_suffix(".json")
+    with path.open(encoding="utf-8") as file:
+        return json.load(file)
 
 
-@fixture(scope="module")
+@pytest.fixture(scope="module")
 def kitchen_sink_query():
     return read_graphql("kitchen_sink")
 
 
-@fixture(scope="module")
+@pytest.fixture(scope="module")
 def kitchen_sink_sdl():
     return read_graphql("schema_kitchen_sink")
 
 
-@fixture(scope="module")
+@pytest.fixture(scope="module")
 def big_schema_sdl():
     return read_graphql("github_schema")
 
 
-@fixture(scope="module")
+@pytest.fixture(scope="module")
 def big_schema_introspection_result():
     return read_json("github_schema")

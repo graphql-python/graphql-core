@@ -1,3 +1,5 @@
+"""Validation"""
+
 from typing import Collection, List, Optional, Type
 
 from ..error import GraphQLError
@@ -7,7 +9,6 @@ from ..utilities import TypeInfo, TypeInfoVisitor
 from .rules import ASTValidationRule
 from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext
-
 
 __all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
 
@@ -100,7 +101,6 @@ def assert_valid_sdl(document_ast: DocumentNode) -> None:
     Utility function which asserts a SDL document is valid by throwing an error if it
     is invalid.
     """
-
     errors = validate_sdl(document_ast)
     if errors:
         raise TypeError("\n\n".join(error.message for error in errors))
@@ -114,7 +114,6 @@ def assert_valid_sdl_extension(
     Utility function which asserts a SDL document is valid by throwing an error if it
     is invalid.
     """
-
     errors = validate_sdl(document_ast, schema)
     if errors:
         raise TypeError("\n\n".join(error.message for error in errors))

@@ -65,7 +65,8 @@ class Person:
 NamedType = GraphQLInterfaceType("Named", {"name": GraphQLField(GraphQLString)})
 
 LifeType = GraphQLInterfaceType(
-    "Life", lambda: {"progeny": GraphQLField(GraphQLList(LifeType))}  # type: ignore
+    "Life",
+    lambda: {"progeny": GraphQLField(GraphQLList(LifeType))},  # type: ignore
 )
 
 MammalType = GraphQLInterfaceType(
@@ -88,7 +89,7 @@ DogType = GraphQLObjectType(
         "father": GraphQLField(DogType),  # type: ignore
     },
     interfaces=[MammalType, LifeType, NamedType],
-    is_type_of=lambda value, info: isinstance(value, Dog),
+    is_type_of=lambda value, _info: isinstance(value, Dog),
 )
 
 CatType = GraphQLObjectType(
@@ -101,7 +102,7 @@ CatType = GraphQLObjectType(
         "father": GraphQLField(CatType),  # type: ignore
     },
     interfaces=[MammalType, LifeType, NamedType],
-    is_type_of=lambda value, info: isinstance(value, Cat),
+    is_type_of=lambda value, _info: isinstance(value, Cat),
 )
 
 
@@ -112,7 +113,7 @@ def resolve_pet_type(value, _info, _type):
         return CatType.name
 
     # Not reachable. All possible types have been considered.
-    assert False, "Unexpected pet type"
+    assert False, "Unexpected pet type"  # pragma: no cover
 
 
 PetType = GraphQLUnionType("Pet", [DogType, CatType], resolve_type=resolve_pet_type)

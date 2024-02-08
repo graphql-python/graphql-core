@@ -1,3 +1,5 @@
+"""Input value coercion"""
+
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..error import GraphQLError
@@ -18,7 +20,6 @@ from ..type import (
     is_list_type,
     is_non_null_type,
 )
-
 
 try:
     from typing import TypeAlias
@@ -139,7 +140,7 @@ def coerce_input_value(
         except GraphQLError as error:
             on_error(path.as_list() if path else [], input_value, error)
             return Undefined
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             on_error(
                 path.as_list() if path else [],
                 input_value,
@@ -157,4 +158,5 @@ def coerce_input_value(
         return parse_result
 
     # Not reachable. All possible input types have been considered.
-    raise TypeError(f"Unexpected input type: {inspect(type_)}.")
+    msg = f"Unexpected input type: {inspect(type_)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover

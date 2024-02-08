@@ -1,8 +1,9 @@
+"""Python dictionary creation from GraphQL AST"""
+
 from typing import Any, Collection, Dict, List, Optional, overload
 
 from ..language import Node, OperationType
 from ..pyutils import is_iterable
-
 
 __all__ = ["ast_to_dict"]
 
@@ -39,7 +40,6 @@ def ast_to_dict(
 
     Set `location` to True in order to get the locations as well.
     """
-
     """Convert a node to a nested Python dictionary."""
     if isinstance(node, Node):
         if cache is None:
@@ -56,7 +56,7 @@ def ast_to_dict(
         if locations:
             loc = node.loc
             if loc:
-                res["loc"] = dict(start=loc.start, end=loc.end)
+                res["loc"] = {"start": loc.start, "end": loc.end}
         return res
     if is_iterable(node):
         return [ast_to_dict(sub_node, locations, cache) for sub_node in node]

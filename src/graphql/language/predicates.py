@@ -1,3 +1,5 @@
+"""Predicates for GraphQL nodes"""
+
 from typing import Union
 
 from .ast import (
@@ -16,7 +18,6 @@ from .ast import (
     ValueNode,
     VariableNode,
 )
-
 
 try:
     from typing import TypeGuard

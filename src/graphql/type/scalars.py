@@ -1,3 +1,5 @@
+"""GraphQL scalar types"""
+
 from math import isfinite
 from typing import Any, Mapping
 
@@ -13,12 +15,10 @@ from ..language.printer import print_ast
 from ..pyutils import inspect
 from .definition import GraphQLNamedType, GraphQLScalarType
 
-
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeGuard
-
 
 __all__ = [
     "is_specified_scalar_type",
@@ -55,21 +55,20 @@ def serialize_int(output_value: Any) -> int:
         elif isinstance(output_value, float):
             num = int(output_value)
             if num != output_value:
-                raise ValueError
+                raise ValueError  # noqa: TRY301
         elif not output_value and isinstance(output_value, str):
             output_value = ""
-            raise ValueError
+            raise ValueError  # noqa: TRY301
         else:
             num = int(output_value)  # raises ValueError if not an integer
-    except (OverflowError, ValueError, TypeError):
-        raise GraphQLError(
-            "Int cannot represent non-integer value: " + inspect(output_value)
-        )
+    except (OverflowError, ValueError, TypeError) as error:
+        msg = "Int cannot represent non-integer value: " + inspect(output_value)
+        raise GraphQLError(msg) from error
     if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
-        raise GraphQLError(
-            "Int cannot represent non 32-bit signed integer value: "
-            + inspect(output_value)
+        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(
+            output_value
         )
+        raise GraphQLError(msg)
     return num
 
 
@@ -81,31 +80,27 @@ def coerce_int(input_value: Any) -> int:
         and isfinite(input_value)
         and int(input_value) == input_value
     ):
-        raise GraphQLError(
-            "Int cannot represent non-integer value: " + inspect(input_value)
-        )
+        msg = "Int cannot represent non-integer value: " + inspect(input_value)
+        raise GraphQLError(msg)
     if not GRAPHQL_MIN_INT <= input_value <= GRAPHQL_MAX_INT:
-        raise GraphQLError(
-            "Int cannot represent non 32-bit signed integer value: "
-            + inspect(input_value)
+        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(
+            input_value
         )
+        raise GraphQLError(msg)
     return int(input_value)
 
 
 def parse_int_literal(value_node: ValueNode, _variables: Any = None) -> int:
     """Parse an integer value node in the AST."""
     if not isinstance(value_node, IntValueNode):
-        raise GraphQLError(
-            "Int cannot represent non-integer value: " + print_ast(value_node),
-            value_node,
-        )
+        msg = "Int cannot represent non-integer value: " + print_ast(value_node)
+        raise GraphQLError(msg, value_node)
     num = int(value_node.value)
     if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
-        raise GraphQLError(
-            "Int cannot represent non 32-bit signed integer value: "
-            + print_ast(value_node),
-            value_node,
+        msg = "Int cannot represent non 32-bit signed integer value: " + print_ast(
+            value_node
         )
+        raise GraphQLError(msg, value_node)
     return num
 
 
@@ -126,14 +121,13 @@ def serialize_float(output_value: Any) -> float:
     try:
         if not output_value and isinstance(output_value, str):
             output_value = ""
-            raise ValueError
+            raise ValueError  # noqa: TRY301
         num = output_value if isinstance(output_value, float) else float(output_value)
         if not isfinite(num):
-            raise ValueError
-    except (ValueError, TypeError):
-        raise GraphQLError(
-            "Float cannot represent non numeric value: " + inspect(output_value)
-        )
+            raise ValueError  # noqa: TRY301
+    except (ValueError, TypeError) as error:
+        msg = "Float cannot represent non numeric value: " + inspect(output_value)
+        raise GraphQLError(msg) from error
     return num
 
 
@@ -310,7 +304,6 @@ GraphQLID = GraphQLScalarType(
     parse_literal=parse_id_literal,
 )
 
-
 specified_scalar_types: Mapping[str, GraphQLScalarType] = {
     type_.name: type_
     for type_ in (
@@ -329,4 +322,4 @@ def is_specified_scalar_type(type_: GraphQLNamedType) -> TypeGuard[GraphQLScalar
 
 
 # register the scalar types to avoid redefinition
-GraphQLNamedType.reserved_types.update(specified_scalar_types)
+GraphQLNamedType.reserved_types.update(specified_scalar_types)  # type: ignore

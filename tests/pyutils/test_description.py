@@ -1,8 +1,7 @@
 from contextlib import contextmanager
 from typing import cast
 
-from pytest import raises
-
+import pytest
 from graphql import graphql_sync
 from graphql.pyutils import (
     Description,
@@ -95,12 +94,12 @@ def describe_description():
             Description.bases = str
 
     def can_only_register_types():
-        with raises(TypeError, match="Only types can be registered\\."):
+        with pytest.raises(TypeError, match="Only types can be registered\\."):
             # noinspection PyTypeChecker
             register_description("foo")  # type: ignore
 
     def can_only_unregister_types():
-        with raises(TypeError, match="Only types can be unregistered\\."):
+        with pytest.raises(TypeError, match="Only types can be unregistered\\."):
             # noinspection PyTypeChecker
             unregister_description("foo")  # type: ignore
 

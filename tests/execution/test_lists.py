@@ -1,7 +1,6 @@
 from typing import Any, AsyncGenerator
 
-from pytest import mark
-
+import pytest
 from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.pyutils import is_awaitable
@@ -143,7 +142,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
         resolve: GraphQLFieldResolver, count=3
     ) -> ExecutionResult:
         async def _list_field(
-            obj_: Any, info_: GraphQLResolveInfo
+            _obj: Any, _info: GraphQLResolveInfo
         ) -> AsyncGenerator[_IndexData, None]:
             for index in range(count):
                 yield _IndexData(index)
@@ -172,7 +171,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
         assert is_awaitable(result)
         return await result
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def accepts_an_async_generator_as_a_list_value():
         async def list_field():
             yield "two"
@@ -184,7 +183,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def accepts_a_custom_async_iterable_as_a_list_value():
         class ListField:
             def __aiter__(self):
@@ -203,7 +202,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_an_async_generator_that_throws():
         async def list_field():
             yield "two"
@@ -215,7 +214,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             [{"message": "bad", "locations": [(1, 3)], "path": ["listField", 2]}],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_an_async_generator_where_intermediate_value_triggers_an_error():
         async def list_field():
             yield "two"
@@ -233,7 +232,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             ],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_errors_from_complete_value_in_async_iterables():
         async def list_field():
             yield "two"
@@ -250,9 +249,9 @@ def describe_execute_accepts_async_iterables_as_list_value():
             ],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_async_functions_from_complete_value_in_async_iterables():
-        async def resolve(data: _IndexData, info_: GraphQLResolveInfo) -> int:
+        async def resolve(data: _IndexData, _info: GraphQLResolveInfo) -> int:
             return data.index
 
         assert await _complete_object_lists(resolve) == (
@@ -260,9 +259,9 @@ def describe_execute_accepts_async_iterables_as_list_value():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_single_async_functions_from_complete_value_in_async_iterables():
-        async def resolve(data: _IndexData, info_: GraphQLResolveInfo) -> int:
+        async def resolve(data: _IndexData, _info: GraphQLResolveInfo) -> int:
             return data.index
 
         assert await _complete_object_lists(resolve, 1) == (
@@ -270,9 +269,9 @@ def describe_execute_accepts_async_iterables_as_list_value():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_async_errors_from_complete_value_in_async_iterables():
-        async def resolve(data: _IndexData, info_: GraphQLResolveInfo) -> int:
+        async def resolve(data: _IndexData, _info: GraphQLResolveInfo) -> int:
             index = data.index
             if index == 2:
                 raise RuntimeError("bad")
@@ -289,7 +288,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             ],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def handles_nulls_yielded_by_async_generator():
         async def list_field():
             yield 1
@@ -323,7 +322,7 @@ def describe_execute_handles_list_nullability():
 
         return result
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def contains_values():
         list_field = [1, 2]
         assert await _complete(list_field, "[Int]") == ({"listField": [1, 2]}, None)
@@ -331,7 +330,7 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]") == ({"listField": [1, 2]}, None)
         assert await _complete(list_field, "[Int!]!") == ({"listField": [1, 2]}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def contains_null():
         list_field = [1, None, 2]
         errors = [
@@ -352,7 +351,7 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]") == ({"listField": None}, errors)
         assert await _complete(list_field, "[Int!]!") == (None, errors)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def returns_null():
         list_field = None
         errors = [
@@ -367,7 +366,7 @@ def describe_execute_handles_list_nullability():
         assert await _complete(list_field, "[Int!]") == ({"listField": None}, None)
         assert await _complete(list_field, "[Int!]!") == (None, errors)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def contains_error():
         list_field = [1, RuntimeError("bad"), 2]
         errors = [
@@ -394,7 +393,7 @@ def describe_execute_handles_list_nullability():
             errors,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def results_in_errors():
         list_field = RuntimeError("bad")
         errors = [

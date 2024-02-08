@@ -4,7 +4,7 @@ from graphql.pyutils import group_by
 def describe_group_by():
     def does_accept_an_empty_list():
         def key_fn(_x: str) -> str:
-            raise TypeError("Unexpected call of key function.")
+            raise TypeError("Unexpected call of key function.")  # pragma: no cover
 
         assert group_by([], key_fn) == {}
 

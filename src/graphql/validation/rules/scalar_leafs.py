@@ -1,10 +1,11 @@
+"""Scalar leafs rule"""
+
 from typing import Any
 
 from ...error import GraphQLError
 from ...language import FieldNode
 from ...type import get_named_type, is_leaf_type
 from . import ValidationRule
-
 
 __all__ = ["ScalarLeafsRule"]
 

@@ -1,7 +1,8 @@
+""""Get operation AST node"""
+
 from typing import Optional
 
 from ..language import DocumentNode, OperationDefinitionNode
-
 
 __all__ = ["get_operation_ast"]
 

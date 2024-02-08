@@ -1,10 +1,11 @@
+"""Simple public-subscribe system"""
+
 from __future__ import annotations  # Python < 3.10
 
 from asyncio import Future, Queue, create_task, get_running_loop, sleep
 from typing import Any, AsyncIterator, Callable, Optional, Set
 
 from .is_awaitable import is_awaitable
-
 
 __all__ = ["SimplePubSub", "SimplePubSubIterator"]
 
@@ -27,16 +28,19 @@ class SimplePubSub:
         for subscriber in self.subscribers:
             result = subscriber(event)
             if is_awaitable(result):
-                create_task(result)  # type: ignore
+                create_task(result)  # type: ignore # noqa: RUF006
         return bool(self.subscribers)
 
     def get_subscriber(
         self, transform: Optional[Callable] = None
     ) -> SimplePubSubIterator:
+        """Return subscriber iterator"""
         return SimplePubSubIterator(self, transform)
 
 
 class SimplePubSubIterator(AsyncIterator):
+    """Async iterator used for subscriptions."""
+
     def __init__(self, pubsub: SimplePubSub, transform: Optional[Callable]) -> None:
         self.pubsub = pubsub
         self.transform = transform
@@ -59,10 +63,12 @@ class SimplePubSubIterator(AsyncIterator):
         return future
 
     async def aclose(self) -> None:
+        """Close the iterator."""
         if self.listening:
             await self.empty_queue()
 
     async def empty_queue(self) -> None:
+        """Empty the queue."""
         self.listening = False
         self.pubsub.subscribers.remove(self.push_value)
         while not self.pull_queue.empty():
@@ -72,6 +78,7 @@ class SimplePubSubIterator(AsyncIterator):
             await self.push_queue.get()
 
     async def push_value(self, event: Any) -> None:
+        """Push a new value."""
         value = event if self.transform is None else self.transform(event)
         if self.pull_queue.empty():
             await self.push_queue.put(value)

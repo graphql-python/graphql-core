@@ -6,7 +6,6 @@ from graphql import (
     graphql_sync,
 )
 
-
 user = GraphQLObjectType(
     name="User",
     fields={
@@ -16,7 +15,7 @@ user = GraphQLObjectType(
 )
 
 
-def resolve_user(obj, info):
+def resolve_user(_obj, _info):
     return {
         "id": "1",
         "name": "Sarah",

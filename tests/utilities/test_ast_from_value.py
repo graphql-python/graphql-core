@@ -1,7 +1,6 @@
 from math import inf, nan
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLError
 from graphql.language import (
     BooleanValueNode,
@@ -58,18 +57,18 @@ def describe_ast_from_value():
 
         # GraphQL spec does not allow coercing non-integer values to Int to
         # avoid accidental data loss.
-        with raises(GraphQLError) as exc_info:
+        with pytest.raises(GraphQLError) as exc_info:
             assert ast_from_value(123.5, GraphQLInt)
         msg = str(exc_info.value)
         assert msg == "Int cannot represent non-integer value: 123.5"
 
         # Note: outside the bounds of 32bit signed int.
-        with raises(GraphQLError) as exc_info:
+        with pytest.raises(GraphQLError) as exc_info:
             assert ast_from_value(1e40, GraphQLInt)
         msg = str(exc_info.value)
         assert msg == "Int cannot represent non 32-bit signed integer value: 1e+40"
 
-        with raises(GraphQLError) as exc_info:
+        with pytest.raises(GraphQLError) as exc_info:
             ast_from_value(nan, GraphQLInt)
         msg = str(exc_info.value)
         assert msg == "Int cannot represent non-integer value: nan"
@@ -126,7 +125,7 @@ def describe_ast_from_value():
 
         assert ast_from_value("01", GraphQLID) == StringValueNode(value="01")
 
-        with raises(GraphQLError) as exc_info:
+        with pytest.raises(GraphQLError) as exc_info:
             assert ast_from_value(False, GraphQLID)
         assert str(exc_info.value) == "ID cannot represent value: False"
 
@@ -144,17 +143,17 @@ def describe_ast_from_value():
             value="value"
         )
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             assert ast_from_value(nan, pass_through_scalar)
         assert str(exc_info.value) == "Cannot convert value to AST: nan."
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             ast_from_value(inf, pass_through_scalar)
         assert str(exc_info.value) == "Cannot convert value to AST: inf."
 
         return_null_scalar = GraphQLScalarType(
             "ReturnNullScalar",
-            serialize=lambda value: None,
+            serialize=lambda value: None,  # noqa: ARG005
         )
 
         assert ast_from_value("value", return_null_scalar) is None
@@ -164,10 +163,10 @@ def describe_ast_from_value():
 
         return_custom_class_scalar = GraphQLScalarType(
             "ReturnCustomClassScalar",
-            serialize=lambda value: SomeClass(),
+            serialize=lambda value: SomeClass(),  # noqa: ARG005
         )
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             ast_from_value("value", return_custom_class_scalar)
         msg = str(exc_info.value)
         assert msg == "Cannot convert value to AST: <SomeClass instance>."
@@ -188,12 +187,12 @@ def describe_ast_from_value():
         assert ast_from_value(complex_value, my_enum) == EnumValueNode(value="COMPLEX")
 
         # Note: case sensitive
-        with raises(GraphQLError) as exc_info:
+        with pytest.raises(GraphQLError) as exc_info:
             ast_from_value("hello", my_enum)
         assert exc_info.value.message == "Enum 'MyEnum' cannot represent value: 'hello'"
 
         # Note: not a valid enum value
-        with raises(GraphQLError) as exc_info:
+        with pytest.raises(GraphQLError) as exc_info:
             ast_from_value("UNKNOWN_VALUE", my_enum)
         assert (
             exc_info.value.message

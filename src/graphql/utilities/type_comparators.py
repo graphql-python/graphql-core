@@ -1,3 +1,5 @@
+"""GraphQL type comparators"""
+
 from ..type import (
     GraphQLCompositeType,
     GraphQLSchema,
@@ -9,14 +11,14 @@ from ..type import (
     is_object_type,
 )
 
-
 __all__ = ["is_equal_type", "is_type_sub_type_of", "do_types_overlap"]
 
 
 def is_equal_type(type_a: GraphQLType, type_b: GraphQLType) -> bool:
     """Check whether two types are equal.
 
-    Provided two types, return true if the types are equal (invariant)."""
+    Provided two types, return true if the types are equal (invariant).
+    """
     # Equivalent types are equal.
     if type_a is type_b:
         return True
@@ -54,7 +56,7 @@ def is_type_sub_type_of(
                 schema, maybe_subtype.of_type, super_type.of_type
             )
         return False
-    elif is_non_null_type(maybe_subtype):
+    if is_non_null_type(maybe_subtype):
         # If super_type is nullable, maybe_subtype may be non-null or nullable.
         return is_type_sub_type_of(schema, maybe_subtype.of_type, super_type)
 
@@ -65,7 +67,7 @@ def is_type_sub_type_of(
                 schema, maybe_subtype.of_type, super_type.of_type
             )
         return False
-    elif is_list_type(maybe_subtype):
+    if is_list_type(maybe_subtype):
         # If super_type is not a list, maybe_subtype must also be not a list.
         return False
 

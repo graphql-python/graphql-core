@@ -5,7 +5,6 @@ from graphql.validation.rules.lone_schema_definition import LoneSchemaDefinition
 
 from .harness import assert_sdl_validation_errors
 
-
 assert_sdl_errors = partial(assert_sdl_validation_errors, LoneSchemaDefinitionRule)
 
 assert_sdl_valid = partial(assert_sdl_errors, errors=[])

@@ -1,7 +1,8 @@
+"""Conversion between camel and snake case"""
+
 # uses code from https://github.com/daveoncode/python-string-utils
 
 import re
-
 
 __all__ = ["camel_to_snake", "snake_to_camel"]
 

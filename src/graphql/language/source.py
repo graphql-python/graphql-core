@@ -1,13 +1,13 @@
+"""GraphQL source input"""
+
 from typing import Any
 
 from .location import SourceLocation
-
 
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeGuard
-
 
 __all__ = ["Source", "is_source"]
 
@@ -41,16 +41,15 @@ class Source:
         if not isinstance(location_offset, SourceLocation):
             location_offset = SourceLocation._make(location_offset)
         if location_offset.line <= 0:
-            raise ValueError(
-                "line in location_offset is 1-indexed and must be positive."
-            )
+            msg = "line in location_offset is 1-indexed and must be positive."
+            raise ValueError(msg)
         if location_offset.column <= 0:
-            raise ValueError(
-                "column in location_offset is 1-indexed and must be positive."
-            )
+            msg = "column in location_offset is 1-indexed and must be positive."
+            raise ValueError(msg)
         self.location_offset = location_offset
 
     def get_location(self, position: int) -> SourceLocation:
+        """Get source location."""
         lines = self.body[:position].splitlines()
         if lines:
             line = len(lines)
@@ -63,12 +62,12 @@ class Source:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} name={self.name!r}>"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (isinstance(other, Source) and other.body == self.body) or (
             isinstance(other, str) and other == self.body
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
 

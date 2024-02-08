@@ -6,7 +6,6 @@ from graphql.validation.rules.unique_argument_definition_names import (
 
 from .harness import assert_sdl_validation_errors
 
-
 assert_sdl_errors = partial(
     assert_sdl_validation_errors, UniqueArgumentDefinitionNamesRule
 )

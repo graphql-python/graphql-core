@@ -1,3 +1,5 @@
+"""Unique directive names per location rule"""
+
 from collections import defaultdict
 from typing import Any, Dict, List, Union, cast
 
@@ -14,7 +16,6 @@ from ...language import (
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-
 __all__ = ["UniqueDirectivesPerLocationRule"]
 
 
@@ -29,7 +30,7 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
         unique_directive_map: Dict[str, bool] = {}
 

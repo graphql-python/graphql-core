@@ -1,10 +1,11 @@
+"""No deprecated rule"""
+
 from typing import Any
 
 from ....error import GraphQLError
 from ....language import ArgumentNode, EnumValueNode, FieldNode, ObjectFieldNode
 from ....type import get_named_type, is_input_object_type
 from .. import ValidationRule
-
 
 __all__ = ["NoDeprecatedCustomRule"]
 

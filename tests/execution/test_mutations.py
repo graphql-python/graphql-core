@@ -1,8 +1,7 @@
 from asyncio import sleep
 from typing import Any, Awaitable, List
 
-from pytest import mark
-
+import pytest
 from graphql.execution import (
     ExperimentalIncrementalExecutionResults,
     execute,
@@ -105,7 +104,7 @@ schema = GraphQLSchema(
 
 
 def describe_execute_handles_mutation_execution_ordering():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def evaluates_mutations_serially():
         document = parse(
             """
@@ -153,7 +152,7 @@ def describe_execute_handles_mutation_execution_ordering():
         result = execute_sync(schema=schema, document=document)
         assert result == ({}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def evaluates_mutations_correctly_in_presence_of_a_failed_mutation():
         document = parse(
             """
@@ -210,7 +209,7 @@ def describe_execute_handles_mutation_execution_ordering():
             ],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def mutation_fields_with_defer_do_not_block_next_mutation():
         document = parse(
             """
@@ -255,7 +254,7 @@ def describe_execute_handles_mutation_execution_ordering():
             },
         ]
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def mutation_inside_of_a_fragment():
         document = parse(
             """
@@ -281,7 +280,7 @@ def describe_execute_handles_mutation_execution_ordering():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def mutation_with_defer_is_not_executed_serially():
         document = parse(
             """

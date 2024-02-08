@@ -1,7 +1,8 @@
+"""Middleware manager"""
+
 from functools import partial, reduce
 from inspect import isfunction
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
-
 
 try:
     from typing import TypeAlias
@@ -32,7 +33,7 @@ class MiddlewareManager:
     _cached_resolvers: Dict[GraphQLFieldResolver, GraphQLFieldResolver]
     _middleware_resolvers: Optional[List[Callable]]
 
-    def __init__(self, *middlewares: Any):
+    def __init__(self, *middlewares: Any) -> None:
         self.middlewares = middlewares
         self._middleware_resolvers = (
             list(get_middleware_resolvers(middlewares)) if middlewares else None

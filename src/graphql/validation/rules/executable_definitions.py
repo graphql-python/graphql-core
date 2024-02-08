@@ -1,3 +1,5 @@
+"""Executable definitions rule"""
+
 from typing import Any, Union, cast
 
 from ...error import GraphQLError
@@ -12,7 +14,6 @@ from ...language import (
     VisitorAction,
 )
 from . import ASTValidationRule
-
 
 __all__ = ["ExecutableDefinitionsRule"]
 

@@ -1,12 +1,11 @@
 from asyncio import sleep
 
-from pytest import mark, raises
-
+import pytest
 from graphql.pyutils import SimplePubSub, is_awaitable
 
 
 def describe_simple_pub_sub():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def subscribe_async_iterator_mock():
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()
@@ -43,14 +42,14 @@ def describe_simple_pub_sub():
         assert pubsub.emit("Fig") is False
 
         # Find that cancelled read-ahead got a "done" result
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await i5
 
         # And next returns empty completion value
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await iterator.__anext__()
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def iterator_aclose_empties_push_queue():
         pubsub = SimplePubSub()
         assert not pubsub.subscribers
@@ -68,7 +67,7 @@ def describe_simple_pub_sub():
         assert iterator.pull_queue.qsize() == 0
         assert not iterator.listening
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def iterator_aclose_empties_pull_queue():
         pubsub = SimplePubSub()
         assert not pubsub.subscribers
@@ -85,7 +84,7 @@ def describe_simple_pub_sub():
         assert iterator.pull_queue.qsize() == 0
         assert not iterator.listening
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def iterator_aclose_is_idempotent():
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()

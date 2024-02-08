@@ -1,3 +1,5 @@
+"""Known argument names on directives rule"""
+
 from typing import Any, Dict, List, Union, cast
 
 from ...error import GraphQLError
@@ -12,7 +14,6 @@ from ...pyutils import did_you_mean, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-
 __all__ = ["KnownArgumentNamesRule", "KnownArgumentNamesOnDirectivesRule"]
 
 
@@ -26,7 +27,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
     context: Union[ValidationContext, SDLValidationContext]
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
+    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
         super().__init__(context)
         directive_args: Dict[str, List[str]] = {}
 
@@ -76,7 +77,7 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
 
     context: ValidationContext
 
-    def __init__(self, context: ValidationContext):
+    def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
 
     def enter_argument(self, arg_node: ArgumentNode, *args: Any) -> None:

@@ -1,8 +1,7 @@
 from math import nan
 from typing import Any, List, NamedTuple, Union
 
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLError
 from graphql.pyutils import Undefined
 from graphql.type import (
@@ -362,14 +361,14 @@ def describe_coerce_input_value():
 
     def describe_with_default_on_error():
         def throw_error_without_path():
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 assert coerce_input_value(None, GraphQLNonNull(GraphQLInt))
             assert exc_info.value.message == (
                 "Invalid value None: Expected non-nullable type 'Int!' not to be None."
             )
 
         def throw_error_with_path():
-            with raises(GraphQLError) as exc_info:
+            with pytest.raises(GraphQLError) as exc_info:
                 assert coerce_input_value(
                     [None], GraphQLList(GraphQLNonNull(GraphQLInt))
                 )

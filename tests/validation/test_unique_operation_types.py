@@ -5,7 +5,6 @@ from graphql.validation.rules.unique_operation_types import UniqueOperationTypes
 
 from .harness import assert_sdl_validation_errors
 
-
 assert_errors = partial(assert_sdl_validation_errors, UniqueOperationTypesRule)
 
 assert_valid = partial(assert_errors, errors=[])

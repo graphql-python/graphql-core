@@ -1,17 +1,15 @@
 from inspect import isasyncgen
 
-from pytest import mark
-
+import pytest
 from graphql.execution import ExecutionContext, execute, subscribe
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
-
 try:
-    anext
+    anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
-    async def anext(iterator):
+    async def anext(iterator):  # noqa: A001
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 
@@ -59,7 +57,7 @@ def describe_customize_execution():
 
 
 def describe_customize_subscription():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def uses_a_custom_subscribe_field_resolver():
         schema = GraphQLSchema(
             query=GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)}),
@@ -88,7 +86,7 @@ def describe_customize_subscription():
 
         await subscription.aclose()
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def uses_a_custom_execution_context_class():
         class TestExecutionContext(ExecutionContext):
             def build_resolve_info(self, *args, **kwargs):

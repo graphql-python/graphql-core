@@ -7,7 +7,7 @@ def describe_ast_to_disc():
         node = NameNode(value="test")
         res = ast_to_dict(node)
         assert res == {"kind": "name", "value": "test"}
-        assert list(res)[0] == "kind"
+        assert next(iter(res)) == "kind"
         assert ast_to_dict(node, locations=True) == res
         assert node.to_dict() == res
         assert node.to_dict(locations=True) == res
@@ -122,7 +122,7 @@ def describe_ast_to_disc():
             ],
             "kind": "document",
         }
-        assert list(res)[0] == "kind"
+        assert next(iter(res)) == "kind"
 
     def converts_simple_schema_to_dict_with_locations():
         ast = parse(
@@ -380,7 +380,7 @@ def describe_ast_to_disc():
             ],
             "kind": "document",
         }
-        assert list(res)[0] == "kind"
+        assert next(iter(res)) == "kind"
 
     def converts_simple_query_to_dict_with_locations():
         ast = parse(

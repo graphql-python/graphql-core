@@ -1,3 +1,5 @@
+"""GraphQL execution"""
+
 from __future__ import annotations  # Python < 3.10
 
 from asyncio import Event, as_completed, ensure_future, gather, shield, sleep, wait_for
@@ -13,6 +15,7 @@ from typing import (
     Dict,
     Generator,
     Iterable,
+    Iterator,
     List,
     NamedTuple,
     Optional,
@@ -23,7 +26,6 @@ from typing import (
     Union,
     cast,
 )
-
 
 try:
     from typing import TypedDict
@@ -47,9 +49,15 @@ from ..language import (
     OperationDefinitionNode,
     OperationType,
 )
-from ..pyutils import AwaitableOrValue, Path, Undefined, async_reduce, inspect
+from ..pyutils import (
+    AwaitableOrValue,
+    Path,
+    Undefined,
+    async_reduce,
+    inspect,
+    is_iterable,
+)
 from ..pyutils import is_awaitable as default_is_awaitable
-from ..pyutils import is_iterable
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
@@ -74,15 +82,13 @@ from .collect_fields import FieldsAndPatches, collect_fields, collect_subfields
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
-
 ASYNC_DELAY = 1 / 512  # wait time in seconds for deferring execution
 
-
 try:  # pragma: no cover
-    anext
+    anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
-    async def anext(iterator: AsyncIterator) -> Any:
+    async def anext(iterator: AsyncIterator) -> Any:  # noqa: A001
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 
@@ -164,7 +170,7 @@ class ExecutionResult:
         data: Optional[Dict[str, Any]] = None,
         errors: Optional[List[GraphQLError]] = None,
         extensions: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         self.data = data
         self.errors = errors
         self.extensions = extensions
@@ -174,7 +180,7 @@ class ExecutionResult:
         ext = "" if self.extensions is None else f", extensions={self.extensions}"
         return f"{name}(data={self.data!r}, errors={self.errors!r}{ext})"
 
-    def __iter__(self) -> Iterable[Any]:
+    def __iter__(self) -> Iterator[Any]:
         return iter((self.data, self.errors))
 
     @property
@@ -187,13 +193,15 @@ class ExecutionResult:
             formatted["extensions"] = self.extensions
         return formatted
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             if "extensions" not in other:
-                return other == dict(data=self.data, errors=self.errors)
-            return other == dict(
-                data=self.data, errors=self.errors, extensions=self.extensions
-            )
+                return other == {"data": self.data, "errors": self.errors}
+            return other == {
+                "data": self.data,
+                "errors": self.errors,
+                "extensions": self.extensions,
+            }
         if isinstance(other, tuple):
             if len(other) == 2:
                 return other == (self.data, self.errors)
@@ -205,7 +213,7 @@ class ExecutionResult:
             and other.extensions == self.extensions
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
 
@@ -237,7 +245,7 @@ class IncrementalDeferResult:
         path: Optional[List[Union[str, int]]] = None,
         label: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         self.data = data
         self.errors = errors
         self.path = path
@@ -269,7 +277,7 @@ class IncrementalDeferResult:
             formatted["extensions"] = self.extensions
         return formatted
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
                 other.get("data") == self.data
@@ -298,7 +306,7 @@ class IncrementalDeferResult:
             and other.extensions == self.extensions
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
 
@@ -330,7 +338,7 @@ class IncrementalStreamResult:
         path: Optional[List[Union[str, int]]] = None,
         label: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         self.items = items
         self.errors = errors
         self.path = path
@@ -362,7 +370,7 @@ class IncrementalStreamResult:
             formatted["extensions"] = self.extensions
         return formatted
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
                 other.get("items") == self.items
@@ -391,7 +399,7 @@ class IncrementalStreamResult:
             and other.extensions == self.extensions
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
 
@@ -434,7 +442,7 @@ class InitialIncrementalExecutionResult:
         incremental: Optional[Sequence[IncrementalResult]] = None,
         has_next: bool = False,
         extensions: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> None:
         self.data = data
         self.errors = errors
         self.incremental = incremental
@@ -465,7 +473,7 @@ class InitialIncrementalExecutionResult:
             formatted["extensions"] = self.extensions
         return formatted
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
                 other.get("data") == self.data
@@ -501,7 +509,7 @@ class InitialIncrementalExecutionResult:
             and other.extensions == self.extensions
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
 
@@ -558,7 +566,7 @@ class SubsequentIncrementalExecutionResult:
             formatted["extensions"] = self.extensions
         return formatted
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
                 ("incremental" not in other or other["incremental"] == self.incremental)
@@ -585,7 +593,7 @@ class SubsequentIncrementalExecutionResult:
             and other.extensions == self.extensions
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
 
@@ -699,11 +707,12 @@ class ExecutionContext:
             elif isinstance(middleware, MiddlewareManager):
                 middleware_manager = middleware
             else:
-                raise TypeError(
+                msg = (
                     "Middleware must be passed as a list or tuple of functions"
                     " or objects, or as a single MiddlewareManager object."
                     f" Got {inspect(middleware)} instead."
                 )
+                raise TypeError(msg)
 
         for definition in document.definitions:
             if isinstance(definition, OperationDefinitionNode):
@@ -797,11 +806,11 @@ class ExecutionContext:
         operation = self.operation
         root_type = schema.get_root_type(operation.operation)
         if root_type is None:
-            raise GraphQLError(
+            msg = (
                 "Schema is not configured to execute"
-                f" {operation.operation.value} operation.",
-                operation,
+                f" {operation.operation.value} operation."
             )
+            raise GraphQLError(msg, operation)
 
         root_fields, patches = collect_fields(
             schema,
@@ -817,9 +826,7 @@ class ExecutionContext:
             self.execute_fields_serially
             if operation.operation == OperationType.MUTATION
             else self.execute_fields
-        )(
-            root_type, root_value, None, root_fields
-        )  # type: ignore
+        )(root_type, root_value, None, root_fields)  # type: ignore
 
         for patch in patches:
             label, patch_fields = patch
@@ -975,11 +982,11 @@ class ExecutionContext:
                         )
                         if self.is_awaitable(completed):
                             return await completed
-                        return completed
                     except Exception as raw_error:
                         error = located_error(raw_error, field_nodes, path.as_list())
                         handle_field_error(error, return_type, errors)
                         return None
+                    return completed
 
                 return await_result()
 
@@ -999,12 +1006,13 @@ class ExecutionContext:
 
                 return await_completed()
 
-            return completed
         except Exception as raw_error:
             error = located_error(raw_error, field_nodes, path.as_list())
             handle_field_error(error, return_type, errors)
             self.filter_subsequent_payloads(path)
             return None
+
+        return completed
 
     def build_resolve_info(
         self,
@@ -1015,7 +1023,8 @@ class ExecutionContext:
     ) -> GraphQLResolveInfo:
         """Build the GraphQLResolveInfo object.
 
-        For internal use only."""
+        For internal use only.
+        """
         # The resolve function's first argument is a collection of information about
         # the current execution state.
         return GraphQLResolveInfo(
@@ -1080,10 +1089,11 @@ class ExecutionContext:
                 async_payload_record,
             )
             if completed is None:
-                raise TypeError(
+                msg = (
                     "Cannot return null for non-nullable field"
                     f" {info.parent_type.name}.{info.field_name}."
                 )
+                raise TypeError(msg)
             return completed
 
         # If result value is null or undefined then return null.
@@ -1115,10 +1125,11 @@ class ExecutionContext:
             )
 
         # Not reachable. All possible output types have been considered.
-        raise TypeError(  # pragma: no cover
+        msg = (
             "Cannot complete value of unexpected output type:"
             f" '{inspect(return_type)}'."
-        )
+        )  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
 
     def get_stream_values(
         self, field_nodes: List[FieldNode], path: Path
@@ -1144,7 +1155,8 @@ class ExecutionContext:
 
         initial_count = stream.get("initialCount")
         if initial_count is None or initial_count < 0:
-            raise ValueError("initialCount must be a positive integer")
+            msg = "initialCount must be a positive integer"
+            raise ValueError(msg)
 
         label = stream.get("label")
         return StreamArguments(initial_count=initial_count, label=label)
@@ -1177,7 +1189,7 @@ class ExecutionContext:
                 and isinstance(stream.initial_count, int)
                 and index >= stream.initial_count
             ):
-                try:
+                with suppress(TimeoutError):
                     await wait_for(
                         shield(
                             self.execute_stream_iterator(
@@ -1193,8 +1205,6 @@ class ExecutionContext:
                         ),
                         timeout=ASYNC_DELAY,
                     )
-                except TimeoutError:
-                    pass
                 break
 
             field_path = path.add_key(index, None)
@@ -1282,10 +1292,11 @@ class ExecutionContext:
             )
 
         if not is_iterable(result):
-            raise GraphQLError(
+            msg = (
                 "Expected Iterable, but did not find one for field"
                 f" '{info.parent_type.name}.{info.field_name}'."
             )
+            raise GraphQLError(msg)
 
         stream = self.get_stream_values(field_nodes, path)
 
@@ -1334,7 +1345,6 @@ class ExecutionContext:
                         )
                         if is_awaitable(completed):
                             return await completed
-                        return completed
                     except Exception as raw_error:
                         error = located_error(
                             raw_error, field_nodes, item_path.as_list()
@@ -1342,6 +1352,7 @@ class ExecutionContext:
                         handle_field_error(error, item_type, errors)
                         self.filter_subsequent_payloads(item_path)
                         return None
+                    return completed
 
                 completed_item = await_completed(item, item_path)
             else:
@@ -1408,10 +1419,12 @@ class ExecutionContext:
         """
         serialized_result = return_type.serialize(result)
         if serialized_result is Undefined or serialized_result is None:
-            raise TypeError(
+            msg = (
                 f"Expected `{inspect(return_type)}.serialize({inspect(result)})`"
-                f" to return non-nullable value, returned: {inspect(serialized_result)}"
+                " to return non-nullable value, returned:"
+                f" {inspect(serialized_result)}"
             )
+            raise TypeError(msg)
         return serialized_result
 
     def complete_abstract_value(
@@ -1475,54 +1488,56 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
+        """Ensure that the given type is valid at runtime."""
         if runtime_type_name is None:
-            raise GraphQLError(
+            msg = (
                 f"Abstract type '{return_type.name}' must resolve"
                 " to an Object type at runtime"
                 f" for field '{info.parent_type.name}.{info.field_name}'."
                 f" Either the '{return_type.name}' type should provide"
                 " a 'resolve_type' function or each possible type should provide"
-                " an 'is_type_of' function.",
-                field_nodes,
+                " an 'is_type_of' function."
             )
+            raise GraphQLError(msg, field_nodes)
 
         if is_object_type(runtime_type_name):  # pragma: no cover
-            raise GraphQLError(
+            msg = (
                 "Support for returning GraphQLObjectType from resolve_type was"
                 " removed in GraphQL-core 3.2, please return type name instead."
             )
+            raise GraphQLError(msg)
 
         if not isinstance(runtime_type_name, str):
-            raise GraphQLError(
+            msg = (
                 f"Abstract type '{return_type.name}' must resolve"
                 " to an Object type at runtime"
                 f" for field '{info.parent_type.name}.{info.field_name}' with value"
-                f" {inspect(result)}, received '{inspect(runtime_type_name)}'.",
-                field_nodes,
+                f" {inspect(result)}, received '{inspect(runtime_type_name)}'."
             )
+            raise GraphQLError(msg, field_nodes)
 
         runtime_type = self.schema.get_type(runtime_type_name)
 
         if runtime_type is None:
-            raise GraphQLError(
+            msg = (
                 f"Abstract type '{return_type.name}' was resolved to a type"
-                f" '{runtime_type_name}' that does not exist inside the schema.",
-                field_nodes,
+                f" '{runtime_type_name}' that does not exist inside the schema."
             )
+            raise GraphQLError(msg, field_nodes)
 
         if not is_object_type(runtime_type):
-            raise GraphQLError(
+            msg = (
                 f"Abstract type '{return_type.name}' was resolved"
-                f" to a non-object type '{runtime_type_name}'.",
-                field_nodes,
+                f" to a non-object type '{runtime_type_name}'."
             )
+            raise GraphQLError(msg, field_nodes)
 
         if not self.schema.is_sub_type(return_type, runtime_type):
-            raise GraphQLError(
+            msg = (
                 f"Runtime Object type '{runtime_type.name}' is not a possible"
-                f" type for '{return_type.name}'.",
-                field_nodes,
+                f" type for '{return_type.name}'."
             )
+            raise GraphQLError(msg, field_nodes)
 
         # noinspection PyTypeChecker
         return runtime_type
@@ -1571,7 +1586,7 @@ class ExecutionContext:
         result: Any,
         async_payload_record: Optional[AsyncPayloadRecord],
     ) -> AwaitableOrValue[Dict[str, Any]]:
-        # Collect sub-fields to execute to complete this value.
+        """Collect sub-fields to execute to complete this value."""
         sub_field_nodes, sub_patches = self.collect_subfields(return_type, field_nodes)
 
         sub_fields = self.execute_fields(
@@ -1612,7 +1627,7 @@ class ExecutionContext:
         key = (
             (return_type, id(field_nodes[0]))
             if len(field_nodes) == 1  # optimize most frequent case
-            else tuple((return_type, *map(id, field_nodes)))
+            else (return_type, *map(id, field_nodes))
         )
         sub_fields_and_patches = cache.get(key)
         if sub_fields_and_patches is None:
@@ -1653,7 +1668,6 @@ class ExecutionContext:
         as it is nearly identical to the "ExecuteQuery" algorithm,
         for which :func:`~graphql.execution.execute` is also used.
         """
-
         if not isinstance(result_or_stream, AsyncIterable):
             return result_or_stream  # pragma: no cover
 
@@ -1674,6 +1688,7 @@ class ExecutionContext:
         path: Optional[Path] = None,
         parent_context: Optional[AsyncPayloadRecord] = None,
     ) -> None:
+        """Execute deferred fragment."""
         async_payload_record = DeferredFragmentRecord(label, path, parent_context, self)
         try:
             awaitable_or_data = self.execute_fields(
@@ -1683,7 +1698,7 @@ class ExecutionContext:
             if self.is_awaitable(awaitable_or_data):
 
                 async def await_data(
-                    awaitable: Awaitable[Dict[str, Any]]
+                    awaitable: Awaitable[Dict[str, Any]],
                 ) -> Optional[Dict[str, Any]]:
                     # noinspection PyShadowingNames
 
@@ -1711,6 +1726,7 @@ class ExecutionContext:
         label: Optional[str] = None,
         parent_context: Optional[AsyncPayloadRecord] = None,
     ) -> AsyncPayloadRecord:
+        """Execute stream field."""
         async_payload_record = StreamRecord(
             label, item_path, None, parent_context, self
         )
@@ -1811,6 +1827,7 @@ class ExecutionContext:
         async_payload_record: StreamRecord,
         field_path: Path,
     ) -> Any:
+        """Execute stream iterator item."""
         if iterator in self._canceled_iterators:
             raise StopAsyncIteration
         try:
@@ -1845,6 +1862,7 @@ class ExecutionContext:
         label: Optional[str],
         parent_context: Optional[AsyncPayloadRecord],
     ) -> None:
+        """Execute stream iterator."""
         index = initial_index
         previous_async_payload_record = parent_context
 
@@ -1889,6 +1907,7 @@ class ExecutionContext:
         null_path: Optional[Path] = None,
         current_async_record: Optional[AsyncPayloadRecord] = None,
     ) -> None:
+        """Filter subsequent payloads."""
         null_path_list = null_path.as_list() if null_path else []
         for async_record in list(self.subsequent_payloads):
             if async_record is current_async_record:
@@ -1903,6 +1922,7 @@ class ExecutionContext:
             del self.subsequent_payloads[async_record]
 
     def get_completed_incremental_results(self) -> List[IncrementalResult]:
+        """Get completed incremental results."""
         incremental_results: List[IncrementalResult] = []
         append_result = incremental_results.append
         subsequent_payloads = list(self.subsequent_payloads)
@@ -1942,6 +1962,7 @@ class ExecutionContext:
     async def yield_subsequent_payloads(
         self,
     ) -> AsyncGenerator[SubsequentIncrementalExecutionResult, None]:
+        """Yield subsequent payloads."""
         payloads = self.subsequent_payloads
         has_next = bool(payloads)
 
@@ -2103,7 +2124,8 @@ def execute_impl(
             async def await_result() -> Any:
                 try:
                     initial_result = build_response(
-                        await result, errors  # type: ignore
+                        await result,  # type: ignore
+                        errors,
                     )
                     if context.subsequent_payloads:
                         return ExperimentalIncrementalExecutionResults(
@@ -2114,10 +2136,10 @@ def execute_impl(
                             ),
                             subsequent_results=context.yield_subsequent_payloads(),
                         )
-                    return initial_result
                 except GraphQLError as error:
                     errors.append(error)
                     return build_response(None, errors)
+                return initial_result
 
             return await_result()
 
@@ -2131,10 +2153,10 @@ def execute_impl(
                 ),
                 subsequent_results=context.yield_subsequent_payloads(),
             )
-        return initial_result
     except GraphQLError as error:
         errors.append(error)
         return build_response(None, errors)
+    return initial_result
 
 
 def assume_not_awaitable(_value: Any) -> bool:
@@ -2191,7 +2213,8 @@ def execute_sync(
     ):
         if default_is_awaitable(result):
             ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
-        raise RuntimeError("GraphQL execution failed to complete synchronously.")
+        msg = "GraphQL execution failed to complete synchronously."
+        raise RuntimeError(msg)
 
     return cast(ExecutionResult, result)
 
@@ -2207,7 +2230,6 @@ def handle_field_error(
     # Otherwise, error protection is applied, logging the error and resolving a
     # null value for this field if one is encountered.
     errors.append(error)
-    return None
 
 
 def invalid_return_type_error(
@@ -2381,7 +2403,7 @@ async def ensure_single_execution_result(
         ExecutionResult,
         InitialIncrementalExecutionResult,
         SubsequentIncrementalExecutionResult,
-    ]
+    ],
 ) -> ExecutionResult:
     """Ensure that the given result does not use incremental delivery."""
     if not isinstance(result, ExecutionResult):
@@ -2593,10 +2615,8 @@ def execute_subscription(
 
     root_type = schema.subscription_type
     if root_type is None:
-        raise GraphQLError(
-            "Schema is not configured to execute subscription operation.",
-            context.operation,
-        )
+        msg = "Schema is not configured to execute subscription operation."
+        raise GraphQLError(msg, context.operation)
 
     root_fields = collect_fields(
         schema,
@@ -2611,9 +2631,8 @@ def execute_subscription(
     field_def = schema.get_field(root_type, field_name)
 
     if not field_def:
-        raise GraphQLError(
-            f"The subscription field '{field_name}' is not defined.", field_nodes
-        )
+        msg = f"The subscription field '{field_name}' is not defined."
+        raise GraphQLError(msg, field_nodes)
 
     path = Path(None, response_name, root_type.name)
     info = context.build_resolve_info(field_def, field_nodes, root_type, path)
@@ -2637,14 +2656,14 @@ def execute_subscription(
                 try:
                     return assert_event_stream(await result)
                 except Exception as error:
-                    raise located_error(error, field_nodes, path.as_list())
+                    raise located_error(error, field_nodes, path.as_list()) from error
 
             return await_result()
 
         return assert_event_stream(result)
 
     except Exception as error:
-        raise located_error(error, field_nodes, path.as_list())
+        raise located_error(error, field_nodes, path.as_list()) from error
 
 
 def assert_event_stream(result: Any) -> AsyncIterable:
@@ -2653,10 +2672,11 @@ def assert_event_stream(result: Any) -> AsyncIterable:
 
     # Assert field returned an event stream, otherwise yield an error.
     if not isinstance(result, AsyncIterable):
-        raise GraphQLError(
+        msg = (
             "Subscription field must return AsyncIterable."
             f" Received: {inspect(result)}."
         )
+        raise GraphQLError(msg)
 
     return result
 
@@ -2706,6 +2726,7 @@ class DeferredFragmentRecord:
         return self.wait().__await__()
 
     async def wait(self) -> Optional[Dict[str, Any]]:
+        """Wait until data is ready."""
         if self.parent_context:
             await self.parent_context.completed.wait()
         _data = self._data
@@ -2722,6 +2743,7 @@ class DeferredFragmentRecord:
         return data
 
     def add_data(self, data: AwaitableOrValue[Optional[Dict[str, Any]]]) -> None:
+        """Add data to the record."""
         self._data = data
         self._data_added.set()
 
@@ -2776,6 +2798,7 @@ class StreamRecord:
         return self.wait().__await__()
 
     async def wait(self) -> Optional[List[str]]:
+        """Wait until data is ready."""
         await self._items_added.wait()
         if self.parent_context:
             await self.parent_context.completed.wait()
@@ -2793,10 +2816,12 @@ class StreamRecord:
         return items
 
     def add_items(self, items: AwaitableOrValue[Optional[List[Any]]]) -> None:
+        """Add items to the record."""
         self._items = items
         self._items_added.set()
 
     def set_is_completed_iterator(self) -> None:
+        """Mark as completed."""
         self.is_completed_iterator = True
         self._items_added.set()
 

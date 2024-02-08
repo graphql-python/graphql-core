@@ -1,7 +1,6 @@
 from typing import cast
 
-from pytest import raises
-
+import pytest
 from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,
@@ -651,7 +650,7 @@ def describe_type_system_build_schema_from_introspection():
         )
 
         def throws_when_introspection_is_missing_schema_property():
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
                 build_client_schema(None)  # type: ignore
 
@@ -661,7 +660,7 @@ def describe_type_system_build_schema_from_introspection():
                 " and no 'errors' were returned alongside: None."
             )
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
                 build_client_schema({})  # type: ignore
 
@@ -680,7 +679,7 @@ def describe_type_system_build_schema_from_introspection():
                 if type_["name"] != "Query"
             ]
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value) == (
@@ -704,7 +703,7 @@ def describe_type_system_build_schema_from_introspection():
                 if type_["name"] != "Float"
             ]
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value).endswith(
@@ -719,7 +718,7 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type["name"] == "Query"
             del query_type["name"]  # type: ignore
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value) == "Unknown type reference: {}."
@@ -734,7 +733,7 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["kind"] == "OBJECT"
             del query_type_introspection["kind"]
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match=r"^Invalid or incomplete introspection result\."
                 " Ensure that a full introspection query is used"
@@ -756,7 +755,7 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["interfaces"] == []
             del query_type_introspection["interfaces"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Query interfaces cannot be resolved."
                 " Introspection result missing interfaces:"
@@ -795,7 +794,7 @@ def describe_type_system_build_schema_from_introspection():
             assert query_type_introspection["fields"]
             del query_type_introspection["fields"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Query fields cannot be resolved."
                 " Introspection result missing fields:"
@@ -818,7 +817,7 @@ def describe_type_system_build_schema_from_introspection():
             assert field["args"]
             del field["args"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Query fields cannot be resolved."
                 r" Introspection result missing field args: {'name': 'foo', .*}\.$",
@@ -840,7 +839,7 @@ def describe_type_system_build_schema_from_introspection():
             assert arg["type"]["name"] == "String"
             arg["type"]["name"] = "SomeUnion"
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value).startswith(
@@ -864,7 +863,7 @@ def describe_type_system_build_schema_from_introspection():
             assert input_field["type"]["name"] == "String"
             input_field["type"]["name"] = "SomeUnion"
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value).startswith(
@@ -888,7 +887,7 @@ def describe_type_system_build_schema_from_introspection():
             assert field["type"]["name"] == "String"
             field["type"]["name"] = "SomeInputObject"
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value).startswith(
@@ -911,7 +910,7 @@ def describe_type_system_build_schema_from_introspection():
             assert some_union_introspection["possibleTypes"]
             del some_union_introspection["possibleTypes"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Introspection result missing possibleTypes:"
                 r" {'kind': 'UNION', 'name': 'SomeUnion', .*}\.$",
@@ -932,7 +931,7 @@ def describe_type_system_build_schema_from_introspection():
             assert some_enum_introspection["enumValues"]
             del some_enum_introspection["enumValues"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Introspection result missing enumValues:"
                 r" {'kind': 'ENUM', 'name': 'SomeEnum', .*}\.$",
@@ -953,7 +952,7 @@ def describe_type_system_build_schema_from_introspection():
             assert some_input_object_introspection["inputFields"]
             del some_input_object_introspection["inputFields"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Introspection result missing inputFields:"
                 r" {'kind': 'INPUT_OBJECT', 'name': 'SomeInputObject', .*}\.$",
@@ -968,7 +967,7 @@ def describe_type_system_build_schema_from_introspection():
             assert some_directive_introspection["locations"] == ["QUERY"]
             del some_directive_introspection["locations"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Introspection result missing directive locations:"
                 r" {'name': 'SomeDirective', .*}\.$",
@@ -983,7 +982,7 @@ def describe_type_system_build_schema_from_introspection():
             assert some_directive_introspection["args"] == []
             del some_directive_introspection["args"]  # type: ignore
 
-            with raises(
+            with pytest.raises(
                 TypeError,
                 match="^Introspection result missing directive args:"
                 r" {'name': 'SomeDirective', .*}\.$",
@@ -1002,7 +1001,7 @@ def describe_type_system_build_schema_from_introspection():
 
             introspection = introspection_from_schema(schema)
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value) == (
@@ -1021,7 +1020,7 @@ def describe_type_system_build_schema_from_introspection():
 
             introspection = introspection_from_schema(schema)
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
             assert str(exc_info.value) == (
@@ -1069,7 +1068,7 @@ def describe_type_system_build_schema_from_introspection():
                 {"kind": "OBJECT", "name": "Foo", "ofType": None}
             ]
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
             assert str(exc_info.value) == (
                 "Foo interfaces cannot be resolved."
@@ -1099,7 +1098,7 @@ def describe_type_system_build_schema_from_introspection():
                 {"kind": "UNION", "name": "Foo", "ofType": None}
             ]
 
-            with raises(TypeError) as exc_info:
+            with pytest.raises(TypeError) as exc_info:
                 build_client_schema(introspection)
             assert str(exc_info.value) == (
                 "Foo types cannot be resolved."

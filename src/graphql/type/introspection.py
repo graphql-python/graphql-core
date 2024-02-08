@@ -1,3 +1,5 @@
+"""GraphQL introspection"""
+
 from enum import Enum
 from typing import Mapping
 
@@ -24,7 +26,6 @@ from .definition import (
     is_union_type,
 )
 from .scalars import GraphQLBoolean, GraphQLString
-
 
 __all__ = [
     "SchemaMetaFieldDef",
@@ -324,7 +325,8 @@ class TypeFields(GraphQLFieldMap):
             return TypeKind.NON_NULL
 
         # Not reachable. All possible types have been considered.
-        raise TypeError(f"Unexpected type: {inspect(type_)}.")  # pragma: no cover
+        msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
 
     @staticmethod
     def name(type_, _info):
@@ -341,45 +343,52 @@ class TypeFields(GraphQLFieldMap):
     # noinspection PyPep8Naming
     @staticmethod
     def fields(type_, _info, includeDeprecated=False):
-        if is_object_type(type_) or is_interface_type(type_):
-            items = type_.fields.items()
-            return (
-                list(items)
-                if includeDeprecated
-                else [item for item in items if item[1].deprecation_reason is None]
-            )
+        if not (is_object_type(type_) or is_interface_type(type_)):
+            return None
+        items = type_.fields.items()
+        return (
+            list(items)
+            if includeDeprecated
+            else [item for item in items if item[1].deprecation_reason is None]
+        )
 
     @staticmethod
     def interfaces(type_, _info):
-        if is_object_type(type_) or is_interface_type(type_):
-            return type_.interfaces
+        return (
+            type_.interfaces
+            if is_object_type(type_) or is_interface_type(type_)
+            else None
+        )
 
     @staticmethod
     def possible_types(type_, info):
-        if is_abstract_type(type_):
-            return info.schema.get_possible_types(type_)
+        return (
+            info.schema.get_possible_types(type_) if is_abstract_type(type_) else None
+        )
 
     # noinspection PyPep8Naming
     @staticmethod
     def enum_values(type_, _info, includeDeprecated=False):
-        if is_enum_type(type_):
-            items = type_.values.items()
-            return (
-                items
-                if includeDeprecated
-                else [item for item in items if item[1].deprecation_reason is None]
-            )
+        if not is_enum_type(type_):
+            return None
+        items = type_.values.items()
+        return (
+            items
+            if includeDeprecated
+            else [item for item in items if item[1].deprecation_reason is None]
+        )
 
     # noinspection PyPep8Naming
     @staticmethod
     def input_fields(type_, _info, includeDeprecated=False):
-        if is_input_object_type(type_):
-            items = type_.fields.items()
-            return (
-                items
-                if includeDeprecated
-                else [item for item in items if item[1].deprecation_reason is None]
-            )
+        if not is_input_object_type(type_):
+            return None
+        items = type_.fields.items()
+        return (
+            items
+            if includeDeprecated
+            else [item for item in items if item[1].deprecation_reason is None]
+        )
 
     @staticmethod
     def of_type(type_, _info):
@@ -573,6 +582,8 @@ _EnumValue: GraphQLObjectType = GraphQLObjectType(
 
 
 class TypeKind(Enum):
+    """Kinds of types"""
+
     SCALAR = "scalar"
     OBJECT = "object"
     INTERFACE = "interface"
@@ -687,4 +698,4 @@ def is_introspection_type(type_: GraphQLNamedType) -> bool:
 
 
 # register the introspection types to avoid redefinition
-GraphQLNamedType.reserved_types.update(introspection_types)
+GraphQLNamedType.reserved_types.update(introspection_types)  # type: ignore

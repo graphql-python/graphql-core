@@ -1,6 +1,7 @@
+"""GraphQL Error"""
+
 from sys import exc_info
 from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Union
-
 
 try:
     from typing import TypedDict
@@ -12,12 +13,12 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
-    from ..language.ast import Node  # noqa: F401
-    from ..language.location import (  # noqa: F401
+    from ..language.ast import Node
+    from ..language.location import (
         FormattedSourceLocation,
         SourceLocation,
     )
-    from ..language.source import Source  # noqa: F401
+    from ..language.source import Source
 
 __all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
 
@@ -127,6 +128,7 @@ class GraphQLError(Exception):
         original_error: Optional[Exception] = None,
         extensions: Optional[GraphQLErrorExtensions] = None,
     ) -> None:
+        """Initialize a GraphQLError."""
         super().__init__(message)
         self.message = message
 
@@ -201,7 +203,7 @@ class GraphQLError(Exception):
             args.append(f"extensions={self.extensions!r}")
         return f"{self.__class__.__name__}({', '.join(args)})"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, GraphQLError)
             and self.__class__ == other.__class__
@@ -220,7 +222,7 @@ class GraphQLError(Exception):
             )
         )
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
     @property

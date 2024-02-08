@@ -1,3 +1,5 @@
+"""Fields on correct type rule"""
+
 from collections import defaultdict
 from functools import cmp_to_key
 from typing import Any, Dict, List, Union
@@ -15,7 +17,6 @@ from ...type import (
     is_object_type,
 )
 from . import ValidationRule
-
 
 __all__ = ["FieldsOnCorrectTypeRule"]
 
@@ -62,8 +63,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
 def get_suggested_type_names(
     schema: GraphQLSchema, type_: GraphQLOutputType, field_name: str
 ) -> List[str]:
-    """
-    Get a list of suggested type names.
+    """Get a list of suggested type names.
 
     Go through all of the implementations of type, as well as the interfaces
     that they implement. If any of those types include the provided field,

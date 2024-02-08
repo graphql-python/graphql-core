@@ -16,7 +16,6 @@ from graphql.type import (
 )
 from graphql.utilities import introspection_from_schema
 
-
 ColorType = GraphQLEnumType("Color", values={"RED": 0, "GREEN": 1, "BLUE": 2})
 
 
@@ -28,7 +27,7 @@ class ColorTypeEnumValues(Enum):
 
 class Complex1:
     # noinspection PyMethodMayBeStatic
-    some_random_object = datetime.now()
+    some_random_object = datetime.now()  # noqa: DTZ005
 
 
 class Complex2:
@@ -52,7 +51,7 @@ QueryType = GraphQLObjectType(
                 "fromInt": GraphQLArgument(GraphQLInt),
                 "fromString": GraphQLArgument(GraphQLString),
             },
-            resolve=lambda _source, info, **args: args.get("fromInt")
+            resolve=lambda _source, _info, **args: args.get("fromInt")
             or args.get("fromString")
             or args.get("fromEnum"),
         ),
@@ -62,7 +61,7 @@ QueryType = GraphQLObjectType(
                 "fromEnum": GraphQLArgument(ColorType),
                 "fromInt": GraphQLArgument(GraphQLInt),
             },
-            resolve=lambda _source, info, **args: args.get("fromEnum"),
+            resolve=lambda _source, _info, **args: args.get("fromEnum"),
         ),
         "complexEnum": GraphQLField(
             ComplexEnum,
@@ -73,13 +72,16 @@ QueryType = GraphQLObjectType(
                 "provideGoodValue": GraphQLArgument(GraphQLBoolean),
                 "provideBadValue": GraphQLArgument(GraphQLBoolean),
             },
-            resolve=lambda _source, info, **args:
+            resolve=lambda _source, _info, **args:
             # Note: this is one of the references of the internal values
             # which ComplexEnum allows.
-            complex2 if args.get("provideGoodValue")
+            complex2
+            if args.get("provideGoodValue")
             # Note: similar object, but not the same *reference* as
             # complex2 above. Enum internal values require object equality.
-            else Complex2() if args.get("provideBadValue") else args.get("fromEnum"),
+            else Complex2()
+            if args.get("provideBadValue")
+            else args.get("fromEnum"),
         ),
     },
 )
@@ -90,7 +92,7 @@ MutationType = GraphQLObjectType(
         "favoriteEnum": GraphQLField(
             ColorType,
             args={"color": GraphQLArgument(ColorType)},
-            resolve=lambda _source, info, color=None: color,
+            resolve=lambda _source, _info, color=None: color,
         )
     },
 )
@@ -101,7 +103,7 @@ SubscriptionType = GraphQLObjectType(
         "subscribeToEnum": GraphQLField(
             ColorType,
             args={"color": GraphQLArgument(ColorType)},
-            resolve=lambda _source, info, color=None: color,
+            resolve=lambda _source, _info, color=None: color,
         )
     },
 )
@@ -118,8 +120,8 @@ def execute_query(source: str, variable_values: Optional[Dict[str, Any]] = None)
 def describe_type_system_enum_values():
     def can_use_python_enums_instead_of_dicts():
         assert ColorType2.values == ColorType.values
-        keys = [key for key in ColorType.values]
-        keys2 = [key for key in ColorType2.values]
+        keys = list(ColorType.values)
+        keys2 = list(ColorType2.values)
         assert keys2 == keys
         values = [value.value for value in ColorType.values.values()]
         values2 = [value.value for value in ColorType2.values.values()]

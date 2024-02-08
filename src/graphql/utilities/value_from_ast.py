@@ -1,3 +1,5 @@
+"""Conversion from GraphQL value AST to Python values."""
+
 from typing import Any, Dict, List, Optional, cast
 
 from ..language import (
@@ -16,7 +18,6 @@ from ..type import (
     is_list_type,
     is_non_null_type,
 )
-
 
 __all__ = ["value_from_ast"]
 
@@ -127,12 +128,13 @@ def value_from_ast(
                 result = type_.parse_literal(value_node, variables)
             else:
                 result = type_.parse_literal(value_node)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return Undefined
         return result
 
     # Not reachable. All possible input types have been considered.
-    raise TypeError(f"Unexpected input type: {inspect(type_)}.")
+    msg = f"Unexpected input type: {inspect(type_)}."  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 def is_missing_variable(

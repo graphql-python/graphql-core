@@ -1,3 +1,5 @@
+"""Find breaking changes between GraphQL schemas"""
+
 from enum import Enum
 from typing import Any, Collection, Dict, List, NamedTuple, Union
 
@@ -30,7 +32,6 @@ from ..type import (
 from ..utilities.sort_value_node import sort_value_node
 from .ast_from_value import ast_from_value
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -48,6 +49,8 @@ __all__ = [
 
 
 class BreakingChangeType(Enum):
+    """Types of breaking changes"""
+
     TYPE_REMOVED = 10
     TYPE_CHANGED_KIND = 11
     TYPE_REMOVED_FROM_UNION = 20
@@ -67,6 +70,8 @@ class BreakingChangeType(Enum):
 
 
 class DangerousChangeType(Enum):
+    """Types of dangerous changes"""
+
     VALUE_ADDED_TO_ENUM = 60
     TYPE_ADDED_TO_UNION = 61
     OPTIONAL_INPUT_FIELD_ADDED = 62
@@ -76,11 +81,15 @@ class DangerousChangeType(Enum):
 
 
 class BreakingChange(NamedTuple):
+    """Type and description of a breaking change"""
+
     type: BreakingChangeType
     description: str
 
 
 class DangerousChange(NamedTuple):
+    """Type and description of a dangerous change"""
+
     type: DangerousChangeType
     description: str
 
@@ -205,12 +214,12 @@ def find_type_changes(
             schema_changes.extend(find_union_type_changes(old_type, new_type))
         elif is_input_object_type(old_type) and is_input_object_type(new_type):
             schema_changes.extend(find_input_object_type_changes(old_type, new_type))
-        elif is_object_type(old_type) and is_object_type(new_type):
-            schema_changes.extend(find_field_changes(old_type, new_type))
-            schema_changes.extend(
-                find_implemented_interfaces_changes(old_type, new_type)
-            )
-        elif is_interface_type(old_type) and is_interface_type(new_type):
+        elif (
+            is_object_type(old_type)
+            and is_object_type(new_type)
+            or is_interface_type(old_type)
+            and is_interface_type(new_type)
+        ):
             schema_changes.extend(find_field_changes(old_type, new_type))
             schema_changes.extend(
                 find_implemented_interfaces_changes(old_type, new_type)
@@ -490,8 +499,7 @@ def is_change_safe_for_object_or_interface_field(
     if is_named_type(old_type):
         return (
             # if they're both named types, see if their names are equivalent
-            is_named_type(new_type)
-            and old_type.name == new_type.name
+            is_named_type(new_type) and old_type.name == new_type.name
         ) or (
             # moving from nullable to non-null of same underlying type is safe
             is_non_null_type(new_type)
@@ -499,7 +507,8 @@ def is_change_safe_for_object_or_interface_field(
         )
 
     # Not reachable. All possible output types have been considered.
-    raise TypeError(f"Unexpected type {inspect(old_type)}")
+    msg = f"Unexpected type {inspect(old_type)}"  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 def is_change_safe_for_input_object_field_or_field_arg(
@@ -531,12 +540,12 @@ def is_change_safe_for_input_object_field_or_field_arg(
     if is_named_type(old_type):
         return (
             # if they're both named types, see if their names are equivalent
-            is_named_type(new_type)
-            and old_type.name == new_type.name
+            is_named_type(new_type) and old_type.name == new_type.name
         )
 
     # Not reachable. All possible output types have been considered.
-    raise TypeError(f"Unexpected type {inspect(old_type)}")
+    msg = f"Unexpected type {inspect(old_type)}"  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 def type_kind_name(type_: GraphQLNamedType) -> str:
@@ -554,13 +563,15 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
         return "an Input type"
 
     # Not reachable. All possible output types have been considered.
-    raise TypeError(f"Unexpected type {inspect(type_)}")
+    msg = f"Unexpected type {inspect(type_)}"  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
 
 
 def stringify_value(value: Any, type_: GraphQLInputType) -> str:
     ast = ast_from_value(value, type_)
     if ast is None:  # pragma: no cover
-        raise TypeError(f"Invalid value: {inspect(value)}")
+        msg = f"Invalid value: {inspect(value)}"
+        raise TypeError(msg)
     return print_ast(sort_value_node(ast))
 
 

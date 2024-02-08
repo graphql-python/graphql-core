@@ -8,8 +8,7 @@ from graphql.language.character_classes import (
     is_name_start,
 )
 
-
-non_ascii = "¯＿±¹²³½£ºµÄäÖöØø×〇᧐〸αΑωΩ"
+non_ascii = "¯＿±¹²³½£ºµÄäÖöØø×〇᧐〸αΑωΩ"  #  noqa: RUF001
 
 
 def describe_digit():

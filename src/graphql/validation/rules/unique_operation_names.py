@@ -1,9 +1,10 @@
+"""Unique operation names rule"""
+
 from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import SKIP, NameNode, OperationDefinitionNode, VisitorAction
 from . import ASTValidationContext, ASTValidationRule
-
 
 __all__ = ["UniqueOperationNamesRule"]
 
@@ -16,7 +17,7 @@ class UniqueOperationNamesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Operation-Name-Uniqueness
     """
 
-    def __init__(self, context: ASTValidationContext):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
         self.known_operation_names: Dict[str, NameNode] = {}
 

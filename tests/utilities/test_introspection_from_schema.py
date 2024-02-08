@@ -2,8 +2,7 @@ import pickle
 import sys
 from copy import deepcopy
 
-from pytest import mark
-
+import pytest
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.utilities import (
     IntrospectionQuery,
@@ -106,9 +105,9 @@ def describe_introspection_from_schema():
             # check that introspecting the copied schema gives the same result
             assert introspection_from_schema(copied) == introspected_schema
 
-    @mark.slow
+    @pytest.mark.slow()
     def describe_deepcopy_and_pickle_big():  # pragma: no cover
-        @mark.timeout(20)
+        @pytest.mark.timeout(20)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811
             # introspect the original big schema
             big_schema = build_schema(big_schema_sdl)
@@ -119,7 +118,7 @@ def describe_introspection_from_schema():
             # check that introspecting the copied schema gives the same result
             assert introspection_from_schema(copied) == expected_introspection
 
-        @mark.timeout(60)
+        @pytest.mark.timeout(60)
         def can_pickle_and_unpickle_big_schema(big_schema_sdl):  # noqa: F811
             # introspect the original big schema
             big_schema = build_schema(big_schema_sdl)
@@ -153,7 +152,7 @@ def describe_introspection_from_schema():
             finally:
                 sys.setrecursionlimit(limit)
 
-        @mark.timeout(60)
+        @pytest.mark.timeout(60)
         def can_deep_copy_pickled_big_schema(big_schema_sdl):  # noqa: F811
             # introspect the original big schema
             big_schema = build_schema(big_schema_sdl)

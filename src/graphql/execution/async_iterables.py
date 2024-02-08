@@ -1,8 +1,9 @@
+"""Helpers for async iterables"""
+
 from __future__ import annotations  # Python < 3.10
 
 from contextlib import AbstractAsyncContextManager
 from typing import (
-    Any,
     AsyncGenerator,
     AsyncIterable,
     Awaitable,
@@ -10,7 +11,6 @@ from typing import (
     TypeVar,
     Union,
 )
-
 
 __all__ = ["aclosing", "flatten_async_iterable", "map_async_iterable"]
 
@@ -20,7 +20,7 @@ V = TypeVar("V")
 AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
 
 
-class aclosing(AbstractAsyncContextManager):
+class aclosing(AbstractAsyncContextManager):  # noqa: N801
     """Async context manager for safely finalizing an async iterator or generator.
 
     Contrary to the function available via the standard library, this one silently
@@ -33,7 +33,7 @@ class aclosing(AbstractAsyncContextManager):
     async def __aenter__(self) -> AsyncIterableOrGenerator[T]:
         return self.iterable
 
-    async def __aexit__(self, *_exc_info: Any) -> None:
+    async def __aexit__(self, *_exc_info: object) -> None:
         try:
             aclose = self.iterable.aclose  # type: ignore
         except AttributeError:
@@ -67,7 +67,6 @@ async def map_async_iterable(
     If the inner iterator supports an `aclose()` method, it will be called when
     the generator finishes or closes.
     """
-
     async with aclosing(iterable) as items:  # type: ignore
         async for item in items:
             yield await callback(item)

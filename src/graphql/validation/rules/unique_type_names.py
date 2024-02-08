@@ -1,9 +1,10 @@
+"""Unique type names rule"""
+
 from typing import Any, Dict
 
 from ...error import GraphQLError
 from ...language import SKIP, NameNode, TypeDefinitionNode, VisitorAction
 from . import SDLValidationContext, SDLValidationRule
-
 
 __all__ = ["UniqueTypeNamesRule"]
 
@@ -14,7 +15,7 @@ class UniqueTypeNamesRule(SDLValidationRule):
     A GraphQL document is only valid if all defined types have unique names.
     """
 
-    def __init__(self, context: SDLValidationContext):
+    def __init__(self, context: SDLValidationContext) -> None:
         super().__init__(context)
         self.known_type_names: Dict[str, NameNode] = {}
         self.schema = context.schema

@@ -1,3 +1,5 @@
+"""Unique variable names rule"""
+
 from operator import attrgetter
 from typing import Any
 
@@ -5,7 +7,6 @@ from ...error import GraphQLError
 from ...language import OperationDefinitionNode
 from ...pyutils import group_by
 from . import ASTValidationRule
-
 
 __all__ = ["UniqueVariableNamesRule"]
 

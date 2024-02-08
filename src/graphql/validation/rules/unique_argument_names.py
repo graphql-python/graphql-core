@@ -1,3 +1,5 @@
+"""Unique argument names rule"""
+
 from operator import attrgetter
 from typing import Any, Collection
 
@@ -5,7 +7,6 @@ from ...error import GraphQLError
 from ...language import ArgumentNode, DirectiveNode, FieldNode
 from ...pyutils import group_by
 from . import ASTValidationRule
-
 
 __all__ = ["UniqueArgumentNamesRule"]
 
@@ -22,7 +23,7 @@ class UniqueArgumentNamesRule(ASTValidationRule):
     def enter_field(self, node: FieldNode, *_args: Any) -> None:
         self.check_arg_uniqueness(node.arguments)
 
-    def enter_directive(self, node: DirectiveNode, *args: Any) -> None:
+    def enter_directive(self, node: DirectiveNode, *_args: Any) -> None:
         self.check_arg_uniqueness(node.arguments)
 
     def check_arg_uniqueness(self, argument_nodes: Collection[ArgumentNode]) -> None:

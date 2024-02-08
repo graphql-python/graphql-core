@@ -1,6 +1,6 @@
 # GraphQL-core 3
 
-GraphQL-core 3 is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
+GraphQL-core 3 is a Python 3.7+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
@@ -15,7 +15,7 @@ replication of the complete test suite of GraphQL.js, making sure this port is
 reliable and compatible with GraphQL.js.
 
 The current stable version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js
-version 16.6.0 and supports Python version 3.6 and newer.
+version 16.6.0 and supports Python version 3.7 and newer.
 
 You can also try out the latest alpha version 3.3.0a3 of GraphQL-core
 which is up-to-date with GraphQL.js version 17.0.0a2.
@@ -196,13 +196,14 @@ Design goals for the GraphQL-core 3 library were:
   (and is now using TypeScript)
 * to use [black](https://github.com/ambv/black) to achieve a consistent code style
   while saving time and mental energy for more important matters
+  (we are now using [ruff](https://github.com/astral-sh/ruff) instead)
 * to replicate the complete Mocha-based test suite of GraphQL.js
   using [pytest](https://docs.pytest.org/)
   with [pytest-describe](https://pypi.org/project/pytest-describe/)
 
 Some restrictions (mostly in line with the design goals):
 
-* requires Python 3.6 or newer
+* requires Python 3.7 or newer
 * does not support some already deprecated methods and options of GraphQL.js
 * supports asynchronous operations only via async.io
   (does not support the additional executors in GraphQL-core)

@@ -1,6 +1,5 @@
 """Tests for graphql.validation"""
 
-from pytest import register_assert_rewrite
+import pytest
 
-
-register_assert_rewrite("tests.validation.harness")
+pytest.register_assert_rewrite("tests.validation.harness")

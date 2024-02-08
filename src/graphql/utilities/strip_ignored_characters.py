@@ -1,10 +1,11 @@
+"""Removal of insignificant characters"""
+
 from typing import Union, cast
 
 from ..language import Lexer, TokenKind
 from ..language.block_string import print_block_string
 from ..language.lexer import is_punctuator_token_kind
 from ..language.source import Source, is_source
-
 
 __all__ = ["strip_ignored_characters"]
 
@@ -31,7 +32,6 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
     Warning: It is guaranteed that this function will always produce stable results.
     However, it's not guaranteed that it will stay the same between different
     releases due to bugfixes or changes in the GraphQL specification.
-    """ '''
 
     Query example::
 
@@ -51,20 +51,20 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
 
     SDL example::
 
-        """
+        \"\"\"
         Type description
-        """
+        \"\"\"
         type Foo {
-          """
+          \"\"\"
           Field description
-          """
+          \"\"\"
           bar: String
         }
 
     Becomes::
 
-        """Type description""" type Foo{"""Field description""" bar:String}
-    '''
+        \"\"\"Type description\"\"\" type Foo{\"\"\"Field description\"\"\" bar:String}
+    """
     if not is_source(source):
         source = Source(cast(str, source))
 

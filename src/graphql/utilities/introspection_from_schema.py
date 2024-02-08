@@ -1,10 +1,11 @@
+"""Building introspection queries from GraphQL schemas"""
+
 from typing import cast
 
 from ..error import GraphQLError
 from ..language import parse
 from ..type import GraphQLSchema
 from .get_introspection_query import IntrospectionQuery, get_introspection_query
-
 
 __all__ = ["introspection_from_schema"]
 
@@ -39,9 +40,11 @@ def introspection_from_schema(
 
     result = execute_sync(schema, document)
     if not isinstance(result, ExecutionResult):  # pragma: no cover
-        raise RuntimeError("Introspection cannot be executed")
+        msg = "Introspection cannot be executed"
+        raise RuntimeError(msg)  # noqa: TRY004
     if result.errors:  # pragma: no cover
         raise result.errors[0]
     if not result.data:  # pragma: no cover
-        raise GraphQLError("Introspection did not return a result")
+        msg = "Introspection did not return a result"
+        raise GraphQLError(msg)
     return cast(IntrospectionQuery, result.data)

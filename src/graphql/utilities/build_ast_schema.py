@@ -1,3 +1,5 @@
+"""GraphQL Schema creation from GraphQL AST"""
+
 from typing import Union, cast
 
 from ..language import DocumentNode, Source, parse
@@ -8,7 +10,6 @@ from ..type import (
     specified_directives,
 )
 from .extend_schema import ExtendSchemaImpl
-
 
 __all__ = [
     "build_ast_schema",
@@ -73,7 +74,7 @@ def build_ast_schema(
 
     # If specified directives were not explicitly declared, add them.
     directives = schema_kwargs["directives"]
-    directive_names = set(directive.name for directive in directives)
+    directive_names = {directive.name for directive in directives}
     missing_directives = []
     for directive in specified_directives:
         if directive.name not in directive_names:

@@ -1,10 +1,11 @@
+"""Stream directive on list field rule"""
+
 from typing import Any, List, cast
 
 from ...error import GraphQLError
 from ...language import DirectiveNode, Node
 from ...type import GraphQLStreamDirective, is_list_type, is_wrapping_type
 from . import ASTValidationRule, ValidationContext
-
 
 __all__ = ["StreamDirectiveOnListField"]
 

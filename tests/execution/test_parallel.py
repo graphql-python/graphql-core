@@ -1,8 +1,7 @@
 import asyncio
 from typing import Awaitable
 
-from pytest import mark
-
+import pytest
 from graphql.execution import execute
 from graphql.language import parse
 from graphql.type import (
@@ -32,7 +31,7 @@ class Barrier:
 
 
 def describe_parallel_execution():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolve_single_field():
         # make sure that the special case of resolving a single field works
         async def resolve(*_args):
@@ -53,7 +52,7 @@ def describe_parallel_execution():
 
         assert result == ({"foo": True}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolve_fields_in_parallel():
         barrier = Barrier(2)
 
@@ -79,7 +78,7 @@ def describe_parallel_execution():
 
         assert result == ({"foo": True, "bar": True}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolve_single_element_list():
         # make sure that the special case of resolving a single element list works
         async def resolve(*_args):
@@ -98,7 +97,7 @@ def describe_parallel_execution():
 
         assert result == ({"foo": [True]}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolve_list_in_parallel():
         barrier = Barrier(2)
 
@@ -128,7 +127,7 @@ def describe_parallel_execution():
 
         assert result == ({"foo": [True, True]}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolve_is_type_of_in_parallel():
         FooType = GraphQLInterfaceType("Foo", {"foo": GraphQLField(GraphQLString)})
 

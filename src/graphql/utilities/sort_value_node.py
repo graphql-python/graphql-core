@@ -1,9 +1,10 @@
+"""Sorting value nodes"""
+
 from copy import copy
 from typing import Tuple
 
 from ..language import ListValueNode, ObjectFieldNode, ObjectValueNode, ValueNode
 from ..pyutils import natural_comparison_key
-
 
 __all__ = ["sort_value_node"]
 

@@ -1,3 +1,5 @@
+"""Sorting GraphQL schemas"""
+
 from typing import Collection, Dict, Optional, Tuple, Union, cast
 
 from ..language import DirectiveLocation
@@ -29,7 +31,6 @@ from ..type import (
     is_union_type,
 )
 
-
 __all__ = ["lexicographic_sort_schema"]
 
 
@@ -40,7 +41,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
     """
 
     def replace_type(
-        type_: Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]
+        type_: Union[GraphQLList, GraphQLNonNull, GraphQLNamedType],
     ) -> Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]:
         if is_list_type(type_):
             return GraphQLList(replace_type(type_.of_type))
@@ -89,7 +90,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         return fields
 
     def sort_input_fields(
-        fields_map: Dict[str, GraphQLInputField]
+        fields_map: Dict[str, GraphQLInputField],
     ) -> Dict[str, GraphQLInputField]:
         return {
             name: GraphQLInputField(
@@ -155,7 +156,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             )
 
         # Not reachable. All possible types have been considered.
-        raise TypeError(f"Unexpected type: {inspect(type_)}.")
+        msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
+        raise TypeError(msg)  # pragma: no cover
 
     type_map: Dict[str, GraphQLNamedType] = {
         type_.name: sort_named_type(type_)
@@ -180,6 +182,6 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
 
 
 def sort_by_name_key(
-    type_: Union[GraphQLNamedType, GraphQLDirective, DirectiveLocation]
+    type_: Union[GraphQLNamedType, GraphQLDirective, DirectiveLocation],
 ) -> Tuple:
     return natural_comparison_key(type_.name)

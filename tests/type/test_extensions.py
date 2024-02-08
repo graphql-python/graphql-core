@@ -1,5 +1,4 @@
-from pytest import param
-
+import pytest
 from graphql.type import (
     GraphQLArgument,
     GraphQLDirective,
@@ -15,10 +14,12 @@ from graphql.type import (
     GraphQLUnionType,
 )
 
-
 dummy_type = GraphQLScalarType("DummyScalar")
 
-bad_extensions = [param([], id="list"), param({1: "ext"}, id="non_string_key")]
+bad_extensions = [
+    pytest.param([], id="list"),
+    pytest.param({1: "ext"}, id="non_string_key"),
+]
 
 
 def describe_type_system_extensions():

@@ -16,11 +16,12 @@ class ASTValidationRule(Visitor):
 
     context: ASTValidationContext
 
-    def __init__(self, context: ASTValidationContext):
+    def __init__(self, context: ASTValidationContext) -> None:
         super().__init__()
         self.context = context
 
     def report_error(self, error: GraphQLError) -> None:
+        """Report a GraphQL error."""
         self.context.report_error(error)
 
 

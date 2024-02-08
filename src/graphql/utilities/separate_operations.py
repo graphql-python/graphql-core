@@ -1,3 +1,5 @@
+"""Separation of GraphQL operations"""
+
 from typing import Any, Dict, List, Set
 
 from ..language import (
@@ -9,7 +11,6 @@ from ..language import (
     Visitor,
     visit,
 )
-
 
 try:
     from typing import TypeAlias

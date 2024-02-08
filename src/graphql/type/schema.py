@@ -1,10 +1,25 @@
+"""GraphQL schemas"""
+
 from __future__ import annotations  # Python < 3.10
 
 from copy import copy, deepcopy
-from typing import Any, Collection, Dict, List, NamedTuple, Optional, Set, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Collection,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    cast,
+)
 
-from ..error import GraphQLError
-from ..language import OperationType, ast
+if TYPE_CHECKING:
+    from ..error import GraphQLError
+    from ..language import OperationType, ast
+
 from ..pyutils import inspect
 from .definition import (
     GraphQLAbstractType,
@@ -29,7 +44,6 @@ from .introspection import (
     introspection_types,
 )
 
-
 try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
@@ -39,9 +53,7 @@ try:
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias, TypeGuard
 
-
 __all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "is_schema", "assert_schema"]
-
 
 TypeMap: TypeAlias = Dict[str, GraphQLNamedType]
 
@@ -52,6 +64,8 @@ class InterfaceImplementations(NamedTuple):
 
 
 class GraphQLSchemaKwargs(TypedDict, total=False):
+    """Arguments for GraphQL schemas"""
+
     query: Optional[GraphQLObjectType]
     mutation: Optional[GraphQLObjectType]
     subscription: Optional[GraphQLObjectType]
@@ -207,15 +221,17 @@ class GraphQLSchema:
 
             type_name = getattr(named_type, "name", None)
             if not type_name:
-                raise TypeError(
+                msg = (
                     "One of the provided types for building the Schema"
-                    " is missing a name.",
+                    " is missing a name."
                 )
+                raise TypeError(msg)
             if type_name in type_map:
-                raise TypeError(
+                msg = (
                     "Schema must contain uniquely named types"
                     f" but contains multiple types named '{type_name}'."
                 )
+                raise TypeError(msg)
 
             type_map[type_name] = named_type
 
@@ -245,6 +261,7 @@ class GraphQLSchema:
                         implementations.objects.append(named_type)
 
     def to_kwargs(self) -> GraphQLSchemaKwargs:
+        """Get corresponding arguments."""
         return GraphQLSchemaKwargs(
             query=self.query_type,
             mutation=self.mutation_type,
@@ -296,9 +313,11 @@ class GraphQLSchema:
         )
 
     def get_root_type(self, operation: OperationType) -> Optional[GraphQLObjectType]:
+        """Get the root type."""
         return getattr(self, f"{operation.value}_type")
 
     def get_type(self, name: str) -> Optional[GraphQLNamedType]:
+        """Get the type with the given name."""
         return self.type_map.get(name)
 
     def get_possible_types(
@@ -316,6 +335,7 @@ class GraphQLSchema:
     def get_implementations(
         self, interface_type: GraphQLInterfaceType
     ) -> InterfaceImplementations:
+        """Get implementations for the given interface type."""
         return self._implementations_map.get(
             interface_type.name, InterfaceImplementations(objects=[], interfaces=[])
         )
@@ -345,6 +365,7 @@ class GraphQLSchema:
         return maybe_sub_type.name in types
 
     def get_directive(self, name: str) -> Optional[GraphQLDirective]:
+        """Get the directive with the given name."""
         for directive in self.directives:
             if directive.name == name:
                 return directive
@@ -381,6 +402,7 @@ class GraphQLSchema:
 
     @property
     def validation_errors(self) -> Optional[List[GraphQLError]]:
+        """Get validation errors."""
         return self._validation_errors
 
 
@@ -418,13 +440,15 @@ class TypeSet(Dict[GraphQLNamedType, None]):
 
 
 def is_schema(schema: Any) -> TypeGuard[GraphQLSchema]:
-    """Test if the given value is a GraphQL schema."""
+    """Check whether this is a GraphQL schema."""
     return isinstance(schema, GraphQLSchema)
 
 
 def assert_schema(schema: Any) -> GraphQLSchema:
+    """Assert that this is a GraphQL schema."""
     if not is_schema(schema):
-        raise TypeError(f"Expected {inspect(schema)} to be a GraphQL schema.")
+        msg = f"Expected {inspect(schema)} to be a GraphQL schema."
+        raise TypeError(msg)
     return schema
 
 
@@ -449,17 +473,17 @@ def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
         ]
         fields = type_.fields
         for field_name, field in fields.items():
-            field = copy(field)
+            field = copy(field)  # noqa: PLW2901
             field.type = remapped_type(field.type, type_map)
             args = field.args
             for arg_name, arg in args.items():
-                arg = copy(arg)
+                arg = copy(arg)  # noqa: PLW2901
                 arg.type = remapped_type(arg.type, type_map)
                 args[arg_name] = arg
             fields[field_name] = field
     elif is_input_object_type(type_):
         fields = type_.fields
         for field_name, field in fields.items():
-            field = copy(field)
+            field = copy(field)  # noqa: PLW2901
             field.type = remapped_type(field.type, type_map)
             fields[field_name] = field

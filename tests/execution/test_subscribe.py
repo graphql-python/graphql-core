@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 from typing import (
     Any,
     AsyncIterable,
@@ -11,8 +12,7 @@ from typing import (
     Union,
 )
 
-from pytest import mark, raises
-
+import pytest
 from graphql.execution import (
     ExecutionResult,
     create_source_event_stream,
@@ -36,17 +36,16 @@ from graphql.type import (
 from ..fixtures import cleanup
 from ..utils.assert_equal_awaitables_or_values import assert_equal_awaitables_or_values
 
-
 try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
 
 try:
-    anext
+    anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
-    async def anext(iterator):
+    async def anext(iterator):  # noqa: A001
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 
@@ -164,9 +163,7 @@ def create_subscription(
         "importantEmail": pubsub.get_subscriber(transform),
     }
 
-    return (
-        subscribe if original_subscribe else experimental_subscribe_incrementally
-    )(  # type: ignore
+    return (subscribe if original_subscribe else experimental_subscribe_incrementally)(  # type: ignore
         email_schema, document, data, variable_values=variable_values
     )
 
@@ -201,7 +198,7 @@ def subscribe_with_bad_args(
 
 # Check all error cases when initializing the subscription.
 def describe_subscription_initialization_phase():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def accepts_positional_arguments():
         document = parse(
             """
@@ -217,11 +214,11 @@ def describe_subscription_initialization_phase():
 
         ai = subscribe(email_schema, document, {"importantEmail": empty_async_iterable})
 
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await anext(ai)
         await ai.aclose()  # type: ignore
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def accepts_multiple_subscription_fields_defined_in_schema():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -246,7 +243,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()  # type: ignore
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def accepts_type_definition_with_sync_subscribe_function():
         async def foo_generator(_obj, _info):
             yield {"foo": "FooValue"}
@@ -266,7 +263,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()  # type: ignore
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def accepts_type_definition_with_async_subscribe_function():
         async def foo_generator(_obj, _info):
             await asyncio.sleep(0)
@@ -294,7 +291,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()  # type: ignore
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_only_resolve_the_first_field_of_invalid_multi_field():
         did_resolve = {"foo": False, "bar": False}
 
@@ -329,7 +326,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()  # type: ignore
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolves_to_an_error_if_schema_does_not_support_subscriptions():
         schema = GraphQLSchema(query=DummyQueryType)
         document = parse("subscription { unknownField }")
@@ -347,7 +344,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolves_to_an_error_for_unknown_subscription_field():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -368,7 +365,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_pass_through_unexpected_errors_thrown_in_subscribe():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -376,11 +373,11 @@ def describe_subscription_initialization_phase():
                 "Subscription", {"foo": GraphQLField(GraphQLString)}
             ),
         )
-        with raises(AttributeError):
+        with pytest.raises(AttributeError):
             subscribe_with_bad_args(schema=schema, document={})  # type: ignore
 
-    @mark.asyncio
-    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+    @pytest.mark.asyncio()
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
         expected_result = (
             None,
@@ -409,7 +406,7 @@ def describe_subscription_initialization_phase():
         del result
         cleanup()
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolves_to_an_error_for_subscription_resolver_errors():
         expected_result = (
             None,
@@ -451,7 +448,7 @@ def describe_subscription_initialization_phase():
         assert is_awaitable(result)
         assert await result == expected_result
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def resolves_to_an_error_if_variables_were_wrong_type():
         schema = GraphQLSchema(
             query=DummyQueryType,
@@ -496,7 +493,7 @@ def describe_subscription_initialization_phase():
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.
 def describe_subscription_publish_phase():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def produces_a_payload_for_multiple_subscribe_in_same_subscription():
         pubsub = SimplePubSub()
 
@@ -531,7 +528,7 @@ def describe_subscription_publish_phase():
         assert await payload1 == (expected_payload, None)
         assert await payload2 == (expected_payload, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def produces_a_payload_when_queried_fields_are_async():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub, {"asyncResolver": True})
@@ -563,14 +560,12 @@ def describe_subscription_publish_phase():
             None,
         )
 
-        try:
+        with suppress(RuntimeError):  # suppress error for Python < 3.8
             await subscription.aclose()  # type: ignore
-        except RuntimeError:  # Python < 3.8
-            pass
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await anext(subscription)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def produces_a_payload_per_subscription_event():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
@@ -629,10 +624,8 @@ def describe_subscription_publish_phase():
 
         # The client decides to disconnect.
         # noinspection PyUnresolvedReferences
-        try:
+        with suppress(RuntimeError):  # suppress error for Python < 3.8
             await subscription.aclose()  # type: ignore
-        except RuntimeError:  # Python < 3.8
-            pass
 
         # Which may result in disconnecting upstream services as well.
         assert (
@@ -648,10 +641,10 @@ def describe_subscription_publish_phase():
         )  # No more listeners.
 
         # Awaiting subscription after closing it results in completed results.
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             assert await anext(subscription)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def produces_additional_payloads_for_subscriptions_with_defer():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub, {"shouldDefer": True})
@@ -768,16 +761,14 @@ def describe_subscription_publish_phase():
         }
 
         # The client disconnects before the deferred payload is consumed.
-        try:
+        with suppress(RuntimeError):  # suppress error for Python < 3.8
             await subscription.aclose()  # type: ignore
-        except RuntimeError:  # Python < 3.8
-            pass
 
         # Awaiting a subscription after closing it results in completed results.
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             assert await anext(subscription)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def original_subscribe_function_returns_errors_with_defer():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub, {"shouldDefer": True}, True)
@@ -840,10 +831,10 @@ def describe_subscription_publish_phase():
         await subscription.aclose()  # type: ignore
 
         # Awaiting a subscription after closing it results in completed results.
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             assert await anext(subscription)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def produces_a_payload_when_there_are_multiple_events():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
@@ -899,7 +890,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_not_trigger_when_subscription_is_already_done():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
@@ -931,10 +922,8 @@ def describe_subscription_publish_phase():
         )
 
         payload = anext(subscription)
-        try:
+        with suppress(RuntimeError):  # suppress error for Python < 3.8
             await subscription.aclose()  # type: ignore
-        except RuntimeError:  # Python < 3.8
-            pass
 
         # A new email arrives!
         assert (
@@ -949,10 +938,10 @@ def describe_subscription_publish_phase():
             is False
         )
 
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await payload
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_not_trigger_when_subscription_is_thrown():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
@@ -986,14 +975,14 @@ def describe_subscription_publish_phase():
         payload = anext(subscription)
 
         # Throw error
-        with raises(RuntimeError) as exc_info:
+        with pytest.raises(RuntimeError) as exc_info:
             await subscription.athrow(RuntimeError("ouch"))  # type: ignore
         assert str(exc_info.value) == "ouch"
 
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await payload
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def event_order_is_correct_for_multiple_publishes():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub)
@@ -1049,7 +1038,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_handle_error_during_execution_of_source_event():
         async def generate_messages(_obj, _info):
             yield "Hello"
@@ -1097,7 +1086,7 @@ def describe_subscription_publish_phase():
         # Subsequent events are still executed.
         assert await anext(subscription) == ({"newMessage": "Bonjour"}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_pass_through_error_thrown_in_source_event_stream():
         async def generate_messages(_obj, _info):
             yield "Hello"
@@ -1126,15 +1115,15 @@ def describe_subscription_publish_phase():
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
-        with raises(RuntimeError) as exc_info:
+        with pytest.raises(RuntimeError) as exc_info:
             await anext(subscription)
 
         assert str(exc_info.value) == "test error"
 
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             await anext(subscription)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_work_with_sync_resolve_function():
         async def generate_messages(_obj, _info):
             yield "Hello"
@@ -1162,7 +1151,7 @@ def describe_subscription_publish_phase():
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_work_with_async_resolve_function():
         async def generate_messages(_obj, _info):
             await asyncio.sleep(0)
@@ -1192,7 +1181,7 @@ def describe_subscription_publish_phase():
 
         assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_work_with_custom_async_iterator():
         class MessageGenerator:
             resolved: List[str] = []
@@ -1210,7 +1199,7 @@ def describe_subscription_publish_phase():
                 return self.values.pop(0)
 
             @classmethod
-            async def resolve(cls, message, _info):
+            async def resolve(cls, message, _info) -> str:
                 await asyncio.sleep(0)
                 cls.resolved.append(message)
                 return message + "!"
@@ -1242,7 +1231,7 @@ def describe_subscription_publish_phase():
 
         await subscription.aclose()  # type: ignore
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def should_close_custom_async_iterator():
         class MessageGenerator:
             closed: bool = False
@@ -1261,13 +1250,13 @@ def describe_subscription_publish_phase():
                 return self.values.pop(0)
 
             @classmethod
-            async def resolve(cls, message, _info):
+            async def resolve(cls, message, _info) -> str:
                 await asyncio.sleep(0)
                 cls.resolved.append(message)
                 return message + "!"
 
             @classmethod
-            async def aclose(cls):
+            async def aclose(cls) -> None:
                 cls.closed = True
 
         schema = GraphQLSchema(

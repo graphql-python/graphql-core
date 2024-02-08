@@ -2,8 +2,7 @@ from copy import copy
 from functools import partial
 from typing import Any, List, Optional, cast
 
-from pytest import mark, raises
-
+import pytest
 from graphql.language import (
     BREAK,
     REMOVE,
@@ -83,7 +82,7 @@ def get_value(node):
 
 def describe_visitor():
     def visit_with_invalid_node():
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             visit("invalid", Visitor())  # type: ignore
         assert str(exc_info.value) == "Not an AST Node: 'invalid'."
@@ -95,7 +94,7 @@ def describe_visitor():
             def enter(self, *_args):
                 pass
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             visit(ast, TestVisitor())  # type: ignore
         assert str(exc_info.value) == "Not an AST Visitor: <TestVisitor instance>."
@@ -107,61 +106,53 @@ def describe_visitor():
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"enter:{node.kind}")
-                pass
 
             def leave(self, node, *args):
                 assert isinstance(self, TestVisitorWithInstanceMethods)
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"leave:{node.kind}")
-                pass
 
             def enter_field(self, node, *args):
                 assert isinstance(self, TestVisitorWithInstanceMethods)
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"enter_field:{node.kind}")
-                pass
 
             def leave_field(self, node, *args):
                 assert isinstance(self, TestVisitorWithInstanceMethods)
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"leave_field:{node.kind}")
-                pass
 
         class TestVisitorWithClassMethods(Visitor):
             @classmethod
-            def enter(cls, node, *args):
+            def enter(cls, node, *args) -> None:
                 assert cls is TestVisitorWithClassMethods
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"enter:{node.kind}")
-                pass
 
             @classmethod
-            def leave(cls, node, *args):
+            def leave(cls, node, *args) -> None:
                 assert cls is TestVisitorWithClassMethods
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"leave:{node.kind}")
-                pass
 
             @classmethod
-            def enter_field(cls, node, *args):
+            def enter_field(cls, node, *args) -> None:
                 assert cls is TestVisitorWithClassMethods
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"enter_field:{node.kind}")
-                pass
 
             @classmethod
-            def leave_field(cls, node, *args):
+            def leave_field(cls, node, *args) -> None:
                 assert cls is TestVisitorWithClassMethods
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"leave_field:{node.kind}")
-                pass
 
         class TestVisitorWithStaticMethods(Visitor):
             @staticmethod
@@ -169,28 +160,24 @@ def describe_visitor():
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"enter:{node.kind}")
-                pass
 
             @staticmethod
             def leave(node, *args):
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"leave:{node.kind}")
-                pass
 
             @staticmethod
             def enter_field(node, *args):
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"enter_field:{node.kind}")
-                pass
 
             @staticmethod
             def leave_field(node, *args):
                 assert isinstance(node, Node)
                 assert len(args) == 4
                 visited.append(f"leave_field:{node.kind}")
-                pass
 
         for visitor_class in (
             TestVisitorWithInstanceMethods,
@@ -342,7 +329,9 @@ def describe_visitor():
         assert edited_ast == ast
         assert visited == ["enter", "leave"]
 
-    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    @pytest.mark.parametrize(
+        "remove_action", [REMOVE, Ellipsis], ids=["REMOVE", "Ellipsis"]
+    )
     def allows_for_editing_on_enter(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
@@ -353,12 +342,15 @@ def describe_visitor():
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
                     return remove_action
+                return None
 
         edited_ast = visit(ast, TestVisitor())
         assert ast == parse("{ a, b, c { a, b, c } }", no_location=True)
         assert edited_ast == parse("{ a,    c { a,    c } }", no_location=True)
 
-    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    @pytest.mark.parametrize(
+        "remove_action", [REMOVE, Ellipsis], ids=["REMOVE", "Ellipsis"]
+    )
     def allows_for_editing_on_leave(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
@@ -369,18 +361,19 @@ def describe_visitor():
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "b":
                     return remove_action
+                return None
 
         edited_ast = visit(ast, TestVisitor())
         assert ast == parse("{ a, b, c { a, b, c } }", no_location=True)
         assert edited_ast == parse("{ a,    c { a,    c } }", no_location=True)
 
-    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    @pytest.mark.parametrize("skip_action", [SKIP, False], ids=["SKIP", "False"])
     def ignores_false_returned_on_leave(skip_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
 
         class TestVisitor(Visitor):
             @staticmethod
-            def leave(*args):
+            def leave(*_args):
                 return skip_action
 
         returned_ast = visit(ast, TestVisitor())
@@ -401,16 +394,18 @@ def describe_visitor():
                     assert node.selection_set
                     node.selection_set.selections = (
                         added_field,
-                    ) + node.selection_set.selections
+                        *node.selection_set.selections,
+                    )
                     return node
                 if node == added_field:
                     self.did_visit_added_field = True
+                return None
 
         visitor = TestVisitor()
         visit(ast, visitor)
         assert visitor.did_visit_added_field
 
-    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    @pytest.mark.parametrize("skip_action", [SKIP, False], ids=["SKIP", "False"])
     def allows_skipping_a_sub_tree(skip_action):
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
@@ -424,6 +419,7 @@ def describe_visitor():
                 visited.append(["enter", kind, value])
                 if kind == "field" and node.name.value == "b":
                     return skip_action
+                return None
 
             @staticmethod
             def leave(*args):
@@ -451,7 +447,7 @@ def describe_visitor():
             ["leave", "document", None],
         ]
 
-    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    @pytest.mark.parametrize("break_action", [BREAK, True], ids=["BREAK", "True"])
     def allows_early_exit_while_visiting(break_action):
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
@@ -465,6 +461,7 @@ def describe_visitor():
                 visited.append(["enter", kind, value])
                 if kind == "name" and node.value == "x":
                     return break_action
+                return None
 
             @staticmethod
             def leave(*args):
@@ -490,7 +487,7 @@ def describe_visitor():
             ["enter", "name", "x"],
         ]
 
-    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    @pytest.mark.parametrize("break_action", [BREAK, True], ids=["BREAK", "True"])
     def allows_early_exit_while_leaving(break_action):
         ast = parse("{ a, b { x }, c }", no_location=True)
         visited = []
@@ -511,6 +508,7 @@ def describe_visitor():
                 visited.append(["leave", kind, value])
                 if kind == "name" and node.value == "x":
                     return break_action
+                return None
 
         visit(ast, TestVisitor())
         assert visited == [
@@ -582,7 +580,8 @@ def describe_visitor():
 
         custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
         assert custom_selection_set is not None
-        custom_selection_set.selections = custom_selection_set.selections + (
+        custom_selection_set.selections = (
+            *custom_selection_set.selections,
             CustomFieldNode(
                 name=NameNode(value="NameNodeToBeSkipped"),
                 selection_set=SelectionSetNode(
@@ -656,7 +655,7 @@ def describe_visitor():
         ]
 
     def cannot_define_visitor_with_unknown_ast_nodes():
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
 
             class VisitorWithNonExistingNode(Visitor):
                 def enter_field(self, *_args):
@@ -667,7 +666,7 @@ def describe_visitor():
 
         assert str(exc_info.value) == "Invalid AST node kind: garfield."
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
 
             class VisitorWithUnspecificNode(Visitor):
                 def enter_type_system_extension(self, *_args):
@@ -1377,7 +1376,7 @@ def describe_visitor():
 
 
 def describe_visit_in_parallel():
-    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    @pytest.mark.parametrize("skip_action", [SKIP, False], ids=["SKIP", "False"])
     def allows_skipping_a_sub_tree(skip_action):
         # Note: nearly identical to the above test but using ParallelVisitor
         ast = parse("{ a, b { x }, c }")
@@ -1392,6 +1391,7 @@ def describe_visit_in_parallel():
                 visited.append(["enter", kind, value])
                 if kind == "field" and node.name.value == "b":
                     return skip_action
+                return None
 
             @staticmethod
             def leave(*args):
@@ -1419,7 +1419,7 @@ def describe_visit_in_parallel():
             ["leave", "document", None],
         ]
 
-    @mark.parametrize("skip_action", (SKIP, False), ids=("SKIP", "False"))
+    @pytest.mark.parametrize("skip_action", [SKIP, False], ids=["SKIP", "False"])
     def allows_skipping_different_sub_trees(skip_action):
         ast = parse("{ a { x }, b { y} }")
         visited = []
@@ -1437,6 +1437,7 @@ def describe_visit_in_parallel():
                 visited.append([f"no-{name}", "enter", kind, value])
                 if kind == "field" and node.name.value == name:
                     return skip_action
+                return None
 
             def leave(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -1483,7 +1484,7 @@ def describe_visit_in_parallel():
             ["no-b", "leave", "document", None],
         ]
 
-    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    @pytest.mark.parametrize("break_action", [BREAK, True], ids=["BREAK", "True"])
     def allows_early_exit_while_visiting(break_action):
         # Note: nearly identical to the above test but using ParallelVisitor.
         ast = parse("{ a, b { x }, c }")
@@ -1498,6 +1499,7 @@ def describe_visit_in_parallel():
                 visited.append(["enter", kind, value])
                 if kind == "name" and node.value == "x":
                     return break_action
+                return None
 
             @staticmethod
             def leave(*args):
@@ -1523,7 +1525,7 @@ def describe_visit_in_parallel():
             ["enter", "name", "x"],
         ]
 
-    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    @pytest.mark.parametrize("break_action", [BREAK, True], ids=["BREAK", "True"])
     def allows_early_exit_from_different_points(break_action):
         ast = parse("{ a { y }, b { x } }")
         visited = []
@@ -1541,6 +1543,7 @@ def describe_visit_in_parallel():
                 visited.append([f"break-{name}", "enter", kind, value])
                 if kind == "name" and node.value == name:
                     return break_action
+                return None
 
             def leave(self, *args):
                 assert self.name == "b"
@@ -1574,7 +1577,7 @@ def describe_visit_in_parallel():
             ["break-b", "enter", "name", "b"],
         ]
 
-    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    @pytest.mark.parametrize("break_action", [BREAK, True], ids=["BREAK", "True"])
     def allows_early_exit_while_leaving(break_action):
         # Note: nearly identical to the above test but using ParallelVisitor.
         ast = parse("{ a, b { x }, c }")
@@ -1596,6 +1599,7 @@ def describe_visit_in_parallel():
                 visited.append(["leave", kind, value])
                 if kind == "name" and node.value == "x":
                     return break_action
+                return None
 
         visit(ast, ParallelVisitor([TestVisitor()]))
         assert visited == [
@@ -1615,7 +1619,7 @@ def describe_visit_in_parallel():
             ["leave", "name", "x"],
         ]
 
-    @mark.parametrize("break_action", (BREAK, True), ids=("BREAK", "True"))
+    @pytest.mark.parametrize("break_action", [BREAK, True], ids=["BREAK", "True"])
     def allows_early_exit_from_leaving_different_points(break_action):
         ast = parse("{ a { y }, b { x } }")
         visited = []
@@ -1640,6 +1644,7 @@ def describe_visit_in_parallel():
                 visited.append([f"break-{name}", "leave", kind, value])
                 if kind == "field" and node.name.value == name:
                     return break_action
+                return None
 
         visit(ast, ParallelVisitor([TestVisitor("a"), TestVisitor("b")]))
         assert visited == [
@@ -1681,7 +1686,9 @@ def describe_visit_in_parallel():
             ["break-b", "leave", "field", None],
         ]
 
-    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    @pytest.mark.parametrize(
+        "remove_action", [REMOVE, Ellipsis], ids=["REMOVE", "Ellipsis"]
+    )
     def allows_for_editing_on_enter(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
         visited = []
@@ -1693,6 +1700,7 @@ def describe_visit_in_parallel():
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
                     return remove_action
+                return None
 
         class TestVisitor2(Visitor):
             @staticmethod
@@ -1739,7 +1747,9 @@ def describe_visit_in_parallel():
             ["leave", "document", None],
         ]
 
-    @mark.parametrize("remove_action", (REMOVE, Ellipsis), ids=("REMOVE", "Ellipsis"))
+    @pytest.mark.parametrize(
+        "remove_action", [REMOVE, Ellipsis], ids=["REMOVE", "Ellipsis"]
+    )
     def allows_for_editing_on_leave(remove_action):
         ast = parse("{ a, b, c { a, b, c } }", no_location=True)
         visited = []
@@ -1751,6 +1761,7 @@ def describe_visit_in_parallel():
                 node = args[0]
                 if node.kind == "field" and node.name.value == "b":
                     return remove_action
+                return None
 
         class TestVisitor2(Visitor):
             @staticmethod

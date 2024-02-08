@@ -1,7 +1,6 @@
 from typing import Union
 
-from pytest import raises
-
+import pytest
 from graphql import graphql_sync
 from graphql.language import parse, print_ast
 from graphql.type import (
@@ -30,7 +29,6 @@ from graphql.utilities import build_schema, concat_ast, extend_schema, print_sch
 
 from ..utils import dedent
 
-
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
@@ -53,12 +51,14 @@ TypeWithExtensionAstNodes: TypeAlias = Union[
 
 
 def expect_extension_ast_nodes(obj: TypeWithExtensionAstNodes, expected: str) -> None:
-    assert obj is not None and obj.extension_ast_nodes is not None
+    assert obj is not None
+    assert obj.extension_ast_nodes is not None
     assert "\n\n".join(print_ast(node) for node in obj.extension_ast_nodes) == expected
 
 
 def expect_ast_node(obj: TypeWithAstNode, expected: str) -> None:
-    assert obj is not None and obj.ast_node is not None
+    assert obj is not None
+    assert obj.ast_node is not None
     assert print_ast(obj.ast_node) == expected
 
 
@@ -1315,7 +1315,7 @@ def describe_extend_schema():
         schema = GraphQLSchema()
         extend_ast = parse("extend schema @unknown")
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             extend_schema(schema, extend_ast)
         assert str(exc_info.value) == "Unknown directive '@unknown'."
 
@@ -1335,7 +1335,7 @@ def describe_extend_schema():
             }
             """
         )
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             extend_schema(schema, ast, assume_valid_sdl=True)
         assert str(exc_info.value).endswith("Unknown type: 'UnknownType'.")
 
@@ -1347,7 +1347,7 @@ def describe_extend_schema():
             """
         )
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             extend_schema(schema, extend_ast)
         assert str(exc_info.value).startswith(
             "Directive '@include' already exists in the schema."
@@ -1370,7 +1370,7 @@ def describe_extend_schema():
             """
         )
 
-        with raises(TypeError) as exc_info:
+        with pytest.raises(TypeError) as exc_info:
             extend_schema(schema, extend_ast)
         assert str(exc_info.value).startswith(
             "Enum value 'SomeEnum.ONE' already exists in the schema."

@@ -18,7 +18,6 @@ from graphql.language import (
     parse_value,
 )
 
-
 all_ast_nodes = sorted(
     [
         node_type()

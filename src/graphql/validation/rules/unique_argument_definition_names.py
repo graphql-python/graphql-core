@@ -1,3 +1,5 @@
+"""Unique argument definition names rule"""
+
 from operator import attrgetter
 from typing import Any, Collection
 
@@ -16,7 +18,6 @@ from ...language import (
 )
 from ...pyutils import group_by
 from . import SDLValidationRule
-
 
 __all__ = ["UniqueArgumentDefinitionNamesRule"]
 

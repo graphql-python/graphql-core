@@ -24,7 +24,6 @@ from graphql.utilities import TypeInfo, TypeInfoVisitor, build_schema
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
-
 test_schema = build_schema(
     """
     interface Pet {
@@ -185,7 +184,7 @@ def describe_visit_with_type_info():
 
         class TestVisitor(Visitor):
             @staticmethod
-            def enter_field(self, node: OperationDefinitionNode, *_args):
+            def enter_field(*_args):
                 parent_type = type_info.get_parent_type()
                 type_name = getattr(type_info.get_parent_type(), "name", None)
                 field_def = type_info.get_field_def()
@@ -350,6 +349,8 @@ def describe_visit_with_type_info():
                             selections=[FieldNode(name=NameNode(value="__typename"))]
                         ),
                     )
+
+                return None
 
             @staticmethod
             def leave(*args):

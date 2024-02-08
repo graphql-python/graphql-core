@@ -1,21 +1,20 @@
+from contextlib import suppress
 from typing import AsyncGenerator
 
-from pytest import mark, raises
-
+import pytest
 from graphql.execution import flatten_async_iterable
 
-
 try:  # pragma: no cover
-    anext
+    anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
-    async def anext(iterator):
+    async def anext(iterator):  # noqa: A001
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 
 
 def describe_flatten_async_iterable():
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def flattens_nested_async_generators():
         async def source():
             async def nested1() -> AsyncGenerator[float, None]:
@@ -35,7 +34,7 @@ def describe_flatten_async_iterable():
 
         assert result == [1.1, 1.2, 2.1, 2.2]
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def allows_returning_early_from_a_nested_async_generator():
         async def source():
             async def nested1() -> AsyncGenerator[float, None]:
@@ -63,18 +62,16 @@ def describe_flatten_async_iterable():
         assert await anext(doubles) == 2.1
 
         # early return
-        try:
+        with suppress(RuntimeError):  # suppress error for Python < 3.8
             await doubles.aclose()
-        except RuntimeError:  # Python < 3.8
-            pass
 
         # subsequent anext calls
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             assert await anext(doubles)
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             assert await anext(doubles)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def allows_throwing_errors_from_a_nested_async_generator():
         async def source():
             async def nested1() -> AsyncGenerator[float, None]:
@@ -102,10 +99,10 @@ def describe_flatten_async_iterable():
         assert await anext(doubles) == 2.1
 
         # throw error
-        with raises(RuntimeError, match="ouch"):
+        with pytest.raises(RuntimeError, match="ouch"):
             await doubles.athrow(RuntimeError, "ouch")
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def completely_yields_sub_iterables_even_when_anext_called_in_parallel():
         async def source():
             async def nested1() -> AsyncGenerator[float, None]:
@@ -127,10 +124,10 @@ def describe_flatten_async_iterable():
         assert await anext2 == 1.2
         assert await anext(doubles) == 2.1
         assert await anext(doubles) == 2.2
-        with raises(StopAsyncIteration):
+        with pytest.raises(StopAsyncIteration):
             assert await anext(doubles)
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def closes_nested_async_iterators():
         closed = []
 
@@ -177,7 +174,7 @@ def describe_flatten_async_iterable():
 
         assert closed == [1.2, 2.2, 2]
 
-    @mark.asyncio
+    @pytest.mark.asyncio()
     async def works_with_nested_async_iterators_that_have_no_close_method():
         class Source:
             def __init__(self):

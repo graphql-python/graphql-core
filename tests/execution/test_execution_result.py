@@ -1,5 +1,4 @@
-from pytest import raises
-
+import pytest
 from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult
 
@@ -107,9 +106,9 @@ def describe_execution_result():
 
     def unpacks_as_two_tuple():
         res = ExecutionResult(data, errors)
-        res_data, res_errors = res  # type: ignore
-        assert res_data == data  # type: ignore
-        assert res_errors == errors  # type: ignore
-        with raises(ValueError):
-            res = ExecutionResult(data, errors, extensions)
-            _res_data, _res_errors, _res_extensions = res  # type: ignore
+        res_data, res_errors = res
+        assert res_data == data
+        assert res_errors == errors
+        res = ExecutionResult(data, errors, extensions)
+        with pytest.raises(ValueError, match="not enough values to unpack"):
+            _res_data, _res_errors, _res_extensions = res
