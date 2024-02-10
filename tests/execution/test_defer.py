@@ -1,5 +1,5 @@
 from asyncio import sleep
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, AsyncGenerator, Dict, List, NamedTuple
 
 import pytest
 from graphql.error import GraphQLError
@@ -15,7 +15,7 @@ from graphql.execution import (
 )
 from graphql.execution.execute import DeferredFragmentRecord
 from graphql.language import DocumentNode, parse
-from graphql.pyutils import Path
+from graphql.pyutils import Path, is_awaitable
 from graphql.type import (
     GraphQLField,
     GraphQLID,
@@ -26,17 +26,35 @@ from graphql.type import (
     GraphQLString,
 )
 
+
+def resolve_null_sync(_obj, _info) -> None:
+    """A resolver returning a null value synchronously."""
+    return
+
+
+async def resolve_null_async(_obj, _info) -> None:
+    """A resolver returning a null value asynchronously."""
+    return
+
+
 friend_type = GraphQLObjectType(
-    "Friend", {"id": GraphQLField(GraphQLID), "name": GraphQLField(GraphQLString)}
+    "Friend",
+    {
+        "id": GraphQLField(GraphQLID),
+        "name": GraphQLField(GraphQLString),
+        "asyncNonNullErrorField": GraphQLField(
+            GraphQLNonNull(GraphQLString), resolve=resolve_null_async
+        ),
+    },
 )
 
 
 class Friend(NamedTuple):
-    name: str
     id: int
+    name: str
 
 
-friends = [Friend("Han", 2), Friend("Leia", 3), Friend("C-3PO", 4)]
+friends = [Friend(2, "Han"), Friend(3, "Leia"), Friend(4, "C-3PO")]
 
 
 async def resolve_slow(_obj, _info) -> str:
@@ -50,14 +68,10 @@ async def resolve_bad(_obj, _info) -> str:
     raise RuntimeError("bad")
 
 
-def resolve_null_sync(_obj, _info) -> None:
-    """Simulate a resolver returning a null value synchronously."""
-    return
-
-
-async def resolve_null_async(_obj, _info) -> None:
-    """Simulate a resolver returning a null value asynchronously."""
-    return
+async def resolve_friends_async(_obj, _info) -> AsyncGenerator[Friend, None]:
+    """A slow async generator yielding the first friend."""
+    await sleep(0)
+    yield friends[0]
 
 
 hero_type = GraphQLObjectType(
@@ -76,10 +90,13 @@ hero_type = GraphQLObjectType(
         "friends": GraphQLField(
             GraphQLList(friend_type), resolve=lambda _obj, _info: friends
         ),
+        "asyncFriends": GraphQLField(
+            GraphQLList(friend_type), resolve=resolve_friends_async
+        ),
     },
 )
 
-hero = Friend("Luke", 1)
+hero = Friend(1, "Luke")
 
 query = GraphQLObjectType(
     "Query", {"hero": GraphQLField(hero_type, resolve=lambda _obj, _info: hero)}
@@ -90,6 +107,8 @@ schema = GraphQLSchema(query)
 
 async def complete(document: DocumentNode, root_value: Any = None) -> Any:
     result = experimental_execute_incrementally(schema, document, root_value)
+    if is_awaitable(result):
+        result = await result
 
     if isinstance(result, ExperimentalIncrementalExecutionResults):
         results: List[Any] = [result.initial_result.formatted]
@@ -883,6 +902,38 @@ def describe_execute_defer_directive():
         ]
 
     @pytest.mark.asyncio()
+    async def filters_deferred_payloads_when_list_item_from_async_iterable_nulled():
+        document = parse(
+            """
+            query {
+              hero {
+                asyncFriends {
+                  asyncNonNullErrorField
+                  ...NameFragment @defer
+                }
+              }
+            }
+            fragment NameFragment on Friend {
+              name
+            }
+            """
+        )
+
+        result = await complete(document)
+
+        assert result == {
+            "data": {"hero": {"asyncFriends": [None]}},
+            "errors": [
+                {
+                    "message": "Cannot return null for non-nullable field"
+                    " Friend.asyncNonNullErrorField.",
+                    "locations": [{"line": 5, "column": 19}],
+                    "path": ["hero", "asyncFriends", 0, "asyncNonNullErrorField"],
+                }
+            ],
+        }
+
+    @pytest.mark.asyncio()
     async def original_execute_function_throws_error_if_deferred_and_all_is_sync():
         document = parse(
             """
@@ -918,7 +969,8 @@ def describe_execute_defer_directive():
             [
                 {
                     "message": "Executing this GraphQL operation would unexpectedly"
-                    " produce multiple payloads (due to @defer or @stream directive)"
+                    " produce multiple payloads"
+                    " (due to @defer or @stream directive)"
                 }
             ],
         )

@@ -1233,6 +1233,7 @@ class ExecutionContext:
                                 error = located_error(
                                     raw_error, field_nodes, field_path.as_list()
                                 )
+                                self.filter_subsequent_payloads(field_path)
                                 handle_field_error(error, item_type, errors)
                                 return None
 
@@ -1243,10 +1244,12 @@ class ExecutionContext:
                 except Exception as raw_error:
                     append_result(None)
                     error = located_error(raw_error, field_nodes, field_path.as_list())
+                    self.filter_subsequent_payloads(field_path)
                     handle_field_error(error, item_type, errors)
             except Exception as raw_error:
                 append_result(None)
                 error = located_error(raw_error, field_nodes, field_path.as_list())
+                self.filter_subsequent_payloads(field_path)
                 handle_field_error(error, item_type, errors)
                 break
             index += 1
