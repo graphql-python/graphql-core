@@ -20,7 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 packages = [
     { include = "graphql", from = "src" },
@@ -41,30 +42,40 @@ Changelog = "https://github.com/graphql-python/graphql-core/releases"
 [tool.poetry.dependencies]
 python = "^3.7"
 typing-extensions = [
-    { version = "^4.5", python = "<3.10" }
+    { version = "^4.9", python = ">=3.8,<3.10" },
+    { version = "^4.7.1", python = "<3.8" },
 ]
 
 [tool.poetry.group.test]
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "^7.3"
-pytest-asyncio = ">=0.21,<1"
+pytest = [
+    { version = "^8.0", python = ">=3.8" },
+    { version = "^7.4", python = "<3.8"}
+]
+pytest-asyncio = [
+    { version = "^0.23.5", python = ">=3.8" },
+    { version = "~0.21.1", python = "<3.8"}
+]
 pytest-benchmark = "^4.0"
 pytest-cov = "^4.1"
-pytest-describe = "^2.1"
-pytest-timeout = "^2.1"
+pytest-describe = "^2.2"
+pytest-timeout = "^2.2"
 tox = [
-    { version = ">=4.12,<5", python = ">=3.8" },
-    { version = ">=3.28,<4", python = "<3.8" }
+    { version = "^4.12", python = ">=3.8" },
+    { version = "^3.28", python = "<3.8" }
 ]
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.2,<0.3"
-mypy = "1.8.0"
+ruff = ">=0.2.1,<0.3"
+mypy = [
+    { version = "^1.8", python = ">=3.8" },
+    { version = "~1.4", python = "<3.8" }
+]
 bump2version = ">=1.0,<2"
 
 [tool.poetry.group.doc]
@@ -72,10 +83,10 @@ optional = true
 
 [tool.poetry.group.doc.dependencies]
 sphinx = [
-    { version = ">=4,<7", python = ">=3.8" },
+    { version = ">=7,<8", python = ">=3.8" },
     { version = ">=4,<6", python = "<3.8" }
 ]
-sphinx_rtd_theme = ">=1,<2"
+sphinx_rtd_theme = "^2.0"
 
 [tool.ruff]
 line-length = 88
@@ -281,5 +292,5 @@ timeout = "100"
 filterwarnings = "ignore::pytest.PytestConfigWarning"
 
 [build-system]
-requires = ["poetry_core>=1.6,<2"]
+requires = ["poetry_core>=1.6.1,<2"]
 build-backend = "poetry.core.masonry.api"

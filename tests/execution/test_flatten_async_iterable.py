@@ -100,7 +100,7 @@ def describe_flatten_async_iterable():
 
         # throw error
         with pytest.raises(RuntimeError, match="ouch"):
-            await doubles.athrow(RuntimeError, "ouch")
+            await doubles.athrow(RuntimeError("ouch"))
 
     @pytest.mark.asyncio()
     async def completely_yields_sub_iterables_even_when_anext_called_in_parallel():

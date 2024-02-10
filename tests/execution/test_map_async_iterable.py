@@ -151,32 +151,6 @@ def describe_map_async_iterable():
             await anext(doubles)
 
     @pytest.mark.asyncio()
-    async def allows_throwing_errors_with_values_through_async_iterables():
-        class Iterable:
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                return 1
-
-        one = map_async_iterable(Iterable(), double)
-
-        assert await anext(one) == 2
-
-        # Throw error with value passed separately
-        try:
-            raise RuntimeError("Ouch")
-        except RuntimeError as error:
-            with pytest.raises(RuntimeError, match="Ouch") as exc_info:
-                await one.athrow(error.__class__, error)
-
-            assert exc_info.value is error  # noqa: PT017
-            assert exc_info.tb is error.__traceback__  # noqa: PT017
-
-        with pytest.raises(StopAsyncIteration):
-            await anext(one)
-
-    @pytest.mark.asyncio()
     async def allows_throwing_errors_with_traceback_through_async_iterables():
         class Iterable:
             def __aiter__(self):
@@ -189,16 +163,16 @@ def describe_map_async_iterable():
 
         assert await anext(one) == 2
 
-        # Throw error with traceback passed separately
         try:
             raise RuntimeError("Ouch")
         except RuntimeError as error:
-            with pytest.raises(RuntimeError) as exc_info:
-                await one.athrow(error.__class__, None, error.__traceback__)
+            with pytest.raises(RuntimeError, match="Ouch") as exc_info:
+                await one.athrow(error)
 
+            assert exc_info.value is error  # noqa: PT017
             assert exc_info.tb
             assert error.__traceback__  # noqa: PT017
-            assert exc_info.tb.tb_frame is error.__traceback__.tb_frame  # noqa: PT017
+            assert exc_info.tb is error.__traceback__  # noqa: PT017
 
         with pytest.raises(StopAsyncIteration):
             await anext(one)

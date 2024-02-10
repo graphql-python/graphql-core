@@ -1801,6 +1801,7 @@ def describe_execute_stream_directive():
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
+        await sleep(0)
         assert finished
 
     @pytest.mark.asyncio()
@@ -1850,6 +1851,8 @@ def describe_execute_stream_directive():
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
+        await sleep(0)
+        await sleep(0)
         assert iterable.index == 4
 
     @pytest.mark.asyncio()
@@ -1891,4 +1894,5 @@ def describe_execute_stream_directive():
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
+        await sleep(0)
         assert finished
