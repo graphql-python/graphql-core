@@ -113,19 +113,19 @@ def describe_parser():
             """
         )
 
-    def limits_maximum_number_of_tokens():
+    def limits_by_a_maximum_number_of_tokens():
         parse("{ foo }", max_tokens=3)
         with pytest.raises(
             GraphQLSyntaxError,
             match="Syntax Error:"
-            r" Document contains more that 2 tokens\. Parsing aborted\.",
+            r" Document contains more than 2 tokens\. Parsing aborted\.",
         ):
             parse("{ foo }", max_tokens=2)
         parse('{ foo(bar: "baz") }', max_tokens=8)
         with pytest.raises(
             GraphQLSyntaxError,
             match="Syntax Error:"
-            r" Document contains more that 7 tokens\. Parsing aborted\.",
+            r" Document contains more than 7 tokens\. Parsing aborted\.",
         ):
             parse('{ foo(bar: "baz") }', max_tokens=7)
 

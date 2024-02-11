@@ -1253,7 +1253,7 @@ class Parser:
                 raise GraphQLSyntaxError(
                     self._lexer.source,
                     token.start,
-                    f"Document contains more that {max_tokens} tokens."
+                    f"Document contains more than {max_tokens} tokens."
                     " Parsing aborted.",
                 )
 
