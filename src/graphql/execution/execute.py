@@ -1001,7 +1001,7 @@ class ExecutionContext:
                     except Exception as raw_error:
                         error = located_error(raw_error, field_nodes, path.as_list())
                         handle_field_error(error, return_type, errors)
-                        self.filter_subsequent_payloads(path)
+                        self.filter_subsequent_payloads(path, async_payload_record)
                         return None
 
                 return await_completed()
@@ -1009,7 +1009,7 @@ class ExecutionContext:
         except Exception as raw_error:
             error = located_error(raw_error, field_nodes, path.as_list())
             handle_field_error(error, return_type, errors)
-            self.filter_subsequent_payloads(path)
+            self.filter_subsequent_payloads(path, async_payload_record)
             return None
 
         return completed
@@ -1225,15 +1225,17 @@ class ExecutionContext:
                     if is_awaitable(completed_item):
                         # noinspection PyShadowingNames
                         async def catch_error(
-                            completed_item: Awaitable[Any], field_path: Path
+                            completed_item: Awaitable[Any], item_path: Path
                         ) -> Any:
                             try:
                                 return await completed_item
                             except Exception as raw_error:
                                 error = located_error(
-                                    raw_error, field_nodes, field_path.as_list()
+                                    raw_error, field_nodes, item_path.as_list()
                                 )
-                                self.filter_subsequent_payloads(field_path)
+                                self.filter_subsequent_payloads(
+                                    item_path, async_payload_record
+                                )
                                 handle_field_error(error, item_type, errors)
                                 return None
 
@@ -1244,7 +1246,7 @@ class ExecutionContext:
                 except Exception as raw_error:
                     append_result(None)
                     error = located_error(raw_error, field_nodes, item_path.as_list())
-                    self.filter_subsequent_payloads(item_path)
+                    self.filter_subsequent_payloads(item_path, async_payload_record)
                     handle_field_error(error, item_type, errors)
             except Exception as raw_error:
                 append_result(None)
@@ -1354,7 +1356,7 @@ class ExecutionContext:
                             raw_error, field_nodes, item_path.as_list()
                         )
                         handle_field_error(error, item_type, errors)
-                        self.filter_subsequent_payloads(item_path)
+                        self.filter_subsequent_payloads(item_path, async_payload_record)
                         return None
                     return completed
 
@@ -1379,14 +1381,16 @@ class ExecutionContext:
                                     raw_error, field_nodes, item_path.as_list()
                                 )
                                 handle_field_error(error, item_type, errors)
-                                self.filter_subsequent_payloads(item_path)
+                                self.filter_subsequent_payloads(
+                                    item_path, async_payload_record
+                                )
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)
                 except Exception as raw_error:
                     error = located_error(raw_error, field_nodes, item_path.as_list())
                     handle_field_error(error, item_type, errors)
-                    self.filter_subsequent_payloads(item_path)
+                    self.filter_subsequent_payloads(item_path, async_payload_record)
                     completed_item = None
 
             if is_awaitable(completed_item):
