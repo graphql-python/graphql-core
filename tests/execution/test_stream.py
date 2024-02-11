@@ -43,11 +43,11 @@ friend_type = GraphQLObjectType(
 
 
 class Friend(NamedTuple):
-    name: str
     id: int
+    name: str
 
 
-friends = [Friend("Luke", 1), Friend("Han", 2), Friend("Leia", 3)]
+friends = [Friend(1, "Luke"), Friend(2, "Han"), Friend(3, "Leia")]
 
 query = GraphQLObjectType(
     "Query",
@@ -1178,6 +1178,50 @@ def describe_execute_stream_directive():
                             "column": 17,
                         }
                     ],
+                    "path": ["nestedObject", "nonNullScalarField"],
+                },
+            ],
+            "data": {
+                "nestedObject": None,
+            },
+        }
+
+    @pytest.mark.asyncio()
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+    async def filters_payloads_that_are_nulled_by_a_later_synchronous_error():
+        document = parse(
+            """
+            query { 
+              nestedObject {
+                nestedFriendList @stream(initialCount: 0) {
+                  name
+                }
+                nonNullScalarField
+              }
+            }
+            """
+        )
+
+        async def friend_list(_info):
+            await sleep(0)
+            yield friends[0]
+
+        result = await complete(
+            document,
+            {
+                "nestedObject": {
+                    "nestedFriendList": friend_list,
+                    "nonNullScalarField": lambda _info: None,
+                }
+            },
+        )
+
+        assert result == {
+            "errors": [
+                {
+                    "message": "Cannot return null for non-nullable field"
+                    " NestedObject.nonNullScalarField.",
+                    "locations": [{"line": 7, "column": 17}],
                     "path": ["nestedObject", "nonNullScalarField"],
                 },
             ],

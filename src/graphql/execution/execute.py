@@ -1172,7 +1172,7 @@ class ExecutionContext:
     ) -> List[Any]:
         """Complete an async iterator.
 
-        Complete a async iterator value by completing the result and calling
+        Complete an async iterator value by completing the result and calling
         recursively until all the results are completed.
         """
         errors = async_payload_record.errors if async_payload_record else self.errors
