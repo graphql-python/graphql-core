@@ -1866,9 +1866,9 @@ class ExecutionContext:
         field_modes: List[FieldNode],
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-        path: Optional[Path],
-        label: Optional[str],
-        parent_context: Optional[AsyncPayloadRecord],
+        path: Path,
+        label: Optional[str] = None,
+        parent_context: Optional[AsyncPayloadRecord] = None,
     ) -> None:
         """Execute stream iterator."""
         index = initial_index
@@ -1912,11 +1912,11 @@ class ExecutionContext:
 
     def filter_subsequent_payloads(
         self,
-        null_path: Optional[Path] = None,
+        null_path: Path,
         current_async_record: Optional[AsyncPayloadRecord] = None,
     ) -> None:
         """Filter subsequent payloads."""
-        null_path_list = null_path.as_list() if null_path else []
+        null_path_list = null_path.as_list()
         for async_record in list(self.subsequent_payloads):
             if async_record is current_async_record:
                 # don't remove payload from where error originates
