@@ -1207,7 +1207,7 @@ class ExecutionContext:
                     )
                 break
 
-            field_path = path.add_key(index, None)
+            item_path = path.add_key(index, None)
             try:
                 try:
                     value = await anext(iterator)
@@ -1218,7 +1218,7 @@ class ExecutionContext:
                         item_type,
                         field_nodes,
                         info,
-                        field_path,
+                        item_path,
                         value,
                         async_payload_record,
                     )
@@ -1237,19 +1237,18 @@ class ExecutionContext:
                                 handle_field_error(error, item_type, errors)
                                 return None
 
-                        append_result(catch_error(completed_item, field_path))
+                        append_result(catch_error(completed_item, item_path))
                         append_awaitable(index)
                     else:
                         append_result(completed_item)
                 except Exception as raw_error:
                     append_result(None)
-                    error = located_error(raw_error, field_nodes, field_path.as_list())
-                    self.filter_subsequent_payloads(field_path)
+                    error = located_error(raw_error, field_nodes, item_path.as_list())
+                    self.filter_subsequent_payloads(item_path)
                     handle_field_error(error, item_type, errors)
             except Exception as raw_error:
                 append_result(None)
-                error = located_error(raw_error, field_nodes, field_path.as_list())
-                self.filter_subsequent_payloads(field_path)
+                error = located_error(raw_error, field_nodes, item_path.as_list())
                 handle_field_error(error, item_type, errors)
                 break
             index += 1
@@ -1316,7 +1315,6 @@ class ExecutionContext:
             # No need to modify the info object containing the path, since from here on
             # it is not ever accessed by resolver functions.
             item_path = path.add_key(index, None)
-            completed_item: AwaitableOrValue[Any]
 
             if (
                 stream
@@ -1334,6 +1332,9 @@ class ExecutionContext:
                     previous_async_payload_record,
                 )
                 continue
+
+            completed_item: AwaitableOrValue[Any]
+
             if is_awaitable(item):
                 # noinspection PyShadowingNames
                 async def await_completed(item: Any, item_path: Path) -> Any:
@@ -1828,7 +1829,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         async_payload_record: StreamRecord,
-        field_path: Path,
+        item_path: Path,
     ) -> Any:
         """Execute stream iterator item."""
         if iterator in self._canceled_iterators:
@@ -1836,7 +1837,7 @@ class ExecutionContext:
         try:
             item = await anext(iterator)
             completed_item = self.complete_value(
-                item_type, field_nodes, info, field_path, item, async_payload_record
+                item_type, field_nodes, info, item_path, item, async_payload_record
             )
 
             return (
@@ -1850,9 +1851,9 @@ class ExecutionContext:
             raise StopAsyncIteration from raw_error
 
         except Exception as raw_error:
-            error = located_error(raw_error, field_nodes, field_path.as_list())
+            error = located_error(raw_error, field_nodes, item_path.as_list())
             handle_field_error(error, item_type, async_payload_record.errors)
-            self.filter_subsequent_payloads(field_path, async_payload_record)
+            self.filter_subsequent_payloads(item_path, async_payload_record)
 
     async def execute_stream_iterator(
         self,
@@ -1870,13 +1871,13 @@ class ExecutionContext:
         previous_async_payload_record = parent_context
 
         while True:
-            field_path = Path(path, index, None)
+            item_path = Path(path, index, None)
             async_payload_record = StreamRecord(
-                label, field_path, iterator, previous_async_payload_record, self
+                label, item_path, iterator, previous_async_payload_record, self
             )
 
             awaitable_data = self.execute_stream_iterator_item(
-                iterator, field_modes, info, item_type, async_payload_record, field_path
+                iterator, field_modes, info, item_type, async_payload_record, item_path
             )
 
             try:
