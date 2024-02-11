@@ -1187,11 +1187,10 @@ def describe_execute_stream_directive():
         }
 
     @pytest.mark.asyncio()
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def filters_payloads_that_are_nulled_by_a_later_synchronous_error():
         document = parse(
             """
-            query { 
+            query {
               nestedObject {
                 nestedFriendList @stream(initialCount: 0) {
                   name
@@ -1203,8 +1202,8 @@ def describe_execute_stream_directive():
         )
 
         async def friend_list(_info):
-            await sleep(0)
-            yield friends[0]
+            await sleep(0)  # pragma: no cover
+            yield friends[0]  # pragma: no cover
 
         result = await complete(
             document,
