@@ -167,6 +167,23 @@ def describe_validate_overlapping_fields_can_be_merged():
             ],
         )
 
+    def different_stream_directive_extra_argument():
+        assert_errors(
+            """
+            fragment conflictingArgs on Dog {
+              name @stream(label: "streamLabel", initialCount: 1)
+              name @stream(label: "streamLabel", initialCount: 1, extraArg: true)
+            }""",
+            [
+                {
+                    "message": "Fields 'name' conflict because they have differing"
+                    " stream directives. Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
+        )
+
     def mix_of_stream_and_no_stream():
         assert_errors(
             """
