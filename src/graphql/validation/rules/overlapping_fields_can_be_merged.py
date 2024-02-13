@@ -8,8 +8,6 @@ from ...language import (
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
-    ObjectFieldNode,
-    ObjectValueNode,
     SelectionSetNode,
     ValueNode,
     print_ast,
@@ -597,7 +595,10 @@ def find_conflict(
 
     return None  # no conflict
 
-def same_arguments(node1: Union[FieldNode, DirectiveNode], node2: Union[FieldNode, DirectiveNode]) -> bool:
+
+def same_arguments(
+    node1: Union[FieldNode, DirectiveNode], node2: Union[FieldNode, DirectiveNode]
+) -> bool:
     args1 = node1.arguments
     args2 = node2.arguments
 
@@ -623,8 +624,10 @@ def same_arguments(node1: Union[FieldNode, DirectiveNode], node2: Union[FieldNod
 
     return all(results)
 
+
 def stringify_value(value: ValueNode) -> str:
     return print_ast(sort_value_node(value))
+
 
 def get_stream_directive(
     directives: Sequence[DirectiveNode],
