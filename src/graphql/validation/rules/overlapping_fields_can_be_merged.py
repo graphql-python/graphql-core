@@ -613,16 +613,13 @@ def same_arguments(
 
     values2 = {arg.name.value: arg.value for arg in args2}
 
-    results = []
     for arg1 in args1:
         value1 = arg1.value
         value2 = values2.get(arg1.name.value)
-        if value2 is None:
-            results.append(False)
-        else:
-            results.append(stringify_value(value1) == stringify_value(value2))
+        if value2 is None or stringify_value(value1) != stringify_value(value2):
+            return False
 
-    return all(results)
+    return True
 
 
 def stringify_value(value: ValueNode) -> str:
