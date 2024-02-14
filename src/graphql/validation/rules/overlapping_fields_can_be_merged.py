@@ -603,10 +603,10 @@ def same_arguments(
     args1 = node1.arguments
     args2 = node2.arguments
 
-    if args1 is None or len(args1) == 0:
-        return args2 is None or len(args2) == 0
+    if not args1:
+        return not args2
 
-    if args2 is None or len(args2) == 0:
+    if not args2:
         return False
 
     if len(args1) != len(args2):

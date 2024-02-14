@@ -6,22 +6,20 @@ from graphql import (
     graphql_sync,
 )
 
-
 schema = GraphQLSchema(
     query=GraphQLObjectType(
         name="Query",
         fields={
             "hello": GraphQLField(
                 GraphQLString,
-                resolve=lambda obj, info: "world",
+                resolve=lambda _obj, _info: "world",
             )
         },
     )
 )
-source = "query {{ {fields} }}".format(fields="hello " * 250)
+source = f"{{ {'hello ' * 250}}}"
 
 
 def test_many_repeated_fields(benchmark):
-    print(source)
     result = benchmark(lambda: graphql_sync(schema, source))
-    assert not result.errors
+    assert result == ({"hello": "world"}, None)
