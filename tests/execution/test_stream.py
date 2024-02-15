@@ -1023,6 +1023,68 @@ def describe_execute_stream_directive():
         document = parse(
             """
             query {
+              friendList @stream(initialCount: 1) {
+                nonNullName
+              }
+            }
+            """
+        )
+
+        async def throw():
+            raise RuntimeError("Oops")
+
+        async def get_friend(i):
+            await sleep(0)
+            return {"nonNullName": throw() if i < 0 else friends[i].name}
+
+        def get_friends(_info):
+            return [get_friend(0), get_friend(-1), get_friend(1)]
+
+        result = await complete(
+            document,
+            {
+                "friendList": get_friends,
+            },
+        )
+        assert result == [
+            {
+                "data": {
+                    "friendList": [{"nonNullName": "Luke"}],
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [None],
+                        "path": ["friendList", 1],
+                        "errors": [
+                            {
+                                "message": "Oops",
+                                "locations": [{"line": 4, "column": 17}],
+                                "path": ["friendList", 1, "nonNullName"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [{"nonNullName": "Han"}],
+                        "path": ["friendList", 2],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio()
+    async def handles_async_error_in_complete_value_for_non_nullable_list():
+        document = parse(
+            """
+            query {
               nonNullFriendList @stream(initialCount: 1) {
                 nonNullName
               }
@@ -1230,7 +1292,6 @@ def describe_execute_stream_directive():
         }
 
     @pytest.mark.asyncio()
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_filter_payloads_when_null_error_is_in_a_different_path():
         document = parse(
             """
@@ -1298,7 +1359,6 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio()
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
         document = parse(
             """

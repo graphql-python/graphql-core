@@ -1873,12 +1873,15 @@ class ExecutionContext:
                 label, item_path, iterator, previous_async_payload_record, self
             )
 
-            awaitable_data = self.execute_stream_iterator_item(
-                iterator, field_modes, info, item_type, async_payload_record, item_path
-            )
-
             try:
-                data = await awaitable_data
+                data = await self.execute_stream_iterator_item(
+                    iterator,
+                    field_modes,
+                    info,
+                    item_type,
+                    async_payload_record,
+                    item_path,
+                )
             except StopAsyncIteration:
                 if async_payload_record.errors:
                     async_payload_record.add_items(None)  # pragma: no cover
@@ -1886,16 +1889,15 @@ class ExecutionContext:
                     del self.subsequent_payloads[async_payload_record]
                 break
             except GraphQLError as error:
-                # entire stream has errored and bubbled upwards
+                async_payload_record.errors.append(error)
                 self.filter_subsequent_payloads(path, async_payload_record)
+                async_payload_record.add_items(None)
                 if iterator:  # pragma: no cover else
                     with suppress(Exception):
                         await iterator.aclose()  # type: ignore
                     # running generators cannot be closed since Python 3.8,
                     # so we need to remember that this iterator is already canceled
                     self._canceled_iterators.add(iterator)
-                async_payload_record.add_items(None)
-                async_payload_record.errors.append(error)
                 break
 
             async_payload_record.add_items([data])

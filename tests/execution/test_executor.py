@@ -519,11 +519,7 @@ def describe_execute_handles_basic_execution_tasks():
 
         async def async_resolver(_obj, _info):
             nonlocal is_async_resolver_finished
-            sleep = asyncio.sleep
-            sleep(0)
-            sleep(0)
-            sleep(0)
-            is_async_resolver_finished = True
+            is_async_resolver_finished = True  # pragma: no cover
 
         schema = GraphQLSchema(
             GraphQLObjectType(
