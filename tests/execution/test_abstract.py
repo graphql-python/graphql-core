@@ -526,7 +526,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
 
                 interface Pet {
                   name: String
-                  }
+                }
 
                 type Cat implements Pet {
                   name: String
