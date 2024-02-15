@@ -170,7 +170,7 @@ def describe_defer_stream_on_root_field():
             """
             subscription {
               subscriptionField {
-                ...nestedFragment
+                ...nestedFragment @defer
               }
             }
             fragment nestedFragment on Message {

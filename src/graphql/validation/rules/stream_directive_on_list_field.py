@@ -11,7 +11,7 @@ __all__ = ["StreamDirectiveOnListField"]
 
 
 class StreamDirectiveOnListField(ASTValidationRule):
-    """Stream directive on list field
+    """Stream directives are used on list fields
 
     A GraphQL document is only valid if stream directives are used on list fields.
     """
