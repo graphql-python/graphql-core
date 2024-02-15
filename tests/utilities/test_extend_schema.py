@@ -135,6 +135,16 @@ def describe_extend_schema():
 
         assert extended_schema.directives == specified_directives
 
+    def preserves_original_schema_config():
+        description = "A schema description"
+        extensions = {"foo": "bar"}
+        schema = GraphQLSchema(description=description, extensions=extensions)
+
+        extended_schema = extend_schema(schema, parse("scalar Bar"))
+
+        assert extended_schema.description == description
+        assert extended_schema.extensions is extensions
+
     def extends_objects_by_adding_new_fields():
         schema = build_schema(
             '''
