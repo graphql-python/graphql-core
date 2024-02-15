@@ -1230,6 +1230,7 @@ def describe_execute_stream_directive():
         }
 
     @pytest.mark.asyncio()
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_filter_payloads_when_null_error_is_in_a_different_path():
         document = parse(
             """
