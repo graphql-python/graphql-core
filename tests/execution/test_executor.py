@@ -514,6 +514,56 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
+    def handles_sync_errors_combined_with_async_ones():
+        is_async_resolver_finished = False
+
+        async def async_resolver(_obj, _info):
+            nonlocal is_async_resolver_finished
+            sleep = asyncio.sleep
+            sleep(0)
+            sleep(0)
+            sleep(0)
+            is_async_resolver_finished = True
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "syncNullError": GraphQLField(
+                        GraphQLNonNull(GraphQLString), resolve=lambda _obj, _info: None
+                    ),
+                    "asyncNullError": GraphQLField(
+                        GraphQLNonNull(GraphQLString), resolve=async_resolver
+                    ),
+                },
+            )
+        )
+
+        document = parse(
+            """
+            {
+              asyncNullError
+              syncNullError
+            }
+            """
+        )
+
+        result = execute(schema, document)
+
+        assert is_async_resolver_finished is False
+
+        assert result == (
+            None,
+            [
+                {
+                    "message": "Cannot return null"
+                    " for non-nullable field Query.syncNullError.",
+                    "locations": [(4, 15)],
+                    "path": ["syncNullError"],
+                }
+            ],
+        )
+
     def full_response_path_is_included_for_non_nullable_fields():
         def resolve_ok(*_args):
             return {}
