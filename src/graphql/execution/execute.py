@@ -1359,11 +1359,11 @@ class ExecutionContext:
         Returns True if the value is awaitable.
         """
         is_awaitable = self.is_awaitable
-        try:
-            if is_awaitable(item):
-                completed_item: Any
 
-                async def await_completed() -> Any:
+        if is_awaitable(item):
+            # noinspection PyShadowingNames
+            async def await_completed() -> Any:
+                try:
                     completed = self.complete_value(
                         item_type,
                         field_nodes,
@@ -1373,21 +1373,28 @@ class ExecutionContext:
                         async_payload_record,
                     )
                     return await completed if is_awaitable(completed) else completed
+                except Exception as raw_error:
+                    error = located_error(raw_error, field_nodes, item_path.as_list())
+                    handle_field_error(error, item_type, errors)
+                    self.filter_subsequent_payloads(item_path, async_payload_record)
+                    return None
 
-                completed_item = await_completed()
-            else:
-                completed_item = self.complete_value(
-                    item_type,
-                    field_nodes,
-                    info,
-                    item_path,
-                    item,
-                    async_payload_record,
-                )
+            complete_results.append(await_completed())
+            return True
+
+        try:
+            completed_item = self.complete_value(
+                item_type,
+                field_nodes,
+                info,
+                item_path,
+                item,
+                async_payload_record,
+            )
 
             if is_awaitable(completed_item):
                 # noinspection PyShadowingNames
-                async def catch_error() -> Any:
+                async def await_completed() -> Any:
                     try:
                         return await completed_item
                     except Exception as raw_error:
@@ -1398,7 +1405,7 @@ class ExecutionContext:
                         self.filter_subsequent_payloads(item_path, async_payload_record)
                         return None
 
-                complete_results.append(catch_error())
+                complete_results.append(await_completed())
                 return True
 
             complete_results.append(completed_item)
@@ -1728,15 +1735,17 @@ class ExecutionContext:
         parent_context: Optional[AsyncPayloadRecord] = None,
     ) -> AsyncPayloadRecord:
         """Execute stream field."""
+        is_awaitable = self.is_awaitable
         async_payload_record = StreamRecord(
             label, item_path, None, parent_context, self
         )
         completed_item: Any
-        try:
-            try:
-                if self.is_awaitable(item):
 
-                    async def await_completed_item() -> Any:
+        if is_awaitable(item):
+            # noinspection PyShadowingNames
+            async def await_completed_items() -> Optional[List[Any]]:
+                try:
+                    try:
                         completed = self.complete_value(
                             item_type,
                             field_nodes,
@@ -1745,76 +1754,79 @@ class ExecutionContext:
                             await item,
                             async_payload_record,
                         )
-                        return (
+                        return [
                             await completed
                             if self.is_awaitable(completed)
                             else completed
+                        ]
+                    except Exception as raw_error:
+                        error = located_error(
+                            raw_error, field_nodes, item_path.as_list()
                         )
-
-                    completed_item = await_completed_item()
-
-                else:
-                    completed_item = self.complete_value(
-                        item_type,
-                        field_nodes,
-                        info,
-                        item_path,
-                        item,
-                        async_payload_record,
-                    )
-
-                if self.is_awaitable(completed_item):
-
-                    async def await_completed_item() -> Any:
-                        # noinspection PyShadowingNames
-                        try:
-                            return await completed_item
-                        except Exception as raw_error:
-                            # noinspection PyShadowingNames
-                            error = located_error(
-                                raw_error, field_nodes, item_path.as_list()
-                            )
-                            handle_field_error(
-                                error, item_type, async_payload_record.errors
-                            )
-                            self.filter_subsequent_payloads(
-                                item_path, async_payload_record
-                            )
-                            return None
-
-                    complete_item = await_completed_item()
-
-                else:
-                    complete_item = completed_item
-            except Exception as raw_error:
-                error = located_error(raw_error, field_nodes, item_path.as_list())
-                handle_field_error(error, item_type, async_payload_record.errors)
-                self.filter_subsequent_payloads(  # pragma: no cover
-                    item_path, async_payload_record
-                )
-                complete_item = None  # pragma: no cover
-
-        except GraphQLError as error:
-            async_payload_record.errors.append(error)
-            self.filter_subsequent_payloads(item_path, async_payload_record)
-            async_payload_record.add_items(None)
-            return async_payload_record
-
-        completed_items: AwaitableOrValue[Optional[List[Any]]]
-        if self.is_awaitable(complete_item):
-
-            async def await_completed_items() -> Optional[List[Any]]:
-                # noinspection PyShadowingNames
-                try:
-                    return [await complete_item]  # type: ignore
+                        handle_field_error(
+                            error, item_type, async_payload_record.errors
+                        )
+                        self.filter_subsequent_payloads(item_path, async_payload_record)
+                        return [None]
                 except GraphQLError as error:
                     async_payload_record.errors.append(error)
                     self.filter_subsequent_payloads(path, async_payload_record)
                     return None
 
-            completed_items = await_completed_items()
-        else:
-            completed_items = [complete_item]
+            async_payload_record.add_items(await_completed_items())
+            return async_payload_record
+
+        try:
+            try:
+                completed_item = self.complete_value(
+                    item_type,
+                    field_nodes,
+                    info,
+                    item_path,
+                    item,
+                    async_payload_record,
+                )
+
+                completed_items: Any
+
+                if is_awaitable(completed_item):
+                    # noinspection PyShadowingNames
+                    async def await_completed_items() -> Optional[List[Any]]:
+                        # noinspection PyShadowingNames
+                        try:
+                            try:
+                                return [await completed_item]
+                            except Exception as raw_error:  # pragma: no cover
+                                # noinspection PyShadowingNames
+                                error = located_error(
+                                    raw_error, field_nodes, item_path.as_list()
+                                )
+                                handle_field_error(
+                                    error, item_type, async_payload_record.errors
+                                )
+                                self.filter_subsequent_payloads(
+                                    item_path, async_payload_record
+                                )
+                                return [None]
+                        except GraphQLError as error:  # pragma: no cover
+                            async_payload_record.errors.append(error)
+                            self.filter_subsequent_payloads(path, async_payload_record)
+                            return None
+
+                    completed_items = await_completed_items()
+                else:
+                    completed_items = [completed_item]
+
+            except Exception as raw_error:
+                error = located_error(raw_error, field_nodes, item_path.as_list())
+                handle_field_error(error, item_type, async_payload_record.errors)
+                self.filter_subsequent_payloads(item_path, async_payload_record)
+                completed_items = [None]
+
+        except GraphQLError as error:
+            async_payload_record.errors.append(error)
+            self.filter_subsequent_payloads(item_path, async_payload_record)
+            completed_items = None
 
         async_payload_record.add_items(completed_items)
         return async_payload_record

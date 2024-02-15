@@ -537,6 +537,54 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio()
+    async def can_stream_a_field_that_returns_a_list_with_nested_async_fields():
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 2) {
+                name
+                id
+              }
+            }
+            """
+        )
+
+        async def get_name(f):
+            return f.name
+
+        async def get_id(f):
+            return f.id
+
+        result = await complete(
+            document,
+            {
+                "friendList": lambda _info: [
+                    {"name": get_name(f), "id": get_id(f)} for f in friends
+                ]
+            },
+        )
+        assert result == [
+            {
+                "data": {
+                    "friendList": [
+                        {"name": "Luke", "id": "1"},
+                        {"name": "Han", "id": "2"},
+                    ]
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [{"name": "Leia", "id": "3"}],
+                        "path": ["friendList", 2],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio()
     async def handles_error_in_list_of_awaitables_before_initial_count_reached():
         document = parse(
             """
@@ -1292,6 +1340,7 @@ def describe_execute_stream_directive():
         }
 
     @pytest.mark.asyncio()
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_filter_payloads_when_null_error_is_in_a_different_path():
         document = parse(
             """
