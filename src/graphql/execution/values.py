@@ -136,7 +136,7 @@ def coerce_variable_values(
                 GraphQLError(
                     prefix + "; " + error.message,
                     var_def_node,  # noqa: B023
-                    original_error=error.original_error,
+                    original_error=error,
                 )
             )
 

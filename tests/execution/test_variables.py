@@ -1,6 +1,7 @@
 from math import nan
 from typing import Any, Dict, Optional
 
+from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult, execute_sync
 from graphql.execution.values import get_variable_values
 from graphql.language import OperationDefinitionNode, StringValueNode, ValueNode, parse
@@ -19,6 +20,25 @@ from graphql.type import (
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
+)
+
+TestFaultyScalarGraphQLError = GraphQLError(
+    "FaultyScalarErrorMessage", extensions={"code": "FaultyScalarExtensionCode"}
+)
+
+
+def faulty_parse_value(value: str) -> str:
+    raise TestFaultyScalarGraphQLError
+
+
+def faulty_parse_literal(ast: ValueNode, _variables=None) -> str:
+    raise TestFaultyScalarGraphQLError
+
+
+TestFaultyScalar = GraphQLScalarType(
+    name="FaultyScalar",
+    parse_value=faulty_parse_value,
+    parse_literal=faulty_parse_literal,
 )
 
 
@@ -47,6 +67,7 @@ TestInputObject = GraphQLInputObjectType(
         "b": GraphQLInputField(GraphQLList(GraphQLString)),
         "c": GraphQLInputField(GraphQLNonNull(GraphQLString)),
         "d": GraphQLInputField(TestComplexScalar),
+        "e": GraphQLInputField(TestFaultyScalar),
     },
 )
 
@@ -253,6 +274,27 @@ def describe_execute_handles_inputs():
                     None,
                 )
 
+            def errors_on_faulty_scalar_type_input():
+                result = execute_query(
+                    """
+                    {
+                      fieldWithObjectInput(input: {c: "foo", e: "bar"})
+                    }
+                    """
+                )
+
+                assert result == (
+                    {"fieldWithObjectInput": None},
+                    [
+                        {
+                            "message": "Argument 'input' has invalid value"
+                            ' { c: "foo", e: "bar" }.',
+                            "path": ["fieldWithObjectInput"],
+                            "locations": [(3, 51)],
+                        }
+                    ],
+                )
+
         def describe_using_variables():
             doc = """
                 query ($input: TestInputObject) {
@@ -363,6 +405,22 @@ def describe_execute_handles_inputs():
                 assert result == (
                     {"fieldWithObjectInput": "{'c': 'foo', 'd': 'DeserializedValue'}"},
                     None,
+                )
+
+            def errors_on_faulty_scalar_type_input():
+                params = {"input": {"c": "foo", "e": "SerializedValue"}}
+                result = execute_query(doc, params)
+
+                assert result == (
+                    None,
+                    [
+                        {
+                            "message": "Variable '$input' got invalid value"
+                            " 'SerializedValue' at 'input.e'; FaultyScalarErrorMessage",
+                            "locations": [(2, 24)],
+                            "extensions": {"code": "FaultyScalarExtensionCode"},
+                        }
+                    ],
                 )
 
             def errors_on_null_for_nested_non_null():
@@ -676,8 +734,8 @@ def describe_execute_handles_inputs():
             )
 
             errors = result.errors
-            assert errors is not None
-            assert errors[0].original_error is None
+            assert errors
+            assert errors[0].original_error
 
         def reports_error_for_non_provided_variables_for_non_nullable_inputs():
             # Note: this test would typically fail validation before
