@@ -1651,18 +1651,16 @@ class ExecutionContext:
 
     def map_source_to_response(
         self, result_or_stream: Union[ExecutionResult, AsyncIterable[Any]]
-    ) -> AwaitableOrValue[
-        Union[
-            AsyncGenerator[
-                Union[
-                    ExecutionResult,
-                    InitialIncrementalExecutionResult,
-                    SubsequentIncrementalExecutionResult,
-                ],
-                None,
+    ) -> Union[
+        AsyncGenerator[
+            Union[
+                ExecutionResult,
+                InitialIncrementalExecutionResult,
+                SubsequentIncrementalExecutionResult,
             ],
-            ExecutionResult,
-        ]
+            None,
+        ],
+        ExecutionResult,
     ]:
         """Map source result to response.
 
