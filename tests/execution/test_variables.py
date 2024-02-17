@@ -27,11 +27,11 @@ TestFaultyScalarGraphQLError = GraphQLError(
 )
 
 
-def faulty_parse_value(value: str) -> str:
+def faulty_parse_value(_value: str) -> str:
     raise TestFaultyScalarGraphQLError
 
 
-def faulty_parse_literal(ast: ValueNode, _variables=None) -> str:
+def faulty_parse_literal(_ast: ValueNode, _variables=None) -> str:
     raise TestFaultyScalarGraphQLError
 
 
@@ -733,9 +733,7 @@ def describe_execute_handles_inputs():
                 ],
             )
 
-            errors = result.errors
-            assert errors
-            assert errors[0].original_error
+            assert result.errors[0].original_error
 
         def reports_error_for_non_provided_variables_for_non_nullable_inputs():
             # Note: this test would typically fail validation before

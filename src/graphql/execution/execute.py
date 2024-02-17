@@ -1142,6 +1142,7 @@ class ExecutionContext:
             )
             error = located_error(raw_error, field_nodes, path.as_list())
             handle_field_error(error, return_type, errors)
+            self.filter_subsequent_payloads(path, async_payload_record)
             completed = None
         return completed
 

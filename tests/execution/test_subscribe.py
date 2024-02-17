@@ -488,7 +488,7 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-        assert result.errors[0].original_error is None
+        assert result.errors[0].original_error
 
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.
