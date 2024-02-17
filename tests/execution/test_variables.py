@@ -733,7 +733,9 @@ def describe_execute_handles_inputs():
                 ],
             )
 
-            assert result.errors[0].original_error
+            errors = result.errors
+            assert errors
+            assert errors[0].original_error
 
         def reports_error_for_non_provided_variables_for_non_nullable_inputs():
             # Note: this test would typically fail validation before

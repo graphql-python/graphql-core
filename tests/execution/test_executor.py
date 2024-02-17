@@ -624,6 +624,7 @@ def describe_execute_handles_basic_execution_tasks():
         result = execute_sync(schema, document, Data())
         assert result == ({"a": "b"}, None)
 
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def uses_the_only_operation_if_no_operation_name_is_provided():
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
