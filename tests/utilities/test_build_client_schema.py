@@ -327,7 +327,7 @@ def describe_type_system_build_schema_from_introspection():
 
               """A field with a two args"""
               two(
-                """This is an list of int arg"""
+                """This is a list of int arg"""
                 listArg: [Int]
 
                 """This is a required arg"""
