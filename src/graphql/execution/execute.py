@@ -969,26 +969,9 @@ class ExecutionContext:
             result = resolve_fn(source, info, **args)
 
             if self.is_awaitable(result):
-                # noinspection PyShadowingNames
-                async def await_result() -> Any:
-                    try:
-                        completed = self.complete_value(
-                            return_type,
-                            field_nodes,
-                            info,
-                            path,
-                            await result,
-                            async_payload_record,
-                        )
-                        if self.is_awaitable(completed):
-                            return await completed
-                    except Exception as raw_error:
-                        error = located_error(raw_error, field_nodes, path.as_list())
-                        handle_field_error(error, return_type, errors)
-                        return None
-                    return completed
-
-                return await_result()
+                return self.complete_awaitable_value(
+                    return_type, field_nodes, info, path, result, async_payload_record
+                )
 
             completed = self.complete_value(
                 return_type, field_nodes, info, path, result, async_payload_record
@@ -1130,6 +1113,37 @@ class ExecutionContext:
             f" '{inspect(return_type)}'."
         )  # pragma: no cover
         raise TypeError(msg)  # pragma: no cover
+
+    async def complete_awaitable_value(
+        self,
+        return_type: GraphQLOutputType,
+        field_nodes: List[FieldNode],
+        info: GraphQLResolveInfo,
+        path: Path,
+        result: Any,
+        async_payload_record: Optional[AsyncPayloadRecord] = None,
+    ) -> Any:
+        """Complete an awaitable value."""
+        try:
+            resolved = await result
+            completed = self.complete_value(
+                return_type,
+                field_nodes,
+                info,
+                path,
+                resolved,
+                async_payload_record,
+            )
+            if self.is_awaitable(completed):
+                completed = await completed
+        except Exception as raw_error:
+            errors = (
+                async_payload_record.errors if async_payload_record else self.errors
+            )
+            error = located_error(raw_error, field_nodes, path.as_list())
+            handle_field_error(error, return_type, errors)
+            completed = None
+        return completed
 
     def get_stream_values(
         self, field_nodes: List[FieldNode], path: Path
@@ -1361,25 +1375,11 @@ class ExecutionContext:
         is_awaitable = self.is_awaitable
 
         if is_awaitable(item):
-            # noinspection PyShadowingNames
-            async def await_completed() -> Any:
-                try:
-                    completed = self.complete_value(
-                        item_type,
-                        field_nodes,
-                        info,
-                        item_path,
-                        await item,
-                        async_payload_record,
-                    )
-                    return await completed if is_awaitable(completed) else completed
-                except Exception as raw_error:
-                    error = located_error(raw_error, field_nodes, item_path.as_list())
-                    handle_field_error(error, item_type, errors)
-                    self.filter_subsequent_payloads(item_path, async_payload_record)
-                    return None
-
-            complete_results.append(await_completed())
+            complete_results.append(
+                self.complete_awaitable_value(
+                    item_type, field_nodes, info, item_path, item, async_payload_record
+                )
+            )
             return True
 
         try:
@@ -1745,29 +1745,16 @@ class ExecutionContext:
             # noinspection PyShadowingNames
             async def await_completed_items() -> Optional[List[Any]]:
                 try:
-                    try:
-                        completed = self.complete_value(
+                    return [
+                        await self.complete_awaitable_value(
                             item_type,
                             field_nodes,
                             info,
                             item_path,
-                            await item,
+                            item,
                             async_payload_record,
                         )
-                        return [
-                            await completed
-                            if self.is_awaitable(completed)
-                            else completed
-                        ]
-                    except Exception as raw_error:
-                        error = located_error(
-                            raw_error, field_nodes, item_path.as_list()
-                        )
-                        handle_field_error(
-                            error, item_type, async_payload_record.errors
-                        )
-                        self.filter_subsequent_payloads(item_path, async_payload_record)
-                        return [None]
+                    ]
                 except GraphQLError as error:
                     async_payload_record.errors.append(error)
                     self.filter_subsequent_payloads(path, async_payload_record)
