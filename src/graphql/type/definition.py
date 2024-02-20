@@ -2,6 +2,7 @@
 
 from __future__ import annotations  # Python < 3.10
 
+import sys
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -554,30 +555,54 @@ class GraphQLField:
     def __copy__(self) -> GraphQLField:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
+if sys.version_info < (3, 9) or sys.version_info >= (3, 11):
+    TContext = TypeVar("TContext")
 
-class GraphQLResolveInfo(NamedTuple):
-    """Collection of information passed to the resolvers.
+    class GraphQLResolveInfo(NamedTuple, Generic[TContext]):
+        """Collection of information passed to the resolvers.
 
-    This is always passed as the first argument to the resolvers.
+        This is always passed as the first argument to the resolvers.
 
-    Note that contrary to the JavaScript implementation, the context (commonly used to
-    represent an authenticated user, or request-specific caches) is included here and
-    not passed as an additional argument.
-    """
+        Note that contrary to the JavaScript implementation, the context (commonly used
+        to represent an authenticated user, or request-specific caches) is included here
+        and not passed as an additional argument.
+        """
 
-    field_name: str
-    field_nodes: List[FieldNode]
-    return_type: GraphQLOutputType
-    parent_type: GraphQLObjectType
-    path: Path
-    schema: GraphQLSchema
-    fragments: Dict[str, FragmentDefinitionNode]
-    root_value: Any
-    operation: OperationDefinitionNode
-    variable_values: Dict[str, Any]
-    context: Any
-    is_awaitable: Callable[[Any], bool]
+        field_name: str
+        field_nodes: List[FieldNode]
+        return_type: GraphQLOutputType
+        parent_type: GraphQLObjectType
+        path: Path
+        schema: GraphQLSchema
+        fragments: Dict[str, FragmentDefinitionNode]
+        root_value: Any
+        operation: OperationDefinitionNode
+        variable_values: Dict[str, Any]
+        context: TContext
+        is_awaitable: Callable[[Any], bool]
+else:
+    class GraphQLResolveInfo(NamedTuple):
+        """Collection of information passed to the resolvers.
 
+        This is always passed as the first argument to the resolvers.
+
+        Note that contrary to the JavaScript implementation, the context (commonly used
+        to represent an authenticated user, or request-specific caches) is included here
+        and not passed as an additional argument.
+        """
+
+        field_name: str
+        field_nodes: List[FieldNode]
+        return_type: GraphQLOutputType
+        parent_type: GraphQLObjectType
+        path: Path
+        schema: GraphQLSchema
+        fragments: Dict[str, FragmentDefinitionNode]
+        root_value: Any
+        operation: OperationDefinitionNode
+        variable_values: Dict[str, Any]
+        context: Any
+        is_awaitable: Callable[[Any], bool]
 
 # Note: Contrary to the Javascript implementation of GraphQLFieldResolver,
 # the context is passed as part of the GraphQLResolveInfo and any arguments
