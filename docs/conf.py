@@ -141,6 +141,7 @@ graphql_classes = {
 ignore_references = set(
     """
 GNT GT KT T VT
+TContext
 enum.Enum
 traceback
 types.TracebackType
@@ -166,6 +167,7 @@ graphql.execution.execute.StreamArguments
 graphql.execution.execute.StreamRecord
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor
+graphql.type.definition.TContext
 graphql.type.schema.InterfaceImplementations
 graphql.validation.validation_context.VariableUsage
 graphql.validation.rules.known_argument_names.KnownArgumentNamesOnDirectivesRule

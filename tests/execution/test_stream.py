@@ -373,6 +373,7 @@ def describe_execute_stream_directive():
         }
 
     @pytest.mark.asyncio()
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_disable_stream_with_null_if_argument():
         document = parse(
             "query ($shouldStream: Boolean)"

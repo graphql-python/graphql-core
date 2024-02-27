@@ -2,7 +2,6 @@
 
 from __future__ import annotations  # Python < 3.10
 
-import sys
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -555,8 +554,10 @@ class GraphQLField:
     def __copy__(self) -> GraphQLField:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
-if sys.version_info < (3, 9) or sys.version_info >= (3, 11):
-    TContext = TypeVar("TContext")
+
+TContext = TypeVar("TContext")
+
+try:
 
     class GraphQLResolveInfo(NamedTuple, Generic[TContext]):
         """Collection of information passed to the resolvers.
@@ -580,8 +581,11 @@ if sys.version_info < (3, 9) or sys.version_info >= (3, 11):
         variable_values: Dict[str, Any]
         context: TContext
         is_awaitable: Callable[[Any], bool]
-else:
-    class GraphQLResolveInfo(NamedTuple):
+except TypeError as error:  # pragma: no cover
+    if "Multiple inheritance with NamedTuple is not supported" not in str(error):
+        raise  # only catch expected error for Python 3.9 and 3.10
+
+    class GraphQLResolveInfo(NamedTuple):  # type: ignore[no-redef]
         """Collection of information passed to the resolvers.
 
         This is always passed as the first argument to the resolvers.
@@ -603,6 +607,7 @@ else:
         variable_values: Dict[str, Any]
         context: Any
         is_awaitable: Callable[[Any], bool]
+
 
 # Note: Contrary to the Javascript implementation of GraphQLFieldResolver,
 # the context is passed as part of the GraphQLResolveInfo and any arguments
