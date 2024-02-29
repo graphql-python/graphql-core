@@ -1,7 +1,13 @@
 import pickle
+import sys
 from enum import Enum
 from math import isnan, nan
-from typing import Dict
+from typing import Any, Callable, Dict, List
+
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
 
 import pytest
 from graphql.error import GraphQLError
@@ -9,6 +15,8 @@ from graphql.language import (
     EnumTypeDefinitionNode,
     EnumTypeExtensionNode,
     EnumValueNode,
+    FieldNode,
+    FragmentDefinitionNode,
     InputObjectTypeDefinitionNode,
     InputObjectTypeExtensionNode,
     InputValueDefinitionNode,
@@ -16,6 +24,7 @@ from graphql.language import (
     InterfaceTypeExtensionNode,
     ObjectTypeDefinitionNode,
     ObjectTypeExtensionNode,
+    OperationDefinitionNode,
     ScalarTypeDefinitionNode,
     ScalarTypeExtensionNode,
     StringValueNode,
@@ -24,7 +33,7 @@ from graphql.language import (
     ValueNode,
     parse_value,
 )
-from graphql.pyutils import Undefined
+from graphql.pyutils import Path, Undefined, is_awaitable
 from graphql.type import (
     GraphQLArgument,
     GraphQLEnumType,
@@ -37,7 +46,10 @@ from graphql.type import (
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
+    GraphQLOutputType,
+    GraphQLResolveInfo,
     GraphQLScalarType,
+    GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
     introspection_types,
@@ -1301,3 +1313,56 @@ def describe_type_system_introspection_types():
                 TypeError, match=f"Redefinition of reserved type '{name}'"
             ):
                 introspection_type.__class__(**introspection_type.to_kwargs())
+
+
+def describe_resolve_info():
+    class InfoArgs(TypedDict):
+        """Arguments for GraphQLResolveInfo"""
+
+        field_name: str
+        field_nodes: List[FieldNode]
+        return_type: GraphQLOutputType
+        parent_type: GraphQLObjectType
+        path: Path
+        schema: GraphQLSchema
+        fragments: Dict[str, FragmentDefinitionNode]
+        root_value: Any
+        operation: OperationDefinitionNode
+        variable_values: Dict[str, Any]
+        is_awaitable: Callable[[Any], bool]
+
+    info_args: InfoArgs = {
+        "field_name": "foo",
+        "field_nodes": [],
+        "return_type": GraphQLString,
+        "parent_type": GraphQLObjectType("Foo", {}),
+        "path": Path(None, "foo", None),
+        "schema": GraphQLSchema(),
+        "fragments": {},
+        "root_value": None,
+        "operation": OperationDefinitionNode(),
+        "variable_values": {},
+        "is_awaitable": is_awaitable,
+    }
+
+    def resolve_info_with_unspecified_context_type_can_use_any_type():
+        info_int = GraphQLResolveInfo(**info_args, context=42)
+        assert info_int.context == 42
+        info_str = GraphQLResolveInfo(**info_args, context="foo")
+        assert info_str.context == "foo"
+
+    def resolve_info_with_unspecified_context_type_remembers_type():
+        info = GraphQLResolveInfo(**info_args, context=42)
+        assert info.context == 42
+        info = GraphQLResolveInfo(**info_args, context="foo")  # type: ignore
+        assert info.context == "foo"
+
+    @pytest.mark.skipif(
+        sys.version_info < (3, 9), reason="this needs at least Python 3.9"
+    )
+    def resolve_info_with_specified_context_type_checks_type():
+        info_int = GraphQLResolveInfo[int](**info_args, context=42)
+        assert isinstance(info_int.context, int)
+        # this should not pass type checking now:
+        info_str = GraphQLResolveInfo[int](**info_args, context="foo")  # type: ignore
+        assert isinstance(info_str.context, str)
