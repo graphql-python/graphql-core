@@ -141,7 +141,7 @@ def coerce_variable_values(
             )
 
         coerced_values[var_name] = coerce_input_value(
-            value, var_type, on_input_value_error
+            value, var_type, on_input_value_error, exclude_unset=schema.exclude_unset
         )
 
     return coerced_values
