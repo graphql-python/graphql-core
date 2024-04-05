@@ -1709,7 +1709,6 @@ class ExecutionContext:
                     awaitable: Awaitable[Dict[str, Any]],
                 ) -> Optional[Dict[str, Any]]:
                     # noinspection PyShadowingNames
-
                     try:
                         return await awaitable
                     except GraphQLError as error:
@@ -2607,16 +2606,14 @@ class DeferredFragmentRecord:
         if self.parent_context:
             await self.parent_context.completed.wait()
         _data = self._data
-        try:
-            data = (
-                await _data  # type: ignore
-                if self._context.is_awaitable(_data)
-                else _data
-            )
-        finally:
-            await sleep(ASYNC_DELAY)  # always defer completion a little bit
-            self.data = data
-            self.completed.set()
+        data = (
+            await _data  # type: ignore
+            if self._context.is_awaitable(_data)
+            else _data
+        )
+        await sleep(ASYNC_DELAY)  # always defer completion a little bit
+        self.completed.set()
+        self.data = data
         return data
 
     def add_data(self, data: AwaitableOrValue[Optional[Dict[str, Any]]]) -> None:
@@ -2680,16 +2677,14 @@ class StreamRecord:
         if self.parent_context:
             await self.parent_context.completed.wait()
         _items = self._items
-        try:
-            items = (
-                await _items  # type: ignore
-                if self._context.is_awaitable(_items)
-                else _items
-            )
-        finally:
-            await sleep(ASYNC_DELAY)  # always defer completion a little bit
-            self.items = items
-            self.completed.set()
+        items = (
+            await _items  # type: ignore
+            if self._context.is_awaitable(_items)
+            else _items
+        )
+        await sleep(ASYNC_DELAY)  # always defer completion a little bit
+        self.items = items
+        self.completed.set()
         return items
 
     def add_items(self, items: AwaitableOrValue[Optional[List[Any]]]) -> None:
