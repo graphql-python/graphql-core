@@ -77,7 +77,7 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
-from .async_iterables import flatten_async_iterable, map_async_iterable
+from .async_iterables import map_async_iterable
 from .collect_fields import FieldsAndPatches, collect_fields, collect_subfields
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
@@ -101,7 +101,6 @@ __all__ = [
     "execute",
     "execute_sync",
     "experimental_execute_incrementally",
-    "experimental_subscribe_incrementally",
     "subscribe",
     "AsyncPayloadRecord",
     "DeferredFragmentRecord",
@@ -817,7 +816,7 @@ class ExecutionContext:
             self.fragments,
             self.variable_values,
             root_type,
-            operation.selection_set,
+            operation,
         )
 
         root_value = self.root_value
@@ -1172,6 +1171,13 @@ class ExecutionContext:
         if initial_count is None or initial_count < 0:
             msg = "initialCount must be a positive integer"
             raise ValueError(msg)
+
+        if self.operation.operation == OperationType.SUBSCRIPTION:
+            msg = (
+                "`@stream` directive not supported on subscription operations."
+                " Disable `@stream` by setting the `if` argument to `false`."
+            )
+            raise TypeError(msg)
 
         label = stream.get("label")
         return StreamArguments(initial_count=initial_count, label=label)
@@ -1644,6 +1650,7 @@ class ExecutionContext:
                 self.schema,
                 self.fragments,
                 self.variable_values,
+                self.operation,
                 return_type,
                 field_nodes,
             )
@@ -1652,17 +1659,7 @@ class ExecutionContext:
 
     def map_source_to_response(
         self, result_or_stream: Union[ExecutionResult, AsyncIterable[Any]]
-    ) -> Union[
-        AsyncGenerator[
-            Union[
-                ExecutionResult,
-                InitialIncrementalExecutionResult,
-                SubsequentIncrementalExecutionResult,
-            ],
-            None,
-        ],
-        ExecutionResult,
-    ]:
+    ) -> Union[AsyncGenerator[ExecutionResult, None], ExecutionResult]:
         """Map source result to response.
 
         For each payload yielded from a subscription,
@@ -1678,13 +1675,17 @@ class ExecutionContext:
         if not isinstance(result_or_stream, AsyncIterable):
             return result_or_stream  # pragma: no cover
 
-        async def callback(payload: Any) -> AsyncGenerator:
+        async def callback(payload: Any) -> ExecutionResult:
             result = execute_impl(self.build_per_event_execution_context(payload))
-            return ensure_async_iterable(
-                await result if self.is_awaitable(result) else result  # type: ignore
+            # typecast to ExecutionResult, not possible to return
+            # ExperimentalIncrementalExecutionResults when operation is 'subscription'.
+            return (
+                await cast(Awaitable[ExecutionResult], result)
+                if self.is_awaitable(result)
+                else cast(ExecutionResult, result)
             )
 
-        return flatten_async_iterable(map_async_iterable(result_or_stream, callback))
+        return map_async_iterable(result_or_stream, callback)
 
     def execute_deferred_fragment(
         self,
@@ -2015,8 +2016,8 @@ def execute(
     a GraphQLError will be thrown immediately explaining the invalid input.
 
     This function does not support incremental delivery (`@defer` and `@stream`).
-    If an operation which would defer or stream data is executed with this
-    function, it will throw or resolve to an object containing an error instead.
+    If an operation that defers or streams data is executed with this function,
+    it will throw or resolve to an object containing an error instead.
     Use `experimental_execute_incrementally` if you want to support incremental
     delivery.
     """
@@ -2362,111 +2363,8 @@ def subscribe(
     a stream of ExecutionResults representing the response stream.
 
     This function does not support incremental delivery (`@defer` and `@stream`).
-    If an operation which would defer or stream data is executed with this function,
-    each :class:`InitialIncrementalExecutionResult` and
-    :class:`SubsequentIncrementalExecutionResult`
-    in the result stream will be replaced with an :class:`ExecutionResult`
-    with a single error stating that defer/stream is not supported.
-    Use :func:`experimental_subscribe_incrementally` if you want to support
-    incremental delivery.
-    """
-    result = experimental_subscribe_incrementally(
-        schema,
-        document,
-        root_value,
-        context_value,
-        variable_values,
-        operation_name,
-        field_resolver,
-        type_resolver,
-        subscribe_field_resolver,
-        execution_context_class,
-    )
-
-    if isinstance(result, ExecutionResult):
-        return result
-    if isinstance(result, AsyncIterable):
-        return map_async_iterable(result, ensure_single_execution_result)
-
-    async def await_result() -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
-        result_or_iterable = await result
-        if isinstance(result_or_iterable, AsyncIterable):
-            return map_async_iterable(
-                result_or_iterable, ensure_single_execution_result
-            )
-        return result_or_iterable
-
-    return await_result()
-
-
-async def ensure_single_execution_result(
-    result: Union[
-        ExecutionResult,
-        InitialIncrementalExecutionResult,
-        SubsequentIncrementalExecutionResult,
-    ],
-) -> ExecutionResult:
-    """Ensure that the given result does not use incremental delivery."""
-    if not isinstance(result, ExecutionResult):
-        return ExecutionResult(
-            None, errors=[GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS)]
-        )
-    return result
-
-
-def experimental_subscribe_incrementally(
-    schema: GraphQLSchema,
-    document: DocumentNode,
-    root_value: Any = None,
-    context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
-) -> AwaitableOrValue[
-    Union[
-        AsyncGenerator[
-            Union[
-                ExecutionResult,
-                InitialIncrementalExecutionResult,
-                SubsequentIncrementalExecutionResult,
-            ],
-            None,
-        ],
-        ExecutionResult,
-    ]
-]:
-    """Create a GraphQL subscription.
-
-    Implements the "Subscribe" algorithm described in the GraphQL spec.
-
-    Returns a coroutine object which yields either an AsyncIterator (if successful) or
-    an ExecutionResult (client error). The coroutine will raise an exception if a server
-    error occurs.
-
-    If the client-provided arguments to this function do not result in a compliant
-    subscription, a GraphQL Response (ExecutionResult) with descriptive errors and no
-    data will be returned.
-
-    If the source stream could not be created due to faulty subscription resolver logic
-    or underlying systems, the coroutine object will yield a single ExecutionResult
-    containing ``errors`` and no ``data``.
-
-    If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
-    a stream of ExecutionResults representing the response stream.
-
-    Each result may be an ExecutionResult with no ``has_next`` attribute (if executing
-    the event did not use `@defer` or `@stream`), or an
-    :class:`InitialIncrementalExecutionResult` or
-    :class:`SubsequentIncrementalExecutionResult`
-    (if executing the event used `@defer` or `@stream`). In the case of
-    incremental execution results, each event produces a single
-    :class:`InitialIncrementalExecutionResult` followed by one or more
-    :class:`SubsequentIncrementalExecutionResult`; all but the last have
-    ``has_next == true``, and the last has ``has_next == False``.
-    There is no interleaving between results generated from the same original event.
+    If an operation that defers or streams data is executed with this function,
+    a field error will be raised at the location of the `@defer` or `@stream` directive.
     """
     if execution_context_class is None:
         execution_context_class = ExecutionContext
@@ -2505,26 +2403,6 @@ def experimental_subscribe_incrementally(
         return result_or_stream
 
     return context.map_source_to_response(result_or_stream)  # type: ignore
-
-
-async def ensure_async_iterable(
-    some_execution_result: Union[
-        ExecutionResult, ExperimentalIncrementalExecutionResults
-    ],
-) -> AsyncGenerator[
-    Union[
-        ExecutionResult,
-        InitialIncrementalExecutionResult,
-        SubsequentIncrementalExecutionResult,
-    ],
-    None,
-]:
-    if isinstance(some_execution_result, ExecutionResult):
-        yield some_execution_result
-    else:
-        yield some_execution_result.initial_result
-        async for result in some_execution_result.subsequent_results:
-            yield result
 
 
 def create_source_event_stream(
@@ -2622,7 +2500,7 @@ def execute_subscription(
         context.fragments,
         context.variable_values,
         root_type,
-        context.operation.selection_set,
+        context.operation,
     ).fields
     first_root_field = next(iter(root_fields.items()))
     response_name, field_nodes = first_root_field

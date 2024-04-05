@@ -8,6 +8,8 @@ from ..language import (
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
+    OperationDefinitionNode,
+    OperationType,
     SelectionSetNode,
 )
 from ..type import (
@@ -43,7 +45,7 @@ def collect_fields(
     fragments: Dict[str, FragmentDefinitionNode],
     variable_values: Dict[str, Any],
     runtime_type: GraphQLObjectType,
-    selection_set: SelectionSetNode,
+    operation: OperationDefinitionNode,
 ) -> FieldsAndPatches:
     """Collect fields.
 
@@ -61,8 +63,9 @@ def collect_fields(
         schema,
         fragments,
         variable_values,
+        operation,
         runtime_type,
-        selection_set,
+        operation.selection_set,
         fields,
         patches,
         set(),
@@ -74,6 +77,7 @@ def collect_subfields(
     schema: GraphQLSchema,
     fragments: Dict[str, FragmentDefinitionNode],
     variable_values: Dict[str, Any],
+    operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
     field_nodes: List[FieldNode],
 ) -> FieldsAndPatches:
@@ -100,6 +104,7 @@ def collect_subfields(
                 schema,
                 fragments,
                 variable_values,
+                operation,
                 return_type,
                 node.selection_set,
                 sub_field_nodes,
@@ -113,6 +118,7 @@ def collect_fields_impl(
     schema: GraphQLSchema,
     fragments: Dict[str, FragmentDefinitionNode],
     variable_values: Dict[str, Any],
+    operation: OperationDefinitionNode,
     runtime_type: GraphQLObjectType,
     selection_set: SelectionSetNode,
     fields: Dict[str, List[FieldNode]],
@@ -133,13 +139,14 @@ def collect_fields_impl(
             ) or not does_fragment_condition_match(schema, selection, runtime_type):
                 continue
 
-            defer = get_defer_values(variable_values, selection)
+            defer = get_defer_values(operation, variable_values, selection)
             if defer:
                 patch_fields = defaultdict(list)
                 collect_fields_impl(
                     schema,
                     fragments,
                     variable_values,
+                    operation,
                     runtime_type,
                     selection.selection_set,
                     patch_fields,
@@ -152,6 +159,7 @@ def collect_fields_impl(
                     schema,
                     fragments,
                     variable_values,
+                    operation,
                     runtime_type,
                     selection.selection_set,
                     fields,
@@ -164,7 +172,7 @@ def collect_fields_impl(
             if not should_include_node(variable_values, selection):
                 continue
 
-            defer = get_defer_values(variable_values, selection)
+            defer = get_defer_values(operation, variable_values, selection)
             if frag_name in visited_fragment_names and not defer:
                 continue
 
@@ -183,6 +191,7 @@ def collect_fields_impl(
                     schema,
                     fragments,
                     variable_values,
+                    operation,
                     runtime_type,
                     fragment.selection_set,
                     patch_fields,
@@ -195,6 +204,7 @@ def collect_fields_impl(
                     schema,
                     fragments,
                     variable_values,
+                    operation,
                     runtime_type,
                     fragment.selection_set,
                     fields,
@@ -210,7 +220,9 @@ class DeferValues(NamedTuple):
 
 
 def get_defer_values(
-    variable_values: Dict[str, Any], node: Union[FragmentSpreadNode, InlineFragmentNode]
+    operation: OperationDefinitionNode,
+    variable_values: Dict[str, Any],
+    node: Union[FragmentSpreadNode, InlineFragmentNode],
 ) -> Optional[DeferValues]:
     """Get values of defer directive if active.
 
@@ -222,6 +234,13 @@ def get_defer_values(
 
     if not defer or defer.get("if") is False:
         return None
+
+    if operation.operation == OperationType.SUBSCRIPTION:
+        msg = (
+            "`@defer` directive not supported on subscription operations."
+            " Disable `@defer` by setting the `if` argument to `false`."
+        )
+        raise TypeError(msg)
 
     return DeferValues(defer.get("label"))
 

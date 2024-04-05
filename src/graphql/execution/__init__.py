@@ -13,7 +13,6 @@ from .execute import (
     default_field_resolver,
     default_type_resolver,
     subscribe,
-    experimental_subscribe_incrementally,
     ExecutionContext,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
@@ -30,7 +29,7 @@ from .execute import (
     FormattedIncrementalResult,
     Middleware,
 )
-from .async_iterables import flatten_async_iterable, map_async_iterable
+from .async_iterables import map_async_iterable
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
@@ -43,7 +42,6 @@ __all__ = [
     "default_field_resolver",
     "default_type_resolver",
     "subscribe",
-    "experimental_subscribe_incrementally",
     "ExecutionContext",
     "ExecutionResult",
     "ExperimentalIncrementalExecutionResults",
@@ -58,7 +56,6 @@ __all__ = [
     "FormattedIncrementalDeferResult",
     "FormattedIncrementalStreamResult",
     "FormattedIncrementalResult",
-    "flatten_async_iterable",
     "map_async_iterable",
     "Middleware",
     "MiddlewareManager",

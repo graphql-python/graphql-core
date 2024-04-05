@@ -53,8 +53,6 @@ Execution
 
 .. autofunction:: subscribe
 
-.. autofunction:: experimental_subscribe_incrementally
-
 .. autofunction:: create_source_event_stream
 
 .. autoclass:: Middleware

@@ -16,7 +16,6 @@ import pytest
 from graphql.execution import (
     ExecutionResult,
     create_source_event_stream,
-    experimental_subscribe_incrementally,
     subscribe,
 )
 from graphql.language import DocumentNode, parse
@@ -116,15 +115,16 @@ email_schema = GraphQLSchema(
 
 
 def create_subscription(
-    pubsub: SimplePubSub,
-    variable_values: Optional[Dict[str, Any]] = None,
-    original_subscribe: bool = False,
+    pubsub: SimplePubSub, variable_values: Optional[Dict[str, Any]] = None
 ) -> AwaitableOrValue[Union[AsyncIterator[ExecutionResult], ExecutionResult]]:
     document = parse(
         """
-        subscription ($priority: Int = 0,
-                      $shouldDefer: Boolean = false
-                      $asyncResolver: Boolean = false) {
+        subscription (
+          $priority: Int = 0
+          $shouldDefer: Boolean = false
+          $shouldStream: Boolean = false
+          $asyncResolver: Boolean = false
+        ) {
           importantEmail(priority: $priority) {
             email {
               from
@@ -135,6 +135,7 @@ def create_subscription(
             }
             ... @defer(if: $shouldDefer) {
               inbox {
+                emails @include(if: $shouldStream) @stream(if: $shouldStream)
                 unread
                 total
               }
@@ -163,9 +164,7 @@ def create_subscription(
         "importantEmail": pubsub.get_subscriber(transform),
     }
 
-    return (subscribe if original_subscribe else experimental_subscribe_incrementally)(  # type: ignore
-        email_schema, document, data, variable_values=variable_values
-    )
+    return subscribe(email_schema, document, data, variable_values=variable_values)
 
 
 DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)})
@@ -645,7 +644,7 @@ def describe_subscription_publish_phase():
             assert await anext(subscription)
 
     @pytest.mark.asyncio()
-    async def produces_additional_payloads_for_subscriptions_with_defer():
+    async def subscribe_function_returns_errors_with_defer():
         pubsub = SimplePubSub()
         subscription = create_subscription(pubsub, {"shouldDefer": True})
         assert isinstance(subscription, AsyncIterator)
@@ -666,31 +665,22 @@ def describe_subscription_publish_phase():
             is True
         )
 
-        # The previously waited on payload now has a value.
-        result = await payload
-        assert result.formatted == {
-            "data": {
-                "importantEmail": {
-                    "email": {
-                        "from": "yuzhi@graphql.org",
-                        "subject": "Alright",
-                    },
-                },
-            },
-            "hasNext": True,
-        }
-
-        # Wait for the next payload from @defer
-        result = await anext(subscription)
-        assert result.formatted == {
-            "incremental": [
+        error_result = (
+            {"importantEmail": None},
+            [
                 {
-                    "data": {"inbox": {"total": 2, "unread": 1}},
+                    "message": "`@defer` directive not supported"
+                    " on subscription operations."
+                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    "locations": [(8, 11)],
                     "path": ["importantEmail"],
                 }
             ],
-            "hasNext": False,
-        }
+        )
+
+        # The previously waited on payload now has a value.
+        result = await payload
+        assert result == error_result
 
         # Another new email arrives,
         # after all incrementally delivered payloads are received.
@@ -708,59 +698,8 @@ def describe_subscription_publish_phase():
 
         # The next waited on payload will have a value.
         result = await anext(subscription)
-        assert result.formatted == {
-            "data": {
-                "importantEmail": {
-                    "email": {
-                        "from": "hyo@graphql.org",
-                        "subject": "Tools",
-                    },
-                },
-            },
-            "hasNext": True,
-        }
+        assert result == error_result
 
-        # Another new email arrives,
-        # before the incrementally delivered payloads from the last email was received.
-        assert (
-            pubsub.emit(
-                {
-                    "from": "adam@graphql.org",
-                    "subject": "Important",
-                    "message": "Read me please",
-                    "unread": True,
-                }
-            )
-            is True
-        )
-
-        # Deferred payload from previous event is received.
-        result = await anext(subscription)
-        assert result.formatted == {
-            "incremental": [
-                {
-                    "data": {"inbox": {"total": 3, "unread": 2}},
-                    "path": ["importantEmail"],
-                }
-            ],
-            "hasNext": False,
-        }
-
-        # Next payload from last event
-        result = await anext(subscription)
-        assert result.formatted == {
-            "data": {
-                "importantEmail": {
-                    "email": {
-                        "from": "adam@graphql.org",
-                        "subject": "Important",
-                    },
-                },
-            },
-            "hasNext": True,
-        }
-
-        # The client disconnects before the deferred payload is consumed.
         with suppress(RuntimeError):  # suppress error for Python < 3.8
             await subscription.aclose()  # type: ignore
 
@@ -769,9 +708,9 @@ def describe_subscription_publish_phase():
             assert await anext(subscription)
 
     @pytest.mark.asyncio()
-    async def original_subscribe_function_returns_errors_with_defer():
+    async def subscribe_function_returns_errors_with_stream():
         pubsub = SimplePubSub()
-        subscription = create_subscription(pubsub, {"shouldDefer": True}, True)
+        subscription = create_subscription(pubsub, {"shouldStream": True})
         assert isinstance(subscription, AsyncIterator)
 
         # Wait for the next subscription payload.
@@ -790,22 +729,24 @@ def describe_subscription_publish_phase():
             is True
         )
 
-        error_payload = (
-            None,
+        # The previously waited on payload now has a value.
+        assert await payload == (
+            {
+                "importantEmail": {
+                    "email": {"from": "yuzhi@graphql.org", "subject": "Alright"},
+                    "inbox": {"emails": None, "unread": 1, "total": 2},
+                }
+            },
             [
                 {
-                    "message": "Executing this GraphQL operation would unexpectedly"
-                    " produce multiple payloads"
-                    " (due to @defer or @stream directive)",
+                    "message": "`@stream` directive not supported"
+                    " on subscription operations."
+                    " Disable `@stream` by setting the `if` argument to `false`.",
+                    "locations": [(18, 17)],
+                    "path": ["importantEmail", "inbox", "emails"],
                 }
             ],
         )
-
-        # The previously waited on payload now has a value.
-        assert await payload == error_payload
-
-        # Wait for the next payload from @defer
-        assert await anext(subscription) == error_payload
 
         # Another new email arrives,
         # after all incrementally delivered payloads are received.
@@ -822,10 +763,23 @@ def describe_subscription_publish_phase():
         )
 
         # The next waited on payload will have a value.
-        assert await anext(subscription) == error_payload
-
-        # The next waited on payload will have a value.
-        assert await anext(subscription) == error_payload
+        assert await anext(subscription) == (
+            {
+                "importantEmail": {
+                    "email": {"from": "hyo@graphql.org", "subject": "Tools"},
+                    "inbox": {"emails": None, "unread": 2, "total": 3},
+                }
+            },
+            [
+                {
+                    "message": "`@stream` directive not supported"
+                    " on subscription operations."
+                    " Disable `@stream` by setting the `if` argument to `false`.",
+                    "locations": [(18, 17)],
+                    "path": ["importantEmail", "inbox", "emails"],
+                }
+            ],
+        )
 
         # The client disconnects before the deferred payload is consumed.
         await subscription.aclose()  # type: ignore

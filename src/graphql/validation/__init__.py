@@ -23,6 +23,11 @@ from .rules.defer_stream_directive_label import DeferStreamDirectiveLabel
 # Spec Section: "Defer And Stream Directives Are Used On Valid Root Field"
 from .rules.defer_stream_directive_on_root_field import DeferStreamDirectiveOnRootField
 
+# Spec Section: "Defer And Stream Directives Are Used On Valid Operations"
+from .rules.defer_stream_directive_on_valid_operations_rule import (
+    DeferStreamDirectiveOnValidOperationsRule,
+)
+
 # Spec Section: "Executable Definitions"
 from .rules.executable_definitions import ExecutableDefinitionsRule
 
@@ -129,6 +134,7 @@ __all__ = [
     "specified_rules",
     "DeferStreamDirectiveLabel",
     "DeferStreamDirectiveOnRootField",
+    "DeferStreamDirectiveOnValidOperationsRule",
     "ExecutableDefinitionsRule",
     "FieldsOnCorrectTypeRule",
     "FragmentsOnCompositeTypesRule",

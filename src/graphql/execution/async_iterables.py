@@ -12,7 +12,7 @@ from typing import (
     Union,
 )
 
-__all__ = ["aclosing", "flatten_async_iterable", "map_async_iterable"]
+__all__ = ["aclosing", "map_async_iterable"]
 
 T = TypeVar("T")
 V = TypeVar("V")
@@ -40,21 +40,6 @@ class aclosing(AbstractAsyncContextManager):  # noqa: N801
             pass  # do not complain if the iterator has no aclose() method
         else:
             await aclose()
-
-
-async def flatten_async_iterable(
-    iterable: AsyncIterableOrGenerator[AsyncIterableOrGenerator[T]],
-) -> AsyncGenerator[T, None]:
-    """Flatten async iterables.
-
-    Given an AsyncIterable of AsyncIterables, flatten all yielded results into a
-    single AsyncIterable.
-    """
-    async with aclosing(iterable) as sub_iterators:  # type: ignore
-        async for sub_iterator in sub_iterators:
-            async with aclosing(sub_iterator) as items:  # type: ignore
-                async for item in items:
-                    yield item
 
 
 async def map_async_iterable(
