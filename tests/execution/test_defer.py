@@ -962,15 +962,10 @@ def describe_execute_defer_directive():
             """
         )
 
-        result = await execute(schema, document, {})  # type: ignore
+        with pytest.raises(GraphQLError) as exc_info:
+            await execute(schema, document, {})  # type: ignore
 
-        assert result == (
-            None,
-            [
-                {
-                    "message": "Executing this GraphQL operation would unexpectedly"
-                    " produce multiple payloads"
-                    " (due to @defer or @stream directive)"
-                }
-            ],
+        assert str(exc_info.value) == (
+            "Executing this GraphQL operation would unexpectedly produce"
+            " multiple payloads (due to @defer or @stream directive)"
         )

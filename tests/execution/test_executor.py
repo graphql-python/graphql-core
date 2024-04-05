@@ -9,6 +9,7 @@ from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDeferDirective,
     GraphQLField,
     GraphQLInt,
     GraphQLInterfaceType,
@@ -18,6 +19,7 @@ from graphql.type import (
     GraphQLResolveInfo,
     GraphQLScalarType,
     GraphQLSchema,
+    GraphQLStreamDirective,
     GraphQLString,
     GraphQLUnionType,
     ResponsePath,
@@ -785,6 +787,38 @@ def describe_execute_handles_basic_execution_tasks():
 
         result = execute_sync(schema, document, Data(), operation_name="S")
         assert result == ({"a": "b"}, None)
+
+    def errors_when_using_original_execute_with_schemas_including_experimental_defer():
+        schema = GraphQLSchema(
+            query=GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
+            directives=[GraphQLDeferDirective],
+        )
+        document = parse("query Q { a }")
+
+        with pytest.raises(GraphQLError) as exc_info:
+            execute(schema, document)
+
+        assert str(exc_info.value) == (
+            "The provided schema unexpectedly contains experimental directives"
+            " (@defer or @stream). These directives may only be utilized"
+            " if experimental execution features are explicitly enabled."
+        )
+
+    def errors_when_using_original_execute_with_schemas_including_experimental_stream():
+        schema = GraphQLSchema(
+            query=GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),
+            directives=[GraphQLStreamDirective],
+        )
+        document = parse("query Q { a }")
+
+        with pytest.raises(GraphQLError) as exc_info:
+            execute(schema, document)
+
+        assert str(exc_info.value) == (
+            "The provided schema unexpectedly contains experimental directives"
+            " (@defer or @stream). These directives may only be utilized"
+            " if experimental execution features are explicitly enabled."
+        )
 
     def resolves_to_an_error_if_schema_does_not_support_operation():
         schema = GraphQLSchema(assume_valid=True)

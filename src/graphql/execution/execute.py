@@ -1984,6 +1984,13 @@ class ExecutionContext:
                     break
 
 
+UNEXPECTED_EXPERIMENTAL_DIRECTIVES = (
+    "The provided schema unexpectedly contains experimental directives"
+    " (@defer or @stream). These directives may only be utilized"
+    " if experimental execution features are explicitly enabled."
+)
+
+
 UNEXPECTED_MULTIPLE_PAYLOADS = (
     "Executing this GraphQL operation would unexpectedly produce multiple payloads"
     " (due to @defer or @stream directive)"
@@ -2016,10 +2023,12 @@ def execute(
 
     This function does not support incremental delivery (`@defer` and `@stream`).
     If an operation that defers or streams data is executed with this function,
-    it will throw or resolve to an object containing an error instead.
-    Use `experimental_execute_incrementally` if you want to support incremental
-    delivery.
+    it will throw an error instead. Use `experimental_execute_incrementally` if
+    you want to support incremental delivery.
     """
+    if schema.get_directive("defer") or schema.get_directive("stream"):
+        raise GraphQLError(UNEXPECTED_EXPERIMENTAL_DIRECTIVES)
+
     result = experimental_execute_incrementally(
         schema,
         document,
@@ -2043,9 +2052,7 @@ def execute(
         awaited_result = await result
         if isinstance(awaited_result, ExecutionResult):
             return awaited_result
-        return ExecutionResult(
-            None, errors=[GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS)]
-        )
+        raise GraphQLError(UNEXPECTED_MULTIPLE_PAYLOADS)
 
     return await_result()
 
