@@ -27,7 +27,7 @@ from graphql.utilities import (
     print_value,
 )
 
-from ..utils import dedent
+from ..utils import dedent, viral_schema, viral_sdl
 
 
 def expect_printed_schema(schema: GraphQLSchema) -> str:
@@ -864,6 +864,10 @@ def describe_type_system_printer():
             }
             '''  # noqa: E501
         )
+
+    def prints_viral_schema_correctly():
+        printed = print_schema(viral_schema)
+        assert printed == viral_sdl
 
 
 def describe_print_value():

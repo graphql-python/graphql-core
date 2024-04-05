@@ -70,51 +70,59 @@ def print_filtered_schema(
 
 def print_schema_definition(schema: GraphQLSchema) -> Optional[str]:
     """Print GraphQL schema definitions."""
-    if schema.description is None and is_schema_of_common_names(schema):
+    query_type = schema.query_type
+    mutation_type = schema.mutation_type
+    subscription_type = schema.subscription_type
+
+    # Special case: When a schema has no root operation types, no valid schema
+    # definition can be printed.
+    if not query_type and not mutation_type and not subscription_type:
         return None
 
-    operation_types = []
+    # Only print a schema definition if there is a description or if it should
+    # not be omitted because of having default type names.
+    if schema.description or not has_default_root_operation_types(schema):
+        return (
+            print_description(schema)
+            + "schema {\n"
+            + (f"  query: {query_type.name}\n" if query_type else "")
+            + (f"  mutation: {mutation_type.name}\n" if mutation_type else "")
+            + (
+                f"  subscription: {subscription_type.name}\n"
+                if subscription_type
+                else ""
+            )
+            + "}"
+        )
 
-    query_type = schema.query_type
-    if query_type:
-        operation_types.append(f"  query: {query_type.name}")
-
-    mutation_type = schema.mutation_type
-    if mutation_type:
-        operation_types.append(f"  mutation: {mutation_type.name}")
-
-    subscription_type = schema.subscription_type
-    if subscription_type:
-        operation_types.append(f"  subscription: {subscription_type.name}")
-
-    return print_description(schema) + "schema {\n" + "\n".join(operation_types) + "\n}"
+    return None
 
 
-def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
-    """Check whether this schema uses the common naming convention.
+def has_default_root_operation_types(schema: GraphQLSchema) -> bool:
+    """Check whether a schema uses the default root operation type names.
 
     GraphQL schema define root types for each type of operation. These types are the
     same as any other type and can be named in any manner, however there is a common
-    naming convention:
+    naming convention::
 
-    schema {
-      query: Query
-      mutation: Mutation
-      subscription: Subscription
-    }
+        schema {
+          query: Query
+          mutation: Mutation
+          subscription: Subscription
+        }
 
-    When using this naming convention, the schema description can be omitted.
+    When using this naming convention, the schema description can be omitted so
+    long as these names are only used for operation types.
+
+    Note however that if any of these default names are used elsewhere in the
+    schema but not as a root operation type, the schema definition must still
+    be printed to avoid ambiguity.
     """
-    query_type = schema.query_type
-    if query_type and query_type.name != "Query":
-        return False
-
-    mutation_type = schema.mutation_type
-    if mutation_type and mutation_type.name != "Mutation":
-        return False
-
-    subscription_type = schema.subscription_type
-    return not subscription_type or subscription_type.name == "Subscription"
+    return (
+        schema.query_type is schema.get_type("Query")
+        and schema.mutation_type is schema.get_type("Mutation")
+        and schema.subscription_type is schema.get_type("Subscription")
+    )
 
 
 def print_type(type_: GraphQLNamedType) -> str:

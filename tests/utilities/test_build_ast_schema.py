@@ -38,7 +38,7 @@ from graphql.utilities import build_ast_schema, build_schema, print_schema, prin
 
 from ..fixtures import big_schema_sdl  # noqa: F401
 from ..star_wars_schema import star_wars_schema
-from ..utils import dedent
+from ..utils import dedent, viral_sdl
 
 try:
     from typing import TypeAlias
@@ -1187,6 +1187,21 @@ def describe_schema_builder():
         with pytest.raises(TypeError) as exc_info:
             build_schema(sdl, assume_valid_sdl=True)
         assert str(exc_info.value).endswith("Unknown type: 'UnknownType'.")
+
+    def correctly_processes_viral_schema():
+        schema = build_schema(viral_sdl)
+        query_type = schema.query_type
+        assert isinstance(query_type, GraphQLNamedType)
+        assert query_type.name == "Query"
+        virus_type = schema.get_type("Virus")
+        assert isinstance(virus_type, GraphQLNamedType)
+        assert virus_type.name == "Virus"
+        mutation_type = schema.get_type("Mutation")
+        assert isinstance(mutation_type, GraphQLNamedType)
+        assert mutation_type.name == "Mutation"
+        # Though the viral schema has a 'Mutation' type, it is not used for the
+        # 'mutation' operation.
+        assert schema.mutation_type is None
 
     def describe_deepcopy_and_pickle():  # pragma: no cover
         sdl = print_schema(star_wars_schema)
