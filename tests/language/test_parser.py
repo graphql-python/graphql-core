@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional, Tuple, cast
 
 import pytest
@@ -261,7 +263,7 @@ def describe_parser():
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, tuple)
@@ -326,16 +328,16 @@ def describe_parser():
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, tuple)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
-        nullability_assertion: Optional[
-            NullabilityAssertionNode
-        ] = field.nullability_assertion
+        nullability_assertion: NullabilityAssertionNode | None = (
+            field.nullability_assertion
+        )
         assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
         assert nullability_assertion.loc == (7, 10)
         nullability_assertion = nullability_assertion.nullability_assertion
@@ -350,16 +352,16 @@ def describe_parser():
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, tuple)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
-        nullability_assertion: Optional[
-            NullabilityAssertionNode
-        ] = field.nullability_assertion
+        nullability_assertion: NullabilityAssertionNode | None = (
+            field.nullability_assertion
+        )
         assert isinstance(nullability_assertion, ListNullabilityOperatorNode)
         assert nullability_assertion.loc == (7, 10)
         nullability_assertion = nullability_assertion.nullability_assertion
@@ -374,16 +376,16 @@ def describe_parser():
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, tuple)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
-        nullability_assertion: Optional[
-            NullabilityAssertionNode
-        ] = field.nullability_assertion
+        nullability_assertion: NullabilityAssertionNode | None = (
+            field.nullability_assertion
+        )
         assert isinstance(nullability_assertion, NonNullAssertionNode)
         assert nullability_assertion.loc == (7, 10)
         nullability_assertion = nullability_assertion.nullability_assertion
@@ -398,16 +400,16 @@ def describe_parser():
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, tuple)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
-        nullability_assertion: Optional[
-            NullabilityAssertionNode
-        ] = field.nullability_assertion
+        nullability_assertion: NullabilityAssertionNode | None = (
+            field.nullability_assertion
+        )
         assert isinstance(nullability_assertion, ErrorBoundaryNode)
         assert nullability_assertion.loc == (7, 10)
         nullability_assertion = nullability_assertion.nullability_assertion
@@ -422,16 +424,16 @@ def describe_parser():
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
         definition = cast(OperationDefinitionNode, definitions[0])
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
         assert isinstance(selections, tuple)
         assert len(selections) == 1
         field = selections[0]
         assert isinstance(field, FieldNode)
-        nullability_assertion: Optional[
-            NullabilityAssertionNode
-        ] = field.nullability_assertion
+        nullability_assertion: NullabilityAssertionNode | None = (
+            field.nullability_assertion
+        )
         assert isinstance(nullability_assertion, NonNullAssertionNode)
         assert nullability_assertion.loc == (7, 16)
         nullability_assertion = nullability_assertion.nullability_assertion
@@ -487,7 +489,7 @@ def describe_parser():
         assert definition.name is None
         assert definition.variable_definitions == ()
         assert definition.directives == ()
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (0, 40)
         selections = selection_set.selections
@@ -572,7 +574,7 @@ def describe_parser():
         assert definition.name is None
         assert definition.variable_definitions == ()
         assert definition.directives == ()
-        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (6, 29)
         selections = selection_set.selections

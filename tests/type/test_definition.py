@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import pickle
 import sys
 from enum import Enum
 from math import isnan, nan
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 try:
     from typing import TypedDict
@@ -920,7 +922,7 @@ def describe_type_system_enums():
         assert str(exc_info.value) == "Expected name to be a string."
 
     def rejects_an_enum_type_with_invalid_name():
-        values: Dict[str, GraphQLEnumValue] = {}
+        values: dict[str, GraphQLEnumValue] = {}
         with pytest.raises(GraphQLError) as exc_info:
             GraphQLEnumType("", values)
         assert str(exc_info.value) == "Expected name to be a non-empty string."
@@ -1320,15 +1322,15 @@ def describe_resolve_info():
         """Arguments for GraphQLResolveInfo"""
 
         field_name: str
-        field_nodes: List[FieldNode]
+        field_nodes: list[FieldNode]
         return_type: GraphQLOutputType
         parent_type: GraphQLObjectType
         path: Path
         schema: GraphQLSchema
-        fragments: Dict[str, FragmentDefinitionNode]
+        fragments: dict[str, FragmentDefinitionNode]
         root_value: Any
         operation: OperationDefinitionNode
-        variable_values: Dict[str, Any]
+        variable_values: dict[str, Any]
         is_awaitable: Callable[[Any], bool]
 
     info_args: InfoArgs = {

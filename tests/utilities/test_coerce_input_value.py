@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from math import nan
-from typing import Any, List, NamedTuple, Union
+from typing import Any, NamedTuple
 
 import pytest
 from graphql.error import GraphQLError
@@ -20,12 +22,12 @@ from graphql.utilities import coerce_input_value
 
 class CoercedValueError(NamedTuple):
     error: str
-    path: List[Union[str, int]]
+    path: list[str | int]
     value: Any
 
 
 class CoercedValue(NamedTuple):
-    errors: List[CoercedValueError]
+    errors: list[CoercedValueError]
     value: Any
 
 
@@ -34,13 +36,13 @@ def expect_value(result: CoercedValue) -> Any:
     return result.value
 
 
-def expect_errors(result: CoercedValue) -> List[CoercedValueError]:
+def expect_errors(result: CoercedValue) -> list[CoercedValueError]:
     return result.errors
 
 
 def describe_coerce_input_value():
     def _coerce_value(input_value: Any, type_: GraphQLInputType):
-        errors: List[CoercedValueError] = []
+        errors: list[CoercedValueError] = []
         append = errors.append
 
         def on_error(path, invalid_value, error):

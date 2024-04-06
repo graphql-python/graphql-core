@@ -5,7 +5,9 @@ data from a backend service rather than from hardcoded JSON objects in a more co
 demo.
 """
 
-from typing import Awaitable, Collection, Dict, Iterator, Optional
+from __future__ import annotations
+
+from typing import Awaitable, Collection, Iterator
 
 __all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_backstory"]
 
@@ -80,7 +82,7 @@ tarkin = Human(
     id="1004", name="Wilhuff Tarkin", friends=["1001"], appearsIn=[4], homePlanet=None
 )
 
-human_data: Dict[str, Human] = {
+human_data: dict[str, Human] = {
     "1000": luke,
     "1001": vader,
     "1002": han,
@@ -104,17 +106,17 @@ artoo = Droid(
     primaryFunction="Astromech",
 )
 
-droid_data: Dict[str, Droid] = {"2000": threepio, "2001": artoo}
+droid_data: dict[str, Droid] = {"2000": threepio, "2001": artoo}
 
 
 # noinspection PyShadowingBuiltins
-async def get_character(id: str) -> Optional[Character]:  # noqa: A002
+async def get_character(id: str) -> Character | None:  # noqa: A002
     """Helper function to get a character by ID."""
     # We use an async function just to illustrate that GraphQL-core supports it.
     return human_data.get(id) or droid_data.get(id)
 
 
-def get_friends(character: Character) -> Iterator[Awaitable[Optional[Character]]]:
+def get_friends(character: Character) -> Iterator[Awaitable[Character | None]]:
     """Allows us to query for a character's friends."""
     # Notice that GraphQL-core accepts iterators of awaitables.
     return map(get_character, character.friends)
@@ -130,13 +132,13 @@ def get_hero(episode: int) -> Character:
 
 
 # noinspection PyShadowingBuiltins
-def get_human(id: str) -> Optional[Human]:  # noqa: A002
+def get_human(id: str) -> Human | None:  # noqa: A002
     """Allows us to query for the human with the given id."""
     return human_data.get(id)
 
 
 # noinspection PyShadowingBuiltins
-def get_droid(id: str) -> Optional[Droid]:  # noqa: A002
+def get_droid(id: str) -> Droid | None:  # noqa: A002
     """Allows us to query for the droid with the given id."""
     return droid_data.get(id)
 

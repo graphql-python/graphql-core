@@ -1,7 +1,9 @@
 """Test all code snippets in the documentation"""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from .utils import dedent
 
@@ -21,8 +23,8 @@ def get_snippets(source, indent=4):
     source_path = Path(__file__).parents[1] / "docs" / source
     with source_path.open() as source_file:
         lines = source_file.readlines()
-    snippets: List[str] = []
-    snippet: List[str] = []
+    snippets: list[str] = []
+    snippet: list[str] = []
     snippet_start = " " * indent
     for line in lines:
         if not line.rstrip() and snippet:

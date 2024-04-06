@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 from math import isfinite
-from typing import Any, Dict, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from graphql import graphql_sync
 from graphql.error import GraphQLError
-from graphql.language import ValueNode
 from graphql.pyutils import inspect
 from graphql.type import (
     GraphQLArgument,
@@ -14,6 +15,9 @@ from graphql.type import (
     GraphQLSchema,
 )
 from graphql.utilities import value_from_ast_untyped
+
+if TYPE_CHECKING:
+    from graphql.language import ValueNode
 
 # this test is not (yet) part of GraphQL.js, see
 # https://github.com/graphql/graphql-js/issues/2657
@@ -31,7 +35,7 @@ def is_finite(value: Any) -> bool:
     )
 
 
-def serialize_money(output_value: Any) -> Dict[str, float]:
+def serialize_money(output_value: Any) -> dict[str, float]:
     if not isinstance(output_value, Money):
         raise GraphQLError("Cannot serialize money value: " + inspect(output_value))
     return output_value._asdict()

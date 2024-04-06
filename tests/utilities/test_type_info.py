@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from __future__ import annotations
 
 from graphql.language import (
     FieldNode,
@@ -180,7 +180,7 @@ def describe_visit_with_type_info():
             """
         )
 
-        visited_fields: List[Tuple[Optional[str], Optional[str]]] = []
+        visited_fields: list[tuple[str | None, str | None]] = []
 
         class TestVisitor(Visitor):
             @staticmethod

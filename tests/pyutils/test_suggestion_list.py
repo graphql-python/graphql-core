@@ -1,9 +1,9 @@
-from typing import List
+from __future__ import annotations
 
 from graphql.pyutils import suggestion_list
 
 
-def expect_suggestions(input_: str, options: List[str], expected: List[str]) -> None:
+def expect_suggestions(input_: str, options: list[str], expected: list[str]) -> None:
     assert suggestion_list(input_, options) == expected
 
 

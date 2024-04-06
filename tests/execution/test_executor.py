@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import asyncio
-from typing import Any, Awaitable, Optional, cast
+from typing import Any, Awaitable, cast
 
 import pytest
 from graphql.error import GraphQLError
@@ -263,7 +265,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
     def it_populates_path_correctly_with_complex_types():
-        path: Optional[ResponsePath] = None
+        path: ResponsePath | None = None
 
         def resolve(_val, info):
             nonlocal path

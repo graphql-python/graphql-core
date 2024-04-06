@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from math import nan
-from typing import Any, Dict, Optional
+from typing import Any
 
 from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult, execute_sync
@@ -153,7 +155,7 @@ schema = GraphQLSchema(TestType)
 
 
 def execute_query(
-    query: str, variable_values: Optional[Dict[str, Any]] = None
+    query: str, variable_values: dict[str, Any] | None = None
 ) -> ExecutionResult:
     document = parse(query)
     return execute_sync(schema, document, variable_values=variable_values)
@@ -1039,7 +1041,7 @@ def describe_execute_handles_inputs():
 
         input_value = {"input": [0, 1, 2]}
 
-        def _invalid_value_error(value: int, index: int) -> Dict[str, Any]:
+        def _invalid_value_error(value: int, index: int) -> dict[str, Any]:
             return {
                 "message": "Variable '$input' got invalid value"
                 f" {value} at 'input[{index}]';"

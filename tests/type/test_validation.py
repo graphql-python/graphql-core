@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from operator import attrgetter
-from typing import List, Union
 
 import pytest
 from graphql.language import DirectiveLocation, parse
@@ -65,7 +66,7 @@ SomeDirective = assert_directive(SomeSchema.get_directive("SomeDirective"))
 
 def with_modifiers(
     type_: GraphQLNamedType,
-) -> List[Union[GraphQLNamedType, GraphQLNonNull, GraphQLList]]:
+) -> list[GraphQLNamedType | GraphQLNonNull | GraphQLList]:
     return [
         type_,
         GraphQLList(type_),

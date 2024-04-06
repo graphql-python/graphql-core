@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
 from importlib import import_module
 from math import inf, nan
-from typing import Any, Dict, FrozenSet, List, Set, Tuple
+from typing import Any
 
 import pytest
 from graphql.pyutils import Undefined, inspect
@@ -165,13 +167,13 @@ def describe_inspect():
         assert inspect([["a", "b"], "c"]) == "[['a', 'b'], 'c']"
 
     def inspect_overly_large_list():
-        s: List[int] = list(range(20))
+        s: list[int] = list(range(20))
         assert inspect(s) == "[0, 1, 2, 3, 4, ..., 16, 17, 18, 19]"
         with increased_list_size():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_list():
-        s: List[List[List]] = [[[]]]
+        s: list[list[list]] = [[[]]]
         assert inspect(s) == "[[[]]]"
         s = [[[1, 2, 3]]]
         assert inspect(s) == "[[[...]]]"
@@ -179,7 +181,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_recursive_list():
-        s: List[Any] = [1, 2, 3]
+        s: list[Any] = [1, 2, 3]
         s[1] = s
         assert inspect(s) == "[1, [...], 3]"
 
@@ -197,7 +199,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_tuple():
-        s: Tuple[Tuple[Tuple]] = (((),),)
+        s: tuple[tuple[tuple]] = (((),),)
         assert inspect(s) == "(((),),)"
         s = (((1, 2, 3),),)
         assert inspect(s) == "(((...),),)"
@@ -205,7 +207,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_recursive_tuple():
-        s: List[Any] = [1, 2, 3]
+        s: list[Any] = [1, 2, 3]
         s[1] = s
         t = tuple(s)
         assert inspect(t) == "(1, [1, [...], 3], 3)"
@@ -238,7 +240,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_dict():
-        s: Dict[str, Dict[str, Dict]] = {"a": {"b": {}}}
+        s: dict[str, dict[str, dict]] = {"a": {"b": {}}}
         assert inspect(s) == "{'a': {'b': {}}}"
         s = {"a": {"b": {"c": 3}}}
         assert inspect(s) == "{'a': {'b': {...}}}"
@@ -246,7 +248,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_recursive_dict():
-        s: Dict[int, Any] = {}
+        s: dict[int, Any] = {}
         s[1] = s
         assert inspect(s) == "{1: {...}}"
 
@@ -267,7 +269,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_set():
-        s: List[List[Set]] = [[set()]]
+        s: list[list[set]] = [[set()]]
         assert inspect(s) == "[[set()]]"
         s = [[{1, 2, 3}]]
         assert inspect(s) == "[[set(...)]]"
@@ -294,7 +296,7 @@ def describe_inspect():
             assert inspect(s) == repr(s)
 
     def inspect_overly_nested_frozenset():
-        s: FrozenSet[FrozenSet[FrozenSet]] = frozenset([frozenset([frozenset()])])
+        s: frozenset[frozenset[frozenset]] = frozenset([frozenset([frozenset()])])
         assert inspect(s) == "frozenset({frozenset({frozenset()})})"
         s = frozenset([frozenset([frozenset([1, 2, 3])])])
         assert inspect(s) == "frozenset({frozenset({frozenset(...)})})"

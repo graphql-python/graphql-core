@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from copy import copy
 from functools import partial
-from typing import Any, List, Optional, cast
+from typing import Any, cast
 
 import pytest
 from graphql.language import (
@@ -185,7 +187,7 @@ def describe_visitor():
             TestVisitorWithStaticMethods,
         ):
             ast = parse("{ a }")
-            visited: List[str] = []
+            visited: list[str] = []
             visit(ast, visitor_class())
             assert visited == [
                 "enter:document",
@@ -576,7 +578,7 @@ def describe_visitor():
             __slots__ = "name", "selection_set"
 
             name: NameNode
-            selection_set: Optional[SelectionSetNode]
+            selection_set: SelectionSetNode | None
 
         custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
         assert custom_selection_set is not None
@@ -732,9 +734,9 @@ def describe_visitor():
     # noinspection PyShadowingNames
     def visits_kitchen_sink(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query, experimental_client_controlled_nullability=True)
-        visited: List[Any] = []
+        visited: list[Any] = []
         record = visited.append
-        arg_stack: List[Any] = []
+        arg_stack: list[Any] = []
         push = arg_stack.append
         pop = arg_stack.pop
 

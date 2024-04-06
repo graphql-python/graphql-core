@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from math import isnan, nan
-from typing import Any, Dict, Optional
+from typing import Any
 
 from graphql.language import ValueNode, parse_value
 from graphql.pyutils import Undefined
@@ -24,7 +26,7 @@ def describe_value_from_ast():
     def _value_from(
         value_text: str,
         type_: GraphQLInputType,
-        variables: Optional[Dict[str, Any]] = None,
+        variables: dict[str, Any] | None = None,
     ):
         ast = parse_value(value_text)
         return value_from_ast(ast, type_, variables)

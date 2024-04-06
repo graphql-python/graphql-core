@@ -1,4 +1,6 @@
-from typing import Any, NamedTuple, Optional
+from __future__ import annotations
+
+from typing import Any, NamedTuple
 
 import pytest
 from graphql.execution import ExecutionResult, execute, execute_sync
@@ -448,11 +450,11 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
 
                 class Pet:
                     __typename = "Pet"
-                    name: Optional[str] = None
+                    name: str | None = None
 
                 class DogPet(Pet):
                     __typename = "Dog"
-                    woofs: Optional[bool] = None
+                    woofs: bool | None = None
 
                 class Odie(DogPet):
                     name = "Odie"
@@ -460,7 +462,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
 
                 class CatPet(Pet):
                     __typename = "Cat"
-                    meows: Optional[bool] = None
+                    meows: bool | None = None
 
                 class Tabby(CatPet):
                     pass

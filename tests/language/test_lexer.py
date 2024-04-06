@@ -1,4 +1,6 @@
-from typing import List, Optional, Tuple
+from __future__ import annotations
+
+from typing import Optional, Tuple
 
 import pytest
 from graphql.error import GraphQLSyntaxError
@@ -576,8 +578,8 @@ def describe_lexer():
             assert end_token.kind != TokenKind.COMMENT
         assert start_token.prev is None
         assert end_token.next is None
-        tokens: List[Token] = []
-        tok: Optional[Token] = start_token
+        tokens: list[Token] = []
+        tok: Token | None = start_token
         while tok:
             assert not tokens or tok.prev == tokens[-1]
             tokens.append(tok)

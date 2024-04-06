@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from functools import partial
-from typing import Callable, List, Tuple
+from typing import Callable
 
 from graphql.utilities import build_schema
 from graphql.validation import NoDeprecatedCustomRule
@@ -9,7 +11,7 @@ from .harness import assert_validation_errors
 
 def build_assertions(
     sdl_str: str,
-) -> Tuple[Callable[[str], None], Callable[[str, List], None]]:
+) -> tuple[Callable[[str], None], Callable[[str, list], None]]:
     schema = build_schema(sdl_str)
     assert_errors = partial(
         assert_validation_errors, NoDeprecatedCustomRule, schema=schema

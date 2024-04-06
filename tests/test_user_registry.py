@@ -4,10 +4,12 @@ This is an additional end-to-end test and demo for running the basic GraphQL
 operations on a simulated user registry database backend.
 """
 
+from __future__ import annotations
+
 from asyncio import create_task, sleep, wait
 from collections import defaultdict
 from enum import Enum
-from typing import Any, AsyncIterable, Dict, List, NamedTuple, Optional
+from typing import Any, AsyncIterable, NamedTuple
 
 import pytest
 from graphql import (
@@ -35,8 +37,8 @@ class User(NamedTuple):
 
     firstName: str
     lastName: str
-    tweets: Optional[int]
-    id: Optional[str] = None
+    tweets: int | None
+    id: str | None = None
     verified: bool = False
 
 
@@ -52,10 +54,10 @@ class UserRegistry:
     """Simulation of a user registry with asynchronous database backend access."""
 
     def __init__(self, **users):
-        self._registry: Dict[str, User] = users
+        self._registry: dict[str, User] = users
         self._pubsub = defaultdict(SimplePubSub)
 
-    async def get(self, id_: str) -> Optional[User]:
+    async def get(self, id_: str) -> User | None:
         """Get a user object from the registry"""
         await sleep(0)
         return self._registry.get(id_)
@@ -91,7 +93,7 @@ class UserRegistry:
         self._pubsub[None].emit(payload)  # notify all user subscriptions
         self._pubsub[user.id].emit(payload)  # notify single user subscriptions
 
-    def event_iterator(self, id_: Optional[str]) -> SimplePubSubIterator:
+    def event_iterator(self, id_: str | None) -> SimplePubSubIterator:
         return self._pubsub[id_].get_subscriber()
 
 
@@ -509,7 +511,7 @@ def describe_subscription():
         done, pending = await wait(tasks, timeout=1)
         assert not pending
 
-        expected_data: List[Dict[str, Any]] = [
+        expected_data: list[dict[str, Any]] = [
             {
                 "mutation": "CREATED",
                 "user": {

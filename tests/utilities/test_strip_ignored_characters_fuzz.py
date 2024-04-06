@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from json import dumps
-from typing import Optional
 
 import pytest
 from graphql.error import GraphQLSyntaxError
@@ -65,7 +66,7 @@ class ExpectStripped:
         self.to_equal(self.doc_string)
 
 
-def lex_value(s: str) -> Optional[str]:
+def lex_value(s: str) -> str | None:
     lexer = Lexer(Source(s))
     value = lexer.advance().value
     assert lexer.advance().kind == TokenKind.EOF, "Expected EOF"

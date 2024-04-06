@@ -1,4 +1,6 @@
-from typing import Collection, Optional, cast
+from __future__ import annotations
+
+from typing import Collection, cast
 
 from graphql.language.block_string import (
     dedent_block_string_lines,
@@ -152,7 +154,7 @@ def describe_is_printable_as_block_string():
 
 def describe_print_block_string():
     def _assert_block_string(
-        s: str, readable: str, minimize: Optional[str] = None
+        s: str, readable: str, minimize: str | None = None
     ) -> None:
         assert print_block_string(s) == readable
         assert print_block_string(s, minimize=True) == minimize or readable

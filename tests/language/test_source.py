@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import weakref
-from typing import Tuple, cast
+from typing import cast
 
 import pytest
 from graphql.language import Source, SourceLocation
@@ -77,7 +79,7 @@ def describe_source():
         assert node.custom == "bar"  # type: ignore
 
     def rejects_invalid_location_offset():
-        def create_source(location_offset: Tuple[int, int]) -> Source:
+        def create_source(location_offset: tuple[int, int]) -> Source:
             return Source("", "", cast(SourceLocation, location_offset))
 
         with pytest.raises(TypeError):

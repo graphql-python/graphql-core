@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import pickle
 from copy import deepcopy
 from textwrap import dedent
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import pytest
 from graphql.error import GraphQLSyntaxError
@@ -78,7 +80,7 @@ def field_node(name: NameNode, type_: TypeNode, loc: Location):
     return field_node_with_args(name, type_, [], loc)
 
 
-def field_node_with_args(name: NameNode, type_: TypeNode, args: List, loc: Location):
+def field_node_with_args(name: NameNode, type_: TypeNode, args: list, loc: Location):
     return FieldDefinitionNode(
         name=name, arguments=args, type=type_, directives=[], loc=loc, description=None
     )
@@ -95,7 +97,7 @@ def enum_value_node(name: str, loc: Location):
 
 
 def input_value_node(
-    name: NameNode, type_: TypeNode, default_value: Optional[ValueNode], loc: Location
+    name: NameNode, type_: TypeNode, default_value: ValueNode | None, loc: Location
 ):
     return InputValueDefinitionNode(
         name=name,
@@ -111,7 +113,7 @@ def boolean_value_node(value: bool, loc: Location):
     return BooleanValueNode(value=value, loc=loc)
 
 
-def string_value_node(value: str, block: Optional[bool], loc: Location):
+def string_value_node(value: str, block: bool | None, loc: Location):
     return StringValueNode(value=value, block=block, loc=loc)
 
 
@@ -120,8 +122,8 @@ def list_type_node(type_: TypeNode, loc: Location):
 
 
 def schema_extension_node(
-    directives: List[DirectiveNode],
-    operation_types: List[OperationTypeDefinitionNode],
+    directives: list[DirectiveNode],
+    operation_types: list[OperationTypeDefinitionNode],
     loc: Location,
 ):
     return SchemaExtensionNode(
@@ -133,7 +135,7 @@ def operation_type_definition(operation: OperationType, type_: TypeNode, loc: Lo
     return OperationTypeDefinitionNode(operation=operation, type=type_, loc=loc)
 
 
-def directive_node(name: NameNode, arguments: List[ArgumentNode], loc: Location):
+def directive_node(name: NameNode, arguments: list[ArgumentNode], loc: Location):
     return DirectiveNode(name=name, arguments=arguments, loc=loc)
 
 

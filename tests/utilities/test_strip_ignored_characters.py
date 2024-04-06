@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 import pytest
 from graphql.error import GraphQLSyntaxError
@@ -9,7 +9,7 @@ from ..fixtures import kitchen_sink_query, kitchen_sink_sdl  # noqa: F401
 from ..utils import dedent
 
 
-def lex_value(s: str) -> Optional[str]:
+def lex_value(s: str) -> str | None:
     lexer = Lexer(Source(s))
     value = lexer.advance().value
     assert lexer.advance().kind == TokenKind.EOF, "Expected EOF"

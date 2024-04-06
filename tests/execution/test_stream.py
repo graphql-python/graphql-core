@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from asyncio import Event, Lock, gather, sleep
-from typing import Any, Awaitable, Dict, List, NamedTuple
+from typing import Any, Awaitable, NamedTuple
 
 import pytest
 from graphql.error import GraphQLError
@@ -91,7 +93,7 @@ async def complete(document: DocumentNode, root_value: Any = None) -> Any:
         result = await result
 
     if isinstance(result, ExperimentalIncrementalExecutionResults):
-        results: List[Any] = [result.initial_result.formatted]
+        results: list[Any] = [result.initial_result.formatted]
         async for patch in result.subsequent_results:
             results.append(patch.formatted)
         return results
@@ -140,7 +142,7 @@ async def complete_async(
     return [IteratorResult(result).formatted for result in results]
 
 
-def modified_args(args: Dict[str, Any], **modifications: Any) -> Dict[str, Any]:
+def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
     return {**args, **modifications}
 
 
@@ -187,7 +189,7 @@ def describe_execute_stream_directive():
 
     # noinspection PyTypeChecker
     def can_compare_incremental_stream_result():
-        args: Dict[str, Any] = {
+        args: dict[str, Any] = {
             "items": ["hello", "world"],
             "errors": [GraphQLError("msg")],
             "path": ["foo", 1],

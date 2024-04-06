@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from asyncio import sleep
-from typing import Any, Awaitable, List
+from typing import Any, Awaitable
 
 import pytest
 from graphql.execution import (
@@ -232,7 +234,7 @@ def describe_execute_handles_mutation_execution_ordering():
             schema, document, root_value
         )
 
-        patches: List[Any] = []
+        patches: list[Any] = []
         assert isinstance(mutation_result, ExperimentalIncrementalExecutionResults)
         patches.append(mutation_result.initial_result.formatted)
         async for patch in mutation_result.subsequent_results:
@@ -303,7 +305,7 @@ def describe_execute_handles_mutation_execution_ordering():
             schema, document, root_value
         )
 
-        patches: List[Any] = []
+        patches: list[Any] = []
         assert isinstance(mutation_result, ExperimentalIncrementalExecutionResults)
         patches.append(mutation_result.initial_result.formatted)
         async for patch in mutation_result.subsequent_results:

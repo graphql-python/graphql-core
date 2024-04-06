@@ -1,13 +1,17 @@
-from typing import List
+from __future__ import annotations
 
-from graphql.error import GraphQLError
+from typing import TYPE_CHECKING
+
 from graphql.language import Source, parse
 from graphql.validation import validate
 
 from .star_wars_schema import star_wars_schema
 
+if TYPE_CHECKING:
+    from graphql.error import GraphQLError
 
-def validation_errors(query: str) -> List[GraphQLError]:
+
+def validation_errors(query: str) -> list[GraphQLError]:
     """Helper function to test a query and the expected response."""
     source = Source(query, "StarWars.graphql")
     ast = parse(source)

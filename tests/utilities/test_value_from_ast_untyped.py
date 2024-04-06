@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from math import nan
-from typing import Any, Dict, Optional
+from typing import Any
 
 from graphql.language import FloatValueNode, IntValueNode, parse_value
 from graphql.pyutils import Undefined
@@ -23,7 +25,7 @@ def describe_value_from_ast_untyped():
         _compare_value(value, expected)
 
     def _expect_value_from_vars(
-        value_text: str, variables: Optional[Dict[str, Any]], expected: Any
+        value_text: str, variables: dict[str, Any] | None, expected: Any
     ):
         ast = parse_value(value_text)
         value = value_from_ast_untyped(ast, variables)

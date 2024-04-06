@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from asyncio import sleep
-from typing import Any, AsyncGenerator, Dict, List, NamedTuple
+from typing import Any, AsyncGenerator, NamedTuple
 
 import pytest
 from graphql.error import GraphQLError
@@ -111,7 +113,7 @@ async def complete(document: DocumentNode, root_value: Any = None) -> Any:
         result = await result
 
     if isinstance(result, ExperimentalIncrementalExecutionResults):
-        results: List[Any] = [result.initial_result.formatted]
+        results: list[Any] = [result.initial_result.formatted]
         async for patch in result.subsequent_results:
             results.append(patch.formatted)
         return results
@@ -120,7 +122,7 @@ async def complete(document: DocumentNode, root_value: Any = None) -> Any:
     return result.formatted
 
 
-def modified_args(args: Dict[str, Any], **modifications: Any) -> Dict[str, Any]:
+def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
     return {**args, **modifications}
 
 
@@ -152,7 +154,7 @@ def describe_execute_defer_directive():
 
     # noinspection PyTypeChecker
     def can_compare_incremental_defer_result():
-        args: Dict[str, Any] = {
+        args: dict[str, Any] = {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
             "path": ["foo", 1],
@@ -219,7 +221,7 @@ def describe_execute_defer_directive():
 
     def can_compare_initial_incremental_execution_result():
         incremental = [IncrementalDeferResult(label="foo")]
-        args: Dict[str, Any] = {
+        args: dict[str, Any] = {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
             "incremental": incremental,
@@ -298,7 +300,7 @@ def describe_execute_defer_directive():
 
     def can_compare_subsequent_incremental_execution_result():
         incremental = [IncrementalDeferResult(label="foo")]
-        args: Dict[str, Any] = {
+        args: dict[str, Any] = {
             "incremental": incremental,
             "has_next": True,
             "extensions": {"baz": 2},

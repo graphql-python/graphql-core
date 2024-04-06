@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import weakref
 from copy import copy, deepcopy
-from typing import Optional
 
 from graphql.language import Location, NameNode, Node, Source, Token, TokenKind
 from graphql.pyutils import inspect
@@ -17,7 +18,7 @@ class SampleNamedNode(Node):
     __slots__ = "foo", "name"
 
     foo: str
-    name: Optional[str]
+    name: str | None
 
 
 def describe_token_class():
