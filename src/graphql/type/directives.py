@@ -2,7 +2,7 @@
 
 from __future__ import annotations  # Python < 3.10
 
-from typing import Any, Collection, Dict, Optional, Tuple, cast
+from typing import Any, Collection, cast
 
 from ..language import DirectiveLocation, ast
 from ..pyutils import inspect
@@ -41,12 +41,12 @@ class GraphQLDirectiveKwargs(TypedDict, total=False):
     """Arguments for GraphQL directives"""
 
     name: str
-    locations: Tuple[DirectiveLocation, ...]
-    args: Dict[str, GraphQLArgument]
+    locations: tuple[DirectiveLocation, ...]
+    args: dict[str, GraphQLArgument]
     is_repeatable: bool
-    description: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[ast.DirectiveDefinitionNode]
+    description: str | None
+    extensions: dict[str, Any]
+    ast_node: ast.DirectiveDefinitionNode | None
 
 
 class GraphQLDirective:
@@ -57,22 +57,22 @@ class GraphQLDirective:
     """
 
     name: str
-    locations: Tuple[DirectiveLocation, ...]
+    locations: tuple[DirectiveLocation, ...]
     is_repeatable: bool
-    args: Dict[str, GraphQLArgument]
-    description: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[ast.DirectiveDefinitionNode]
+    args: dict[str, GraphQLArgument]
+    description: str | None
+    extensions: dict[str, Any]
+    ast_node: ast.DirectiveDefinitionNode | None
 
     def __init__(
         self,
         name: str,
         locations: Collection[DirectiveLocation],
-        args: Optional[Dict[str, GraphQLArgument]] = None,
+        args: dict[str, GraphQLArgument] | None = None,
         is_repeatable: bool = False,
-        description: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[ast.DirectiveDefinitionNode] = None,
+        description: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: ast.DirectiveDefinitionNode | None = None,
     ) -> None:
         assert_name(name)
         try:
@@ -261,7 +261,7 @@ GraphQLSpecifiedByDirective = GraphQLDirective(
     description="Exposes a URL that specifies the behaviour of this scalar.",
 )
 
-specified_directives: Tuple[GraphQLDirective, ...] = (
+specified_directives: tuple[GraphQLDirective, ...] = (
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
     GraphQLDeprecatedDirective,

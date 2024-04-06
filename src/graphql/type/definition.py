@@ -10,12 +10,9 @@ from typing import (
     Collection,
     Dict,
     Generic,
-    List,
     Mapping,
     NamedTuple,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -224,22 +221,22 @@ class GraphQLNamedTypeKwargs(TypedDict, total=False):
     """Arguments for GraphQL named types"""
 
     name: str
-    description: Optional[str]
-    extensions: Dict[str, Any]
+    description: str | None
+    extensions: dict[str, Any]
     # unfortunately, we cannot make the following more specific, because they are
     # used by subclasses with different node types and typed dicts cannot be refined
-    ast_node: Optional[Any]
-    extension_ast_nodes: Tuple[Any, ...]
+    ast_node: Any | None
+    extension_ast_nodes: tuple[Any, ...]
 
 
 class GraphQLNamedType(GraphQLType):
     """Base class for all GraphQL named types"""
 
     name: str
-    description: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[TypeDefinitionNode]
-    extension_ast_nodes: Tuple[TypeExtensionNode, ...]
+    description: str | None
+    extensions: dict[str, Any]
+    ast_node: TypeDefinitionNode | None
+    extension_ast_nodes: tuple[TypeExtensionNode, ...]
 
     reserved_types: Mapping[str, GraphQLNamedType] = {}
 
@@ -250,11 +247,11 @@ class GraphQLNamedType(GraphQLType):
             raise TypeError(msg)
         return super().__new__(cls)
 
-    def __reduce__(self) -> Tuple[Callable, Tuple]:
+    def __reduce__(self) -> tuple[Callable, tuple]:
         return self._get_instance, (self.name, tuple(self.to_kwargs().items()))
 
     @classmethod
-    def _get_instance(cls, name: str, args: Tuple) -> GraphQLNamedType:
+    def _get_instance(cls, name: str, args: tuple) -> GraphQLNamedType:
         try:
             return cls.reserved_types[name]
         except KeyError:
@@ -263,10 +260,10 @@ class GraphQLNamedType(GraphQLType):
     def __init__(
         self,
         name: str,
-        description: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[TypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[TypeExtensionNode]] = None,
+        description: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: TypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[TypeExtensionNode] | None = None,
     ) -> None:
         assert_name(name)
         self.name = name
@@ -323,10 +320,10 @@ GraphQLScalarLiteralParser: TypeAlias = Callable[
 class GraphQLScalarTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL scalar types"""
 
-    serialize: Optional[GraphQLScalarSerializer]
-    parse_value: Optional[GraphQLScalarValueParser]
-    parse_literal: Optional[GraphQLScalarLiteralParser]
-    specified_by_url: Optional[str]
+    serialize: GraphQLScalarSerializer | None
+    parse_value: GraphQLScalarValueParser | None
+    parse_literal: GraphQLScalarLiteralParser | None
+    specified_by_url: str | None
 
 
 class GraphQLScalarType(GraphQLNamedType):
@@ -357,21 +354,21 @@ class GraphQLScalarType(GraphQLNamedType):
 
     """
 
-    specified_by_url: Optional[str]
-    ast_node: Optional[ScalarTypeDefinitionNode]
-    extension_ast_nodes: Tuple[ScalarTypeExtensionNode, ...]
+    specified_by_url: str | None
+    ast_node: ScalarTypeDefinitionNode | None
+    extension_ast_nodes: tuple[ScalarTypeExtensionNode, ...]
 
     def __init__(
         self,
         name: str,
-        serialize: Optional[GraphQLScalarSerializer] = None,
-        parse_value: Optional[GraphQLScalarValueParser] = None,
-        parse_literal: Optional[GraphQLScalarLiteralParser] = None,
-        description: Optional[str] = None,
-        specified_by_url: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[ScalarTypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[ScalarTypeExtensionNode]] = None,
+        serialize: GraphQLScalarSerializer | None = None,
+        parse_value: GraphQLScalarValueParser | None = None,
+        parse_literal: GraphQLScalarLiteralParser | None = None,
+        description: str | None = None,
+        specified_by_url: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: ScalarTypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[ScalarTypeExtensionNode] | None = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -420,7 +417,7 @@ class GraphQLScalarType(GraphQLNamedType):
         return value
 
     def parse_literal(
-        self, node: ValueNode, variables: Optional[Dict[str, Any]] = None
+        self, node: ValueNode, variables: dict[str, Any] | None = None
     ) -> Any:
         """Parses an externally provided literal value to use as an input.
 
@@ -471,13 +468,13 @@ class GraphQLFieldKwargs(TypedDict, total=False):
     """Arguments for GraphQL fields"""
 
     type_: GraphQLOutputType
-    args: Optional[GraphQLArgumentMap]
-    resolve: Optional[GraphQLFieldResolver]
-    subscribe: Optional[GraphQLFieldResolver]
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[FieldDefinitionNode]
+    args: GraphQLArgumentMap | None
+    resolve: GraphQLFieldResolver | None
+    subscribe: GraphQLFieldResolver | None
+    description: str | None
+    deprecation_reason: str | None
+    extensions: dict[str, Any]
+    ast_node: FieldDefinitionNode | None
 
 
 class GraphQLField:
@@ -485,23 +482,23 @@ class GraphQLField:
 
     type: GraphQLOutputType
     args: GraphQLArgumentMap
-    resolve: Optional[GraphQLFieldResolver]
-    subscribe: Optional[GraphQLFieldResolver]
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[FieldDefinitionNode]
+    resolve: GraphQLFieldResolver | None
+    subscribe: GraphQLFieldResolver | None
+    description: str | None
+    deprecation_reason: str | None
+    extensions: dict[str, Any]
+    ast_node: FieldDefinitionNode | None
 
     def __init__(
         self,
         type_: GraphQLOutputType,
-        args: Optional[GraphQLArgumentMap] = None,
-        resolve: Optional[GraphQLFieldResolver] = None,
-        subscribe: Optional[GraphQLFieldResolver] = None,
-        description: Optional[str] = None,
-        deprecation_reason: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[FieldDefinitionNode] = None,
+        args: GraphQLArgumentMap | None = None,
+        resolve: GraphQLFieldResolver | None = None,
+        subscribe: GraphQLFieldResolver | None = None,
+        description: str | None = None,
+        deprecation_reason: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: FieldDefinitionNode | None = None,
     ) -> None:
         if args:
             args = {
@@ -570,15 +567,15 @@ try:
         """
 
         field_name: str
-        field_nodes: List[FieldNode]
+        field_nodes: list[FieldNode]
         return_type: GraphQLOutputType
         parent_type: GraphQLObjectType
         path: Path
         schema: GraphQLSchema
-        fragments: Dict[str, FragmentDefinitionNode]
+        fragments: dict[str, FragmentDefinitionNode]
         root_value: Any
         operation: OperationDefinitionNode
-        variable_values: Dict[str, Any]
+        variable_values: dict[str, Any]
         context: TContext
         is_awaitable: Callable[[Any], bool]
 except TypeError as error:  # pragma: no cover
@@ -596,15 +593,15 @@ except TypeError as error:  # pragma: no cover
         """
 
         field_name: str
-        field_nodes: List[FieldNode]
+        field_nodes: list[FieldNode]
         return_type: GraphQLOutputType
         parent_type: GraphQLObjectType
         path: Path
         schema: GraphQLSchema
-        fragments: Dict[str, FragmentDefinitionNode]
+        fragments: dict[str, FragmentDefinitionNode]
         root_value: Any
         operation: OperationDefinitionNode
-        variable_values: Dict[str, Any]
+        variable_values: dict[str, Any]
         context: Any
         is_awaitable: Callable[[Any], bool]
 
@@ -638,11 +635,11 @@ class GraphQLArgumentKwargs(TypedDict, total=False):
 
     type_: GraphQLInputType
     default_value: Any
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    out_name: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[InputValueDefinitionNode]
+    description: str | None
+    deprecation_reason: str | None
+    out_name: str | None
+    extensions: dict[str, Any]
+    ast_node: InputValueDefinitionNode | None
 
 
 class GraphQLArgument:
@@ -650,21 +647,21 @@ class GraphQLArgument:
 
     type: GraphQLInputType
     default_value: Any
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
-    extensions: Dict[str, Any]
-    ast_node: Optional[InputValueDefinitionNode]
+    description: str | None
+    deprecation_reason: str | None
+    out_name: str | None  # for transforming names (extension of GraphQL.js)
+    extensions: dict[str, Any]
+    ast_node: InputValueDefinitionNode | None
 
     def __init__(
         self,
         type_: GraphQLInputType,
         default_value: Any = Undefined,
-        description: Optional[str] = None,
-        deprecation_reason: Optional[str] = None,
-        out_name: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[InputValueDefinitionNode] = None,
+        description: str | None = None,
+        deprecation_reason: str | None = None,
+        out_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: InputValueDefinitionNode | None = None,
     ) -> None:
         self.type = type_
         self.default_value = default_value
@@ -710,8 +707,8 @@ class GraphQLObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL object types"""
 
     fields: GraphQLFieldMap
-    interfaces: Tuple[GraphQLInterfaceType, ...]
-    is_type_of: Optional[GraphQLIsTypeOfFn]
+    interfaces: tuple[GraphQLInterfaceType, ...]
+    is_type_of: GraphQLIsTypeOfFn | None
 
 
 class GraphQLObjectType(GraphQLNamedType):
@@ -742,20 +739,20 @@ class GraphQLObjectType(GraphQLNamedType):
 
     """
 
-    is_type_of: Optional[GraphQLIsTypeOfFn]
-    ast_node: Optional[ObjectTypeDefinitionNode]
-    extension_ast_nodes: Tuple[ObjectTypeExtensionNode, ...]
+    is_type_of: GraphQLIsTypeOfFn | None
+    ast_node: ObjectTypeDefinitionNode | None
+    extension_ast_nodes: tuple[ObjectTypeExtensionNode, ...]
 
     def __init__(
         self,
         name: str,
         fields: ThunkMapping[GraphQLField],
-        interfaces: Optional[ThunkCollection[GraphQLInterfaceType]] = None,
-        is_type_of: Optional[GraphQLIsTypeOfFn] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        description: Optional[str] = None,
-        ast_node: Optional[ObjectTypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[ObjectTypeExtensionNode]] = None,
+        interfaces: ThunkCollection[GraphQLInterfaceType] | None = None,
+        is_type_of: GraphQLIsTypeOfFn | None = None,
+        extensions: dict[str, Any] | None = None,
+        description: str | None = None,
+        ast_node: ObjectTypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[ObjectTypeExtensionNode] | None = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -798,7 +795,7 @@ class GraphQLObjectType(GraphQLNamedType):
         }
 
     @cached_property
-    def interfaces(self) -> Tuple[GraphQLInterfaceType, ...]:
+    def interfaces(self) -> tuple[GraphQLInterfaceType, ...]:
         """Get provided interfaces."""
         try:
             interfaces: Collection[GraphQLInterfaceType] = resolve_thunk(
@@ -828,8 +825,8 @@ class GraphQLInterfaceTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL interface types"""
 
     fields: GraphQLFieldMap
-    interfaces: Tuple[GraphQLInterfaceType, ...]
-    resolve_type: Optional[GraphQLTypeResolver]
+    interfaces: tuple[GraphQLInterfaceType, ...]
+    resolve_type: GraphQLTypeResolver | None
 
 
 class GraphQLInterfaceType(GraphQLNamedType):
@@ -847,20 +844,20 @@ class GraphQLInterfaceType(GraphQLNamedType):
             })
     """
 
-    resolve_type: Optional[GraphQLTypeResolver]
-    ast_node: Optional[InterfaceTypeDefinitionNode]
-    extension_ast_nodes: Tuple[InterfaceTypeExtensionNode, ...]
+    resolve_type: GraphQLTypeResolver | None
+    ast_node: InterfaceTypeDefinitionNode | None
+    extension_ast_nodes: tuple[InterfaceTypeExtensionNode, ...]
 
     def __init__(
         self,
         name: str,
         fields: ThunkMapping[GraphQLField],
-        interfaces: Optional[ThunkCollection[GraphQLInterfaceType]] = None,
-        resolve_type: Optional[GraphQLTypeResolver] = None,
-        description: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[InterfaceTypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[InterfaceTypeExtensionNode]] = None,
+        interfaces: ThunkCollection[GraphQLInterfaceType] | None = None,
+        resolve_type: GraphQLTypeResolver | None = None,
+        description: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: InterfaceTypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[InterfaceTypeExtensionNode] | None = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -903,7 +900,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         }
 
     @cached_property
-    def interfaces(self) -> Tuple[GraphQLInterfaceType, ...]:
+    def interfaces(self) -> tuple[GraphQLInterfaceType, ...]:
         """Get provided interfaces."""
         try:
             interfaces: Collection[GraphQLInterfaceType] = resolve_thunk(
@@ -932,8 +929,8 @@ def assert_interface_type(type_: Any) -> GraphQLInterfaceType:
 class GraphQLUnionTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL union types"""
 
-    types: Tuple[GraphQLObjectType, ...]
-    resolve_type: Optional[GraphQLTypeResolver]
+    types: tuple[GraphQLObjectType, ...]
+    resolve_type: GraphQLTypeResolver | None
 
 
 class GraphQLUnionType(GraphQLNamedType):
@@ -954,19 +951,19 @@ class GraphQLUnionType(GraphQLNamedType):
         PetType = GraphQLUnionType('Pet', [DogType, CatType], resolve_type)
     """
 
-    resolve_type: Optional[GraphQLTypeResolver]
-    ast_node: Optional[UnionTypeDefinitionNode]
-    extension_ast_nodes: Tuple[UnionTypeExtensionNode, ...]
+    resolve_type: GraphQLTypeResolver | None
+    ast_node: UnionTypeDefinitionNode | None
+    extension_ast_nodes: tuple[UnionTypeExtensionNode, ...]
 
     def __init__(
         self,
         name: str,
         types: ThunkCollection[GraphQLObjectType],
-        resolve_type: Optional[GraphQLTypeResolver] = None,
-        description: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[UnionTypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[UnionTypeExtensionNode]] = None,
+        resolve_type: GraphQLTypeResolver | None = None,
+        description: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: UnionTypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[UnionTypeExtensionNode] | None = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -989,7 +986,7 @@ class GraphQLUnionType(GraphQLNamedType):
         return self.__class__(**self.to_kwargs())
 
     @cached_property
-    def types(self) -> Tuple[GraphQLObjectType, ...]:
+    def types(self) -> tuple[GraphQLObjectType, ...]:
         """Get provided types."""
         try:
             types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
@@ -1020,7 +1017,7 @@ class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL enum types"""
 
     values: GraphQLEnumValueMap
-    names_as_values: Optional[bool]
+    names_as_values: bool | None
 
 
 class GraphQLEnumType(GraphQLNamedType):
@@ -1058,18 +1055,18 @@ class GraphQLEnumType(GraphQLNamedType):
     """
 
     values: GraphQLEnumValueMap
-    ast_node: Optional[EnumTypeDefinitionNode]
-    extension_ast_nodes: Tuple[EnumTypeExtensionNode, ...]
+    ast_node: EnumTypeDefinitionNode | None
+    extension_ast_nodes: tuple[EnumTypeExtensionNode, ...]
 
     def __init__(
         self,
         name: str,
-        values: Union[GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]],
-        names_as_values: Optional[bool] = False,
-        description: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[EnumTypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[EnumTypeExtensionNode]] = None,
+        values: GraphQLEnumValueMap | Mapping[str, Any] | type[Enum],
+        names_as_values: bool | None = False,
+        description: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: EnumTypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[EnumTypeExtensionNode] | None = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1118,9 +1115,9 @@ class GraphQLEnumType(GraphQLNamedType):
         return self.__class__(**self.to_kwargs())
 
     @cached_property
-    def _value_lookup(self) -> Dict[Any, str]:
+    def _value_lookup(self) -> dict[Any, str]:
         # use first value or name as lookup
-        lookup: Dict[Any, str] = {}
+        lookup: dict[Any, str] = {}
         for name, enum_value in self.values.items():
             value = enum_value.value
             if value is None or value is Undefined:
@@ -1165,7 +1162,7 @@ class GraphQLEnumType(GraphQLNamedType):
         raise GraphQLError(msg)
 
     def parse_literal(
-        self, value_node: ValueNode, _variables: Optional[Dict[str, Any]] = None
+        self, value_node: ValueNode, _variables: dict[str, Any] | None = None
     ) -> Any:
         """Parse literal value."""
         # Note: variables will be resolved before calling this method.
@@ -1211,28 +1208,28 @@ class GraphQLEnumValueKwargs(TypedDict, total=False):
     """Arguments for GraphQL enum values"""
 
     value: Any
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[EnumValueDefinitionNode]
+    description: str | None
+    deprecation_reason: str | None
+    extensions: dict[str, Any]
+    ast_node: EnumValueDefinitionNode | None
 
 
 class GraphQLEnumValue:
     """A GraphQL enum value."""
 
     value: Any
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[EnumValueDefinitionNode]
+    description: str | None
+    deprecation_reason: str | None
+    extensions: dict[str, Any]
+    ast_node: EnumValueDefinitionNode | None
 
     def __init__(
         self,
         value: Any = None,
-        description: Optional[str] = None,
-        deprecation_reason: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[EnumValueDefinitionNode] = None,
+        description: str | None = None,
+        deprecation_reason: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: EnumValueDefinitionNode | None = None,
     ) -> None:
         self.value = value
         self.description = description
@@ -1271,7 +1268,7 @@ class GraphQLInputObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL input object types"""
 
     fields: GraphQLInputFieldMap
-    out_type: Optional[GraphQLInputFieldOutType]
+    out_type: GraphQLInputFieldOutType | None
 
 
 class GraphQLInputObjectType(GraphQLNamedType):
@@ -1299,18 +1296,18 @@ class GraphQLInputObjectType(GraphQLNamedType):
     converted to other types by specifying an ``out_type`` function or class.
     """
 
-    ast_node: Optional[InputObjectTypeDefinitionNode]
-    extension_ast_nodes: Tuple[InputObjectTypeExtensionNode, ...]
+    ast_node: InputObjectTypeDefinitionNode | None
+    extension_ast_nodes: tuple[InputObjectTypeExtensionNode, ...]
 
     def __init__(
         self,
         name: str,
         fields: ThunkMapping[GraphQLInputField],
-        description: Optional[str] = None,
-        out_type: Optional[GraphQLInputFieldOutType] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[InputObjectTypeDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[InputObjectTypeExtensionNode]] = None,
+        description: str | None = None,
+        out_type: GraphQLInputFieldOutType | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: InputObjectTypeDefinitionNode | None = None,
+        extension_ast_nodes: Collection[InputObjectTypeExtensionNode] | None = None,
     ) -> None:
         super().__init__(
             name=name,
@@ -1324,7 +1321,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
             self.out_type = out_type  # type: ignore
 
     @staticmethod
-    def out_type(value: Dict[str, Any]) -> Any:
+    def out_type(value: dict[str, Any]) -> Any:
         """Transform outbound values (this is an extension of GraphQL.js).
 
         This default implementation passes values unaltered as dictionaries.
@@ -1380,11 +1377,11 @@ class GraphQLInputFieldKwargs(TypedDict, total=False):
 
     type_: GraphQLInputType
     default_value: Any
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    out_name: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[InputValueDefinitionNode]
+    description: str | None
+    deprecation_reason: str | None
+    out_name: str | None
+    extensions: dict[str, Any]
+    ast_node: InputValueDefinitionNode | None
 
 
 class GraphQLInputField:
@@ -1392,21 +1389,21 @@ class GraphQLInputField:
 
     type: GraphQLInputType
     default_value: Any
-    description: Optional[str]
-    deprecation_reason: Optional[str]
-    out_name: Optional[str]  # for transforming names (extension of GraphQL.js)
-    extensions: Dict[str, Any]
-    ast_node: Optional[InputValueDefinitionNode]
+    description: str | None
+    deprecation_reason: str | None
+    out_name: str | None  # for transforming names (extension of GraphQL.js)
+    extensions: dict[str, Any]
+    ast_node: InputValueDefinitionNode | None
 
     def __init__(
         self,
         type_: GraphQLInputType,
         default_value: Any = Undefined,
-        description: Optional[str] = None,
-        deprecation_reason: Optional[str] = None,
-        out_name: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[InputValueDefinitionNode] = None,
+        description: str | None = None,
+        deprecation_reason: str | None = None,
+        out_name: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: InputValueDefinitionNode | None = None,
     ) -> None:
         self.type = type_
         self.default_value = default_value
@@ -1656,8 +1653,8 @@ def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType:
 
 
 def get_nullable_type(
-    type_: Optional[Union[GraphQLNullableType, GraphQLNonNull]],
-) -> Optional[GraphQLNullableType]:
+    type_: GraphQLNullableType | GraphQLNonNull | None,
+) -> GraphQLNullableType | None:
     """Unwrap possible non-null type"""
     if is_non_null_type(type_):
         type_ = type_.of_type
@@ -1702,7 +1699,7 @@ def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
     ...
 
 
-def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:
+def get_named_type(type_: GraphQLType | None) -> GraphQLNamedType | None:
     """Unwrap possible wrapping type"""
     if type_:
         unwrapped_type = type_

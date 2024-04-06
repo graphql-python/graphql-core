@@ -2,7 +2,7 @@
 
 from __future__ import annotations  # Python < 3.10
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from ..language import (
     ArgumentNode,
@@ -67,8 +67,8 @@ class TypeInfo:
     def __init__(
         self,
         schema: GraphQLSchema,
-        initial_type: Optional[GraphQLType] = None,
-        get_field_def_fn: Optional[GetFieldDefFn] = None,
+        initial_type: GraphQLType | None = None,
+        get_field_def_fn: GetFieldDefFn | None = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
@@ -78,14 +78,14 @@ class TypeInfo:
         The optional last parameter is deprecated and will be removed in v3.3.
         """
         self._schema = schema
-        self._type_stack: List[Optional[GraphQLOutputType]] = []
-        self._parent_type_stack: List[Optional[GraphQLCompositeType]] = []
-        self._input_type_stack: List[Optional[GraphQLInputType]] = []
-        self._field_def_stack: List[Optional[GraphQLField]] = []
-        self._default_value_stack: List[Any] = []
-        self._directive: Optional[GraphQLDirective] = None
-        self._argument: Optional[GraphQLArgument] = None
-        self._enum_value: Optional[GraphQLEnumValue] = None
+        self._type_stack: list[GraphQLOutputType | None] = []
+        self._parent_type_stack: list[GraphQLCompositeType | None] = []
+        self._input_type_stack: list[GraphQLInputType | None] = []
+        self._field_def_stack: list[GraphQLField | None] = []
+        self._default_value_stack: list[Any] = []
+        self._directive: GraphQLDirective | None = None
+        self._argument: GraphQLArgument | None = None
+        self._enum_value: GraphQLEnumValue | None = None
         self._get_field_def: GetFieldDefFn = get_field_def_fn or get_field_def
         if initial_type:
             if is_input_type(initial_type):
@@ -95,27 +95,27 @@ class TypeInfo:
             if is_output_type(initial_type):
                 self._type_stack.append(initial_type)
 
-    def get_type(self) -> Optional[GraphQLOutputType]:
+    def get_type(self) -> GraphQLOutputType | None:
         if self._type_stack:
             return self._type_stack[-1]
         return None
 
-    def get_parent_type(self) -> Optional[GraphQLCompositeType]:
+    def get_parent_type(self) -> GraphQLCompositeType | None:
         if self._parent_type_stack:
             return self._parent_type_stack[-1]
         return None
 
-    def get_input_type(self) -> Optional[GraphQLInputType]:
+    def get_input_type(self) -> GraphQLInputType | None:
         if self._input_type_stack:
             return self._input_type_stack[-1]
         return None
 
-    def get_parent_input_type(self) -> Optional[GraphQLInputType]:
+    def get_parent_input_type(self) -> GraphQLInputType | None:
         if len(self._input_type_stack) > 1:
             return self._input_type_stack[-2]
         return None
 
-    def get_field_def(self) -> Optional[GraphQLField]:
+    def get_field_def(self) -> GraphQLField | None:
         if self._field_def_stack:
             return self._field_def_stack[-1]
         return None
@@ -125,13 +125,13 @@ class TypeInfo:
             return self._default_value_stack[-1]
         return None
 
-    def get_directive(self) -> Optional[GraphQLDirective]:
+    def get_directive(self) -> GraphQLDirective | None:
         return self._directive
 
-    def get_argument(self) -> Optional[GraphQLArgument]:
+    def get_argument(self) -> GraphQLArgument | None:
         return self._argument
 
-    def get_enum_value(self) -> Optional[GraphQLEnumValue]:
+    def get_enum_value(self) -> GraphQLEnumValue | None:
         return self._enum_value
 
     def enter(self, node: Node) -> None:
@@ -262,7 +262,7 @@ class TypeInfo:
 
 def get_field_def(
     schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode
-) -> Optional[GraphQLField]:
+) -> GraphQLField | None:
     return schema.get_field(parent_type, field_node.name.value)
 
 

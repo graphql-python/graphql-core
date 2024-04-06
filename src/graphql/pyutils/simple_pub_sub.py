@@ -3,7 +3,7 @@
 from __future__ import annotations  # Python < 3.10
 
 from asyncio import Future, Queue, create_task, get_running_loop, sleep
-from typing import Any, AsyncIterator, Callable, Optional, Set
+from typing import Any, AsyncIterator, Callable
 
 from .is_awaitable import is_awaitable
 
@@ -18,7 +18,7 @@ class SimplePubSub:
     Useful for mocking a PubSub system for tests.
     """
 
-    subscribers: Set[Callable]
+    subscribers: set[Callable]
 
     def __init__(self) -> None:
         self.subscribers = set()
@@ -32,7 +32,7 @@ class SimplePubSub:
         return bool(self.subscribers)
 
     def get_subscriber(
-        self, transform: Optional[Callable] = None
+        self, transform: Callable | None = None
     ) -> SimplePubSubIterator:
         """Return subscriber iterator"""
         return SimplePubSubIterator(self, transform)
@@ -41,7 +41,7 @@ class SimplePubSub:
 class SimplePubSubIterator(AsyncIterator):
     """Async iterator used for subscriptions."""
 
-    def __init__(self, pubsub: SimplePubSub, transform: Optional[Callable]) -> None:
+    def __init__(self, pubsub: SimplePubSub, transform: Callable | None) -> None:
         self.pubsub = pubsub
         self.transform = transform
         self.pull_queue: Queue[Future] = Queue()

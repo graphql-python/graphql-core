@@ -154,7 +154,6 @@ ignore = [
   "PLR2004",  # allow some "magic" values
   "PYI034",  # do not check return value of new method
   "TID252",  # allow relative imports
-  "UP006", "UP007",  # use old type annotations (for now)
   "TRY003",  # allow specific messages outside the exception class
 ]
 

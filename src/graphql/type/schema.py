@@ -8,11 +8,7 @@ from typing import (
     Any,
     Collection,
     Dict,
-    List,
     NamedTuple,
-    Optional,
-    Set,
-    Tuple,
     cast,
 )
 
@@ -59,22 +55,22 @@ TypeMap: TypeAlias = Dict[str, GraphQLNamedType]
 
 
 class InterfaceImplementations(NamedTuple):
-    objects: List[GraphQLObjectType]
-    interfaces: List[GraphQLInterfaceType]
+    objects: list[GraphQLObjectType]
+    interfaces: list[GraphQLInterfaceType]
 
 
 class GraphQLSchemaKwargs(TypedDict, total=False):
     """Arguments for GraphQL schemas"""
 
-    query: Optional[GraphQLObjectType]
-    mutation: Optional[GraphQLObjectType]
-    subscription: Optional[GraphQLObjectType]
-    types: Optional[Tuple[GraphQLNamedType, ...]]
-    directives: Tuple[GraphQLDirective, ...]
-    description: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[ast.SchemaDefinitionNode]
-    extension_ast_nodes: Tuple[ast.SchemaExtensionNode, ...]
+    query: GraphQLObjectType | None
+    mutation: GraphQLObjectType | None
+    subscription: GraphQLObjectType | None
+    types: tuple[GraphQLNamedType, ...] | None
+    directives: tuple[GraphQLDirective, ...]
+    description: str | None
+    extensions: dict[str, Any]
+    ast_node: ast.SchemaDefinitionNode | None
+    extension_ast_nodes: tuple[ast.SchemaExtensionNode, ...]
     assume_valid: bool
 
 
@@ -128,31 +124,31 @@ class GraphQLSchema:
           directives=specified_directives + [my_custom_directive])
     """
 
-    query_type: Optional[GraphQLObjectType]
-    mutation_type: Optional[GraphQLObjectType]
-    subscription_type: Optional[GraphQLObjectType]
+    query_type: GraphQLObjectType | None
+    mutation_type: GraphQLObjectType | None
+    subscription_type: GraphQLObjectType | None
     type_map: TypeMap
-    directives: Tuple[GraphQLDirective, ...]
-    description: Optional[str]
-    extensions: Dict[str, Any]
-    ast_node: Optional[ast.SchemaDefinitionNode]
-    extension_ast_nodes: Tuple[ast.SchemaExtensionNode, ...]
+    directives: tuple[GraphQLDirective, ...]
+    description: str | None
+    extensions: dict[str, Any]
+    ast_node: ast.SchemaDefinitionNode | None
+    extension_ast_nodes: tuple[ast.SchemaExtensionNode, ...]
 
-    _implementations_map: Dict[str, InterfaceImplementations]
-    _sub_type_map: Dict[str, Set[str]]
-    _validation_errors: Optional[List[GraphQLError]]
+    _implementations_map: dict[str, InterfaceImplementations]
+    _sub_type_map: dict[str, set[str]]
+    _validation_errors: list[GraphQLError] | None
 
     def __init__(
         self,
-        query: Optional[GraphQLObjectType] = None,
-        mutation: Optional[GraphQLObjectType] = None,
-        subscription: Optional[GraphQLObjectType] = None,
-        types: Optional[Collection[GraphQLNamedType]] = None,
-        directives: Optional[Collection[GraphQLDirective]] = None,
-        description: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
-        ast_node: Optional[ast.SchemaDefinitionNode] = None,
-        extension_ast_nodes: Optional[Collection[ast.SchemaExtensionNode]] = None,
+        query: GraphQLObjectType | None = None,
+        mutation: GraphQLObjectType | None = None,
+        subscription: GraphQLObjectType | None = None,
+        types: Collection[GraphQLNamedType] | None = None,
+        directives: Collection[GraphQLDirective] | None = None,
+        description: str | None = None,
+        extensions: dict[str, Any] | None = None,
+        ast_node: ast.SchemaDefinitionNode | None = None,
+        extension_ast_nodes: Collection[ast.SchemaExtensionNode] | None = None,
         assume_valid: bool = False,
     ) -> None:
         """Initialize GraphQL schema.
@@ -212,7 +208,7 @@ class GraphQLSchema:
         self._sub_type_map = {}
 
         # Keep track of all implementations by interface name.
-        implementations_map: Dict[str, InterfaceImplementations] = {}
+        implementations_map: dict[str, InterfaceImplementations] = {}
         self._implementations_map = implementations_map
 
         for named_type in all_referenced_types:
@@ -278,7 +274,7 @@ class GraphQLSchema:
     def __copy__(self) -> GraphQLSchema:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
 
-    def __deepcopy__(self, memo_: Dict) -> GraphQLSchema:
+    def __deepcopy__(self, memo_: dict) -> GraphQLSchema:
         from ..type import (
             is_introspection_type,
             is_specified_directive,
@@ -312,17 +308,17 @@ class GraphQLSchema:
             assume_valid=True,
         )
 
-    def get_root_type(self, operation: OperationType) -> Optional[GraphQLObjectType]:
+    def get_root_type(self, operation: OperationType) -> GraphQLObjectType | None:
         """Get the root type."""
         return getattr(self, f"{operation.value}_type")
 
-    def get_type(self, name: str) -> Optional[GraphQLNamedType]:
+    def get_type(self, name: str) -> GraphQLNamedType | None:
         """Get the type with the given name."""
         return self.type_map.get(name)
 
     def get_possible_types(
         self, abstract_type: GraphQLAbstractType
-    ) -> List[GraphQLObjectType]:
+    ) -> list[GraphQLObjectType]:
         """Get list of all possible concrete types for given abstract type."""
         return (
             abstract_type.types
@@ -364,7 +360,7 @@ class GraphQLSchema:
             self._sub_type_map[abstract_type.name] = types
         return maybe_sub_type.name in types
 
-    def get_directive(self, name: str) -> Optional[GraphQLDirective]:
+    def get_directive(self, name: str) -> GraphQLDirective | None:
         """Get the directive with the given name."""
         for directive in self.directives:
             if directive.name == name:
@@ -373,7 +369,7 @@ class GraphQLSchema:
 
     def get_field(
         self, parent_type: GraphQLCompositeType, field_name: str
-    ) -> Optional[GraphQLField]:
+    ) -> GraphQLField | None:
         """Get field of a given type with the given name.
 
         This method looks up the field on the given type definition.
@@ -401,7 +397,7 @@ class GraphQLSchema:
             return None
 
     @property
-    def validation_errors(self) -> Optional[List[GraphQLError]]:
+    def validation_errors(self) -> list[GraphQLError] | None:
         """Get validation errors."""
         return self._validation_errors
 

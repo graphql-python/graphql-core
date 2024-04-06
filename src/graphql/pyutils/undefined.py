@@ -3,7 +3,6 @@
 from __future__ import annotations  # Python < 3.10
 
 import warnings
-from typing import Optional
 
 __all__ = ["Undefined", "UndefinedType"]
 
@@ -11,7 +10,7 @@ __all__ = ["Undefined", "UndefinedType"]
 class UndefinedType:
     """Auxiliary class for creating the Undefined singleton."""
 
-    _instance: Optional[UndefinedType] = None
+    _instance: UndefinedType | None = None
 
     def __new__(cls) -> UndefinedType:
         """Create the Undefined singleton."""

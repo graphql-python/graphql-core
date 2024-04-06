@@ -1,7 +1,5 @@
 from __future__ import annotations  # Python < 3.10
 
-from typing import List, Optional, Union
-
 from graphql.execution import execute_sync
 from graphql.language import parse
 from graphql.type import (
@@ -19,9 +17,9 @@ from graphql.type import (
 class Dog:
     name: str
     barks: bool
-    mother: Optional[Dog]
-    father: Optional[Dog]
-    progeny: List[Dog]
+    mother: Dog | None
+    father: Dog | None
+    progeny: list[Dog]
 
     def __init__(self, name: str, barks: bool):
         self.name = name
@@ -34,9 +32,9 @@ class Dog:
 class Cat:
     name: str
     meows: bool
-    mother: Optional[Cat]
-    father: Optional[Cat]
-    progeny: List[Cat]
+    mother: Cat | None
+    father: Cat | None
+    progeny: list[Cat]
 
     def __init__(self, name: str, meows: bool):
         self.name = name
@@ -48,14 +46,14 @@ class Cat:
 
 class Person:
     name: str
-    pets: Optional[List[Union[Dog, Cat]]]
-    friends: Optional[List[Union[Dog, Cat, Person]]]
+    pets: list[Dog | Cat] | None
+    friends: list[Dog | Cat | Person] | None
 
     def __init__(
         self,
         name: str,
-        pets: Optional[List[Union[Dog, Cat]]] = None,
-        friends: Optional[List[Union[Dog, Cat, Person]]] = None,
+        pets: list[Dog | Cat] | None = None,
+        friends: list[Dog | Cat | Person] | None = None,
     ):
         self.name = name
         self.pets = pets

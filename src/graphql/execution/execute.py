@@ -12,7 +12,6 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
-    Dict,
     Generator,
     Iterable,
     Iterator,
@@ -20,9 +19,7 @@ from typing import (
     NamedTuple,
     Optional,
     Sequence,
-    Set,
     Tuple,
-    Type,
     Union,
     cast,
 )
@@ -145,9 +142,9 @@ __all__ = [
 class FormattedExecutionResult(TypedDict, total=False):
     """Formatted execution result"""
 
-    data: Optional[Dict[str, Any]]
-    errors: List[GraphQLFormattedError]
-    extensions: Dict[str, Any]
+    data: dict[str, Any] | None
+    errors: list[GraphQLFormattedError]
+    extensions: dict[str, Any]
 
 
 class ExecutionResult:
@@ -160,15 +157,15 @@ class ExecutionResult:
 
     __slots__ = "data", "errors", "extensions"
 
-    data: Optional[Dict[str, Any]]
-    errors: Optional[List[GraphQLError]]
-    extensions: Optional[Dict[str, Any]]
+    data: dict[str, Any] | None
+    errors: list[GraphQLError] | None
+    extensions: dict[str, Any] | None
 
     def __init__(
         self,
-        data: Optional[Dict[str, Any]] = None,
-        errors: Optional[List[GraphQLError]] = None,
-        extensions: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
+        errors: list[GraphQLError] | None = None,
+        extensions: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
         self.errors = errors
@@ -219,31 +216,31 @@ class ExecutionResult:
 class FormattedIncrementalDeferResult(TypedDict, total=False):
     """Formatted incremental deferred execution result"""
 
-    data: Optional[Dict[str, Any]]
-    errors: List[GraphQLFormattedError]
-    path: List[Union[str, int]]
+    data: dict[str, Any] | None
+    errors: list[GraphQLFormattedError]
+    path: list[str | int]
     label: str
-    extensions: Dict[str, Any]
+    extensions: dict[str, Any]
 
 
 class IncrementalDeferResult:
     """Incremental deferred execution result"""
 
-    data: Optional[Dict[str, Any]]
-    errors: Optional[List[GraphQLError]]
-    path: Optional[List[Union[str, int]]]
-    label: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    data: dict[str, Any] | None
+    errors: list[GraphQLError] | None
+    path: list[str | int] | None
+    label: str | None
+    extensions: dict[str, Any] | None
 
     __slots__ = "data", "errors", "path", "label", "extensions"
 
     def __init__(
         self,
-        data: Optional[Dict[str, Any]] = None,
-        errors: Optional[List[GraphQLError]] = None,
-        path: Optional[List[Union[str, int]]] = None,
-        label: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
+        errors: list[GraphQLError] | None = None,
+        path: list[str | int] | None = None,
+        label: str | None = None,
+        extensions: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
         self.errors = errors
@@ -253,7 +250,7 @@ class IncrementalDeferResult:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: List[str] = [f"data={self.data!r}, errors={self.errors!r}"]
+        args: list[str] = [f"data={self.data!r}, errors={self.errors!r}"]
         if self.path:
             args.append(f"path={self.path!r}")
         if self.label:
@@ -312,31 +309,31 @@ class IncrementalDeferResult:
 class FormattedIncrementalStreamResult(TypedDict, total=False):
     """Formatted incremental stream execution result"""
 
-    items: Optional[List[Any]]
-    errors: List[GraphQLFormattedError]
-    path: List[Union[str, int]]
+    items: list[Any] | None
+    errors: list[GraphQLFormattedError]
+    path: list[str | int]
     label: str
-    extensions: Dict[str, Any]
+    extensions: dict[str, Any]
 
 
 class IncrementalStreamResult:
     """Incremental streamed execution result"""
 
-    items: Optional[List[Any]]
-    errors: Optional[List[GraphQLError]]
-    path: Optional[List[Union[str, int]]]
-    label: Optional[str]
-    extensions: Optional[Dict[str, Any]]
+    items: list[Any] | None
+    errors: list[GraphQLError] | None
+    path: list[str | int] | None
+    label: str | None
+    extensions: dict[str, Any] | None
 
     __slots__ = "items", "errors", "path", "label", "extensions"
 
     def __init__(
         self,
-        items: Optional[List[Any]] = None,
-        errors: Optional[List[GraphQLError]] = None,
-        path: Optional[List[Union[str, int]]] = None,
-        label: Optional[str] = None,
-        extensions: Optional[Dict[str, Any]] = None,
+        items: list[Any] | None = None,
+        errors: list[GraphQLError] | None = None,
+        path: list[str | int] | None = None,
+        label: str | None = None,
+        extensions: dict[str, Any] | None = None,
     ) -> None:
         self.items = items
         self.errors = errors
@@ -346,7 +343,7 @@ class IncrementalStreamResult:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: List[str] = [f"items={self.items!r}, errors={self.errors!r}"]
+        args: list[str] = [f"items={self.items!r}, errors={self.errors!r}"]
         if self.path:
             args.append(f"path={self.path!r}")
         if self.label:
@@ -412,11 +409,11 @@ IncrementalResult = Union[IncrementalDeferResult, IncrementalStreamResult]
 class FormattedInitialIncrementalExecutionResult(TypedDict, total=False):
     """Formatted initial incremental execution result"""
 
-    data: Optional[Dict[str, Any]]
-    errors: List[GraphQLFormattedError]
+    data: dict[str, Any] | None
+    errors: list[GraphQLFormattedError]
     hasNext: bool
-    incremental: List[FormattedIncrementalResult]
-    extensions: Dict[str, Any]
+    incremental: list[FormattedIncrementalResult]
+    extensions: dict[str, Any]
 
 
 class InitialIncrementalExecutionResult:
@@ -426,21 +423,21 @@ class InitialIncrementalExecutionResult:
     - ``incremental`` is a list of the results from defer/stream directives.
     """
 
-    data: Optional[Dict[str, Any]]
-    errors: Optional[List[GraphQLError]]
-    incremental: Optional[Sequence[IncrementalResult]]
+    data: dict[str, Any] | None
+    errors: list[GraphQLError] | None
+    incremental: Sequence[IncrementalResult] | None
     has_next: bool
-    extensions: Optional[Dict[str, Any]]
+    extensions: dict[str, Any] | None
 
     __slots__ = "data", "errors", "has_next", "incremental", "extensions"
 
     def __init__(
         self,
-        data: Optional[Dict[str, Any]] = None,
-        errors: Optional[List[GraphQLError]] = None,
-        incremental: Optional[Sequence[IncrementalResult]] = None,
+        data: dict[str, Any] | None = None,
+        errors: list[GraphQLError] | None = None,
+        incremental: Sequence[IncrementalResult] | None = None,
         has_next: bool = False,
-        extensions: Optional[Dict[str, Any]] = None,
+        extensions: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
         self.errors = errors
@@ -450,7 +447,7 @@ class InitialIncrementalExecutionResult:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: List[str] = [f"data={self.data!r}, errors={self.errors!r}"]
+        args: list[str] = [f"data={self.data!r}, errors={self.errors!r}"]
         if self.incremental:
             args.append(f"incremental[{len(self.incremental)}]")
         if self.has_next:
@@ -515,9 +512,9 @@ class InitialIncrementalExecutionResult:
 class FormattedSubsequentIncrementalExecutionResult(TypedDict, total=False):
     """Formatted subsequent incremental execution result"""
 
-    incremental: List[FormattedIncrementalResult]
+    incremental: list[FormattedIncrementalResult]
     hasNext: bool
-    extensions: Dict[str, Any]
+    extensions: dict[str, Any]
 
 
 class SubsequentIncrementalExecutionResult:
@@ -529,15 +526,15 @@ class SubsequentIncrementalExecutionResult:
 
     __slots__ = "has_next", "incremental", "extensions"
 
-    incremental: Optional[Sequence[IncrementalResult]]
+    incremental: Sequence[IncrementalResult] | None
     has_next: bool
-    extensions: Optional[Dict[str, Any]]
+    extensions: dict[str, Any] | None
 
     def __init__(
         self,
-        incremental: Optional[Sequence[IncrementalResult]] = None,
+        incremental: Sequence[IncrementalResult] | None = None,
         has_next: bool = False,
-        extensions: Optional[Dict[str, Any]] = None,
+        extensions: dict[str, Any] | None = None,
     ) -> None:
         self.incremental = incremental
         self.has_next = has_next
@@ -545,7 +542,7 @@ class SubsequentIncrementalExecutionResult:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: List[str] = []
+        args: list[str] = []
         if self.incremental:
             args.append(f"incremental[{len(self.incremental)}]")
         if self.has_next:
@@ -600,7 +597,7 @@ class StreamArguments(NamedTuple):
     """Arguments of the stream directive"""
 
     initial_count: int
-    label: Optional[str]
+    label: str | None
 
 
 class ExperimentalIncrementalExecutionResults(NamedTuple):
@@ -621,17 +618,17 @@ class ExecutionContext:
     """
 
     schema: GraphQLSchema
-    fragments: Dict[str, FragmentDefinitionNode]
+    fragments: dict[str, FragmentDefinitionNode]
     root_value: Any
     context_value: Any
     operation: OperationDefinitionNode
-    variable_values: Dict[str, Any]
+    variable_values: dict[str, Any]
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
-    errors: List[GraphQLError]
-    subsequent_payloads: Dict[AsyncPayloadRecord, None]  # used as ordered set
-    middleware_manager: Optional[MiddlewareManager]
+    errors: list[GraphQLError]
+    subsequent_payloads: dict[AsyncPayloadRecord, None]  # used as ordered set
+    middleware_manager: MiddlewareManager | None
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
         default_is_awaitable  # type: ignore
@@ -640,18 +637,18 @@ class ExecutionContext:
     def __init__(
         self,
         schema: GraphQLSchema,
-        fragments: Dict[str, FragmentDefinitionNode],
+        fragments: dict[str, FragmentDefinitionNode],
         root_value: Any,
         context_value: Any,
         operation: OperationDefinitionNode,
-        variable_values: Dict[str, Any],
+        variable_values: dict[str, Any],
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
         subscribe_field_resolver: GraphQLFieldResolver,
-        subsequent_payloads: Dict[AsyncPayloadRecord, None],
-        errors: List[GraphQLError],
-        middleware_manager: Optional[MiddlewareManager],
-        is_awaitable: Optional[Callable[[Any], bool]],
+        subsequent_payloads: dict[AsyncPayloadRecord, None],
+        errors: list[GraphQLError],
+        middleware_manager: MiddlewareManager | None,
+        is_awaitable: Callable[[Any], bool] | None,
     ) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -667,8 +664,8 @@ class ExecutionContext:
         self.middleware_manager = middleware_manager
         if is_awaitable:
             self.is_awaitable = is_awaitable
-        self._canceled_iterators: Set[AsyncIterator] = set()
-        self._subfields_cache: Dict[Tuple, FieldsAndPatches] = {}
+        self._canceled_iterators: set[AsyncIterator] = set()
+        self._subfields_cache: dict[tuple, FieldsAndPatches] = {}
 
     @classmethod
     def build(
@@ -677,14 +674,14 @@ class ExecutionContext:
         document: DocumentNode,
         root_value: Any = None,
         context_value: Any = None,
-        raw_variable_values: Optional[Dict[str, Any]] = None,
-        operation_name: Optional[str] = None,
-        field_resolver: Optional[GraphQLFieldResolver] = None,
-        type_resolver: Optional[GraphQLTypeResolver] = None,
-        subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-        middleware: Optional[Middleware] = None,
-        is_awaitable: Optional[Callable[[Any], bool]] = None,
-    ) -> Union[List[GraphQLError], ExecutionContext]:
+        raw_variable_values: dict[str, Any] | None = None,
+        operation_name: str | None = None,
+        field_resolver: GraphQLFieldResolver | None = None,
+        type_resolver: GraphQLTypeResolver | None = None,
+        subscribe_field_resolver: GraphQLFieldResolver | None = None,
+        middleware: Middleware | None = None,
+        is_awaitable: Callable[[Any], bool] | None = None,
+    ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
 
         Constructs a ExecutionContext object from the arguments passed to execute, which
@@ -697,9 +694,9 @@ class ExecutionContext:
         # If the schema used for execution is invalid, raise an error.
         assert_valid_schema(schema)
 
-        operation: Optional[OperationDefinitionNode] = None
-        fragments: Dict[str, FragmentDefinitionNode] = {}
-        middleware_manager: Optional[MiddlewareManager] = None
+        operation: OperationDefinitionNode | None = None
+        fragments: dict[str, FragmentDefinitionNode] = {}
+        middleware_manager: MiddlewareManager | None = None
         if middleware is not None:
             if isinstance(middleware, (list, tuple)):
                 middleware_manager = MiddlewareManager(*middleware)
@@ -762,7 +759,7 @@ class ExecutionContext:
 
     @staticmethod
     def build_response(
-        data: Optional[Dict[str, Any]], errors: List[GraphQLError]
+        data: dict[str, Any] | None, errors: list[GraphQLError]
     ) -> ExecutionResult:
         """Build response.
 
@@ -796,7 +793,7 @@ class ExecutionContext:
             self.is_awaitable,
         )
 
-    def execute_operation(self) -> AwaitableOrValue[Dict[str, Any]]:
+    def execute_operation(self) -> AwaitableOrValue[dict[str, Any]]:
         """Execute an operation.
 
         Implements the "Executing operations" section of the spec.
@@ -839,9 +836,9 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        path: Optional[Path],
-        fields: Dict[str, List[FieldNode]],
-    ) -> AwaitableOrValue[Dict[str, Any]]:
+        path: Path | None,
+        fields: dict[str, list[FieldNode]],
+    ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields serially.
 
         Implements the "Executing selection sets" section of the spec
@@ -850,8 +847,8 @@ class ExecutionContext:
         is_awaitable = self.is_awaitable
 
         def reducer(
-            results: Dict[str, Any], field_item: Tuple[str, List[FieldNode]]
-        ) -> AwaitableOrValue[Dict[str, Any]]:
+            results: dict[str, Any], field_item: tuple[str, list[FieldNode]]
+        ) -> AwaitableOrValue[dict[str, Any]]:
             response_name, field_nodes = field_item
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
@@ -864,7 +861,7 @@ class ExecutionContext:
                 async def set_result(
                     response_name: str,
                     awaitable_result: Awaitable,
-                ) -> Dict[str, Any]:
+                ) -> dict[str, Any]:
                     results[response_name] = await awaitable_result
                     return results
 
@@ -879,10 +876,10 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        path: Optional[Path],
-        fields: Dict[str, List[FieldNode]],
-        async_payload_record: Optional[AsyncPayloadRecord] = None,
-    ) -> AwaitableOrValue[Dict[str, Any]]:
+        path: Path | None,
+        fields: dict[str, list[FieldNode]],
+        async_payload_record: AsyncPayloadRecord | None = None,
+    ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields concurrently.
 
         Implements the "Executing selection sets" section of the spec
@@ -890,7 +887,7 @@ class ExecutionContext:
         """
         results = {}
         is_awaitable = self.is_awaitable
-        awaitable_fields: List[str] = []
+        awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name, parent_type.name)
@@ -910,7 +907,7 @@ class ExecutionContext:
         # field, which is possibly a coroutine object. Return a coroutine object that
         # will yield this same map, but with any coroutines awaited in parallel and
         # replaced with the values they yielded.
-        async def get_results() -> Dict[str, Any]:
+        async def get_results() -> dict[str, Any]:
             if len(awaitable_fields) == 1:
                 # If there is only one field, avoid the overhead of parallelization.
                 field = awaitable_fields[0]
@@ -930,9 +927,9 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source: Any,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         path: Path,
-        async_payload_record: Optional[AsyncPayloadRecord] = None,
+        async_payload_record: AsyncPayloadRecord | None = None,
     ) -> AwaitableOrValue[Any]:
         """Resolve the field on the given source object.
 
@@ -999,7 +996,7 @@ class ExecutionContext:
     def build_resolve_info(
         self,
         field_def: GraphQLField,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         parent_type: GraphQLObjectType,
         path: Path,
     ) -> GraphQLResolveInfo:
@@ -1027,11 +1024,11 @@ class ExecutionContext:
     def complete_value(
         self,
         return_type: GraphQLOutputType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        async_payload_record: Optional[AsyncPayloadRecord],
+        async_payload_record: AsyncPayloadRecord | None,
     ) -> AwaitableOrValue[Any]:
         """Complete a value.
 
@@ -1116,11 +1113,11 @@ class ExecutionContext:
     async def complete_awaitable_value(
         self,
         return_type: GraphQLOutputType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        async_payload_record: Optional[AsyncPayloadRecord] = None,
+        async_payload_record: AsyncPayloadRecord | None = None,
     ) -> Any:
         """Complete an awaitable value."""
         try:
@@ -1146,8 +1143,8 @@ class ExecutionContext:
         return completed
 
     def get_stream_values(
-        self, field_nodes: List[FieldNode], path: Path
-    ) -> Optional[StreamArguments]:
+        self, field_nodes: list[FieldNode], path: Path
+    ) -> StreamArguments | None:
         """Get stream values.
 
         Returns an object containing the `@stream` arguments if a field should be
@@ -1185,12 +1182,12 @@ class ExecutionContext:
     async def complete_async_iterator_value(
         self,
         item_type: GraphQLOutputType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
         iterator: AsyncIterator[Any],
-        async_payload_record: Optional[AsyncPayloadRecord],
-    ) -> List[Any]:
+        async_payload_record: AsyncPayloadRecord | None,
+    ) -> list[Any]:
         """Complete an async iterator.
 
         Complete an async iterator value by completing the result and calling
@@ -1199,9 +1196,9 @@ class ExecutionContext:
         errors = async_payload_record.errors if async_payload_record else self.errors
         stream = self.get_stream_values(field_nodes, path)
         complete_list_item_value = self.complete_list_item_value
-        awaitable_indices: List[int] = []
+        awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
-        completed_results: List[Any] = []
+        completed_results: list[Any] = []
         index = 0
         while True:
             if (
@@ -1272,12 +1269,12 @@ class ExecutionContext:
     def complete_list_value(
         self,
         return_type: GraphQLList[GraphQLOutputType],
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
-        result: Union[AsyncIterable[Any], Iterable[Any]],
-        async_payload_record: Optional[AsyncPayloadRecord],
-    ) -> AwaitableOrValue[List[Any]]:
+        result: AsyncIterable[Any] | Iterable[Any],
+        async_payload_record: AsyncPayloadRecord | None,
+    ) -> AwaitableOrValue[list[Any]]:
         """Complete a list value.
 
         Complete a list value by completing each item in the list with the inner type.
@@ -1305,10 +1302,10 @@ class ExecutionContext:
         # the list contains no coroutine objects by avoiding creating another coroutine
         # object.
         complete_list_item_value = self.complete_list_item_value
-        awaitable_indices: List[int] = []
+        awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
         previous_async_payload_record = async_payload_record
-        completed_results: List[Any] = []
+        completed_results: list[Any] = []
         for index, item in enumerate(result):
             # No need to modify the info object containing the path, since from here on
             # it is not ever accessed by resolver functions.
@@ -1347,7 +1344,7 @@ class ExecutionContext:
             return completed_results
 
         # noinspection PyShadowingNames
-        async def get_completed_results() -> List[Any]:
+        async def get_completed_results() -> list[Any]:
             if len(awaitable_indices) == 1:
                 # If there is only one index, avoid the overhead of parallelization.
                 index = awaitable_indices[0]
@@ -1367,13 +1364,13 @@ class ExecutionContext:
     def complete_list_item_value(
         self,
         item: Any,
-        complete_results: List[Any],
-        errors: List[GraphQLError],
+        complete_results: list[Any],
+        errors: list[GraphQLError],
         item_type: GraphQLOutputType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         item_path: Path,
-        async_payload_record: Optional[AsyncPayloadRecord],
+        async_payload_record: AsyncPayloadRecord | None,
     ) -> bool:
         """Complete a list item value by adding it to the completed results.
 
@@ -1445,11 +1442,11 @@ class ExecutionContext:
     def complete_abstract_value(
         self,
         return_type: GraphQLAbstractType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        async_payload_record: Optional[AsyncPayloadRecord],
+        async_payload_record: AsyncPayloadRecord | None,
     ) -> AwaitableOrValue[Any]:
         """Complete an abstract value.
 
@@ -1499,7 +1496,7 @@ class ExecutionContext:
         self,
         runtime_type_name: Any,
         return_type: GraphQLAbstractType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
@@ -1560,12 +1557,12 @@ class ExecutionContext:
     def complete_object_value(
         self,
         return_type: GraphQLObjectType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        async_payload_record: Optional[AsyncPayloadRecord],
-    ) -> AwaitableOrValue[Dict[str, Any]]:
+        async_payload_record: AsyncPayloadRecord | None,
+    ) -> AwaitableOrValue[dict[str, Any]]:
         """Complete an Object value by executing all sub-selections."""
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
@@ -1575,7 +1572,7 @@ class ExecutionContext:
 
             if self.is_awaitable(is_type_of):
 
-                async def execute_subfields_async() -> Dict[str, Any]:
+                async def execute_subfields_async() -> dict[str, Any]:
                     if not await is_type_of:  # type: ignore
                         raise invalid_return_type_error(
                             return_type, result, field_nodes
@@ -1596,11 +1593,11 @@ class ExecutionContext:
     def collect_and_execute_subfields(
         self,
         return_type: GraphQLObjectType,
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         path: Path,
         result: Any,
-        async_payload_record: Optional[AsyncPayloadRecord],
-    ) -> AwaitableOrValue[Dict[str, Any]]:
+        async_payload_record: AsyncPayloadRecord | None,
+    ) -> AwaitableOrValue[dict[str, Any]]:
         """Collect sub-fields to execute to complete this value."""
         sub_field_nodes, sub_patches = self.collect_subfields(return_type, field_nodes)
 
@@ -1622,7 +1619,7 @@ class ExecutionContext:
         return sub_fields
 
     def collect_subfields(
-        self, return_type: GraphQLObjectType, field_nodes: List[FieldNode]
+        self, return_type: GraphQLObjectType, field_nodes: list[FieldNode]
     ) -> FieldsAndPatches:
         """Collect subfields.
 
@@ -1658,8 +1655,8 @@ class ExecutionContext:
         return sub_fields_and_patches
 
     def map_source_to_response(
-        self, result_or_stream: Union[ExecutionResult, AsyncIterable[Any]]
-    ) -> Union[AsyncGenerator[ExecutionResult, None], ExecutionResult]:
+        self, result_or_stream: ExecutionResult | AsyncIterable[Any]
+    ) -> AsyncGenerator[ExecutionResult, None] | ExecutionResult:
         """Map source result to response.
 
         For each payload yielded from a subscription,
@@ -1691,10 +1688,10 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        fields: Dict[str, List[FieldNode]],
-        label: Optional[str] = None,
-        path: Optional[Path] = None,
-        parent_context: Optional[AsyncPayloadRecord] = None,
+        fields: dict[str, list[FieldNode]],
+        label: str | None = None,
+        path: Path | None = None,
+        parent_context: AsyncPayloadRecord | None = None,
     ) -> None:
         """Execute deferred fragment."""
         async_payload_record = DeferredFragmentRecord(label, path, parent_context, self)
@@ -1706,8 +1703,8 @@ class ExecutionContext:
             if self.is_awaitable(awaitable_or_data):
 
                 async def await_data(
-                    awaitable: Awaitable[Dict[str, Any]],
-                ) -> Optional[Dict[str, Any]]:
+                    awaitable: Awaitable[dict[str, Any]],
+                ) -> dict[str, Any] | None:
                     # noinspection PyShadowingNames
                     try:
                         return await awaitable
@@ -1727,11 +1724,11 @@ class ExecutionContext:
         path: Path,
         item_path: Path,
         item: AwaitableOrValue[Any],
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-        label: Optional[str] = None,
-        parent_context: Optional[AsyncPayloadRecord] = None,
+        label: str | None = None,
+        parent_context: AsyncPayloadRecord | None = None,
     ) -> AsyncPayloadRecord:
         """Execute stream field."""
         is_awaitable = self.is_awaitable
@@ -1742,7 +1739,7 @@ class ExecutionContext:
 
         if is_awaitable(item):
             # noinspection PyShadowingNames
-            async def await_completed_items() -> Optional[List[Any]]:
+            async def await_completed_items() -> list[Any] | None:
                 try:
                     return [
                         await self.complete_awaitable_value(
@@ -1777,7 +1774,7 @@ class ExecutionContext:
 
                 if is_awaitable(completed_item):
                     # noinspection PyShadowingNames
-                    async def await_completed_items() -> Optional[List[Any]]:
+                    async def await_completed_items() -> list[Any] | None:
                         # noinspection PyShadowingNames
                         try:
                             try:
@@ -1820,7 +1817,7 @@ class ExecutionContext:
     async def execute_stream_iterator_item(
         self,
         iterator: AsyncIterator[Any],
-        field_nodes: List[FieldNode],
+        field_nodes: list[FieldNode],
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         async_payload_record: StreamRecord,
@@ -1854,12 +1851,12 @@ class ExecutionContext:
         self,
         initial_index: int,
         iterator: AsyncIterator[Any],
-        field_modes: List[FieldNode],
+        field_modes: list[FieldNode],
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         path: Path,
-        label: Optional[str] = None,
-        parent_context: Optional[AsyncPayloadRecord] = None,
+        label: str | None = None,
+        parent_context: AsyncPayloadRecord | None = None,
     ) -> None:
         """Execute stream iterator."""
         index = initial_index
@@ -1906,7 +1903,7 @@ class ExecutionContext:
     def filter_subsequent_payloads(
         self,
         null_path: Path,
-        current_async_record: Optional[AsyncPayloadRecord] = None,
+        current_async_record: AsyncPayloadRecord | None = None,
     ) -> None:
         """Filter subsequent payloads."""
         null_path_list = null_path.as_list()
@@ -1922,9 +1919,9 @@ class ExecutionContext:
                 self._canceled_iterators.add(async_record.iterator)
             del self.subsequent_payloads[async_record]
 
-    def get_completed_incremental_results(self) -> List[IncrementalResult]:
+    def get_completed_incremental_results(self) -> list[IncrementalResult]:
         """Get completed incremental results."""
-        incremental_results: List[IncrementalResult] = []
+        incremental_results: list[IncrementalResult] = []
         append_result = incremental_results.append
         subsequent_payloads = list(self.subsequent_payloads)
         for async_payload_record in subsequent_payloads:
@@ -2002,14 +1999,14 @@ def execute(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
-    is_awaitable: Optional[Callable[[Any], bool]] = None,
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    middleware: Middleware | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
+    is_awaitable: Callable[[Any], bool] | None = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -2062,15 +2059,15 @@ def experimental_execute_incrementally(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
-    is_awaitable: Optional[Callable[[Any], bool]] = None,
-) -> AwaitableOrValue[Union[ExecutionResult, ExperimentalIncrementalExecutionResults]]:
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    middleware: Middleware | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
+    is_awaitable: Callable[[Any], bool] | None = None,
+) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
 
      Implements the "Executing requests" section of the GraphQL specification,
@@ -2109,7 +2106,7 @@ def experimental_execute_incrementally(
 
 def execute_impl(
     context: ExecutionContext,
-) -> AwaitableOrValue[Union[ExecutionResult, ExperimentalIncrementalExecutionResults]]:
+) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation (internal implementation)."""
     # Return a possible coroutine object that will eventually yield the data described
     # by the "Response" section of the GraphQL specification.
@@ -2177,12 +2174,12 @@ def execute_sync(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    middleware: Middleware | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
     check_sync: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
@@ -2228,7 +2225,7 @@ def execute_sync(
 
 
 def handle_field_error(
-    error: GraphQLError, return_type: GraphQLOutputType, errors: List[GraphQLError]
+    error: GraphQLError, return_type: GraphQLOutputType, errors: list[GraphQLError]
 ) -> None:
     """Handle error properly according to the field type."""
     # If the field type is non-nullable, then it is resolved without any protection
@@ -2241,7 +2238,7 @@ def handle_field_error(
 
 
 def invalid_return_type_error(
-    return_type: GraphQLObjectType, result: Any, field_nodes: List[FieldNode]
+    return_type: GraphQLObjectType, result: Any, field_nodes: list[FieldNode]
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
@@ -2250,7 +2247,7 @@ def invalid_return_type_error(
     )
 
 
-def get_typename(value: Any) -> Optional[str]:
+def get_typename(value: Any) -> str | None:
     """Get the ``__typename`` property of the given value."""
     if isinstance(value, Mapping):
         return value.get("__typename")
@@ -2264,7 +2261,7 @@ def get_typename(value: Any) -> Optional[str]:
 
 def default_type_resolver(
     value: Any, info: GraphQLResolveInfo, abstract_type: GraphQLAbstractType
-) -> AwaitableOrValue[Optional[str]]:
+) -> AwaitableOrValue[str | None]:
     """Default type resolver function.
 
     If a resolve_type function is not given, then a default resolve behavior is used
@@ -2285,9 +2282,9 @@ def default_type_resolver(
     # Otherwise, test each possible type.
     possible_types = info.schema.get_possible_types(abstract_type)
     is_awaitable = info.is_awaitable
-    awaitable_is_type_of_results: List[Awaitable] = []
+    awaitable_is_type_of_results: list[Awaitable] = []
     append_awaitable_results = awaitable_is_type_of_results.append
-    awaitable_types: List[GraphQLObjectType] = []
+    awaitable_types: list[GraphQLObjectType] = []
     append_awaitable_types = awaitable_types.append
 
     for type_ in possible_types:
@@ -2302,7 +2299,7 @@ def default_type_resolver(
 
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
-        async def get_type() -> Optional[str]:
+        async def get_type() -> str | None:
             is_type_of_results = await gather(*awaitable_is_type_of_results)
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
@@ -2342,13 +2339,13 @@ def subscribe(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
-) -> AwaitableOrValue[Union[AsyncIterator[ExecutionResult], ExecutionResult]]:
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
+) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     """Create a GraphQL subscription.
 
     Implements the "Subscribe" algorithm described in the GraphQL spec.
@@ -2416,13 +2413,13 @@ def create_source_event_stream(
     document: DocumentNode,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
-) -> AwaitableOrValue[Union[AsyncIterable[Any], ExecutionResult]]:
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
+) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
     """Create source event stream
 
     Implements the "CreateSourceEventStream" algorithm described in the GraphQL
@@ -2469,7 +2466,7 @@ def create_source_event_stream(
 
 def create_source_event_stream_impl(
     context: ExecutionContext,
-) -> AwaitableOrValue[Union[AsyncIterable[Any], ExecutionResult]]:
+) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
     """Create source event stream (internal implementation)."""
     try:
         event_stream = execute_subscription(context)
@@ -2480,7 +2477,7 @@ def create_source_event_stream_impl(
         awaitable_event_stream = cast(Awaitable, event_stream)
 
         # noinspection PyShadowingNames
-        async def await_event_stream() -> Union[AsyncIterable[Any], ExecutionResult]:
+        async def await_event_stream() -> AsyncIterable[Any] | ExecutionResult:
             try:
                 return await awaitable_event_stream
             except GraphQLError as error:
@@ -2567,21 +2564,21 @@ def assert_event_stream(result: Any) -> AsyncIterable:
 class DeferredFragmentRecord:
     """A record collecting data marked with the defer directive"""
 
-    errors: List[GraphQLError]
-    label: Optional[str]
-    path: List[Union[str, int]]
-    data: Optional[Dict[str, Any]]
-    parent_context: Optional[AsyncPayloadRecord]
+    errors: list[GraphQLError]
+    label: str | None
+    path: list[str | int]
+    data: dict[str, Any] | None
+    parent_context: AsyncPayloadRecord | None
     completed: Event
     _context: ExecutionContext
-    _data: AwaitableOrValue[Optional[Dict[str, Any]]]
+    _data: AwaitableOrValue[dict[str, Any] | None]
     _data_added: Event
 
     def __init__(
         self,
-        label: Optional[str],
-        path: Optional[Path],
-        parent_context: Optional[AsyncPayloadRecord],
+        label: str | None,
+        path: Path | None,
+        parent_context: AsyncPayloadRecord | None,
         context: ExecutionContext,
     ) -> None:
         self.label = label
@@ -2596,7 +2593,7 @@ class DeferredFragmentRecord:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: List[str] = [f"path={self.path!r}"]
+        args: list[str] = [f"path={self.path!r}"]
         if self.label:
             args.append(f"label={self.label!r}")
         if self.parent_context:
@@ -2605,10 +2602,10 @@ class DeferredFragmentRecord:
             args.append("data")
         return f"{name}({', '.join(args)})"
 
-    def __await__(self) -> Generator[Any, None, Optional[Dict[str, Any]]]:
+    def __await__(self) -> Generator[Any, None, dict[str, Any] | None]:
         return self.wait().__await__()
 
-    async def wait(self) -> Optional[Dict[str, Any]]:
+    async def wait(self) -> dict[str, Any] | None:
         """Wait until data is ready."""
         if self.parent_context:
             await self.parent_context.completed.wait()
@@ -2623,7 +2620,7 @@ class DeferredFragmentRecord:
         self.data = data
         return data
 
-    def add_data(self, data: AwaitableOrValue[Optional[Dict[str, Any]]]) -> None:
+    def add_data(self, data: AwaitableOrValue[dict[str, Any] | None]) -> None:
         """Add data to the record."""
         self._data = data
         self._data_added.set()
@@ -2632,24 +2629,24 @@ class DeferredFragmentRecord:
 class StreamRecord:
     """A record collecting items marked with the stream directive"""
 
-    errors: List[GraphQLError]
-    label: Optional[str]
-    path: List[Union[str, int]]
-    items: Optional[List[str]]
-    parent_context: Optional[AsyncPayloadRecord]
-    iterator: Optional[AsyncIterator[Any]]
+    errors: list[GraphQLError]
+    label: str | None
+    path: list[str | int]
+    items: list[str] | None
+    parent_context: AsyncPayloadRecord | None
+    iterator: AsyncIterator[Any] | None
     is_completed_iterator: bool
     completed: Event
     _context: ExecutionContext
-    _items: AwaitableOrValue[Optional[List[Any]]]
+    _items: AwaitableOrValue[list[Any] | None]
     _items_added: Event
 
     def __init__(
         self,
-        label: Optional[str],
-        path: Optional[Path],
-        iterator: Optional[AsyncIterator[Any]],
-        parent_context: Optional[AsyncPayloadRecord],
+        label: str | None,
+        path: Path | None,
+        iterator: AsyncIterator[Any] | None,
+        parent_context: AsyncPayloadRecord | None,
         context: ExecutionContext,
     ) -> None:
         self.label = label
@@ -2666,7 +2663,7 @@ class StreamRecord:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: List[str] = [f"path={self.path!r}"]
+        args: list[str] = [f"path={self.path!r}"]
         if self.label:
             args.append(f"label={self.label!r}")
         if self.parent_context:
@@ -2675,10 +2672,10 @@ class StreamRecord:
             args.append("items")
         return f"{name}({', '.join(args)})"
 
-    def __await__(self) -> Generator[Any, None, Optional[List[str]]]:
+    def __await__(self) -> Generator[Any, None, list[str] | None]:
         return self.wait().__await__()
 
-    async def wait(self) -> Optional[List[str]]:
+    async def wait(self) -> list[str] | None:
         """Wait until data is ready."""
         await self._items_added.wait()
         if self.parent_context:
@@ -2694,7 +2691,7 @@ class StreamRecord:
         self.completed.set()
         return items
 
-    def add_items(self, items: AwaitableOrValue[Optional[List[Any]]]) -> None:
+    def add_items(self, items: AwaitableOrValue[list[Any] | None]) -> None:
         """Add items to the record."""
         self._items = items
         self._items_added.set()
