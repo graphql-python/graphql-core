@@ -1,6 +1,8 @@
 """Human-readable descriptions"""
 
-from typing import Any, Tuple, Union
+from __future__ import annotations
+
+from typing import Any
 
 __all__ = [
     "Description",
@@ -19,7 +21,7 @@ class Description:
     If you register(object), any object will be allowed as description.
     """
 
-    bases: Union[type, Tuple[type, ...]] = str
+    bases: type | tuple[type, ...] = str
 
     @classmethod
     def isinstance(cls, obj: Any) -> bool:

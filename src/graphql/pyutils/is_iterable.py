@@ -1,5 +1,7 @@
 """Check whether objects are iterable"""
 
+from __future__ import annotations
+
 from array import array
 from typing import Any, Collection, Iterable, Mapping, ValuesView
 

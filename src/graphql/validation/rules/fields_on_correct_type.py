@@ -1,11 +1,12 @@
 """Fields on correct type rule"""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from functools import cmp_to_key
-from typing import Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import FieldNode
 from ...pyutils import did_you_mean, natural_comparison_key, suggestion_list
 from ...type import (
     GraphQLInterfaceType,
@@ -17,6 +18,9 @@ from ...type import (
     is_object_type,
 )
 from . import ValidationRule
+
+if TYPE_CHECKING:
+    from ...language import FieldNode
 
 __all__ = ["FieldsOnCorrectTypeRule"]
 
@@ -62,7 +66,7 @@ class FieldsOnCorrectTypeRule(ValidationRule):
 
 def get_suggested_type_names(
     schema: GraphQLSchema, type_: GraphQLOutputType, field_name: str
-) -> List[str]:
+) -> list[str]:
     """Get a list of suggested type names.
 
     Go through all of the implementations of type, as well as the interfaces
@@ -74,8 +78,8 @@ def get_suggested_type_names(
         return []
 
     # Use a dict instead of a set for stable sorting when usage counts are the same
-    suggested_types: Dict[Union[GraphQLObjectType, GraphQLInterfaceType], None] = {}
-    usage_count: Dict[str, int] = defaultdict(int)
+    suggested_types: dict[GraphQLObjectType | GraphQLInterfaceType, None] = {}
+    usage_count: dict[str, int] = defaultdict(int)
     for possible_type in schema.get_possible_types(type_):
         if field_name not in possible_type.fields:
             continue
@@ -93,8 +97,8 @@ def get_suggested_type_names(
             usage_count[possible_interface.name] += 1
 
     def cmp(
-        type_a: Union[GraphQLObjectType, GraphQLInterfaceType],
-        type_b: Union[GraphQLObjectType, GraphQLInterfaceType],
+        type_a: GraphQLObjectType | GraphQLInterfaceType,
+        type_b: GraphQLObjectType | GraphQLInterfaceType,
     ) -> int:  # pragma: no cover
         # Suggest both interface and object types based on how common they are.
         usage_count_diff = usage_count[type_b.name] - usage_count[type_a.name]
@@ -118,7 +122,7 @@ def get_suggested_type_names(
     return [type_.name for type_ in sorted(suggested_types, key=cmp_to_key(cmp))]
 
 
-def get_suggested_field_names(type_: GraphQLOutputType, field_name: str) -> List[str]:
+def get_suggested_field_names(type_: GraphQLOutputType, field_name: str) -> list[str]:
     """Get a list of suggested field names.
 
     For the field name provided, determine if there are any similar field names that may

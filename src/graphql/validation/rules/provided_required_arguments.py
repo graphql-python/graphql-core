@@ -1,6 +1,8 @@
 """Provided required arguments on directives rule"""
 
-from typing import Any, Dict, List, Union, cast
+from __future__ import annotations
+
+from typing import Any, List, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -29,12 +31,12 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
     For internal use only.
     """
 
-    context: Union[ValidationContext, SDLValidationContext]
+    context: ValidationContext | SDLValidationContext
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
-        required_args_map: Dict[
-            str, Dict[str, Union[GraphQLArgument, InputValueDefinitionNode]]
+        required_args_map: dict[
+            str, dict[str, GraphQLArgument | InputValueDefinitionNode]
         ] = {}
 
         schema = context.schema

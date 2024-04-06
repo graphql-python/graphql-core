@@ -1,13 +1,15 @@
 """List with suggestions"""
 
-from typing import Collection, List, Optional
+from __future__ import annotations
+
+from typing import Collection
 
 from .natural_compare import natural_comparison_key
 
 __all__ = ["suggestion_list"]
 
 
-def suggestion_list(input_: str, options: Collection[str]) -> List[str]:
+def suggestion_list(input_: str, options: Collection[str]) -> list[str]:
     """Get list with suggestions for a given input.
 
     Given an invalid input string and list of valid options, returns a filtered list
@@ -44,8 +46,8 @@ class LexicalDistance:
 
     _input: str
     _input_lower_case: str
-    _input_list: List[int]
-    _rows: List[List[int]]
+    _input_list: list[int]
+    _rows: list[list[int]]
 
     def __init__(self, input_: str) -> None:
         self._input = input_
@@ -55,7 +57,7 @@ class LexicalDistance:
 
         self._rows = [[0] * row_size, [0] * row_size, [0] * row_size]
 
-    def measure(self, option: str, threshold: int) -> Optional[int]:
+    def measure(self, option: str, threshold: int) -> int | None:
         if self._input == option:
             return 0
 

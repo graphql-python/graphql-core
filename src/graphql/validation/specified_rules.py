@@ -1,8 +1,8 @@
 """Specified rules"""
 
-from typing import Tuple, Type
+from __future__ import annotations
 
-from .rules import ASTValidationRule
+from typing import TYPE_CHECKING
 
 # Spec Section: "Defer And Stream Directive Labels Are Unique"
 from .rules.defer_stream_directive_label import DeferStreamDirectiveLabel
@@ -112,6 +112,9 @@ from .rules.variables_are_input_types import VariablesAreInputTypesRule
 # Spec Section: "All Variable Usages Are Allowed"
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
+if TYPE_CHECKING:
+    from .rules import ASTValidationRule
+
 __all__ = ["specified_rules", "specified_sdl_rules"]
 
 
@@ -120,7 +123,7 @@ __all__ = ["specified_rules", "specified_sdl_rules"]
 # The order of the rules in this list has been adjusted to lead to the
 # most clear output when encountering multiple validation errors.
 
-specified_rules: Tuple[Type[ASTValidationRule], ...] = (
+specified_rules: tuple[type[ASTValidationRule], ...] = (
     ExecutableDefinitionsRule,
     UniqueOperationNamesRule,
     LoneAnonymousOperationRule,
@@ -158,7 +161,7 @@ The order of the rules in this tuple has been adjusted to lead to the
 most clear output when encountering multiple validation errors.
 """
 
-specified_sdl_rules: Tuple[Type[ASTValidationRule], ...] = (
+specified_sdl_rules: tuple[type[ASTValidationRule], ...] = (
     LoneSchemaDefinitionRule,
     UniqueOperationTypesRule,
     UniqueTypeNamesRule,

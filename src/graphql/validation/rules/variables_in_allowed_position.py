@@ -1,6 +1,8 @@
 """Variables in allowed position rule"""
 
-from typing import Any, Dict, Optional
+from __future__ import annotations
+
+from typing import Any
 
 from ...error import GraphQLError
 from ...language import (
@@ -27,7 +29,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.var_def_map: Dict[str, Any] = {}
+        self.var_def_map: dict[str, Any] = {}
 
     def enter_operation_definition(self, *_args: Any) -> None:
         self.var_def_map.clear()
@@ -71,7 +73,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
 def allowed_variable_usage(
     schema: GraphQLSchema,
     var_type: GraphQLType,
-    var_default_value: Optional[ValueNode],
+    var_default_value: ValueNode | None,
     location_type: GraphQLType,
     location_default_value: Any,
 ) -> bool:

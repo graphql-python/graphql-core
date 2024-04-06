@@ -1,7 +1,9 @@
 """GraphQL client schema creation"""
 
+from __future__ import annotations
+
 from itertools import chain
-from typing import Callable, Collection, Dict, List, Union, cast
+from typing import Callable, Collection, cast
 
 from ..language import DirectiveLocation, parse_value
 from ..pyutils import Undefined, inspect
@@ -152,10 +154,9 @@ def build_client_schema(
             )
 
     def build_implementations_list(
-        implementing_introspection: Union[
-            IntrospectionObjectType, IntrospectionInterfaceType
-        ],
-    ) -> List[GraphQLInterfaceType]:
+        implementing_introspection: IntrospectionObjectType
+        | IntrospectionInterfaceType,
+    ) -> list[GraphQLInterfaceType]:
         maybe_interfaces = implementing_introspection.get("interfaces")
         if maybe_interfaces is None:
             # Temporary workaround until GraphQL ecosystem will fully support
@@ -252,7 +253,7 @@ def build_client_schema(
             ),
         )
 
-    type_builders: Dict[str, Callable[[IntrospectionType], GraphQLNamedType]] = {
+    type_builders: dict[str, Callable[[IntrospectionType], GraphQLNamedType]] = {
         TypeKind.SCALAR.name: build_scalar_def,  # type: ignore
         TypeKind.OBJECT.name: build_object_def,  # type: ignore
         TypeKind.INTERFACE.name: build_interface_def,  # type: ignore
@@ -262,8 +263,8 @@ def build_client_schema(
     }
 
     def build_field_def_map(
-        type_introspection: Union[IntrospectionObjectType, IntrospectionInterfaceType],
-    ) -> Dict[str, GraphQLField]:
+        type_introspection: IntrospectionObjectType | IntrospectionInterfaceType,
+    ) -> dict[str, GraphQLField]:
         if type_introspection.get("fields") is None:
             msg = f"Introspection result missing fields: {type_introspection}."
 
@@ -300,7 +301,7 @@ def build_client_schema(
 
     def build_argument_def_map(
         argument_value_introspections: Collection[IntrospectionInputValue],
-    ) -> Dict[str, GraphQLArgument]:
+    ) -> dict[str, GraphQLArgument]:
         return {
             argument_introspection["name"]: build_argument(argument_introspection)
             for argument_introspection in argument_value_introspections
@@ -333,7 +334,7 @@ def build_client_schema(
 
     def build_input_value_def_map(
         input_value_introspections: Collection[IntrospectionInputValue],
-    ) -> Dict[str, GraphQLInputField]:
+    ) -> dict[str, GraphQLInputField]:
         return {
             input_value_introspection["name"]: build_input_value(
                 input_value_introspection
@@ -395,7 +396,7 @@ def build_client_schema(
         )
 
     # Iterate through all types, getting the type definition for each.
-    type_map: Dict[str, GraphQLNamedType] = {
+    type_map: dict[str, GraphQLNamedType] = {
         type_introspection["name"]: build_type(type_introspection)
         for type_introspection in schema_introspection["types"]
     }

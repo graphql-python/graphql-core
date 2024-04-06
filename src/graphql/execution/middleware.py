@@ -1,8 +1,10 @@
 """Middleware manager"""
 
+from __future__ import annotations
+
 from functools import partial, reduce
 from inspect import isfunction
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Iterator
 
 try:
     from typing import TypeAlias
@@ -30,8 +32,8 @@ class MiddlewareManager:
     # allow custom attributes (not used internally)
     __slots__ = "__dict__", "middlewares", "_middleware_resolvers", "_cached_resolvers"
 
-    _cached_resolvers: Dict[GraphQLFieldResolver, GraphQLFieldResolver]
-    _middleware_resolvers: Optional[List[Callable]]
+    _cached_resolvers: dict[GraphQLFieldResolver, GraphQLFieldResolver]
+    _middleware_resolvers: list[Callable] | None
 
     def __init__(self, *middlewares: Any) -> None:
         self.middlewares = middlewares
@@ -59,7 +61,7 @@ class MiddlewareManager:
         return self._cached_resolvers[field_resolver]
 
 
-def get_middleware_resolvers(middlewares: Tuple[Any, ...]) -> Iterator[Callable]:
+def get_middleware_resolvers(middlewares: tuple[Any, ...]) -> Iterator[Callable]:
     """Get a list of resolver functions from a list of classes or functions."""
     for middleware in middlewares:
         if isfunction(middleware):

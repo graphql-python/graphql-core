@@ -1,8 +1,10 @@
 """Possible type extension rule"""
 
+from __future__ import annotations
+
 import re
 from functools import partial
-from typing import Any, Optional
+from typing import Any
 
 from ...error import GraphQLError
 from ...language import TypeDefinitionNode, TypeExtensionNode
@@ -41,7 +43,7 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
         def_node = self.defined_types.get(type_name)
         existing_type = schema.get_type(type_name) if schema else None
 
-        expected_kind: Optional[str]
+        expected_kind: str | None
         if def_node:
             expected_kind = def_kind_to_ext_kind(def_node.kind)
         elif existing_type:

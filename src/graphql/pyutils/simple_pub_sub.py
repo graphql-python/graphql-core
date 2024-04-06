@@ -1,6 +1,6 @@
 """Simple public-subscribe system"""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from asyncio import Future, Queue, create_task, get_running_loop, sleep
 from typing import Any, AsyncIterator, Callable

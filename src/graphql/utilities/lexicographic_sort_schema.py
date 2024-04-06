@@ -1,8 +1,9 @@
 """Sorting GraphQL schemas"""
 
-from typing import Collection, Dict, Optional, Tuple, Union, cast
+from __future__ import annotations
 
-from ..language import DirectiveLocation
+from typing import TYPE_CHECKING, Collection, Optional, cast
+
 from ..pyutils import inspect, merge_kwargs, natural_comparison_key
 from ..type import (
     GraphQLArgument,
@@ -31,6 +32,9 @@ from ..type import (
     is_union_type,
 )
 
+if TYPE_CHECKING:
+    from ..language import DirectiveLocation
+
 __all__ = ["lexicographic_sort_schema"]
 
 
@@ -41,8 +45,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
     """
 
     def replace_type(
-        type_: Union[GraphQLList, GraphQLNonNull, GraphQLNamedType],
-    ) -> Union[GraphQLList, GraphQLNonNull, GraphQLNamedType]:
+        type_: GraphQLList | GraphQLNonNull | GraphQLNamedType,
+    ) -> GraphQLList | GraphQLNonNull | GraphQLNamedType:
         if is_list_type(type_):
             return GraphQLList(replace_type(type_.of_type))
         if is_non_null_type(type_):
@@ -53,8 +57,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         return type_map[type_.name]
 
     def replace_maybe_type(
-        maybe_type: Optional[GraphQLNamedType],
-    ) -> Optional[GraphQLNamedType]:
+        maybe_type: GraphQLNamedType | None,
+    ) -> GraphQLNamedType | None:
         return maybe_type and replace_named_type(maybe_type)
 
     def sort_directive(directive: GraphQLDirective) -> GraphQLDirective:
@@ -66,7 +70,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             )
         )
 
-    def sort_args(args_map: Dict[str, GraphQLArgument]) -> Dict[str, GraphQLArgument]:
+    def sort_args(args_map: dict[str, GraphQLArgument]) -> dict[str, GraphQLArgument]:
         args = {}
         for name, arg in sorted(args_map.items()):
             args[name] = GraphQLArgument(
@@ -77,7 +81,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             )
         return args
 
-    def sort_fields(fields_map: Dict[str, GraphQLField]) -> Dict[str, GraphQLField]:
+    def sort_fields(fields_map: dict[str, GraphQLField]) -> dict[str, GraphQLField]:
         fields = {}
         for name, field in sorted(fields_map.items()):
             fields[name] = GraphQLField(
@@ -90,8 +94,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         return fields
 
     def sort_input_fields(
-        fields_map: Dict[str, GraphQLInputField],
-    ) -> Dict[str, GraphQLInputField]:
+        fields_map: dict[str, GraphQLInputField],
+    ) -> dict[str, GraphQLInputField]:
         return {
             name: GraphQLInputField(
                 cast(
@@ -104,7 +108,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             for name, field in sorted(fields_map.items())
         }
 
-    def sort_types(array: Collection[GraphQLNamedType]) -> Tuple[GraphQLNamedType, ...]:
+    def sort_types(array: Collection[GraphQLNamedType]) -> tuple[GraphQLNamedType, ...]:
         return tuple(
             replace_named_type(type_) for type_ in sorted(array, key=sort_by_name_key)
         )
@@ -159,7 +163,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
         raise TypeError(msg)  # pragma: no cover
 
-    type_map: Dict[str, GraphQLNamedType] = {
+    type_map: dict[str, GraphQLNamedType] = {
         type_.name: sort_named_type(type_)
         for type_ in sorted(schema.type_map.values(), key=sort_by_name_key)
     }
@@ -182,6 +186,6 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
 
 
 def sort_by_name_key(
-    type_: Union[GraphQLNamedType, GraphQLDirective, DirectiveLocation],
-) -> Tuple:
+    type_: GraphQLNamedType | GraphQLDirective | DirectiveLocation,
+) -> tuple:
     return natural_comparison_key(type_.name)

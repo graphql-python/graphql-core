@@ -1,9 +1,13 @@
 """Reduce awaitable values"""
 
-from typing import Any, Awaitable, Callable, Collection, TypeVar, cast
+from __future__ import annotations
 
-from .awaitable_or_value import AwaitableOrValue
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Collection, TypeVar, cast
+
 from .is_awaitable import is_awaitable as default_is_awaitable
+
+if TYPE_CHECKING:
+    from .awaitable_or_value import AwaitableOrValue
 
 __all__ = ["async_reduce"]
 

@@ -1,6 +1,6 @@
 """Predicates for GraphQL nodes"""
 
-from typing import Union
+from __future__ import annotations
 
 from .ast import (
     DefinitionNode,
@@ -93,7 +93,7 @@ def is_type_definition_node(node: Node) -> TypeGuard[TypeDefinitionNode]:
 
 def is_type_system_extension_node(
     node: Node,
-) -> TypeGuard[Union[SchemaExtensionNode, TypeExtensionNode]]:
+) -> TypeGuard[SchemaExtensionNode | TypeExtensionNode]:
     """Check whether the given node represents a type system extension."""
     return isinstance(node, (SchemaExtensionNode, TypeExtensionNode))
 

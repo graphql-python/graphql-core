@@ -1,8 +1,10 @@
 """Schema validation"""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from operator import attrgetter, itemgetter
-from typing import Any, Collection, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Any, Collection, Optional, cast
 
 from ..error import GraphQLError
 from ..language import (
@@ -42,7 +44,7 @@ from .schema import GraphQLSchema, assert_schema
 __all__ = ["validate_schema", "assert_valid_schema"]
 
 
-def validate_schema(schema: GraphQLSchema) -> List[GraphQLError]:
+def validate_schema(schema: GraphQLSchema) -> list[GraphQLError]:
     """Validate a GraphQL schema.
 
     Implements the "Type Validation" sub-sections of the specification's "Type System"
@@ -85,7 +87,7 @@ def assert_valid_schema(schema: GraphQLSchema) -> None:
 class SchemaValidationContext:
     """Utility class providing a context for schema validation."""
 
-    errors: List[GraphQLError]
+    errors: list[GraphQLError]
     schema: GraphQLSchema
 
     def __init__(self, schema: GraphQLSchema) -> None:
@@ -95,7 +97,7 @@ class SchemaValidationContext:
     def report_error(
         self,
         message: str,
-        nodes: Union[Optional[Node], Collection[Optional[Node]]] = None,
+        nodes: Node | None | Collection[Node | None] = None,
     ) -> None:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
@@ -106,7 +108,7 @@ class SchemaValidationContext:
         schema = self.schema
         if not schema.query_type:
             self.report_error("Query root type must be provided.", schema.ast_node)
-        root_types_map: Dict[GraphQLObjectType, List[OperationType]] = defaultdict(list)
+        root_types_map: dict[GraphQLObjectType, list[OperationType]] = defaultdict(list)
 
         for operation_type in OperationType:
             root_type = schema.get_root_type(operation_type)
@@ -176,7 +178,7 @@ class SchemaValidationContext:
                         ],
                     )
 
-    def validate_name(self, node: Any, name: Optional[str] = None) -> None:
+    def validate_name(self, node: Any, name: str | None = None) -> None:
         # Ensure names are valid, however introspection types opt out.
         try:
             if not name:
@@ -234,7 +236,7 @@ class SchemaValidationContext:
                 validate_input_object_circular_refs(type_)
 
     def validate_fields(
-        self, type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+        self, type_: GraphQLObjectType | GraphQLInterfaceType
     ) -> None:
         fields = type_.fields
 
@@ -281,9 +283,9 @@ class SchemaValidationContext:
                     )
 
     def validate_interfaces(
-        self, type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+        self, type_: GraphQLObjectType | GraphQLInterfaceType
     ) -> None:
-        iface_type_names: Set[str] = set()
+        iface_type_names: set[str] = set()
         for iface in type_.interfaces:
             if not is_interface_type(iface):
                 self.report_error(
@@ -314,7 +316,7 @@ class SchemaValidationContext:
 
     def validate_type_implements_interface(
         self,
-        type_: Union[GraphQLObjectType, GraphQLInterfaceType],
+        type_: GraphQLObjectType | GraphQLInterfaceType,
         iface: GraphQLInterfaceType,
     ) -> None:
         type_fields, iface_fields = type_.fields, iface.fields
@@ -393,7 +395,7 @@ class SchemaValidationContext:
 
     def validate_type_implements_ancestors(
         self,
-        type_: Union[GraphQLObjectType, GraphQLInterfaceType],
+        type_: GraphQLObjectType | GraphQLInterfaceType,
         iface: GraphQLInterfaceType,
     ) -> None:
         type_interfaces, iface_interfaces = type_.interfaces, iface.interfaces
@@ -418,7 +420,7 @@ class SchemaValidationContext:
                 [union.ast_node, *union.extension_ast_nodes],
             )
 
-        included_type_names: Set[str] = set()
+        included_type_names: set[str] = set()
         for member_type in member_types:
             if is_object_type(member_type):
                 if member_type.name in included_type_names:
@@ -485,8 +487,8 @@ class SchemaValidationContext:
 
 def get_operation_type_node(
     schema: GraphQLSchema, operation: OperationType
-) -> Optional[Node]:
-    ast_node: Optional[Union[SchemaDefinitionNode, SchemaExtensionNode]]
+) -> Node | None:
+    ast_node: SchemaDefinitionNode | SchemaExtensionNode | None
     for ast_node in [schema.ast_node, *(schema.extension_ast_nodes or ())]:
         if ast_node:
             operation_types = ast_node.operation_types
@@ -504,11 +506,11 @@ class InputObjectCircularRefsValidator:
         self.context = context
         # Tracks already visited types to maintain O(N) and to ensure that cycles
         # are not redundantly reported.
-        self.visited_types: Set[str] = set()
+        self.visited_types: set[str] = set()
         # Array of input fields used to produce meaningful errors
-        self.field_path: List[Tuple[str, GraphQLInputField]] = []
+        self.field_path: list[tuple[str, GraphQLInputField]] = []
         # Position in the type path
-        self.field_path_index_by_type_name: Dict[str, int] = {}
+        self.field_path_index_by_type_name: dict[str, int] = {}
 
     def __call__(self, input_obj: GraphQLInputObjectType) -> None:
         """Detect cycles recursively."""
@@ -550,13 +552,13 @@ class InputObjectCircularRefsValidator:
 
 
 def get_all_implements_interface_nodes(
-    type_: Union[GraphQLObjectType, GraphQLInterfaceType], iface: GraphQLInterfaceType
-) -> List[NamedTypeNode]:
+    type_: GraphQLObjectType | GraphQLInterfaceType, iface: GraphQLInterfaceType
+) -> list[NamedTypeNode]:
     ast_node = type_.ast_node
     nodes = type_.extension_ast_nodes
     if ast_node is not None:
         nodes = [ast_node, *nodes]  # type: ignore
-    implements_nodes: List[NamedTypeNode] = []
+    implements_nodes: list[NamedTypeNode] = []
     for node in nodes:
         iface_nodes = node.interfaces
         if iface_nodes:  # pragma: no cover else
@@ -570,12 +572,12 @@ def get_all_implements_interface_nodes(
 
 def get_union_member_type_nodes(
     union: GraphQLUnionType, type_name: str
-) -> List[NamedTypeNode]:
+) -> list[NamedTypeNode]:
     ast_node = union.ast_node
     nodes = union.extension_ast_nodes
     if ast_node is not None:
         nodes = [ast_node, *nodes]  # type: ignore
-    member_type_nodes: List[NamedTypeNode] = []
+    member_type_nodes: list[NamedTypeNode] = []
     for node in nodes:
         type_nodes = node.types
         if type_nodes:  # pragma: no cover else
@@ -588,8 +590,8 @@ def get_union_member_type_nodes(
 
 
 def get_deprecated_directive_node(
-    definition_node: Optional[Union[InputValueDefinitionNode]],
-) -> Optional[DirectiveNode]:
+    definition_node: InputValueDefinitionNode | None,
+) -> DirectiveNode | None:
     directives = definition_node and definition_node.directives
     if directives:
         for directive in directives:

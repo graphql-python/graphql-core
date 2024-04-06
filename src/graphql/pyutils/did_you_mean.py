@@ -1,6 +1,8 @@
 """Generating suggestions"""
 
-from typing import Optional, Sequence
+from __future__ import annotations
+
+from typing import Sequence
 
 from .format_list import or_list
 
@@ -9,7 +11,7 @@ __all__ = ["did_you_mean"]
 MAX_LENGTH = 5
 
 
-def did_you_mean(suggestions: Sequence[str], sub_message: Optional[str] = None) -> str:
+def did_you_mean(suggestions: Sequence[str], sub_message: str | None = None) -> str:
     """Given [ A, B, C ] return ' Did you mean A, B, or C?'"""
     if not suggestions or not MAX_LENGTH:
         return ""

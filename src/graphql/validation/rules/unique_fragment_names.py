@@ -1,6 +1,8 @@
 """Unique fragment names rule"""
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any
 
 from ...error import GraphQLError
 from ...language import SKIP, FragmentDefinitionNode, NameNode, VisitorAction
@@ -19,7 +21,7 @@ class UniqueFragmentNamesRule(ASTValidationRule):
 
     def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
-        self.known_fragment_names: Dict[str, NameNode] = {}
+        self.known_fragment_names: dict[str, NameNode] = {}
 
     @staticmethod
     def enter_operation_definition(*_args: Any) -> VisitorAction:

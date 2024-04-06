@@ -1,7 +1,9 @@
 """Located GraphQL Error"""
 
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import TYPE_CHECKING, Collection, Optional, Union
+from typing import TYPE_CHECKING, Collection
 
 from ..pyutils import inspect
 from .graphql_error import GraphQLError
@@ -14,8 +16,8 @@ __all__ = ["located_error"]
 
 def located_error(
     original_error: Exception,
-    nodes: Optional[Union[None, Collection["Node"]]] = None,
-    path: Optional[Collection[Union[str, int]]] = None,
+    nodes: None | Collection[Node] = None,
+    path: Collection[str | int] | None = None,
 ) -> GraphQLError:
     """Located GraphQL Error
 

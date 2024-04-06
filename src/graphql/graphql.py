@@ -1,7 +1,9 @@
 """Execute a GraphQL operation"""
 
+from __future__ import annotations
+
 from asyncio import ensure_future
-from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union, cast
+from typing import Any, Awaitable, Callable, cast
 
 from .error import GraphQLError
 from .execution import ExecutionContext, ExecutionResult, Middleware, execute
@@ -20,16 +22,16 @@ __all__ = ["graphql", "graphql_sync"]
 
 async def graphql(
     schema: GraphQLSchema,
-    source: Union[str, Source],
+    source: str | Source,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
-    is_awaitable: Optional[Callable[[Any], bool]] = None,
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    middleware: Middleware | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
+    is_awaitable: Callable[[Any], bool] | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -106,15 +108,15 @@ def assume_not_awaitable(_value: Any) -> bool:
 
 def graphql_sync(
     schema: GraphQLSchema,
-    source: Union[str, Source],
+    source: str | Source,
     root_value: Any = None,
     context_value: Any = None,
-    variable_values: Optional[Dict[str, Any]] = None,
-    operation_name: Optional[str] = None,
-    field_resolver: Optional[GraphQLFieldResolver] = None,
-    type_resolver: Optional[GraphQLTypeResolver] = None,
-    middleware: Optional[Middleware] = None,
-    execution_context_class: Optional[Type[ExecutionContext]] = None,
+    variable_values: dict[str, Any] | None = None,
+    operation_name: str | None = None,
+    field_resolver: GraphQLFieldResolver | None = None,
+    type_resolver: GraphQLTypeResolver | None = None,
+    middleware: Middleware | None = None,
+    execution_context_class: type[ExecutionContext] | None = None,
     check_sync: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
@@ -156,16 +158,16 @@ def graphql_sync(
 
 def graphql_impl(
     schema: GraphQLSchema,
-    source: Union[str, Source],
+    source: str | Source,
     root_value: Any,
     context_value: Any,
-    variable_values: Optional[Dict[str, Any]],
-    operation_name: Optional[str],
-    field_resolver: Optional[GraphQLFieldResolver],
-    type_resolver: Optional[GraphQLTypeResolver],
-    middleware: Optional[Middleware],
-    execution_context_class: Optional[Type[ExecutionContext]],
-    is_awaitable: Optional[Callable[[Any], bool]],
+    variable_values: dict[str, Any] | None,
+    operation_name: str | None,
+    field_resolver: GraphQLFieldResolver | None,
+    type_resolver: GraphQLTypeResolver | None,
+    middleware: Middleware | None,
+    execution_context_class: type[ExecutionContext] | None,
+    is_awaitable: Callable[[Any], bool] | None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema

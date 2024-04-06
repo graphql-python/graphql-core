@@ -1,6 +1,6 @@
 """Source locations"""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 

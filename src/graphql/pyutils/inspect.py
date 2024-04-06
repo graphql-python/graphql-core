@@ -1,5 +1,7 @@
 """Value inspection for error messages"""
 
+from __future__ import annotations
+
 from inspect import (
     isasyncgen,
     isasyncgenfunction,
@@ -11,7 +13,7 @@ from inspect import (
     isgeneratorfunction,
     ismethod,
 )
-from typing import Any, List
+from typing import Any
 
 from .undefined import Undefined
 
@@ -36,7 +38,7 @@ def inspect(value: Any) -> str:
     return inspect_recursive(value, [])
 
 
-def inspect_recursive(value: Any, seen_values: List) -> str:
+def inspect_recursive(value: Any, seen_values: list) -> str:
     if value is None or value is Undefined or isinstance(value, (bool, float, complex)):
         return repr(value)
     if isinstance(value, (int, str, bytes, bytearray)):
@@ -164,7 +166,7 @@ def trunc_str(s: str) -> str:
     return s
 
 
-def trunc_list(s: List) -> List:
+def trunc_list(s: list) -> list:
     """Truncate lists to maximum length."""
     if len(s) > max_list_size:
         i = max_list_size // 2

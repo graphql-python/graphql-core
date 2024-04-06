@@ -1,10 +1,14 @@
 """Known fragment names rule"""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import FragmentSpreadNode
 from . import ValidationRule
+
+if TYPE_CHECKING:
+    from ...language import FragmentSpreadNode
 
 __all__ = ["KnownFragmentNamesRule"]
 

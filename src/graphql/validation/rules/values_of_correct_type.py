@@ -1,5 +1,7 @@
 """Value literals of correct type rule"""
 
+from __future__ import annotations
+
 from typing import Any, cast
 
 from ...error import GraphQLError

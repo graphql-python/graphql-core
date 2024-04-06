@@ -1,6 +1,6 @@
 """GraphQL execution"""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from asyncio import Event, as_completed, ensure_future, gather, shield, sleep, wait_for
 from collections.abc import Mapping

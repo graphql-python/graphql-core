@@ -1,6 +1,8 @@
 """Conversion from GraphQL value AST to Python values."""
 
-from typing import Any, Dict, List, Optional, cast
+from __future__ import annotations
+
+from typing import Any, cast
 
 from ..language import (
     ListValueNode,
@@ -23,9 +25,9 @@ __all__ = ["value_from_ast"]
 
 
 def value_from_ast(
-    value_node: Optional[ValueNode],
+    value_node: ValueNode | None,
     type_: GraphQLInputType,
-    variables: Optional[Dict[str, Any]] = None,
+    variables: dict[str, Any] | None = None,
 ) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 
@@ -76,7 +78,7 @@ def value_from_ast(
     if is_list_type(type_):
         item_type = type_.of_type
         if isinstance(value_node, ListValueNode):
-            coerced_values: List[Any] = []
+            coerced_values: list[Any] = []
             append_value = coerced_values.append
             for item_node in value_node.values:
                 if is_missing_variable(item_node, variables):
@@ -99,7 +101,7 @@ def value_from_ast(
     if is_input_object_type(type_):
         if not isinstance(value_node, ObjectValueNode):
             return Undefined
-        coerced_obj: Dict[str, Any] = {}
+        coerced_obj: dict[str, Any] = {}
         fields = type_.fields
         field_nodes = {field.name.value: field for field in value_node.fields}
         for field_name, field in fields.items():
@@ -138,7 +140,7 @@ def value_from_ast(
 
 
 def is_missing_variable(
-    value_node: ValueNode, variables: Optional[Dict[str, Any]] = None
+    value_node: ValueNode, variables: dict[str, Any] | None = None
 ) -> bool:
     """Check if ``value_node`` is a variable not defined in the ``variables`` dict."""
     return isinstance(value_node, VariableNode) and (

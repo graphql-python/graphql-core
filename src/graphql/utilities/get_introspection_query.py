@@ -1,9 +1,12 @@
 """Get introspection query"""
 
-from textwrap import dedent
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
 
-from ..language import DirectiveLocation
+from textwrap import dedent
+from typing import TYPE_CHECKING, Any, Dict, Union
+
+if TYPE_CHECKING:
+    from ..language import DirectiveLocation
 
 try:
     from typing import Literal, TypedDict
@@ -53,7 +56,7 @@ def get_introspection_query(
     maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     maybe_schema_description = maybe_description if schema_description else ""
 
-    def input_deprecation(string: str) -> Optional[str]:
+    def input_deprecation(string: str) -> str | None:
         return string if input_value_deprecation else ""
 
     return dedent(
@@ -168,7 +171,7 @@ SimpleIntrospectionType: TypeAlias = Dict[str, Any]
 
 
 class MaybeWithDescription(TypedDict, total=False):
-    description: Optional[str]
+    description: str | None
 
 
 class WithName(MaybeWithDescription):
@@ -176,26 +179,26 @@ class WithName(MaybeWithDescription):
 
 
 class MaybeWithSpecifiedByUrl(TypedDict, total=False):
-    specifiedByURL: Optional[str]
+    specifiedByURL: str | None
 
 
 class WithDeprecated(TypedDict):
     isDeprecated: bool
-    deprecationReason: Optional[str]
+    deprecationReason: str | None
 
 
 class MaybeWithDeprecated(TypedDict, total=False):
     isDeprecated: bool
-    deprecationReason: Optional[str]
+    deprecationReason: str | None
 
 
 class IntrospectionInputValue(WithName, MaybeWithDeprecated):
     type: SimpleIntrospectionType  # should be IntrospectionInputType
-    defaultValue: Optional[str]
+    defaultValue: str | None
 
 
 class IntrospectionField(WithName, WithDeprecated):
-    args: List[IntrospectionInputValue]
+    args: list[IntrospectionInputValue]
     type: SimpleIntrospectionType  # should be IntrospectionOutputType
 
 
@@ -208,8 +211,8 @@ class MaybeWithIsRepeatable(TypedDict, total=False):
 
 
 class IntrospectionDirective(WithName, MaybeWithIsRepeatable):
-    locations: List[DirectiveLocation]
-    args: List[IntrospectionInputValue]
+    locations: list[DirectiveLocation]
+    args: list[IntrospectionInputValue]
 
 
 class IntrospectionScalarType(WithName, MaybeWithSpecifiedByUrl):
@@ -218,30 +221,30 @@ class IntrospectionScalarType(WithName, MaybeWithSpecifiedByUrl):
 
 class IntrospectionInterfaceType(WithName):
     kind: Literal["interface"]
-    fields: List[IntrospectionField]
-    interfaces: List[SimpleIntrospectionType]  # should be InterfaceType
-    possibleTypes: List[SimpleIntrospectionType]  # should be NamedType
+    fields: list[IntrospectionField]
+    interfaces: list[SimpleIntrospectionType]  # should be InterfaceType
+    possibleTypes: list[SimpleIntrospectionType]  # should be NamedType
 
 
 class IntrospectionObjectType(WithName):
     kind: Literal["object"]
-    fields: List[IntrospectionField]
-    interfaces: List[SimpleIntrospectionType]  # should be InterfaceType
+    fields: list[IntrospectionField]
+    interfaces: list[SimpleIntrospectionType]  # should be InterfaceType
 
 
 class IntrospectionUnionType(WithName):
     kind: Literal["union"]
-    possibleTypes: List[SimpleIntrospectionType]  # should be NamedType
+    possibleTypes: list[SimpleIntrospectionType]  # should be NamedType
 
 
 class IntrospectionEnumType(WithName):
     kind: Literal["enum"]
-    enumValues: List[IntrospectionEnumValue]
+    enumValues: list[IntrospectionEnumValue]
 
 
 class IntrospectionInputObjectType(WithName):
     kind: Literal["input_object"]
-    inputFields: List[IntrospectionInputValue]
+    inputFields: list[IntrospectionInputValue]
 
 
 IntrospectionType: TypeAlias = Union[
@@ -285,10 +288,10 @@ IntrospectionTypeRef: TypeAlias = Union[
 
 class IntrospectionSchema(MaybeWithDescription):
     queryType: IntrospectionObjectType
-    mutationType: Optional[IntrospectionObjectType]
-    subscriptionType: Optional[IntrospectionObjectType]
-    types: List[IntrospectionType]
-    directives: List[IntrospectionDirective]
+    mutationType: IntrospectionObjectType | None
+    subscriptionType: IntrospectionObjectType | None
+    types: list[IntrospectionType]
+    directives: list[IntrospectionDirective]
 
 
 class IntrospectionQuery(TypedDict):

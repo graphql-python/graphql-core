@@ -1,5 +1,7 @@
 """Unique argument definition names rule"""
 
+from __future__ import annotations
+
 from operator import attrgetter
 from typing import Any, Collection
 

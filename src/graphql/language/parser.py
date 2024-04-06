@@ -1,7 +1,9 @@
 """GraphQL parser"""
 
+from __future__ import annotations
+
 from functools import partial
-from typing import Callable, List, Mapping, Optional, TypeVar, Union, cast
+from typing import Callable, List, Mapping, TypeVar, Union, cast
 
 from ..error import GraphQLError, GraphQLSyntaxError
 from .ast import (
@@ -85,7 +87,7 @@ SourceType: TypeAlias = Union[Source, str]
 def parse(
     source: SourceType,
     no_location: bool = False,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
     allow_legacy_fragment_variables: bool = False,
     experimental_client_controlled_nullability: bool = False,
 ) -> DocumentNode:
@@ -149,7 +151,7 @@ def parse(
 def parse_value(
     source: SourceType,
     no_location: bool = False,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
     allow_legacy_fragment_variables: bool = False,
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
@@ -177,7 +179,7 @@ def parse_value(
 def parse_const_value(
     source: SourceType,
     no_location: bool = False,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
     allow_legacy_fragment_variables: bool = False,
 ) -> ConstValueNode:
     """Parse the AST for a given string containing a GraphQL constant value.
@@ -200,7 +202,7 @@ def parse_const_value(
 def parse_type(
     source: SourceType,
     no_location: bool = False,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
     allow_legacy_fragment_variables: bool = False,
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
@@ -238,7 +240,7 @@ class Parser:
     """
 
     _no_location: bool
-    _max_tokens: Optional[int]
+    _max_tokens: int | None
     _allow_legacy_fragment_variables: bool
     _experimental_client_controlled_nullability: bool
     _lexer: Lexer
@@ -248,7 +250,7 @@ class Parser:
         self,
         source: SourceType,
         no_location: bool = False,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         allow_legacy_fragment_variables: bool = False,
         experimental_client_controlled_nullability: bool = False,
     ) -> None:
@@ -371,7 +373,7 @@ class Parser:
         except ValueError as error:
             raise self.unexpected(operation_token) from error
 
-    def parse_variable_definitions(self) -> List[VariableDefinitionNode]:
+    def parse_variable_definitions(self) -> list[VariableDefinitionNode]:
         """VariableDefinitions: (VariableDefinition+)"""
         return self.optional_many(
             TokenKind.PAREN_L, self.parse_variable_definition, TokenKind.PAREN_R
@@ -417,7 +419,7 @@ class Parser:
         start = self._lexer.token
         name_or_alias = self.parse_name()
         if self.expect_optional_token(TokenKind.COLON):
-            alias: Optional[NameNode] = name_or_alias
+            alias: NameNode | None = name_or_alias
             name = self.parse_name()
         else:
             alias = None
@@ -436,7 +438,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_nullability_assertion(self) -> Optional[NullabilityAssertionNode]:
+    def parse_nullability_assertion(self) -> NullabilityAssertionNode | None:
         """NullabilityAssertion (grammar not yet finalized)
 
         # Note: Client Controlled Nullability is experimental and may be changed or
@@ -446,7 +448,7 @@ class Parser:
             return None
 
         start = self._lexer.token
-        nullability_assertion: Optional[NullabilityAssertionNode] = None
+        nullability_assertion: NullabilityAssertionNode | None = None
 
         if self.expect_optional_token(TokenKind.BRACKET_L):
             inner_modifier = self.parse_nullability_assertion()
@@ -466,7 +468,7 @@ class Parser:
 
         return nullability_assertion
 
-    def parse_arguments(self, is_const: bool) -> List[ArgumentNode]:
+    def parse_arguments(self, is_const: bool) -> list[ArgumentNode]:
         """Arguments[Const]: (Argument[?Const]+)"""
         item = self.parse_const_argument if is_const else self.parse_argument
         item = cast(Callable[[], ArgumentNode], item)
@@ -488,7 +490,7 @@ class Parser:
 
     # Implement the parsing rules in the Fragments section.
 
-    def parse_fragment(self) -> Union[FragmentSpreadNode, InlineFragmentNode]:
+    def parse_fragment(self) -> FragmentSpreadNode | InlineFragmentNode:
         """Corresponds to both FragmentSpread and InlineFragment in the spec.
 
         FragmentSpread: ... FragmentName Directives?
@@ -642,15 +644,15 @@ class Parser:
 
     # Implement the parsing rules in the Directives section.
 
-    def parse_directives(self, is_const: bool) -> List[DirectiveNode]:
+    def parse_directives(self, is_const: bool) -> list[DirectiveNode]:
         """Directives[Const]: Directive[?Const]+"""
-        directives: List[DirectiveNode] = []
+        directives: list[DirectiveNode] = []
         append = directives.append
         while self.peek(TokenKind.AT):
             append(self.parse_directive(is_const))
         return directives
 
-    def parse_const_directives(self) -> List[ConstDirectiveNode]:
+    def parse_const_directives(self) -> list[ConstDirectiveNode]:
         return cast(List[ConstDirectiveNode], self.parse_directives(True))
 
     def parse_directive(self, is_const: bool) -> DirectiveNode:
@@ -710,7 +712,7 @@ class Parser:
     def peek_description(self) -> bool:
         return self.peek(TokenKind.STRING) or self.peek(TokenKind.BLOCK_STRING)
 
-    def parse_description(self) -> Optional[StringValueNode]:
+    def parse_description(self) -> StringValueNode | None:
         """Description: StringValue"""
         if self.peek_description():
             return self.parse_string_literal()
@@ -774,7 +776,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_implements_interfaces(self) -> List[NamedTypeNode]:
+    def parse_implements_interfaces(self) -> list[NamedTypeNode]:
         """ImplementsInterfaces"""
         return (
             self.delimited_many(TokenKind.AMP, self.parse_named_type)
@@ -782,7 +784,7 @@ class Parser:
             else []
         )
 
-    def parse_fields_definition(self) -> List[FieldDefinitionNode]:
+    def parse_fields_definition(self) -> list[FieldDefinitionNode]:
         """FieldsDefinition: {FieldDefinition+}"""
         return self.optional_many(
             TokenKind.BRACE_L, self.parse_field_definition, TokenKind.BRACE_R
@@ -806,7 +808,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_argument_defs(self) -> List[InputValueDefinitionNode]:
+    def parse_argument_defs(self) -> list[InputValueDefinitionNode]:
         """ArgumentsDefinition: (InputValueDefinition+)"""
         return self.optional_many(
             TokenKind.PAREN_L, self.parse_input_value_def, TokenKind.PAREN_R
@@ -868,7 +870,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_union_member_types(self) -> List[NamedTypeNode]:
+    def parse_union_member_types(self) -> list[NamedTypeNode]:
         """UnionMemberTypes"""
         return (
             self.delimited_many(TokenKind.PIPE, self.parse_named_type)
@@ -892,7 +894,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_enum_values_definition(self) -> List[EnumValueDefinitionNode]:
+    def parse_enum_values_definition(self) -> list[EnumValueDefinitionNode]:
         """EnumValuesDefinition: {EnumValueDefinition+}"""
         return self.optional_many(
             TokenKind.BRACE_L, self.parse_enum_value_definition, TokenKind.BRACE_R
@@ -938,7 +940,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_input_fields_definition(self) -> List[InputValueDefinitionNode]:
+    def parse_input_fields_definition(self) -> list[InputValueDefinitionNode]:
         """InputFieldsDefinition: {InputValueDefinition+}"""
         return self.optional_many(
             TokenKind.BRACE_L, self.parse_input_value_def, TokenKind.BRACE_R
@@ -1072,7 +1074,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_directive_locations(self) -> List[NameNode]:
+    def parse_directive_locations(self) -> list[NameNode]:
         """DirectiveLocations"""
         return self.delimited_many(TokenKind.PIPE, self.parse_directive_location)
 
@@ -1086,7 +1088,7 @@ class Parser:
 
     # Core parsing utility functions
 
-    def loc(self, start_token: Token) -> Optional[Location]:
+    def loc(self, start_token: Token) -> Location | None:
         """Return a location object.
 
         Used to identify the place in the source that created a given parsed object.
@@ -1160,7 +1162,7 @@ class Parser:
 
         return False
 
-    def unexpected(self, at_token: Optional[Token] = None) -> GraphQLError:
+    def unexpected(self, at_token: Token | None = None) -> GraphQLError:
         """Create an error when an unexpected lexed token is encountered."""
         token = at_token or self._lexer.token
         return GraphQLSyntaxError(
@@ -1169,7 +1171,7 @@ class Parser:
 
     def any(
         self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
-    ) -> List[T]:
+    ) -> list[T]:
         """Fetch any matching nodes, possibly none.
 
         Returns a possibly empty list of parse nodes, determined by the ``parse_fn``.
@@ -1178,7 +1180,7 @@ class Parser:
         token.
         """
         self.expect_token(open_kind)
-        nodes: List[T] = []
+        nodes: list[T] = []
         append = nodes.append
         expect_optional_token = partial(self.expect_optional_token, close_kind)
         while not expect_optional_token():
@@ -1187,7 +1189,7 @@ class Parser:
 
     def optional_many(
         self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
-    ) -> List[T]:
+    ) -> list[T]:
         """Fetch matching nodes, maybe none.
 
         Returns a list of parse nodes, determined by the ``parse_fn``. It can be empty
@@ -1207,7 +1209,7 @@ class Parser:
 
     def many(
         self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
-    ) -> List[T]:
+    ) -> list[T]:
         """Fetch matching nodes, at least one.
 
         Returns a non-empty list of parse nodes, determined by the ``parse_fn``. This
@@ -1225,7 +1227,7 @@ class Parser:
 
     def delimited_many(
         self, delimiter_kind: TokenKind, parse_fn: Callable[[], T]
-    ) -> List[T]:
+    ) -> list[T]:
         """Fetch many delimited nodes.
 
         Returns a non-empty list of parse nodes, determined by the ``parse_fn``. This
@@ -1235,7 +1237,7 @@ class Parser:
         """
         expect_optional_token = partial(self.expect_optional_token, delimiter_kind)
         expect_optional_token()
-        nodes: List[T] = []
+        nodes: list[T] = []
         append = nodes.append
         while True:
             append(parse_fn())

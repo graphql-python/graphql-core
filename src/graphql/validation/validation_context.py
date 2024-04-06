@@ -1,8 +1,16 @@
 """Validation context"""
 
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
+from __future__ import annotations
 
-from ..error import GraphQLError
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    NamedTuple,
+    Union,
+    cast,
+)
+
 from ..language import (
     DocumentNode,
     FragmentDefinitionNode,
@@ -14,17 +22,20 @@ from ..language import (
     VisitorAction,
     visit,
 )
-from ..type import (
-    GraphQLArgument,
-    GraphQLCompositeType,
-    GraphQLDirective,
-    GraphQLEnumValue,
-    GraphQLField,
-    GraphQLInputType,
-    GraphQLOutputType,
-    GraphQLSchema,
-)
 from ..utilities import TypeInfo, TypeInfoVisitor
+
+if TYPE_CHECKING:
+    from ..error import GraphQLError
+    from ..type import (
+        GraphQLArgument,
+        GraphQLCompositeType,
+        GraphQLDirective,
+        GraphQLEnumValue,
+        GraphQLField,
+        GraphQLInputType,
+        GraphQLOutputType,
+        GraphQLSchema,
+    )
 
 try:
     from typing import TypeAlias
@@ -47,14 +58,14 @@ class VariableUsage(NamedTuple):
     """Variable usage"""
 
     node: VariableNode
-    type: Optional[GraphQLInputType]
+    type: GraphQLInputType | None
     default_value: Any
 
 
 class VariableUsageVisitor(Visitor):
     """Visitor adding all variable usages to a given list."""
 
-    usages: List[VariableUsage]
+    usages: list[VariableUsage]
 
     def __init__(self, type_info: TypeInfo) -> None:
         super().__init__()
@@ -84,10 +95,10 @@ class ASTValidationContext:
 
     document: DocumentNode
 
-    _fragments: Optional[Dict[str, FragmentDefinitionNode]]
-    _fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]]
-    _recursively_referenced_fragments: Dict[
-        OperationDefinitionNode, List[FragmentDefinitionNode]
+    _fragments: dict[str, FragmentDefinitionNode] | None
+    _fragment_spreads: dict[SelectionSetNode, list[FragmentSpreadNode]]
+    _recursively_referenced_fragments: dict[
+        OperationDefinitionNode, list[FragmentDefinitionNode]
     ]
 
     def __init__(
@@ -105,7 +116,7 @@ class ASTValidationContext:
     def report_error(self, error: GraphQLError) -> None:
         self.on_error(error)
 
-    def get_fragment(self, name: str) -> Optional[FragmentDefinitionNode]:
+    def get_fragment(self, name: str) -> FragmentDefinitionNode | None:
         fragments = self._fragments
         if fragments is None:
             fragments = {
@@ -117,7 +128,7 @@ class ASTValidationContext:
             self._fragments = fragments
         return fragments.get(name)
 
-    def get_fragment_spreads(self, node: SelectionSetNode) -> List[FragmentSpreadNode]:
+    def get_fragment_spreads(self, node: SelectionSetNode) -> list[FragmentSpreadNode]:
         spreads = self._fragment_spreads.get(node)
         if spreads is None:
             spreads = []
@@ -141,12 +152,12 @@ class ASTValidationContext:
 
     def get_recursively_referenced_fragments(
         self, operation: OperationDefinitionNode
-    ) -> List[FragmentDefinitionNode]:
+    ) -> list[FragmentDefinitionNode]:
         fragments = self._recursively_referenced_fragments.get(operation)
         if fragments is None:
             fragments = []
             append_fragment = fragments.append
-            collected_names: Set[str] = set()
+            collected_names: set[str] = set()
             add_name = collected_names.add
             nodes_to_visit = [operation.selection_set]
             append_node = nodes_to_visit.append
@@ -175,12 +186,12 @@ class SDLValidationContext(ASTValidationContext):
     rule.
     """
 
-    schema: Optional[GraphQLSchema]
+    schema: GraphQLSchema | None
 
     def __init__(
         self,
         ast: DocumentNode,
-        schema: Optional[GraphQLSchema],
+        schema: GraphQLSchema | None,
         on_error: Callable[[GraphQLError], None],
     ) -> None:
         super().__init__(ast, on_error)
@@ -198,8 +209,8 @@ class ValidationContext(ASTValidationContext):
     schema: GraphQLSchema
 
     _type_info: TypeInfo
-    _variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]]
-    _recursive_variable_usages: Dict[OperationDefinitionNode, List[VariableUsage]]
+    _variable_usages: dict[NodeWithSelectionSet, list[VariableUsage]]
+    _recursive_variable_usages: dict[OperationDefinitionNode, list[VariableUsage]]
 
     def __init__(
         self,
@@ -214,7 +225,7 @@ class ValidationContext(ASTValidationContext):
         self._variable_usages = {}
         self._recursive_variable_usages = {}
 
-    def get_variable_usages(self, node: NodeWithSelectionSet) -> List[VariableUsage]:
+    def get_variable_usages(self, node: NodeWithSelectionSet) -> list[VariableUsage]:
         usages = self._variable_usages.get(node)
         if usages is None:
             usage_visitor = VariableUsageVisitor(self._type_info)
@@ -225,7 +236,7 @@ class ValidationContext(ASTValidationContext):
 
     def get_recursive_variable_usages(
         self, operation: OperationDefinitionNode
-    ) -> List[VariableUsage]:
+    ) -> list[VariableUsage]:
         usages = self._recursive_variable_usages.get(operation)
         if usages is None:
             get_variable_usages = self.get_variable_usages
@@ -235,26 +246,26 @@ class ValidationContext(ASTValidationContext):
             self._recursive_variable_usages[operation] = usages
         return usages
 
-    def get_type(self) -> Optional[GraphQLOutputType]:
+    def get_type(self) -> GraphQLOutputType | None:
         return self._type_info.get_type()
 
-    def get_parent_type(self) -> Optional[GraphQLCompositeType]:
+    def get_parent_type(self) -> GraphQLCompositeType | None:
         return self._type_info.get_parent_type()
 
-    def get_input_type(self) -> Optional[GraphQLInputType]:
+    def get_input_type(self) -> GraphQLInputType | None:
         return self._type_info.get_input_type()
 
-    def get_parent_input_type(self) -> Optional[GraphQLInputType]:
+    def get_parent_input_type(self) -> GraphQLInputType | None:
         return self._type_info.get_parent_input_type()
 
-    def get_field_def(self) -> Optional[GraphQLField]:
+    def get_field_def(self) -> GraphQLField | None:
         return self._type_info.get_field_def()
 
-    def get_directive(self) -> Optional[GraphQLDirective]:
+    def get_directive(self) -> GraphQLDirective | None:
         return self._type_info.get_directive()
 
-    def get_argument(self) -> Optional[GraphQLArgument]:
+    def get_argument(self) -> GraphQLArgument | None:
         return self._type_info.get_argument()
 
-    def get_enum_value(self) -> Optional[GraphQLEnumValue]:
+    def get_enum_value(self) -> GraphQLEnumValue | None:
         return self._type_info.get_enum_value()

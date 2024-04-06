@@ -1,5 +1,7 @@
 """AST Visitor"""
 
+from __future__ import annotations
+
 from copy import copy
 from enum import Enum
 from typing import (
@@ -7,11 +9,9 @@ from typing import (
     Callable,
     Collection,
     Dict,
-    List,
     NamedTuple,
     Optional,
     Tuple,
-    Union,
 )
 
 from ..pyutils import inspect, snake_to_camel
@@ -64,8 +64,8 @@ VisitorKeyMap: TypeAlias = Dict[str, Tuple[str, ...]]
 class EnterLeaveVisitor(NamedTuple):
     """Visitor with functions for entering and leaving."""
 
-    enter: Optional[Callable[..., Optional[VisitorAction]]]
-    leave: Optional[Callable[..., Optional[VisitorAction]]]
+    enter: Callable[..., VisitorAction | None] | None
+    leave: Callable[..., VisitorAction | None] | None
 
 
 class Visitor:
@@ -112,7 +112,7 @@ class Visitor:
     # Provide special return values as attributes
     BREAK, SKIP, REMOVE, IDLE = BREAK, SKIP, REMOVE, IDLE
 
-    enter_leave_map: Dict[str, EnterLeaveVisitor]
+    enter_leave_map: dict[str, EnterLeaveVisitor]
 
     def __init_subclass__(cls) -> None:
         """Verify that all defined handlers are valid."""
@@ -122,7 +122,7 @@ class Visitor:
                 continue
             attr_kind = attr.split("_", 1)
             if len(attr_kind) < 2:
-                kind: Optional[str] = None
+                kind: str | None = None
             else:
                 attr, kind = attr_kind  # noqa: PLW2901
             if attr in ("enter", "leave") and kind:
@@ -160,13 +160,13 @@ class Stack(NamedTuple):
 
     in_array: bool
     idx: int
-    keys: Tuple[Node, ...]
-    edits: List[Tuple[Union[int, str], Node]]
+    keys: tuple[Node, ...]
+    edits: list[tuple[int | str, Node]]
     prev: Any  # 'Stack' (python/mypy/issues/731)
 
 
 def visit(
-    root: Node, visitor: Visitor, visitor_keys: Optional[VisitorKeyMap] = None
+    root: Node, visitor: Visitor, visitor_keys: VisitorKeyMap | None = None
 ) -> Any:
     """Visit each node in an AST.
 
@@ -197,16 +197,16 @@ def visit(
 
     stack: Any = None
     in_array = False
-    keys: Tuple[Node, ...] = (root,)
+    keys: tuple[Node, ...] = (root,)
     idx = -1
-    edits: List[Any] = []
+    edits: list[Any] = []
     node: Any = root
     key: Any = None
     parent: Any = None
-    path: List[Any] = []
+    path: list[Any] = []
     path_append = path.append
     path_pop = path.pop
-    ancestors: List[Any] = []
+    ancestors: list[Any] = []
     ancestors_append = ancestors.append
     ancestors_pop = ancestors.pop
 
@@ -317,7 +317,7 @@ class ParallelVisitor(Visitor):
         """Create a new visitor from the given list of parallel visitors."""
         super().__init__()
         self.visitors = visitors
-        self.skipping: List[Any] = [None] * len(visitors)
+        self.skipping: list[Any] = [None] * len(visitors)
 
     def get_enter_leave_for_kind(self, kind: str) -> EnterLeaveVisitor:
         """Given a node kind, return the EnterLeaveVisitor for that kind."""
@@ -325,8 +325,8 @@ class ParallelVisitor(Visitor):
             return self.enter_leave_map[kind]
         except KeyError:
             has_visitor = False
-            enter_list: List[Optional[Callable[..., Optional[VisitorAction]]]] = []
-            leave_list: List[Optional[Callable[..., Optional[VisitorAction]]]] = []
+            enter_list: list[Callable[..., VisitorAction | None] | None] = []
+            leave_list: list[Callable[..., VisitorAction | None] | None] = []
             for visitor in self.visitors:
                 enter, leave = visitor.get_enter_leave_for_kind(kind)
                 if not has_visitor and (enter or leave):
@@ -336,7 +336,7 @@ class ParallelVisitor(Visitor):
 
             if has_visitor:
 
-                def enter(node: Node, *args: Any) -> Optional[VisitorAction]:
+                def enter(node: Node, *args: Any) -> VisitorAction | None:
                     skipping = self.skipping
                     for i, fn in enumerate(enter_list):
                         if not skipping[i] and fn:
@@ -349,7 +349,7 @@ class ParallelVisitor(Visitor):
                                 return result
                     return None
 
-                def leave(node: Node, *args: Any) -> Optional[VisitorAction]:
+                def leave(node: Node, *args: Any) -> VisitorAction | None:
                     skipping = self.skipping
                     for i, fn in enumerate(leave_list):
                         if not skipping[i]:

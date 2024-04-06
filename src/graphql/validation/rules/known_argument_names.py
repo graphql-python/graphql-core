@@ -1,6 +1,8 @@
 """Known argument names on directives rule"""
 
-from typing import Any, Dict, List, Union, cast
+from __future__ import annotations
+
+from typing import Any, List, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -25,11 +27,11 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
     For internal use only.
     """
 
-    context: Union[ValidationContext, SDLValidationContext]
+    context: ValidationContext | SDLValidationContext
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
-        directive_args: Dict[str, List[str]] = {}
+        directive_args: dict[str, list[str]] = {}
 
         schema = context.schema
         defined_directives = schema.directives if schema else specified_directives

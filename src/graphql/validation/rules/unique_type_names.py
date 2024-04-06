@@ -1,6 +1,8 @@
 """Unique type names rule"""
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any
 
 from ...error import GraphQLError
 from ...language import SKIP, NameNode, TypeDefinitionNode, VisitorAction
@@ -17,7 +19,7 @@ class UniqueTypeNamesRule(SDLValidationRule):
 
     def __init__(self, context: SDLValidationContext) -> None:
         super().__init__(context)
-        self.known_type_names: Dict[str, NameNode] = {}
+        self.known_type_names: dict[str, NameNode] = {}
         self.schema = context.schema
 
     def check_type_name(self, node: TypeDefinitionNode, *_args: Any) -> VisitorAction:

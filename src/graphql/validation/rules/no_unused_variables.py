@@ -1,10 +1,14 @@
 """No unused variables rule"""
 
-from typing import Any, List, Set
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import OperationDefinitionNode, VariableDefinitionNode
 from . import ValidationContext, ValidationRule
+
+if TYPE_CHECKING:
+    from ...language import OperationDefinitionNode, VariableDefinitionNode
 
 __all__ = ["NoUnusedVariablesRule"]
 
@@ -20,7 +24,7 @@ class NoUnusedVariablesRule(ValidationRule):
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.variable_defs: List[VariableDefinitionNode] = []
+        self.variable_defs: list[VariableDefinitionNode] = []
 
     def enter_operation_definition(self, *_args: Any) -> None:
         self.variable_defs.clear()
@@ -28,7 +32,7 @@ class NoUnusedVariablesRule(ValidationRule):
     def leave_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
-        variable_name_used: Set[str] = set()
+        variable_name_used: set[str] = set()
         usages = self.context.get_recursive_variable_usages(operation)
 
         for usage in usages:

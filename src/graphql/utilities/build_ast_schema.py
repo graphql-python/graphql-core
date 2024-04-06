@@ -1,6 +1,8 @@
 """GraphQL Schema creation from GraphQL AST"""
 
-from typing import Union, cast
+from __future__ import annotations
+
+from typing import cast
 
 from ..language import DocumentNode, Source, parse
 from ..type import (
@@ -86,7 +88,7 @@ def build_ast_schema(
 
 
 def build_schema(
-    source: Union[str, Source],
+    source: str | Source,
     assume_valid: bool = False,
     assume_valid_sdl: bool = False,
     no_location: bool = False,

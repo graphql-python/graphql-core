@@ -1,6 +1,6 @@
 """GraphQL-core version number"""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 import re
 from typing import NamedTuple

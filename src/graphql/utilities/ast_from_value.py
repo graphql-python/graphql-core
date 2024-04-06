@@ -1,8 +1,10 @@
 """GraphQL AST creation from Python"""
 
+from __future__ import annotations
+
 import re
 from math import isfinite
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 from ..language import (
     BooleanValueNode,
@@ -33,7 +35,7 @@ __all__ = ["ast_from_value"]
 _re_integer_string = re.compile("^-?(?:0|[1-9][0-9]*)$")
 
 
-def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
+def ast_from_value(value: Any, type_: GraphQLInputType) -> ValueNode | None:
     """Produce a GraphQL Value AST given a Python object.
 
     This function will match Python/JSON values to GraphQL AST schema format by using

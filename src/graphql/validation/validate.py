@@ -1,14 +1,18 @@
 """Validation"""
 
-from typing import Collection, List, Optional, Type
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Collection
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
-from .rules import ASTValidationRule
 from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext
+
+if TYPE_CHECKING:
+    from .rules import ASTValidationRule
 
 __all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
 
@@ -25,10 +29,10 @@ validation_aborted_error = ValidationAbortedError(
 def validate(
     schema: GraphQLSchema,
     document_ast: DocumentNode,
-    rules: Optional[Collection[Type[ASTValidationRule]]] = None,
-    max_errors: Optional[int] = None,
-    type_info: Optional[TypeInfo] = None,
-) -> List[GraphQLError]:
+    rules: Collection[type[ASTValidationRule]] | None = None,
+    max_errors: int | None = None,
+    type_info: TypeInfo | None = None,
+) -> list[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
     Validation runs synchronously, returning a list of encountered errors, or an empty
@@ -56,7 +60,7 @@ def validate(
     if rules is None:
         rules = specified_rules
 
-    errors: List[GraphQLError] = []
+    errors: list[GraphQLError] = []
 
     def on_error(error: GraphQLError) -> None:
         if len(errors) >= max_errors:
@@ -79,14 +83,14 @@ def validate(
 
 def validate_sdl(
     document_ast: DocumentNode,
-    schema_to_extend: Optional[GraphQLSchema] = None,
-    rules: Optional[Collection[Type[ASTValidationRule]]] = None,
-) -> List[GraphQLError]:
+    schema_to_extend: GraphQLSchema | None = None,
+    rules: Collection[type[ASTValidationRule]] | None = None,
+) -> list[GraphQLError]:
     """Validate an SDL document.
 
     For internal use only.
     """
-    errors: List[GraphQLError] = []
+    errors: list[GraphQLError] = []
     context = SDLValidationContext(document_ast, schema_to_extend, errors.append)
     if rules is None:
         rules = specified_sdl_rules

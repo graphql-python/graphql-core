@@ -1,6 +1,8 @@
 """Separation of GraphQL operations"""
 
-from typing import Any, Dict, List, Set
+from __future__ import annotations
+
+from typing import Any, Dict, List
 
 from ..language import (
     DocumentNode,
@@ -24,14 +26,14 @@ __all__ = ["separate_operations"]
 DepGraph: TypeAlias = Dict[str, List[str]]
 
 
-def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
+def separate_operations(document_ast: DocumentNode) -> dict[str, DocumentNode]:
     """Separate operations in a given AST document.
 
     This function accepts a single AST document which may contain many operations and
     fragments and returns a collection of AST documents each of which contains a single
     operation as well the fragment definitions it refers to.
     """
-    operations: List[OperationDefinitionNode] = []
+    operations: list[OperationDefinitionNode] = []
     dep_graph: DepGraph = {}
 
     # Populate metadata and build a dependency graph.
@@ -47,9 +49,9 @@ def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
 
     # For each operation, produce a new synthesized AST which includes only what is
     # necessary for completing that operation.
-    separated_document_asts: Dict[str, DocumentNode] = {}
+    separated_document_asts: dict[str, DocumentNode] = {}
     for operation in operations:
-        dependencies: Set[str] = set()
+        dependencies: set[str] = set()
 
         for fragment_name in collect_dependencies(operation.selection_set):
             collect_transitive_dependencies(dependencies, dep_graph, fragment_name)
@@ -75,7 +77,7 @@ def separate_operations(document_ast: DocumentNode) -> Dict[str, DocumentNode]:
 
 
 def collect_transitive_dependencies(
-    collected: Set[str], dep_graph: DepGraph, from_name: str
+    collected: set[str], dep_graph: DepGraph, from_name: str
 ) -> None:
     """Collect transitive dependencies.
 
@@ -92,7 +94,7 @@ def collect_transitive_dependencies(
 
 
 class DependencyCollector(Visitor):
-    dependencies: List[str]
+    dependencies: list[str]
 
     def __init__(self) -> None:
         super().__init__()
@@ -103,7 +105,7 @@ class DependencyCollector(Visitor):
         self.add_dependency(node.name.value)
 
 
-def collect_dependencies(selection_set: SelectionSetNode) -> List[str]:
+def collect_dependencies(selection_set: SelectionSetNode) -> list[str]:
     collector = DependencyCollector()
     visit(selection_set, collector)
     return collector.dependencies

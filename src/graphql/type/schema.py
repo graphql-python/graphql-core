@@ -1,6 +1,6 @@
 """GraphQL schemas"""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from copy import copy, deepcopy
 from typing import (

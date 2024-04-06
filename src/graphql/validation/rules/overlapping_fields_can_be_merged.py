@@ -1,5 +1,7 @@
 """Overlapping fields can be merged rule"""
 
+from __future__ import annotations
+
 from itertools import chain
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
@@ -41,7 +43,7 @@ MYPY = False
 __all__ = ["OverlappingFieldsCanBeMergedRule"]
 
 
-def reason_message(reason: "ConflictReasonMessage") -> str:
+def reason_message(reason: ConflictReasonMessage) -> str:
     if isinstance(reason, list):
         return " and ".join(
             f"subfields '{response_name}' conflict"
@@ -70,7 +72,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # A cache for the "field map" and list of fragment names found in any given
         # selection set. Selection sets may be asked for this information multiple
         # times, so this improves the performance of this validator.
-        self.cached_fields_and_fragment_names: Dict = {}
+        self.cached_fields_and_fragment_names: dict = {}
 
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
         conflicts = find_conflicts_within_selection_set(
@@ -161,11 +163,11 @@ NodeAndDefCollection: TypeAlias = Dict[str, List[NodeAndDef]]
 
 def find_conflicts_within_selection_set(
     context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
-    parent_type: Optional[GraphQLNamedType],
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
+    parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-) -> List[Conflict]:
+) -> list[Conflict]:
     """Find conflicts within selection set.
 
     Find all conflicts found "within" a selection set, including those found via
@@ -173,7 +175,7 @@ def find_conflicts_within_selection_set(
 
     Called when visiting each SelectionSet in the GraphQL Document.
     """
-    conflicts: List[Conflict] = []
+    conflicts: list[Conflict] = []
 
     field_map, fragment_names = get_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, parent_type, selection_set
@@ -222,9 +224,9 @@ def find_conflicts_within_selection_set(
 
 def collect_conflicts_between_fields_and_fragment(
     context: ValidationContext,
-    conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
+    conflicts: list[Conflict],
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
     are_mutually_exclusive: bool,
     field_map: NodeAndDefCollection,
     fragment_name: str,
@@ -283,9 +285,9 @@ def collect_conflicts_between_fields_and_fragment(
 
 def collect_conflicts_between_fragments(
     context: ValidationContext,
-    conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
+    conflicts: list[Conflict],
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
     are_mutually_exclusive: bool,
     fragment_name1: str,
     fragment_name2: str,
@@ -360,21 +362,21 @@ def collect_conflicts_between_fragments(
 
 def find_conflicts_between_sub_selection_sets(
     context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
     are_mutually_exclusive: bool,
-    parent_type1: Optional[GraphQLNamedType],
+    parent_type1: GraphQLNamedType | None,
     selection_set1: SelectionSetNode,
-    parent_type2: Optional[GraphQLNamedType],
+    parent_type2: GraphQLNamedType | None,
     selection_set2: SelectionSetNode,
-) -> List[Conflict]:
+) -> list[Conflict]:
     """Find conflicts between sub selection sets.
 
     Find all conflicts found between two selection sets, including those found via
     spreading in fragments. Called when determining if conflicts exist between the
     sub-fields of two overlapping fields.
     """
-    conflicts: List[Conflict] = []
+    conflicts: list[Conflict] = []
 
     field_map1, fragment_names1 = get_fields_and_fragment_names(
         context, cached_fields_and_fragment_names, parent_type1, selection_set1
@@ -442,9 +444,9 @@ def find_conflicts_between_sub_selection_sets(
 
 def collect_conflicts_within(
     context: ValidationContext,
-    conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
+    conflicts: list[Conflict],
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
     field_map: NodeAndDefCollection,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
@@ -475,9 +477,9 @@ def collect_conflicts_within(
 
 def collect_conflicts_between(
     context: ValidationContext,
-    conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
+    conflicts: list[Conflict],
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
     parent_fields_are_mutually_exclusive: bool,
     field_map1: NodeAndDefCollection,
     field_map2: NodeAndDefCollection,
@@ -514,13 +516,13 @@ def collect_conflicts_between(
 
 def find_conflict(
     context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    compared_fragment_pairs: "PairSet",
+    cached_fields_and_fragment_names: dict,
+    compared_fragment_pairs: PairSet,
     parent_fields_are_mutually_exclusive: bool,
     response_name: str,
     field1: NodeAndDef,
     field2: NodeAndDef,
-) -> Optional[Conflict]:
+) -> Conflict | None:
     """Find conflict.
 
     Determines if there is a conflict between two particular fields, including comparing
@@ -598,7 +600,7 @@ def find_conflict(
 
 
 def same_arguments(
-    node1: Union[FieldNode, DirectiveNode], node2: Union[FieldNode, DirectiveNode]
+    node1: FieldNode | DirectiveNode, node2: FieldNode | DirectiveNode
 ) -> bool:
     args1 = node1.arguments
     args2 = node2.arguments
@@ -629,7 +631,7 @@ def stringify_value(value: ValueNode) -> str:
 
 def get_stream_directive(
     directives: Sequence[DirectiveNode],
-) -> Optional[DirectiveNode]:
+) -> DirectiveNode | None:
     for directive in directives:
         if directive.name.value == "stream":
             return directive
@@ -681,10 +683,10 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
 
 def get_fields_and_fragment_names(
     context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    parent_type: Optional[GraphQLNamedType],
+    cached_fields_and_fragment_names: dict,
+    parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-) -> Tuple[NodeAndDefCollection, List[str]]:
+) -> tuple[NodeAndDefCollection, list[str]]:
     """Get fields and referenced fragment names
 
     Given a selection set, return the collection of fields (a mapping of response name
@@ -694,7 +696,7 @@ def get_fields_and_fragment_names(
     cached = cached_fields_and_fragment_names.get(selection_set)
     if not cached:
         node_and_defs: NodeAndDefCollection = {}
-        fragment_names: Dict[str, bool] = {}
+        fragment_names: dict[str, bool] = {}
         collect_fields_and_fragment_names(
             context, parent_type, selection_set, node_and_defs, fragment_names
         )
@@ -705,9 +707,9 @@ def get_fields_and_fragment_names(
 
 def get_referenced_fields_and_fragment_names(
     context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
+    cached_fields_and_fragment_names: dict,
     fragment: FragmentDefinitionNode,
-) -> Tuple[NodeAndDefCollection, List[str]]:
+) -> tuple[NodeAndDefCollection, list[str]]:
     """Get referenced fields and nested fragment names
 
     Given a reference to a fragment, return the represented collection of fields as well
@@ -726,10 +728,10 @@ def get_referenced_fields_and_fragment_names(
 
 def collect_fields_and_fragment_names(
     context: ValidationContext,
-    parent_type: Optional[GraphQLNamedType],
+    parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
     node_and_defs: NodeAndDefCollection,
-    fragment_names: Dict[str, bool],
+    fragment_names: dict[str, bool],
 ) -> None:
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
@@ -764,8 +766,8 @@ def collect_fields_and_fragment_names(
 
 
 def subfield_conflicts(
-    conflicts: List[Conflict], response_name: str, node1: FieldNode, node2: FieldNode
-) -> Optional[Conflict]:
+    conflicts: list[Conflict], response_name: str, node1: FieldNode, node2: FieldNode
+) -> Conflict | None:
     """Check whether there are conflicts between sub-fields.
 
     Given a series of Conflicts which occurred between two sub-fields, generate a single
@@ -788,7 +790,7 @@ class PairSet:
 
     __slots__ = ("_data",)
 
-    _data: Dict[str, Dict[str, bool]]
+    _data: dict[str, dict[str, bool]]
 
     def __init__(self) -> None:
         self._data = {}

@@ -1,5 +1,7 @@
 """Check whether objects are awaitable"""
 
+from __future__ import annotations
+
 import inspect
 from types import CoroutineType, GeneratorType
 from typing import Any, Awaitable

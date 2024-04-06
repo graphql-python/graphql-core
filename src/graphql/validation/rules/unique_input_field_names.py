@@ -1,10 +1,14 @@
 """Unique input field names rule"""
 
-from typing import Any, Dict, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import NameNode, ObjectFieldNode
 from . import ASTValidationContext, ASTValidationRule
+
+if TYPE_CHECKING:
+    from ...language import NameNode, ObjectFieldNode
 
 __all__ = ["UniqueInputFieldNamesRule"]
 
@@ -20,8 +24,8 @@ class UniqueInputFieldNamesRule(ASTValidationRule):
 
     def __init__(self, context: ASTValidationContext) -> None:
         super().__init__(context)
-        self.known_names_stack: List[Dict[str, NameNode]] = []
-        self.known_names: Dict[str, NameNode] = {}
+        self.known_names_stack: list[dict[str, NameNode]] = []
+        self.known_names: dict[str, NameNode] = {}
 
     def enter_object_value(self, *_args: Any) -> None:
         self.known_names_stack.append(self.known_names)

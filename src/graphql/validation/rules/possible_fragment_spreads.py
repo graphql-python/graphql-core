@@ -1,12 +1,16 @@
 """Possible fragment spread rule"""
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import FragmentSpreadNode, InlineFragmentNode
 from ...type import GraphQLCompositeType, is_composite_type
 from ...utilities import do_types_overlap, type_from_ast
 from . import ValidationRule
+
+if TYPE_CHECKING:
+    from ...language import FragmentSpreadNode, InlineFragmentNode
 
 __all__ = ["PossibleFragmentSpreadsRule"]
 
@@ -54,7 +58,7 @@ class PossibleFragmentSpreadsRule(ValidationRule):
                 )
             )
 
-    def get_fragment_type(self, name: str) -> Optional[GraphQLCompositeType]:
+    def get_fragment_type(self, name: str) -> GraphQLCompositeType | None:
         context = self.context
         frag = context.get_fragment(name)
         if frag:

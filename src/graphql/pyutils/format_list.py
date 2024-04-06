@@ -1,5 +1,7 @@
 """List formatting"""
 
+from __future__ import annotations
+
 from typing import Sequence
 
 __all__ = ["or_list", "and_list"]

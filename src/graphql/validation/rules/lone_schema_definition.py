@@ -1,10 +1,14 @@
 """Lone Schema definition rule"""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import SchemaDefinitionNode
 from . import SDLValidationContext, SDLValidationRule
+
+if TYPE_CHECKING:
+    from ...language import SchemaDefinitionNode
 
 __all__ = ["LoneSchemaDefinitionRule"]
 

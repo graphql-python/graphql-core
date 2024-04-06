@@ -1,6 +1,6 @@
 """Helpers for async iterables"""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from contextlib import AbstractAsyncContextManager
 from typing import (

@@ -1,6 +1,6 @@
 """GraphQL type definitions."""
 
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from enum import Enum
 from typing import (

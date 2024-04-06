@@ -1,6 +1,8 @@
 """Single field subscriptions rule"""
 
-from typing import Any, Dict, cast
+from __future__ import annotations
+
+from typing import Any, cast
 
 from ...error import GraphQLError
 from ...execution.collect_fields import collect_fields
@@ -33,9 +35,9 @@ class SingleFieldSubscriptionsRule(ValidationRule):
         subscription_type = schema.subscription_type
         if subscription_type:
             operation_name = node.name.value if node.name else None
-            variable_values: Dict[str, Any] = {}
+            variable_values: dict[str, Any] = {}
             document = self.context.document
-            fragments: Dict[str, FragmentDefinitionNode] = {
+            fragments: dict[str, FragmentDefinitionNode] = {
                 definition.name.value: definition
                 for definition in document.definitions
                 if isinstance(definition, FragmentDefinitionNode)

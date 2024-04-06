@@ -1,6 +1,8 @@
 """Input value coercion"""
 
-from typing import Any, Callable, Dict, List, Optional, Union, cast
+from __future__ import annotations
+
+from typing import Any, Callable, List, Union, cast
 
 from ..error import GraphQLError
 from ..pyutils import (
@@ -34,7 +36,7 @@ OnErrorCB: TypeAlias = Callable[[List[Union[str, int]], Any, GraphQLError], None
 
 
 def default_on_error(
-    path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
+    path: list[str | int], invalid_value: Any, error: GraphQLError
 ) -> None:
     error_prefix = "Invalid value " + inspect(invalid_value)
     if path:
@@ -47,7 +49,7 @@ def coerce_input_value(
     input_value: Any,
     type_: GraphQLInputType,
     on_error: OnErrorCB = default_on_error,
-    path: Optional[Path] = None,
+    path: Path | None = None,
 ) -> Any:
     """Coerce a Python value given a GraphQL Input Type."""
     if is_non_null_type(type_):
@@ -69,7 +71,7 @@ def coerce_input_value(
     if is_list_type(type_):
         item_type = type_.of_type
         if is_iterable(input_value):
-            coerced_list: List[Any] = []
+            coerced_list: list[Any] = []
             append_item = coerced_list.append
             for index, item_value in enumerate(input_value):
                 append_item(
@@ -90,7 +92,7 @@ def coerce_input_value(
             )
             return Undefined
 
-        coerced_dict: Dict[str, Any] = {}
+        coerced_dict: dict[str, Any] = {}
         fields = type_.fields
 
         for field_name, field in fields.items():

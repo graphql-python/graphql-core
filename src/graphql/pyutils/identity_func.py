@@ -1,5 +1,7 @@
 """Identity function"""
 
+from __future__ import annotations
+
 from typing import Any, TypeVar, cast
 
 from .undefined import Undefined

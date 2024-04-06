@@ -1,6 +1,8 @@
 """Defer stream directive on valid operations rule"""
 
-from typing import Any, List, Set
+from __future__ import annotations
+
+from typing import Any
 
 from ...error import GraphQLError
 from ...language import (
@@ -39,7 +41,7 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.fragments_used_on_subscriptions: Set[str] = set()
+        self.fragments_used_on_subscriptions: set[str] = set()
 
     def enter_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
@@ -55,7 +57,7 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
         _key: Any,
         _parent: Any,
         _path: Any,
-        ancestors: List[Node],
+        ancestors: list[Node],
     ) -> None:
         try:
             definition_node = ancestors[2]

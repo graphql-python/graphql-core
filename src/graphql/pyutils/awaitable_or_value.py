@@ -1,5 +1,7 @@
 """Awaitable or value type"""
 
+from __future__ import annotations
+
 from typing import Awaitable, TypeVar, Union
 
 try:

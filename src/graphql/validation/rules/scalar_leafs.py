@@ -1,11 +1,15 @@
 """Scalar leafs rule"""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from ...language import FieldNode
 from ...type import get_named_type, is_leaf_type
 from . import ValidationRule
+
+if TYPE_CHECKING:
+    from ...language import FieldNode
 
 __all__ = ["ScalarLeafsRule"]
 

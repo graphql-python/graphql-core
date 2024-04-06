@@ -1,7 +1,9 @@
 """Find breaking changes between GraphQL schemas"""
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import Any, Collection, Dict, List, NamedTuple, Union
+from typing import Any, Collection, NamedTuple, Union
 
 from ..language import print_ast
 from ..pyutils import Undefined, inspect
@@ -99,7 +101,7 @@ Change: TypeAlias = Union[BreakingChange, DangerousChange]
 
 def find_breaking_changes(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
-) -> List[BreakingChange]:
+) -> list[BreakingChange]:
     """Find breaking changes.
 
     Given two schemas, returns a list containing descriptions of all the types of
@@ -114,7 +116,7 @@ def find_breaking_changes(
 
 def find_dangerous_changes(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
-) -> List[DangerousChange]:
+) -> list[DangerousChange]:
     """Find dangerous changes.
 
     Given two schemas, returns a list containing descriptions of all the types of
@@ -129,7 +131,7 @@ def find_dangerous_changes(
 
 def find_schema_changes(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
-) -> List[Change]:
+) -> list[Change]:
     return find_type_changes(old_schema, new_schema) + find_directive_changes(
         old_schema, new_schema
     )
@@ -137,8 +139,8 @@ def find_schema_changes(
 
 def find_directive_changes(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
-) -> List[Change]:
-    schema_changes: List[Change] = []
+) -> list[Change]:
+    schema_changes: list[Change] = []
 
     directives_diff = list_diff(old_schema.directives, new_schema.directives)
 
@@ -192,8 +194,8 @@ def find_directive_changes(
 
 def find_type_changes(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
-) -> List[Change]:
-    schema_changes: List[Change] = []
+) -> list[Change]:
+    schema_changes: list[Change] = []
     types_diff = dict_diff(old_schema.type_map, new_schema.type_map)
 
     for type_name, old_type in types_diff.removed.items():
@@ -239,8 +241,8 @@ def find_type_changes(
 def find_input_object_type_changes(
     old_type: GraphQLInputObjectType,
     new_type: GraphQLInputObjectType,
-) -> List[Change]:
-    schema_changes: List[Change] = []
+) -> list[Change]:
+    schema_changes: list[Change] = []
     fields_diff = dict_diff(old_type.fields, new_type.fields)
 
     for field_name, new_field in fields_diff.added.items():
@@ -287,8 +289,8 @@ def find_input_object_type_changes(
 
 def find_union_type_changes(
     old_type: GraphQLUnionType, new_type: GraphQLUnionType
-) -> List[Change]:
-    schema_changes: List[Change] = []
+) -> list[Change]:
+    schema_changes: list[Change] = []
     possible_types_diff = list_diff(old_type.types, new_type.types)
 
     for possible_type in possible_types_diff.added:
@@ -312,8 +314,8 @@ def find_union_type_changes(
 
 def find_enum_type_changes(
     old_type: GraphQLEnumType, new_type: GraphQLEnumType
-) -> List[Change]:
-    schema_changes: List[Change] = []
+) -> list[Change]:
+    schema_changes: list[Change] = []
     values_diff = dict_diff(old_type.values, new_type.values)
 
     for value_name in values_diff.added:
@@ -336,10 +338,10 @@ def find_enum_type_changes(
 
 
 def find_implemented_interfaces_changes(
-    old_type: Union[GraphQLObjectType, GraphQLInterfaceType],
-    new_type: Union[GraphQLObjectType, GraphQLInterfaceType],
-) -> List[Change]:
-    schema_changes: List[Change] = []
+    old_type: GraphQLObjectType | GraphQLInterfaceType,
+    new_type: GraphQLObjectType | GraphQLInterfaceType,
+) -> list[Change]:
+    schema_changes: list[Change] = []
     interfaces_diff = list_diff(old_type.interfaces, new_type.interfaces)
 
     for interface in interfaces_diff.added:
@@ -362,10 +364,10 @@ def find_implemented_interfaces_changes(
 
 
 def find_field_changes(
-    old_type: Union[GraphQLObjectType, GraphQLInterfaceType],
-    new_type: Union[GraphQLObjectType, GraphQLInterfaceType],
-) -> List[Change]:
-    schema_changes: List[Change] = []
+    old_type: GraphQLObjectType | GraphQLInterfaceType,
+    new_type: GraphQLObjectType | GraphQLInterfaceType,
+) -> list[Change]:
+    schema_changes: list[Change] = []
     fields_diff = dict_diff(old_type.fields, new_type.fields)
 
     for field_name in fields_diff.removed:
@@ -396,12 +398,12 @@ def find_field_changes(
 
 
 def find_arg_changes(
-    old_type: Union[GraphQLObjectType, GraphQLInterfaceType],
+    old_type: GraphQLObjectType | GraphQLInterfaceType,
     field_name: str,
     old_field: GraphQLField,
     new_field: GraphQLField,
-) -> List[Change]:
-    schema_changes: List[Change] = []
+) -> list[Change]:
+    schema_changes: list[Change] = []
     args_diff = dict_diff(old_field.args, new_field.args)
 
     for arg_name in args_diff.removed:
@@ -578,9 +580,9 @@ def stringify_value(value: Any, type_: GraphQLInputType) -> str:
 class ListDiff(NamedTuple):
     """Tuple with added, removed and persisted list items."""
 
-    added: List
-    removed: List
-    persisted: List
+    added: list
+    removed: list
+    persisted: list
 
 
 def list_diff(old_list: Collection, new_list: Collection) -> ListDiff:
@@ -609,12 +611,12 @@ def list_diff(old_list: Collection, new_list: Collection) -> ListDiff:
 class DictDiff(NamedTuple):
     """Tuple with added, removed and persisted dict entries."""
 
-    added: Dict
-    removed: Dict
-    persisted: Dict
+    added: dict
+    removed: dict
+    persisted: dict
 
 
-def dict_diff(old_dict: Dict, new_dict: Dict) -> DictDiff:
+def dict_diff(old_dict: dict, new_dict: dict) -> DictDiff:
     """Get differences between two dicts."""
     added = {}
     removed = {}

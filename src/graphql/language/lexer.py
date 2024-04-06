@@ -1,13 +1,17 @@
 """GraphQL Lexer"""
 
-from typing import List, NamedTuple, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, NamedTuple
 
 from ..error import GraphQLSyntaxError
 from .ast import Token
 from .block_string import dedent_block_string_lines
 from .character_classes import is_digit, is_name_continue, is_name_start
-from .source import Source
 from .token_kind import TokenKind
+
+if TYPE_CHECKING:
+    from .source import Source
 
 __all__ = ["Lexer", "is_punctuator_token_kind"]
 
@@ -84,7 +88,7 @@ class Lexer:
         return f"U+{point:04X}"
 
     def create_token(
-        self, kind: TokenKind, start: int, end: int, value: Optional[str] = None
+        self, kind: TokenKind, start: int, end: int, value: str | None = None
     ) -> Token:
         """Create a token with line and column location information."""
         line = self.line
@@ -265,7 +269,7 @@ class Lexer:
         body_length = len(body)
         position = start + 1
         chunk_start = position
-        value: List[str] = []
+        value: list[str] = []
         append = value.append
 
         while position < body_length:

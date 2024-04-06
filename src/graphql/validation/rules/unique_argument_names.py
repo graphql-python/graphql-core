@@ -1,12 +1,16 @@
 """Unique argument names rule"""
 
+from __future__ import annotations
+
 from operator import attrgetter
-from typing import Any, Collection
+from typing import TYPE_CHECKING, Any, Collection
 
 from ...error import GraphQLError
-from ...language import ArgumentNode, DirectiveNode, FieldNode
 from ...pyutils import group_by
 from . import ASTValidationRule
+
+if TYPE_CHECKING:
+    from ...language import ArgumentNode, DirectiveNode, FieldNode
 
 __all__ = ["UniqueArgumentNamesRule"]
 

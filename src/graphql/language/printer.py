@@ -1,11 +1,15 @@
 """Print AST"""
 
-from typing import Any, Collection, Optional
+from __future__ import annotations
 
-from ..language.ast import Node, OperationType
+from typing import TYPE_CHECKING, Any, Collection
+
 from .block_string import print_block_string
 from .print_string import print_string
 from .visitor import Visitor, visit
+
+if TYPE_CHECKING:
+    from ..language.ast import Node, OperationType
 
 try:
     from typing import TypeAlias
@@ -414,7 +418,7 @@ class PrintAstVisitor(Visitor):
         )
 
 
-def join(strings: Optional[Strings], separator: str = "") -> str:
+def join(strings: Strings | None, separator: str = "") -> str:
     """Join strings in a given collection.
 
     Return an empty string if it is None or empty, otherwise join all items together
@@ -423,7 +427,7 @@ def join(strings: Optional[Strings], separator: str = "") -> str:
     return separator.join(s for s in strings if s) if strings else ""
 
 
-def block(strings: Optional[Strings]) -> str:
+def block(strings: Strings | None) -> str:
     """Return strings inside a block.
 
     Given a collection of strings, return a string with each item on its own line,
@@ -432,7 +436,7 @@ def block(strings: Optional[Strings]) -> str:
     return wrap("{\n", indent(join(strings, "\n")), "\n}")
 
 
-def wrap(start: str, string: Optional[str], end: str = "") -> str:
+def wrap(start: str, string: str | None, end: str = "") -> str:
     """Wrap string inside other strings at start and end.
 
     If the string is not None or empty, then wrap with start and end, otherwise return
@@ -455,6 +459,6 @@ def is_multiline(string: str) -> bool:
     return "\n" in string
 
 
-def has_multiline_items(strings: Optional[Strings]) -> bool:
+def has_multiline_items(strings: Strings | None) -> bool:
     """Check whether one of the items in the list has multiple lines."""
     return any(is_multiline(item) for item in strings) if strings else False

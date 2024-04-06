@@ -1,6 +1,8 @@
 """Known directives rule"""
 
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from __future__ import annotations
+
+from typing import Any, List, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -25,11 +27,11 @@ class KnownDirectivesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Directives-Are-Defined
     """
 
-    context: Union[ValidationContext, SDLValidationContext]
+    context: ValidationContext | SDLValidationContext
 
-    def __init__(self, context: Union[ValidationContext, SDLValidationContext]) -> None:
+    def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
-        locations_map: Dict[str, Tuple[DirectiveLocation, ...]] = {}
+        locations_map: dict[str, tuple[DirectiveLocation, ...]] = {}
 
         schema = context.schema
         defined_directives = (
@@ -51,7 +53,7 @@ class KnownDirectivesRule(ASTValidationRule):
         _key: Any,
         _parent: Any,
         _path: Any,
-        ancestors: List[Node],
+        ancestors: list[Node],
     ) -> None:
         name = node.name.value
         locations = self.locations_map.get(name)
@@ -101,8 +103,8 @@ _directive_location = {
 
 
 def get_directive_location_for_ast_path(
-    ancestors: List[Node],
-) -> Optional[DirectiveLocation]:
+    ancestors: list[Node],
+) -> DirectiveLocation | None:
     applied_to = ancestors[-1]
     if not isinstance(applied_to, Node):  # pragma: no cover
         msg = "Unexpected error in directive."

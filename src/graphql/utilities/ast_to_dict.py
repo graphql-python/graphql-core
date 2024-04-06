@@ -1,6 +1,8 @@
 """Python dictionary creation from GraphQL AST"""
 
-from typing import Any, Collection, Dict, List, Optional, overload
+from __future__ import annotations
+
+from typing import Any, Collection, overload
 
 from ..language import Node, OperationType
 from ..pyutils import is_iterable
@@ -10,8 +12,8 @@ __all__ = ["ast_to_dict"]
 
 @overload
 def ast_to_dict(
-    node: Node, locations: bool = False, cache: Optional[Dict[Node, Any]] = None
-) -> Dict:
+    node: Node, locations: bool = False, cache: dict[Node, Any] | None = None
+) -> dict:
     ...
 
 
@@ -19,8 +21,8 @@ def ast_to_dict(
 def ast_to_dict(
     node: Collection[Node],
     locations: bool = False,
-    cache: Optional[Dict[Node, Any]] = None,
-) -> List[Node]:
+    cache: dict[Node, Any] | None = None,
+) -> list[Node]:
     ...
 
 
@@ -28,13 +30,13 @@ def ast_to_dict(
 def ast_to_dict(
     node: OperationType,
     locations: bool = False,
-    cache: Optional[Dict[Node, Any]] = None,
+    cache: dict[Node, Any] | None = None,
 ) -> str:
     ...
 
 
 def ast_to_dict(
-    node: Any, locations: bool = False, cache: Optional[Dict[Node, Any]] = None
+    node: Any, locations: bool = False, cache: dict[Node, Any] | None = None
 ) -> Any:
     """Convert a language AST to a nested Python dictionary.
 

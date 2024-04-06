@@ -1,6 +1,8 @@
 """Helpers for handling values"""
 
-from typing import Any, Callable, Collection, Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Callable, Collection, Dict, List, Union
 
 from ..error import GraphQLError
 from ..language import (
@@ -44,8 +46,8 @@ CoercedVariableValues: TypeAlias = Union[List[GraphQLError], Dict[str, Any]]
 def get_variable_values(
     schema: GraphQLSchema,
     var_def_nodes: Collection[VariableDefinitionNode],
-    inputs: Dict[str, Any],
-    max_errors: Optional[int] = None,
+    inputs: dict[str, Any],
+    max_errors: int | None = None,
 ) -> CoercedVariableValues:
     """Get coerced variable values based on provided definitions.
 
@@ -53,7 +55,7 @@ def get_variable_values(
     variable definitions and arbitrary input. If the input cannot be parsed to match
     the variable definitions, a GraphQLError will be raised.
     """
-    errors: List[GraphQLError] = []
+    errors: list[GraphQLError] = []
 
     def on_error(error: GraphQLError) -> None:
         if max_errors is not None and len(errors) >= max_errors:
@@ -77,10 +79,10 @@ def get_variable_values(
 def coerce_variable_values(
     schema: GraphQLSchema,
     var_def_nodes: Collection[VariableDefinitionNode],
-    inputs: Dict[str, Any],
+    inputs: dict[str, Any],
     on_error: Callable[[GraphQLError], None],
-) -> Dict[str, Any]:
-    coerced_values: Dict[str, Any] = {}
+) -> dict[str, Any]:
+    coerced_values: dict[str, Any] = {}
     for var_def_node in var_def_nodes:
         var_name = var_def_node.variable.name.value
         var_type = type_from_ast(schema, var_def_node.type)
@@ -126,7 +128,7 @@ def coerce_variable_values(
             continue
 
         def on_input_value_error(
-            path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
+            path: list[str | int], invalid_value: Any, error: GraphQLError
         ) -> None:
             invalid_str = inspect(invalid_value)
             prefix = f"Variable '${var_name}' got invalid value {invalid_str}"  # noqa: B023
@@ -148,16 +150,16 @@ def coerce_variable_values(
 
 
 def get_argument_values(
-    type_def: Union[GraphQLField, GraphQLDirective],
-    node: Union[FieldNode, DirectiveNode],
-    variable_values: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    type_def: GraphQLField | GraphQLDirective,
+    node: FieldNode | DirectiveNode,
+    variable_values: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
 
     Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
     """
-    coerced_values: Dict[str, Any] = {}
+    coerced_values: dict[str, Any] = {}
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}
 
     for name, arg_def in type_def.args.items():
@@ -224,8 +226,8 @@ NodeWithDirective: TypeAlias = Union[
 def get_directive_values(
     directive_def: GraphQLDirective,
     node: NodeWithDirective,
-    variable_values: Optional[Dict[str, Any]] = None,
-) -> Optional[Dict[str, Any]]:
+    variable_values: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
     """Get coerced argument values based on provided nodes.
 
     Prepares a dict of argument values given a directive definition and an AST node

@@ -1,7 +1,9 @@
 """GraphQL Error"""
 
+from __future__ import annotations
+
 from sys import exc_info
-from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Collection, Dict
 
 try:
     from typing import TypedDict
@@ -39,12 +41,12 @@ class GraphQLFormattedError(TypedDict, total=False):
     message: str
     # If an error can be associated to a particular point in the requested
     # GraphQL document, it should contain a list of locations.
-    locations: List["FormattedSourceLocation"]
+    locations: list[FormattedSourceLocation]
     # If an error can be associated to a particular field in the GraphQL result,
     # it _must_ contain an entry with the key `path` that details the path of
     # the response field which experienced the error. This allows clients to
     # identify whether a null result is intentional or caused by a runtime error.
-    path: List[Union[str, int]]
+    path: list[str | int]
     # Reserved for implementors to extend the protocol however they see fit,
     # and hence there are no additional restrictions on its contents.
     extensions: GraphQLErrorExtensions
@@ -62,7 +64,7 @@ class GraphQLError(Exception):
     message: str
     """A message describing the Error for debugging purposes"""
 
-    locations: Optional[List["SourceLocation"]]
+    locations: list[SourceLocation] | None
     """Source locations
 
     A list of (line, column) locations within the source GraphQL document which
@@ -73,7 +75,7 @@ class GraphQLError(Exception):
     the field which produced the error.
     """
 
-    path: Optional[List[Union[str, int]]]
+    path: list[str | int] | None
     """
 
     A list of field names and array indexes describing the JSON-path into the execution
@@ -82,27 +84,27 @@ class GraphQLError(Exception):
     Only included for errors during execution.
     """
 
-    nodes: Optional[List["Node"]]
+    nodes: list[Node] | None
     """A list of GraphQL AST Nodes corresponding to this error"""
 
-    source: Optional["Source"]
+    source: Source | None
     """The source GraphQL document for the first location of this error
 
     Note that if this Error represents more than one node, the source may not represent
     nodes after the first node.
     """
 
-    positions: Optional[Collection[int]]
+    positions: Collection[int] | None
     """Error positions
 
     A list of character offsets within the source GraphQL document which correspond
     to this error.
     """
 
-    original_error: Optional[Exception]
+    original_error: Exception | None
     """The original error thrown from a field resolver during execution"""
 
-    extensions: Optional[GraphQLErrorExtensions]
+    extensions: GraphQLErrorExtensions | None
     """Extension fields to add to the formatted error"""
 
     __slots__ = (
@@ -121,12 +123,12 @@ class GraphQLError(Exception):
     def __init__(
         self,
         message: str,
-        nodes: Union[Collection["Node"], "Node", None] = None,
-        source: Optional["Source"] = None,
-        positions: Optional[Collection[int]] = None,
-        path: Optional[Collection[Union[str, int]]] = None,
-        original_error: Optional[Exception] = None,
-        extensions: Optional[GraphQLErrorExtensions] = None,
+        nodes: Collection[Node] | Node | None = None,
+        source: Source | None = None,
+        positions: Collection[int] | None = None,
+        path: Collection[str | int] | None = None,
+        original_error: Exception | None = None,
+        extensions: GraphQLErrorExtensions | None = None,
     ) -> None:
         """Initialize a GraphQLError."""
         super().__init__(message)
@@ -155,7 +157,7 @@ class GraphQLError(Exception):
             positions = [loc.start for loc in node_locations]
         self.positions = positions or None
         if positions and source:
-            locations: Optional[List[SourceLocation]] = [
+            locations: list[SourceLocation] | None = [
                 source.get_location(pos) for pos in positions
             ]
         else:

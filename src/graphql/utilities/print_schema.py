@@ -1,6 +1,8 @@
 """Printing GraphQL Schemas in SDL format"""
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Any, Callable
 
 from ..language import StringValueNode, print_ast
 from ..language.block_string import is_printable_as_block_string
@@ -68,7 +70,7 @@ def print_filtered_schema(
     )
 
 
-def print_schema_definition(schema: GraphQLSchema) -> Optional[str]:
+def print_schema_definition(schema: GraphQLSchema) -> str | None:
     """Print GraphQL schema definitions."""
     query_type = schema.query_type
     mutation_type = schema.mutation_type
@@ -155,7 +157,7 @@ def print_scalar(type_: GraphQLScalarType) -> str:
 
 
 def print_implemented_interfaces(
-    type_: Union[GraphQLObjectType, GraphQLInterfaceType],
+    type_: GraphQLObjectType | GraphQLInterfaceType,
 ) -> str:
     """Print the interfaces implemented by a GraphQL object or interface type."""
     interfaces = type_.interfaces
@@ -209,7 +211,7 @@ def print_input_object(type_: GraphQLInputObjectType) -> str:
     return print_description(type_) + f"input {type_.name}" + print_block(fields)
 
 
-def print_fields(type_: Union[GraphQLObjectType, GraphQLInterfaceType]) -> str:
+def print_fields(type_: GraphQLObjectType | GraphQLInterfaceType) -> str:
     """Print the fields of a GraphQL object or interface type."""
     fields = [
         print_description(field, "  ", not i)
@@ -222,12 +224,12 @@ def print_fields(type_: Union[GraphQLObjectType, GraphQLInterfaceType]) -> str:
     return print_block(fields)
 
 
-def print_block(items: List[str]) -> str:
+def print_block(items: list[str]) -> str:
     """Print a block with the given items."""
     return " {\n" + "\n".join(items) + "\n}" if items else ""
 
 
-def print_args(args: Dict[str, GraphQLArgument], indentation: str = "") -> str:
+def print_args(args: dict[str, GraphQLArgument], indentation: str = "") -> str:
     """Print the given GraphQL arguments."""
     if not args:
         return ""
@@ -273,7 +275,7 @@ def print_directive(directive: GraphQLDirective) -> str:
     )
 
 
-def print_deprecated(reason: Optional[str]) -> str:
+def print_deprecated(reason: str | None) -> str:
     """Print a deprecation reason."""
     if reason is None:
         return ""
@@ -292,13 +294,11 @@ def print_specified_by_url(scalar: GraphQLScalarType) -> str:
 
 
 def print_description(
-    def_: Union[
-        GraphQLArgument,
-        GraphQLDirective,
-        GraphQLEnumValue,
-        GraphQLNamedType,
-        GraphQLSchema,
-    ],
+    def_: GraphQLArgument
+    | GraphQLDirective
+    | GraphQLEnumValue
+    | GraphQLNamedType
+    | GraphQLSchema,
     indentation: str = "",
     first_in_block: bool = True,
 ) -> str:

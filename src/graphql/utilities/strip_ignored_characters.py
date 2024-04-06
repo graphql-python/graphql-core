@@ -1,6 +1,8 @@
 """Removal of insignificant characters"""
 
-from typing import Union, cast
+from __future__ import annotations
+
+from typing import cast
 
 from ..language import Lexer, TokenKind
 from ..language.block_string import print_block_string
@@ -10,7 +12,7 @@ from ..language.source import Source, is_source
 __all__ = ["strip_ignored_characters"]
 
 
-def strip_ignored_characters(source: Union[str, Source]) -> str:
+def strip_ignored_characters(source: str | Source) -> str:
     '''Strip characters that are ignored anyway.
 
     Strips characters that are not significant to the validity or execution

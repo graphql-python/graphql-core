@@ -1,4 +1,4 @@
-from __future__ import annotations  # Python < 3.10
+from __future__ import annotations
 
 from graphql.execution import execute_sync
 from graphql.language import parse

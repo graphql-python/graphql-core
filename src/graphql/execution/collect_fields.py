@@ -1,7 +1,9 @@
 """Collect fields"""
 
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Union
+from typing import Any, NamedTuple
 
 from ..language import (
     FieldNode,
@@ -29,21 +31,21 @@ __all__ = ["collect_fields", "collect_subfields", "FieldsAndPatches"]
 class PatchFields(NamedTuple):
     """Optionally labelled set of fields to be used as a patch."""
 
-    label: Optional[str]
-    fields: Dict[str, List[FieldNode]]
+    label: str | None
+    fields: dict[str, list[FieldNode]]
 
 
 class FieldsAndPatches(NamedTuple):
     """Tuple of collected fields and patches to be applied."""
 
-    fields: Dict[str, List[FieldNode]]
-    patches: List[PatchFields]
+    fields: dict[str, list[FieldNode]]
+    patches: list[PatchFields]
 
 
 def collect_fields(
     schema: GraphQLSchema,
-    fragments: Dict[str, FragmentDefinitionNode],
-    variable_values: Dict[str, Any],
+    fragments: dict[str, FragmentDefinitionNode],
+    variable_values: dict[str, Any],
     runtime_type: GraphQLObjectType,
     operation: OperationDefinitionNode,
 ) -> FieldsAndPatches:
@@ -57,8 +59,8 @@ def collect_fields(
 
     For internal use only.
     """
-    fields: Dict[str, List[FieldNode]] = defaultdict(list)
-    patches: List[PatchFields] = []
+    fields: dict[str, list[FieldNode]] = defaultdict(list)
+    patches: list[PatchFields] = []
     collect_fields_impl(
         schema,
         fragments,
@@ -75,11 +77,11 @@ def collect_fields(
 
 def collect_subfields(
     schema: GraphQLSchema,
-    fragments: Dict[str, FragmentDefinitionNode],
-    variable_values: Dict[str, Any],
+    fragments: dict[str, FragmentDefinitionNode],
+    variable_values: dict[str, Any],
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
-    field_nodes: List[FieldNode],
+    field_nodes: list[FieldNode],
 ) -> FieldsAndPatches:
     """Collect subfields.
 
@@ -92,10 +94,10 @@ def collect_subfields(
 
     For internal use only.
     """
-    sub_field_nodes: Dict[str, List[FieldNode]] = defaultdict(list)
-    visited_fragment_names: Set[str] = set()
+    sub_field_nodes: dict[str, list[FieldNode]] = defaultdict(list)
+    visited_fragment_names: set[str] = set()
 
-    sub_patches: List[PatchFields] = []
+    sub_patches: list[PatchFields] = []
     sub_fields_and_patches = FieldsAndPatches(sub_field_nodes, sub_patches)
 
     for node in field_nodes:
@@ -116,17 +118,17 @@ def collect_subfields(
 
 def collect_fields_impl(
     schema: GraphQLSchema,
-    fragments: Dict[str, FragmentDefinitionNode],
-    variable_values: Dict[str, Any],
+    fragments: dict[str, FragmentDefinitionNode],
+    variable_values: dict[str, Any],
     operation: OperationDefinitionNode,
     runtime_type: GraphQLObjectType,
     selection_set: SelectionSetNode,
-    fields: Dict[str, List[FieldNode]],
-    patches: List[PatchFields],
-    visited_fragment_names: Set[str],
+    fields: dict[str, list[FieldNode]],
+    patches: list[PatchFields],
+    visited_fragment_names: set[str],
 ) -> None:
     """Collect fields (internal implementation)."""
-    patch_fields: Dict[str, List[FieldNode]]
+    patch_fields: dict[str, list[FieldNode]]
 
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
@@ -216,14 +218,14 @@ def collect_fields_impl(
 class DeferValues(NamedTuple):
     """Values of an active defer directive."""
 
-    label: Optional[str]
+    label: str | None
 
 
 def get_defer_values(
     operation: OperationDefinitionNode,
-    variable_values: Dict[str, Any],
-    node: Union[FragmentSpreadNode, InlineFragmentNode],
-) -> Optional[DeferValues]:
+    variable_values: dict[str, Any],
+    node: FragmentSpreadNode | InlineFragmentNode,
+) -> DeferValues | None:
     """Get values of defer directive if active.
 
     Returns an object containing the `@defer` arguments if a field should be
@@ -246,8 +248,8 @@ def get_defer_values(
 
 
 def should_include_node(
-    variable_values: Dict[str, Any],
-    node: Union[FragmentSpreadNode, FieldNode, InlineFragmentNode],
+    variable_values: dict[str, Any],
+    node: FragmentSpreadNode | FieldNode | InlineFragmentNode,
 ) -> bool:
     """Check if node should be included
 
@@ -267,7 +269,7 @@ def should_include_node(
 
 def does_fragment_condition_match(
     schema: GraphQLSchema,
-    fragment: Union[FragmentDefinitionNode, InlineFragmentNode],
+    fragment: FragmentDefinitionNode | InlineFragmentNode,
     type_: GraphQLObjectType,
 ) -> bool:
     """Determine if a fragment is applicable to the given type."""
