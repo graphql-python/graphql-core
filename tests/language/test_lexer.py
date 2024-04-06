@@ -41,7 +41,7 @@ def assert_syntax_error(text: str, message: str, location: Location) -> None:
 
 def describe_lexer():
     def ignores_bom_header():
-        token = lex_one("\uFEFF foo")
+        token = lex_one("\ufeff foo")
         assert token == Token(TokenKind.NAME, 2, 5, 1, 3, "foo")
 
     def tracks_line_breaks():
@@ -145,8 +145,8 @@ def describe_lexer():
         assert lex_one('"slashes \\\\ \\/"') == Token(
             TokenKind.STRING, 0, 15, 1, 1, "slashes \\ /"
         )
-        assert lex_one('"unescaped surrogate pair \uD83D\uDE00"') == Token(
-            TokenKind.STRING, 0, 29, 1, 1, "unescaped surrogate pair \uD83D\uDE00"
+        assert lex_one('"unescaped surrogate pair \ud83d\ude00"') == Token(
+            TokenKind.STRING, 0, 29, 1, 1, "unescaped surrogate pair \ud83d\ude00"
         )
         assert lex_one('"unescaped unicode outside BMP \U0001f600"') == Token(
             TokenKind.STRING, 0, 33, 1, 1, "unescaped unicode outside BMP \U0001f600"
@@ -160,10 +160,10 @@ def describe_lexer():
             "unescaped maximal unicode outside BMP \U0010ffff",
         )
         assert lex_one('"unicode \\u1234\\u5678\\u90AB\\uCDEF"') == Token(
-            TokenKind.STRING, 0, 34, 1, 1, "unicode \u1234\u5678\u90AB\uCDEF"
+            TokenKind.STRING, 0, 34, 1, 1, "unicode \u1234\u5678\u90ab\ucdef"
         )
         assert lex_one('"unicode \\u{1234}\\u{5678}\\u{90AB}\\u{CDEF}"') == Token(
-            TokenKind.STRING, 0, 42, 1, 1, "unicode \u1234\u5678\u90AB\uCDEF"
+            TokenKind.STRING, 0, 42, 1, 1, "unicode \u1234\u5678\u90ab\ucdef"
         )
         assert lex_one('"string with unicode escape outside BMP \\u{1F600}"') == Token(
             TokenKind.STRING,
@@ -171,7 +171,7 @@ def describe_lexer():
             50,
             1,
             1,
-            "string with unicode escape outside BMP \U0001F600",
+            "string with unicode escape outside BMP \U0001f600",
         )
         assert lex_one('"string with minimal unicode escape \\u{0}"') == Token(
             TokenKind.STRING, 0, 42, 1, 1, "string with minimal unicode escape \u0000"
@@ -182,7 +182,7 @@ def describe_lexer():
             47,
             1,
             1,
-            "string with maximal unicode escape \U0010FFFF",
+            "string with maximal unicode escape \U0010ffff",
         )
         assert lex_one(
             '"string with maximal minimal unicode escape \\u{00000000}"'
@@ -222,7 +222,7 @@ def describe_lexer():
             56,
             1,
             1,
-            "string with unicode surrogate pair escape \U0010FFFF",
+            "string with unicode surrogate pair escape \U0010ffff",
         )
 
     def lex_reports_useful_string_errors():
@@ -237,17 +237,17 @@ def describe_lexer():
             (1, 1),
         )
         assert_syntax_error(
-            '"bad surrogate \uDEAD"',
+            '"bad surrogate \udead"',
             "Invalid character within String: U+DEAD.",
             (1, 16),
         )
         assert_syntax_error(
-            '"bad high surrogate pair \uDEAD\uDEAD"',
+            '"bad high surrogate pair \udead\udead"',
             "Invalid character within String: U+DEAD.",
             (1, 26),
         )
         assert_syntax_error(
-            '"bad low surrogate pair \uD800\uD800"',
+            '"bad low surrogate pair \ud800\ud800"',
             "Invalid character within String: U+D800.",
             (1, 25),
         )
@@ -329,12 +329,12 @@ def describe_lexer():
             (1, 25),
         )
         assert_syntax_error(
-            '"cannot escape half a pair \uD83D\\uDE00 esc"',
+            '"cannot escape half a pair \ud83d\\uDE00 esc"',
             "Invalid character within String: U+D83D.",
             (1, 28),
         )
         assert_syntax_error(
-            '"cannot escape half a pair \\uD83D\uDE00 esc"',
+            '"cannot escape half a pair \\uD83D\ude00 esc"',
             "Invalid Unicode escape sequence: '\\uD83D'.",
             (1, 28),
         )
@@ -373,13 +373,13 @@ def describe_lexer():
             1,
             "unescaped \\n\\r\\b\\t\\f\\u1234",
         )
-        assert lex_one('"""unescaped surrogate pair \uD83D\uDE00"""') == Token(
+        assert lex_one('"""unescaped surrogate pair \ud83d\ude00"""') == Token(
             TokenKind.BLOCK_STRING,
             0,
             33,
             1,
             1,
-            "unescaped surrogate pair \uD83D\uDE00",
+            "unescaped surrogate pair \ud83d\ude00",
         )
         assert lex_one('"""unescaped unicode outside BMP \U0001f600"""') == Token(
             TokenKind.BLOCK_STRING,
@@ -412,7 +412,7 @@ def describe_lexer():
         assert_syntax_error('"""', "Unterminated string.", (1, 4))
         assert_syntax_error('"""no end quote', "Unterminated string.", (1, 16))
         assert_syntax_error(
-            '"""contains invalid surrogate \uDEAD"""',
+            '"""contains invalid surrogate \udead"""',
             "Invalid character within String: U+DEAD.",
             (1, 31),
         )
@@ -535,16 +535,16 @@ def describe_lexer():
         assert_syntax_error("~", "Unexpected character: '~'.", (1, 1))
         assert_syntax_error("\x00", "Unexpected character: U+0000.", (1, 1))
         assert_syntax_error("\b", "Unexpected character: U+0008.", (1, 1))
-        assert_syntax_error("\xAA", "Unexpected character: U+00AA.", (1, 1))
-        assert_syntax_error("\u0AAA", "Unexpected character: U+0AAA.", (1, 1))
-        assert_syntax_error("\u203B", "Unexpected character: U+203B.", (1, 1))
+        assert_syntax_error("\xaa", "Unexpected character: U+00AA.", (1, 1))
+        assert_syntax_error("\u0aaa", "Unexpected character: U+0AAA.", (1, 1))
+        assert_syntax_error("\u203b", "Unexpected character: U+203B.", (1, 1))
         assert_syntax_error("\U0001f600", "Unexpected character: U+1F600.", (1, 1))
-        assert_syntax_error("\uD83D\uDE00", "Unexpected character: U+1F600.", (1, 1))
-        assert_syntax_error("\uD800\uDC00", "Unexpected character: U+10000.", (1, 1))
-        assert_syntax_error("\uDBFF\uDFFF", "Unexpected character: U+10FFFF.", (1, 1))
-        assert_syntax_error("\uD800", "Invalid character: U+D800.", (1, 1))
-        assert_syntax_error("\uDBFF", "Invalid character: U+DBFF.", (1, 1))
-        assert_syntax_error("\uDEAD", "Invalid character: U+DEAD.", (1, 1))
+        assert_syntax_error("\ud83d\ude00", "Unexpected character: U+1F600.", (1, 1))
+        assert_syntax_error("\ud800\udc00", "Unexpected character: U+10000.", (1, 1))
+        assert_syntax_error("\udbff\udfff", "Unexpected character: U+10FFFF.", (1, 1))
+        assert_syntax_error("\ud800", "Invalid character: U+D800.", (1, 1))
+        assert_syntax_error("\udbff", "Invalid character: U+DBFF.", (1, 1))
+        assert_syntax_error("\udead", "Invalid character: U+DEAD.", (1, 1))
 
     # noinspection PyArgumentEqualDefault
     def lex_reports_useful_information_for_dashes_in_names():
@@ -606,11 +606,11 @@ def describe_lexer():
         assert lex_one("# Comment \U0001f600").prev == Token(
             TokenKind.COMMENT, 0, 11, 1, 1, " Comment \U0001f600"
         )
-        assert lex_one("# Comment \uD83D\uDE00").prev == Token(
-            TokenKind.COMMENT, 0, 12, 1, 1, " Comment \uD83D\uDE00"
+        assert lex_one("# Comment \ud83d\ude00").prev == Token(
+            TokenKind.COMMENT, 0, 12, 1, 1, " Comment \ud83d\ude00"
         )
         assert_syntax_error(
-            "# Invalid surrogate \uDEAD", "Invalid character: U+DEAD.", (1, 21)
+            "# Invalid surrogate \udead", "Invalid character: U+DEAD.", (1, 21)
         )
 
 

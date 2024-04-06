@@ -33,9 +33,7 @@ class UniqueOperationTypesRule(SDLValidationRule):
         self.defined_operation_types: dict[
             OperationType, OperationTypeDefinitionNode
         ] = {}
-        self.existing_operation_types: dict[
-            OperationType, GraphQLObjectType | None
-        ] = (
+        self.existing_operation_types: dict[OperationType, GraphQLObjectType | None] = (
             {
                 OperationType.QUERY: schema.query_type,
                 OperationType.MUTATION: schema.mutation_type,

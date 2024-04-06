@@ -152,8 +152,10 @@ EnterLeaveVisitor
 ExperimentalIncrementalExecutionResults
 FormattedSourceLocation
 GraphQLAbstractType
+GraphQLCompositeType
 GraphQLErrorExtensions
 GraphQLFieldResolver
+GraphQLInputType
 GraphQLTypeResolver
 GraphQLOutputType
 Middleware

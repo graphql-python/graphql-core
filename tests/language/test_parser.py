@@ -173,8 +173,8 @@ def describe_parser():
         # Note: \u0A0A could be naively interpreted as two line-feed chars.
         doc = parse(
             """
-            # This comment has a \u0A0A multi-byte character.
-            { field(arg: "Has a \u0A0A multi-byte character.") }
+            # This comment has a \u0a0a multi-byte character.
+            { field(arg: "Has a \u0a0a multi-byte character.") }
             """
         )
         definitions = doc.definitions
@@ -189,7 +189,7 @@ def describe_parser():
         assert len(arguments) == 1
         value = arguments[0].value
         assert isinstance(value, StringValueNode)
-        assert value.value == "Has a \u0A0A multi-byte character."
+        assert value.value == "Has a \u0a0a multi-byte character."
 
     # noinspection PyShadowingNames
     def parses_kitchen_sink(kitchen_sink_query):  # noqa: F811

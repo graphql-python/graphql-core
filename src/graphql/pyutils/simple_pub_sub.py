@@ -31,9 +31,7 @@ class SimplePubSub:
                 create_task(result)  # type: ignore # noqa: RUF006
         return bool(self.subscribers)
 
-    def get_subscriber(
-        self, transform: Callable | None = None
-    ) -> SimplePubSubIterator:
+    def get_subscriber(self, transform: Callable | None = None) -> SimplePubSubIterator:
         """Return subscriber iterator"""
         return SimplePubSubIterator(self, transform)
 

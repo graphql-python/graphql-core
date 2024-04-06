@@ -21,27 +21,23 @@ __all__ = ["type_from_ast"]
 @overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: NamedTypeNode
-) -> GraphQLNamedType | None:
-    ...
+) -> GraphQLNamedType | None: ...
 
 
 @overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: ListTypeNode
-) -> GraphQLList | None:
-    ...
+) -> GraphQLList | None: ...
 
 
 @overload
 def type_from_ast(
     schema: GraphQLSchema, type_node: NonNullTypeNode
-) -> GraphQLNonNull | None:
-    ...
+) -> GraphQLNonNull | None: ...
 
 
 @overload
-def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> GraphQLType | None:
-    ...
+def type_from_ast(schema: GraphQLSchema, type_node: TypeNode) -> GraphQLType | None: ...
 
 
 def type_from_ast(

@@ -235,9 +235,7 @@ class SchemaValidationContext:
                 # Ensure Input Objects do not contain non-nullable circular references
                 validate_input_object_circular_refs(type_)
 
-    def validate_fields(
-        self, type_: GraphQLObjectType | GraphQLInterfaceType
-    ) -> None:
+    def validate_fields(self, type_: GraphQLObjectType | GraphQLInterfaceType) -> None:
         fields = type_.fields
 
         # Objects and Interfaces both must define one or more fields.

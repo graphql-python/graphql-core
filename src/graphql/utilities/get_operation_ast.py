@@ -1,4 +1,4 @@
-""""Get operation AST node"""
+"""Get operation AST node"""
 
 from __future__ import annotations
 

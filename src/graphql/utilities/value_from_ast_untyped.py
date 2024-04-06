@@ -77,9 +77,7 @@ def value_from_string(
     return value_node.value
 
 
-def value_from_list(
-    value_node: ListValueNode, variables: dict[str, Any] | None
-) -> Any:
+def value_from_list(value_node: ListValueNode, variables: dict[str, Any] | None) -> Any:
     return [value_from_ast_untyped(node, variables) for node in value_node.values]
 
 

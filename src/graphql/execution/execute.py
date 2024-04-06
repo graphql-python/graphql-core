@@ -36,7 +36,7 @@ try:  # only needed for Python < 3.11
     # noinspection PyCompatibility
     from asyncio.exceptions import TimeoutError
 except ImportError:  # Python < 3.7
-    from concurrent.futures import TimeoutError  # type: ignore
+    from concurrent.futures import TimeoutError
 
 from ..error import GraphQLError, GraphQLFormattedError, located_error
 from ..language import (

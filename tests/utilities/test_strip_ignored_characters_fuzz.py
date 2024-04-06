@@ -11,7 +11,7 @@ from ..utils import dedent, gen_fuzz_strings
 
 ignored_tokens = [
     # UnicodeBOM
-    "\uFEFF",  # Byte Order Mark (U+FEFF)
+    "\ufeff",  # Byte Order Mark (U+FEFF)
     # WhiteSpace
     "\t",  # Horizontal Tab (U+0009)
     " ",  # Space (U+0020)
@@ -55,7 +55,7 @@ class ExpectStripped:
         stripped_twice = strip_ignored_characters(stripped)
 
         assert stripped == stripped_twice, dedent(
-            f""""
+            f"""
             Expected strip_ignored_characters({stripped!r})"
               to equal {stripped!r}
               but got {stripped_twice!r}

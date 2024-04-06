@@ -1638,18 +1638,15 @@ def assert_nullable_type(type_: Any) -> GraphQLNullableType:
 
 
 @overload
-def get_nullable_type(type_: None) -> None:
-    ...
+def get_nullable_type(type_: None) -> None: ...
 
 
 @overload
-def get_nullable_type(type_: GraphQLNullableType) -> GraphQLNullableType:
-    ...
+def get_nullable_type(type_: GraphQLNullableType) -> GraphQLNullableType: ...
 
 
 @overload
-def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType:
-    ...
+def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType: ...
 
 
 def get_nullable_type(
@@ -1690,13 +1687,11 @@ def assert_named_type(type_: Any) -> GraphQLNamedType:
 
 
 @overload
-def get_named_type(type_: None) -> None:
-    ...
+def get_named_type(type_: None) -> None: ...
 
 
 @overload
-def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
-    ...
+def get_named_type(type_: GraphQLType) -> GraphQLNamedType: ...
 
 
 def get_named_type(type_: GraphQLType | None) -> GraphQLNamedType | None:
