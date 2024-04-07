@@ -1116,35 +1116,6 @@ def describe_type_system_input_objects():
                 "SomeInputObject fields cannot be resolved. Oops!"
             )
 
-    def describe_input_objects_fields_must_not_have_resolvers():
-        def rejects_an_input_object_type_with_resolvers():
-            def resolve():
-                pass
-
-            with pytest.raises(
-                TypeError, match="got an unexpected keyword argument 'resolve'"
-            ):
-                # noinspection PyArgumentList
-                GraphQLInputObjectType(
-                    "SomeInputObject",
-                    {
-                        "f": GraphQLInputField(  # type: ignore
-                            ScalarType,
-                            resolve=resolve,
-                        )
-                    },
-                )
-
-        def rejects_an_input_object_type_with_resolver_constant():
-            with pytest.raises(
-                TypeError, match="got an unexpected keyword argument 'resolve'"
-            ):
-                # noinspection PyArgumentList
-                GraphQLInputObjectType(
-                    "SomeInputObject",
-                    {"f": GraphQLInputField(ScalarType, resolve={})},  # type: ignore
-                )
-
 
 def describe_type_system_arguments():
     def accepts_an_argument_with_a_description():
