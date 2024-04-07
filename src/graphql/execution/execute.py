@@ -1219,7 +1219,7 @@ class ExecutionContext:
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
-        iterator: AsyncIterator[Any],
+        async_iterator: AsyncIterator[Any],
         async_payload_record: AsyncPayloadRecord | None,
     ) -> list[Any]:
         """Complete an async iterator.
@@ -1244,7 +1244,7 @@ class ExecutionContext:
                         shield(
                             self.execute_stream_async_iterator(
                                 index,
-                                iterator,
+                                async_iterator,
                                 field_group,
                                 info,
                                 item_type,
@@ -1260,7 +1260,7 @@ class ExecutionContext:
             item_path = path.add_key(index, None)
             try:
                 try:
-                    value = await anext(iterator)
+                    value = await anext(async_iterator)
                 except StopAsyncIteration:
                     break
             except Exception as raw_error:
@@ -1315,10 +1315,10 @@ class ExecutionContext:
         item_type = return_type.of_type
 
         if isinstance(result, AsyncIterable):
-            iterator = result.__aiter__()
+            async_iterator = result.__aiter__()
 
             return self.complete_async_iterator_value(
-                item_type, field_group, info, path, iterator, async_payload_record
+                item_type, field_group, info, path, async_iterator, async_payload_record
             )
 
         if not is_iterable(result):
@@ -1861,7 +1861,7 @@ class ExecutionContext:
 
     async def execute_stream_async_iterator_item(
         self,
-        iterator: AsyncIterator[Any],
+        async_iterator: AsyncIterator[Any],
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
@@ -1869,10 +1869,10 @@ class ExecutionContext:
         item_path: Path,
     ) -> Any:
         """Execute stream iterator item."""
-        if iterator in self._canceled_iterators:
+        if async_iterator in self._canceled_iterators:
             raise StopAsyncIteration
         try:
-            item = await anext(iterator)
+            item = await anext(async_iterator)
             completed_item = self.complete_value(
                 item_type, field_group, info, item_path, item, async_payload_record
             )
@@ -1884,7 +1884,7 @@ class ExecutionContext:
             )
 
         except StopAsyncIteration as raw_error:
-            async_payload_record.set_is_completed_iterator()
+            async_payload_record.set_is_completed_async_iterator()
             raise StopAsyncIteration from raw_error
 
         except Exception as raw_error:
@@ -1896,7 +1896,7 @@ class ExecutionContext:
     async def execute_stream_async_iterator(
         self,
         initial_index: int,
-        iterator: AsyncIterator[Any],
+        async_iterator: AsyncIterator[Any],
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
@@ -1911,12 +1911,12 @@ class ExecutionContext:
         while True:
             item_path = Path(path, index, None)
             async_payload_record = StreamRecord(
-                label, item_path, iterator, previous_async_payload_record, self
+                label, item_path, async_iterator, previous_async_payload_record, self
             )
 
             try:
                 data = await self.execute_stream_async_iterator_item(
-                    iterator,
+                    async_iterator,
                     field_group,
                     info,
                     item_type,
@@ -1933,12 +1933,12 @@ class ExecutionContext:
                 async_payload_record.errors.append(error)
                 self.filter_subsequent_payloads(path, async_payload_record)
                 async_payload_record.add_items(None)
-                if iterator:  # pragma: no cover else
+                if async_iterator:  # pragma: no cover else
                     with suppress(Exception):
-                        await iterator.aclose()  # type: ignore
+                        await async_iterator.aclose()  # type: ignore
                     # running generators cannot be closed since Python 3.8,
                     # so we need to remember that this iterator is already canceled
-                    self._canceled_iterators.add(iterator)
+                    self._canceled_iterators.add(async_iterator)
                 break
 
             async_payload_record.add_items([data])
@@ -1961,8 +1961,8 @@ class ExecutionContext:
                 # async_record points to a path unaffected by this payload
                 continue
             # async_record path points to nulled error field
-            if isinstance(async_record, StreamRecord) and async_record.iterator:
-                self._canceled_iterators.add(async_record.iterator)
+            if isinstance(async_record, StreamRecord) and async_record.async_iterator:
+                self._canceled_iterators.add(async_record.async_iterator)
             del self.subsequent_payloads[async_record]
 
     def get_completed_incremental_results(self) -> list[IncrementalResult]:
@@ -1977,7 +1977,7 @@ class ExecutionContext:
             del self.subsequent_payloads[async_payload_record]
             if isinstance(async_payload_record, StreamRecord):
                 items = async_payload_record.items
-                if async_payload_record.is_completed_iterator:
+                if async_payload_record.is_completed_async_iterator:
                     # async iterable resolver finished but there may be pending payload
                     continue  # pragma: no cover
                 incremental_result = IncrementalStreamResult(
@@ -2667,8 +2667,8 @@ class StreamRecord:
     path: list[str | int]
     items: list[str] | None
     parent_context: AsyncPayloadRecord | None
-    iterator: AsyncIterator[Any] | None
-    is_completed_iterator: bool
+    async_iterator: AsyncIterator[Any] | None
+    is_completed_async_iterator: bool
     completed: Event
     _context: ExecutionContext
     _items: AwaitableOrValue[list[Any] | None]
@@ -2678,21 +2678,21 @@ class StreamRecord:
         self,
         label: str | None,
         path: Path | None,
-        iterator: AsyncIterator[Any] | None,
+        async_iterator: AsyncIterator[Any] | None,
         parent_context: AsyncPayloadRecord | None,
         context: ExecutionContext,
     ) -> None:
         self.label = label
         self.path = path.as_list() if path else []
         self.parent_context = parent_context
-        self.iterator = iterator
+        self.async_iterator = async_iterator
         self.errors = []
         self._context = context
         context.subsequent_payloads[self] = None
         self.items = self._items = None
         self.completed = Event()
         self._items_added = Event()
-        self.is_completed_iterator = False
+        self.is_completed_async_iterator = False
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
@@ -2729,9 +2729,9 @@ class StreamRecord:
         self._items = items
         self._items_added.set()
 
-    def set_is_completed_iterator(self) -> None:
+    def set_is_completed_async_iterator(self) -> None:
         """Mark as completed."""
-        self.is_completed_iterator = True
+        self.is_completed_async_iterator = True
         self._items_added.set()
 
 
