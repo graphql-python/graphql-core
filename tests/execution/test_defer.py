@@ -349,7 +349,6 @@ def describe_execute_defer_directive():
               }
             }
             fragment NameFragment on Hero {
-              id
               name
             }
             """
@@ -359,9 +358,7 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
-                "incremental": [
-                    {"data": {"id": "1", "name": "Luke"}, "path": ["hero"]}
-                ],
+                "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
                 "hasNext": False,
             },
         ]
@@ -507,12 +504,11 @@ def describe_execute_defer_directive():
             """
             query HeroNameQuery {
               hero {
-                id
                 ...TopFragment @defer(label: "DeferTop")
               }
             }
             fragment TopFragment on Hero {
-              name
+              id
               ...NestedFragment @defer(label: "DeferNested")
             }
             fragment NestedFragment on Hero {
@@ -525,7 +521,7 @@ def describe_execute_defer_directive():
         result = await complete(document)
 
         assert result == [
-            {"data": {"hero": {"id": "1"}}, "hasNext": True},
+            {"data": {"hero": {}}, "hasNext": True},
             {
                 "incremental": [
                     {
@@ -540,7 +536,7 @@ def describe_execute_defer_directive():
                         "label": "DeferNested",
                     },
                     {
-                        "data": {"name": "Luke"},
+                        "data": {"id": "1"},
                         "path": ["hero"],
                         "label": "DeferTop",
                     },
@@ -555,7 +551,6 @@ def describe_execute_defer_directive():
             """
             query HeroNameQuery {
               hero {
-                id
                 ...TopFragment @defer(label: "DeferTop")
                 ...TopFragment
               }
@@ -568,7 +563,7 @@ def describe_execute_defer_directive():
         result = await complete(document)
 
         assert result == [
-            {"data": {"hero": {"id": "1", "name": "Luke"}}, "hasNext": True},
+            {"data": {"hero": {"name": "Luke"}}, "hasNext": True},
             {
                 "incremental": [
                     {
@@ -587,7 +582,6 @@ def describe_execute_defer_directive():
             """
             query HeroNameQuery {
               hero {
-                id
                 ...TopFragment
                 ...TopFragment @defer(label: "DeferTop")
               }
@@ -600,7 +594,7 @@ def describe_execute_defer_directive():
         result = await complete(document)
 
         assert result == [
-            {"data": {"hero": {"id": "1", "name": "Luke"}}, "hasNext": True},
+            {"data": {"hero": {"name": "Luke"}}, "hasNext": True},
             {
                 "incremental": [
                     {
