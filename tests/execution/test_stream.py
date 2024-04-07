@@ -12,7 +12,7 @@ from graphql.execution import (
     IncrementalStreamResult,
     experimental_execute_incrementally,
 )
-from graphql.execution.execute import StreamRecord
+from graphql.execution.execute import StreamItemsRecord
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import Path
 from graphql.type import (
@@ -175,9 +175,11 @@ def describe_execute_stream_directive():
     def can_print_stream_record():
         context = ExecutionContext.build(schema, parse("{ hero { id } }"))
         assert isinstance(context, ExecutionContext)
-        record = StreamRecord(None, None, None, None, context)
+        record = StreamItemsRecord(None, None, None, None, context)
         assert str(record) == "StreamRecord(path=[])"
-        record = StreamRecord("foo", Path(None, "bar", "Bar"), None, record, context)
+        record = StreamItemsRecord(
+            "foo", Path(None, "bar", "Bar"), None, record, context
+        )
         assert (
             str(record) == "StreamRecord(" "path=['bar'], label='foo', parent_context)"
         )

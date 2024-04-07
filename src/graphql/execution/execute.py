@@ -106,7 +106,7 @@ __all__ = [
     "subscribe",
     "AsyncPayloadRecord",
     "DeferredFragmentRecord",
-    "StreamRecord",
+    "StreamItemsRecord",
     "ExecutionResult",
     "ExecutionContext",
     "ExperimentalIncrementalExecutionResults",
@@ -1772,7 +1772,7 @@ class ExecutionContext:
     ) -> AsyncPayloadRecord:
         """Execute stream field."""
         is_awaitable = self.is_awaitable
-        async_payload_record = StreamRecord(
+        async_payload_record = StreamItemsRecord(
             label, item_path, None, parent_context, self
         )
         completed_item: Any
@@ -1865,7 +1865,7 @@ class ExecutionContext:
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-        async_payload_record: StreamRecord,
+        async_payload_record: StreamItemsRecord,
         item_path: Path,
     ) -> Any:
         """Execute stream iterator item."""
@@ -1910,7 +1910,7 @@ class ExecutionContext:
 
         while True:
             item_path = Path(path, index, None)
-            async_payload_record = StreamRecord(
+            async_payload_record = StreamItemsRecord(
                 label, item_path, async_iterator, previous_async_payload_record, self
             )
 
@@ -1961,7 +1961,10 @@ class ExecutionContext:
                 # async_record points to a path unaffected by this payload
                 continue
             # async_record path points to nulled error field
-            if isinstance(async_record, StreamRecord) and async_record.async_iterator:
+            if (
+                isinstance(async_record, StreamItemsRecord)
+                and async_record.async_iterator
+            ):
                 self._canceled_iterators.add(async_record.async_iterator)
             del self.subsequent_payloads[async_record]
 
@@ -1975,7 +1978,7 @@ class ExecutionContext:
             if not async_payload_record.completed.is_set():
                 continue
             del self.subsequent_payloads[async_payload_record]
-            if isinstance(async_payload_record, StreamRecord):
+            if isinstance(async_payload_record, StreamItemsRecord):
                 items = async_payload_record.items
                 if async_payload_record.is_completed_async_iterator:
                     # async iterable resolver finished but there may be pending payload
@@ -2659,7 +2662,7 @@ class DeferredFragmentRecord:
         self._data_added.set()
 
 
-class StreamRecord:
+class StreamItemsRecord:
     """A record collecting items marked with the stream directive"""
 
     errors: list[GraphQLError]
@@ -2735,4 +2738,4 @@ class StreamRecord:
         self._items_added.set()
 
 
-AsyncPayloadRecord = Union[DeferredFragmentRecord, StreamRecord]
+AsyncPayloadRecord = Union[DeferredFragmentRecord, StreamItemsRecord]
