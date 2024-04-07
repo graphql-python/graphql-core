@@ -83,7 +83,7 @@ def print_schema_definition(schema: GraphQLSchema) -> str | None:
 
     # Only print a schema definition if there is a description or if it should
     # not be omitted because of having default type names.
-    if schema.description or not has_default_root_operation_types(schema):
+    if not (schema.description is None and has_default_root_operation_types(schema)):
         return (
             print_description(schema)
             + "schema {\n"
@@ -235,7 +235,7 @@ def print_args(args: dict[str, GraphQLArgument], indentation: str = "") -> str:
         return ""
 
     # If every arg does not have a description, print them on one line.
-    if not any(arg.description for arg in args.values()):
+    if all(arg.description is None for arg in args.values()):
         return (
             "("
             + ", ".join(print_input_value(name, arg) for name, arg in args.items())

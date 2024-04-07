@@ -8,6 +8,7 @@ from graphql.type import (
     GraphQLBoolean,
     GraphQLDirective,
     GraphQLEnumType,
+    GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
     GraphQLInputField,
@@ -602,13 +603,108 @@ def describe_type_system_printer():
         )
 
     def prints_an_empty_description():
-        schema = build_single_field_schema(GraphQLField(GraphQLString, description=""))
+        args = {
+            "someArg": GraphQLArgument(GraphQLString, description=""),
+            "anotherArg": GraphQLArgument(GraphQLString, description=""),
+        }
+        fields = {
+            "someField": GraphQLField(GraphQLString, args, description=""),
+            "anotherField": GraphQLField(GraphQLString, args, description=""),
+        }
+        query_type = GraphQLObjectType("Query", fields, description="")
+        scalar_type = GraphQLScalarType("SomeScalar", description="")
+        interface_type = GraphQLInterfaceType("SomeInterface", fields, description="")
+        union_type = GraphQLUnionType("SomeUnion", [query_type], description="")
+        enum_type = GraphQLEnumType(
+            "SomeEnum",
+            {
+                "SOME_VALUE": GraphQLEnumValue("Some Value", description=""),
+                "ANOTHER_VALUE": GraphQLEnumValue("Another Value", description=""),
+            },
+            description="",
+        )
+        some_directive = GraphQLDirective(
+            "someDirective", [DirectiveLocation.QUERY], args, description=""
+        )
+
+        schema = GraphQLSchema(
+            query_type,
+            types=[scalar_type, interface_type, union_type, enum_type],
+            directives=[some_directive],
+            description="",
+        )
 
         assert expect_printed_schema(schema) == dedent(
             '''
+            """"""
+            schema {
+              query: Query
+            }
+
+            """"""
+            directive @someDirective(
+              """"""
+              someArg: String
+
+              """"""
+              anotherArg: String
+            ) on QUERY
+
+            """"""
+            scalar SomeScalar
+
+            """"""
+            interface SomeInterface {
+              """"""
+              someField(
+                """"""
+                someArg: String
+
+                """"""
+                anotherArg: String
+              ): String
+
+              """"""
+              anotherField(
+                """"""
+                someArg: String
+
+                """"""
+                anotherArg: String
+              ): String
+            }
+
+            """"""
+            union SomeUnion = Query
+
+            """"""
             type Query {
               """"""
-              singleField: String
+              someField(
+                """"""
+                someArg: String
+
+                """"""
+                anotherArg: String
+              ): String
+
+              """"""
+              anotherField(
+                """"""
+                someArg: String
+
+                """"""
+                anotherArg: String
+              ): String
+            }
+
+            """"""
+            enum SomeEnum {
+              """"""
+              SOME_VALUE
+
+              """"""
+              ANOTHER_VALUE
             }
             '''
         )

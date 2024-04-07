@@ -245,6 +245,13 @@ class ExtendSchemaImpl:
 
         # Then produce and return the kwargs for a Schema with these types.
         get_operation = operation_types.get
+        description = (
+            schema_def.description.value
+            if schema_def and schema_def.description
+            else None
+        )
+        if description is None:
+            description = schema_kwargs["description"]
         return GraphQLSchemaKwargs(
             query=get_operation(OperationType.QUERY),  # type: ignore
             mutation=get_operation(OperationType.MUTATION),  # type: ignore
@@ -255,12 +262,7 @@ class ExtendSchemaImpl:
                 for directive in schema_kwargs["directives"]
             )
             + tuple(self.build_directive(directive) for directive in directive_defs),
-            description=(
-                schema_def.description.value
-                if schema_def and schema_def.description
-                else None
-            )
-            or schema_kwargs["description"],
+            description=description,
             extensions=schema_kwargs["extensions"],
             ast_node=schema_def or schema_kwargs["ast_node"],
             extension_ast_nodes=schema_kwargs["extension_ast_nodes"]
