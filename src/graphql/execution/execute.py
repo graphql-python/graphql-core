@@ -882,7 +882,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        fields: GroupedFieldSet,
+        grouped_field_set: GroupedFieldSet,
         incremental_data_record: IncrementalDataRecord | None = None,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields concurrently.
@@ -894,7 +894,7 @@ class ExecutionContext:
         is_awaitable = self.is_awaitable
         awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
-        for response_name, field_group in fields.items():
+        for response_name, field_group in grouped_field_set.items():
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
                 parent_type,
