@@ -41,9 +41,10 @@ Sort a GraphQLSchema:
 
 Print a GraphQLSchema to GraphQL Schema language:
 
-.. autofunction:: print_introspection_schema
 .. autofunction:: print_schema
 .. autofunction:: print_type
+.. autofunction:: print_directive
+.. autofunction:: print_introspection_schema
 
 Create a GraphQLType from a GraphQL language AST:
 

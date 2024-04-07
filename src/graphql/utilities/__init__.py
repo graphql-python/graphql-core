@@ -27,9 +27,10 @@ from .lexicographic_sort_schema import lexicographic_sort_schema
 
 # Print a GraphQLSchema to GraphQL Schema language.
 from .print_schema import (
-    print_introspection_schema,
     print_schema,
     print_type,
+    print_directive,
+    print_introspection_schema,
     print_value,  # deprecated
 )
 
@@ -103,9 +104,10 @@ __all__ = [
     "is_type_sub_type_of",
     "introspection_from_schema",
     "lexicographic_sort_schema",
-    "print_introspection_schema",
     "print_schema",
     "print_type",
+    "print_directive",
+    "print_introspection_schema",
     "print_value",
     "separate_operations",
     "strip_ignored_characters",

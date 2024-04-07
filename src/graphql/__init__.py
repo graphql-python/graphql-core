@@ -188,6 +188,8 @@ from .utilities import (
     print_schema,
     # Print a GraphQLType to GraphQL Schema language.
     print_type,
+    # Print a GraphQLDirective to GraphQL Schema language.
+    print_directive,
     # Prints the built-in introspection schema in the Schema Language format.
     print_introspection_schema,
     # Create a GraphQLType from a GraphQL language AST.
@@ -788,6 +790,7 @@ __all__ = [
     "lexicographic_sort_schema",
     "print_schema",
     "print_type",
+    "print_directive",
     "print_introspection_schema",
     "type_from_ast",
     "value_from_ast",
