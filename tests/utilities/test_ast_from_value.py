@@ -4,14 +4,14 @@ import pytest
 from graphql.error import GraphQLError
 from graphql.language import (
     BooleanValueNode,
+    ConstListValueNode,
+    ConstObjectFieldNode,
+    ConstObjectValueNode,
     EnumValueNode,
     FloatValueNode,
     IntValueNode,
-    ListValueNode,
     NameNode,
     NullValueNode,
-    ObjectFieldNode,
-    ObjectValueNode,
     StringValueNode,
 )
 from graphql.pyutils import Undefined
@@ -202,13 +202,13 @@ def describe_ast_from_value():
     def converts_list_values_to_list_asts():
         assert ast_from_value(
             ["FOO", "BAR"], GraphQLList(GraphQLString)
-        ) == ListValueNode(
+        ) == ConstListValueNode(
             values=[StringValueNode(value="FOO"), StringValueNode(value="BAR")]
         )
 
         assert ast_from_value(
             ["HELLO", "GOODBYE"], GraphQLList(my_enum)
-        ) == ListValueNode(
+        ) == ConstListValueNode(
             values=[EnumValueNode(value="HELLO"), EnumValueNode(value="GOODBYE")]
         )
 
@@ -218,7 +218,7 @@ def describe_ast_from_value():
             yield 3
 
         assert ast_from_value(list_generator(), GraphQLList(GraphQLInt)) == (
-            ListValueNode(
+            ConstListValueNode(
                 values=[
                     IntValueNode(value="1"),
                     IntValueNode(value="2"),
@@ -237,7 +237,7 @@ def describe_ast_from_value():
             ["FOO", None, "BAR"], GraphQLList(GraphQLNonNull(GraphQLString))
         )
 
-        assert ast == ListValueNode(
+        assert ast == ConstListValueNode(
             values=[StringValueNode(value="FOO"), StringValueNode(value="BAR")]
         )
 
@@ -247,20 +247,24 @@ def describe_ast_from_value():
     )
 
     def converts_input_objects():
-        assert ast_from_value({"foo": 3, "bar": "HELLO"}, input_obj) == ObjectValueNode(
+        assert ast_from_value(
+            {"foo": 3, "bar": "HELLO"}, input_obj
+        ) == ConstObjectValueNode(
             fields=[
-                ObjectFieldNode(
+                ConstObjectFieldNode(
                     name=NameNode(value="foo"), value=FloatValueNode(value="3")
                 ),
-                ObjectFieldNode(
+                ConstObjectFieldNode(
                     name=NameNode(value="bar"), value=EnumValueNode(value="HELLO")
                 ),
             ]
         )
 
     def converts_input_objects_with_explicit_nulls():
-        assert ast_from_value({"foo": None}, input_obj) == ObjectValueNode(
-            fields=[ObjectFieldNode(name=NameNode(value="foo"), value=NullValueNode())]
+        assert ast_from_value({"foo": None}, input_obj) == ConstObjectValueNode(
+            fields=[
+                ConstObjectFieldNode(name=NameNode(value="foo"), value=NullValueNode())
+            ]
         )
 
     def does_not_convert_non_object_values_as_input_objects():
