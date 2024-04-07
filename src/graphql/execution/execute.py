@@ -1242,7 +1242,7 @@ class ExecutionContext:
                 with suppress(TimeoutError):
                     await wait_for(
                         shield(
-                            self.execute_stream_iterator(
+                            self.execute_stream_async_iterator(
                                 index,
                                 iterator,
                                 field_group,
@@ -1859,7 +1859,7 @@ class ExecutionContext:
         async_payload_record.add_items(completed_items)
         return async_payload_record
 
-    async def execute_stream_iterator_item(
+    async def execute_stream_async_iterator_item(
         self,
         iterator: AsyncIterator[Any],
         field_group: FieldGroup,
@@ -1893,7 +1893,7 @@ class ExecutionContext:
             )
             self.filter_subsequent_payloads(item_path, async_payload_record)
 
-    async def execute_stream_iterator(
+    async def execute_stream_async_iterator(
         self,
         initial_index: int,
         iterator: AsyncIterator[Any],
@@ -1915,7 +1915,7 @@ class ExecutionContext:
             )
 
             try:
-                data = await self.execute_stream_iterator_item(
+                data = await self.execute_stream_async_iterator_item(
                     iterator,
                     field_group,
                     info,

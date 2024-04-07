@@ -159,6 +159,7 @@ GraphQLFieldResolver
 GraphQLInputType
 GraphQLTypeResolver
 GraphQLOutputType
+GroupedFieldSet
 Middleware
 asyncio.events.AbstractEventLoop
 graphql.execution.collect_fields.FieldsAndPatches
