@@ -853,10 +853,10 @@ class ExecutionContext:
         def reducer(
             results: dict[str, Any], field_item: tuple[str, FieldGroup]
         ) -> AwaitableOrValue[dict[str, Any]]:
-            response_name, field_nodes = field_item
+            response_name, field_group = field_item
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
-                parent_type, source_value, field_nodes, field_path
+                parent_type, source_value, field_group, field_path
             )
             if result is Undefined:
                 return results
@@ -893,10 +893,10 @@ class ExecutionContext:
         is_awaitable = self.is_awaitable
         awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
-        for response_name, field_nodes in fields.items():
+        for response_name, field_group in fields.items():
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
-                parent_type, source_value, field_nodes, field_path, async_payload_record
+                parent_type, source_value, field_group, field_path, async_payload_record
             )
             if result is not Undefined:
                 results[response_name] = result
@@ -931,7 +931,7 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source: Any,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         path: Path,
         async_payload_record: AsyncPayloadRecord | None = None,
     ) -> AwaitableOrValue[Any]:
@@ -944,7 +944,7 @@ class ExecutionContext:
         objects, serialize scalars, or execute the sub-selection-set for objects.
         """
         errors = async_payload_record.errors if async_payload_record else self.errors
-        field_name = field_nodes[0].name.value
+        field_name = field_group[0].name.value
         field_def = self.schema.get_field(parent_type, field_name)
         if not field_def:
             return Undefined
@@ -955,14 +955,14 @@ class ExecutionContext:
         if self.middleware_manager:
             resolve_fn = self.middleware_manager.get_field_resolver(resolve_fn)
 
-        info = self.build_resolve_info(field_def, field_nodes, parent_type, path)
+        info = self.build_resolve_info(field_def, field_group, parent_type, path)
 
         # Get the resolve function, regardless of if its result is normal or abrupt
         # (error).
         try:
             # Build a dictionary of arguments from the field.arguments AST, using the
             # variables scope to fulfill any variable references.
-            args = get_argument_values(field_def, field_nodes[0], self.variable_values)
+            args = get_argument_values(field_def, field_group[0], self.variable_values)
 
             # Note that contrary to the JavaScript implementation, we pass the context
             # value as part of the resolve info.
@@ -970,11 +970,11 @@ class ExecutionContext:
 
             if self.is_awaitable(result):
                 return self.complete_awaitable_value(
-                    return_type, field_nodes, info, path, result, async_payload_record
+                    return_type, field_group, info, path, result, async_payload_record
                 )
 
             completed = self.complete_value(
-                return_type, field_nodes, info, path, result, async_payload_record
+                return_type, field_group, info, path, result, async_payload_record
             )
             if self.is_awaitable(completed):
                 # noinspection PyShadowingNames
@@ -982,7 +982,7 @@ class ExecutionContext:
                     try:
                         return await completed
                     except Exception as raw_error:
-                        error = located_error(raw_error, field_nodes, path.as_list())
+                        error = located_error(raw_error, field_group, path.as_list())
                         handle_field_error(error, return_type, errors)
                         self.filter_subsequent_payloads(path, async_payload_record)
                         return None
@@ -990,7 +990,7 @@ class ExecutionContext:
                 return await_completed()
 
         except Exception as raw_error:
-            error = located_error(raw_error, field_nodes, path.as_list())
+            error = located_error(raw_error, field_group, path.as_list())
             handle_field_error(error, return_type, errors)
             self.filter_subsequent_payloads(path, async_payload_record)
             return None
@@ -1000,7 +1000,7 @@ class ExecutionContext:
     def build_resolve_info(
         self,
         field_def: GraphQLField,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         parent_type: GraphQLObjectType,
         path: Path,
     ) -> GraphQLResolveInfo:
@@ -1011,8 +1011,8 @@ class ExecutionContext:
         # The resolve function's first argument is a collection of information about
         # the current execution state.
         return GraphQLResolveInfo(
-            field_nodes[0].name.value,
-            field_nodes,
+            field_group[0].name.value,
+            field_group,
             field_def.type,
             parent_type,
             path,
@@ -1028,7 +1028,7 @@ class ExecutionContext:
     def complete_value(
         self,
         return_type: GraphQLOutputType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1065,7 +1065,7 @@ class ExecutionContext:
         if is_non_null_type(return_type):
             completed = self.complete_value(
                 return_type.of_type,
-                field_nodes,
+                field_group,
                 info,
                 path,
                 result,
@@ -1086,7 +1086,7 @@ class ExecutionContext:
         # If field type is List, complete each item in the list with inner type
         if is_list_type(return_type):
             return self.complete_list_value(
-                return_type, field_nodes, info, path, result, async_payload_record
+                return_type, field_group, info, path, result, async_payload_record
             )
 
         # If field type is a leaf type, Scalar or Enum, serialize to a valid value,
@@ -1098,13 +1098,13 @@ class ExecutionContext:
         # Object type and complete for that type.
         if is_abstract_type(return_type):
             return self.complete_abstract_value(
-                return_type, field_nodes, info, path, result, async_payload_record
+                return_type, field_group, info, path, result, async_payload_record
             )
 
         # If field type is Object, execute and complete all sub-selections.
         if is_object_type(return_type):
             return self.complete_object_value(
-                return_type, field_nodes, info, path, result, async_payload_record
+                return_type, field_group, info, path, result, async_payload_record
             )
 
         # Not reachable. All possible output types have been considered.
@@ -1117,7 +1117,7 @@ class ExecutionContext:
     async def complete_awaitable_value(
         self,
         return_type: GraphQLOutputType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1128,7 +1128,7 @@ class ExecutionContext:
             resolved = await result
             completed = self.complete_value(
                 return_type,
-                field_nodes,
+                field_group,
                 info,
                 path,
                 resolved,
@@ -1140,14 +1140,14 @@ class ExecutionContext:
             errors = (
                 async_payload_record.errors if async_payload_record else self.errors
             )
-            error = located_error(raw_error, field_nodes, path.as_list())
+            error = located_error(raw_error, field_group, path.as_list())
             handle_field_error(error, return_type, errors)
             self.filter_subsequent_payloads(path, async_payload_record)
             completed = None
         return completed
 
     def get_stream_values(
-        self, field_nodes: FieldGroup, path: Path
+        self, field_group: FieldGroup, path: Path
     ) -> StreamArguments | None:
         """Get stream values.
 
@@ -1162,7 +1162,7 @@ class ExecutionContext:
         # validation only allows equivalent streams on multiple fields, so it is
         # safe to only check the first field_node for the stream directive
         stream = get_directive_values(
-            GraphQLStreamDirective, field_nodes[0], self.variable_values
+            GraphQLStreamDirective, field_group[0], self.variable_values
         )
 
         if not stream or stream.get("if") is False:
@@ -1186,7 +1186,7 @@ class ExecutionContext:
     async def complete_async_iterator_value(
         self,
         item_type: GraphQLOutputType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         iterator: AsyncIterator[Any],
@@ -1198,7 +1198,7 @@ class ExecutionContext:
         recursively until all the results are completed.
         """
         errors = async_payload_record.errors if async_payload_record else self.errors
-        stream = self.get_stream_values(field_nodes, path)
+        stream = self.get_stream_values(field_group, path)
         complete_list_item_value = self.complete_list_item_value
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
@@ -1216,7 +1216,7 @@ class ExecutionContext:
                             self.execute_stream_iterator(
                                 index,
                                 iterator,
-                                field_nodes,
+                                field_group,
                                 info,
                                 item_type,
                                 path,
@@ -1235,7 +1235,7 @@ class ExecutionContext:
                 except StopAsyncIteration:
                     break
             except Exception as raw_error:
-                error = located_error(raw_error, field_nodes, item_path.as_list())
+                error = located_error(raw_error, field_group, item_path.as_list())
                 handle_field_error(error, item_type, errors)
                 completed_results.append(None)
                 break
@@ -1244,7 +1244,7 @@ class ExecutionContext:
                 completed_results,
                 errors,
                 item_type,
-                field_nodes,
+                field_group,
                 info,
                 item_path,
                 async_payload_record,
@@ -1273,7 +1273,7 @@ class ExecutionContext:
     def complete_list_value(
         self,
         return_type: GraphQLList[GraphQLOutputType],
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: AsyncIterable[Any] | Iterable[Any],
@@ -1290,7 +1290,7 @@ class ExecutionContext:
             iterator = result.__aiter__()
 
             return self.complete_async_iterator_value(
-                item_type, field_nodes, info, path, iterator, async_payload_record
+                item_type, field_group, info, path, iterator, async_payload_record
             )
 
         if not is_iterable(result):
@@ -1300,7 +1300,7 @@ class ExecutionContext:
             )
             raise GraphQLError(msg)
 
-        stream = self.get_stream_values(field_nodes, path)
+        stream = self.get_stream_values(field_group, path)
 
         # This is specified as a simple map, however we're optimizing the path where
         # the list contains no coroutine objects by avoiding creating another coroutine
@@ -1324,7 +1324,7 @@ class ExecutionContext:
                     path,
                     item_path,
                     item,
-                    field_nodes,
+                    field_group,
                     info,
                     item_type,
                     stream.label,
@@ -1337,7 +1337,7 @@ class ExecutionContext:
                 completed_results,
                 errors,
                 item_type,
-                field_nodes,
+                field_group,
                 info,
                 item_path,
                 async_payload_record,
@@ -1371,7 +1371,7 @@ class ExecutionContext:
         complete_results: list[Any],
         errors: list[GraphQLError],
         item_type: GraphQLOutputType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_path: Path,
         async_payload_record: AsyncPayloadRecord | None,
@@ -1385,7 +1385,7 @@ class ExecutionContext:
         if is_awaitable(item):
             complete_results.append(
                 self.complete_awaitable_value(
-                    item_type, field_nodes, info, item_path, item, async_payload_record
+                    item_type, field_group, info, item_path, item, async_payload_record
                 )
             )
             return True
@@ -1393,7 +1393,7 @@ class ExecutionContext:
         try:
             completed_item = self.complete_value(
                 item_type,
-                field_nodes,
+                field_group,
                 info,
                 item_path,
                 item,
@@ -1407,7 +1407,7 @@ class ExecutionContext:
                         return await completed_item
                     except Exception as raw_error:
                         error = located_error(
-                            raw_error, field_nodes, item_path.as_list()
+                            raw_error, field_group, item_path.as_list()
                         )
                         handle_field_error(error, item_type, errors)
                         self.filter_subsequent_payloads(item_path, async_payload_record)
@@ -1419,7 +1419,7 @@ class ExecutionContext:
             complete_results.append(completed_item)
 
         except Exception as raw_error:
-            error = located_error(raw_error, field_nodes, item_path.as_list())
+            error = located_error(raw_error, field_group, item_path.as_list())
             handle_field_error(error, item_type, errors)
             self.filter_subsequent_payloads(item_path, async_payload_record)
             complete_results.append(None)
@@ -1446,7 +1446,7 @@ class ExecutionContext:
     def complete_abstract_value(
         self,
         return_type: GraphQLAbstractType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1468,11 +1468,11 @@ class ExecutionContext:
                     self.ensure_valid_runtime_type(
                         await runtime_type,  # type: ignore
                         return_type,
-                        field_nodes,
+                        field_group,
                         info,
                         result,
                     ),
-                    field_nodes,
+                    field_group,
                     info,
                     path,
                     result,
@@ -1487,9 +1487,9 @@ class ExecutionContext:
 
         return self.complete_object_value(
             self.ensure_valid_runtime_type(
-                runtime_type, return_type, field_nodes, info, result
+                runtime_type, return_type, field_group, info, result
             ),
-            field_nodes,
+            field_group,
             info,
             path,
             result,
@@ -1500,7 +1500,7 @@ class ExecutionContext:
         self,
         runtime_type_name: Any,
         return_type: GraphQLAbstractType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
@@ -1514,7 +1514,7 @@ class ExecutionContext:
                 " a 'resolve_type' function or each possible type should provide"
                 " an 'is_type_of' function."
             )
-            raise GraphQLError(msg, field_nodes)
+            raise GraphQLError(msg, field_group)
 
         if is_object_type(runtime_type_name):  # pragma: no cover
             msg = (
@@ -1530,7 +1530,7 @@ class ExecutionContext:
                 f" for field '{info.parent_type.name}.{info.field_name}' with value"
                 f" {inspect(result)}, received '{inspect(runtime_type_name)}'."
             )
-            raise GraphQLError(msg, field_nodes)
+            raise GraphQLError(msg, field_group)
 
         runtime_type = self.schema.get_type(runtime_type_name)
 
@@ -1539,21 +1539,21 @@ class ExecutionContext:
                 f"Abstract type '{return_type.name}' was resolved to a type"
                 f" '{runtime_type_name}' that does not exist inside the schema."
             )
-            raise GraphQLError(msg, field_nodes)
+            raise GraphQLError(msg, field_group)
 
         if not is_object_type(runtime_type):
             msg = (
                 f"Abstract type '{return_type.name}' was resolved"
                 f" to a non-object type '{runtime_type_name}'."
             )
-            raise GraphQLError(msg, field_nodes)
+            raise GraphQLError(msg, field_group)
 
         if not self.schema.is_sub_type(return_type, runtime_type):
             msg = (
                 f"Runtime Object type '{runtime_type.name}' is not a possible"
                 f" type for '{return_type.name}'."
             )
-            raise GraphQLError(msg, field_nodes)
+            raise GraphQLError(msg, field_group)
 
         # noinspection PyTypeChecker
         return runtime_type
@@ -1561,7 +1561,7 @@ class ExecutionContext:
     def complete_object_value(
         self,
         return_type: GraphQLObjectType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1579,31 +1579,31 @@ class ExecutionContext:
                 async def execute_subfields_async() -> dict[str, Any]:
                     if not await is_type_of:  # type: ignore
                         raise invalid_return_type_error(
-                            return_type, result, field_nodes
+                            return_type, result, field_group
                         )
                     return self.collect_and_execute_subfields(
-                        return_type, field_nodes, path, result, async_payload_record
+                        return_type, field_group, path, result, async_payload_record
                     )  # type: ignore
 
                 return execute_subfields_async()
 
             if not is_type_of:
-                raise invalid_return_type_error(return_type, result, field_nodes)
+                raise invalid_return_type_error(return_type, result, field_group)
 
         return self.collect_and_execute_subfields(
-            return_type, field_nodes, path, result, async_payload_record
+            return_type, field_group, path, result, async_payload_record
         )
 
     def collect_and_execute_subfields(
         self,
         return_type: GraphQLObjectType,
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         path: Path,
         result: Any,
         async_payload_record: AsyncPayloadRecord | None,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Collect sub-fields to execute to complete this value."""
-        sub_field_nodes, sub_patches = self.collect_subfields(return_type, field_nodes)
+        sub_field_nodes, sub_patches = self.collect_subfields(return_type, field_group)
 
         sub_fields = self.execute_fields(
             return_type, result, path, sub_field_nodes, async_payload_record
@@ -1623,7 +1623,7 @@ class ExecutionContext:
         return sub_fields
 
     def collect_subfields(
-        self, return_type: GraphQLObjectType, field_nodes: FieldGroup
+        self, return_type: GraphQLObjectType, field_group: FieldGroup
     ) -> FieldsAndPatches:
         """Collect subfields.
 
@@ -1633,17 +1633,17 @@ class ExecutionContext:
         lists of values.
         """
         cache = self._subfields_cache
-        # We cannot use the field_nodes themselves as key for the cache, since they
-        # are not hashable as a list. We also do not want to use the field_nodes
-        # themselves (converted to a tuple) as keys, since hashing them is slow.
-        # Therefore, we use the ids of the field_nodes as keys. Note that we do not
-        # use the id of the list, since we want to hit the cache for all lists of
+        # We cannot use the field_group itself as key for the cache, since it
+        # is not hashable as a list. We also do not want to use the field_group
+        # itself (converted to a tuple) as keys, since hashing them is slow.
+        # Therefore, we use the ids of the field_group items as keys. Note that we do
+        # not use the id of the list, since we want to hit the cache for all lists of
         # the same nodes, not only for the same list of nodes. Also, the list id may
         # even be reused, in which case we would get wrong results from the cache.
         key = (
-            (return_type, id(field_nodes[0]))
-            if len(field_nodes) == 1  # optimize most frequent case
-            else (return_type, *map(id, field_nodes))
+            (return_type, id(field_group[0]))
+            if len(field_group) == 1  # optimize most frequent case
+            else (return_type, *map(id, field_group))
         )
         sub_fields_and_patches = cache.get(key)
         if sub_fields_and_patches is None:
@@ -1653,7 +1653,7 @@ class ExecutionContext:
                 self.variable_values,
                 self.operation,
                 return_type,
-                field_nodes,
+                field_group,
             )
             cache[key] = sub_fields_and_patches
         return sub_fields_and_patches
@@ -1728,7 +1728,7 @@ class ExecutionContext:
         path: Path,
         item_path: Path,
         item: AwaitableOrValue[Any],
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         label: str | None = None,
@@ -1748,7 +1748,7 @@ class ExecutionContext:
                     return [
                         await self.complete_awaitable_value(
                             item_type,
-                            field_nodes,
+                            field_group,
                             info,
                             item_path,
                             item,
@@ -1767,7 +1767,7 @@ class ExecutionContext:
             try:
                 completed_item = self.complete_value(
                     item_type,
-                    field_nodes,
+                    field_group,
                     info,
                     item_path,
                     item,
@@ -1786,7 +1786,7 @@ class ExecutionContext:
                             except Exception as raw_error:  # pragma: no cover
                                 # noinspection PyShadowingNames
                                 error = located_error(
-                                    raw_error, field_nodes, item_path.as_list()
+                                    raw_error, field_group, item_path.as_list()
                                 )
                                 handle_field_error(
                                     error, item_type, async_payload_record.errors
@@ -1805,7 +1805,7 @@ class ExecutionContext:
                     completed_items = [completed_item]
 
             except Exception as raw_error:
-                error = located_error(raw_error, field_nodes, item_path.as_list())
+                error = located_error(raw_error, field_group, item_path.as_list())
                 handle_field_error(error, item_type, async_payload_record.errors)
                 self.filter_subsequent_payloads(item_path, async_payload_record)
                 completed_items = [None]
@@ -1821,7 +1821,7 @@ class ExecutionContext:
     async def execute_stream_iterator_item(
         self,
         iterator: AsyncIterator[Any],
-        field_nodes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         async_payload_record: StreamRecord,
@@ -1833,7 +1833,7 @@ class ExecutionContext:
         try:
             item = await anext(iterator)
             completed_item = self.complete_value(
-                item_type, field_nodes, info, item_path, item, async_payload_record
+                item_type, field_group, info, item_path, item, async_payload_record
             )
 
             return (
@@ -1847,7 +1847,7 @@ class ExecutionContext:
             raise StopAsyncIteration from raw_error
 
         except Exception as raw_error:
-            error = located_error(raw_error, field_nodes, item_path.as_list())
+            error = located_error(raw_error, field_group, item_path.as_list())
             handle_field_error(error, item_type, async_payload_record.errors)
             self.filter_subsequent_payloads(item_path, async_payload_record)
 
@@ -1855,7 +1855,7 @@ class ExecutionContext:
         self,
         initial_index: int,
         iterator: AsyncIterator[Any],
-        field_modes: FieldGroup,
+        field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         path: Path,
@@ -1875,7 +1875,7 @@ class ExecutionContext:
             try:
                 data = await self.execute_stream_iterator_item(
                     iterator,
-                    field_modes,
+                    field_group,
                     info,
                     item_type,
                     async_payload_record,
@@ -2242,12 +2242,12 @@ def handle_field_error(
 
 
 def invalid_return_type_error(
-    return_type: GraphQLObjectType, result: Any, field_nodes: FieldGroup
+    return_type: GraphQLObjectType, result: Any, field_group: FieldGroup
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
         f"Expected value of type '{return_type.name}' but got: {inspect(result)}.",
-        field_nodes,
+        field_group,
     )
 
 
@@ -2510,16 +2510,16 @@ def execute_subscription(
         context.operation,
     ).fields
     first_root_field = next(iter(root_fields.items()))
-    response_name, field_nodes = first_root_field
-    field_name = field_nodes[0].name.value
+    response_name, field_group = first_root_field
+    field_name = field_group[0].name.value
     field_def = schema.get_field(root_type, field_name)
 
     if not field_def:
         msg = f"The subscription field '{field_name}' is not defined."
-        raise GraphQLError(msg, field_nodes)
+        raise GraphQLError(msg, field_group)
 
     path = Path(None, response_name, root_type.name)
-    info = context.build_resolve_info(field_def, field_nodes, root_type, path)
+    info = context.build_resolve_info(field_def, field_group, root_type, path)
 
     # Implements the "ResolveFieldEventStream" algorithm from GraphQL specification.
     # It differs from "ResolveFieldValue" due to providing a different `resolveFn`.
@@ -2527,7 +2527,7 @@ def execute_subscription(
     try:
         # Build a dictionary of arguments from the field.arguments AST, using the
         # variables scope to fulfill any variable references.
-        args = get_argument_values(field_def, field_nodes[0], context.variable_values)
+        args = get_argument_values(field_def, field_group[0], context.variable_values)
 
         # Call the `subscribe()` resolver or the default resolver to produce an
         # AsyncIterable yielding raw payloads.
@@ -2540,14 +2540,14 @@ def execute_subscription(
                 try:
                     return assert_event_stream(await result)
                 except Exception as error:
-                    raise located_error(error, field_nodes, path.as_list()) from error
+                    raise located_error(error, field_group, path.as_list()) from error
 
             return await_result()
 
         return assert_event_stream(result)
 
     except Exception as error:
-        raise located_error(error, field_nodes, path.as_list()) from error
+        raise located_error(error, field_group, path.as_list()) from error
 
 
 def assert_event_stream(result: Any) -> AsyncIterable:

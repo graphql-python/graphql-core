@@ -72,8 +72,8 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                         extra_field_selection,
                     )
                 )
-            for field_nodes in fields.values():
-                field_name = field_nodes[0].name.value
+            for field_group in fields.values():
+                field_name = field_group[0].name.value
                 if field_name.startswith("__"):
                     self.report_error(
                         GraphQLError(
@@ -83,6 +83,6 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                                 else f"Subscription '{operation_name}'"
                             )
                             + " must not select an introspection top level field.",
-                            field_nodes,
+                            field_group,
                         )
                     )

@@ -93,7 +93,7 @@ def collect_subfields(
     variable_values: dict[str, Any],
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
-    field_nodes: FieldGroup,
+    field_group: FieldGroup,
 ) -> FieldsAndPatches:
     """Collect subfields.
 
@@ -112,7 +112,7 @@ def collect_subfields(
     sub_patches: list[PatchFields] = []
     sub_fields_and_patches = FieldsAndPatches(sub_field_nodes, sub_patches)
 
-    for node in field_nodes:
+    for node in field_group:
         if node.selection_set:
             collect_fields_impl(
                 schema,
