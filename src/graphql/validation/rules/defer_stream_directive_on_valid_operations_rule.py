@@ -80,6 +80,6 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
                 if not if_argument_can_be_false(node):
                     msg = (
                         "Stream directive not supported on subscription operations."
-                        " Disable `@defer` by setting the `if` argument to `false`."
+                        " Disable `@stream` by setting the `if` argument to `false`."
                     )
                     self.report_error(GraphQLError(msg, node))

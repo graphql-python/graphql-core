@@ -274,7 +274,7 @@ def describe_defer_stream_directive_on_valid_operations():
                 {
                     "message": "Stream directive not supported"
                     " on subscription operations."
-                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    " Disable `@stream` by setting the `if` argument to `false`.",
                     "locations": [(4, 26)],
                 },
             ],
@@ -296,7 +296,7 @@ def describe_defer_stream_directive_on_valid_operations():
                 {
                     "message": "Stream directive not supported"
                     " on subscription operations."
-                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    " Disable `@stream` by setting the `if` argument to `false`.",
                     "locations": [(8, 24)],
                 },
             ],
@@ -344,7 +344,7 @@ def describe_defer_stream_directive_on_valid_operations():
                 {
                     "message": "Stream directive not supported"
                     " on subscription operations."
-                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    " Disable `@stream` by setting the `if` argument to `false`.",
                     "locations": [(15, 24)],
                 },
             ],
