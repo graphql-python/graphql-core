@@ -43,10 +43,15 @@ def describe_customize_execution():
 
         class TestExecutionContext(ExecutionContext):
             def execute_field(
-                self, parent_type, source, field_group, path, async_payload_record=None
+                self,
+                parent_type,
+                source,
+                field_group,
+                path,
+                incremental_data_record=None,
             ):
                 result = super().execute_field(
-                    parent_type, source, field_group, path, async_payload_record
+                    parent_type, source, field_group, path, incremental_data_record
                 )
                 return result * 2  # type: ignore
 

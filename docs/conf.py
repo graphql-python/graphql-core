@@ -146,7 +146,6 @@ enum.Enum
 traceback
 types.TracebackType
 TypeMap
-AsyncPayloadRecord
 AwaitableOrValue
 EnterLeaveVisitor
 ExperimentalIncrementalExecutionResults
@@ -160,6 +159,7 @@ GraphQLInputType
 GraphQLTypeResolver
 GraphQLOutputType
 GroupedFieldSet
+IncrementalDataRecord
 Middleware
 asyncio.events.AbstractEventLoop
 graphql.execution.collect_fields.FieldsAndPatches
@@ -168,7 +168,7 @@ graphql.execution.Middleware
 graphql.execution.execute.DeferredFragmentRecord
 graphql.execution.execute.ExperimentalIncrementalExecutionResults
 graphql.execution.execute.StreamArguments
-graphql.execution.execute.StreamRecord
+graphql.execution.execute.StreamItemsRecord
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor
 graphql.type.definition.TContext

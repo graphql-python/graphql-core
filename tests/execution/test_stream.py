@@ -176,16 +176,17 @@ def describe_execute_stream_directive():
         context = ExecutionContext.build(schema, parse("{ hero { id } }"))
         assert isinstance(context, ExecutionContext)
         record = StreamItemsRecord(None, None, None, None, context)
-        assert str(record) == "StreamRecord(path=[])"
+        assert str(record) == "StreamItemsRecord(path=[])"
         record = StreamItemsRecord(
             "foo", Path(None, "bar", "Bar"), None, record, context
         )
         assert (
-            str(record) == "StreamRecord(" "path=['bar'], label='foo', parent_context)"
+            str(record) == "StreamItemsRecord("
+            "path=['bar'], label='foo', parent_context)"
         )
         record.items = ["hello", "world"]
         assert (
-            str(record) == "StreamRecord("
+            str(record) == "StreamItemsRecord("
             "path=['bar'], label='foo', parent_context, items)"
         )
 
