@@ -842,7 +842,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        fields: GroupedFieldSet,
+        grouped_field_set: GroupedFieldSet,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields serially.
 
@@ -875,7 +875,7 @@ class ExecutionContext:
             return results
 
         # noinspection PyTypeChecker
-        return async_reduce(reducer, fields.items(), {})
+        return async_reduce(reducer, grouped_field_set.items(), {})
 
     def execute_fields(
         self,
