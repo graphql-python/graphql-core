@@ -200,11 +200,19 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_list_value(node: PrintedNode, *_args: Any) -> str:
-        return f"[{join(node.values, ', ')}]"
+        values = node.values
+        values_line = f"[{join(values, ', ')}]"
+        return (
+            "\n".join(("[", indent(join(values, "\n")), "]"))
+            if len(values_line) > 80
+            else values_line
+        )
 
     @staticmethod
     def leave_object_value(node: PrintedNode, *_args: Any) -> str:
-        return f"{{ {join(node.fields, ', ')} }}"
+        fields = node.fields
+        fields_line = f"{{ {join(fields, ', ')} }}"
+        return block(fields) if len(fields_line) > MAX_LINE_LENGTH else fields_line
 
     @staticmethod
     def leave_object_field(node: PrintedNode, *_args: Any) -> str:
