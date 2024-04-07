@@ -28,27 +28,28 @@ from graphql.type import (
     GraphQLString,
 )
 
-
-def resolve_null_sync(_obj, _info) -> None:
-    """A resolver returning a null value synchronously."""
-    return
-
-
-async def resolve_null_async(_obj, _info) -> None:
-    """A resolver returning a null value asynchronously."""
-    return
-
-
 friend_type = GraphQLObjectType(
     "Friend",
     {
         "id": GraphQLField(GraphQLID),
         "name": GraphQLField(GraphQLString),
-        "asyncNonNullErrorField": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=resolve_null_async
-        ),
+        "nonNullName": GraphQLField(GraphQLNonNull(GraphQLString)),
     },
 )
+
+hero_type = GraphQLObjectType(
+    "Hero",
+    {
+        "id": GraphQLField(GraphQLID),
+        "name": GraphQLField(GraphQLString),
+        "nonNullName": GraphQLField(GraphQLNonNull(GraphQLString)),
+        "friends": GraphQLField(GraphQLList(friend_type)),
+    },
+)
+
+query = GraphQLObjectType("Query", {"hero": GraphQLField(hero_type)})
+
+schema = GraphQLSchema(query)
 
 
 class Friend(NamedTuple):
@@ -58,57 +59,44 @@ class Friend(NamedTuple):
 
 friends = [Friend(2, "Han"), Friend(3, "Leia"), Friend(4, "C-3PO")]
 
-
-async def resolve_slow(_obj, _info) -> str:
-    """Simulate a slow async resolver returning a value."""
-    await sleep(0)
-    return "slow"
+hero = {"id": 1, "name": "Luke", "friends": friends}
 
 
-async def resolve_bad(_obj, _info) -> str:
-    """Simulate a bad async resolver raising an error."""
-    raise RuntimeError("bad")
+class Resolvers:
+    """Various resolver functions for testing."""
 
+    @staticmethod
+    def null(_info) -> None:
+        """A resolver returning a null value synchronously."""
+        return
 
-async def resolve_friends_async(_obj, _info) -> AsyncGenerator[Friend, None]:
-    """A slow async generator yielding the first friend."""
-    await sleep(0)
-    yield friends[0]
+    @staticmethod
+    async def null_async(_info) -> None:
+        """A resolver returning a null value asynchronously."""
+        return
 
+    @staticmethod
+    async def slow(_info) -> str:
+        """Simulate a slow async resolver returning a value."""
+        await sleep(0)
+        return "slow"
 
-hero_type = GraphQLObjectType(
-    "Hero",
-    {
-        "id": GraphQLField(GraphQLID),
-        "name": GraphQLField(GraphQLString),
-        "slowField": GraphQLField(GraphQLString, resolve=resolve_slow),
-        "errorField": GraphQLField(GraphQLString, resolve=resolve_bad),
-        "nonNullErrorField": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=resolve_null_sync
-        ),
-        "asyncNonNullErrorField": GraphQLField(
-            GraphQLNonNull(GraphQLString), resolve=resolve_null_async
-        ),
-        "friends": GraphQLField(
-            GraphQLList(friend_type), resolve=lambda _obj, _info: friends
-        ),
-        "asyncFriends": GraphQLField(
-            GraphQLList(friend_type), resolve=resolve_friends_async
-        ),
-    },
-)
+    @staticmethod
+    def bad(_info) -> str:
+        """Simulate a bad resolver raising an error."""
+        raise RuntimeError("bad")
 
-hero = Friend(1, "Luke")
-
-query = GraphQLObjectType(
-    "Query", {"hero": GraphQLField(hero_type, resolve=lambda _obj, _info: hero)}
-)
-
-schema = GraphQLSchema(query)
+    @staticmethod
+    async def friends(_info) -> AsyncGenerator[Friend, None]:
+        """A slow async generator yielding the first friend."""
+        await sleep(0)
+        yield friends[0]
 
 
 async def complete(document: DocumentNode, root_value: Any = None) -> Any:
-    result = experimental_execute_incrementally(schema, document, root_value)
+    result = experimental_execute_incrementally(
+        schema, document, root_value or {"hero": hero}
+    )
     if is_awaitable(result):
         result = await result
 
@@ -485,24 +473,24 @@ def describe_execute_defer_directive():
             }
             fragment QueryFragment on Query {
               hero {
-                errorField
+                name
               }
             }
             """
         )
-        result = await complete(document)
+        result = await complete(document, {"hero": {**hero, "name": Resolvers.bad}})
 
         assert result == [
             {"data": {}, "hasNext": True},
             {
                 "incremental": [
                     {
-                        "data": {"hero": {"errorField": None}},
+                        "data": {"hero": {"name": None}},
                         "errors": [
                             {
                                 "message": "bad",
                                 "locations": [{"column": 17, "line": 7}],
-                                "path": ["hero", "errorField"],
+                                "path": ["hero", "name"],
                             }
                         ],
                         "path": [],
@@ -666,24 +654,24 @@ def describe_execute_defer_directive():
               }
             }
             fragment NameFragment on Hero {
-              errorField
+              name
             }
             """
         )
-        result = await complete(document)
+        result = await complete(document, {"hero": {**hero, "name": Resolvers.bad}})
 
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
                 "incremental": [
                     {
-                        "data": {"errorField": None},
+                        "data": {"name": None},
                         "path": ["hero"],
                         "errors": [
                             {
                                 "message": "bad",
                                 "locations": [{"line": 9, "column": 15}],
-                                "path": ["hero", "errorField"],
+                                "path": ["hero", "name"],
                             }
                         ],
                     },
@@ -703,11 +691,13 @@ def describe_execute_defer_directive():
               }
             }
             fragment NameFragment on Hero {
-              nonNullErrorField
+              nonNullName
             }
             """
         )
-        result = await complete(document)
+        result = await complete(
+            document, {"hero": {**hero, "nonNullName": Resolvers.null}}
+        )
 
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
@@ -719,9 +709,9 @@ def describe_execute_defer_directive():
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
-                                " Hero.nonNullErrorField.",
+                                " Hero.nonNullName.",
                                 "locations": [{"line": 9, "column": 15}],
-                                "path": ["hero", "nonNullErrorField"],
+                                "path": ["hero", "nonNullName"],
                             }
                         ],
                     },
@@ -736,7 +726,7 @@ def describe_execute_defer_directive():
             """
             query HeroNameQuery {
               hero {
-                nonNullErrorField
+                nonNullName
                 ...NameFragment @defer
               }
             }
@@ -745,16 +735,18 @@ def describe_execute_defer_directive():
             }
             """
         )
-        result = await complete(document)
+        result = await complete(
+            document, {"hero": {**hero, "nonNullName": Resolvers.null}}
+        )
 
         assert result == {
             "data": {"hero": None},
             "errors": [
                 {
                     "message": "Cannot return null for non-nullable field"
-                    " Hero.nonNullErrorField.",
+                    " Hero.nonNullName.",
                     "locations": [{"line": 4, "column": 17}],
-                    "path": ["hero", "nonNullErrorField"],
+                    "path": ["hero", "nonNullName"],
                 }
             ],
         }
@@ -770,11 +762,13 @@ def describe_execute_defer_directive():
               }
             }
             fragment NameFragment on Hero {
-              asyncNonNullErrorField
+              nonNullName
             }
             """
         )
-        result = await complete(document)
+        result = await complete(
+            document, {"hero": {**hero, "nonNullName": Resolvers.null_async}}
+        )
 
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
@@ -786,9 +780,9 @@ def describe_execute_defer_directive():
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
-                                " Hero.asyncNonNullErrorField.",
+                                " Hero.nonNullName.",
                                 "locations": [{"line": 9, "column": 15}],
-                                "path": ["hero", "asyncNonNullErrorField"],
+                                "path": ["hero", "nonNullName"],
                             }
                         ],
                     },
@@ -808,7 +802,7 @@ def describe_execute_defer_directive():
               }
             }
             fragment NameFragment on Hero {
-              slowField
+              name
               friends {
                 ...NestedFragment @defer
               }
@@ -818,14 +812,14 @@ def describe_execute_defer_directive():
             }
             """
         )
-        result = await complete(document)
+        result = await complete(document, {"hero": {**hero, "name": Resolvers.slow}})
 
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
                 "incremental": [
                     {
-                        "data": {"slowField": "slow", "friends": [{}, {}, {}]},
+                        "data": {"name": "slow", "friends": [{}, {}, {}]},
                         "path": ["hero"],
                     }
                 ],
@@ -909,8 +903,8 @@ def describe_execute_defer_directive():
             """
             query {
               hero {
-                asyncFriends {
-                  asyncNonNullErrorField
+                friends {
+                  nonNullName
                   ...NameFragment @defer
                 }
               }
@@ -921,16 +915,18 @@ def describe_execute_defer_directive():
             """
         )
 
-        result = await complete(document)
+        result = await complete(
+            document, {"hero": {**hero, "friends": Resolvers.friends}}
+        )
 
         assert result == {
-            "data": {"hero": {"asyncFriends": [None]}},
+            "data": {"hero": {"friends": [None]}},
             "errors": [
                 {
                     "message": "Cannot return null for non-nullable field"
-                    " Friend.asyncNonNullErrorField.",
+                    " Friend.nonNullName.",
                     "locations": [{"line": 5, "column": 19}],
-                    "path": ["hero", "asyncFriends", 0, "asyncNonNullErrorField"],
+                    "path": ["hero", "friends", 0, "nonNullName"],
                 }
             ],
         }
@@ -958,14 +954,15 @@ def describe_execute_defer_directive():
         document = parse(
             """
             query Deferred {
-              hero { slowField }
+              hero { name }
               ... @defer { hero { id } }
             }
             """
         )
 
+        root_value = {"hero": {**hero, "name": Resolvers.slow}}
         with pytest.raises(GraphQLError) as exc_info:
-            await execute(schema, document, {})  # type: ignore
+            await execute(schema, document, root_value)  # type: ignore
 
         assert str(exc_info.value) == (
             "Executing this GraphQL operation would unexpectedly produce"
