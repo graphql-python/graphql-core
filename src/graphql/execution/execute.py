@@ -77,6 +77,7 @@ from .async_iterables import map_async_iterable
 from .collect_fields import (
     FieldGroup,
     FieldsAndPatches,
+    GroupedFieldSet,
     collect_fields,
     collect_subfields,
 )
@@ -841,7 +842,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        fields: dict[str, FieldGroup],
+        fields: GroupedFieldSet,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields serially.
 
@@ -881,7 +882,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        fields: dict[str, FieldGroup],
+        fields: GroupedFieldSet,
         async_payload_record: AsyncPayloadRecord | None = None,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields concurrently.
@@ -1692,7 +1693,7 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        fields: dict[str, FieldGroup],
+        fields: GroupedFieldSet,
         label: str | None = None,
         path: Path | None = None,
         parent_context: AsyncPayloadRecord | None = None,

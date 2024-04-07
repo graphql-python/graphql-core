@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
-from typing import Any, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple
 
 from ..language import (
     FieldNode,
@@ -32,25 +32,33 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias
 
 
-__all__ = ["collect_fields", "collect_subfields", "FieldGroup", "FieldsAndPatches"]
+__all__ = [
+    "collect_fields",
+    "collect_subfields",
+    "FieldGroup",
+    "FieldsAndPatches",
+    "GroupedFieldSet",
+]
 
 if sys.version_info < (3, 9):
     FieldGroup: TypeAlias = List[FieldNode]
+    GroupedFieldSet = Dict[str, FieldGroup]
 else:  # Python >= 3.9
     FieldGroup: TypeAlias = list[FieldNode]
+    GroupedFieldSet = dict[str, FieldGroup]
 
 
 class PatchFields(NamedTuple):
     """Optionally labelled set of fields to be used as a patch."""
 
     label: str | None
-    fields: dict[str, FieldGroup]
+    fields: GroupedFieldSet
 
 
 class FieldsAndPatches(NamedTuple):
     """Tuple of collected fields and patches to be applied."""
 
-    fields: dict[str, FieldGroup]
+    fields: GroupedFieldSet
     patches: list[PatchFields]
 
 
