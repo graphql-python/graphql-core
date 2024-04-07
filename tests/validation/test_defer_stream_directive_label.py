@@ -9,7 +9,7 @@ assert_errors = partial(assert_validation_errors, DeferStreamDirectiveLabel)
 assert_valid = partial(assert_errors, errors=[])
 
 
-def describe_defer_stream_label():
+def describe_defer_stream_directive_labels():
     def defer_fragments_with_no_label():
         assert_valid(
             """
