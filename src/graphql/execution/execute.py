@@ -813,7 +813,7 @@ class ExecutionContext:
             )
             raise GraphQLError(msg, operation)
 
-        root_fields, patches = collect_fields(
+        grouped_field_set, patches = collect_fields(
             schema,
             self.fragments,
             self.variable_values,
@@ -827,12 +827,12 @@ class ExecutionContext:
             self.execute_fields_serially
             if operation.operation == OperationType.MUTATION
             else self.execute_fields
-        )(root_type, root_value, None, root_fields)  # type: ignore
+        )(root_type, root_value, None, grouped_field_set)  # type: ignore
 
         for patch in patches:
-            label, patch_fields = patch
+            label, patch_grouped_filed_set = patch
             self.execute_deferred_fragment(
-                root_type, root_value, patch_fields, label, None
+                root_type, root_value, patch_grouped_filed_set, label, None
             )
 
         return result
@@ -1604,10 +1604,12 @@ class ExecutionContext:
         async_payload_record: AsyncPayloadRecord | None,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Collect sub-fields to execute to complete this value."""
-        sub_field_nodes, sub_patches = self.collect_subfields(return_type, field_group)
+        sub_grouped_field_set, sub_patches = self.collect_subfields(
+            return_type, field_group
+        )
 
         sub_fields = self.execute_fields(
-            return_type, result, path, sub_field_nodes, async_payload_record
+            return_type, result, path, sub_grouped_field_set, async_payload_record
         )
 
         for sub_patch in sub_patches:
@@ -2503,14 +2505,14 @@ def execute_subscription(
         msg = "Schema is not configured to execute subscription operation."
         raise GraphQLError(msg, context.operation)
 
-    root_fields = collect_fields(
+    grouped_field_set = collect_fields(
         schema,
         context.fragments,
         context.variable_values,
         root_type,
         context.operation,
-    ).fields
-    first_root_field = next(iter(root_fields.items()))
+    ).grouped_field_set
+    first_root_field = next(iter(grouped_field_set.items()))
     response_name, field_group = first_root_field
     field_name = field_group[0].name.value
     field_def = schema.get_field(root_type, field_name)

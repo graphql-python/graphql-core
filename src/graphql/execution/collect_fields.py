@@ -52,13 +52,13 @@ class PatchFields(NamedTuple):
     """Optionally labelled set of fields to be used as a patch."""
 
     label: str | None
-    fields: GroupedFieldSet
+    grouped_field_set: GroupedFieldSet
 
 
 class FieldsAndPatches(NamedTuple):
     """Tuple of collected fields and patches to be applied."""
 
-    fields: GroupedFieldSet
+    grouped_field_set: GroupedFieldSet
     patches: list[PatchFields]
 
 
@@ -79,7 +79,7 @@ def collect_fields(
 
     For internal use only.
     """
-    fields: dict[str, list[FieldNode]] = defaultdict(list)
+    grouped_field_set: dict[str, list[FieldNode]] = defaultdict(list)
     patches: list[PatchFields] = []
     collect_fields_impl(
         schema,
@@ -88,11 +88,11 @@ def collect_fields(
         operation,
         runtime_type,
         operation.selection_set,
-        fields,
+        grouped_field_set,
         patches,
         set(),
     )
-    return FieldsAndPatches(fields, patches)
+    return FieldsAndPatches(grouped_field_set, patches)
 
 
 def collect_subfields(
@@ -114,11 +114,11 @@ def collect_subfields(
 
     For internal use only.
     """
-    sub_field_nodes: dict[str, list[FieldNode]] = defaultdict(list)
+    sub_grouped_field_set: dict[str, list[FieldNode]] = defaultdict(list)
     visited_fragment_names: set[str] = set()
 
     sub_patches: list[PatchFields] = []
-    sub_fields_and_patches = FieldsAndPatches(sub_field_nodes, sub_patches)
+    sub_fields_and_patches = FieldsAndPatches(sub_grouped_field_set, sub_patches)
 
     for node in field_group:
         if node.selection_set:
@@ -129,7 +129,7 @@ def collect_subfields(
                 operation,
                 return_type,
                 node.selection_set,
-                sub_field_nodes,
+                sub_grouped_field_set,
                 sub_patches,
                 visited_fragment_names,
             )
@@ -143,7 +143,7 @@ def collect_fields_impl(
     operation: OperationDefinitionNode,
     runtime_type: GraphQLObjectType,
     selection_set: SelectionSetNode,
-    fields: dict[str, list[FieldNode]],
+    grouped_field_set: dict[str, list[FieldNode]],
     patches: list[PatchFields],
     visited_fragment_names: set[str],
 ) -> None:
@@ -154,7 +154,7 @@ def collect_fields_impl(
         if isinstance(selection, FieldNode):
             if not should_include_node(variable_values, selection):
                 continue
-            fields[get_field_entry_key(selection)].append(selection)
+            grouped_field_set[get_field_entry_key(selection)].append(selection)
         elif isinstance(selection, InlineFragmentNode):
             if not should_include_node(
                 variable_values, selection
@@ -184,7 +184,7 @@ def collect_fields_impl(
                     operation,
                     runtime_type,
                     selection.selection_set,
-                    fields,
+                    grouped_field_set,
                     patches,
                     visited_fragment_names,
                 )
@@ -229,7 +229,7 @@ def collect_fields_impl(
                     operation,
                     runtime_type,
                     fragment.selection_set,
-                    fields,
+                    grouped_field_set,
                     patches,
                     visited_fragment_names,
                 )

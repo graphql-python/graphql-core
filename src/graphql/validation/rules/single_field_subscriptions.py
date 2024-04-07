@@ -42,15 +42,15 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 for definition in document.definitions
                 if isinstance(definition, FragmentDefinitionNode)
             }
-            fields = collect_fields(
+            grouped_field_set = collect_fields(
                 schema,
                 fragments,
                 variable_values,
                 subscription_type,
                 node,
-            ).fields
-            if len(fields) > 1:
-                field_selection_lists = list(fields.values())
+            ).grouped_field_set
+            if len(grouped_field_set) > 1:
+                field_selection_lists = list(grouped_field_set.values())
                 extra_field_selection_lists = field_selection_lists[1:]
                 extra_field_selection = [
                     field
@@ -72,7 +72,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                         extra_field_selection,
                     )
                 )
-            for field_group in fields.values():
+            for field_group in grouped_field_set.values():
                 field_name = field_group[0].name.value
                 if field_name.startswith("__"):
                     self.report_error(
