@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import sys
 from collections import defaultdict
-from typing import Any, NamedTuple
+from typing import Any, List, NamedTuple
 
 from ..language import (
     FieldNode,
@@ -25,20 +26,31 @@ from ..type import (
 from ..utilities.type_from_ast import type_from_ast
 from .values import get_directive_values
 
-__all__ = ["collect_fields", "collect_subfields", "FieldsAndPatches"]
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+
+__all__ = ["collect_fields", "collect_subfields", "FieldGroup", "FieldsAndPatches"]
+
+if sys.version_info < (3, 9):
+    FieldGroup: TypeAlias = List[FieldNode]
+else:  # Python >= 3.9
+    FieldGroup: TypeAlias = list[FieldNode]
 
 
 class PatchFields(NamedTuple):
     """Optionally labelled set of fields to be used as a patch."""
 
     label: str | None
-    fields: dict[str, list[FieldNode]]
+    fields: dict[str, FieldGroup]
 
 
 class FieldsAndPatches(NamedTuple):
     """Tuple of collected fields and patches to be applied."""
 
-    fields: dict[str, list[FieldNode]]
+    fields: dict[str, FieldGroup]
     patches: list[PatchFields]
 
 
@@ -81,7 +93,7 @@ def collect_subfields(
     variable_values: dict[str, Any],
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
-    field_nodes: list[FieldNode],
+    field_nodes: FieldGroup,
 ) -> FieldsAndPatches:
     """Collect subfields.
 

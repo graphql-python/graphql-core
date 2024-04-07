@@ -150,6 +150,7 @@ AsyncPayloadRecord
 AwaitableOrValue
 EnterLeaveVisitor
 ExperimentalIncrementalExecutionResults
+FieldGroup
 FormattedSourceLocation
 GraphQLAbstractType
 GraphQLCompositeType

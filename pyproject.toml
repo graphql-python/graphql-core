@@ -251,6 +251,7 @@ exclude_lines = [
     "pragma: no cover",
     "except ImportError:",
     "# Python <",
+    'sys\.version_info <',
     "raise NotImplementedError",
     "assert False,",
     '\s+next\($',

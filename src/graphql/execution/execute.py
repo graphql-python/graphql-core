@@ -41,7 +41,6 @@ except ImportError:  # Python < 3.7
 from ..error import GraphQLError, GraphQLFormattedError, located_error
 from ..language import (
     DocumentNode,
-    FieldNode,
     FragmentDefinitionNode,
     OperationDefinitionNode,
     OperationType,
@@ -75,7 +74,12 @@ from ..type import (
     is_object_type,
 )
 from .async_iterables import map_async_iterable
-from .collect_fields import FieldsAndPatches, collect_fields, collect_subfields
+from .collect_fields import (
+    FieldGroup,
+    FieldsAndPatches,
+    collect_fields,
+    collect_subfields,
+)
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
@@ -837,7 +841,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        fields: dict[str, list[FieldNode]],
+        fields: dict[str, FieldGroup],
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields serially.
 
@@ -847,7 +851,7 @@ class ExecutionContext:
         is_awaitable = self.is_awaitable
 
         def reducer(
-            results: dict[str, Any], field_item: tuple[str, list[FieldNode]]
+            results: dict[str, Any], field_item: tuple[str, FieldGroup]
         ) -> AwaitableOrValue[dict[str, Any]]:
             response_name, field_nodes = field_item
             field_path = Path(path, response_name, parent_type.name)
@@ -877,7 +881,7 @@ class ExecutionContext:
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        fields: dict[str, list[FieldNode]],
+        fields: dict[str, FieldGroup],
         async_payload_record: AsyncPayloadRecord | None = None,
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Execute the given fields concurrently.
@@ -927,7 +931,7 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source: Any,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         path: Path,
         async_payload_record: AsyncPayloadRecord | None = None,
     ) -> AwaitableOrValue[Any]:
@@ -996,7 +1000,7 @@ class ExecutionContext:
     def build_resolve_info(
         self,
         field_def: GraphQLField,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         parent_type: GraphQLObjectType,
         path: Path,
     ) -> GraphQLResolveInfo:
@@ -1024,7 +1028,7 @@ class ExecutionContext:
     def complete_value(
         self,
         return_type: GraphQLOutputType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1113,7 +1117,7 @@ class ExecutionContext:
     async def complete_awaitable_value(
         self,
         return_type: GraphQLOutputType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1143,7 +1147,7 @@ class ExecutionContext:
         return completed
 
     def get_stream_values(
-        self, field_nodes: list[FieldNode], path: Path
+        self, field_nodes: FieldGroup, path: Path
     ) -> StreamArguments | None:
         """Get stream values.
 
@@ -1182,7 +1186,7 @@ class ExecutionContext:
     async def complete_async_iterator_value(
         self,
         item_type: GraphQLOutputType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         iterator: AsyncIterator[Any],
@@ -1269,7 +1273,7 @@ class ExecutionContext:
     def complete_list_value(
         self,
         return_type: GraphQLList[GraphQLOutputType],
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: AsyncIterable[Any] | Iterable[Any],
@@ -1367,7 +1371,7 @@ class ExecutionContext:
         complete_results: list[Any],
         errors: list[GraphQLError],
         item_type: GraphQLOutputType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         item_path: Path,
         async_payload_record: AsyncPayloadRecord | None,
@@ -1442,7 +1446,7 @@ class ExecutionContext:
     def complete_abstract_value(
         self,
         return_type: GraphQLAbstractType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1496,7 +1500,7 @@ class ExecutionContext:
         self,
         runtime_type_name: Any,
         return_type: GraphQLAbstractType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
@@ -1557,7 +1561,7 @@ class ExecutionContext:
     def complete_object_value(
         self,
         return_type: GraphQLObjectType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1593,7 +1597,7 @@ class ExecutionContext:
     def collect_and_execute_subfields(
         self,
         return_type: GraphQLObjectType,
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         path: Path,
         result: Any,
         async_payload_record: AsyncPayloadRecord | None,
@@ -1619,7 +1623,7 @@ class ExecutionContext:
         return sub_fields
 
     def collect_subfields(
-        self, return_type: GraphQLObjectType, field_nodes: list[FieldNode]
+        self, return_type: GraphQLObjectType, field_nodes: FieldGroup
     ) -> FieldsAndPatches:
         """Collect subfields.
 
@@ -1688,7 +1692,7 @@ class ExecutionContext:
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
-        fields: dict[str, list[FieldNode]],
+        fields: dict[str, FieldGroup],
         label: str | None = None,
         path: Path | None = None,
         parent_context: AsyncPayloadRecord | None = None,
@@ -1724,7 +1728,7 @@ class ExecutionContext:
         path: Path,
         item_path: Path,
         item: AwaitableOrValue[Any],
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         label: str | None = None,
@@ -1817,7 +1821,7 @@ class ExecutionContext:
     async def execute_stream_iterator_item(
         self,
         iterator: AsyncIterator[Any],
-        field_nodes: list[FieldNode],
+        field_nodes: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         async_payload_record: StreamRecord,
@@ -1851,7 +1855,7 @@ class ExecutionContext:
         self,
         initial_index: int,
         iterator: AsyncIterator[Any],
-        field_modes: list[FieldNode],
+        field_modes: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         path: Path,
@@ -2238,7 +2242,7 @@ def handle_field_error(
 
 
 def invalid_return_type_error(
-    return_type: GraphQLObjectType, result: Any, field_nodes: list[FieldNode]
+    return_type: GraphQLObjectType, result: Any, field_nodes: FieldGroup
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
