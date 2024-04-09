@@ -162,7 +162,7 @@ class Stack(NamedTuple):
     idx: int
     keys: tuple[Node, ...]
     edits: list[tuple[int | str, Node]]
-    prev: Any  # 'Stack' (python/mypy/issues/731)
+    prev: Stack
 
 
 def visit(

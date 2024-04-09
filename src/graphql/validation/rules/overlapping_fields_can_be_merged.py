@@ -98,10 +98,7 @@ Conflict: TypeAlias = Tuple["ConflictReason", List[FieldNode], List[FieldNode]]
 # Field name and reason.
 ConflictReason: TypeAlias = Tuple[str, "ConflictReasonMessage"]
 # Reason is a string, or a nested list of conflicts.
-if MYPY:  # recursive types not fully supported yet (/python/mypy/issues/731)
-    ConflictReasonMessage: TypeAlias = Union[str, List]
-else:
-    ConflictReasonMessage: TypeAlias = Union[str, List[ConflictReason]]
+ConflictReasonMessage: TypeAlias = Union[str, List[ConflictReason]]
 # Tuple defining a field node in a context.
 NodeAndDef: TypeAlias = Tuple[GraphQLCompositeType, FieldNode, Optional[GraphQLField]]
 # Dictionary of lists of those.
