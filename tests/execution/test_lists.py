@@ -210,8 +210,8 @@ def describe_execute_accepts_async_iterables_as_list_value():
             raise RuntimeError("bad")
 
         assert await _complete(list_field()) == (
-            {"listField": ["two", "4", None]},
-            [{"message": "bad", "locations": [(1, 3)], "path": ["listField", 2]}],
+            {"listField": None},
+            [{"message": "bad", "locations": [(1, 3)], "path": ["listField"]}],
         )
 
     @pytest.mark.asyncio()

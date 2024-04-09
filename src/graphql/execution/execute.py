@@ -1275,15 +1275,9 @@ class ExecutionContext:
                 except StopAsyncIteration:
                     break
             except Exception as raw_error:
-                self.handle_field_error(
-                    raw_error,
-                    item_type,
-                    field_group,
-                    item_path,
-                    incremental_data_record,
-                )
-                completed_results.append(None)
-                break
+                raise located_error(
+                    raw_error, field_group, path.as_list()
+                ) from raw_error
             if complete_list_item_value(
                 value,
                 completed_results,
@@ -1897,6 +1891,7 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
         incremental_data_record: StreamItemsRecord,
+        path: Path,
         item_path: Path,
     ) -> Any:
         """Execute stream iterator item."""
@@ -1904,20 +1899,20 @@ class ExecutionContext:
             raise StopAsyncIteration
         try:
             item = await anext(async_iterator)
+        except StopAsyncIteration as raw_error:
+            incremental_data_record.set_is_completed_async_iterator()
+            raise StopAsyncIteration from raw_error
+        except Exception as raw_error:
+            raise located_error(raw_error, field_group, path.as_list()) from raw_error
+        try:
             completed_item = self.complete_value(
                 item_type, field_group, info, item_path, item, incremental_data_record
             )
-
             return (
                 await completed_item
                 if self.is_awaitable(completed_item)
                 else completed_item
             )
-
-        except StopAsyncIteration as raw_error:
-            incremental_data_record.set_is_completed_async_iterator()
-            raise StopAsyncIteration from raw_error
-
         except Exception as raw_error:
             self.handle_field_error(
                 raw_error, item_type, field_group, item_path, incremental_data_record
@@ -1952,6 +1947,7 @@ class ExecutionContext:
                     info,
                     item_type,
                     incremental_data_record,
+                    path,
                     item_path,
                 )
             except StopAsyncIteration:
