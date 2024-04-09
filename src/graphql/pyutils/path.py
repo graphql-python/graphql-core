@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, NamedTuple, Optional
+from typing import NamedTuple
 
 __all__ = ["Path"]
 
@@ -10,7 +10,7 @@ __all__ = ["Path"]
 class Path(NamedTuple):
     """A generic path of string or integer indices"""
 
-    prev: Optional[Path]
+    prev: Path | None
     """path with the previous indices"""
     key: str | int
     """current index in the path (string or integer)"""
@@ -25,7 +25,7 @@ class Path(NamedTuple):
         """Return a list of the path keys."""
         flattened: list[str | int] = []
         append = flattened.append
-        curr: Path = self
+        curr: Path | None = self
         while curr:
             append(curr.key)
             curr = curr.prev

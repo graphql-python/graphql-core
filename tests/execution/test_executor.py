@@ -308,9 +308,11 @@ def describe_execute_handles_basic_execution_tasks():
         prev, key, typename = path
         assert key == "l2"
         assert typename == "SomeObject"
+        assert prev is not None
         prev, key, typename = prev
         assert key == 0
         assert typename is None
+        assert prev is not None
         prev, key, typename = prev
         assert key == "l1"
         assert typename == "SomeQuery"

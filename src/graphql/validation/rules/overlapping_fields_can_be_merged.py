@@ -38,8 +38,6 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias
 
 
-MYPY = False
-
 __all__ = ["OverlappingFieldsCanBeMergedRule"]
 
 
