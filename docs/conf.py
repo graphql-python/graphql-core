@@ -165,10 +165,11 @@ asyncio.events.AbstractEventLoop
 graphql.execution.collect_fields.FieldsAndPatches
 graphql.execution.map_async_iterable.map_async_iterable
 graphql.execution.Middleware
-graphql.execution.execute.DeferredFragmentRecord
 graphql.execution.execute.ExperimentalIncrementalExecutionResults
 graphql.execution.execute.StreamArguments
-graphql.execution.execute.StreamItemsRecord
+graphql.execution.incremental_publisher.IncrementalPublisherMixin
+graphql.execution.incremental_publisher.StreamItemsRecord
+graphql.execution.incremental_publisher.DeferredFragmentRecord
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor
 graphql.type.definition.TContext

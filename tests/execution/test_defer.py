@@ -15,7 +15,7 @@ from graphql.execution import (
     execute,
     experimental_execute_incrementally,
 )
-from graphql.execution.execute import DeferredFragmentRecord
+from graphql.execution.incremental_publisher import DeferredFragmentRecord
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import Path, is_awaitable
 from graphql.type import (

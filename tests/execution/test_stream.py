@@ -12,7 +12,7 @@ from graphql.execution import (
     IncrementalStreamResult,
     experimental_execute_incrementally,
 )
-from graphql.execution.execute import StreamItemsRecord
+from graphql.execution.incremental_publisher import StreamItemsRecord
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import Path
 from graphql.type import (
