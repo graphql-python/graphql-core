@@ -17,7 +17,7 @@ reliable and compatible with GraphQL.js.
 The current stable version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js
 version 16.6.0 and supports Python version 3.7 and newer.
 
-You can also try out the latest alpha version 3.3.0a4 of GraphQL-core
+You can also try out the latest alpha version 3.3.0a5 of GraphQL-core
 which is up-to-date with GraphQL.js version 17.0.0a2.
 Please note that this new minor version of GraphQL-core does not support
 Python 3.6 anymore.
