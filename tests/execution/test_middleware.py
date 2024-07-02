@@ -1,9 +1,18 @@
+import inspect
 from typing import Awaitable, cast
 
 import pytest
+from graphql import subscribe
 from graphql.execution import Middleware, MiddlewareManager, execute
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+
+
+def _create_subscription_schema(tp: GraphQLObjectType) -> GraphQLSchema:
+    noop_type = GraphQLObjectType(
+        "Noop", {"noop": GraphQLField(GraphQLString, resolve=lambda *_: "noop")}
+    )
+    return GraphQLSchema(query=noop_type, subscription=tp)
 
 
 def describe_middleware():
@@ -235,6 +244,38 @@ def describe_middleware():
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
             assert result.data == {"field": "devloseR"}
+
+        @pytest.mark.asyncio()
+        async def subscription_simple():
+            async def bar_resolve(_obj, _info):
+                yield "bar"
+
+            test_type = GraphQLObjectType(
+                "Subscription",
+                {
+                    "bar": GraphQLField(
+                        GraphQLString,
+                        resolve=lambda message, _: message,
+                        subscribe=bar_resolve,
+                    ),
+                },
+            )
+            doc = parse("subscription { bar }")
+
+            async def reverse_middleware(next_, value, info, **kwargs):
+                awaitable_maybe = next_(value, info, **kwargs)
+                if inspect.isawaitable(awaitable_maybe):
+                    return (await awaitable_maybe)[::-1]
+                return awaitable_maybe[::-1]
+
+            agen = subscribe(
+                _create_subscription_schema(test_type),
+                doc,
+                middleware=MiddlewareManager(reverse_middleware),
+            )
+            assert inspect.isasyncgen(agen)
+            data = (await agen.__anext__()).data
+            assert data == {"bar": "rab"}
 
     def describe_without_manager():
         def no_middleware():
