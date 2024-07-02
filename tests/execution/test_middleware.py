@@ -1,25 +1,32 @@
+import inspect
 from typing import Awaitable, cast
 
 import pytest
+from graphql import subscribe
 from graphql.execution import Middleware, MiddlewareManager, execute
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
-def _create_schema(tp: GraphQLObjectType, is_subscription: bool) -> GraphQLSchema:
+
+def _create_schema(
+    tp: GraphQLObjectType, is_subscription: bool = False
+) -> GraphQLSchema:
     if is_subscription:
-        noop_type = GraphQLObjectType("Noop", {"noop": GraphQLField(GraphQLString, resolve=lambda *_: "noop")})
+        noop_type = GraphQLObjectType(
+            "Noop", {"noop": GraphQLField(GraphQLString, resolve=lambda *_: "noop")}
+        )
         return GraphQLSchema(query=noop_type, subscription=tp)
     return GraphQLSchema(tp)
-@pytest.mark.parametrize("is_subscription", [False, True], ids=["query", "subscription"])
-def test_describe_middleware(is_subscription: bool):
 
-    def test_test_describe_with_manager():
-        def test_default():
+
+def describe_middleware():
+    def describe_with_manager():
+        def default():
             doc = parse("{ field }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_field(self, _info):
+                def field(self, _info):
                     return "resolved"
 
             test_type = GraphQLObjectType(
@@ -28,20 +35,20 @@ def test_describe_middleware(is_subscription: bool):
 
             middlewares = MiddlewareManager()
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data["field"] == "resolved"  # type: ignore
 
-        def test_single_function():
+        def single_function():
             doc = parse("{ first second }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_first(self, _info):
+                def first(self, _info):
                     return "one"
 
-                def test_second(self, _info):
+                def second(self, _info):
                     return "two"
 
             test_type = GraphQLObjectType(
@@ -57,12 +64,12 @@ def test_describe_middleware(is_subscription: bool):
 
             middlewares = MiddlewareManager(reverse_middleware)
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
 
-        def test_two_functions_and_field_resolvers():
+        def two_functions_and_field_resolvers():
             doc = parse("{ first second }")
 
             # noinspection PyMethodMayBeStatic
@@ -90,21 +97,21 @@ def test_describe_middleware(is_subscription: bool):
 
             middlewares = MiddlewareManager(reverse_middleware, capitalize_middleware)
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data == {"first": "Eno", "second": "Owt"}  # type: ignore
 
         @pytest.mark.asyncio()
-        async def test_single_async_function():
+        async def single_async_function():
             doc = parse("{ first second }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                async def test_first(self, _info):
+                async def first(self, _info):
                     return "one"
 
-                async def test_second(self, _info):
+                async def second(self, _info):
                     return "two"
 
             test_type = GraphQLObjectType(
@@ -120,21 +127,21 @@ def test_describe_middleware(is_subscription: bool):
 
             middlewares = MiddlewareManager(reverse_middleware)
             awaitable_result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
             assert result.data == {"first": "eno", "second": "owt"}
 
-        def test_single_object():
+        def single_object():
             doc = parse("{ first second }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_first(self, _info):
+                def first(self, _info):
                     return "one"
 
-                def test_second(self, _info):
+                def second(self, _info):
                     return "two"
 
             test_type = GraphQLObjectType(
@@ -147,17 +154,17 @@ def test_describe_middleware(is_subscription: bool):
 
             class ReverseMiddleware:
                 # noinspection PyMethodMayBeStatic
-                def test_resolve(self, next_, *args, **kwargs):
+                def resolve(self, next_, *args, **kwargs):
                     return next_(*args, **kwargs)[::-1]
 
             middlewares = MiddlewareManager(ReverseMiddleware())
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
 
-        def test_skip_middleware_without_resolve_method():
+        def skip_middleware_without_resolve_method():
             class BadMiddleware:
                 pass  # no resolve method here
 
@@ -173,12 +180,12 @@ def test_describe_middleware(is_subscription: bool):
                 middleware=MiddlewareManager(BadMiddleware()),
             ) == ({"foo": "bar"}, None)
 
-        def test_with_function_and_object():
+        def with_function_and_object():
             doc = parse("{ field }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_field(self, _info):
+                def field(self, _info):
                     return "resolved"
 
             test_type = GraphQLObjectType(
@@ -190,28 +197,28 @@ def test_describe_middleware(is_subscription: bool):
 
             class CaptitalizeMiddleware:
                 # noinspection PyMethodMayBeStatic
-                def test_resolve(self, next_, *args, **kwargs):
+                def resolve(self, next_, *args, **kwargs):
                     return next_(*args, **kwargs).capitalize()
 
             middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "Devloser"}  # type: ignore
 
             middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "devloseR"}  # type: ignore
 
         @pytest.mark.asyncio()
-        async def test_with_async_function_and_object():
+        async def with_async_function_and_object():
             doc = parse("{ field }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                async def test_field(self, _info):
+                async def field(self, _info):
                     return "resolved"
 
             test_type = GraphQLObjectType(
@@ -228,7 +235,7 @@ def test_describe_middleware(is_subscription: bool):
 
             middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
             awaitable_result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
@@ -236,46 +243,78 @@ def test_describe_middleware(is_subscription: bool):
 
             middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
             awaitable_result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
             assert result.data == {"field": "devloseR"}
 
-    def test_describe_without_manager():
-        def test_no_middleware():
+        @pytest.mark.asyncio()
+        async def subscription_simple():
+            async def bar_resolve(_obj, _info):
+                yield "bar"
+
+            test_type = GraphQLObjectType(
+                "Subscription",
+                {
+                    "bar": GraphQLField(
+                        GraphQLString,
+                        resolve=lambda message, _: message,
+                        subscribe=bar_resolve,
+                    ),
+                },
+            )
+            doc = parse("subscription { bar }")
+
+            async def reverse_middleware(next_, value, info, **kwargs):
+                awaitable_maybe = next_(value, info, **kwargs)
+                if inspect.isawaitable(awaitable_maybe):
+                    return (await awaitable_maybe)[::-1]
+                return awaitable_maybe[::-1]
+
+            agen = subscribe(
+                _create_schema(test_type, is_subscription=True),
+                doc,
+                middleware=MiddlewareManager(reverse_middleware),
+            )
+            assert inspect.isasyncgen(agen)
+            data = (await agen.__anext__()).data
+            assert data == {"bar": "rab"}
+
+    def describe_without_manager():
+        def no_middleware():
             doc = parse("{ field }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_field(self, _info):
+                def field(self, _info):
                     return "resolved"
 
             test_type = GraphQLObjectType(
                 "TestType", {"field": GraphQLField(GraphQLString)}
             )
 
-            result = execute(_create_schema(test_type, is_subscription), doc, Data(), middleware=None)
+            result = execute(_create_schema(test_type), doc, Data(), middleware=None)
 
             assert result.data["field"] == "resolved"  # type: ignore
 
-        def test_empty_middleware_list():
+        def empty_middleware_list():
             doc = parse("{ field }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_field(self, _info):
+                def field(self, _info):
                     return "resolved"
 
             test_type = GraphQLObjectType(
                 "TestType", {"field": GraphQLField(GraphQLString)}
             )
 
-            result = execute(_create_schema(test_type, is_subscription), doc, Data(), middleware=[])
+            result = execute(_create_schema(test_type), doc, Data(), middleware=[])
 
             assert result.data["field"] == "resolved"  # type: ignore
 
-        def test_bad_middleware_object():
+        def bad_middleware_object():
             doc = parse("{ field }")
 
             test_type = GraphQLObjectType(
@@ -285,7 +324,7 @@ def test_describe_middleware(is_subscription: bool):
             with pytest.raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
                 execute(
-                    _create_schema(test_type, is_subscription),
+                    _create_schema(test_type),
                     doc,
                     None,
                     middleware=cast(Middleware, {"bad": "value"}),
@@ -297,12 +336,12 @@ def test_describe_middleware(is_subscription: bool):
                 " Got {'bad': 'value'} instead."
             )
 
-        def test_list_of_functions():
+        def list_of_functions():
             doc = parse("{ field }")
 
             # noinspection PyMethodMayBeStatic
             class Data:
-                def test_field(self, _info):
+                def field(self, _info):
                     return "resolved"
 
             test_type = GraphQLObjectType(
@@ -312,11 +351,11 @@ def test_describe_middleware(is_subscription: bool):
             log = []
 
             class LogMiddleware:
-                def test___init__(self, name):
+                def __init__(self, name):
                     self.name = name
 
                 # noinspection PyMethodMayBeStatic
-                def test_resolve(self, next_, *args, **kwargs):
+                def resolve(self, next_, *args, **kwargs):
                     log.append(f"enter {self.name}")
                     value = next_(*args, **kwargs)
                     log.append(f"exit {self.name}")
@@ -325,7 +364,7 @@ def test_describe_middleware(is_subscription: bool):
             middlewares = [LogMiddleware("A"), LogMiddleware("B"), LogMiddleware("C")]
 
             result = execute(
-                _create_schema(test_type, is_subscription), doc, Data(), middleware=middlewares
+                _create_schema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "resolved"}  # type: ignore
 
