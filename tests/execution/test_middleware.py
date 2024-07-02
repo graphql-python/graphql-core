@@ -226,7 +226,7 @@ def describe_middleware():
 
             class CaptitalizeMiddleware:
                 # noinspection PyMethodMayBeStatic
-                async def test_resolve(self, next_, *args, **kwargs):
+                async def resolve(self, next_, *args, **kwargs):
                     return (await next_(*args, **kwargs)).capitalize()
 
             middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
