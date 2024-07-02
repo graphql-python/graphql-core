@@ -8,15 +8,11 @@ from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
 
-def _create_schema(
-    tp: GraphQLObjectType, is_subscription: bool = False
-) -> GraphQLSchema:
-    if is_subscription:
-        noop_type = GraphQLObjectType(
-            "Noop", {"noop": GraphQLField(GraphQLString, resolve=lambda *_: "noop")}
-        )
-        return GraphQLSchema(query=noop_type, subscription=tp)
-    return GraphQLSchema(tp)
+def _create_subscription_schema(tp: GraphQLObjectType) -> GraphQLSchema:
+    noop_type = GraphQLObjectType(
+        "Noop", {"noop": GraphQLField(GraphQLString, resolve=lambda *_: "noop")}
+    )
+    return GraphQLSchema(query=noop_type, subscription=tp)
 
 
 def describe_middleware():
@@ -35,7 +31,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager()
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data["field"] == "resolved"  # type: ignore
@@ -64,7 +60,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(reverse_middleware)
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
@@ -97,7 +93,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(reverse_middleware, capitalize_middleware)
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data == {"first": "Eno", "second": "Owt"}  # type: ignore
@@ -127,7 +123,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(reverse_middleware)
             awaitable_result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
@@ -159,7 +155,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(ReverseMiddleware())
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
 
             assert result.data == {"first": "eno", "second": "owt"}  # type: ignore
@@ -202,13 +198,13 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "Devloser"}  # type: ignore
 
             middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "devloseR"}  # type: ignore
 
@@ -235,7 +231,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(reverse_middleware, CaptitalizeMiddleware())
             awaitable_result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
@@ -243,7 +239,7 @@ def describe_middleware():
 
             middlewares = MiddlewareManager(CaptitalizeMiddleware(), reverse_middleware)
             awaitable_result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
@@ -273,7 +269,7 @@ def describe_middleware():
                 return awaitable_maybe[::-1]
 
             agen = subscribe(
-                _create_schema(test_type, is_subscription=True),
+                _create_subscription_schema(test_type),
                 doc,
                 middleware=MiddlewareManager(reverse_middleware),
             )
@@ -294,7 +290,7 @@ def describe_middleware():
                 "TestType", {"field": GraphQLField(GraphQLString)}
             )
 
-            result = execute(_create_schema(test_type), doc, Data(), middleware=None)
+            result = execute(GraphQLSchema(test_type), doc, Data(), middleware=None)
 
             assert result.data["field"] == "resolved"  # type: ignore
 
@@ -310,7 +306,7 @@ def describe_middleware():
                 "TestType", {"field": GraphQLField(GraphQLString)}
             )
 
-            result = execute(_create_schema(test_type), doc, Data(), middleware=[])
+            result = execute(GraphQLSchema(test_type), doc, Data(), middleware=[])
 
             assert result.data["field"] == "resolved"  # type: ignore
 
@@ -324,7 +320,7 @@ def describe_middleware():
             with pytest.raises(TypeError) as exc_info:
                 # noinspection PyTypeChecker
                 execute(
-                    _create_schema(test_type),
+                    GraphQLSchema(test_type),
                     doc,
                     None,
                     middleware=cast(Middleware, {"bad": "value"}),
@@ -364,7 +360,7 @@ def describe_middleware():
             middlewares = [LogMiddleware("A"), LogMiddleware("B"), LogMiddleware("C")]
 
             result = execute(
-                _create_schema(test_type), doc, Data(), middleware=middlewares
+                GraphQLSchema(test_type), doc, Data(), middleware=middlewares
             )
             assert result.data == {"field": "resolved"}  # type: ignore
 
