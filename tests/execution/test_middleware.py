@@ -247,9 +247,10 @@ def describe_middleware():
 
         @pytest.mark.asyncio()
         async def subscription_simple():
+
             async def bar_resolve(_obj, _info):
                 yield "bar"
-
+                yield "oof"
             test_type = GraphQLObjectType(
                 "Subscription",
                 {
@@ -264,8 +265,6 @@ def describe_middleware():
 
             async def reverse_middleware(next_, value, info, **kwargs):
                 awaitable_maybe = next_(value, info, **kwargs)
-                if inspect.isawaitable(awaitable_maybe):
-                    return (await awaitable_maybe)[::-1]
                 return awaitable_maybe[::-1]
 
             agen = subscribe(
@@ -276,6 +275,8 @@ def describe_middleware():
             assert inspect.isasyncgen(agen)
             data = (await agen.__anext__()).data
             assert data == {"bar": "rab"}
+            data = (await agen.__anext__()).data
+            assert data == {"bar": "foo"}
 
     def describe_without_manager():
         def no_middleware():
