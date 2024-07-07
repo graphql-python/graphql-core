@@ -3,16 +3,8 @@ from typing import Awaitable, cast
 
 import pytest
 from graphql.execution import Middleware, MiddlewareManager, execute, subscribe
-from graphql.execution import Middleware, MiddlewareManager, execute
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
-
-
-def _create_subscription_schema(tp: GraphQLObjectType) -> GraphQLSchema:
-    noop_type = GraphQLObjectType(
-        "Noop", {"noop": GraphQLField(GraphQLString, resolve=lambda *_: "noop")}
-    )
-    return GraphQLSchema(query=noop_type, subscription=tp)
 
 
 def describe_middleware():
@@ -247,7 +239,6 @@ def describe_middleware():
 
         @pytest.mark.asyncio()
         async def subscription_simple():
-
             async def bar_resolve(_obj, _info):
                 yield "bar"
                 yield "oof"
@@ -268,8 +259,14 @@ def describe_middleware():
                 awaitable_maybe = next_(value, info, **kwargs)
                 return awaitable_maybe[::-1]
 
+            noop_type = GraphQLObjectType(
+                "Noop",
+                {"noop": GraphQLField(GraphQLString, resolve=lambda *_args: "noop")},
+            )
+            schema = GraphQLSchema(query=noop_type, subscription=test_type)
+
             agen = subscribe(
-                _create_subscription_schema(test_type),
+                schema,
                 doc,
                 middleware=MiddlewareManager(reverse_middleware),
             )
