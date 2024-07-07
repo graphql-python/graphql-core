@@ -156,8 +156,9 @@ GraphQLCompositeType
 GraphQLErrorExtensions
 GraphQLFieldResolver
 GraphQLInputType
-GraphQLTypeResolver
+GraphQLNullableType
 GraphQLOutputType
+GraphQLTypeResolver
 GroupedFieldSet
 IncrementalDataRecord
 Middleware
