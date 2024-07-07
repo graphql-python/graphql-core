@@ -256,7 +256,7 @@ def describe_middleware():
                 {
                     "bar": GraphQLField(
                         GraphQLString,
-                        resolve=lambda message, _: message,
+                        resolve=lambda message, _info: message,
                         subscribe=bar_resolve,
                     ),
                 },
