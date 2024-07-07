@@ -261,7 +261,7 @@ def describe_middleware():
 
             noop_type = GraphQLObjectType(
                 "Noop",
-                {"noop": GraphQLField(GraphQLString, resolve=lambda *_args: "noop")},
+                {"noop": GraphQLField(GraphQLString)},
             )
             schema = GraphQLSchema(query=noop_type, subscription=test_type)
 
