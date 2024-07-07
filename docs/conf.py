@@ -172,6 +172,8 @@ graphql.execution.incremental_publisher.StreamItemsRecord
 graphql.execution.incremental_publisher.DeferredFragmentRecord
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor
+graphql.type.definition.GT_co
+graphql.type.definition.GNT_co
 graphql.type.definition.TContext
 graphql.type.schema.InterfaceImplementations
 graphql.validation.validation_context.VariableUsage
