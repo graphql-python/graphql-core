@@ -281,10 +281,7 @@ def should_include_node(
         return False
 
     include = get_directive_values(GraphQLIncludeDirective, node, variable_values)
-    if include and not include["if"]:
-        return False
-
-    return True
+    return not (include and not include["if"])
 
 
 def does_fragment_condition_match(

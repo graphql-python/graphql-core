@@ -783,7 +783,7 @@ class GraphQLObjectType(GraphQLNamedType):
         """Get provided fields, wrapping them as GraphQLFields if needed."""
         try:
             fields = resolve_thunk(self._fields)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             msg = f"{self.name} fields cannot be resolved. {error}"
             raise cls(msg) from error
@@ -801,7 +801,7 @@ class GraphQLObjectType(GraphQLNamedType):
             interfaces: Collection[GraphQLInterfaceType] = resolve_thunk(
                 self._interfaces  # type: ignore
             )
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             msg = f"{self.name} interfaces cannot be resolved. {error}"
             raise cls(msg) from error
@@ -888,7 +888,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
         """Get provided fields, wrapping them as GraphQLFields if needed."""
         try:
             fields = resolve_thunk(self._fields)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             msg = f"{self.name} fields cannot be resolved. {error}"
             raise cls(msg) from error
@@ -906,7 +906,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
             interfaces: Collection[GraphQLInterfaceType] = resolve_thunk(
                 self._interfaces  # type: ignore
             )
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             msg = f"{self.name} interfaces cannot be resolved. {error}"
             raise cls(msg) from error
@@ -992,7 +992,7 @@ class GraphQLUnionType(GraphQLNamedType):
         """Get provided types."""
         try:
             types: Collection[GraphQLObjectType] = resolve_thunk(self._types)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             msg = f"{self.name} types cannot be resolved. {error}"
             raise cls(msg) from error
@@ -1350,7 +1350,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         """Get provided fields, wrap them as GraphQLInputField if needed."""
         try:
             fields = resolve_thunk(self._fields)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             cls = GraphQLError if isinstance(error, GraphQLError) else TypeError
             msg = f"{self.name} fields cannot be resolved. {error}"
             raise cls(msg) from error

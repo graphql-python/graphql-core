@@ -97,7 +97,7 @@ def is_printable_as_block_string(value: str) -> bool:
     if is_empty_line:
         return False  # has trailing empty lines
 
-    if has_common_indent and seen_non_empty_line:
+    if has_common_indent and seen_non_empty_line:  # noqa: SIM103
         return False  # has internal indent
 
     return True

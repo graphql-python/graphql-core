@@ -354,7 +354,7 @@ class ExecutionContext(IncrementalPublisherMixin):
     middleware_manager: MiddlewareManager | None
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
-        default_is_awaitable  # type: ignore
+        default_is_awaitable
     )
 
     def __init__(
@@ -1113,13 +1113,13 @@ class ExecutionContext(IncrementalPublisherMixin):
                 index = awaitable_indices[0]
                 completed_results[index] = await completed_results[index]
             else:
-                for index, result in zip(
+                for index, sub_result in zip(
                     awaitable_indices,
                     await gather(
                         *(completed_results[index] for index in awaitable_indices)
                     ),
                 ):
-                    completed_results[index] = result
+                    completed_results[index] = sub_result
             return completed_results
 
         return get_completed_results()
