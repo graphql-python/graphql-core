@@ -2043,6 +2043,7 @@ def subscribe(
     type_resolver: GraphQLTypeResolver | None = None,
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
+    middleware: MiddlewareManager | None = None,
 ) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -2082,6 +2083,7 @@ def subscribe(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        middleware=middleware,
     )
 
     # Return early errors if execution context failed.

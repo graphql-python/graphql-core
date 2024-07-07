@@ -1,7 +1,8 @@
+import inspect
 from typing import Awaitable, cast
 
 import pytest
-from graphql.execution import Middleware, MiddlewareManager, execute
+from graphql.execution import Middleware, MiddlewareManager, execute, subscribe
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
@@ -235,6 +236,45 @@ def describe_middleware():
             assert isinstance(awaitable_result, Awaitable)
             result = await awaitable_result
             assert result.data == {"field": "devloseR"}
+
+        @pytest.mark.asyncio()
+        async def subscription_simple():
+            async def bar_resolve(_obj, _info):
+                yield "bar"
+                yield "oof"
+
+            test_type = GraphQLObjectType(
+                "Subscription",
+                {
+                    "bar": GraphQLField(
+                        GraphQLString,
+                        resolve=lambda message, _info: message,
+                        subscribe=bar_resolve,
+                    ),
+                },
+            )
+            doc = parse("subscription { bar }")
+
+            async def reverse_middleware(next_, value, info, **kwargs):
+                awaitable_maybe = next_(value, info, **kwargs)
+                return awaitable_maybe[::-1]
+
+            noop_type = GraphQLObjectType(
+                "Noop",
+                {"noop": GraphQLField(GraphQLString)},
+            )
+            schema = GraphQLSchema(query=noop_type, subscription=test_type)
+
+            agen = subscribe(
+                schema,
+                doc,
+                middleware=MiddlewareManager(reverse_middleware),
+            )
+            assert inspect.isasyncgen(agen)
+            data = (await agen.__anext__()).data
+            assert data == {"bar": "rab"}
+            data = (await agen.__anext__()).data
+            assert data == {"bar": "foo"}
 
     def describe_without_manager():
         def no_middleware():
