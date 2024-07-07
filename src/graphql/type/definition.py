@@ -189,15 +189,15 @@ def assert_type(type_: Any) -> GraphQLType:
 
 # These types wrap and modify other types
 
-GT = TypeVar("GT", bound=GraphQLType, covariant=True)  # noqa: PLC0105
+GT_co = TypeVar("GT_co", bound=GraphQLType, covariant=True)
 
 
-class GraphQLWrappingType(GraphQLType, Generic[GT]):
+class GraphQLWrappingType(GraphQLType, Generic[GT_co]):
     """Base class for all GraphQL wrapping types"""
 
-    of_type: GT
+    of_type: GT_co
 
-    def __init__(self, type_: GT) -> None:
+    def __init__(self, type_: GT_co) -> None:
         self.of_type = type_
 
     def __repr__(self) -> str:
@@ -255,7 +255,7 @@ class GraphQLNamedType(GraphQLType):
         try:
             return cls.reserved_types[name]
         except KeyError:
-            return cls(**dict(args))
+            return cls(**dict(args))  # pyright: ignore
 
     def __init__(
         self,
@@ -429,8 +429,8 @@ class GraphQLScalarType(GraphQLNamedType):
     def to_kwargs(self) -> GraphQLScalarTypeKwargs:
         """Get corresponding arguments."""
         # noinspection PyArgumentList
-        return GraphQLScalarTypeKwargs(  # type: ignore
-            super().to_kwargs(),
+        return GraphQLScalarTypeKwargs(
+            super().to_kwargs(),  # type: ignore
             serialize=None
             if self.serialize is GraphQLScalarType.serialize
             else self.serialize,
@@ -552,11 +552,11 @@ class GraphQLField:
         return self.__class__(**self.to_kwargs())
 
 
-TContext = TypeVar("TContext")
+TContext = TypeVar("TContext")  # pylint: disable=invalid-name
 
 try:
 
-    class GraphQLResolveInfo(NamedTuple, Generic[TContext]):
+    class GraphQLResolveInfo(NamedTuple, Generic[TContext]):  # pyright: ignore
         """Collection of information passed to the resolvers.
 
         This is always passed as the first argument to the resolvers.
@@ -768,8 +768,8 @@ class GraphQLObjectType(GraphQLNamedType):
     def to_kwargs(self) -> GraphQLObjectTypeKwargs:
         """Get corresponding arguments."""
         # noinspection PyArgumentList
-        return GraphQLObjectTypeKwargs(  # type: ignore
-            super().to_kwargs(),
+        return GraphQLObjectTypeKwargs(
+            super().to_kwargs(),  # type: ignore
             fields=self.fields.copy(),
             interfaces=self.interfaces,
             is_type_of=self.is_type_of,
@@ -873,8 +873,8 @@ class GraphQLInterfaceType(GraphQLNamedType):
     def to_kwargs(self) -> GraphQLInterfaceTypeKwargs:
         """Get corresponding arguments."""
         # noinspection PyArgumentList
-        return GraphQLInterfaceTypeKwargs(  # type: ignore
-            super().to_kwargs(),
+        return GraphQLInterfaceTypeKwargs(
+            super().to_kwargs(),  # type: ignore
             fields=self.fields.copy(),
             interfaces=self.interfaces,
             resolve_type=self.resolve_type,
@@ -978,8 +978,10 @@ class GraphQLUnionType(GraphQLNamedType):
     def to_kwargs(self) -> GraphQLUnionTypeKwargs:
         """Get corresponding arguments."""
         # noinspection PyArgumentList
-        return GraphQLUnionTypeKwargs(  # type: ignore
-            super().to_kwargs(), types=self.types, resolve_type=self.resolve_type
+        return GraphQLUnionTypeKwargs(
+            super().to_kwargs(),  # type: ignore
+            types=self.types,
+            resolve_type=self.resolve_type,
         )
 
     def __copy__(self) -> GraphQLUnionType:  # pragma: no cover
@@ -1082,7 +1084,7 @@ class GraphQLEnumType(GraphQLNamedType):
                 isinstance(name, str) for name in values
             ):
                 try:
-                    values = dict(values)
+                    values = dict(values)  # pyright: ignore
                 except (TypeError, ValueError) as error:
                     msg = (
                         f"{name} values must be an Enum or a mapping"
@@ -1107,8 +1109,9 @@ class GraphQLEnumType(GraphQLNamedType):
     def to_kwargs(self) -> GraphQLEnumTypeKwargs:
         """Get corresponding arguments."""
         # noinspection PyArgumentList
-        return GraphQLEnumTypeKwargs(  # type: ignore
-            super().to_kwargs(), values=self.values.copy()
+        return GraphQLEnumTypeKwargs(
+            super().to_kwargs(),  # type: ignore
+            values=self.values.copy(),
         )
 
     def __copy__(self) -> GraphQLEnumType:  # pragma: no cover
@@ -1331,8 +1334,8 @@ class GraphQLInputObjectType(GraphQLNamedType):
     def to_kwargs(self) -> GraphQLInputObjectTypeKwargs:
         """Get corresponding arguments."""
         # noinspection PyArgumentList
-        return GraphQLInputObjectTypeKwargs(  # type: ignore
-            super().to_kwargs(),
+        return GraphQLInputObjectTypeKwargs(
+            super().to_kwargs(),  # type: ignore
             fields=self.fields.copy(),
             out_type=None
             if self.out_type is GraphQLInputObjectType.out_type
@@ -1448,7 +1451,7 @@ def is_required_input_field(field: GraphQLInputField) -> bool:
 # Wrapper types
 
 
-class GraphQLList(GraphQLWrappingType[GT]):
+class GraphQLList(GraphQLWrappingType[GT_co]):
     """List Type Wrapper
 
     A list is a wrapping type which points to another type. Lists are often created
@@ -1467,7 +1470,7 @@ class GraphQLList(GraphQLWrappingType[GT]):
                 }
     """
 
-    def __init__(self, type_: GT) -> None:
+    def __init__(self, type_: GT_co) -> None:
         super().__init__(type_=type_)
 
     def __str__(self) -> str:
@@ -1487,10 +1490,10 @@ def assert_list_type(type_: Any) -> GraphQLList:
     return type_
 
 
-GNT = TypeVar("GNT", bound="GraphQLNullableType", covariant=True)  # noqa: PLC0105
+GNT_co = TypeVar("GNT_co", bound="GraphQLNullableType", covariant=True)
 
 
-class GraphQLNonNull(GraphQLWrappingType[GNT]):
+class GraphQLNonNull(GraphQLWrappingType[GNT_co]):
     """Non-Null Type Wrapper
 
     A non-null is a wrapping type which points to another type. Non-null types enforce
@@ -1510,7 +1513,7 @@ class GraphQLNonNull(GraphQLWrappingType[GNT]):
     Note: the enforcement of non-nullability occurs within the executor.
     """
 
-    def __init__(self, type_: GNT) -> None:
+    def __init__(self, type_: GNT_co) -> None:
         super().__init__(type_=type_)
 
     def __str__(self) -> str:

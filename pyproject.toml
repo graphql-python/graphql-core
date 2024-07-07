@@ -274,12 +274,31 @@ disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [
-    "graphql.pyutils.frozen_dict",
-    "graphql.pyutils.frozen_list",
     "graphql.type.introspection",
     "tests.*"
 ]
 disallow_untyped_defs = false
+
+[tool.pyright]
+reportIncompatibleVariableOverride = false
+reportMissingTypeArgument = false
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnnecessaryIsInstance = false
+reportUnknownVariableType = false
+ignore = ["**/test_*"]  # test functions
+
+[tool.pylint.basic]
+max-module-lines = 2000
+
+[tool.pylint.messages_control]
+disable = [
+    "method-hidden",
+    "missing-module-docstring",  # test modules
+    "redefined-outer-name",
+    "unused-variable",  # test functions
+]
 
 [tool.pytest.ini_options]
 minversion = "7.4"
