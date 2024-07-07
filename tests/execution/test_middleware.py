@@ -2,7 +2,7 @@ import inspect
 from typing import Awaitable, cast
 
 import pytest
-from graphql import subscribe
+from graphql.execution import Middleware, MiddlewareManager, execute, subscribe
 from graphql.execution import Middleware, MiddlewareManager, execute
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
