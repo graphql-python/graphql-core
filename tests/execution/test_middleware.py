@@ -251,6 +251,7 @@ def describe_middleware():
             async def bar_resolve(_obj, _info):
                 yield "bar"
                 yield "oof"
+
             test_type = GraphQLObjectType(
                 "Subscription",
                 {
