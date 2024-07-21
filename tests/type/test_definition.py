@@ -714,35 +714,35 @@ def describe_type_system_enums():
         assert enum_type.values == {"RED": red, "BLUE": blue}
 
     def defines_an_enum_using_a_python_enum():
-        colors = Enum("Colors", "RED BLUE")
-        enum_type = GraphQLEnumType("SomeEnum", colors)
+        Colors = Enum("Colors", "RED BLUE")
+        enum_type = GraphQLEnumType("SomeEnum", Colors)
         assert enum_type.values == {
             "RED": GraphQLEnumValue(1),
             "BLUE": GraphQLEnumValue(2),
         }
 
     def defines_an_enum_using_values_of_a_python_enum():
-        colors = Enum("Colors", "RED BLUE")
-        enum_type = GraphQLEnumType("SomeEnum", colors, names_as_values=False)
+        Colors = Enum("Colors", "RED BLUE")
+        enum_type = GraphQLEnumType("SomeEnum", Colors, names_as_values=False)
         assert enum_type.values == {
             "RED": GraphQLEnumValue(1),
             "BLUE": GraphQLEnumValue(2),
         }
 
     def defines_an_enum_using_names_of_a_python_enum():
-        colors = Enum("Colors", "RED BLUE")
-        enum_type = GraphQLEnumType("SomeEnum", colors, names_as_values=True)
+        Colors = Enum("Colors", "RED BLUE")
+        enum_type = GraphQLEnumType("SomeEnum", Colors, names_as_values=True)
         assert enum_type.values == {
             "RED": GraphQLEnumValue("RED"),
             "BLUE": GraphQLEnumValue("BLUE"),
         }
 
     def defines_an_enum_using_members_of_a_python_enum():
-        colors = Enum("Colors", "RED BLUE")
-        enum_type = GraphQLEnumType("SomeEnum", colors, names_as_values=None)
+        Colors = Enum("Colors", "RED BLUE")
+        enum_type = GraphQLEnumType("SomeEnum", Colors, names_as_values=None)
         assert enum_type.values == {
-            "RED": GraphQLEnumValue(colors.RED),
-            "BLUE": GraphQLEnumValue(colors.BLUE),
+            "RED": GraphQLEnumValue(Colors.RED),
+            "BLUE": GraphQLEnumValue(Colors.BLUE),
         }
 
     def defines_an_enum_type_with_a_description():

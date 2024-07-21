@@ -8,6 +8,7 @@ from typing import (
     AsyncIterable,
     Awaitable,
     Callable,
+    Generic,
     TypeVar,
     Union,
 )
@@ -20,7 +21,7 @@ V = TypeVar("V")
 AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
 
 
-class aclosing(AbstractAsyncContextManager):  # noqa: N801
+class aclosing(AbstractAsyncContextManager, Generic[T]):  # noqa: N801
     """Async context manager for safely finalizing an async iterator or generator.
 
     Contrary to the function available via the standard library, this one silently
@@ -52,6 +53,6 @@ async def map_async_iterable(
     If the inner iterator supports an `aclose()` method, it will be called when
     the generator finishes or closes.
     """
-    async with aclosing(iterable) as items:  # type: ignore
+    async with aclosing(iterable) as items:
         async for item in items:
             yield await callback(item)

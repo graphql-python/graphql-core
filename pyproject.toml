@@ -52,11 +52,11 @@ optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = [
-    { version = "^8.2", python = ">=3.8" },
+    { version = "^8.3", python = ">=3.8" },
     { version = "^7.4", python = "<3.8"}
 ]
 pytest-asyncio = [
-    { version = "^0.23.6", python = ">=3.8" },
+    { version = "^0.23.8", python = ">=3.8" },
     { version = "~0.21.1", python = "<3.8"}
 ]
 pytest-benchmark = "^4.0"
@@ -67,7 +67,7 @@ pytest-cov = [
 pytest-describe = "^2.2"
 pytest-timeout = "^2.3"
 tox = [
-    { version = "^4.14", python = ">=3.8" },
+    { version = "^4.16", python = ">=3.8" },
     { version = "^3.28", python = "<3.8" }
 ]
 
@@ -75,7 +75,7 @@ tox = [
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.5.1,<0.6"
+ruff = ">=0.5.3,<0.6"
 mypy = [
     { version = "^1.10", python = ">=3.8" },
     { version = "~1.4", python = "<3.8" }

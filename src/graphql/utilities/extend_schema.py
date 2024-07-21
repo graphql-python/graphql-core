@@ -55,13 +55,16 @@ from ..type import (
     GraphQLInputField,
     GraphQLInputFieldMap,
     GraphQLInputObjectType,
+    GraphQLInputObjectTypeKwargs,
     GraphQLInputType,
     GraphQLInterfaceType,
+    GraphQLInterfaceTypeKwargs,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
     GraphQLNullableType,
     GraphQLObjectType,
+    GraphQLObjectTypeKwargs,
     GraphQLOutputType,
     GraphQLScalarType,
     GraphQLSchema,
@@ -69,6 +72,7 @@ from ..type import (
     GraphQLSpecifiedByDirective,
     GraphQLType,
     GraphQLUnionType,
+    GraphQLUnionTypeKwargs,
     assert_schema,
     introspection_types,
     is_enum_type,
@@ -326,7 +330,7 @@ class ExtendSchemaImpl:
         raise TypeError(msg)  # pragma: no cover
 
     def extend_input_object_type_fields(
-        self, kwargs: dict[str, Any], extensions: tuple[Any, ...]
+        self, kwargs: GraphQLInputObjectTypeKwargs, extensions: tuple[Any, ...]
     ) -> GraphQLInputFieldMap:
         """Extend GraphQL input object type fields."""
         return {
@@ -392,7 +396,7 @@ class ExtendSchemaImpl:
         )
 
     def extend_object_type_interfaces(
-        self, kwargs: dict[str, Any], extensions: tuple[Any, ...]
+        self, kwargs: GraphQLObjectTypeKwargs, extensions: tuple[Any, ...]
     ) -> list[GraphQLInterfaceType]:
         """Extend a GraphQL object type interface."""
         return [
@@ -401,7 +405,7 @@ class ExtendSchemaImpl:
         ] + self.build_interfaces(extensions)
 
     def extend_object_type_fields(
-        self, kwargs: dict[str, Any], extensions: tuple[Any, ...]
+        self, kwargs: GraphQLObjectTypeKwargs, extensions: tuple[Any, ...]
     ) -> GraphQLFieldMap:
         """Extend GraphQL object type fields."""
         return {
@@ -430,7 +434,7 @@ class ExtendSchemaImpl:
         )
 
     def extend_interface_type_interfaces(
-        self, kwargs: dict[str, Any], extensions: tuple[Any, ...]
+        self, kwargs: GraphQLInterfaceTypeKwargs, extensions: tuple[Any, ...]
     ) -> list[GraphQLInterfaceType]:
         """Extend GraphQL interface type interfaces."""
         return [
@@ -439,7 +443,7 @@ class ExtendSchemaImpl:
         ] + self.build_interfaces(extensions)
 
     def extend_interface_type_fields(
-        self, kwargs: dict[str, Any], extensions: tuple[Any, ...]
+        self, kwargs: GraphQLInterfaceTypeKwargs, extensions: tuple[Any, ...]
     ) -> GraphQLFieldMap:
         """Extend GraphQL interface type fields."""
         return {
@@ -470,7 +474,7 @@ class ExtendSchemaImpl:
         )
 
     def extend_union_type_types(
-        self, kwargs: dict[str, Any], extensions: tuple[Any, ...]
+        self, kwargs: GraphQLUnionTypeKwargs, extensions: tuple[Any, ...]
     ) -> list[GraphQLObjectType]:
         """Extend types of a GraphQL union type."""
         return [
