@@ -82,10 +82,9 @@ from .collect_fields import (
 )
 from .incremental_publisher import (
     ASYNC_DELAY,
-    DeferredFragmentRecord,
     FormattedIncrementalResult,
     IncrementalDataRecord,
-    IncrementalPublisherMixin,
+    IncrementalPublisher,
     IncrementalResult,
     StreamItemsRecord,
     SubsequentIncrementalExecutionResult,
@@ -119,6 +118,9 @@ __all__ = [
     "InitialIncrementalExecutionResult",
     "Middleware",
 ]
+
+suppress_exceptions = suppress(Exception)
+suppress_timeout_error = suppress(TimeoutError)
 
 
 # Terminology
@@ -334,7 +336,7 @@ class ExperimentalIncrementalExecutionResults(NamedTuple):
 Middleware: TypeAlias = Optional[Union[Tuple, List, MiddlewareManager]]
 
 
-class ExecutionContext(IncrementalPublisherMixin):
+class ExecutionContext:
     """Data that must be available at all points during query execution.
 
     Namely, schema of the type system that is currently executing, and the fragments
@@ -351,6 +353,7 @@ class ExecutionContext(IncrementalPublisherMixin):
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
     errors: list[GraphQLError]
+    incremental_publisher: IncrementalPublisher
     middleware_manager: MiddlewareManager | None
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
@@ -368,8 +371,8 @@ class ExecutionContext(IncrementalPublisherMixin):
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
         subscribe_field_resolver: GraphQLFieldResolver,
-        subsequent_payloads: dict[IncrementalDataRecord, None],
         errors: list[GraphQLError],
+        incremental_publisher: IncrementalPublisher,
         middleware_manager: MiddlewareManager | None,
         is_awaitable: Callable[[Any], bool] | None,
     ) -> None:
@@ -382,13 +385,14 @@ class ExecutionContext(IncrementalPublisherMixin):
         self.field_resolver = field_resolver
         self.type_resolver = type_resolver
         self.subscribe_field_resolver = subscribe_field_resolver
-        self.subsequent_payloads = subsequent_payloads
         self.errors = errors
+        self.incremental_publisher = incremental_publisher
         self.middleware_manager = middleware_manager
         if is_awaitable:
             self.is_awaitable = is_awaitable
         self._canceled_iterators: set[AsyncIterator] = set()
         self._subfields_cache: dict[tuple, FieldsAndPatches] = {}
+        self._tasks: set[Awaitable] = set()
 
     @classmethod
     def build(
@@ -474,8 +478,8 @@ class ExecutionContext(IncrementalPublisherMixin):
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
             subscribe_field_resolver or default_field_resolver,
-            {},
             [],
+            IncrementalPublisher(),
             middleware_manager,
             is_awaitable,
         )
@@ -510,8 +514,10 @@ class ExecutionContext(IncrementalPublisherMixin):
             self.field_resolver,
             self.type_resolver,
             self.subscribe_field_resolver,
-            {},
             [],
+            # no need to update incrementalPublisher,
+            # incremental delivery is not supported for subscriptions
+            self.incremental_publisher,
             self.middleware_manager,
             self.is_awaitable,
         )
@@ -716,7 +722,7 @@ class ExecutionContext(IncrementalPublisherMixin):
                             path,
                             incremental_data_record,
                         )
-                        self.filter_subsequent_payloads(path, incremental_data_record)
+                        self.incremental_publisher.filter(path, incremental_data_record)
                         return None
 
                 return await_completed()
@@ -729,7 +735,7 @@ class ExecutionContext(IncrementalPublisherMixin):
                 path,
                 incremental_data_record,
             )
-            self.filter_subsequent_payloads(path, incremental_data_record)
+            self.incremental_publisher.filter(path, incremental_data_record)
             return None
 
         return completed
@@ -901,7 +907,7 @@ class ExecutionContext(IncrementalPublisherMixin):
             self.handle_field_error(
                 raw_error, return_type, field_group, path, incremental_data_record
             )
-            self.filter_subsequent_payloads(path, incremental_data_record)
+            self.incremental_publisher.filter(path, incremental_data_record)
             completed = None
         return completed
 
@@ -968,7 +974,7 @@ class ExecutionContext(IncrementalPublisherMixin):
                 and isinstance(stream.initial_count, int)
                 and index >= stream.initial_count
             ):
-                with suppress(TimeoutError):
+                with suppress_timeout_error:
                     await wait_for(
                         shield(
                             self.execute_stream_async_iterator(
@@ -1176,7 +1182,7 @@ class ExecutionContext(IncrementalPublisherMixin):
                             item_path,
                             incremental_data_record,
                         )
-                        self.filter_subsequent_payloads(
+                        self.incremental_publisher.filter(
                             item_path, incremental_data_record
                         )
                         return None
@@ -1194,7 +1200,7 @@ class ExecutionContext(IncrementalPublisherMixin):
                 item_path,
                 incremental_data_record,
             )
-            self.filter_subsequent_payloads(item_path, incremental_data_record)
+            self.incremental_publisher.filter(item_path, incremental_data_record)
             complete_results.append(None)
 
         return False
@@ -1385,11 +1391,11 @@ class ExecutionContext(IncrementalPublisherMixin):
         )
 
         for sub_patch in sub_patches:
-            label, sub_patch_field_nodes = sub_patch
+            label, sub_patch_grouped_field_set = sub_patch
             self.execute_deferred_fragment(
                 return_type,
                 result,
-                sub_patch_field_nodes,
+                sub_patch_grouped_field_set,
                 label,
                 path,
                 incremental_data_record,
@@ -1473,8 +1479,11 @@ class ExecutionContext(IncrementalPublisherMixin):
         parent_context: IncrementalDataRecord | None = None,
     ) -> None:
         """Execute deferred fragment."""
-        incremental_data_record = DeferredFragmentRecord(
-            label, path, parent_context, self
+        incremental_publisher = self.incremental_publisher
+        incremental_data_record = (
+            incremental_publisher.prepare_new_deferred_fragment_record(
+                label, path, parent_context
+            )
         )
         try:
             awaitable_or_data = self.execute_fields(
@@ -1483,22 +1492,34 @@ class ExecutionContext(IncrementalPublisherMixin):
 
             if self.is_awaitable(awaitable_or_data):
 
-                async def await_data(
-                    awaitable: Awaitable[dict[str, Any]],
-                ) -> dict[str, Any] | None:
-                    # noinspection PyShadowingNames
+                async def await_data() -> None:
                     try:
-                        return await awaitable
+                        data = await awaitable_or_data  # type: ignore
                     except GraphQLError as error:
-                        incremental_data_record.errors.append(error)
-                        return None
+                        incremental_publisher.add_field_error(
+                            incremental_data_record, error
+                        )
+                        incremental_publisher.complete_deferred_fragment_record(
+                            incremental_data_record, None
+                        )
+                    else:
+                        incremental_publisher.complete_deferred_fragment_record(
+                            incremental_data_record, data
+                        )
 
-                awaitable_or_data = await_data(awaitable_or_data)  # type: ignore
+                self.add_task(await_data())
+
+            else:
+                incremental_publisher.complete_deferred_fragment_record(
+                    incremental_data_record,
+                    awaitable_or_data,  # type: ignore
+                )
         except GraphQLError as error:
-            incremental_data_record.errors.append(error)
+            incremental_publisher.add_field_error(incremental_data_record, error)
+            incremental_publisher.complete_deferred_fragment_record(
+                incremental_data_record, None
+            )
             awaitable_or_data = None
-
-        incremental_data_record.add_data(awaitable_or_data)
 
     def execute_stream_field(
         self,
@@ -1513,31 +1534,38 @@ class ExecutionContext(IncrementalPublisherMixin):
     ) -> IncrementalDataRecord:
         """Execute stream field."""
         is_awaitable = self.is_awaitable
-        incremental_data_record = StreamItemsRecord(
-            label, item_path, None, parent_context, self
+        incremental_publisher = self.incremental_publisher
+        incremental_data_record = incremental_publisher.prepare_new_stream_items_record(
+            label, item_path, parent_context
         )
         completed_item: Any
 
         if is_awaitable(item):
-            # noinspection PyShadowingNames
-            async def await_completed_items() -> list[Any] | None:
-                try:
-                    return [
-                        await self.complete_awaitable_value(
-                            item_type,
-                            field_group,
-                            info,
-                            item_path,
-                            item,
-                            incremental_data_record,
-                        )
-                    ]
-                except GraphQLError as error:
-                    incremental_data_record.errors.append(error)
-                    self.filter_subsequent_payloads(path, incremental_data_record)
-                    return None
 
-            incremental_data_record.add_items(await_completed_items())
+            async def await_completed_awaitable_item() -> None:
+                try:
+                    value = await self.complete_awaitable_value(
+                        item_type,
+                        field_group,
+                        info,
+                        item_path,
+                        item,
+                        incremental_data_record,
+                    )
+                except GraphQLError as error:
+                    incremental_publisher.add_field_error(
+                        incremental_data_record, error
+                    )
+                    incremental_publisher.filter(path, incremental_data_record)
+                    incremental_publisher.complete_stream_items_record(
+                        incremental_data_record, None
+                    )
+                else:
+                    incremental_publisher.complete_stream_items_record(
+                        incremental_data_record, [value]
+                    )
+
+            self.add_task(await_completed_awaitable_item())
             return incremental_data_record
 
         try:
@@ -1550,39 +1578,6 @@ class ExecutionContext(IncrementalPublisherMixin):
                     item,
                     incremental_data_record,
                 )
-
-                completed_items: Any
-
-                if is_awaitable(completed_item):
-                    # noinspection PyShadowingNames
-                    async def await_completed_items() -> list[Any] | None:
-                        # noinspection PyShadowingNames
-                        try:
-                            try:
-                                return [await completed_item]
-                            except Exception as raw_error:  # pragma: no cover
-                                self.handle_field_error(
-                                    raw_error,
-                                    item_type,
-                                    field_group,
-                                    item_path,
-                                    incremental_data_record,
-                                )
-                                self.filter_subsequent_payloads(
-                                    item_path, incremental_data_record
-                                )
-                                return [None]
-                        except GraphQLError as error:  # pragma: no cover
-                            incremental_data_record.errors.append(error)
-                            self.filter_subsequent_payloads(
-                                path, incremental_data_record
-                            )
-                            return None
-
-                    completed_items = await_completed_items()
-                else:
-                    completed_items = [completed_item]
-
             except Exception as raw_error:
                 self.handle_field_error(
                     raw_error,
@@ -1591,15 +1586,51 @@ class ExecutionContext(IncrementalPublisherMixin):
                     item_path,
                     incremental_data_record,
                 )
-                self.filter_subsequent_payloads(item_path, incremental_data_record)
-                completed_items = [None]
-
+                completed_item = None
+                incremental_publisher.filter(item_path, incremental_data_record)
         except GraphQLError as error:
-            incremental_data_record.errors.append(error)
-            self.filter_subsequent_payloads(item_path, incremental_data_record)
-            completed_items = None
+            incremental_publisher.add_field_error(incremental_data_record, error)
+            incremental_publisher.filter(path, incremental_data_record)
+            incremental_publisher.complete_stream_items_record(
+                incremental_data_record, None
+            )
+            return incremental_data_record
 
-        incremental_data_record.add_items(completed_items)
+        if is_awaitable(completed_item):
+
+            async def await_completed_item() -> None:
+                try:
+                    try:
+                        value = await completed_item
+                    except Exception as raw_error:  # pragma: no cover
+                        self.handle_field_error(
+                            raw_error,
+                            item_type,
+                            field_group,
+                            item_path,
+                            incremental_data_record,
+                        )
+                        incremental_publisher.filter(item_path, incremental_data_record)
+                        value = None
+                except GraphQLError as error:  # pragma: no cover
+                    incremental_publisher.add_field_error(
+                        incremental_data_record, error
+                    )
+                    incremental_publisher.filter(path, incremental_data_record)
+                    incremental_publisher.complete_stream_items_record(
+                        incremental_data_record, None
+                    )
+                else:
+                    incremental_publisher.complete_stream_items_record(
+                        incremental_data_record, [value]
+                    )
+
+            self.add_task(await_completed_item())
+            return incremental_data_record
+
+        incremental_publisher.complete_stream_items_record(
+            incremental_data_record, [completed_item]
+        )
         return incremental_data_record
 
     async def execute_stream_async_iterator_item(
@@ -1614,11 +1645,13 @@ class ExecutionContext(IncrementalPublisherMixin):
     ) -> Any:
         """Execute stream iterator item."""
         if async_iterator in self._canceled_iterators:
-            raise StopAsyncIteration
+            raise StopAsyncIteration  # pragma: no cover
         try:
             item = await anext(async_iterator)
         except StopAsyncIteration as raw_error:
-            incremental_data_record.set_is_completed_async_iterator()
+            self.incremental_publisher.set_is_completed_async_iterator(
+                incremental_data_record
+            )
             raise StopAsyncIteration from raw_error
         except Exception as raw_error:
             raise located_error(raw_error, field_group, path.as_list()) from raw_error
@@ -1635,7 +1668,7 @@ class ExecutionContext(IncrementalPublisherMixin):
             self.handle_field_error(
                 raw_error, item_type, field_group, item_path, incremental_data_record
             )
-            self.filter_subsequent_payloads(item_path, incremental_data_record)
+            self.incremental_publisher.filter(item_path, incremental_data_record)
 
     async def execute_stream_async_iterator(
         self,
@@ -1649,17 +1682,21 @@ class ExecutionContext(IncrementalPublisherMixin):
         parent_context: IncrementalDataRecord | None = None,
     ) -> None:
         """Execute stream iterator."""
+        incremental_publisher = self.incremental_publisher
         index = initial_index
         previous_incremental_data_record = parent_context
 
+        done = False
         while True:
             item_path = Path(path, index, None)
-            incremental_data_record = StreamItemsRecord(
-                label, item_path, async_iterator, previous_incremental_data_record, self
+            incremental_data_record = (
+                incremental_publisher.prepare_new_stream_items_record(
+                    label, item_path, previous_incremental_data_record, async_iterator
+                )
             )
 
             try:
-                data = await self.execute_stream_async_iterator_item(
+                completed_item = await self.execute_stream_async_iterator_item(
                     async_iterator,
                     field_group,
                     info,
@@ -1668,28 +1705,38 @@ class ExecutionContext(IncrementalPublisherMixin):
                     path,
                     item_path,
                 )
-            except StopAsyncIteration:
-                if incremental_data_record.errors:
-                    incremental_data_record.add_items(None)  # pragma: no cover
-                else:
-                    del self.subsequent_payloads[incremental_data_record]
-                break
             except GraphQLError as error:
-                incremental_data_record.errors.append(error)
-                self.filter_subsequent_payloads(path, incremental_data_record)
-                incremental_data_record.add_items(None)
+                incremental_publisher.add_field_error(incremental_data_record, error)
+                incremental_publisher.filter(path, incremental_data_record)
+                incremental_publisher.complete_stream_items_record(
+                    incremental_data_record, None
+                )
                 if async_iterator:  # pragma: no cover else
-                    with suppress(Exception):
+                    with suppress_exceptions:
                         await async_iterator.aclose()  # type: ignore
                     # running generators cannot be closed since Python 3.8,
                     # so we need to remember that this iterator is already canceled
                     self._canceled_iterators.add(async_iterator)
                 break
+            except StopAsyncIteration:
+                done = True
 
-            incremental_data_record.add_items([data])
+            incremental_publisher.complete_stream_items_record(
+                incremental_data_record,
+                [completed_item],
+            )
 
+            if done:
+                break
             previous_incremental_data_record = incremental_data_record
             index += 1
+
+    def add_task(self, awaitable: Awaitable[Any]) -> None:
+        """Add the given task to the tasks set for later execution."""
+        tasks = self._tasks
+        task = ensure_future(awaitable)
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)
 
 
 UNEXPECTED_EXPERIMENTAL_DIRECTIVES = (
@@ -1831,6 +1878,7 @@ def execute_impl(
     # at which point we still log the error and null the parent field, which
     # in this case is the entire response.
     errors = context.errors
+    incremental_publisher = context.incremental_publisher
     build_response = context.build_response
     try:
         result = context.execute_operation()
@@ -1843,14 +1891,15 @@ def execute_impl(
                         await result,  # type: ignore
                         errors,
                     )
-                    if context.subsequent_payloads:
+                    incremental_publisher.publish_initial()
+                    if incremental_publisher.has_next():
                         return ExperimentalIncrementalExecutionResults(
                             initial_result=InitialIncrementalExecutionResult(
                                 initial_result.data,
                                 initial_result.errors,
                                 has_next=True,
                             ),
-                            subsequent_results=context.yield_subsequent_payloads(),
+                            subsequent_results=incremental_publisher.subscribe(),
                         )
                 except GraphQLError as error:
                     errors.append(error)
@@ -1860,14 +1909,15 @@ def execute_impl(
             return await_result()
 
         initial_result = build_response(result, errors)  # type: ignore
-        if context.subsequent_payloads:
+        incremental_publisher.publish_initial()
+        if incremental_publisher.has_next():
             return ExperimentalIncrementalExecutionResults(
                 initial_result=InitialIncrementalExecutionResult(
                     initial_result.data,
                     initial_result.errors,
                     has_next=True,
                 ),
-                subsequent_results=context.yield_subsequent_payloads(),
+                subsequent_results=incremental_publisher.subscribe(),
             )
     except GraphQLError as error:
         errors.append(error)

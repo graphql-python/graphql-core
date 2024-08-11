@@ -6,7 +6,6 @@ from typing import Any, Awaitable, NamedTuple
 import pytest
 from graphql.error import GraphQLError
 from graphql.execution import (
-    ExecutionContext,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalStreamResult,
@@ -173,13 +172,9 @@ def describe_execute_stream_directive():
         )
 
     def can_print_stream_record():
-        context = ExecutionContext.build(schema, parse("{ hero { id } }"))
-        assert isinstance(context, ExecutionContext)
-        record = StreamItemsRecord(None, None, None, None, context)
+        record = StreamItemsRecord(None, None, None, None)
         assert str(record) == "StreamItemsRecord(path=[])"
-        record = StreamItemsRecord(
-            "foo", Path(None, "bar", "Bar"), None, record, context
-        )
+        record = StreamItemsRecord("foo", Path(None, "bar", "Bar"), record, None)
         assert (
             str(record) == "StreamItemsRecord("
             "path=['bar'], label='foo', parent_context)"
@@ -748,6 +743,9 @@ def describe_execute_stream_directive():
                         "path": ["friendList", 2],
                     }
                 ],
+                "hasNext": True,
+            },
+            {
                 "hasNext": False,
             },
         ]
@@ -788,6 +786,9 @@ def describe_execute_stream_directive():
                         "path": ["friendList", 2],
                     }
                 ],
+                "hasNext": True,
+            },
+            {
                 "hasNext": False,
             },
         ]
@@ -861,10 +862,10 @@ def describe_execute_stream_directive():
                             "path": ["friendList", 2],
                         }
                     ],
-                    "hasNext": False,
+                    "hasNext": True,
                 },
             },
-            {"done": True, "value": None},
+            {"done": False, "value": {"hasNext": False}},
             {"done": True, "value": None},
         ]
 
@@ -1092,7 +1093,7 @@ def describe_execute_stream_directive():
             return {"nonNullName": throw() if i < 0 else friends[i].name}
 
         def get_friends(_info):
-            return [get_friend(0), get_friend(-1), get_friend(1)]
+            return [get_friend(i) for i in (0, -1, 1)]
 
         result = await complete(
             document,
@@ -1135,7 +1136,68 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio()
-    async def handles_async_error_in_complete_value_for_non_nullable_list():
+    async def handles_nested_async_error_in_complete_value_after_initial_count():
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 1) {
+                nonNullName
+              }
+            }
+            """
+        )
+
+        async def get_friend_name(i):
+            await sleep(0)
+            if i < 0:
+                raise RuntimeError("Oops")
+            return friends[i].name
+
+        def get_friends(_info):
+            return [{"nonNullName": get_friend_name(i)} for i in (0, -1, 1)]
+
+        result = await complete(
+            document,
+            {
+                "friendList": get_friends,
+            },
+        )
+        assert result == [
+            {
+                "data": {
+                    "friendList": [{"nonNullName": "Luke"}],
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [None],
+                        "path": ["friendList", 1],
+                        "errors": [
+                            {
+                                "message": "Oops",
+                                "locations": [{"line": 4, "column": 17}],
+                                "path": ["friendList", 1, "nonNullName"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [{"nonNullName": "Han"}],
+                        "path": ["friendList", 2],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio()
+    async def handles_async_error_in_complete_value_after_initial_count_non_null():
         document = parse(
             """
             query {
@@ -1154,7 +1216,7 @@ def describe_execute_stream_directive():
             return {"nonNullName": throw() if i < 0 else friends[i].name}
 
         def get_friends(_info):
-            return [get_friend(0), get_friend(-1), get_friend(1)]
+            return [get_friend(i) for i in (0, -1, 1)]
 
         result = await complete(
             document,
@@ -1188,7 +1250,59 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio()
-    async def handles_async_error_after_initial_count_reached_from_async_iterable():
+    async def handles_nested_async_error_in_complete_value_after_initial_non_null():
+        document = parse(
+            """
+            query {
+              nonNullFriendList @stream(initialCount: 1) {
+                nonNullName
+              }
+            }
+            """
+        )
+
+        async def get_friend_name(i):
+            await sleep(0)
+            if i < 0:
+                raise RuntimeError("Oops")
+            return friends[i].name
+
+        def get_friends(_info):
+            return [{"nonNullName": get_friend_name(i)} for i in (0, -1, 1)]
+
+        result = await complete(
+            document,
+            {
+                "nonNullFriendList": get_friends,
+            },
+        )
+        assert result == [
+            {
+                "data": {
+                    "nonNullFriendList": [{"nonNullName": "Luke"}],
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": None,
+                        "path": ["nonNullFriendList", 1],
+                        "errors": [
+                            {
+                                "message": "Oops",
+                                "locations": [{"line": 4, "column": 17}],
+                                "path": ["nonNullFriendList", 1, "nonNullName"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio()
+    async def handles_async_error_in_complete_value_after_initial_from_async_iterable():
         document = parse(
             """
             query {
@@ -1207,9 +1321,8 @@ def describe_execute_stream_directive():
             return {"nonNullName": throw() if i < 0 else friends[i].name}
 
         async def get_friends(_info):
-            yield await get_friend(0)
-            yield await get_friend(-1)
-            yield await get_friend(1)
+            for i in 0, -1, 1:
+                yield await get_friend(i)
 
         result = await complete(
             document,
@@ -1245,6 +1358,63 @@ def describe_execute_stream_directive():
                     {
                         "items": [{"nonNullName": "Han"}],
                         "path": ["friendList", 2],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio()
+    async def handles_async_error_in_complete_value_from_async_iterable_non_null():
+        document = parse(
+            """
+            query {
+              nonNullFriendList @stream(initialCount: 1) {
+                nonNullName
+              }
+            }
+            """
+        )
+
+        async def throw():
+            raise RuntimeError("Oops")
+
+        async def get_friend(i):
+            await sleep(0)
+            return {"nonNullName": throw() if i < 0 else friends[i].name}
+
+        async def get_friends(_info):
+            for i in 0, -1, 1:  # pragma: no cover exit
+                yield await get_friend(i)
+
+        result = await complete(
+            document,
+            {
+                "nonNullFriendList": get_friends,
+            },
+        )
+        assert result == [
+            {
+                "data": {
+                    "nonNullFriendList": [{"nonNullName": "Luke"}],
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": None,
+                        "path": ["nonNullFriendList", 1],
+                        "errors": [
+                            {
+                                "message": "Oops",
+                                "locations": [{"line": 4, "column": 17}],
+                                "path": ["nonNullFriendList", 1, "nonNullName"],
+                            },
+                        ],
                     },
                 ],
                 "hasNext": False,
@@ -1409,8 +1579,9 @@ def describe_execute_stream_directive():
                         "path": ["nestedObject", "nestedFriendList", 0],
                     },
                 ],
-                "hasNext": False,
+                "hasNext": True,
             },
+            {"hasNext": False},
         ]
 
     @pytest.mark.asyncio()
@@ -1537,6 +1708,9 @@ def describe_execute_stream_directive():
                         ],
                     },
                 ],
+                "hasNext": True,
+            },
+            {
                 "hasNext": False,
             },
         ]
@@ -1677,6 +1851,9 @@ def describe_execute_stream_directive():
                         "path": ["friendList", 2],
                     }
                 ],
+                "hasNext": True,
+            },
+            {
                 "hasNext": False,
             },
         ]
@@ -1756,6 +1933,10 @@ def describe_execute_stream_directive():
                     "path": ["nestedObject", "nestedFriendList", 1],
                 },
             ],
+            "hasNext": True,
+        }
+        result5 = await anext(iterator)
+        assert result5.formatted == {
             "hasNext": False,
         }
 

@@ -6,7 +6,6 @@ from typing import Any, AsyncGenerator, NamedTuple
 import pytest
 from graphql.error import GraphQLError
 from graphql.execution import (
-    ExecutionContext,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalDeferResult,
@@ -321,13 +320,9 @@ def describe_execute_defer_directive():
         }
 
     def can_print_deferred_fragment_record():
-        context = ExecutionContext.build(schema, parse("{ hero { id } }"))
-        assert isinstance(context, ExecutionContext)
-        record = DeferredFragmentRecord(None, None, None, context)
+        record = DeferredFragmentRecord(None, None, None)
         assert str(record) == "DeferredFragmentRecord(path=[])"
-        record = DeferredFragmentRecord(
-            "foo", Path(None, "bar", "Bar"), record, context
-        )
+        record = DeferredFragmentRecord("foo", Path(None, "bar", "Bar"), record)
         assert (
             str(record) == "DeferredFragmentRecord("
             "path=['bar'], label='foo', parent_context)"

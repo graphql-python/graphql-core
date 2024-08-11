@@ -168,7 +168,7 @@ graphql.execution.map_async_iterable.map_async_iterable
 graphql.execution.Middleware
 graphql.execution.execute.ExperimentalIncrementalExecutionResults
 graphql.execution.execute.StreamArguments
-graphql.execution.incremental_publisher.IncrementalPublisherMixin
+graphql.execution.incremental_publisher.IncrementalPublisher
 graphql.execution.incremental_publisher.StreamItemsRecord
 graphql.execution.incremental_publisher.DeferredFragmentRecord
 graphql.language.lexer.EscapeSequence

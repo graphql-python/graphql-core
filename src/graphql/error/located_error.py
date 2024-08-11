@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 __all__ = ["located_error"]
 
+suppress_attribute_error = suppress(AttributeError)
+
 
 def located_error(
     original_error: Exception,
@@ -45,6 +47,6 @@ def located_error(
     except AttributeError:
         positions = None
 
-    with suppress(AttributeError):
+    with suppress_attribute_error:
         nodes = original_error.nodes or nodes  # type: ignore
     return GraphQLError(message, nodes, source, positions, path, original_error)

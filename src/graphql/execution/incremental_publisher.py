@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from asyncio import Event, as_completed, sleep
+from asyncio import Event, ensure_future, gather
+from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
     AsyncIterator,
     Awaitable,
-    Callable,
-    Generator,
+    Collection,
+    NamedTuple,
     Sequence,
     Union,
 )
@@ -19,15 +20,11 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
 
 
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
-    from ..pyutils import AwaitableOrValue, Path
+    from ..pyutils import Path
 
 __all__ = [
     "ASYNC_DELAY",
@@ -38,7 +35,7 @@ __all__ = [
     "FormattedSubsequentIncrementalExecutionResult",
     "IncrementalDataRecord",
     "IncrementalDeferResult",
-    "IncrementalPublisherMixin",
+    "IncrementalPublisher",
     "IncrementalResult",
     "IncrementalStreamResult",
     "StreamItemsRecord",
@@ -47,6 +44,8 @@ __all__ = [
 
 
 ASYNC_DELAY = 1 / 512  # wait time in seconds for deferring execution
+
+suppress_key_error = suppress(KeyError)
 
 
 class FormattedIncrementalDeferResult(TypedDict, total=False):
@@ -326,50 +325,243 @@ class SubsequentIncrementalExecutionResult:
         return not self == other
 
 
-class IncrementalPublisherMixin:
-    """Mixin to add incremental publishing to the ExecutionContext."""
+class InitialResult(NamedTuple):
+    """The state of the initial result"""
 
-    _canceled_iterators: set[AsyncIterator]
-    subsequent_payloads: dict[IncrementalDataRecord, None]  # used as ordered set
+    children: dict[IncrementalDataRecord, None]
+    is_completed: bool
 
-    is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
 
-    def filter_subsequent_payloads(
+class IncrementalPublisher:
+    """Publish incremental results.
+
+    This class is used to publish incremental results to the client, enabling
+    semi-concurrent execution while preserving result order.
+
+    The internal publishing state is managed as follows:
+
+    ``_released``: the set of Incremental Data records that are ready to be sent to the
+    client, i.e. their parents have completed and they have also completed.
+
+    ``_pending``: the set of Incremental Data records that are definitely pending, i.e.
+    their parents have completed so that they can no longer be filtered. This includes
+    all Incremental Data records in `released`, as well as Incremental Data records that
+    have not yet completed.
+
+    ``_initial_result``: a record containing the state of the initial result,
+    as follows:
+    ``is_completed``: indicates whether the initial result has completed.
+    ``children``: the set of Incremental Data records that can be be published when the
+    initial result is completed.
+
+    Each Incremental Data record also contains similar metadata, i.e. these records also
+    contain similar ``is_completed`` and ``children`` properties.
+
+    Note: Instead of sets we use dicts (with values set to None) which preserve order
+    and thereby achieve more deterministic results.
+    """
+
+    _initial_result: InitialResult
+    _released: dict[IncrementalDataRecord, None]
+    _pending: dict[IncrementalDataRecord, None]
+    _resolve: Event | None
+
+    def __init__(self) -> None:
+        self._initial_result = InitialResult({}, False)
+        self._released = {}
+        self._pending = {}
+        self._resolve = None  # lazy initialization
+        self._tasks: set[Awaitable] = set()
+
+    def has_next(self) -> bool:
+        """Check whether there is a next incremental result."""
+        return bool(self._pending)
+
+    async def subscribe(
+        self,
+    ) -> AsyncGenerator[SubsequentIncrementalExecutionResult, None]:
+        """Subscribe to the incremental results."""
+        is_done = False
+        pending = self._pending
+
+        try:
+            while not is_done:
+                released = self._released
+                for item in released:
+                    with suppress_key_error:
+                        del pending[item]
+                self._released = {}
+
+                result = self._get_incremental_result(released)
+
+                if not self.has_next():
+                    is_done = True
+
+                if result is not None:
+                    yield result
+                else:
+                    resolve = self._resolve
+                    if resolve is None:
+                        self._resolve = resolve = Event()
+                    await resolve.wait()
+        finally:
+            close_async_iterators = []
+            for incremental_data_record in pending:
+                if isinstance(
+                    incremental_data_record, StreamItemsRecord
+                ):  # pragma: no cover
+                    async_iterator = incremental_data_record.async_iterator
+                    if async_iterator:
+                        try:
+                            close_async_iterator = async_iterator.aclose()  # type: ignore
+                        except AttributeError:
+                            pass
+                        else:
+                            close_async_iterators.append(close_async_iterator)
+            await gather(*close_async_iterators)
+
+    def prepare_new_deferred_fragment_record(
+        self,
+        label: str | None,
+        path: Path | None,
+        parent_context: IncrementalDataRecord | None,
+    ) -> DeferredFragmentRecord:
+        """Prepare a new deferred fragment record."""
+        deferred_fragment_record = DeferredFragmentRecord(label, path, parent_context)
+
+        context = parent_context or self._initial_result
+        context.children[deferred_fragment_record] = None
+        return deferred_fragment_record
+
+    def prepare_new_stream_items_record(
+        self,
+        label: str | None,
+        path: Path | None,
+        parent_context: IncrementalDataRecord | None,
+        async_iterator: AsyncIterator[Any] | None = None,
+    ) -> StreamItemsRecord:
+        """Prepare a new stream items record."""
+        stream_items_record = StreamItemsRecord(
+            label, path, parent_context, async_iterator
+        )
+
+        context = parent_context or self._initial_result
+        context.children[stream_items_record] = None
+        return stream_items_record
+
+    def complete_deferred_fragment_record(
+        self,
+        deferred_fragment_record: DeferredFragmentRecord,
+        data: dict[str, Any] | None,
+    ) -> None:
+        """Complete the given deferred fragment record."""
+        deferred_fragment_record.data = data
+        deferred_fragment_record.is_completed = True
+        self._release(deferred_fragment_record)
+
+    def complete_stream_items_record(
+        self,
+        stream_items_record: StreamItemsRecord,
+        items: list[str] | None,
+    ) -> None:
+        """Complete the given stream items record."""
+        stream_items_record.items = items
+        stream_items_record.is_completed = True
+        self._release(stream_items_record)
+
+    def set_is_completed_async_iterator(
+        self, stream_items_record: StreamItemsRecord
+    ) -> None:
+        """Mark async iterator for stream items as completed."""
+        stream_items_record.is_completed_async_iterator = True
+
+    def add_field_error(
+        self, incremental_data_record: IncrementalDataRecord, error: GraphQLError
+    ) -> None:
+        """Add a field error to the given incremental data record."""
+        incremental_data_record.errors.append(error)
+
+    def publish_initial(self) -> None:
+        """Publish the initial result."""
+        for child in self._initial_result.children:
+            self._publish(child)
+
+    def filter(
         self,
         null_path: Path,
-        current_incremental_data_record: IncrementalDataRecord | None = None,
+        erroring_incremental_data_record: IncrementalDataRecord | None,
     ) -> None:
-        """Filter subsequent payloads."""
+        """Filter out the given erroring incremental data record."""
         null_path_list = null_path.as_list()
-        for incremental_data_record in list(self.subsequent_payloads):
-            if incremental_data_record is current_incremental_data_record:
-                # don't remove payload from where error originates
-                continue
-            if incremental_data_record.path[: len(null_path_list)] != null_path_list:
-                # incremental_data_record points to a path unaffected by this payload
-                continue
-            # incremental_data_record path points to nulled error field
-            if (
-                isinstance(incremental_data_record, StreamItemsRecord)
-                and incremental_data_record.async_iterator
-            ):
-                self._canceled_iterators.add(incremental_data_record.async_iterator)
-            del self.subsequent_payloads[incremental_data_record]
 
-    def get_completed_incremental_results(self) -> list[IncrementalResult]:
-        """Get completed incremental results."""
-        incremental_results: list[IncrementalResult] = []
-        append_result = incremental_results.append
-        subsequent_payloads = list(self.subsequent_payloads)
-        for incremental_data_record in subsequent_payloads:
-            incremental_result: IncrementalResult
-            if not incremental_data_record.completed.is_set():
+        children = (erroring_incremental_data_record or self._initial_result).children
+
+        for child in self._get_descendants(children):
+            if not self._matches_path(child.path, null_path_list):
                 continue
-            del self.subsequent_payloads[incremental_data_record]
+
+            self._delete(child)
+            parent = child.parent_context or self._initial_result
+            with suppress_key_error:
+                del parent.children[child]
+
+            if isinstance(child, StreamItemsRecord):
+                async_iterator = child.async_iterator
+                if async_iterator:
+                    try:
+                        close_async_iterator = async_iterator.aclose()  # type:ignore
+                    except AttributeError:  # pragma: no cover
+                        pass
+                    else:
+                        self._add_task(close_async_iterator)
+
+    def _trigger(self) -> None:
+        """Trigger the resolve event."""
+        resolve = self._resolve
+        if resolve is not None:
+            resolve.set()
+        self._resolve = Event()
+
+    def _introduce(self, item: IncrementalDataRecord) -> None:
+        """Introduce a new IncrementalDataRecord."""
+        self._pending[item] = None
+
+    def _release(self, item: IncrementalDataRecord) -> None:
+        """Release the given IncrementalDataRecord."""
+        if item in self._pending:
+            self._released[item] = None
+            self._trigger()
+
+    def _push(self, item: IncrementalDataRecord) -> None:
+        """Push the given IncrementalDataRecord."""
+        self._released[item] = None
+        self._pending[item] = None
+        self._trigger()
+
+    def _delete(self, item: IncrementalDataRecord) -> None:
+        """Delete the given IncrementalDataRecord."""
+        with suppress_key_error:
+            del self._released[item]
+        with suppress_key_error:
+            del self._pending[item]
+        self._trigger()
+
+    def _get_incremental_result(
+        self, completed_records: Collection[IncrementalDataRecord]
+    ) -> SubsequentIncrementalExecutionResult | None:
+        """Get the incremental result with the completed records."""
+        incremental_results: list[IncrementalResult] = []
+        encountered_completed_async_iterator = False
+        append_result = incremental_results.append
+        for incremental_data_record in completed_records:
+            incremental_result: IncrementalResult
+            for child in incremental_data_record.children:
+                self._publish(child)
             if isinstance(incremental_data_record, StreamItemsRecord):
                 items = incremental_data_record.items
                 if incremental_data_record.is_completed_async_iterator:
                     # async iterable resolver finished but there may be pending payload
+                    encountered_completed_async_iterator = True
                     continue  # pragma: no cover
                 incremental_result = IncrementalStreamResult(
                     items,
@@ -389,33 +581,48 @@ class IncrementalPublisherMixin:
                     incremental_data_record.path,
                     incremental_data_record.label,
                 )
-
             append_result(incremental_result)
 
-        return incremental_results
+        if incremental_results:
+            return SubsequentIncrementalExecutionResult(
+                incremental=incremental_results, has_next=self.has_next()
+            )
+        if encountered_completed_async_iterator and not self.has_next():
+            return SubsequentIncrementalExecutionResult(has_next=False)
+        return None
 
-    async def yield_subsequent_payloads(
+    def _publish(self, incremental_data_record: IncrementalDataRecord) -> None:
+        """Publish the given incremental data record."""
+        if incremental_data_record.is_completed:
+            self._push(incremental_data_record)
+        else:
+            self._introduce(incremental_data_record)
+
+    def _get_descendants(
         self,
-    ) -> AsyncGenerator[SubsequentIncrementalExecutionResult, None]:
-        """Yield subsequent payloads."""
-        payloads = self.subsequent_payloads
-        has_next = bool(payloads)
+        children: dict[IncrementalDataRecord, None],
+        descendants: dict[IncrementalDataRecord, None] | None = None,
+    ) -> dict[IncrementalDataRecord, None]:
+        """Get the descendants of the given children."""
+        if descendants is None:
+            descendants = {}
+        for child in children:
+            descendants[child] = None
+            self._get_descendants(child.children, descendants)
+        return descendants
 
-        while has_next:
-            for awaitable in as_completed(payloads):
-                await awaitable
+    def _matches_path(
+        self, test_path: list[str | int], base_path: list[str | int]
+    ) -> bool:
+        """Get whether the given test path matches the base path."""
+        return all(item == test_path[i] for i, item in enumerate(base_path))
 
-                incremental = self.get_completed_incremental_results()
-
-                has_next = bool(payloads)
-
-                if incremental or not has_next:
-                    yield SubsequentIncrementalExecutionResult(
-                        incremental=incremental or None, has_next=has_next
-                    )
-
-                if not has_next:
-                    break
+    def _add_task(self, awaitable: Awaitable[Any]) -> None:
+        """Add the given task to the tasks set for later execution."""
+        tasks = self._tasks
+        task = ensure_future(awaitable)
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)
 
 
 class DeferredFragmentRecord:
@@ -426,27 +633,22 @@ class DeferredFragmentRecord:
     path: list[str | int]
     data: dict[str, Any] | None
     parent_context: IncrementalDataRecord | None
-    completed: Event
-    _publisher: IncrementalPublisherMixin
-    _data: AwaitableOrValue[dict[str, Any] | None]
-    _data_added: Event
+    children: dict[IncrementalDataRecord, None]
+    is_completed: bool
 
     def __init__(
         self,
         label: str | None,
         path: Path | None,
         parent_context: IncrementalDataRecord | None,
-        context: IncrementalPublisherMixin,
     ) -> None:
         self.label = label
         self.path = path.as_list() if path else []
         self.parent_context = parent_context
         self.errors = []
-        self._publisher = context
-        context.subsequent_payloads[self] = None
-        self.data = self._data = None
-        self.completed = Event()
-        self._data_added = Event()
+        self.children = {}
+        self.is_completed = False
+        self.data = None
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
@@ -459,29 +661,6 @@ class DeferredFragmentRecord:
             args.append("data")
         return f"{name}({', '.join(args)})"
 
-    def __await__(self) -> Generator[Any, None, dict[str, Any] | None]:
-        return self.wait().__await__()
-
-    async def wait(self) -> dict[str, Any] | None:
-        """Wait until data is ready."""
-        if self.parent_context:
-            await self.parent_context.completed.wait()
-        _data = self._data
-        data = (
-            await _data  # type: ignore
-            if self._publisher.is_awaitable(_data)
-            else _data
-        )
-        await sleep(ASYNC_DELAY)  # always defer completion a little bit
-        self.completed.set()
-        self.data = data
-        return data
-
-    def add_data(self, data: AwaitableOrValue[dict[str, Any] | None]) -> None:
-        """Add data to the record."""
-        self._data = data
-        self._data_added.set()
-
 
 class StreamItemsRecord:
     """A record collecting items marked with the stream directive"""
@@ -491,32 +670,26 @@ class StreamItemsRecord:
     path: list[str | int]
     items: list[str] | None
     parent_context: IncrementalDataRecord | None
+    children: dict[IncrementalDataRecord, None]
     async_iterator: AsyncIterator[Any] | None
     is_completed_async_iterator: bool
-    completed: Event
-    _publisher: IncrementalPublisherMixin
-    _items: AwaitableOrValue[list[Any] | None]
-    _items_added: Event
+    is_completed: bool
 
     def __init__(
         self,
         label: str | None,
         path: Path | None,
-        async_iterator: AsyncIterator[Any] | None,
         parent_context: IncrementalDataRecord | None,
-        context: IncrementalPublisherMixin,
+        async_iterator: AsyncIterator[Any] | None = None,
     ) -> None:
         self.label = label
         self.path = path.as_list() if path else []
         self.parent_context = parent_context
         self.async_iterator = async_iterator
         self.errors = []
-        self._publisher = context
-        context.subsequent_payloads[self] = None
-        self.items = self._items = None
-        self.completed = Event()
-        self._items_added = Event()
-        self.is_completed_async_iterator = False
+        self.children = {}
+        self.is_completed_async_iterator = self.is_completed = False
+        self.items = None
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
@@ -528,35 +701,6 @@ class StreamItemsRecord:
         if self.items is not None:
             args.append("items")
         return f"{name}({', '.join(args)})"
-
-    def __await__(self) -> Generator[Any, None, list[str] | None]:
-        return self.wait().__await__()
-
-    async def wait(self) -> list[str] | None:
-        """Wait until data is ready."""
-        await self._items_added.wait()
-        if self.parent_context:
-            await self.parent_context.completed.wait()
-        _items = self._items
-        items = (
-            await _items  # type: ignore
-            if self._publisher.is_awaitable(_items)
-            else _items
-        )
-        await sleep(ASYNC_DELAY)  # always defer completion a little bit
-        self.items = items
-        self.completed.set()
-        return items
-
-    def add_items(self, items: AwaitableOrValue[list[Any] | None]) -> None:
-        """Add items to the record."""
-        self._items = items
-        self._items_added.set()
-
-    def set_is_completed_async_iterator(self) -> None:
-        """Mark as completed."""
-        self.is_completed_async_iterator = True
-        self._items_added.set()
 
 
 IncrementalDataRecord = Union[DeferredFragmentRecord, StreamItemsRecord]
