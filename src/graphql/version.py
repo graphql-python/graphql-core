@@ -8,7 +8,7 @@ from typing import NamedTuple
 __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
 
-version = "3.3.0a5"
+version = "3.3.0a6"
 
 version_js = "17.0.0a2"
 
