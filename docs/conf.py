@@ -145,6 +145,7 @@ types.TracebackType
 EnterLeaveVisitor
 FormattedSourceLocation
 GraphQLAbstractType
+GraphQLErrorExtensions
 GraphQLOutputType
 asyncio.events.AbstractEventLoop
 graphql.execution.map_async_iterator.MapAsyncIterator
