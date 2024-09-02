@@ -1,9 +1,7 @@
 import asyncio
+from typing import Any, Callable, Dict, List
 
-from typing import Any, Dict, List, Callable
-
-from pytest import mark, raises
-
+from graphql.execution import MapAsyncIterator, create_source_event_stream, subscribe
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
@@ -16,10 +14,10 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
-from graphql.execution import create_source_event_stream, subscribe, MapAsyncIterator
+from pytest import mark, raises
 
 try:
-    anext
+    anext  # type: ignore
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
     async def anext(iterator):

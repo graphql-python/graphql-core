@@ -1,10 +1,10 @@
 from asyncio import ensure_future
 from inspect import isawaitable
-from typing import Any, Awaitable, Callable, Dict, Optional, Union, Type, cast
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 from .error import GraphQLError
-from .execution import execute, ExecutionResult, ExecutionContext, Middleware
-from .language import parse, Source
+from .execution import ExecutionContext, ExecutionResult, Middleware, execute
+from .language import Source, parse
 from .pyutils import AwaitableOrValue
 from .type import (
     GraphQLFieldResolver,
@@ -90,9 +90,9 @@ async def graphql(
     )
 
     if isawaitable(result):
-        return await cast(Awaitable[ExecutionResult], result)
+        return await result
 
-    return cast(ExecutionResult, result)
+    return result
 
 
 def assume_not_awaitable(_value: Any) -> bool:
@@ -143,10 +143,10 @@ def graphql_sync(
 
     # Assert that the execution was synchronous.
     if isawaitable(result):
-        ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
+        ensure_future(result).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
-    return cast(ExecutionResult, result)
+    return result
 
 
 def graphql_impl(

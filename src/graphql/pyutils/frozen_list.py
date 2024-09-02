@@ -6,7 +6,7 @@ from .frozen_error import FrozenError
 __all__ = ["FrozenList"]
 
 
-T = TypeVar("T", covariant=True)
+T = TypeVar("T")
 
 
 class FrozenList(List[T]):
@@ -36,7 +36,7 @@ class FrozenList(List[T]):
     def __imul__(self, value):
         raise FrozenError
 
-    def __hash__(self):
+    def __hash__(self) -> int:  # type: ignore
         return hash(tuple(self))
 
     def __copy__(self) -> "FrozenList":

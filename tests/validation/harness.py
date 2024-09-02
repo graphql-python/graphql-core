@@ -1,10 +1,10 @@
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.type import GraphQLSchema
 from graphql.utilities import build_schema
-from graphql.validation import ValidationRule, SDLValidationRule
+from graphql.validation import ASTValidationRule
 from graphql.validation.validate import validate, validate_sdl
 
 __all__ = [
@@ -121,9 +121,9 @@ test_schema = build_schema(
 
 
 def assert_validation_errors(
-    rule: Type[ValidationRule],
+    rule: Type[ASTValidationRule],
     query_str: str,
-    errors: List[GraphQLError],
+    errors: List[Union[GraphQLError, Dict[str, Any]]],
     schema: GraphQLSchema = test_schema,
 ) -> List[GraphQLError]:
     doc = parse(query_str)
@@ -133,9 +133,9 @@ def assert_validation_errors(
 
 
 def assert_sdl_validation_errors(
-    rule: Type[SDLValidationRule],
+    rule: Type[ASTValidationRule],
     sdl_str: str,
-    errors: List[GraphQLError],
+    errors: List[Union[GraphQLError, Dict[str, Any]]],
     schema: Optional[GraphQLSchema] = None,
 ) -> List[GraphQLError]:
     doc = parse(sdl_str)

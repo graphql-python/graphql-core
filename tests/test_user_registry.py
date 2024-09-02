@@ -15,12 +15,7 @@ try:
 except ImportError:  # Python < 3.7
     create_task = None  # type: ignore
 
-from pytest import fixture, mark
-
 from graphql import (
-    graphql,
-    parse,
-    subscribe,
     GraphQLArgument,
     GraphQLBoolean,
     GraphQLEnumType,
@@ -33,10 +28,13 @@ from graphql import (
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
+    graphql,
+    parse,
+    subscribe,
 )
-
-from graphql.pyutils import SimplePubSub, SimplePubSubIterator
 from graphql.execution.map_async_iterator import MapAsyncIterator
+from graphql.pyutils import SimplePubSub, SimplePubSubIterator
+from pytest import fixture, mark
 
 
 class User(NamedTuple):
@@ -498,22 +496,23 @@ def describe_subscription():
             )
 
         async def receive_one():
-            async for result in subscription_one:  # type: ignore # pragma: no cover
+            async for result in subscription_one:  # pragma: no cover
                 received_one.append(result)
                 if len(received_one) == 3:  # pragma: no cover else
                     break
 
         async def receive_all():
-            async for result in subscription_all:  # type: ignore # pragma: no cover
+            async for result in subscription_all:  # pragma: no cover
                 received_all.append(result)
                 if len(received_all) == 6:  # pragma: no cover else
                     break
 
         tasks = [
-            create_task(task()) if create_task else task()
+            create_task(task()) if create_task else task()  # type: ignore
             for task in (mutate_users, receive_one, receive_all)
         ]
         done, pending = await wait(tasks, timeout=1)
+        assert len(done) == len(tasks)
         assert not pending
 
         expected_data: List[Dict[str, Any]] = [

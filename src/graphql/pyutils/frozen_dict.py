@@ -6,7 +6,7 @@ from .frozen_error import FrozenError
 __all__ = ["FrozenDict"]
 
 KT = TypeVar("KT")
-VT = TypeVar("VT", covariant=True)
+VT = TypeVar("VT")
 
 
 class FrozenDict(Dict[KT, VT]):
@@ -25,7 +25,7 @@ class FrozenDict(Dict[KT, VT]):
     def __iadd__(self, value):
         raise FrozenError
 
-    def __hash__(self):
+    def __hash__(self) -> int:  # type: ignore
         return hash(tuple(self.items()))
 
     def __copy__(self) -> "FrozenDict":
@@ -48,5 +48,5 @@ class FrozenDict(Dict[KT, VT]):
     def setdefault(self, key, default=None):
         raise FrozenError
 
-    def update(self, other=None):
+    def update(self, other=None):  # type: ignore
         raise FrozenError

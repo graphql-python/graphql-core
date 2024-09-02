@@ -10,9 +10,9 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Union,
     Tuple,
     Type,
+    Union,
     cast,
 )
 
@@ -30,25 +30,27 @@ from ..language import (
     OperationType,
 )
 from ..pyutils import (
-    inspect,
-    is_awaitable as default_is_awaitable,
-    is_iterable,
     AwaitableOrValue,
     Path,
     Undefined,
+    inspect,
+    is_iterable,
+)
+from ..pyutils import (
+    is_awaitable as default_is_awaitable,
 )
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
+    GraphQLFieldResolver,
     GraphQLLeafType,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLOutputType,
-    GraphQLSchema,
-    GraphQLFieldResolver,
-    GraphQLTypeResolver,
     GraphQLResolveInfo,
+    GraphQLSchema,
+    GraphQLTypeResolver,
     SchemaMetaFieldDef,
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
@@ -213,13 +215,13 @@ class ExecutionContext:
         self.context_value = context_value
         self.operation = operation
         self.variable_values = variable_values
-        self.field_resolver = field_resolver  # type: ignore
-        self.type_resolver = type_resolver  # type: ignore
-        self.subscribe_field_resolver = subscribe_field_resolver  # type: ignore
+        self.field_resolver = field_resolver
+        self.type_resolver = type_resolver
+        self.subscribe_field_resolver = subscribe_field_resolver
         self.errors = errors
         self.middleware_manager = middleware_manager
         if is_awaitable:
-            self.is_awaitable = is_awaitable
+            self.is_awaitable = is_awaitable  # type: ignore
         self._subfields_cache: Dict[Tuple, Dict[str, List[FieldNode]]] = {}
 
     @classmethod
@@ -793,7 +795,7 @@ class ExecutionContext:
         that value, then complete the value for that type.
         """
         resolve_type_fn = return_type.resolve_type or self.type_resolver
-        runtime_type = resolve_type_fn(result, info, return_type)  # type: ignore
+        runtime_type = resolve_type_fn(result, info, return_type)
 
         if self.is_awaitable(runtime_type):
             runtime_type = cast(Awaitable, runtime_type)
@@ -1096,10 +1098,10 @@ def execute_sync(
 
     # Assert that the execution was synchronous.
     if isawaitable(result):
-        ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
+        ensure_future(result).cancel()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
-    return cast(ExecutionResult, result)
+    return result
 
 
 def assert_valid_execution_arguments(

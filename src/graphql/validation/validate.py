@@ -2,8 +2,8 @@ from typing import Collection, List, Optional, Type
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
-from ..type import GraphQLSchema, assert_valid_schema
 from ..pyutils import inspect, is_collection
+from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
 from .rules import ASTValidationRule
 from .specified_rules import specified_rules, specified_sdl_rules
@@ -65,7 +65,7 @@ def validate(
     errors: List[GraphQLError] = []
 
     def on_error(error: GraphQLError) -> None:
-        if len(errors) >= max_errors:  # type: ignore
+        if len(errors) >= max_errors:
             errors.append(
                 GraphQLError(
                     "Too many validation errors, error limit reached."

@@ -833,8 +833,10 @@ class GraphQLObjectType(GraphQLNamedType):
             )
         return {
             assert_name(name): (
-                value if isinstance(value, GraphQLField) else GraphQLField(value)
-            )  # type: ignore
+                value
+                if isinstance(value, GraphQLField)
+                else GraphQLField(value)  # type: ignore
+            )
             for name, value in fields.items()
         }
 
@@ -967,8 +969,10 @@ class GraphQLInterfaceType(GraphQLNamedType):
             )
         return {
             assert_name(name): (
-                value if isinstance(value, GraphQLField) else GraphQLField(value)
-            )  # type: ignore
+                value
+                if isinstance(value, GraphQLField)
+                else GraphQLField(value)  # type: ignore
+            )
             for name, value in fields.items()
         }
 
@@ -1175,12 +1179,12 @@ class GraphQLEnumType(GraphQLNamedType):
             ):
                 try:
                     # noinspection PyTypeChecker
-                    values = dict(values)  # type: ignore
-                except (TypeError, ValueError):
+                    values = dict(values)
+                except (TypeError, ValueError) as error:
                     raise TypeError(
                         f"{name} values must be an Enum or a mapping"
                         " with value names as keys."
-                    )
+                    ) from error
             values = cast(Dict[str, Any], values)
         else:
             values = cast(Dict[str, Enum], values)
@@ -1488,8 +1492,8 @@ class GraphQLInputObjectType(GraphQLNamedType):
             assert_name(name): (
                 value
                 if isinstance(value, GraphQLInputField)
-                else GraphQLInputField(value)
-            )  # type: ignore
+                else GraphQLInputField(value)  # type: ignore
+            )
             for name, value in fields.items()
         }
 
