@@ -53,6 +53,27 @@ typing-extensions = [
 [tool.black]
 target-version = ['py36', 'py37', 'py38', 'py39', 'py310', 'py311', 'py312']
 
+[tool.pyright]
+reportIncompatibleVariableOverride = false
+reportMissingTypeArgument = false
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnnecessaryIsInstance = false
+reportUnknownVariableType = false
+ignore = ["**/test_*"]  # test functions
+
+[tool.pylint.basic]
+max-module-lines = 2000
+
+[tool.pylint.messages_control]
+disable = [
+    "method-hidden",
+    "missing-module-docstring",  # test modules
+    "redefined-outer-name",
+    "unused-variable",  # test functions
+]
+
 [build-system]
 requires = ["poetry_core>=1,<2", "setuptools>=59,<70"]
 build-backend = "poetry.core.masonry.api"
