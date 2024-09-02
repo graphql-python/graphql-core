@@ -3,7 +3,6 @@ from typing import Any, Collection, Dict, List, Optional, overload
 from ..language import Node, OperationType
 from ..pyutils import is_iterable
 
-
 __all__ = ["ast_to_dict"]
 
 
@@ -34,10 +33,8 @@ def ast_to_dict(
 ) -> Any:
     """Convert a language AST to a nested Python dictionary.
 
-    Set `location` to True in order to get the locations as well.
+    Set `locations` to True in order to get the locations as well.
     """
-
-    """Convert a node to a nested Python dictionary."""
     if isinstance(node, Node):
         if cache is None:
             cache = {}
