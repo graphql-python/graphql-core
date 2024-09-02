@@ -53,11 +53,11 @@ optional = true
 [tool.poetry.group.test.dependencies]
 pytest = [
     { version = "^8.3", python = ">=3.8" },
-    { version = "^7.4", python = "<3.8"}
+    { version = "^7.4", python = "<3.8" }
 ]
 pytest-asyncio = [
     { version = "^0.23.8", python = ">=3.8" },
-    { version = "~0.21.1", python = "<3.8"}
+    { version = "~0.21.1", python = "<3.8" }
 ]
 pytest-benchmark = "^4.0"
 pytest-cov = [
