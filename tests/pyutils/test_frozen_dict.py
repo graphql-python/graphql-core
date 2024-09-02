@@ -1,8 +1,7 @@
 from copy import copy, deepcopy
 
+from graphql.pyutils import FrozenDict, FrozenError
 from pytest import raises
-
-from graphql.pyutils import FrozenError, FrozenDict
 
 
 def describe_frozen_list():
@@ -59,7 +58,7 @@ def describe_frozen_list():
         fd2 = FrozenDict({1: 2, 3: 4})
         assert fd2 == fd1
         assert fd2 is not fd1
-        assert hash(fd2) is not hash(fd1)
+        assert hash(fd2) == hash(fd1)
         fd3 = FrozenDict({1: 2, 3: 5})
         assert fd3 != fd1
         assert hash(fd3) != hash(fd1)

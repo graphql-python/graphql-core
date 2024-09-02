@@ -1,9 +1,9 @@
 import asyncio
+import sys
 from inspect import isawaitable
 
-from pytest import mark
-
 from graphql.pyutils import is_awaitable
+from pytest import mark
 
 
 def describe_is_awaitable():
@@ -76,7 +76,11 @@ def describe_is_awaitable():
         assert is_awaitable(some_coroutine())
 
     @mark.filterwarnings("ignore::Warning")  # Deprecation and Runtime
-    def recognizes_an_old_style_coroutine():
+    @mark.skipif(
+        sys.version_info >= (3, 11),
+        reason="Generator-based coroutines not supported after Python 3.11",
+    )
+    def recognizes_an_old_style_coroutine():  # pragma: no cover
         @asyncio.coroutine
         def some_old_style_coroutine():
             yield False  # pragma: no cover
