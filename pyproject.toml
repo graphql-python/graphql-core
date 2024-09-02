@@ -39,6 +39,7 @@ packages = [
     { include = 'poetry.lock', format = "sdist" },
     { include = 'tox.ini', format = "sdist" },
     { include = 'setup.cfg', format = "sdist" },
+    { include = 'setup.py', format = "sdist" },
     { include = 'CODEOWNERS', format = "sdist" },
     { include = 'MANIFEST.in', format = "sdist" },
     { include = 'SECURITY.md', format = "sdist" }
