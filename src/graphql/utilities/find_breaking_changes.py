@@ -134,7 +134,7 @@ def find_directive_changes(
             )
         )
 
-    for (old_directive, new_directive) in directives_diff.persisted:
+    for old_directive, new_directive in directives_diff.persisted:
         args_diff = dict_diff(old_directive.args, new_directive.args)
 
         for arg_name, new_arg in args_diff.added.items():
@@ -185,10 +185,12 @@ def find_type_changes(
         schema_changes.append(
             BreakingChange(
                 BreakingChangeType.TYPE_REMOVED,
-                f"Standard scalar {type_name} was removed"
-                " because it is not referenced anymore."
-                if is_specified_scalar_type(old_type)
-                else f"{type_name} was removed.",
+                (
+                    f"Standard scalar {type_name} was removed"
+                    " because it is not referenced anymore."
+                    if is_specified_scalar_type(old_type)
+                    else f"{type_name} was removed."
+                ),
             )
         )
 

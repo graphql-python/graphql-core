@@ -1,4 +1,5 @@
 """Fixtures for graphql tests"""
+
 import json
 from os.path import dirname, join
 

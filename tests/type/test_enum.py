@@ -75,10 +75,13 @@ QueryType = GraphQLObjectType(
             resolve=lambda _source, info, **args:
             # Note: this is one of the references of the internal values
             # which ComplexEnum allows.
-            complex2 if args.get("provideGoodValue")
-            # Note: similar object, but not the same *reference* as
-            # complex2 above. Enum internal values require object equality.
-            else Complex2() if args.get("provideBadValue") else args.get("fromEnum"),
+            (
+                complex2
+                if args.get("provideGoodValue")
+                # Note: similar object, but not the same *reference* as
+                # complex2 above. Enum internal values require object equality.
+                else Complex2() if args.get("provideBadValue") else args.get("fromEnum")
+            ),
         ),
     },
 )

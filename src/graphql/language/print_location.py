@@ -48,9 +48,11 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
             ("|", "^".rjust(sub_line_column_num)),
             (
                 "|",
-                sub_lines[sub_line_index + 1]
-                if sub_line_index < len(sub_lines) - 1
-                else None,
+                (
+                    sub_lines[sub_line_index + 1]
+                    if sub_line_index < len(sub_lines) - 1
+                    else None
+                ),
             ),
         )
 

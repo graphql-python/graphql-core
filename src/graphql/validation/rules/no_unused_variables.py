@@ -37,10 +37,12 @@ class NoUnusedVariablesRule(ValidationRule):
             if variable_name not in variable_name_used:
                 self.report_error(
                     GraphQLError(
-                        f"Variable '${variable_name}' is never used"
-                        f" in operation '{operation.name.value}'."
-                        if operation.name
-                        else f"Variable '${variable_name}' is never used.",
+                        (
+                            f"Variable '${variable_name}' is never used"
+                            f" in operation '{operation.name.value}'."
+                            if operation.name
+                            else f"Variable '${variable_name}' is never used."
+                        ),
                         variable_def,
                     )
                 )

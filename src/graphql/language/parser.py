@@ -346,9 +346,11 @@ class Parser:
         return VariableDefinitionNode(
             variable=self.parse_variable(),
             type=self.expect_token(TokenKind.COLON) and self.parse_type_reference(),
-            default_value=self.parse_const_value_literal()
-            if self.expect_optional_token(TokenKind.EQUALS)
-            else None,
+            default_value=(
+                self.parse_const_value_literal()
+                if self.expect_optional_token(TokenKind.EQUALS)
+                else None
+            ),
             directives=self.parse_const_directives(),
             loc=self.loc(start),
         )
@@ -390,9 +392,9 @@ class Parser:
             name=name,
             arguments=self.parse_arguments(False),
             directives=self.parse_directives(False),
-            selection_set=self.parse_selection_set()
-            if self.peek(TokenKind.BRACE_L)
-            else None,
+            selection_set=(
+                self.parse_selection_set() if self.peek(TokenKind.BRACE_L) else None
+            ),
             loc=self.loc(start),
         )
 

@@ -438,16 +438,22 @@ class GraphQLScalarType(GraphQLNamedType):
         # noinspection PyArgumentList
         return GraphQLScalarTypeKwargs(  # type: ignore
             super().to_kwargs(),
-            serialize=None
-            if self.serialize is GraphQLScalarType.serialize
-            else self.serialize,
-            parse_value=None
-            if self.parse_value is GraphQLScalarType.parse_value
-            else self.parse_value,
-            parse_literal=None
-            if getattr(self.parse_literal, "__func__", None)
-            is GraphQLScalarType.parse_literal
-            else self.parse_literal,
+            serialize=(
+                None
+                if self.serialize is GraphQLScalarType.serialize
+                else self.serialize
+            ),
+            parse_value=(
+                None
+                if self.parse_value is GraphQLScalarType.parse_value
+                else self.parse_value
+            ),
+            parse_literal=(
+                None
+                if getattr(self.parse_literal, "__func__", None)
+                is GraphQLScalarType.parse_literal
+                else self.parse_literal
+            ),
             specified_by_url=self.specified_by_url,
         )
 
@@ -517,9 +523,11 @@ class GraphQLField:
             )
         else:
             args = {
-                assert_name(name): value
-                if isinstance(value, GraphQLArgument)
-                else GraphQLArgument(cast(GraphQLInputType, value))
+                assert_name(name): (
+                    value
+                    if isinstance(value, GraphQLArgument)
+                    else GraphQLArgument(cast(GraphQLInputType, value))
+                )
                 for name, value in args.items()
             }
         if resolve is not None and not callable(resolve):
@@ -824,9 +832,9 @@ class GraphQLObjectType(GraphQLNamedType):
                 f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
-            assert_name(name): value
-            if isinstance(value, GraphQLField)
-            else GraphQLField(value)  # type: ignore
+            assert_name(name): (
+                value if isinstance(value, GraphQLField) else GraphQLField(value)
+            )  # type: ignore
             for name, value in fields.items()
         }
 
@@ -958,9 +966,9 @@ class GraphQLInterfaceType(GraphQLNamedType):
                 f"{self.name} fields must be GraphQLField or output type objects."
             )
         return {
-            assert_name(name): value
-            if isinstance(value, GraphQLField)
-            else GraphQLField(value)  # type: ignore
+            assert_name(name): (
+                value if isinstance(value, GraphQLField) else GraphQLField(value)
+            )  # type: ignore
             for name, value in fields.items()
         }
 
@@ -1181,9 +1189,11 @@ class GraphQLEnumType(GraphQLNamedType):
             elif names_as_values is True:
                 values = {key: key for key in values}
         values = {
-            assert_enum_value_name(key): value
-            if isinstance(value, GraphQLEnumValue)
-            else GraphQLEnumValue(value)
+            assert_enum_value_name(key): (
+                value
+                if isinstance(value, GraphQLEnumValue)
+                else GraphQLEnumValue(value)
+            )
             for key, value in values.items()
         }
         if ast_node and not isinstance(ast_node, EnumTypeDefinitionNode):
@@ -1441,9 +1451,11 @@ class GraphQLInputObjectType(GraphQLNamedType):
         return GraphQLInputObjectTypeKwargs(  # type: ignore
             super().to_kwargs(),
             fields=self.fields.copy(),
-            out_type=None
-            if self.out_type is GraphQLInputObjectType.out_type
-            else self.out_type,
+            out_type=(
+                None
+                if self.out_type is GraphQLInputObjectType.out_type
+                else self.out_type
+            ),
         )
 
     def __copy__(self) -> "GraphQLInputObjectType":  # pragma: no cover
@@ -1473,9 +1485,11 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 " GraphQLInputField or input type objects."
             )
         return {
-            assert_name(name): value
-            if isinstance(value, GraphQLInputField)
-            else GraphQLInputField(value)  # type: ignore
+            assert_name(name): (
+                value
+                if isinstance(value, GraphQLInputField)
+                else GraphQLInputField(value)
+            )  # type: ignore
             for name, value in fields.items()
         }
 
@@ -1695,18 +1709,15 @@ def assert_nullable_type(type_: Any) -> GraphQLNullableType:
 
 
 @overload
-def get_nullable_type(type_: None) -> None:
-    ...
+def get_nullable_type(type_: None) -> None: ...
 
 
 @overload
-def get_nullable_type(type_: GraphQLNullableType) -> GraphQLNullableType:
-    ...
+def get_nullable_type(type_: GraphQLNullableType) -> GraphQLNullableType: ...
 
 
 @overload
-def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType:
-    ...
+def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType: ...
 
 
 def get_nullable_type(
@@ -1798,13 +1809,11 @@ def assert_named_type(type_: Any) -> GraphQLNamedType:
 
 
 @overload
-def get_named_type(type_: None) -> None:
-    ...
+def get_named_type(type_: None) -> None: ...
 
 
 @overload
-def get_named_type(type_: GraphQLType) -> GraphQLNamedType:
-    ...
+def get_named_type(type_: GraphQLType) -> GraphQLNamedType: ...
 
 
 def get_named_type(type_: Optional[GraphQLType]) -> Optional[GraphQLNamedType]:

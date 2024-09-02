@@ -34,10 +34,12 @@ class NoUndefinedVariablesRule(ValidationRule):
             if var_name not in defined_variables:
                 self.report_error(
                     GraphQLError(
-                        f"Variable '${var_name}' is not defined"
-                        f" by operation '{operation.name.value}'."
-                        if operation.name
-                        else f"Variable '${var_name}' is not defined.",
+                        (
+                            f"Variable '${var_name}' is not defined"
+                            f" by operation '{operation.name.value}'."
+                            if operation.name
+                            else f"Variable '${var_name}' is not defined."
+                        ),
                         [node, operation],
                     )
                 )

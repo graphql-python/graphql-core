@@ -62,9 +62,11 @@ class KnownTypeNamesRule(ASTValidationRule):
 
             suggested_types = suggestion_list(
                 type_name,
-                list(standard_type_names) + self.type_names
-                if is_sdl
-                else self.type_names,
+                (
+                    list(standard_type_names) + self.type_names
+                    if is_sdl
+                    else self.type_names
+                ),
             )
             self.report_error(
                 GraphQLError(

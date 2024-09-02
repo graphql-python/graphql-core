@@ -62,11 +62,13 @@ def inspect_recursive(value: Any, seen_values: List) -> str:
             items = trunc_list(items)
             if isinstance(value, dict):
                 s = ", ".join(
-                    "..."
-                    if v is ELLIPSIS
-                    else inspect_recursive(v[0], seen_values)
-                    + ": "
-                    + inspect_recursive(v[1], seen_values)
+                    (
+                        "..."
+                        if v is ELLIPSIS
+                        else inspect_recursive(v[0], seen_values)
+                        + ": "
+                        + inspect_recursive(v[1], seen_values)
+                    )
                     for v in items
                 )
             else:

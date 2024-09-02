@@ -10,8 +10,7 @@ __all__ = ["ast_to_dict"]
 @overload
 def ast_to_dict(
     node: Node, locations: bool = False, cache: Optional[Dict[Node, Any]] = None
-) -> Dict:
-    ...
+) -> Dict: ...
 
 
 @overload
@@ -19,8 +18,7 @@ def ast_to_dict(
     node: Collection[Node],
     locations: bool = False,
     cache: Optional[Dict[Node, Any]] = None,
-) -> List[Node]:
-    ...
+) -> List[Node]: ...
 
 
 @overload
@@ -28,8 +26,7 @@ def ast_to_dict(
     node: OperationType,
     locations: bool = False,
     cache: Optional[Dict[Node, Any]] = None,
-) -> str:
-    ...
+) -> str: ...
 
 
 def ast_to_dict(

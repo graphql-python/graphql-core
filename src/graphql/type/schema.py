@@ -270,9 +270,9 @@ class GraphQLSchema:
                         if iface.name in implementations_map:
                             implementations = implementations_map[iface.name]
                         else:
-                            implementations = implementations_map[
-                                iface.name
-                            ] = InterfaceImplementations(objects=[], interfaces=[])
+                            implementations = implementations_map[iface.name] = (
+                                InterfaceImplementations(objects=[], interfaces=[])
+                            )
 
                         implementations.interfaces.append(named_type)
             elif is_object_type(named_type):
@@ -284,9 +284,9 @@ class GraphQLSchema:
                         if iface.name in implementations_map:
                             implementations = implementations_map[iface.name]
                         else:
-                            implementations = implementations_map[
-                                iface.name
-                            ] = InterfaceImplementations(objects=[], interfaces=[])
+                            implementations = implementations_map[iface.name] = (
+                                InterfaceImplementations(objects=[], interfaces=[])
+                            )
 
                         implementations.objects.append(named_type)
 

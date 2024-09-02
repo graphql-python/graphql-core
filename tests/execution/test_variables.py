@@ -83,9 +83,9 @@ def field_with_input_arg(input_arg: GraphQLArgument):
     return GraphQLField(
         GraphQLString,
         args={"input": input_arg},
-        resolve=lambda _obj, _info, **args: repr(args["input"])
-        if "input" in args
-        else None,
+        resolve=lambda _obj, _info, **args: (
+            repr(args["input"]) if "input" in args else None
+        ),
     )
 
 

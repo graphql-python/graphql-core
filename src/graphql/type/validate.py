@@ -408,11 +408,13 @@ class SchemaValidationContext:
         for transitive in iface_interfaces:
             if transitive not in type_interfaces:
                 self.report_error(
-                    f"Type {type_.name} cannot implement {iface.name}"
-                    " because it would create a circular reference."
-                    if transitive is type_
-                    else f"Type {type_.name} must implement {transitive.name}"
-                    f" because it is implemented by {iface.name}.",
+                    (
+                        f"Type {type_.name} cannot implement {iface.name}"
+                        " because it would create a circular reference."
+                        if transitive is type_
+                        else f"Type {type_.name} must implement {transitive.name}"
+                        f" because it is implemented by {iface.name}."
+                    ),
                     get_all_implements_interface_nodes(iface, transitive)
                     + get_all_implements_interface_nodes(type_, iface),
                 )

@@ -855,7 +855,7 @@ def describe_subscription_publish_phase():
         subscription = await subscribe(schema, document)
         assert isinstance(subscription, MapAsyncIterator)
 
-        assert await (anext(subscription)) == ({"newMessage": "Hello"}, None)
+        assert await anext(subscription) == ({"newMessage": "Hello"}, None)
 
         with raises(RuntimeError) as exc_info:
             await anext(subscription)

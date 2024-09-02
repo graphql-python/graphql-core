@@ -65,9 +65,11 @@ class GraphQLDirective:
         assert_name(name)
         try:
             locations = tuple(
-                value
-                if isinstance(value, DirectiveLocation)
-                else DirectiveLocation[cast(str, value)]
+                (
+                    value
+                    if isinstance(value, DirectiveLocation)
+                    else DirectiveLocation[cast(str, value)]
+                )
                 for value in locations
             )
         except (KeyError, TypeError):
@@ -90,9 +92,11 @@ class GraphQLDirective:
             )
         else:
             args = {
-                assert_name(name): value
-                if isinstance(value, GraphQLArgument)
-                else GraphQLArgument(cast(GraphQLInputType, value))
+                assert_name(name): (
+                    value
+                    if isinstance(value, GraphQLArgument)
+                    else GraphQLArgument(cast(GraphQLInputType, value))
+                )
                 for name, value in args.items()
             }
         if not isinstance(is_repeatable, bool):
