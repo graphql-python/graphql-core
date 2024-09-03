@@ -1,27 +1,26 @@
 from contextlib import contextmanager
 from typing import cast
 
-from pytest import raises
-
 from graphql import graphql_sync
-from graphql.type import (
-    GraphQLArgument,
-    GraphQLDirective,
-    GraphQLEnumValue,
-    GraphQLField,
-    GraphQLInputField,
-    GraphQLObjectType,
-    GraphQLNamedType,
-    GraphQLSchema,
-    GraphQLString,
-)
 from graphql.pyutils import (
     Description,
     is_description,
     register_description,
     unregister_description,
 )
+from graphql.type import (
+    GraphQLArgument,
+    GraphQLDirective,
+    GraphQLEnumValue,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLNamedType,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+)
 from graphql.utilities import get_introspection_query, print_schema
+from pytest import raises
 
 from ..utils import dedent
 
@@ -43,7 +42,7 @@ def registered(base: type):
     try:
         yield None
     finally:
-        unregister_description(LazyString)
+        unregister_description(base)
 
 
 def describe_description():
