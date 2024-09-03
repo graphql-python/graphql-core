@@ -566,6 +566,7 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def handles_sync_errors_combined_with_async_ones():
         is_async_resolver_finished = False
 
@@ -616,6 +617,7 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def full_response_path_is_included_for_non_nullable_fields():
         def resolve_ok(*_args):
             return {}
@@ -665,6 +667,7 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def uses_the_inline_operation_if_no_operation_name_is_provided():
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
@@ -678,6 +681,7 @@ def describe_execute_handles_basic_execution_tasks():
         result = execute_sync(schema, document, Data())
         assert result == ({"a": "b"}, None)
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def uses_the_only_operation_if_no_operation_name_is_provided():
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
@@ -691,6 +695,7 @@ def describe_execute_handles_basic_execution_tasks():
         result = execute_sync(schema, document, Data())
         assert result == ({"a": "b"}, None)
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def uses_the_named_operation_if_operation_name_is_provided():
         schema = GraphQLSchema(
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
