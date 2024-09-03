@@ -1,8 +1,8 @@
 from asyncio import CancelledError, Event, Task, ensure_future, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
-from typing import cast, Any, AsyncIterable, Callable, Optional, Set, Type, Union
 from types import TracebackType
+from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union, cast
 
 __all__ = ["MapAsyncIterator"]
 
@@ -73,9 +73,13 @@ class MapAsyncIterator:
         """Throw an exception into the asynchronous iterator."""
         if self.is_closed:
             return
+        if isinstance(type_, BaseException):
+            value = type_
+            type_ = type(value)
+            traceback = value.__traceback__
         athrow = getattr(self.iterator, "athrow", None)
         if athrow:
-            await athrow(type_, value, traceback)
+            await athrow(type_ if value is None else value)
         else:
             await self.aclose()
             if value is None:
