@@ -288,7 +288,7 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Argument 'input' has invalid value"
-                            ' { c: "foo", e: "bar" }.',
+                            ' {c: "foo", e: "bar"}.',
                             "path": ["fieldWithObjectInput"],
                             "locations": [(3, 51)],
                         }
