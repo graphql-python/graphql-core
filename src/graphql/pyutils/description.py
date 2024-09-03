@@ -44,7 +44,7 @@ class Description:
         if not isinstance(base, type):
             raise TypeError("Only types can be unregistered.")
         if isinstance(cls.bases, tuple):
-            if base in cls.bases:
+            if base in cls.bases:  # pragma: no branch
                 cls.bases = tuple(b for b in cls.bases if b is not base)
             if not cls.bases:
                 cls.bases = object

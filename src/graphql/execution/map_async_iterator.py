@@ -84,7 +84,7 @@ class MapAsyncIterator:
             await self.aclose()
             if value is None:
                 if traceback is None:
-                    raise type_
+                    raise type_  # pragma: no cover
                 value = (
                     type_
                     if isinstance(value, BaseException)
