@@ -1,6 +1,8 @@
 [run]
 branch = True
-source = src
+source =
+    src
+    tests
 omit =
     */conftest.py
     */test_*_fuzz.py
@@ -15,6 +17,7 @@ exclude_lines =
     pragma: no cover
     except ImportError:
     \# Python <
+    sys\.version_info <
     raise NotImplementedError
     raise TypeError\(f?"Unexpected
     assert False,
@@ -23,4 +26,5 @@ exclude_lines =
     if TYPE_CHECKING:
     ^\s+\.\.\.$
     ^\s+pass$
+    \: \.\.\.$
 ignore_errors = True
