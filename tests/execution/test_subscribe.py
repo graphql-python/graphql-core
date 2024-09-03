@@ -1,7 +1,12 @@
 import asyncio
 from typing import Any, Callable, Dict, List
 
-from graphql.execution import MapAsyncIterator, create_source_event_stream, subscribe
+from graphql.execution import (
+    ExecutionResult,
+    MapAsyncIterator,
+    create_source_event_stream,
+    subscribe,
+)
 from graphql.language import parse
 from graphql.pyutils import SimplePubSub
 from graphql.type import (
@@ -446,6 +451,8 @@ def describe_subscription_initialization_phase():
         # resolve to an ExecutionResult that contains an informative error description.
         result = await subscribe(schema, document, variable_values=variable_values)
 
+        assert isinstance(result, ExecutionResult)
+
         assert result == (
             None,
             [
@@ -457,7 +464,9 @@ def describe_subscription_initialization_phase():
             ],
         )
 
-        assert result.errors[0].original_error
+        errors = result.errors
+        assert errors
+        assert errors[0].original_error
 
 
 # Once a subscription returns a valid AsyncIterator, it can still yield errors.

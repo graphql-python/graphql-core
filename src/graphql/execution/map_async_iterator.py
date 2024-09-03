@@ -2,7 +2,7 @@ from asyncio import CancelledError, Event, Task, ensure_future, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable
 from types import TracebackType
-from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union, cast
+from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union
 
 __all__ = ["MapAsyncIterator"]
 
@@ -85,11 +85,7 @@ class MapAsyncIterator:
             if value is None:
                 if traceback is None:
                     raise type_  # pragma: no cover
-                value = (
-                    type_
-                    if isinstance(value, BaseException)
-                    else cast(Type[BaseException], type_)()
-                )
+                value = type_ if isinstance(value, BaseException) else type_()
             if traceback is not None:
                 value = value.with_traceback(traceback)
             raise value
