@@ -1,12 +1,5 @@
-from typing import (
-    Any,
-    ByteString,
-    Collection,
-    Iterable,
-    Mapping,
-    Text,
-    ValuesView,
-)
+from collections.abc import Collection, Iterable, Mapping, ValuesView
+from typing import Any
 
 __all__ = ["is_collection", "is_iterable"]
 
@@ -14,7 +7,7 @@ collection_types: Any = Collection
 if not isinstance({}.values(), Collection):  # Python < 3.7.2
     collection_types = (Collection, ValuesView)
 iterable_types: Any = Iterable
-not_iterable_types: Any = (ByteString, Mapping, Text)
+not_iterable_types: Any = (bytes, bytearray, memoryview, str, Mapping)
 
 
 def is_collection(value: Any) -> bool:
