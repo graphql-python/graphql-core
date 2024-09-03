@@ -42,7 +42,7 @@ def registered(base: type):
     try:
         yield None
     finally:
-        unregister_description(LazyString)
+        unregister_description(base)
 
 
 def describe_description():
