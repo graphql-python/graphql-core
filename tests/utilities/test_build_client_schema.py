@@ -1,7 +1,5 @@
 from typing import cast
 
-from pytest import raises
-
 from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,
@@ -18,8 +16,8 @@ from graphql.type import (
     assert_enum_type,
 )
 from graphql.utilities import (
-    build_schema,
     build_client_schema,
+    build_schema,
     introspection_from_schema,
     print_schema,
 )
@@ -31,6 +29,7 @@ from graphql.utilities.get_introspection_query import (
     IntrospectionType,
     IntrospectionUnionType,
 )
+from pytest import raises
 
 from ..utils import dedent
 
@@ -991,11 +990,11 @@ def describe_type_system_build_schema_from_introspection():
                 build_client_schema(introspection)
 
     def describe_very_deep_decorators_are_not_supported():
-        def fails_on_very_deep_lists_more_than_7_levels():
+        def fails_on_very_deep_lists_more_than_8_levels():
             schema = build_schema(
                 """
                 type Query {
-                  foo: [[[[[[[[String]]]]]]]]
+                  foo: [[[[[[[[[[String]]]]]]]]]]
                 }
                 """
             )
@@ -1010,11 +1009,11 @@ def describe_type_system_build_schema_from_introspection():
                 " Decorated type deeper than introspection query."
             )
 
-        def fails_on_a_very_deep_non_null_more_than_7_levels():
+        def fails_on_a_very_deep_non_null_more_than_8_levels():
             schema = build_schema(
                 """
                 type Query {
-                  foo: [[[[String!]!]!]!]
+                  foo: [[[[[String!]!]!]!]!]
                 }
                 """
             )
@@ -1029,12 +1028,12 @@ def describe_type_system_build_schema_from_introspection():
                 " Decorated type deeper than introspection query."
             )
 
-        def succeeds_on_deep_types_less_or_equal_7_levels():
-            # e.g., fully non-null 3D matrix
+        def succeeds_on_deep_types_less_or_equal_8_levels():
+            # e.g., fully non-null 4D matrix
             sdl = dedent(
                 """
                 type Query {
-                  foo: [[[String!]!]!]!
+                  foo: [[[[String!]!]!]!]!
                 }
                 """
             )
