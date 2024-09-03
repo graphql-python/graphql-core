@@ -5,8 +5,8 @@ from ..language import (
     DirectiveNode,
     EnumValueDefinitionNode,
     ExecutableDefinitionNode,
-    FieldNode,
     FieldDefinitionNode,
+    FieldNode,
     InputValueDefinitionNode,
     NullValueNode,
     SchemaDefinitionNode,
@@ -17,7 +17,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
-from ..pyutils import inspect, print_path_list, Undefined
+from ..pyutils import Undefined, inspect, print_path_list
 from ..type import (
     GraphQLDirective,
     GraphQLField,
@@ -131,7 +131,7 @@ def coerce_variable_values(
                 GraphQLError(
                     prefix + "; " + error.message,
                     var_def_node,
-                    original_error=error.original_error,
+                    original_error=error,
                 )
             )
 
