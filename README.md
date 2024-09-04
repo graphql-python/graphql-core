@@ -10,7 +10,7 @@ a query language for APIs created by Facebook.
 ![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 3.2.3 of GraphQL-core is up-to-date with GraphQL.js version 16.6.0.
+The current version 3.2.4 of GraphQL-core is up-to-date with GraphQL.js version 16.8.2.
 
 An extensive test suite with over 2300 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
@@ -196,6 +196,10 @@ Some restrictions (mostly in line with the design goals):
 * supports asynchronous operations only via async.io
   (does not support the additional executors in GraphQL-core)
 
+Note that meanwhile we are using the amazing [ruff](https://docs.astral.sh/ruff/) tool
+to both format and check the code of GraphQL-core 3,
+in addition to using [mypy](https://mypy-lang.org/) as type checker.
+
 
 ## Integration with other libraries and roadmap
 
@@ -205,14 +209,12 @@ Some restrictions (mostly in line with the design goals):
   also been created by Syrus Akbary, who meanwhile has handed over the maintenance
   and future development to members of the GraphQL-Python community.
 
-  The current version 2 of Graphene is using Graphql-core 2 as core library for much of
-  the heavy lifting. Note that Graphene 2 is not compatible with GraphQL-core 3.
-  The  new version 3 of Graphene will use GraphQL-core 3 instead of GraphQL-core 2.
+  Graphene 3 is now using Graphql-core 3 as core library for much of the heavy lifting.
 
 * [Ariadne](https://github.com/mirumee/ariadne) is a Python library for implementing
   GraphQL servers using schema-first approach created by Mirumee Software.
 
-  Ariadne is already using GraphQL-core 3 as its GraphQL implementation.
+  Ariadne is also using GraphQL-core 3 as its GraphQL implementation.
 
 * [Strawberry](https://github.com/strawberry-graphql/strawberry), created by Patrick
   Arminio, is a new GraphQL library for Python 3, inspired by dataclasses,
@@ -228,6 +230,7 @@ Changes are tracked as
 ## Credits and history
 
 The GraphQL-core 3 library
+
 * has been created and is maintained by Christoph Zwerschke
 * uses ideas and code from GraphQL-core 2, a prior work by Syrus Akbary
 * is a Python port of GraphQL.js which has been developed by Lee Byron and others
