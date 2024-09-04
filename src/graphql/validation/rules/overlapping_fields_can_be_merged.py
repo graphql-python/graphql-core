@@ -3,13 +3,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
+    DirectiveNode,
     FieldNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
-    ObjectFieldNode,
-    ObjectValueNode,
     SelectionSetNode,
+    ValueNode,
     print_ast,
 )
 from ...type import (
@@ -551,7 +551,7 @@ def find_conflict(
             )
 
         # Two field calls must have the same arguments.
-        if stringify_arguments(node1) != stringify_arguments(node2):
+        if not same_arguments(node1, node2):
             return (response_name, "they have differing arguments"), [node1], [node2]
 
     if type1 and type2 and do_types_conflict(type1, type2):
@@ -582,14 +582,34 @@ def find_conflict(
     return None  # no conflict
 
 
-def stringify_arguments(field_node: FieldNode) -> str:
-    input_object_with_args = ObjectValueNode(
-        fields=tuple(
-            ObjectFieldNode(name=arg_node.name, value=arg_node.value)
-            for arg_node in field_node.arguments
-        )
-    )
-    return print_ast(sort_value_node(input_object_with_args))
+def same_arguments(
+    node1: Union[FieldNode, DirectiveNode], node2: Union[FieldNode, DirectiveNode]
+) -> bool:
+    args1 = node1.arguments
+    args2 = node2.arguments
+
+    if not args1:
+        return not args2
+
+    if not args2:
+        return False
+
+    if len(args1) != len(args2):
+        return False  # pragma: no cover
+
+    values2 = {arg.name.value: arg.value for arg in args2}
+
+    for arg1 in args1:
+        value1 = arg1.value
+        value2 = values2.get(arg1.name.value)
+        if value2 is None or stringify_value(value1) != stringify_value(value2):
+            return False
+
+    return True
+
+
+def stringify_value(value: ValueNode) -> str:
+    return print_ast(sort_value_node(value))
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
