@@ -1,5 +1,6 @@
 from re import search
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 with open("src/graphql/version.py") as version_file:
     version = search('version = "(.*)"', version_file.read()).group(1)
@@ -31,9 +32,11 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     install_requires=[
-        "typing-extensions>=4.2,<5; python_version < '3.8'",
+        "typing-extensions>=4,<5; python_version < '3.10'",
     ],
     python_requires=">=3.6,<4",
     packages=find_packages("src"),
