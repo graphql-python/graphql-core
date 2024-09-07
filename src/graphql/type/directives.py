@@ -1,6 +1,6 @@
 from typing import Any, Collection, Dict, Optional, Tuple, cast
 
-from ..language import ast, DirectiveLocation
+from ..language import DirectiveLocation, ast
 from ..pyutils import inspect, is_description
 from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull, is_input_type
@@ -224,17 +224,17 @@ GraphQLDeprecatedDirective = GraphQLDirective(
     description="Marks an element of a GraphQL schema as no longer supported.",
 )
 
-# Used to provide a URL for specifying the behaviour of custom scalar definitions:
+# Used to provide a URL for specifying the behavior of custom scalar definitions:
 GraphQLSpecifiedByDirective = GraphQLDirective(
     name="specifiedBy",
     locations=[DirectiveLocation.SCALAR],
     args={
         "url": GraphQLArgument(
             GraphQLNonNull(GraphQLString),
-            description="The URL that specifies the behaviour of this scalar.",
+            description="The URL that specifies the behavior of this scalar.",
         )
     },
-    description="Exposes a URL that specifies the behaviour of this scalar.",
+    description="Exposes a URL that specifies the behavior of this scalar.",
 )
 
 

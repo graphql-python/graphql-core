@@ -1,12 +1,14 @@
-from typing import cast, Any, Dict
+from typing import Any, Dict, cast
 
 from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDirective,
     GraphQLEnumType,
     GraphQLField,
     GraphQLFloat,
+    GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInt,
     GraphQLInterfaceType,
@@ -17,13 +19,11 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
-    GraphQLInputField,
-    GraphQLDirective,
 )
 from graphql.utilities import (
     build_schema,
-    print_schema,
     print_introspection_schema,
+    print_schema,
     print_value,
 )
 
@@ -667,9 +667,9 @@ def describe_type_system_printer():
               reason: String = "No longer supported"
             ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
 
-            """Exposes a URL that specifies the behaviour of this scalar."""
+            """Exposes a URL that specifies the behavior of this scalar."""
             directive @specifiedBy(
-              """The URL that specifies the behaviour of this scalar."""
+              """The URL that specifies the behavior of this scalar."""
               url: String!
             ) on SCALAR
 

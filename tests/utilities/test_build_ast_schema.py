@@ -4,24 +4,24 @@ from typing import Union
 from pytest import mark, raises
 
 from graphql import graphql_sync
-from graphql.language import parse, print_ast, DocumentNode, InterfaceTypeDefinitionNode
+from graphql.language import DocumentNode, InterfaceTypeDefinitionNode, parse, print_ast
 from graphql.type import (
-    GraphQLDeprecatedDirective,
-    GraphQLIncludeDirective,
-    GraphQLSchema,
-    GraphQLSkipDirective,
-    GraphQLSpecifiedByDirective,
-    GraphQLBoolean,
-    GraphQLFloat,
-    GraphQLID,
-    GraphQLInt,
-    GraphQLString,
     GraphQLArgument,
+    GraphQLBoolean,
+    GraphQLDeprecatedDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
+    GraphQLFloat,
+    GraphQLID,
+    GraphQLIncludeDirective,
     GraphQLInputField,
+    GraphQLInt,
     GraphQLNamedType,
+    GraphQLSchema,
+    GraphQLSkipDirective,
+    GraphQLSpecifiedByDirective,
+    GraphQLString,
     assert_directive,
     assert_enum_type,
     assert_input_object_type,
@@ -1121,7 +1121,7 @@ def describe_schema_builder():
         assert errors
 
     def do_not_override_standard_types():
-        # Note: not sure it's desired behaviour to just silently ignore override
+        # Note: not sure it's desired behavior to just silently ignore override
         # attempts so just documenting it here.
 
         schema = build_schema(
