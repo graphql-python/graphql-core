@@ -86,6 +86,11 @@ test_schema = build_schema(
       stringListField: [String]
     }
 
+    input OneOfInput @oneOf {
+      stringField: String
+      intField: Int
+    }
+
     type ComplicatedArgs {
       # TODO List
       # TODO Coercion
@@ -100,6 +105,7 @@ test_schema = build_schema(
       stringListArgField(stringListArg: [String]): String
       stringListNonNullArgField(stringListNonNullArg: [String!]): String
       complexArgField(complexArg: ComplexInput): String
+      oneOfArgField(oneOfArg: OneOfInput): String
       multipleReqs(req1: Int!, req2: Int!): String
       nonNullFieldWithDefault(arg: Int! = 0): String
       multipleOpts(opt1: Int = 0, opt2: Int = 0): String

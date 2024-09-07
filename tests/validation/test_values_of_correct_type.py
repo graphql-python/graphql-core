@@ -931,6 +931,29 @@ def describe_validate_values_of_correct_type():
                 """
             )
 
+    def describe_valid_one_of_input_object_value():
+        def exactly_one_field():
+            assert_valid(
+                """
+                {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: "abc" })
+                  }
+                }
+                """
+            )
+
+        def exactly_one_non_nullable_variable():
+            assert_valid(
+                """
+                query ($string: String!) {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: $string })
+                  }
+                }
+                """
+            )
+
     def describe_invalid_input_object_value():
         def partial_object_missing_required():
             assert_errors(
@@ -1095,6 +1118,77 @@ def describe_validate_values_of_correct_type():
                 }
                 """,
                 schema=schema,
+            )
+
+    def describe_invalid_one_of_input_object_value():
+        def invalid_field_type():
+            assert_errors(
+                """
+                {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: 2 })
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "String cannot represent a non string value: 2",
+                        "locations": [(4, 60)],
+                    },
+                ],
+            )
+
+        def exactly_one_null_field():
+            assert_errors(
+                """
+                {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: null })
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Field 'OneOfInput.stringField' must be non-null.",
+                        "locations": [(4, 45)],
+                    },
+                ],
+            )
+
+        def exactly_one_nullable_variable():
+            assert_errors(
+                """
+                query ($string: String) {
+                complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: $string })
+                }
+                }
+                """,
+                [
+                    {
+                        "message": "Variable 'string' must be non-nullable to be used"
+                        " for OneOf Input Object 'OneOfInput'.",
+                        "locations": [(4, 45)],
+                    },
+                ],
+            )
+
+        def more_than_one_field():
+            assert_errors(
+                """
+                {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: "abc", intField: 123 })
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "OneOf Input Object 'OneOfInput'"
+                        " must specify exactly one key.",
+                        "locations": [(4, 45)],
+                    },
+                ],
             )
 
     def describe_directive_arguments():

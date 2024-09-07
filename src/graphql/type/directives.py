@@ -261,11 +261,20 @@ GraphQLSpecifiedByDirective = GraphQLDirective(
     description="Exposes a URL that specifies the behaviour of this scalar.",
 )
 
+# Used to declare an Input Object as a OneOf Input Objects.
+GraphQLOneOfDirective = GraphQLDirective(
+    name="oneOf",
+    locations=[DirectiveLocation.INPUT_OBJECT],
+    args={},
+    description="Indicates an Input Object is a OneOf Input Object.",
+)
+
 specified_directives: tuple[GraphQLDirective, ...] = (
     GraphQLIncludeDirective,
     GraphQLSkipDirective,
     GraphQLDeprecatedDirective,
     GraphQLSpecifiedByDirective,
+    GraphQLOneOfDirective,
 )
 """A tuple with all directives from the GraphQL specification"""
 

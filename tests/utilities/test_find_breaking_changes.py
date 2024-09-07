@@ -1,6 +1,7 @@
 from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLIncludeDirective,
+    GraphQLOneOfDirective,
     GraphQLSchema,
     GraphQLSkipDirective,
     GraphQLSpecifiedByDirective,
@@ -817,6 +818,7 @@ def describe_find_breaking_changes():
                 GraphQLSkipDirective,
                 GraphQLIncludeDirective,
                 GraphQLSpecifiedByDirective,
+                GraphQLOneOfDirective,
             ]
         )
 

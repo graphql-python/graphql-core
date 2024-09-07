@@ -128,16 +128,20 @@ def coerce_variable_values(
             continue
 
         def on_input_value_error(
-            path: list[str | int], invalid_value: Any, error: GraphQLError
+            path: list[str | int],
+            invalid_value: Any,
+            error: GraphQLError,
+            var_name: str = var_name,
+            var_def_node: VariableDefinitionNode = var_def_node,
         ) -> None:
             invalid_str = inspect(invalid_value)
-            prefix = f"Variable '${var_name}' got invalid value {invalid_str}"  # noqa: B023
+            prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
             if path:
-                prefix += f" at '{var_name}{print_path_list(path)}'"  # noqa: B023
+                prefix += f" at '{var_name}{print_path_list(path)}'"
             on_error(
                 GraphQLError(
                     prefix + "; " + error.message,
-                    var_def_node,  # noqa: B023
+                    var_def_node,
                     original_error=error,
                 )
             )
@@ -193,7 +197,8 @@ def get_argument_values(
                     )
                     raise GraphQLError(msg, value_node)
                 continue  # pragma: no cover
-            is_null = variable_values[variable_name] is None
+            variable_value = variable_values[variable_name]
+            is_null = variable_value is None or variable_value is Undefined
 
         if is_null and is_non_null_type(arg_type):
             msg = f"Argument '{name}' of non-null type '{arg_type}' must not be null."

@@ -65,6 +65,7 @@ from ..type import (
     GraphQLNullableType,
     GraphQLObjectType,
     GraphQLObjectTypeKwargs,
+    GraphQLOneOfDirective,
     GraphQLOutputType,
     GraphQLScalarType,
     GraphQLSchema,
@@ -777,6 +778,7 @@ class ExtendSchemaImpl:
             fields=partial(self.build_input_field_map, all_nodes),
             ast_node=ast_node,
             extension_ast_nodes=extension_nodes,
+            is_one_of=is_one_of(ast_node),
         )
 
     def build_type(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
@@ -822,3 +824,10 @@ def get_specified_by_url(
 
     specified_by_url = get_directive_values(GraphQLSpecifiedByDirective, node)
     return specified_by_url["url"] if specified_by_url else None
+
+
+def is_one_of(node: InputObjectTypeDefinitionNode) -> bool:
+    """Given an input object node, returns if the node should be OneOf."""
+    from ..execution import get_directive_values
+
+    return get_directive_values(GraphQLOneOfDirective, node) is not None

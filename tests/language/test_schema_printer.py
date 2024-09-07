@@ -57,6 +57,7 @@ def describe_printer_sdl_document():
               five(argument: [String] = ["string", "string"]): String
               six(argument: InputType = { key: "value" }): Type
               seven(argument: Int = null): Type
+              eight(argument: OneOfInputType): Type
             }
 
             type AnnotatedObject @onObject(arg: "value") {
@@ -137,6 +138,11 @@ def describe_printer_sdl_document():
             input InputType {
               key: String!
               answer: Int = 42
+            }
+
+            input OneOfInputType @oneOf {
+              string: String
+              int: Int
             }
 
             input AnnotatedInput @onInputObject {

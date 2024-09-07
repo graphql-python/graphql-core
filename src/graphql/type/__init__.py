@@ -137,6 +137,7 @@ from .directives import (
     GraphQLStreamDirective,
     GraphQLDeprecatedDirective,
     GraphQLSpecifiedByDirective,
+    GraphQLOneOfDirective,
     # Keyword Args
     GraphQLDirectiveKwargs,
     # Constant Deprecation Reason
@@ -286,6 +287,7 @@ __all__ = [
     "GraphQLStreamDirective",
     "GraphQLDeprecatedDirective",
     "GraphQLSpecifiedByDirective",
+    "GraphQLOneOfDirective",
     "GraphQLDirectiveKwargs",
     "DEFAULT_DEPRECATION_REASON",
     "is_specified_scalar_type",

@@ -174,6 +174,15 @@ def describe_value_from_ast():
         },
     )
 
+    test_one_of_input_obj = GraphQLInputObjectType(
+        "TestOneOfInput",
+        {
+            "a": GraphQLInputField(GraphQLString),
+            "b": GraphQLInputField(GraphQLString),
+        },
+        is_one_of=True,
+    )
+
     def coerces_input_objects_according_to_input_coercion_rules():
         assert _value_from("null", test_input_obj) is None
         assert _value_from("[]", test_input_obj) is Undefined
@@ -193,6 +202,14 @@ def describe_value_from_ast():
         )
         assert _value_from("{ requiredBool: null }", test_input_obj) is Undefined
         assert _value_from("{ bool: true }", test_input_obj) is Undefined
+        assert _value_from('{ a: "abc" }', test_one_of_input_obj) == {"a": "abc"}
+        assert _value_from('{ b: "def" }', test_one_of_input_obj) == {"b": "def"}
+        assert _value_from('{ a: "abc", b: None }', test_one_of_input_obj) is Undefined
+        assert _value_from("{ a: null }", test_one_of_input_obj) is Undefined
+        assert _value_from("{ a: 1 }", test_one_of_input_obj) is Undefined
+        assert _value_from('{ a: "abc", b: "def" }', test_one_of_input_obj) is Undefined
+        assert _value_from("{}", test_one_of_input_obj) is Undefined
+        assert _value_from('{ c: "abc" }', test_one_of_input_obj) is Undefined
 
     def accepts_variable_values_assuming_already_coerced():
         assert _value_from("$var", GraphQLBoolean, {}) is Undefined

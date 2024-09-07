@@ -305,6 +305,7 @@ class TypeFields(GraphQLFieldMap):
                 resolve=cls.input_fields,
             ),
             "ofType": GraphQLField(_Type, resolve=cls.of_type),
+            "isOneOf": GraphQLField(GraphQLBoolean, resolve=cls.is_one_of),
         }
 
     @staticmethod
@@ -395,6 +396,10 @@ class TypeFields(GraphQLFieldMap):
     @staticmethod
     def of_type(type_, _info):
         return getattr(type_, "of_type", None)
+
+    @staticmethod
+    def is_one_of(type_, _info):
+        return type_.is_one_of if is_input_object_type(type_) else None
 
 
 _Type: GraphQLObjectType = GraphQLObjectType(
