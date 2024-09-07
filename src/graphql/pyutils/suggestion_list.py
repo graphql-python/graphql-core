@@ -99,8 +99,7 @@ class LexicalDistance:
                     double_diagonal_cell = rows[(i - 2) % 3][j - 2]
                     current_cell = min(current_cell, double_diagonal_cell + 1)
 
-                if current_cell < smallest_cell:
-                    smallest_cell = current_cell
+                smallest_cell = min(current_cell, smallest_cell)
 
                 current_row[j] = current_cell
 

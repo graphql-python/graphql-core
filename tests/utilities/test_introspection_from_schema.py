@@ -3,6 +3,7 @@ import sys
 from copy import deepcopy
 
 import pytest
+
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.utilities import (
     IntrospectionQuery,
@@ -105,7 +106,7 @@ def describe_introspection_from_schema():
             # check that introspecting the copied schema gives the same result
             assert introspection_from_schema(copied) == introspected_schema
 
-    @pytest.mark.slow()
+    @pytest.mark.slow
     def describe_deepcopy_and_pickle_big():  # pragma: no cover
         @pytest.mark.timeout(20)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811

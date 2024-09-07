@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import pytest
+
 from graphql.language import NameNode, ScalarTypeDefinitionNode, parse, print_ast
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401

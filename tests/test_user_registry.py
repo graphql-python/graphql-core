@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Any, AsyncIterable, NamedTuple
 
 import pytest
+
 from graphql import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -212,13 +213,13 @@ schema = GraphQLSchema(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def context():
     return {"registry": UserRegistry()}
 
 
 def describe_query():
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def query_user(context):
         user = await context["registry"].create(
             firstName="John", lastName="Doe", tweets=42, verified=True
@@ -250,7 +251,7 @@ def describe_query():
 
 
 def describe_mutation():
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def create_user(context):
         received = {}
 
@@ -302,7 +303,7 @@ def describe_mutation():
             "User 0": {"user": user, "mutation": MutationEnum.CREATED.value},
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def update_user(context):
         received = {}
 
@@ -358,7 +359,7 @@ def describe_mutation():
             "User 0": {"user": user, "mutation": MutationEnum.UPDATED.value},
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def delete_user(context):
         received = {}
 
@@ -400,7 +401,7 @@ def describe_mutation():
 
 
 def describe_subscription():
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def subscribe_to_user_mutations(context):
         query = """
             subscription ($userId: ID!) {

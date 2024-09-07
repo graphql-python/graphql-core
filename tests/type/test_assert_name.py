@@ -1,4 +1,5 @@
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.type import assert_enum_value_name, assert_name
 

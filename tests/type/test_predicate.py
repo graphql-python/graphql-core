@@ -1,6 +1,7 @@
 from typing import Any
 
 import pytest
+
 from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,

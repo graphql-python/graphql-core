@@ -1,4 +1,5 @@
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.utilities import TypeInfo, build_schema

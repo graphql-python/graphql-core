@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import pytest
+
 from graphql.language import (
     DirectiveLocation,
     SchemaDefinitionNode,

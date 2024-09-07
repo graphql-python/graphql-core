@@ -1,11 +1,12 @@
 from asyncio import sleep
 
 import pytest
+
 from graphql.pyutils import SimplePubSub, is_awaitable
 
 
 def describe_simple_pub_sub():
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def subscribe_async_iterator_mock():
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()
@@ -49,7 +50,7 @@ def describe_simple_pub_sub():
         with pytest.raises(StopAsyncIteration):
             await iterator.__anext__()
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def iterator_aclose_empties_push_queue():
         pubsub = SimplePubSub()
         assert not pubsub.subscribers
@@ -67,7 +68,7 @@ def describe_simple_pub_sub():
         assert iterator.pull_queue.qsize() == 0
         assert not iterator.listening
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def iterator_aclose_empties_pull_queue():
         pubsub = SimplePubSub()
         assert not pubsub.subscribers
@@ -84,7 +85,7 @@ def describe_simple_pub_sub():
         assert iterator.pull_queue.qsize() == 0
         assert not iterator.listening
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def iterator_aclose_is_idempotent():
         pubsub = SimplePubSub()
         iterator = pubsub.get_subscriber()

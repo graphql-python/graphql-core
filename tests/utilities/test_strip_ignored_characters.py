@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind, parse
 from graphql.utilities import strip_ignored_characters

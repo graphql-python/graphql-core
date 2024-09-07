@@ -1,4 +1,5 @@
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult
 

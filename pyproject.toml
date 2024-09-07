@@ -75,7 +75,7 @@ tox = [
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.5.7,<0.6"
+ruff = ">=0.6.4,<0.7"
 mypy = [
     { version = "^1.11", python = ">=3.8" },
     { version = "~1.4", python = "<3.8" }

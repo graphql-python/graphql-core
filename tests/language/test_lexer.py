@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pytest
+
 from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, SourceLocation, Token, TokenKind
 from graphql.language.lexer import is_punctuator_token_kind

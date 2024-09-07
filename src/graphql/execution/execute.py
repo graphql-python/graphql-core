@@ -96,7 +96,7 @@ try:  # pragma: no cover
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
-    async def anext(iterator: AsyncIterator) -> Any:  # noqa: A001
+    async def anext(iterator: AsyncIterator) -> Any:
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 

@@ -6,6 +6,7 @@ from math import inf, nan
 from typing import Any
 
 import pytest
+
 from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLDirective,
@@ -138,7 +139,7 @@ def describe_inspect():
         assert inspect(test_generator) == "<generator function test_generator>"
         assert inspect(test_generator()) == "<generator test_generator>"
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def inspect_coroutine():
         async def test_coroutine():
             pass

@@ -3,6 +3,7 @@ from math import inf, nan, pi
 from typing import Any
 
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
 from graphql.pyutils import Undefined

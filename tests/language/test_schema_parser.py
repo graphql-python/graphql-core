@@ -6,6 +6,7 @@ from textwrap import dedent
 from typing import Optional, Tuple
 
 import pytest
+
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,

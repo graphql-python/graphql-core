@@ -3,6 +3,7 @@ from inspect import isawaitable
 from sys import version_info as python_version
 
 import pytest
+
 from graphql.pyutils import is_awaitable
 
 
@@ -66,7 +67,7 @@ def describe_is_awaitable():
         assert not isawaitable(some_async_function)
         assert not is_awaitable(some_async_function)
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def recognizes_a_coroutine_object():
         async def some_async_function():
             return True
@@ -92,7 +93,7 @@ def describe_is_awaitable():
         assert is_awaitable(some_old_style_coroutine)
         assert is_awaitable(some_old_style_coroutine)
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def recognizes_a_future_object():
         async def some_async_function():
             return True
@@ -105,7 +106,7 @@ def describe_is_awaitable():
 
         assert await some_future is True
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def declines_an_async_generator():
         async def some_async_generator_function():
             yield True

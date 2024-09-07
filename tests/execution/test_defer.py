@@ -4,6 +4,7 @@ from asyncio import sleep
 from typing import Any, AsyncGenerator, NamedTuple
 
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.execution import (
     ExecutionResult,
@@ -333,7 +334,7 @@ def describe_execute_defer_directive():
             "path=['bar'], label='foo', parent_context, data)"
         )
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_fragments_containing_scalar_types():
         document = parse(
             """
@@ -358,7 +359,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_disable_defer_using_if_argument():
         document = parse(
             """
@@ -384,7 +385,7 @@ def describe_execute_defer_directive():
             },
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def does_not_disable_defer_with_null_if_argument():
         document = parse(
             """
@@ -409,7 +410,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def throws_an_error_for_defer_directive_with_non_string_label():
         document = parse(
             """
@@ -430,7 +431,7 @@ def describe_execute_defer_directive():
             ],
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_fragments_on_the_top_level_query_field():
         document = parse(
             """
@@ -456,7 +457,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_fragments_with_errors_on_the_top_level_query_field():
         document = parse(
             """
@@ -493,7 +494,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_a_fragment_within_an_already_deferred_fragment():
         document = parse(
             """
@@ -540,7 +541,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_a_fragment_that_is_also_not_deferred_with_deferred_first():
         document = parse(
             """
@@ -571,7 +572,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_a_fragment_that_is_also_not_deferred_with_non_deferred_first():
         document = parse(
             """
@@ -602,7 +603,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_an_inline_fragment():
         document = parse(
             """
@@ -632,7 +633,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_errors_thrown_in_deferred_fragments():
         document = parse(
             """
@@ -669,7 +670,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_non_nullable_errors_thrown_in_deferred_fragments():
         document = parse(
             """
@@ -709,7 +710,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_non_nullable_errors_thrown_outside_deferred_fragments():
         document = parse(
             """
@@ -740,7 +741,7 @@ def describe_execute_defer_directive():
             ],
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_async_non_nullable_errors_thrown_in_deferred_fragments():
         document = parse(
             """
@@ -780,7 +781,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def returns_payloads_in_correct_order():
         document = parse(
             """
@@ -833,7 +834,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def returns_payloads_from_synchronous_data_in_correct_order():
         document = parse(
             """
@@ -886,7 +887,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def filters_deferred_payloads_when_list_item_from_async_iterable_nulled():
         document = parse(
             """
@@ -920,7 +921,7 @@ def describe_execute_defer_directive():
             ],
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def original_execute_function_throws_error_if_deferred_and_all_is_sync():
         document = parse(
             """
@@ -938,7 +939,7 @@ def describe_execute_defer_directive():
             " multiple payloads (due to @defer or @stream directive)"
         )
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def original_execute_function_throws_error_if_deferred_and_not_all_is_sync():
         document = parse(
             """

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, NamedTuple
 
 import pytest
+
 from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.pyutils import is_awaitable

@@ -1,4 +1,5 @@
 import pytest
+
 from graphql.language import TypeNode, parse_type
 from graphql.type import GraphQLList, GraphQLNonNull, GraphQLObjectType
 from graphql.utilities import type_from_ast

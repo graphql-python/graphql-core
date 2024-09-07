@@ -5,6 +5,7 @@ from functools import partial
 from typing import Any, cast
 
 import pytest
+
 from graphql.language import (
     BREAK,
     REMOVE,

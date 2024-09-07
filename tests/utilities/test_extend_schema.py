@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Union
 
 import pytest
+
 from graphql import graphql_sync
 from graphql.language import parse, print_ast
 from graphql.type import (

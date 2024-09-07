@@ -2,6 +2,7 @@ import inspect
 from typing import Awaitable, cast
 
 import pytest
+
 from graphql.execution import Middleware, MiddlewareManager, execute, subscribe
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
@@ -90,7 +91,7 @@ def describe_middleware():
 
             assert result.data == {"first": "Eno", "second": "Owt"}  # type: ignore
 
-        @pytest.mark.asyncio()
+        @pytest.mark.asyncio
         async def single_async_function():
             doc = parse("{ first second }")
 
@@ -200,7 +201,7 @@ def describe_middleware():
             )
             assert result.data == {"field": "devloseR"}  # type: ignore
 
-        @pytest.mark.asyncio()
+        @pytest.mark.asyncio
         async def with_async_function_and_object():
             doc = parse("{ field }")
 
@@ -237,7 +238,7 @@ def describe_middleware():
             result = await awaitable_result
             assert result.data == {"field": "devloseR"}
 
-        @pytest.mark.asyncio()
+        @pytest.mark.asyncio
         async def subscription_simple():
             async def bar_resolve(_obj, _info):
                 yield "bar"

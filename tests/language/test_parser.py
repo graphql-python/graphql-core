@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Tuple, cast
 
 import pytest
+
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,

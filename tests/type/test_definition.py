@@ -12,6 +12,7 @@ except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
 
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.language import (
     EnumTypeDefinitionNode,

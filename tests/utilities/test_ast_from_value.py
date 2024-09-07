@@ -1,6 +1,7 @@
 from math import inf, nan
 
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.language import (
     BooleanValueNode,

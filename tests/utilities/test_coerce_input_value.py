@@ -4,6 +4,7 @@ from math import nan
 from typing import Any, NamedTuple
 
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.pyutils import Undefined
 from graphql.type import (

@@ -1,4 +1,5 @@
 import pytest
+
 from graphql.type import (
     GraphQLArgument,
     GraphQLDirective,

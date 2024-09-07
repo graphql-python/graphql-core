@@ -1,4 +1,5 @@
 import pytest
+
 from graphql.pyutils import and_list, or_list
 
 

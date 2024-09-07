@@ -4,6 +4,7 @@ from asyncio import Event, Lock, gather, sleep
 from typing import Any, Awaitable, NamedTuple
 
 import pytest
+
 from graphql.error import GraphQLError
 from graphql.execution import (
     ExecutionResult,
@@ -28,7 +29,7 @@ try:  # pragma: no cover
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
-    async def anext(iterator):  # noqa: A001
+    async def anext(iterator):
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
 
@@ -217,7 +218,7 @@ def describe_execute_stream_directive():
         assert result != dict(list(args.items())[:2] + [("path", ["foo", 2])])
         assert result != {**args, "label": "baz"}
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_a_list_field():
         document = parse("{ scalarList @stream(initialCount: 1) }")
         result = await complete(
@@ -240,7 +241,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_use_default_value_of_initial_count():
         document = parse("{ scalarList @stream }")
         result = await complete(
@@ -267,7 +268,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def negative_values_of_initial_count_throw_field_errors():
         document = parse("{ scalarList @stream(initialCount: -2) }")
         result = await complete(
@@ -286,7 +287,7 @@ def describe_execute_stream_directive():
             ],
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def non_integer_values_of_initial_count_throw_field_errors():
         document = parse("{ scalarList @stream(initialCount: 1.5) }")
         result = await complete(document, {"scalarList": ["apple", "half of a banana"]})
@@ -303,7 +304,7 @@ def describe_execute_stream_directive():
             ],
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def returns_label_from_stream_directive():
         document = parse(
             '{ scalarList @stream(initialCount: 1, label: "scalar-stream") }'
@@ -340,7 +341,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def throws_an_error_for_stream_directive_with_non_string_label():
         document = parse("{ scalarList @stream(initialCount: 1, label: 42) }")
         result = await complete(document, {"scalarList": ["some apples"]})
@@ -360,7 +361,7 @@ def describe_execute_stream_directive():
             ],
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_disable_stream_using_if_argument():
         document = parse("{ scalarList @stream(initialCount: 0, if: false) }")
         result = await complete(
@@ -372,7 +373,7 @@ def describe_execute_stream_directive():
             },
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_disable_stream_with_null_if_argument():
         document = parse(
@@ -400,7 +401,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_multi_dimensional_lists():
         document = parse("{ scalarListList @stream(initialCount: 1) }")
         result = await complete(
@@ -440,7 +441,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_a_field_that_returns_a_list_of_awaitables():
         document = parse(
             """
@@ -482,7 +483,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_in_correct_order_with_list_of_awaitables():
         document = parse(
             """
@@ -537,7 +538,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_a_field_that_returns_a_list_with_nested_async_fields():
         document = parse(
             """
@@ -585,7 +586,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_error_in_list_of_awaitables_before_initial_count_reached():
         document = parse(
             """
@@ -635,7 +636,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_error_in_list_of_awaitables_after_initial_count_reached():
         document = parse(
             """
@@ -694,7 +695,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_a_field_that_returns_an_async_iterable():
         document = parse(
             """
@@ -750,7 +751,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_stream_a_field_that_returns_an_async_iterable_with_initial_count():
         document = parse(
             """
@@ -793,7 +794,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def negative_initial_count_throw_error_on_field_returning_async_iterable():
         document = parse(
             """
@@ -821,7 +822,7 @@ def describe_execute_stream_directive():
             "data": {"friendList": None},
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_handle_concurrent_calls_to_next_without_waiting():
         document = parse(
             """
@@ -869,7 +870,7 @@ def describe_execute_stream_directive():
             {"done": True, "value": None},
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_error_in_async_iterable_before_initial_count_is_reached():
         document = parse(
             """
@@ -900,7 +901,7 @@ def describe_execute_stream_directive():
             "data": {"friendList": None},
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_error_in_async_iterable_after_initial_count_is_reached():
         document = parse(
             """
@@ -945,7 +946,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_null_for_non_null_list_items_after_initial_count_is_reached():
         document = parse(
             """
@@ -986,7 +987,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_null_for_non_null_async_items_after_initial_count_is_reached():
         document = parse(
             """
@@ -1034,7 +1035,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_error_thrown_in_complete_value_after_initial_count_is_reached():
         document = parse(
             """
@@ -1073,7 +1074,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_async_error_in_complete_value_after_initial_count_is_reached():
         document = parse(
             """
@@ -1135,7 +1136,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_nested_async_error_in_complete_value_after_initial_count():
         document = parse(
             """
@@ -1196,7 +1197,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_async_error_in_complete_value_after_initial_count_non_null():
         document = parse(
             """
@@ -1249,7 +1250,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_nested_async_error_in_complete_value_after_initial_non_null():
         document = parse(
             """
@@ -1301,7 +1302,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_async_error_in_complete_value_after_initial_from_async_iterable():
         document = parse(
             """
@@ -1367,7 +1368,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_async_error_in_complete_value_from_async_iterable_non_null():
         document = parse(
             """
@@ -1421,7 +1422,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def filters_payloads_that_are_nulled():
         document = parse(
             """
@@ -1472,7 +1473,7 @@ def describe_execute_stream_directive():
             },
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def filters_payloads_that_are_nulled_by_a_later_synchronous_error():
         document = parse(
             """
@@ -1515,7 +1516,7 @@ def describe_execute_stream_directive():
             },
         }
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_filter_payloads_when_null_error_is_in_a_different_path():
         document = parse(
@@ -1584,7 +1585,7 @@ def describe_execute_stream_directive():
             {"hasNext": False},
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
         document = parse(
@@ -1655,7 +1656,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def filters_defer_payloads_that_are_nulled_in_a_stream_response():
         document = parse(
             """
@@ -1716,7 +1717,7 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.timeout(1)
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def returns_iterator_and_ignores_error_when_stream_payloads_are_filtered():
         finished = False
 
@@ -1795,7 +1796,7 @@ def describe_execute_stream_directive():
 
         assert not finished  # running iterator cannot be canceled
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def handles_awaitables_from_complete_value_after_initial_count_is_reached():
         document = parse(
             """
@@ -1858,7 +1859,7 @@ def describe_execute_stream_directive():
             },
         ]
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def returns_payloads_properly_when_parent_deferred_slower_than_stream():
         resolve_slow_field = Event()
 
@@ -1944,7 +1945,7 @@ def describe_execute_stream_directive():
             await anext(iterator)
 
     @pytest.mark.timeout(1)
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_fields_that_are_resolved_after_async_iterable_is_complete():
         resolve_slow_field = Event()
         resolve_iterable = Event()
@@ -2022,7 +2023,7 @@ def describe_execute_stream_directive():
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def can_defer_fields_that_are_resolved_before_async_iterable_is_complete():
         resolve_slow_field = Event()
         resolve_iterable = Event()
@@ -2106,7 +2107,7 @@ def describe_execute_stream_directive():
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def finishes_async_iterable_when_returned_generator_is_closed():
         finished = False
 
@@ -2146,7 +2147,7 @@ def describe_execute_stream_directive():
         await sleep(0)
         assert finished
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def finishes_async_iterable_when_underlying_iterator_has_no_close_method():
         class Iterable:
             def __init__(self):
@@ -2197,7 +2198,7 @@ def describe_execute_stream_directive():
         await sleep(0)
         assert iterable.index == 4
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def finishes_async_iterable_when_error_is_raised_in_returned_generator():
         finished = False
 

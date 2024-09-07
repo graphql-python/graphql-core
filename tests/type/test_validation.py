@@ -3,6 +3,7 @@ from __future__ import annotations
 from operator import attrgetter
 
 import pytest
+
 from graphql.language import DirectiveLocation, parse
 from graphql.pyutils import inspect
 from graphql.type import (

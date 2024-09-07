@@ -1,6 +1,7 @@
 from typing import cast
 
 import pytest
+
 from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,

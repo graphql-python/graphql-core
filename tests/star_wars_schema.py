@@ -54,7 +54,6 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
-
 from tests.star_wars_data import (
     get_droid,
     get_friends,

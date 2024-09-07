@@ -1,6 +1,7 @@
 import pickle
 
 import pytest
+
 from graphql.pyutils import Undefined, UndefinedType
 
 

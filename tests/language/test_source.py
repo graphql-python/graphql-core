@@ -4,6 +4,7 @@ import weakref
 from typing import cast
 
 import pytest
+
 from graphql.language import Source, SourceLocation
 
 from ..utils import dedent
