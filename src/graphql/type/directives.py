@@ -248,17 +248,17 @@ GraphQLDeprecatedDirective = GraphQLDirective(
     description="Marks an element of a GraphQL schema as no longer supported.",
 )
 
-# Used to provide a URL for specifying the behaviour of custom scalar definitions:
+# Used to provide a URL for specifying the behavior of custom scalar definitions:
 GraphQLSpecifiedByDirective = GraphQLDirective(
     name="specifiedBy",
     locations=[DirectiveLocation.SCALAR],
     args={
         "url": GraphQLArgument(
             GraphQLNonNull(GraphQLString),
-            description="The URL that specifies the behaviour of this scalar.",
+            description="The URL that specifies the behavior of this scalar.",
         )
     },
-    description="Exposes a URL that specifies the behaviour of this scalar.",
+    description="Exposes a URL that specifies the behavior of this scalar.",
 )
 
 # Used to declare an Input Object as a OneOf Input Objects.

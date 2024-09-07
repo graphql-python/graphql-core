@@ -7,6 +7,7 @@ from copy import deepcopy
 from typing import Union
 
 import pytest
+
 from graphql import graphql_sync
 from graphql.language import DocumentNode, InterfaceTypeDefinitionNode, parse, print_ast
 from graphql.type import (
@@ -1139,7 +1140,7 @@ def describe_schema_builder():
         assert errors
 
     def do_not_override_standard_types():
-        # Note: not sure it's desired behaviour to just silently ignore override
+        # Note: not sure it's desired behavior to just silently ignore override
         # attempts so just documenting it here.
 
         schema = build_schema(
@@ -1252,7 +1253,7 @@ def describe_schema_builder():
             # check that printing the copied schema gives the same SDL
             assert print_schema(copied) == sdl
 
-    @pytest.mark.slow()
+    @pytest.mark.slow
     def describe_deepcopy_and_pickle_big():  # pragma: no cover
         @pytest.mark.timeout(20)
         def can_deep_copy_big_schema(big_schema_sdl):  # noqa: F811
