@@ -230,8 +230,12 @@ class ExtendSchemaImpl:
             return schema_kwargs
 
         self = cls(type_extensions)
-        for existing_type in schema_kwargs["types"] or ():
-            self.type_map[existing_type.name] = self.extend_named_type(existing_type)
+
+        self.type_map = {
+            type_.name: self.extend_named_type(type_)
+            for type_ in schema_kwargs["types"] or ()
+        }
+
         for type_node in type_defs:
             name = type_node.name.value
             self.type_map[name] = std_type_map.get(name) or self.build_type(type_node)
