@@ -149,6 +149,14 @@ def get_introspection_query(
                       ofType {{
                         kind
                         name
+                        ofType {{
+                          kind
+                          name
+                          ofType {{
+                            kind
+                            name
+                          }}
+                        }}
                       }}
                     }}
                   }}
