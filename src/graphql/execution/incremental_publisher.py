@@ -33,6 +33,7 @@ __all__ = [
     "FormattedIncrementalResult",
     "FormattedIncrementalStreamResult",
     "FormattedSubsequentIncrementalExecutionResult",
+    "InitialResultRecord",
     "IncrementalDataRecord",
     "IncrementalDeferResult",
     "IncrementalPublisher",
@@ -340,34 +341,23 @@ class IncrementalPublisher:
 
     The internal publishing state is managed as follows:
 
-    ``_released``: the set of Incremental Data records that are ready to be sent to the
+    ``_released``: the set of Subsequent Data records that are ready to be sent to the
     client, i.e. their parents have completed and they have also completed.
 
-    ``_pending``: the set of Incremental Data records that are definitely pending, i.e.
+    ``_pending``: the set of Subsequent Data records that are definitely pending, i.e.
     their parents have completed so that they can no longer be filtered. This includes
-    all Incremental Data records in `released`, as well as Incremental Data records that
+    all Subsequent Data records in `released`, as well as Subsequent Data records that
     have not yet completed.
-
-    ``_initial_result``: a record containing the state of the initial result,
-    as follows:
-    ``is_completed``: indicates whether the initial result has completed.
-    ``children``: the set of Incremental Data records that can be be published when the
-    initial result is completed.
-
-    Each Incremental Data record also contains similar metadata, i.e. these records also
-    contain similar ``is_completed`` and ``children`` properties.
 
     Note: Instead of sets we use dicts (with values set to None) which preserve order
     and thereby achieve more deterministic results.
     """
 
-    _initial_result: InitialResult
-    _released: dict[IncrementalDataRecord, None]
-    _pending: dict[IncrementalDataRecord, None]
+    _released: dict[SubsequentDataRecord, None]
+    _pending: dict[SubsequentDataRecord, None]
     _resolve: Event | None
 
     def __init__(self) -> None:
-        self._initial_result = InitialResult({}, False)
         self._released = {}
         self._pending = {}
         self._resolve = None  # lazy initialization
@@ -420,33 +410,33 @@ class IncrementalPublisher:
                             close_async_iterators.append(close_async_iterator)
             await gather(*close_async_iterators)
 
+    def prepare_initial_result_record(self) -> InitialResultRecord:
+        """Prepare a new initial result record."""
+        return InitialResultRecord(errors=[], children={})
+
     def prepare_new_deferred_fragment_record(
         self,
         label: str | None,
         path: Path | None,
-        parent_context: IncrementalDataRecord | None,
+        parent_context: IncrementalDataRecord,
     ) -> DeferredFragmentRecord:
         """Prepare a new deferred fragment record."""
-        deferred_fragment_record = DeferredFragmentRecord(label, path, parent_context)
+        deferred_fragment_record = DeferredFragmentRecord(label, path)
 
-        context = parent_context or self._initial_result
-        context.children[deferred_fragment_record] = None
+        parent_context.children[deferred_fragment_record] = None
         return deferred_fragment_record
 
     def prepare_new_stream_items_record(
         self,
         label: str | None,
         path: Path | None,
-        parent_context: IncrementalDataRecord | None,
+        parent_context: IncrementalDataRecord,
         async_iterator: AsyncIterator[Any] | None = None,
     ) -> StreamItemsRecord:
         """Prepare a new stream items record."""
-        stream_items_record = StreamItemsRecord(
-            label, path, parent_context, async_iterator
-        )
+        stream_items_record = StreamItemsRecord(label, path, async_iterator)
 
-        context = parent_context or self._initial_result
-        context.children[stream_items_record] = None
+        parent_context.children[stream_items_record] = None
         return stream_items_record
 
     def complete_deferred_fragment_record(
@@ -481,29 +471,34 @@ class IncrementalPublisher:
         """Add a field error to the given incremental data record."""
         incremental_data_record.errors.append(error)
 
-    def publish_initial(self) -> None:
+    def publish_initial(self, initial_result: InitialResultRecord) -> None:
         """Publish the initial result."""
-        for child in self._initial_result.children:
+        for child in initial_result.children:
+            if child.filtered:
+                continue
             self._publish(child)
+
+    def get_initial_errors(
+        self, initial_result: InitialResultRecord
+    ) -> list[GraphQLError]:
+        """Get the errors from the given initial result."""
+        return initial_result.errors
 
     def filter(
         self,
         null_path: Path,
-        erroring_incremental_data_record: IncrementalDataRecord | None,
+        erroring_incremental_data_record: IncrementalDataRecord,
     ) -> None:
         """Filter out the given erroring incremental data record."""
         null_path_list = null_path.as_list()
 
-        children = (erroring_incremental_data_record or self._initial_result).children
+        descendants = self._get_descendants(erroring_incremental_data_record.children)
 
-        for child in self._get_descendants(children):
+        for child in descendants:
             if not self._matches_path(child.path, null_path_list):
                 continue
 
-            self._delete(child)
-            parent = child.parent_context or self._initial_result
-            with suppress_key_error:
-                del parent.children[child]
+            child.filtered = True
 
             if isinstance(child, StreamItemsRecord):
                 async_iterator = child.async_iterator
@@ -522,32 +517,24 @@ class IncrementalPublisher:
             resolve.set()
         self._resolve = Event()
 
-    def _introduce(self, item: IncrementalDataRecord) -> None:
+    def _introduce(self, item: SubsequentDataRecord) -> None:
         """Introduce a new IncrementalDataRecord."""
         self._pending[item] = None
 
-    def _release(self, item: IncrementalDataRecord) -> None:
+    def _release(self, item: SubsequentDataRecord) -> None:
         """Release the given IncrementalDataRecord."""
         if item in self._pending:
             self._released[item] = None
             self._trigger()
 
-    def _push(self, item: IncrementalDataRecord) -> None:
+    def _push(self, item: SubsequentDataRecord) -> None:
         """Push the given IncrementalDataRecord."""
         self._released[item] = None
         self._pending[item] = None
         self._trigger()
 
-    def _delete(self, item: IncrementalDataRecord) -> None:
-        """Delete the given IncrementalDataRecord."""
-        with suppress_key_error:
-            del self._released[item]
-        with suppress_key_error:
-            del self._pending[item]
-        self._trigger()
-
     def _get_incremental_result(
-        self, completed_records: Collection[IncrementalDataRecord]
+        self, completed_records: Collection[SubsequentDataRecord]
     ) -> SubsequentIncrementalExecutionResult | None:
         """Get the incremental result with the completed records."""
         incremental_results: list[IncrementalResult] = []
@@ -556,6 +543,8 @@ class IncrementalPublisher:
         for incremental_data_record in completed_records:
             incremental_result: IncrementalResult
             for child in incremental_data_record.children:
+                if child.filtered:
+                    continue
                 self._publish(child)
             if isinstance(incremental_data_record, StreamItemsRecord):
                 items = incremental_data_record.items
@@ -591,18 +580,18 @@ class IncrementalPublisher:
             return SubsequentIncrementalExecutionResult(has_next=False)
         return None
 
-    def _publish(self, incremental_data_record: IncrementalDataRecord) -> None:
+    def _publish(self, subsequent_result_record: SubsequentDataRecord) -> None:
         """Publish the given incremental data record."""
-        if incremental_data_record.is_completed:
-            self._push(incremental_data_record)
+        if subsequent_result_record.is_completed:
+            self._push(subsequent_result_record)
         else:
-            self._introduce(incremental_data_record)
+            self._introduce(subsequent_result_record)
 
     def _get_descendants(
         self,
-        children: dict[IncrementalDataRecord, None],
-        descendants: dict[IncrementalDataRecord, None] | None = None,
-    ) -> dict[IncrementalDataRecord, None]:
+        children: dict[SubsequentDataRecord, None],
+        descendants: dict[SubsequentDataRecord, None] | None = None,
+    ) -> dict[SubsequentDataRecord, None]:
         """Get the descendants of the given children."""
         if descendants is None:
             descendants = {}
@@ -625,6 +614,13 @@ class IncrementalPublisher:
         task.add_done_callback(tasks.discard)
 
 
+class InitialResultRecord(NamedTuple):
+    """Formatted subsequent incremental execution result"""
+
+    errors: list[GraphQLError]
+    children: dict[SubsequentDataRecord, None]
+
+
 class DeferredFragmentRecord:
     """A record collecting data marked with the defer directive"""
 
@@ -632,22 +628,16 @@ class DeferredFragmentRecord:
     label: str | None
     path: list[str | int]
     data: dict[str, Any] | None
-    parent_context: IncrementalDataRecord | None
-    children: dict[IncrementalDataRecord, None]
+    children: dict[SubsequentDataRecord, None]
     is_completed: bool
+    filtered: bool
 
-    def __init__(
-        self,
-        label: str | None,
-        path: Path | None,
-        parent_context: IncrementalDataRecord | None,
-    ) -> None:
+    def __init__(self, label: str | None, path: Path | None) -> None:
         self.label = label
         self.path = path.as_list() if path else []
-        self.parent_context = parent_context
         self.errors = []
         self.children = {}
-        self.is_completed = False
+        self.is_completed = self.filtered = False
         self.data = None
 
     def __repr__(self) -> str:
@@ -655,8 +645,6 @@ class DeferredFragmentRecord:
         args: list[str] = [f"path={self.path!r}"]
         if self.label:
             args.append(f"label={self.label!r}")
-        if self.parent_context:
-            args.append("parent_context")
         if self.data is not None:
             args.append("data")
         return f"{name}({', '.join(args)})"
@@ -669,26 +657,24 @@ class StreamItemsRecord:
     label: str | None
     path: list[str | int]
     items: list[str] | None
-    parent_context: IncrementalDataRecord | None
-    children: dict[IncrementalDataRecord, None]
+    children: dict[SubsequentDataRecord, None]
     async_iterator: AsyncIterator[Any] | None
     is_completed_async_iterator: bool
     is_completed: bool
+    filtered: bool
 
     def __init__(
         self,
         label: str | None,
         path: Path | None,
-        parent_context: IncrementalDataRecord | None,
         async_iterator: AsyncIterator[Any] | None = None,
     ) -> None:
         self.label = label
         self.path = path.as_list() if path else []
-        self.parent_context = parent_context
         self.async_iterator = async_iterator
         self.errors = []
         self.children = {}
-        self.is_completed_async_iterator = self.is_completed = False
+        self.is_completed_async_iterator = self.is_completed = self.filtered = False
         self.items = None
 
     def __repr__(self) -> str:
@@ -696,11 +682,11 @@ class StreamItemsRecord:
         args: list[str] = [f"path={self.path!r}"]
         if self.label:
             args.append(f"label={self.label!r}")
-        if self.parent_context:
-            args.append("parent_context")
         if self.items is not None:
             args.append("items")
         return f"{name}({', '.join(args)})"
 
 
-IncrementalDataRecord = Union[DeferredFragmentRecord, StreamItemsRecord]
+SubsequentDataRecord = Union[DeferredFragmentRecord, StreamItemsRecord]
+
+IncrementalDataRecord = Union[InitialResultRecord, SubsequentDataRecord]

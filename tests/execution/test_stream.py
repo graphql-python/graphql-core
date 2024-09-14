@@ -173,18 +173,12 @@ def describe_execute_stream_directive():
         )
 
     def can_print_stream_record():
-        record = StreamItemsRecord(None, None, None, None)
+        record = StreamItemsRecord(None, None, None)
         assert str(record) == "StreamItemsRecord(path=[])"
-        record = StreamItemsRecord("foo", Path(None, "bar", "Bar"), record, None)
-        assert (
-            str(record) == "StreamItemsRecord("
-            "path=['bar'], label='foo', parent_context)"
-        )
+        record = StreamItemsRecord("foo", Path(None, "bar", "Bar"), None)
+        assert str(record) == "StreamItemsRecord(" "path=['bar'], label='foo')"
         record.items = ["hello", "world"]
-        assert (
-            str(record) == "StreamItemsRecord("
-            "path=['bar'], label='foo', parent_context, items)"
-        )
+        assert str(record) == "StreamItemsRecord(" "path=['bar'], label='foo', items)"
 
     # noinspection PyTypeChecker
     def can_compare_incremental_stream_result():

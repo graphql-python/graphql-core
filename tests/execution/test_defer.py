@@ -321,17 +321,13 @@ def describe_execute_defer_directive():
         }
 
     def can_print_deferred_fragment_record():
-        record = DeferredFragmentRecord(None, None, None)
+        record = DeferredFragmentRecord(None, None)
         assert str(record) == "DeferredFragmentRecord(path=[])"
-        record = DeferredFragmentRecord("foo", Path(None, "bar", "Bar"), record)
-        assert (
-            str(record) == "DeferredFragmentRecord("
-            "path=['bar'], label='foo', parent_context)"
-        )
+        record = DeferredFragmentRecord("foo", Path(None, "bar", "Bar"))
+        assert str(record) == "DeferredFragmentRecord(" "path=['bar'], label='foo')"
         record.data = {"hello": "world"}
         assert (
-            str(record) == "DeferredFragmentRecord("
-            "path=['bar'], label='foo', parent_context, data)"
+            str(record) == "DeferredFragmentRecord(" "path=['bar'], label='foo', data)"
         )
 
     @pytest.mark.asyncio
