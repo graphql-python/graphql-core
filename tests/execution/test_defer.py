@@ -37,20 +37,6 @@ friend_type = GraphQLObjectType(
     },
 )
 
-hero_type = GraphQLObjectType(
-    "Hero",
-    {
-        "id": GraphQLField(GraphQLID),
-        "name": GraphQLField(GraphQLString),
-        "nonNullName": GraphQLField(GraphQLNonNull(GraphQLString)),
-        "friends": GraphQLField(GraphQLList(friend_type)),
-    },
-)
-
-query = GraphQLObjectType("Query", {"hero": GraphQLField(hero_type)})
-
-schema = GraphQLSchema(query)
-
 
 class Friend(NamedTuple):
     id: int
@@ -59,7 +45,89 @@ class Friend(NamedTuple):
 
 friends = [Friend(2, "Han"), Friend(3, "Leia"), Friend(4, "C-3PO")]
 
-hero = {"id": 1, "name": "Luke", "friends": friends}
+deeper_object = GraphQLObjectType(
+    "DeeperObject",
+    {
+        "foo": GraphQLField(GraphQLString),
+        "bar": GraphQLField(GraphQLString),
+        "baz": GraphQLField(GraphQLString),
+        "bak": GraphQLField(GraphQLString),
+    },
+)
+
+nested_object = GraphQLObjectType(
+    "NestedObject",
+    {"deeperObject": GraphQLField(deeper_object), "name": GraphQLField(GraphQLString)},
+)
+
+another_nested_object = GraphQLObjectType(
+    "AnotherNestedObject", {"deeperObject": GraphQLField(deeper_object)}
+)
+
+hero = {
+    "name": "Luke",
+    "id": 1,
+    "friends": friends,
+    "nestedObject": nested_object,
+    "AnotherNestedObject": another_nested_object,
+}
+
+c = GraphQLObjectType(
+    "c",
+    {
+        "d": GraphQLField(GraphQLString),
+        "nonNullErrorField": GraphQLField(GraphQLNonNull(GraphQLString)),
+    },
+)
+
+e = GraphQLObjectType(
+    "e",
+    {
+        "f": GraphQLField(GraphQLString),
+    },
+)
+
+b = GraphQLObjectType(
+    "b",
+    {
+        "c": GraphQLField(c),
+        "e": GraphQLField(e),
+    },
+)
+
+a = GraphQLObjectType(
+    "a",
+    {
+        "b": GraphQLField(b),
+        "someField": GraphQLField(GraphQLString),
+    },
+)
+
+g = GraphQLObjectType(
+    "g",
+    {
+        "h": GraphQLField(GraphQLString),
+    },
+)
+
+hero_type = GraphQLObjectType(
+    "Hero",
+    {
+        "id": GraphQLField(GraphQLID),
+        "name": GraphQLField(GraphQLString),
+        "nonNullName": GraphQLField(GraphQLNonNull(GraphQLString)),
+        "friends": GraphQLField(GraphQLList(friend_type)),
+        "nestedObject": GraphQLField(nested_object),
+        "anotherNestedObject": GraphQLField(another_nested_object),
+    },
+)
+
+query = GraphQLObjectType(
+    "Query",
+    {"hero": GraphQLField(hero_type), "a": GraphQLField(a), "g": GraphQLField(g)},
+)
+
+schema = GraphQLSchema(query)
 
 
 class Resolvers:
@@ -624,6 +692,1082 @@ def describe_execute_defer_directive():
                         "path": ["hero"],
                         "label": "InlineDeferred",
                     },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def emits_empty_defer_fragments():
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ... @defer {
+                  name @skip(if: true)
+                }
+              }
+            }
+            fragment TopFragment on Hero {
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {"data": {"hero": {}}, "hasNext": True},
+            {
+                "incremental": [
+                    {
+                        "data": {},
+                        "path": ["hero"],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def can_separately_emit_defer_fragments_different_labels_varying_fields():
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ... @defer(label: "DeferID") {
+                  id
+                }
+                ... @defer(label: "DeferName") {
+                  name
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {"data": {"hero": {}}, "hasNext": True},
+            {
+                "incremental": [
+                    {
+                        "data": {"id": "1"},
+                        "path": ["hero"],
+                        "label": "DeferID",
+                    },
+                    {
+                        "data": {"name": "Luke"},
+                        "path": ["hero"],
+                        "label": "DeferName",
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def does_not_deduplicate_multiple_defers_on_the_same_object():
+        document = parse(
+            """
+            query {
+              hero {
+                friends {
+                  ... @defer {
+                    ...FriendFrag
+                    ... @defer {
+                      ...FriendFrag
+                      ... @defer {
+                        ...FriendFrag
+                        ... @defer {
+                          ...FriendFrag
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            fragment FriendFrag on Friend {
+              id
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {"data": {"hero": {"friends": [{}, {}, {}]}}, "hasNext": True},
+            {
+                "incremental": [
+                    {"data": {}, "path": ["hero", "friends", 0]},
+                    {"data": {}, "path": ["hero", "friends", 0]},
+                    {"data": {}, "path": ["hero", "friends", 0]},
+                    {
+                        "data": {"id": "2", "name": "Han"},
+                        "path": ["hero", "friends", 0],
+                    },
+                    {"data": {}, "path": ["hero", "friends", 1]},
+                    {"data": {}, "path": ["hero", "friends", 1]},
+                    {"data": {}, "path": ["hero", "friends", 1]},
+                    {
+                        "data": {"id": "3", "name": "Leia"},
+                        "path": ["hero", "friends", 1],
+                    },
+                    {"data": {}, "path": ["hero", "friends", 2]},
+                    {"data": {}, "path": ["hero", "friends", 2]},
+                    {"data": {}, "path": ["hero", "friends", 2]},
+                    {
+                        "data": {"id": "4", "name": "C-3PO"},
+                        "path": ["hero", "friends", 2],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def does_not_deduplicate_fields_present_in_the_initial_payload():
+        document = parse(
+            """
+            query {
+              hero {
+                nestedObject {
+                  deeperObject {
+                    foo
+                  }
+                }
+                anotherNestedObject {
+                  deeperObject {
+                    foo
+                  }
+                }
+                ... @defer {
+                  nestedObject {
+                    deeperObject {
+                      bar
+                    }
+                  }
+                  anotherNestedObject {
+                    deeperObject {
+                      foo
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {
+                "hero": {
+                    "nestedObject": {"deeperObject": {"foo": "foo", "bar": "bar"}},
+                    "anotherNestedObject": {"deeperObject": {"foo": "foo"}},
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {
+                    "hero": {
+                        "nestedObject": {"deeperObject": {"foo": "foo"}},
+                        "anotherNestedObject": {"deeperObject": {"foo": "foo"}},
+                    }
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "nestedObject": {
+                                "deeperObject": {
+                                    "bar": "bar",
+                                },
+                            },
+                            "anotherNestedObject": {
+                                "deeperObject": {
+                                    "foo": "foo",
+                                },
+                            },
+                        },
+                        "path": ["hero"],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def does_not_deduplicate_fields_present_in_a_parent_defer_payload():
+        document = parse(
+            """
+            query {
+              hero {
+                ... @defer {
+                  nestedObject {
+                    deeperObject {
+                      foo
+                      ... @defer {
+                        foo
+                        bar
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"hero": {"nestedObject": {"deeperObject": {"foo": "foo", "bar": "bar"}}}},
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "nestedObject": {
+                                "deeperObject": {
+                                    "foo": "foo",
+                                },
+                            }
+                        },
+                        "path": ["hero"],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "foo": "foo",
+                            "bar": "bar",
+                        },
+                        "path": ["hero", "nestedObject", "deeperObject"],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def does_not_deduplicate_fields_with_deferred_fragments_at_multiple_levels():
+        document = parse(
+            """
+            query {
+              hero {
+                nestedObject {
+                  deeperObject {
+                    foo
+                  }
+                }
+                ... @defer {
+                  nestedObject {
+                    deeperObject {
+                      foo
+                      bar
+                    }
+                    ... @defer {
+                      deeperObject {
+                        foo
+                        bar
+                        baz
+                        ... @defer {
+                          foo
+                          bar
+                          baz
+                          bak
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {
+                "hero": {
+                    "nestedObject": {
+                        "deeperObject": {
+                            "foo": "foo",
+                            "bar": "bar",
+                            "baz": "baz",
+                            "bak": "bak",
+                        }
+                    }
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"nestedObject": {"deeperObject": {"foo": "foo"}}}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "nestedObject": {
+                                "deeperObject": {
+                                    "foo": "foo",
+                                    "bar": "bar",
+                                },
+                            }
+                        },
+                        "path": ["hero"],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "deeperObject": {
+                                "foo": "foo",
+                                "bar": "bar",
+                                "baz": "baz",
+                            }
+                        },
+                        "path": ["hero", "nestedObject"],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "foo": "foo",
+                            "bar": "bar",
+                            "baz": "baz",
+                            "bak": "bak",
+                        },
+                        "path": ["hero", "nestedObject", "deeperObject"],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def does_not_combine_fields_from_deferred_fragments_branches_same_level():
+        document = parse(
+            """
+            query {
+              hero {
+                nestedObject {
+                  deeperObject {
+                    ... @defer {
+                      foo
+                    }
+                  }
+                }
+                ... @defer {
+                  nestedObject {
+                    deeperObject {
+                      ... @defer {
+                        foo
+                        bar
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"hero": {"nestedObject": {"deeperObject": {"foo": "foo", "bar": "bar"}}}},
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"nestedObject": {"deeperObject": {}}}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "foo": "foo",
+                        },
+                        "path": ["hero", "nestedObject", "deeperObject"],
+                    },
+                    {
+                        "data": {"nestedObject": {"deeperObject": {}}},
+                        "path": ["hero"],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "foo": "foo",
+                            "bar": "bar",
+                        },
+                        "path": ["hero", "nestedObject", "deeperObject"],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def does_not_combine_fields_from_deferred_fragments_branches_multi_levels():
+        document = parse(
+            """
+            query {
+              a {
+                b {
+                  c {
+                    d
+                  }
+                  ... @defer {
+                    e {
+                      f
+                    }
+                  }
+                }
+              }
+              ... @defer {
+                a {
+                  b {
+                    e {
+                      f
+                    }
+                  }
+                }
+                g {
+                  h
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"a": {"b": {"c": {"d": "d"}, "e": {"f": "f"}}}, "g": {"h": "h"}},
+        )
+
+        assert result == [
+            {
+                "data": {"a": {"b": {"c": {"d": "d"}}}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"e": {"f": "f"}},
+                        "path": ["a", "b"],
+                    },
+                    {
+                        "data": {"a": {"b": {"e": {"f": "f"}}}, "g": {"h": "h"}},
+                        "path": [],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def preserves_error_boundaries_null_first():
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  someField
+                  b {
+                    c {
+                      nonNullErrorField
+                    }
+                  }
+                }
+              }
+              a {
+                ... @defer {
+                  b {
+                    c {
+                      d
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"a": {"b": {"c": {"d": "d"}}, "someField": "someField"}},
+        )
+
+        assert result == [
+            {
+                "data": {"a": {}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"b": {"c": {"d": "d"}}},
+                        "path": ["a"],
+                    },
+                    {
+                        "data": {"a": {"b": {"c": None}, "someField": "someField"}},
+                        "path": [],
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 8, "column": 23}],
+                                "path": ["a", "b", "c", "nonNullErrorField"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def preserves_error_boundaries_value_first():
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  b {
+                    c {
+                      d
+                    }
+                  }
+                }
+              }
+              a {
+                ... @defer {
+                  someField
+                  b {
+                    c {
+                      nonNullErrorField
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {
+                "a": {
+                    "b": {"c": {"d": "d"}, "nonNullErrorFIeld": None},
+                    "someField": "someField",
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {"a": {}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"b": {"c": None}, "someField": "someField"},
+                        "path": ["a"],
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 17, "column": 23}],
+                                "path": ["a", "b", "c", "nonNullErrorField"],
+                            },
+                        ],
+                    },
+                    {
+                        "data": {"a": {"b": {"c": {"d": "d"}}}},
+                        "path": [],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def correctly_handle_a_slow_null():
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  someField
+                  b {
+                    c {
+                      nonNullErrorField
+                    }
+                  }
+                }
+              }
+              a {
+                ... @defer {
+                  b {
+                    c {
+                      d
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def slow_null(_info) -> None:
+            await sleep(0)
+
+        result = await complete(
+            document,
+            {
+                "a": {
+                    "b": {"c": {"d": "d", "nonNullErrorField": slow_null}},
+                    "someField": "someField",
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {"a": {}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"b": {"c": {"d": "d"}}},
+                        "path": ["a"],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"a": {"b": {"c": None}, "someField": "someField"}},
+                        "path": [],
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 8, "column": 23}],
+                                "path": ["a", "b", "c", "nonNullErrorField"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def cancels_deferred_fields_when_initial_result_exhibits_null_bubbling():
+        document = parse(
+            """
+            query {
+              hero {
+                nonNullName
+              }
+              ... @defer {
+                hero {
+                  name
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {
+                "hero": {**hero, "nonNullName": lambda _info: None},
+            },
+        )
+
+        assert result == [
+            {
+                "data": {"hero": None},
+                "errors": [
+                    {
+                        "message": "Cannot return null"
+                        " for non-nullable field Hero.nonNullName.",
+                        "locations": [{"line": 4, "column": 17}],
+                        "path": ["hero", "nonNullName"],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"hero": {"name": "Luke"}},
+                        "path": [],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def cancels_deferred_fields_when_deferred_result_exhibits_null_bubbling():
+        document = parse(
+            """
+            query {
+              ... @defer {
+                hero {
+                  nonNullName
+                  name
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {
+                "hero": {**hero, "nonNullName": lambda _info: None},
+            },
+        )
+
+        assert result == [
+            {
+                "data": {},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"hero": None},
+                        "path": [],
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field Hero.nonNullName.",
+                                "locations": [{"line": 5, "column": 19}],
+                                "path": ["hero", "nonNullName"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_list_fields():
+        document = parse(
+            """
+            query {
+              hero {
+                friends {
+                  name
+                }
+                ... @defer {
+                  friends {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {
+                    "hero": {
+                        "friends": [
+                            {"name": "Han"},
+                            {"name": "Leia"},
+                            {"name": "C-3PO"},
+                        ]
+                    }
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "friends": [
+                                {"name": "Han"},
+                                {"name": "Leia"},
+                                {"name": "C-3PO"},
+                            ]
+                        },
+                        "path": ["hero"],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_async_iterable_list_fields():
+        document = parse(
+            """
+            query {
+              hero {
+                friends {
+                  name
+                }
+                ... @defer {
+                  friends {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve_friends(_info):
+            await sleep(0)
+            yield friends[0]
+
+        result = await complete(
+            document,
+            {
+                "hero": {**hero, "friends": resolve_friends},
+            },
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"friends": [{"name": "Han"}]}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"friends": [{"name": "Han"}]},
+                        "path": ["hero"],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_empty_async_iterable_list_fields():
+        document = parse(
+            """
+            query {
+              hero {
+                friends {
+                  name
+                }
+                ... @defer {
+                  friends {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve_friends(_info):
+            await sleep(0)
+            for friend in []:  # type: ignore
+                yield friend  # pragma: no cover
+
+        result = await complete(
+            document,
+            {
+                "hero": {**hero, "friends": resolve_friends},
+            },
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"friends": []}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"friends": []},
+                        "path": ["hero"],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_list_fields_with_non_overlapping_fields():
+        document = parse(
+            """
+            query {
+              hero {
+                friends {
+                  name
+                }
+                ... @defer {
+                  friends {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {
+                    "hero": {
+                        "friends": [
+                            {"name": "Han"},
+                            {"name": "Leia"},
+                            {"name": "C-3PO"},
+                        ]
+                    }
+                },
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"friends": [{"id": "2"}, {"id": "3"}, {"id": "4"}]},
+                        "path": ["hero"],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_list_fields_that_return_empty_lists():
+        document = parse(
+            """
+            query {
+              hero {
+                friends {
+                  name
+                }
+                ... @defer {
+                  friends {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document, {"hero": {**hero, "friends": lambda _info: []}}
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"friends": []}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"friends": []},
+                        "path": ["hero"],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_null_object_fields():
+        document = parse(
+            """
+            query {
+              hero {
+                nestedObject {
+                  name
+                }
+                ... @defer {
+                  nestedObject {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document, {"hero": {**hero, "nestedObject": lambda _info: None}}
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"nestedObject": None}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"nestedObject": None},
+                        "path": ["hero"],
+                    }
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_deduplicate_async_object_fields():
+        document = parse(
+            """
+            query {
+              hero {
+                nestedObject {
+                  name
+                }
+                ... @defer {
+                  nestedObject {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve_nested_object(_info):
+            return {"name": "foo"}
+
+        result = await complete(
+            document, {"hero": {"nestedObject": resolve_nested_object}}
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {"nestedObject": {"name": "foo"}}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"nestedObject": {"name": "foo"}},
+                        "path": ["hero"],
+                    }
                 ],
                 "hasNext": False,
             },

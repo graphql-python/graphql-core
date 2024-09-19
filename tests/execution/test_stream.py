@@ -1363,7 +1363,7 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio
-    async def handles_async_error_in_complete_value_from_async_iterable_non_null():
+    async def handles_async_error_in_complete_value_from_async_generator_non_null():
         document = parse(
             """
             query {
@@ -1852,6 +1852,179 @@ def describe_execute_stream_directive():
                 "hasNext": False,
             },
         ]
+
+    @pytest.mark.asyncio
+    async def handles_overlapping_deferred_and_non_deferred_streams():
+        document = parse(
+            """
+            query {
+              nestedObject {
+                nestedFriendList @stream(initialCount: 0) {
+                  id
+                }
+              }
+              nestedObject {
+                ... @defer {
+                  nestedFriendList @stream(initialCount: 0) {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def get_nested_friend_list(_info):
+            for i in range(2):
+                await sleep(0)
+                yield friends[i]
+
+        result = await complete(
+            document,
+            {
+                "nestedObject": {
+                    "nestedFriendList": get_nested_friend_list,
+                }
+            },
+        )
+
+        assert result in (
+            # exact order of results depends on timing and Python version
+            [
+                {
+                    "data": {"nestedObject": {"nestedFriendList": []}},
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "1"}],
+                            "path": ["nestedObject", "nestedFriendList", 0],
+                        },
+                        {"data": {"nestedFriendList": []}, "path": ["nestedObject"]},
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "2"}],
+                            "path": ["nestedObject", "nestedFriendList", 1],
+                        },
+                        {
+                            "items": [{"id": "1", "name": "Luke"}],
+                            "path": ["nestedObject", "nestedFriendList", 0],
+                        },
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "2", "name": "Han"}],
+                            "path": ["nestedObject", "nestedFriendList", 1],
+                        },
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "hasNext": False,
+                },
+            ],
+            [
+                {
+                    "data": {"nestedObject": {"nestedFriendList": []}},
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "1"}],
+                            "path": ["nestedObject", "nestedFriendList", 0],
+                        },
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "2"}],
+                            "path": ["nestedObject", "nestedFriendList", 1],
+                        },
+                        {"data": {"nestedFriendList": []}, "path": ["nestedObject"]},
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "1", "name": "Luke"}],
+                            "path": ["nestedObject", "nestedFriendList", 0],
+                        },
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "2", "name": "Han"}],
+                            "path": ["nestedObject", "nestedFriendList", 1],
+                        },
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "hasNext": False,
+                },
+            ],
+            [
+                {"data": {"nestedObject": {"nestedFriendList": []}}, "hasNext": True},
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "1"}],
+                            "path": ["nestedObject", "nestedFriendList", 0],
+                        }
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "2"}],
+                            "path": ["nestedObject", "nestedFriendList", 1],
+                        }
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {"data": {"nestedFriendList": []}, "path": ["nestedObject"]}
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "1", "name": "Luke"}],
+                            "path": ["nestedObject", "nestedFriendList", 0],
+                        }
+                    ],
+                    "hasNext": True,
+                },
+                {
+                    "incremental": [
+                        {
+                            "items": [{"id": "2", "name": "Han"}],
+                            "path": ["nestedObject", "nestedFriendList", 1],
+                        }
+                    ],
+                    "hasNext": True,
+                },
+                {"hasNext": False},
+            ],
+        )
 
     @pytest.mark.asyncio
     async def returns_payloads_properly_when_parent_deferred_slower_than_stream():
