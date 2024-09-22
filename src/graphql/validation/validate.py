@@ -14,7 +14,13 @@ from .validation_context import SDLValidationContext, ValidationContext
 if TYPE_CHECKING:
     from .rules import ASTValidationRule
 
-__all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
+__all__ = [
+    "assert_valid_sdl",
+    "assert_valid_sdl_extension",
+    "validate",
+    "validate_sdl",
+    "ValidationAbortedError",
+]
 
 
 class ValidationAbortedError(GraphQLError):
