@@ -471,8 +471,9 @@ class Parser:
     def parse_arguments(self, is_const: bool) -> list[ArgumentNode]:
         """Arguments[Const]: (Argument[?Const]+)"""
         item = self.parse_const_argument if is_const else self.parse_argument
-        item = cast(Callable[[], ArgumentNode], item)
-        return self.optional_many(TokenKind.PAREN_L, item, TokenKind.PAREN_R)
+        return self.optional_many(
+            TokenKind.PAREN_L, cast(Callable[[], ArgumentNode], item), TokenKind.PAREN_R
+        )
 
     def parse_argument(self, is_const: bool = False) -> ArgumentNode:
         """Argument[Const]: Name : Value[?Const]"""

@@ -289,7 +289,7 @@ def visit(
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
             in_array = isinstance(node, tuple)
-            keys = node if in_array else visitor_keys.get(node.kind, ())
+            keys = node if in_array else visitor_keys.get(node.kind, ())  # type: ignore
             idx = -1
             edits = []
             if parent:
