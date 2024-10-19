@@ -70,6 +70,7 @@ tox = [
     { version = "^4.16", python = ">=3.8" },
     { version = "^3.28", python = "<3.8" }
 ]
+pytest-codspeed = "^2.2.1"
 
 [tool.poetry.group.lint]
 optional = true

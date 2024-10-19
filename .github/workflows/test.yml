@@ -3,6 +3,31 @@ name: Tests
 on: [push, pull_request]
 
 jobs:
+
+  benchmarks:
+    name: 📈 Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install poetry
+      - uses: actions/setup-python@v5
+        id: setup-python
+        with:
+          python-version: "3.12"
+          architecture: x64
+          cache: "poetry"
+
+      - run: poetry env use 3.12
+      - run: poetry install --with test
+        if: steps.setup-python.outputs.cache-hit != 'true'
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v2
+        with:
+          token: ${{ secrets.CODSPEED_TOKEN }}
+          run: poetry run pytest tests --benchmark-enable --codspeed
+
   tests:
     runs-on: ubuntu-latest
 
