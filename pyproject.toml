@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
 packages = [
     { include = "graphql", from = "src" },
@@ -76,9 +77,9 @@ pytest-codspeed = "^2.2.1"
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.6.4,<0.7"
+ruff = ">=0.7,<0.8"
 mypy = [
-    { version = "^1.11", python = ">=3.8" },
+    { version = "^1.12", python = ">=3.8" },
     { version = "~1.4", python = "<3.8" }
 ]
 bump2version = ">=1.0,<2"

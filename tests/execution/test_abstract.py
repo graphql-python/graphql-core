@@ -42,7 +42,7 @@ async def execute_query(
     assert isinstance(schema, GraphQLSchema)
     assert isinstance(query, str)
     document = parse(query)
-    result = (execute_sync if sync else execute)(schema, document, root_value)  # type: ignore
+    result = (execute_sync if sync else execute)(schema, document, root_value)
     if not sync and is_awaitable(result):
         result = await result
     assert isinstance(result, ExecutionResult)
