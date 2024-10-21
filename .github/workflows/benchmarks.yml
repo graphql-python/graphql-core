@@ -1,0 +1,31 @@
+name: CodSpeed
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  benchmarks:
+    name: 📈 Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: setup-python
+        with:
+          python-version: "3.12"
+          architecture: x64
+
+      - run: pipx install poetry
+
+      - run: poetry env use 3.12
+      - run: poetry install --with test
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          token: ${{ secrets.CODSPEED_TOKEN }}
+          run: poetry run pytest tests --benchmark-enable --codspeed
