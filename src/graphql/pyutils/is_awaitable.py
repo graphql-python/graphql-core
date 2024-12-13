@@ -16,6 +16,8 @@ __all__ = ["is_awaitable"]
 
 CO_ITERABLE_COROUTINE = inspect.CO_ITERABLE_COROUTINE
 
+_common_primitives = {int, float, bool, str, list, dict, tuple, type(None)}
+
 
 def is_awaitable(value: Any) -> TypeGuard[Awaitable]:
     """Return True if object can be passed to an ``await`` expression.
@@ -23,6 +25,9 @@ def is_awaitable(value: Any) -> TypeGuard[Awaitable]:
     Instead of testing whether the object is an instance of abc.Awaitable, we
     check the existence of an `__await__` attribute. This is much faster.
     """
+    if type(value) in _common_primitives:
+        return False
+
     return (
         # check for coroutine objects
         isinstance(value, CoroutineType)
