@@ -19,73 +19,73 @@ if TYPE_CHECKING:
 
 
 __all__ = [
-    "Location",
-    "Token",
-    "Node",
-    "NameNode",
-    "DocumentNode",
-    "DefinitionNode",
-    "ExecutableDefinitionNode",
-    "OperationDefinitionNode",
-    "VariableDefinitionNode",
-    "SelectionSetNode",
-    "SelectionNode",
-    "FieldNode",
-    "NullabilityAssertionNode",
-    "NonNullAssertionNode",
-    "ErrorBoundaryNode",
-    "ListNullabilityOperatorNode",
+    "QUERY_DOCUMENT_KEYS",
     "ArgumentNode",
+    "BooleanValueNode",
     "ConstArgumentNode",
+    "ConstDirectiveNode",
+    "ConstListValueNode",
+    "ConstObjectFieldNode",
+    "ConstObjectValueNode",
+    "ConstValueNode",
+    "DefinitionNode",
+    "DirectiveDefinitionNode",
+    "DirectiveNode",
+    "DocumentNode",
+    "EnumTypeDefinitionNode",
+    "EnumTypeExtensionNode",
+    "EnumValueDefinitionNode",
+    "EnumValueNode",
+    "ErrorBoundaryNode",
+    "ExecutableDefinitionNode",
+    "FieldDefinitionNode",
+    "FieldNode",
+    "FloatValueNode",
+    "FragmentDefinitionNode",
     "FragmentSpreadNode",
     "InlineFragmentNode",
-    "FragmentDefinitionNode",
-    "ValueNode",
-    "ConstValueNode",
-    "VariableNode",
+    "InputObjectTypeDefinitionNode",
+    "InputObjectTypeExtensionNode",
+    "InputValueDefinitionNode",
     "IntValueNode",
-    "FloatValueNode",
-    "StringValueNode",
-    "BooleanValueNode",
-    "NullValueNode",
-    "EnumValueNode",
-    "ListValueNode",
-    "ConstListValueNode",
-    "ObjectValueNode",
-    "ConstObjectValueNode",
-    "ObjectFieldNode",
-    "ConstObjectFieldNode",
-    "DirectiveNode",
-    "ConstDirectiveNode",
-    "TypeNode",
-    "NamedTypeNode",
+    "InterfaceTypeDefinitionNode",
+    "InterfaceTypeExtensionNode",
+    "ListNullabilityOperatorNode",
     "ListTypeNode",
+    "ListValueNode",
+    "Location",
+    "NameNode",
+    "NamedTypeNode",
+    "Node",
+    "NonNullAssertionNode",
     "NonNullTypeNode",
-    "TypeSystemDefinitionNode",
-    "SchemaDefinitionNode",
+    "NullValueNode",
+    "NullabilityAssertionNode",
+    "ObjectFieldNode",
+    "ObjectTypeDefinitionNode",
+    "ObjectTypeExtensionNode",
+    "ObjectValueNode",
+    "OperationDefinitionNode",
     "OperationType",
     "OperationTypeDefinitionNode",
-    "TypeDefinitionNode",
     "ScalarTypeDefinitionNode",
-    "ObjectTypeDefinitionNode",
-    "FieldDefinitionNode",
-    "InputValueDefinitionNode",
-    "InterfaceTypeDefinitionNode",
-    "UnionTypeDefinitionNode",
-    "EnumTypeDefinitionNode",
-    "EnumValueDefinitionNode",
-    "InputObjectTypeDefinitionNode",
-    "DirectiveDefinitionNode",
-    "SchemaExtensionNode",
-    "TypeExtensionNode",
-    "TypeSystemExtensionNode",
     "ScalarTypeExtensionNode",
-    "ObjectTypeExtensionNode",
-    "InterfaceTypeExtensionNode",
+    "SchemaDefinitionNode",
+    "SchemaExtensionNode",
+    "SelectionNode",
+    "SelectionSetNode",
+    "StringValueNode",
+    "Token",
+    "TypeDefinitionNode",
+    "TypeExtensionNode",
+    "TypeNode",
+    "TypeSystemDefinitionNode",
+    "TypeSystemExtensionNode",
+    "UnionTypeDefinitionNode",
     "UnionTypeExtensionNode",
-    "EnumTypeExtensionNode",
-    "InputObjectTypeExtensionNode",
-    "QUERY_DOCUMENT_KEYS",
+    "ValueNode",
+    "VariableDefinitionNode",
+    "VariableNode",
 ]
 
 
@@ -95,7 +95,7 @@ class Token:
     Represents a range of characters represented by a lexical token within a Source.
     """
 
-    __slots__ = "kind", "start", "end", "line", "column", "prev", "next", "value"
+    __slots__ = "column", "end", "kind", "line", "next", "prev", "start", "value"
 
     kind: TokenKind  # the kind of token
     start: int  # the character offset at which this Node begins
@@ -202,11 +202,11 @@ class Location:
     """
 
     __slots__ = (
-        "start",
         "end",
-        "start_token",
         "end_token",
         "source",
+        "start",
+        "start_token",
     )
 
     start: int  # character offset at which this Node begins
@@ -345,7 +345,7 @@ class Node:
     """AST nodes"""
 
     # allow custom attributes and weak references (not used internally)
-    __slots__ = "__dict__", "__weakref__", "loc", "_hash"
+    __slots__ = "__dict__", "__weakref__", "_hash", "loc"
 
     loc: Location | None
 
@@ -457,7 +457,7 @@ class DefinitionNode(Node):
 
 
 class ExecutableDefinitionNode(DefinitionNode):
-    __slots__ = "name", "directives", "variable_definitions", "selection_set"
+    __slots__ = "directives", "name", "selection_set", "variable_definitions"
 
     name: NameNode | None
     directives: tuple[DirectiveNode, ...]
@@ -472,7 +472,7 @@ class OperationDefinitionNode(ExecutableDefinitionNode):
 
 
 class VariableDefinitionNode(Node):
-    __slots__ = "variable", "type", "default_value", "directives"
+    __slots__ = "default_value", "directives", "type", "variable"
 
     variable: VariableNode
     type: TypeNode
@@ -493,7 +493,7 @@ class SelectionNode(Node):
 
 
 class FieldNode(SelectionNode):
-    __slots__ = "alias", "name", "arguments", "nullability_assertion", "selection_set"
+    __slots__ = "alias", "arguments", "name", "nullability_assertion", "selection_set"
 
     alias: NameNode | None
     name: NameNode
@@ -542,7 +542,7 @@ class FragmentSpreadNode(SelectionNode):
 
 
 class InlineFragmentNode(SelectionNode):
-    __slots__ = "type_condition", "selection_set"
+    __slots__ = "selection_set", "type_condition"
 
     type_condition: NamedTypeNode
     selection_set: SelectionSetNode
@@ -581,7 +581,7 @@ class FloatValueNode(ValueNode):
 
 
 class StringValueNode(ValueNode):
-    __slots__ = "value", "block"
+    __slots__ = "block", "value"
 
     value: str
     block: bool | None
@@ -650,7 +650,7 @@ ConstValueNode: TypeAlias = Union[
 
 
 class DirectiveNode(Node):
-    __slots__ = "name", "arguments"
+    __slots__ = "arguments", "name"
 
     name: NameNode
     arguments: tuple[ArgumentNode, ...]
@@ -711,7 +711,7 @@ class OperationTypeDefinitionNode(Node):
 
 
 class TypeDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "description", "name", "directives"
+    __slots__ = "description", "directives", "name"
 
     description: StringValueNode | None
     name: NameNode
@@ -725,7 +725,7 @@ class ScalarTypeDefinitionNode(TypeDefinitionNode):
 
 
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = "interfaces", "fields"
+    __slots__ = "fields", "interfaces"
 
     interfaces: tuple[NamedTypeNode, ...]
     directives: tuple[ConstDirectiveNode, ...]
@@ -733,7 +733,7 @@ class ObjectTypeDefinitionNode(TypeDefinitionNode):
 
 
 class FieldDefinitionNode(DefinitionNode):
-    __slots__ = "description", "name", "directives", "arguments", "type"
+    __slots__ = "arguments", "description", "directives", "name", "type"
 
     description: StringValueNode | None
     name: NameNode
@@ -743,7 +743,7 @@ class FieldDefinitionNode(DefinitionNode):
 
 
 class InputValueDefinitionNode(DefinitionNode):
-    __slots__ = "description", "name", "directives", "type", "default_value"
+    __slots__ = "default_value", "description", "directives", "name", "type"
 
     description: StringValueNode | None
     name: NameNode
@@ -775,7 +775,7 @@ class EnumTypeDefinitionNode(TypeDefinitionNode):
 
 
 class EnumValueDefinitionNode(DefinitionNode):
-    __slots__ = "description", "name", "directives"
+    __slots__ = "description", "directives", "name"
 
     description: StringValueNode | None
     name: NameNode
@@ -793,7 +793,7 @@ class InputObjectTypeDefinitionNode(TypeDefinitionNode):
 
 
 class DirectiveDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "description", "name", "arguments", "repeatable", "locations"
+    __slots__ = "arguments", "description", "locations", "name", "repeatable"
 
     description: StringValueNode | None
     name: NameNode
@@ -816,7 +816,7 @@ class SchemaExtensionNode(Node):
 
 
 class TypeExtensionNode(TypeSystemDefinitionNode):
-    __slots__ = "name", "directives"
+    __slots__ = "directives", "name"
 
     name: NameNode
     directives: tuple[ConstDirectiveNode, ...]
@@ -830,14 +830,14 @@ class ScalarTypeExtensionNode(TypeExtensionNode):
 
 
 class ObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = "interfaces", "fields"
+    __slots__ = "fields", "interfaces"
 
     interfaces: tuple[NamedTypeNode, ...]
     fields: tuple[FieldDefinitionNode, ...]
 
 
 class InterfaceTypeExtensionNode(TypeExtensionNode):
-    __slots__ = "interfaces", "fields"
+    __slots__ = "fields", "interfaces"
 
     interfaces: tuple[NamedTypeNode, ...]
     fields: tuple[FieldDefinitionNode, ...]

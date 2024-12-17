@@ -49,7 +49,7 @@ try:
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias, TypeGuard
 
-__all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "is_schema", "assert_schema"]
+__all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "assert_schema", "is_schema"]
 
 TypeMap: TypeAlias = Dict[str, GraphQLNamedType]
 

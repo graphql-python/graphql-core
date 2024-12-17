@@ -12,9 +12,9 @@ if TYPE_CHECKING:
     from graphql.validation import ASTValidationRule
 
 __all__ = [
-    "test_schema",
-    "assert_validation_errors",
     "assert_sdl_validation_errors",
+    "assert_validation_errors",
+    "test_schema",
 ]
 
 test_schema = build_schema(

@@ -3,7 +3,7 @@
 from ..error import GraphQLError
 from ..language.character_classes import is_name_continue, is_name_start
 
-__all__ = ["assert_name", "assert_enum_value_name"]
+__all__ = ["assert_enum_value_name", "assert_name"]
 
 
 def assert_name(name: str) -> str:

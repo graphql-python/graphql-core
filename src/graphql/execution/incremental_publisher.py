@@ -37,13 +37,13 @@ __all__ = [
     "FormattedIncrementalStreamResult",
     "FormattedInitialIncrementalExecutionResult",
     "FormattedSubsequentIncrementalExecutionResult",
-    "InitialIncrementalExecutionResult",
-    "InitialResultRecord",
     "IncrementalDataRecord",
     "IncrementalDeferResult",
     "IncrementalPublisher",
     "IncrementalResult",
     "IncrementalStreamResult",
+    "InitialIncrementalExecutionResult",
+    "InitialResultRecord",
     "StreamItemsRecord",
     "SubsequentIncrementalExecutionResult",
 ]
@@ -151,7 +151,7 @@ class InitialIncrementalExecutionResult:
     has_next: bool
     extensions: dict[str, Any] | None
 
-    __slots__ = "data", "errors", "has_next", "incremental", "extensions"
+    __slots__ = "data", "errors", "extensions", "has_next", "incremental"
 
     def __init__(
         self,
@@ -257,7 +257,7 @@ class IncrementalDeferResult:
     label: str | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "data", "errors", "path", "label", "extensions"
+    __slots__ = "data", "errors", "extensions", "label", "path"
 
     def __init__(
         self,
@@ -350,7 +350,7 @@ class IncrementalStreamResult:
     label: str | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "items", "errors", "path", "label", "extensions"
+    __slots__ = "errors", "extensions", "items", "label", "path"
 
     def __init__(
         self,
@@ -446,7 +446,7 @@ class SubsequentIncrementalExecutionResult:
     - ``incremental`` is a list of the results from defer/stream directives.
     """
 
-    __slots__ = "has_next", "incremental", "extensions"
+    __slots__ = "extensions", "has_next", "incremental"
 
     incremental: Sequence[IncrementalResult] | None
     has_next: bool

@@ -16,7 +16,7 @@ from ...pyutils import did_you_mean, suggestion_list
 from ...type import specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-__all__ = ["KnownArgumentNamesRule", "KnownArgumentNamesOnDirectivesRule"]
+__all__ = ["KnownArgumentNamesOnDirectivesRule", "KnownArgumentNamesRule"]
 
 
 class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):

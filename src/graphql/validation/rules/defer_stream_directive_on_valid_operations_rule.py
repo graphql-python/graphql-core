@@ -66,7 +66,8 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
         if (
             isinstance(definition_node, FragmentDefinitionNode)
             and definition_node.name.value in self.fragments_used_on_subscriptions
-            or isinstance(definition_node, OperationDefinitionNode)
+        ) or (
+            isinstance(definition_node, OperationDefinitionNode)
             and definition_node.operation == OperationType.SUBSCRIPTION
         ):
             if node.name.value == GraphQLDeferDirective.name:

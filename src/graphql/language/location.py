@@ -12,7 +12,7 @@ except ImportError:  # Python < 3.8
 if TYPE_CHECKING:
     from .source import Source
 
-__all__ = ["get_location", "SourceLocation", "FormattedSourceLocation"]
+__all__ = ["FormattedSourceLocation", "SourceLocation", "get_location"]
 
 
 class FormattedSourceLocation(TypedDict):

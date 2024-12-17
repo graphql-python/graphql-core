@@ -19,7 +19,7 @@ from ...language import (
 from ...type import GraphQLArgument, is_required_argument, is_type, specified_directives
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
-__all__ = ["ProvidedRequiredArgumentsRule", "ProvidedRequiredArgumentsOnDirectivesRule"]
+__all__ = ["ProvidedRequiredArgumentsOnDirectivesRule", "ProvidedRequiredArgumentsRule"]
 
 
 class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):

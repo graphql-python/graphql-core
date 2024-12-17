@@ -20,20 +20,20 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeGuard
 
 __all__ = [
-    "is_directive",
-    "assert_directive",
-    "is_specified_directive",
-    "specified_directives",
+    "DEFAULT_DEPRECATION_REASON",
+    "DirectiveLocation",
     "GraphQLDeferDirective",
+    "GraphQLDeprecatedDirective",
     "GraphQLDirective",
     "GraphQLDirectiveKwargs",
     "GraphQLIncludeDirective",
     "GraphQLSkipDirective",
-    "GraphQLStreamDirective",
-    "GraphQLDeprecatedDirective",
     "GraphQLSpecifiedByDirective",
-    "DirectiveLocation",
-    "DEFAULT_DEPRECATION_REASON",
+    "GraphQLStreamDirective",
+    "assert_directive",
+    "is_directive",
+    "is_specified_directive",
+    "specified_directives",
 ]
 
 

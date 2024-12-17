@@ -15,11 +15,11 @@ if TYPE_CHECKING:
     from .rules import ASTValidationRule
 
 __all__ = [
+    "ValidationAbortedError",
     "assert_valid_sdl",
     "assert_valid_sdl_extension",
     "validate",
     "validate_sdl",
-    "ValidationAbortedError",
 ]
 
 

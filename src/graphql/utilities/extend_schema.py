@@ -92,8 +92,8 @@ from ..type import (
 from .value_from_ast import value_from_ast
 
 __all__ = [
-    "extend_schema",
     "ExtendSchemaImpl",
+    "extend_schema",
 ]
 
 

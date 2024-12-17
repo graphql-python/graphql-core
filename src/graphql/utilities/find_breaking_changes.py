@@ -216,11 +216,8 @@ def find_type_changes(
             schema_changes.extend(find_union_type_changes(old_type, new_type))
         elif is_input_object_type(old_type) and is_input_object_type(new_type):
             schema_changes.extend(find_input_object_type_changes(old_type, new_type))
-        elif (
-            is_object_type(old_type)
-            and is_object_type(new_type)
-            or is_interface_type(old_type)
-            and is_interface_type(new_type)
+        elif (is_object_type(old_type) and is_object_type(new_type)) or (
+            is_interface_type(old_type) and is_interface_type(new_type)
         ):
             schema_changes.extend(find_field_changes(old_type, new_type))
             schema_changes.extend(

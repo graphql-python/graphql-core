@@ -108,14 +108,14 @@ class GraphQLError(Exception):
     """Extension fields to add to the formatted error"""
 
     __slots__ = (
+        "extensions",
+        "locations",
         "message",
         "nodes",
-        "source",
-        "positions",
-        "locations",
-        "path",
         "original_error",
-        "extensions",
+        "path",
+        "positions",
+        "source",
     )
 
     __hash__ = Exception.__hash__

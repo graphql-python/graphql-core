@@ -21,7 +21,7 @@ class Source:
     """A representation of source input to GraphQL."""
 
     # allow custom attributes and weak references (not used internally)
-    __slots__ = "__weakref__", "__dict__", "body", "name", "location_offset"
+    __slots__ = "__dict__", "__weakref__", "body", "location_offset", "name"
 
     def __init__(
         self,

@@ -19,7 +19,6 @@ except ImportError:  # Python < 3.10
 
 
 __all__ = [
-    "get_introspection_query",
     "IntrospectionDirective",
     "IntrospectionEnumType",
     "IntrospectionField",
@@ -35,6 +34,7 @@ __all__ = [
     "IntrospectionType",
     "IntrospectionTypeRef",
     "IntrospectionUnionType",
+    "get_introspection_query",
 ]
 
 

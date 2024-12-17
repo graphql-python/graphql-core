@@ -23,15 +23,15 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeGuard
 
 __all__ = [
-    "is_specified_scalar_type",
-    "specified_scalar_types",
-    "GraphQLInt",
-    "GraphQLFloat",
-    "GraphQLString",
-    "GraphQLBoolean",
-    "GraphQLID",
     "GRAPHQL_MAX_INT",
     "GRAPHQL_MIN_INT",
+    "GraphQLBoolean",
+    "GraphQLFloat",
+    "GraphQLID",
+    "GraphQLInt",
+    "GraphQLString",
+    "is_specified_scalar_type",
+    "specified_scalar_types",
 ]
 
 # As per the GraphQL Spec, Integers are only treated as valid

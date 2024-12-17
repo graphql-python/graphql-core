@@ -1,6 +1,6 @@
 """Character classes"""
 
-__all__ = ["is_digit", "is_letter", "is_name_start", "is_name_continue"]
+__all__ = ["is_digit", "is_letter", "is_name_continue", "is_name_start"]
 
 
 def is_digit(char: str) -> bool:

@@ -8,8 +8,8 @@ from .viral_schema import viral_schema
 from .viral_sdl import viral_sdl
 
 __all__ = [
-    "assert_matching_values",
     "assert_equal_awaitables_or_values",
+    "assert_matching_values",
     "dedent",
     "gen_fuzz_strings",
     "viral_schema",

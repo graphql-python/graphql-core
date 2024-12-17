@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-__all__ = ["or_list", "and_list"]
+__all__ = ["and_list", "or_list"]
 
 
 def or_list(items: Sequence[str]) -> str:

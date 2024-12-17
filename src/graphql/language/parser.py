@@ -77,7 +77,7 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias
 
 
-__all__ = ["parse", "parse_type", "parse_value", "parse_const_value"]
+__all__ = ["parse", "parse_const_value", "parse_type", "parse_value"]
 
 T = TypeVar("T")
 

@@ -27,8 +27,10 @@ def is_awaitable(value: Any) -> TypeGuard[Awaitable]:
         # check for coroutine objects
         isinstance(value, CoroutineType)
         # check for old-style generator based coroutine objects
-        or isinstance(value, GeneratorType)  # for Python < 3.11
-        and bool(value.gi_code.co_flags & CO_ITERABLE_COROUTINE)
+        or (
+            isinstance(value, GeneratorType)  # for Python < 3.11
+            and bool(value.gi_code.co_flags & CO_ITERABLE_COROUTINE)
+        )
         # check for other awaitables (e.g. futures)
         or hasattr(value, "__await__")
     )

@@ -11,7 +11,7 @@ from ..type import (
     is_object_type,
 )
 
-__all__ = ["is_equal_type", "is_type_sub_type_of", "do_types_overlap"]
+__all__ = ["do_types_overlap", "is_equal_type", "is_type_sub_type_of"]
 
 
 def is_equal_type(type_a: GraphQLType, type_b: GraphQLType) -> bool:

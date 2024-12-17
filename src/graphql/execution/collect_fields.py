@@ -33,11 +33,11 @@ except ImportError:  # Python < 3.10
 
 
 __all__ = [
-    "collect_fields",
-    "collect_subfields",
     "FieldGroup",
     "FieldsAndPatches",
     "GroupedFieldSet",
+    "collect_fields",
+    "collect_subfields",
 ]
 
 if sys.version_info < (3, 9):

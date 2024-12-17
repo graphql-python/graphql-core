@@ -25,15 +25,15 @@ except ImportError:  # Python < 3.10
 
 
 __all__ = [
-    "Visitor",
+    "BREAK",
+    "IDLE",
+    "REMOVE",
+    "SKIP",
     "ParallelVisitor",
+    "Visitor",
     "VisitorAction",
     "VisitorKeyMap",
     "visit",
-    "BREAK",
-    "SKIP",
-    "REMOVE",
-    "IDLE",
 ]
 
 

@@ -30,7 +30,7 @@ class MiddlewareManager:
     """
 
     # allow custom attributes (not used internally)
-    __slots__ = "__dict__", "middlewares", "_middleware_resolvers", "_cached_resolvers"
+    __slots__ = "__dict__", "_cached_resolvers", "_middleware_resolvers", "middlewares"
 
     _cached_resolvers: dict[GraphQLFieldResolver, GraphQLFieldResolver]
     _middleware_resolvers: list[Callable] | None

@@ -149,8 +149,7 @@ def print_block_string(value: str, minimize: bool = False) -> str:
     skip_leading_new_line = is_single_line and value and value[0] in " \t"
     before = (
         "\n"
-        if print_as_multiple_lines
-        and not skip_leading_new_line
+        if (print_as_multiple_lines and not skip_leading_new_line)
         or force_leading_new_line
         else ""
     )

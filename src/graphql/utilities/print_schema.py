@@ -33,10 +33,10 @@ from ..type import (
 from .ast_from_value import ast_from_value
 
 __all__ = [
-    "print_schema",
-    "print_type",
     "print_directive",
     "print_introspection_schema",
+    "print_schema",
+    "print_type",
     "print_value",
 ]
 

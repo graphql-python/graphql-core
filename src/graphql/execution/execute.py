@@ -27,9 +27,9 @@ except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias, TypeGuard
 try:  # only needed for Python < 3.11
     # noinspection PyCompatibility
-    from asyncio.exceptions import TimeoutError
+    from asyncio.exceptions import TimeoutError  # noqa: A004
 except ImportError:  # Python < 3.7
-    from concurrent.futures import TimeoutError
+    from concurrent.futures import TimeoutError  # noqa: A004
 
 from ..error import GraphQLError, located_error
 from ..language import (
@@ -98,6 +98,8 @@ except NameError:  # pragma: no cover (Python < 3.10)
 
 __all__ = [
     "ASYNC_DELAY",
+    "ExecutionContext",
+    "Middleware",
     "create_source_event_stream",
     "default_field_resolver",
     "default_type_resolver",
@@ -105,8 +107,6 @@ __all__ = [
     "execute_sync",
     "experimental_execute_incrementally",
     "subscribe",
-    "ExecutionContext",
-    "Middleware",
 ]
 
 suppress_exceptions = suppress(Exception)

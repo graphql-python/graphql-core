@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 
 __all__ = [
+    "big_schema_introspection_result",
+    "big_schema_sdl",
     "cleanup",
     "kitchen_sink_query",
     "kitchen_sink_sdl",
-    "big_schema_sdl",
-    "big_schema_introspection_result",
 ]
 
 

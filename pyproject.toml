@@ -149,7 +149,6 @@ select = [
   "YTT",    # flake8-2020
 ]
 ignore = [
-  "ANN101", "ANN102",  # no type annotation for self and cls needed
   "ANN401",  # allow explicit Any
   "COM812",  # allow trailing commas for auto-formatting
   "D105", "D107",  # no docstring needed for magic methods

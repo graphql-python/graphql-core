@@ -41,7 +41,7 @@ from .directives import GraphQLDeprecatedDirective, is_directive
 from .introspection import is_introspection_type
 from .schema import GraphQLSchema, assert_schema
 
-__all__ = ["validate_schema", "assert_valid_schema"]
+__all__ = ["assert_valid_schema", "validate_schema"]
 
 
 def validate_schema(schema: GraphQLSchema) -> list[GraphQLError]:

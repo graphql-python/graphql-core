@@ -26,17 +26,17 @@ except ImportError:  # Python < 3.10
 
 
 __all__ = [
+    "is_const_value_node",
     "is_definition_node",
     "is_executable_definition_node",
     "is_nullability_assertion_node",
     "is_selection_node",
-    "is_value_node",
-    "is_const_value_node",
+    "is_type_definition_node",
+    "is_type_extension_node",
     "is_type_node",
     "is_type_system_definition_node",
-    "is_type_definition_node",
     "is_type_system_extension_node",
-    "is_type_extension_node",
+    "is_value_node",
 ]
 
 
