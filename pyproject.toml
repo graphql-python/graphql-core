@@ -67,17 +67,20 @@ pytest-cov = [
 ]
 pytest-describe = "^2.2"
 pytest-timeout = "^2.3"
+pytest-codspeed = [
+    { version = "^3.1.0", python = ">=3.9" },
+    { version = "^2.2.1", python = "<3.8" }
+]
 tox = [
     { version = "^4.16", python = ">=3.8" },
     { version = "^3.28", python = "<3.8" }
 ]
-pytest-codspeed = "^2.2.1"
 
 [tool.poetry.group.lint]
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.7,<0.8"
+ruff = ">=0.8,<0.9"
 mypy = [
     { version = "^1.12", python = ">=3.8" },
     { version = "~1.4", python = "<3.8" }

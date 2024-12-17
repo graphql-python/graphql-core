@@ -35,7 +35,7 @@ def execute_query(
 def describe_execute_handles_one_of_input_objects():
     def describe_one_of_input_objects():
         root_value = {
-            "test": lambda _info, input: input,  # noqa: A002
+            "test": lambda _info, input: input,
         }
 
         def accepts_a_good_default_value():
