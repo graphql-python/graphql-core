@@ -1,4 +1,4 @@
-name: CodSpeed
+name: Performance
 
 on:
   push:
@@ -11,20 +11,24 @@ jobs:
   benchmarks:
     name: 📈 Benchmarks
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         id: setup-python
         with:
           python-version: "3.12"
           architecture: x64
 
-      - run: pipx install poetry
+      - name: Install with poetry
+        run: |
+          pipx install poetry
+          poetry env use 3.12
+          poetry install --with test
 
-      - run: poetry env use 3.12
-      - run: poetry install --with test
-
-      - name: Run benchmarks
+      - name: Run benchmarks with CodSpeed
         uses: CodSpeedHQ/action@v3
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}

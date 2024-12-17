@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 jobs:
   tests:
+    name: 🧪 Tests
     runs-on: ubuntu-latest
 
     strategy:
