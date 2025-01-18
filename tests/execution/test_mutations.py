@@ -246,13 +246,13 @@ def describe_execute_handles_mutation_execution_ordering():
             {
                 "incremental": [
                     {
-                        "label": "defer-label",
                         "path": ["first"],
                         "data": {
                             "promiseToGetTheNumber": 2,
                         },
                     },
                 ],
+                "completed": [{"path": ["first"], "label": "defer-label"}],
                 "hasNext": False,
             },
         ]
@@ -317,13 +317,13 @@ def describe_execute_handles_mutation_execution_ordering():
             {
                 "incremental": [
                     {
-                        "label": "defer-label",
                         "path": [],
                         "data": {
                             "first": {"theNumber": 1},
                         },
                     },
                 ],
+                "completed": [{"path": [], "label": "defer-label"}],
                 "hasNext": False,
             },
         ]

@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import sys
-from collections import defaultdict
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Dict, NamedTuple, Union, cast
 
 from ..language import (
     FieldNode,
@@ -15,6 +14,7 @@ from ..language import (
     OperationType,
     SelectionSetNode,
 )
+from ..pyutils import RefMap, RefSet
 from ..type import (
     GraphQLDeferDirective,
     GraphQLIncludeDirective,
@@ -33,33 +33,88 @@ except ImportError:  # Python < 3.10
 
 
 __all__ = [
+    "NON_DEFERRED_TARGET_SET",
+    "CollectFieldsContext",
+    "CollectFieldsResult",
+    "DeferUsage",
+    "DeferUsageSet",
+    "FieldDetails",
     "FieldGroup",
-    "FieldsAndPatches",
-    "GroupedFieldSet",
+    "GroupedFieldSetDetails",
+    "Target",
+    "TargetSet",
     "collect_fields",
     "collect_subfields",
 ]
 
-if sys.version_info < (3, 9):
-    FieldGroup: TypeAlias = List[FieldNode]
-    GroupedFieldSet = Dict[str, FieldGroup]
-else:  # Python >= 3.9
-    FieldGroup: TypeAlias = list[FieldNode]
-    GroupedFieldSet = dict[str, FieldGroup]
 
-
-class PatchFields(NamedTuple):
-    """Optionally labelled set of fields to be used as a patch."""
+class DeferUsage(NamedTuple):
+    """An optionally labelled list of ancestor targets."""
 
     label: str | None
+    ancestors: list[Target]
+
+
+Target: TypeAlias = Union[DeferUsage, None]
+
+TargetSet: TypeAlias = RefSet[Target]
+DeferUsageSet: TypeAlias = RefSet[DeferUsage]
+
+
+NON_DEFERRED_TARGET_SET: TargetSet = RefSet([None])
+
+
+class FieldDetails(NamedTuple):
+    """A field node and its target."""
+
+    node: FieldNode
+    target: Target
+
+
+class FieldGroup(NamedTuple):
+    """A group of fields that share the same target set."""
+
+    fields: list[FieldDetails]
+    targets: TargetSet
+
+    def to_nodes(self) -> list[FieldNode]:
+        """Return the field nodes in this group."""
+        return [field_details.node for field_details in self.fields]
+
+
+if sys.version_info < (3, 9):
+    GroupedFieldSet: TypeAlias = Dict[str, FieldGroup]
+else:  # Python >= 3.9
+    GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
+
+
+class GroupedFieldSetDetails(NamedTuple):
+    """A grouped field set with defer info."""
+
     grouped_field_set: GroupedFieldSet
+    should_initiate_defer: bool
 
 
-class FieldsAndPatches(NamedTuple):
-    """Tuple of collected fields and patches to be applied."""
+class CollectFieldsResult(NamedTuple):
+    """Collected fields and deferred usages."""
 
     grouped_field_set: GroupedFieldSet
-    patches: list[PatchFields]
+    new_grouped_field_set_details: RefMap[DeferUsageSet, GroupedFieldSetDetails]
+    new_defer_usages: list[DeferUsage]
+
+
+class CollectFieldsContext(NamedTuple):
+    """Context for collecting fields."""
+
+    schema: GraphQLSchema
+    fragments: dict[str, FragmentDefinitionNode]
+    variable_values: dict[str, Any]
+    operation: OperationDefinitionNode
+    runtime_type: GraphQLObjectType
+    targets_by_key: dict[str, TargetSet]
+    fields_by_target: RefMap[Target, dict[str, list[FieldNode]]]
+    new_defer_usages: list[DeferUsage]
+    visited_fragment_names: set[str]
 
 
 def collect_fields(
@@ -68,7 +123,7 @@ def collect_fields(
     variable_values: dict[str, Any],
     runtime_type: GraphQLObjectType,
     operation: OperationDefinitionNode,
-) -> FieldsAndPatches:
+) -> CollectFieldsResult:
     """Collect fields.
 
     Given a selection_set, collects all the fields and returns them.
@@ -79,20 +134,23 @@ def collect_fields(
 
     For internal use only.
     """
-    grouped_field_set: dict[str, list[FieldNode]] = defaultdict(list)
-    patches: list[PatchFields] = []
-    collect_fields_impl(
+    context = CollectFieldsContext(
         schema,
         fragments,
         variable_values,
         operation,
         runtime_type,
-        operation.selection_set,
-        grouped_field_set,
-        patches,
+        {},
+        RefMap(),
+        [],
         set(),
     )
-    return FieldsAndPatches(grouped_field_set, patches)
+    collect_fields_impl(context, operation.selection_set)
+
+    return CollectFieldsResult(
+        *build_grouped_field_sets(context.targets_by_key, context.fields_by_target),
+        context.new_defer_usages,
+    )
 
 
 def collect_subfields(
@@ -102,7 +160,7 @@ def collect_subfields(
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
     field_group: FieldGroup,
-) -> FieldsAndPatches:
+) -> CollectFieldsResult:
     """Collect subfields.
 
     Given a list of field nodes, collects all the subfields of the passed in fields,
@@ -114,47 +172,73 @@ def collect_subfields(
 
     For internal use only.
     """
-    sub_grouped_field_set: dict[str, list[FieldNode]] = defaultdict(list)
-    visited_fragment_names: set[str] = set()
+    context = CollectFieldsContext(
+        schema,
+        fragments,
+        variable_values,
+        operation,
+        return_type,
+        {},
+        RefMap(),
+        [],
+        set(),
+    )
 
-    sub_patches: list[PatchFields] = []
-    sub_fields_and_patches = FieldsAndPatches(sub_grouped_field_set, sub_patches)
-
-    for node in field_group:
+    for field_details in field_group.fields:
+        node = field_details.node
         if node.selection_set:
-            collect_fields_impl(
-                schema,
-                fragments,
-                variable_values,
-                operation,
-                return_type,
-                node.selection_set,
-                sub_grouped_field_set,
-                sub_patches,
-                visited_fragment_names,
-            )
-    return sub_fields_and_patches
+            collect_fields_impl(context, node.selection_set, field_details.target)
+
+    return CollectFieldsResult(
+        *build_grouped_field_sets(
+            context.targets_by_key, context.fields_by_target, field_group.targets
+        ),
+        context.new_defer_usages,
+    )
 
 
 def collect_fields_impl(
-    schema: GraphQLSchema,
-    fragments: dict[str, FragmentDefinitionNode],
-    variable_values: dict[str, Any],
-    operation: OperationDefinitionNode,
-    runtime_type: GraphQLObjectType,
+    context: CollectFieldsContext,
     selection_set: SelectionSetNode,
-    grouped_field_set: dict[str, list[FieldNode]],
-    patches: list[PatchFields],
-    visited_fragment_names: set[str],
+    parent_target: Target | None = None,
+    new_target: Target | None = None,
 ) -> None:
     """Collect fields (internal implementation)."""
-    patch_fields: dict[str, list[FieldNode]]
+    (
+        schema,
+        fragments,
+        variable_values,
+        operation,
+        runtime_type,
+        targets_by_key,
+        fields_by_target,
+        new_defer_usages,
+        visited_fragment_names,
+    ) = context
+
+    ancestors: list[Target]
 
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
             if not should_include_node(variable_values, selection):
                 continue
-            grouped_field_set[get_field_entry_key(selection)].append(selection)
+            key = get_field_entry_key(selection)
+            target = new_target or parent_target
+            key_targets = targets_by_key.get(key)
+            if key_targets is None:
+                key_targets = RefSet([target])
+                targets_by_key[key] = key_targets
+            else:
+                key_targets.add(target)
+            target_fields = fields_by_target.get(target)
+            if target_fields is None:
+                fields_by_target[target] = {key: [selection]}
+            else:
+                field_nodes = target_fields.get(key)
+                if field_nodes is None:
+                    target_fields[key] = [selection]
+                else:
+                    field_nodes.append(selection)
         elif isinstance(selection, InlineFragmentNode):
             if not should_include_node(
                 variable_values, selection
@@ -162,32 +246,19 @@ def collect_fields_impl(
                 continue
 
             defer = get_defer_values(operation, variable_values, selection)
+
             if defer:
-                patch_fields = defaultdict(list)
-                collect_fields_impl(
-                    schema,
-                    fragments,
-                    variable_values,
-                    operation,
-                    runtime_type,
-                    selection.selection_set,
-                    patch_fields,
-                    patches,
-                    visited_fragment_names,
+                ancestors = (
+                    [None]
+                    if parent_target is None
+                    else [parent_target, *parent_target.ancestors]
                 )
-                patches.append(PatchFields(defer.label, patch_fields))
+                target = DeferUsage(defer.label, ancestors)
+                new_defer_usages.append(target)
             else:
-                collect_fields_impl(
-                    schema,
-                    fragments,
-                    variable_values,
-                    operation,
-                    runtime_type,
-                    selection.selection_set,
-                    grouped_field_set,
-                    patches,
-                    visited_fragment_names,
-                )
+                target = new_target
+
+            collect_fields_impl(context, selection.selection_set, parent_target, target)
         elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover else
             frag_name = selection.name.value
 
@@ -204,35 +275,19 @@ def collect_fields_impl(
             ):
                 continue
 
-            if not defer:
-                visited_fragment_names.add(frag_name)
-
             if defer:
-                patch_fields = defaultdict(list)
-                collect_fields_impl(
-                    schema,
-                    fragments,
-                    variable_values,
-                    operation,
-                    runtime_type,
-                    fragment.selection_set,
-                    patch_fields,
-                    patches,
-                    visited_fragment_names,
+                ancestors = (
+                    [None]
+                    if parent_target is None
+                    else [parent_target, *parent_target.ancestors]
                 )
-                patches.append(PatchFields(defer.label, patch_fields))
+                target = DeferUsage(defer.label, ancestors)
+                new_defer_usages.append(target)
             else:
-                collect_fields_impl(
-                    schema,
-                    fragments,
-                    variable_values,
-                    operation,
-                    runtime_type,
-                    fragment.selection_set,
-                    grouped_field_set,
-                    patches,
-                    visited_fragment_names,
-                )
+                visited_fragment_names.add(frag_name)
+                target = new_target
+
+            collect_fields_impl(context, fragment.selection_set, parent_target, target)
 
 
 class DeferValues(NamedTuple):
@@ -305,3 +360,111 @@ def does_fragment_condition_match(
 def get_field_entry_key(node: FieldNode) -> str:
     """Implement the logic to compute the key of a given field's entry"""
     return node.alias.value if node.alias else node.name.value
+
+
+def build_grouped_field_sets(
+    targets_by_key: dict[str, TargetSet],
+    fields_by_target: RefMap[Target, dict[str, list[FieldNode]]],
+    parent_targets: TargetSet = NON_DEFERRED_TARGET_SET,
+) -> tuple[GroupedFieldSet, RefMap[DeferUsageSet, GroupedFieldSetDetails]]:
+    """Build grouped field sets."""
+    parent_target_keys, target_set_details_map = get_target_set_details(
+        targets_by_key, parent_targets
+    )
+
+    grouped_field_set = (
+        get_ordered_grouped_field_set(
+            parent_target_keys, parent_targets, targets_by_key, fields_by_target
+        )
+        if parent_target_keys
+        else {}
+    )
+
+    new_grouped_field_set_details: RefMap[DeferUsageSet, GroupedFieldSetDetails] = (
+        RefMap()
+    )
+
+    for masking_targets, target_set_details in target_set_details_map.items():
+        keys, should_initiate_defer = target_set_details
+
+        new_grouped_field_set = get_ordered_grouped_field_set(
+            keys, masking_targets, targets_by_key, fields_by_target
+        )
+
+        # All TargetSets that causes new grouped field sets consist only of DeferUsages
+        # and have should_initiate_defer defined
+
+        new_grouped_field_set_details[cast(DeferUsageSet, masking_targets)] = (
+            GroupedFieldSetDetails(new_grouped_field_set, should_initiate_defer)
+        )
+
+    return grouped_field_set, new_grouped_field_set_details
+
+
+class TargetSetDetails(NamedTuple):
+    """A set of target keys with defer info."""
+
+    keys: set[str]
+    should_initiate_defer: bool
+
+
+def get_target_set_details(
+    targets_by_key: dict[str, TargetSet], parent_targets: TargetSet
+) -> tuple[set[str], RefMap[TargetSet, TargetSetDetails]]:
+    """Get target set details."""
+    parent_target_keys: set[str] = set()
+    target_set_details_map: RefMap[TargetSet, TargetSetDetails] = RefMap()
+
+    for response_key, targets in targets_by_key.items():
+        masking_target_list: list[Target] = []
+        for target in targets:
+            if not target or all(
+                ancestor not in targets for ancestor in target.ancestors
+            ):
+                masking_target_list.append(target)
+
+        masking_targets: TargetSet = RefSet(masking_target_list)
+        if masking_targets == parent_targets:
+            parent_target_keys.add(response_key)
+            continue
+
+        for target_set, target_set_details in target_set_details_map.items():
+            if target_set == masking_targets:
+                target_set_details.keys.add(response_key)
+                break
+        else:
+            target_set_details = TargetSetDetails(
+                {response_key},
+                any(
+                    defer_usage not in parent_targets for defer_usage in masking_targets
+                ),
+            )
+            target_set_details_map[masking_targets] = target_set_details
+
+    return parent_target_keys, target_set_details_map
+
+
+def get_ordered_grouped_field_set(
+    keys: set[str],
+    masking_targets: TargetSet,
+    targets_by_key: dict[str, TargetSet],
+    fields_by_target: RefMap[Target, dict[str, list[FieldNode]]],
+) -> GroupedFieldSet:
+    """Get ordered grouped field set."""
+    grouped_field_set: GroupedFieldSet = {}
+
+    first_target = next(iter(masking_targets))
+    first_fields = fields_by_target[first_target]
+    for key in list(first_fields):
+        if key in keys:
+            field_group = grouped_field_set.get(key)
+            if field_group is None:  # pragma: no cover else
+                field_group = FieldGroup([], masking_targets)
+                grouped_field_set[key] = field_group
+            for target in targets_by_key[key]:
+                fields_for_target = fields_by_target[target]
+                nodes = fields_for_target[key]
+                del fields_for_target[key]
+                field_group.fields.extend(FieldDetails(node, target) for node in nodes)
+
+    return grouped_field_set

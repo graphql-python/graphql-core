@@ -33,12 +33,16 @@ from .path import Path
 from .print_path_list import print_path_list
 from .simple_pub_sub import SimplePubSub, SimplePubSubIterator
 from .undefined import Undefined, UndefinedType
+from .ref_map import RefMap
+from .ref_set import RefSet
 
 __all__ = [
     "AwaitableOrValue",
     "Description",
     "FrozenError",
     "Path",
+    "RefMap",
+    "RefSet",
     "SimplePubSub",
     "SimplePubSubIterator",
     "Undefined",

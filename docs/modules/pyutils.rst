@@ -30,3 +30,7 @@ PyUtils
 .. autoclass:: SimplePubSub
 .. autoclass:: SimplePubSubIterator
 .. autodata:: Undefined
+.. autoclass:: RefMap
+   :no-inherited-members:
+.. autoclass:: RefSet
+   :no-inherited-members:

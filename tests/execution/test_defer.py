@@ -15,7 +15,13 @@ from graphql.execution import (
     execute,
     experimental_execute_incrementally,
 )
-from graphql.execution.incremental_publisher import DeferredFragmentRecord
+from graphql.execution.incremental_publisher import (
+    CompletedResult,
+    DeferredFragmentRecord,
+    DeferredGroupedFieldSetRecord,
+    StreamItemsRecord,
+    StreamRecord,
+)
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import Path, is_awaitable
 from graphql.type import (
@@ -145,9 +151,14 @@ class Resolvers:
 
     @staticmethod
     async def slow(_info) -> str:
-        """Simulate a slow async resolver returning a value."""
+        """Simulate a slow async resolver returning a non-null value."""
         await sleep(0)
         return "slow"
+
+    @staticmethod
+    async def slow_null(_info) -> None:
+        """Simulate a slow async resolver returning a null value."""
+        await sleep(0)
 
     @staticmethod
     def bad(_info) -> str:
@@ -155,9 +166,8 @@ class Resolvers:
         raise RuntimeError("bad")
 
     @staticmethod
-    async def friends(_info) -> AsyncGenerator[Friend, None]:
-        """A slow async generator yielding the first friend."""
-        await sleep(0)
+    async def first_friend(_info) -> AsyncGenerator[Friend, None]:
+        """An async generator yielding the first friend."""
         yield friends[0]
 
 
@@ -183,6 +193,42 @@ def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
 
 
 def describe_execute_defer_directive():
+    def can_format_and_print_completed_result():
+        result = CompletedResult([])
+        assert result.formatted == {"path": []}
+        assert str(result) == "CompletedResult(path=[])"
+
+        result = CompletedResult(
+            path=["foo", 1], label="bar", errors=[GraphQLError("oops")]
+        )
+        assert result.formatted == {
+            "path": ["foo", 1],
+            "label": "bar",
+            "errors": [{"message": "oops"}],
+        }
+        assert (
+            str(result) == "CompletedResult(path=['foo', 1], label='bar',"
+            " errors=[GraphQLError('oops')])"
+        )
+
+    def can_compare_completed_result():
+        args: dict[str, Any] = {"path": ["foo", 1], "label": "bar", "errors": []}
+        result = CompletedResult(**args)
+        assert result == CompletedResult(**args)
+        assert result != CompletedResult(**modified_args(args, path=["foo", 2]))
+        assert result != CompletedResult(**modified_args(args, label="baz"))
+        assert result != CompletedResult(
+            **modified_args(args, errors=[GraphQLError("oops")])
+        )
+        assert result == tuple(args.values())
+        assert result == tuple(args.values())[:2]
+        assert result != tuple(args.values())[:1]
+        assert result == args
+        assert result == dict(list(args.items())[:2])
+        assert result != dict(
+            list(args.items())[:1] + [("errors", [GraphQLError("oops")])]
+        )
+
     def can_format_and_print_incremental_defer_result():
         result = IncrementalDeferResult()
         assert result.formatted == {"data": None}
@@ -192,20 +238,17 @@ def describe_execute_defer_directive():
             data={"hello": "world"},
             errors=[GraphQLError("msg")],
             path=["foo", 1],
-            label="bar",
             extensions={"baz": 2},
         )
         assert result.formatted == {
             "data": {"hello": "world"},
             "errors": [{"message": "msg"}],
             "extensions": {"baz": 2},
-            "label": "bar",
             "path": ["foo", 1],
         }
         assert (
             str(result) == "IncrementalDeferResult(data={'hello': 'world'},"
-            " errors=[GraphQLError('msg')], path=['foo', 1], label='bar',"
-            " extensions={'baz': 2})"
+            " errors=[GraphQLError('msg')], path=['foo', 1], extensions={'baz': 2})"
         )
 
     # noinspection PyTypeChecker
@@ -214,7 +257,6 @@ def describe_execute_defer_directive():
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
             "path": ["foo", 1],
-            "label": "bar",
             "extensions": {"baz": 2},
         }
         result = IncrementalDeferResult(**args)
@@ -224,7 +266,6 @@ def describe_execute_defer_directive():
         )
         assert result != IncrementalDeferResult(**modified_args(args, errors=[]))
         assert result != IncrementalDeferResult(**modified_args(args, path=["foo", 2]))
-        assert result != IncrementalDeferResult(**modified_args(args, label="baz"))
         assert result != IncrementalDeferResult(
             **modified_args(args, extensions={"baz": 1})
         )
@@ -238,7 +279,7 @@ def describe_execute_defer_directive():
         assert result == dict(list(args.items())[:2])
         assert result == dict(list(args.items())[:3])
         assert result != dict(list(args.items())[:2] + [("path", ["foo", 2])])
-        assert result != {**args, "label": "baz"}
+        assert result != {**args, "extensions": {"baz": 3}}
 
     def can_format_and_print_initial_incremental_execution_result():
         result = InitialIncrementalExecutionResult()
@@ -254,33 +295,28 @@ def describe_execute_defer_directive():
             == "InitialIncrementalExecutionResult(data=None, errors=None, has_next)"
         )
 
-        incremental = [IncrementalDeferResult(label="foo")]
         result = InitialIncrementalExecutionResult(
             data={"hello": "world"},
             errors=[GraphQLError("msg")],
-            incremental=incremental,
             has_next=True,
             extensions={"baz": 2},
         )
         assert result.formatted == {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "incremental": [{"data": None, "label": "foo"}],
             "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert (
             str(result) == "InitialIncrementalExecutionResult("
-            "data={'hello': 'world'}, errors=[GraphQLError('msg')], incremental[1],"
-            " has_next, extensions={'baz': 2})"
+            "data={'hello': 'world'}, errors=[GraphQLError('msg')], has_next,"
+            " extensions={'baz': 2})"
         )
 
     def can_compare_initial_incremental_execution_result():
-        incremental = [IncrementalDeferResult(label="foo")]
         args: dict[str, Any] = {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "incremental": incremental,
             "has_next": True,
             "extensions": {"baz": 2},
         }
@@ -291,9 +327,6 @@ def describe_execute_defer_directive():
         )
         assert result != InitialIncrementalExecutionResult(
             **modified_args(args, errors=[])
-        )
-        assert result != InitialIncrementalExecutionResult(
-            **modified_args(args, incremental=[])
         )
         assert result != InitialIncrementalExecutionResult(
             **modified_args(args, has_next=False)
@@ -311,20 +344,17 @@ def describe_execute_defer_directive():
         assert result == {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "incremental": incremental,
             "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert result == {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "incremental": incremental,
             "hasNext": True,
         }
         assert result != {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "incremental": incremental,
             "hasNext": False,
             "extensions": {"baz": 2},
         }
@@ -338,27 +368,32 @@ def describe_execute_defer_directive():
         assert result.formatted == {"hasNext": True}
         assert str(result) == "SubsequentIncrementalExecutionResult(has_next)"
 
-        incremental = [IncrementalDeferResult(label="foo")]
+        incremental = [IncrementalDeferResult()]
+        completed = [CompletedResult(["foo", 1])]
         result = SubsequentIncrementalExecutionResult(
-            incremental=incremental,
             has_next=True,
+            incremental=incremental,
+            completed=completed,
             extensions={"baz": 2},
         )
         assert result.formatted == {
-            "incremental": [{"data": None, "label": "foo"}],
             "hasNext": True,
+            "incremental": [{"data": None}],
+            "completed": [{"path": ["foo", 1]}],
             "extensions": {"baz": 2},
         }
         assert (
-            str(result) == "SubsequentIncrementalExecutionResult(incremental[1],"
-            " has_next, extensions={'baz': 2})"
+            str(result) == "SubsequentIncrementalExecutionResult(has_next,"
+            " incremental[1], completed[1], extensions={'baz': 2})"
         )
 
     def can_compare_subsequent_incremental_execution_result():
-        incremental = [IncrementalDeferResult(label="foo")]
+        incremental = [IncrementalDeferResult()]
+        completed = [CompletedResult(path=["foo", 1])]
         args: dict[str, Any] = {
-            "incremental": incremental,
             "has_next": True,
+            "incremental": incremental,
+            "completed": completed,
             "extensions": {"baz": 2},
         }
         result = SubsequentIncrementalExecutionResult(**args)
@@ -377,25 +412,57 @@ def describe_execute_defer_directive():
         assert result != tuple(args.values())[:1]
         assert result != (incremental, False)
         assert result == {
-            "incremental": incremental,
             "hasNext": True,
+            "incremental": incremental,
+            "completed": completed,
             "extensions": {"baz": 2},
         }
         assert result == {"incremental": incremental, "hasNext": True}
         assert result != {
-            "incremental": incremental,
             "hasNext": False,
+            "incremental": incremental,
+            "completed": completed,
             "extensions": {"baz": 2},
         }
 
+    def can_print_deferred_grouped_field_set_record():
+        record = DeferredGroupedFieldSetRecord([], {}, False)
+        assert (
+            str(record) == "DeferredGroupedFieldSetRecord("
+            "deferred_fragment_records=[], grouped_field_set={})"
+        )
+        record = DeferredGroupedFieldSetRecord([], {}, True, Path(None, "foo", "Foo"))
+        assert (
+            str(record) == "DeferredGroupedFieldSetRecord("
+            "deferred_fragment_records=[], grouped_field_set={}, path=['foo'])"
+        )
+
     def can_print_deferred_fragment_record():
         record = DeferredFragmentRecord(None, None)
-        assert str(record) == "DeferredFragmentRecord(path=[])"
-        record = DeferredFragmentRecord("foo", Path(None, "bar", "Bar"))
-        assert str(record) == "DeferredFragmentRecord(" "path=['bar'], label='foo')"
-        record.data = {"hello": "world"}
+        assert str(record) == "DeferredFragmentRecord()"
+        record = DeferredFragmentRecord(Path(None, "bar", "Bar"), "foo")
+        assert str(record) == "DeferredFragmentRecord(path=['bar'], label='foo')"
+
+    def can_print_stream_record():
+        record = StreamRecord(Path(None, "bar", "Bar"), "foo")
+        assert str(record) == "StreamRecord(path=['bar'], label='foo')"
+        record.path = []
+        assert str(record) == "StreamRecord(label='foo')"
+        record.label = None
+        assert str(record) == "StreamRecord()"
+
+    def can_print_stream_items_record():
+        record = StreamItemsRecord(
+            StreamRecord(Path(None, "bar", "Bar"), "foo"),
+            Path(None, "baz", "Baz"),
+        )
         assert (
-            str(record) == "DeferredFragmentRecord(" "path=['bar'], label='foo', data)"
+            str(record) == "StreamItemsRecord(stream_record=StreamRecord("
+            "path=['bar'], label='foo'), path=['baz'])"
+        )
+        record = StreamItemsRecord(StreamRecord(Path(None, "bar", "Bar")))
+        assert (
+            str(record) == "StreamItemsRecord(stream_record=StreamRecord(path=['bar']))"
         )
 
     @pytest.mark.asyncio
@@ -419,6 +486,7 @@ def describe_execute_defer_directive():
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
                 "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
@@ -470,6 +538,7 @@ def describe_execute_defer_directive():
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
                 "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
@@ -514,9 +583,8 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {}, "hasNext": True},
             {
-                "incremental": [
-                    {"data": {"hero": {"id": "1"}}, "path": [], "label": "DeferQuery"}
-                ],
+                "incremental": [{"data": {"hero": {"id": "1"}}, "path": []}],
+                "completed": [{"path": [], "label": "DeferQuery"}],
                 "hasNext": False,
             },
         ]
@@ -551,9 +619,9 @@ def describe_execute_defer_directive():
                             }
                         ],
                         "path": [],
-                        "label": "DeferQuery",
                     }
                 ],
+                "completed": [{"path": [], "label": "DeferQuery"}],
                 "hasNext": False,
             },
         ]
@@ -585,6 +653,10 @@ def describe_execute_defer_directive():
             {
                 "incremental": [
                     {
+                        "data": {"id": "1"},
+                        "path": ["hero"],
+                    },
+                    {
                         "data": {
                             "friends": [
                                 {"name": "Han"},
@@ -593,13 +665,11 @@ def describe_execute_defer_directive():
                             ]
                         },
                         "path": ["hero"],
-                        "label": "DeferNested",
                     },
-                    {
-                        "data": {"id": "1"},
-                        "path": ["hero"],
-                        "label": "DeferTop",
-                    },
+                ],
+                "completed": [
+                    {"path": ["hero"], "label": "DeferTop"},
+                    {"path": ["hero"], "label": "DeferNested"},
                 ],
                 "hasNext": False,
             },
@@ -625,13 +695,7 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {"name": "Luke"}}, "hasNext": True},
             {
-                "incremental": [
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                        "label": "DeferTop",
-                    },
-                ],
+                "completed": [{"path": ["hero"], "label": "DeferTop"}],
                 "hasNext": False,
             },
         ]
@@ -656,13 +720,7 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {"name": "Luke"}}, "hasNext": True},
             {
-                "incremental": [
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                        "label": "DeferTop",
-                    },
-                ],
+                "completed": [{"path": ["hero"], "label": "DeferTop"}],
                 "hasNext": False,
             },
         ]
@@ -686,19 +744,14 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
-                "incremental": [
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                        "label": "InlineDeferred",
-                    },
-                ],
+                "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
+                "completed": [{"path": ["hero"], "label": "InlineDeferred"}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def emits_empty_defer_fragments():
+    async def does_not_emit_empty_defer_fragments():
         document = parse(
             """
             query HeroNameQuery {
@@ -718,18 +771,13 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {}}, "hasNext": True},
             {
-                "incremental": [
-                    {
-                        "data": {},
-                        "path": ["hero"],
-                    },
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def can_separately_emit_defer_fragments_different_labels_varying_fields():
+    async def separately_emits_defer_fragments_different_labels_varying_fields():
         document = parse(
             """
             query HeroNameQuery {
@@ -747,26 +795,236 @@ def describe_execute_defer_directive():
         result = await complete(document)
 
         assert result == [
-            {"data": {"hero": {}}, "hasNext": True},
+            {
+                "data": {"hero": {}},
+                "hasNext": True,
+            },
             {
                 "incremental": [
                     {
                         "data": {"id": "1"},
                         "path": ["hero"],
-                        "label": "DeferID",
                     },
                     {
                         "data": {"name": "Luke"},
                         "path": ["hero"],
-                        "label": "DeferName",
                     },
+                ],
+                "completed": [
+                    {"path": ["hero"], "label": "DeferID"},
+                    {"path": ["hero"], "label": "DeferName"},
                 ],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def does_not_deduplicate_multiple_defers_on_the_same_object():
+    async def separately_emits_defer_fragments_different_labels_varying_subfields():
+        document = parse(
+            """
+            query HeroNameQuery {
+              ... @defer(label: "DeferID") {
+                hero {
+                  id
+                }
+              }
+              ... @defer(label: "DeferName") {
+                hero {
+                  name
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"hero": {}},
+                        "path": [],
+                    },
+                    {
+                        "data": {"id": "1"},
+                        "path": ["hero"],
+                    },
+                    {
+                        "data": {"name": "Luke"},
+                        "path": ["hero"],
+                    },
+                ],
+                "completed": [
+                    {"path": [], "label": "DeferID"},
+                    {"path": [], "label": "DeferName"},
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def separately_emits_defer_fragments_different_labels_var_subfields_async():
+        document = parse(
+            """
+            query HeroNameQuery {
+              ... @defer(label: "DeferID") {
+                hero {
+                  id
+                }
+              }
+              ... @defer(label: "DeferName") {
+                hero {
+                  name
+                }
+              }
+            }
+            """
+        )
+
+        async def resolve(value):
+            return value
+
+        result = await complete(
+            document,
+            {
+                "hero": {
+                    "id": lambda _info: resolve(1),
+                    "name": lambda _info: resolve("Luke"),
+                }
+            },
+        )
+
+        assert result == [
+            {
+                "data": {},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"hero": {}},
+                        "path": [],
+                    },
+                    {
+                        "data": {"id": "1"},
+                        "path": ["hero"],
+                    },
+                    {
+                        "data": {"name": "Luke"},
+                        "path": ["hero"],
+                    },
+                ],
+                "completed": [
+                    {"path": [], "label": "DeferID"},
+                    {"path": [], "label": "DeferName"},
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def separately_emits_defer_fragments_var_subfields_same_prio_diff_level():
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ... @defer(label: "DeferID") {
+                  id
+                }
+              }
+              ... @defer(label: "DeferName") {
+                hero {
+                  name
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"id": "1"},
+                        "path": ["hero"],
+                    },
+                    {
+                        "data": {"name": "Luke"},
+                        "path": ["hero"],
+                    },
+                ],
+                "completed": [
+                    {"path": ["hero"], "label": "DeferID"},
+                    {"path": [], "label": "DeferName"},
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def separately_emits_nested_defer_frags_var_subfields_same_prio_diff_level():
+        document = parse(
+            """
+            query HeroNameQuery {
+              ... @defer(label: "DeferName") {
+                hero {
+                  name
+                  ... @defer(label: "DeferID") {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {},
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "hero": {
+                                "name": "Luke",
+                            },
+                        },
+                        "path": [],
+                    },
+                ],
+                "completed": [
+                    {"path": [], "label": "DeferName"},
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "id": "1",
+                        },
+                        "path": ["hero"],
+                    },
+                ],
+                "completed": [{"path": ["hero"], "label": "DeferID"}],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def can_deduplicate_multiple_defers_on_the_same_object():
         document = parse(
             """
             query {
@@ -800,34 +1058,39 @@ def describe_execute_defer_directive():
             {"data": {"hero": {"friends": [{}, {}, {}]}}, "hasNext": True},
             {
                 "incremental": [
-                    {"data": {}, "path": ["hero", "friends", 0]},
-                    {"data": {}, "path": ["hero", "friends", 0]},
-                    {"data": {}, "path": ["hero", "friends", 0]},
                     {
                         "data": {"id": "2", "name": "Han"},
                         "path": ["hero", "friends", 0],
                     },
-                    {"data": {}, "path": ["hero", "friends", 1]},
-                    {"data": {}, "path": ["hero", "friends", 1]},
-                    {"data": {}, "path": ["hero", "friends", 1]},
                     {
                         "data": {"id": "3", "name": "Leia"},
                         "path": ["hero", "friends", 1],
                     },
-                    {"data": {}, "path": ["hero", "friends", 2]},
-                    {"data": {}, "path": ["hero", "friends", 2]},
-                    {"data": {}, "path": ["hero", "friends", 2]},
                     {
                         "data": {"id": "4", "name": "C-3PO"},
                         "path": ["hero", "friends", 2],
                     },
+                ],
+                "completed": [
+                    {"path": ["hero", "friends", 0]},
+                    {"path": ["hero", "friends", 0]},
+                    {"path": ["hero", "friends", 0]},
+                    {"path": ["hero", "friends", 1]},
+                    {"path": ["hero", "friends", 1]},
+                    {"path": ["hero", "friends", 1]},
+                    {"path": ["hero", "friends", 2]},
+                    {"path": ["hero", "friends", 2]},
+                    {"path": ["hero", "friends", 2]},
+                    {"path": ["hero", "friends", 0]},
+                    {"path": ["hero", "friends", 1]},
+                    {"path": ["hero", "friends", 2]},
                 ],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def does_not_deduplicate_fields_present_in_the_initial_payload():
+    async def deduplicates_fields_present_in_the_initial_payload():
         document = parse(
             """
             query {
@@ -881,27 +1144,17 @@ def describe_execute_defer_directive():
             {
                 "incremental": [
                     {
-                        "data": {
-                            "nestedObject": {
-                                "deeperObject": {
-                                    "bar": "bar",
-                                },
-                            },
-                            "anotherNestedObject": {
-                                "deeperObject": {
-                                    "foo": "foo",
-                                },
-                            },
-                        },
-                        "path": ["hero"],
+                        "data": {"bar": "bar"},
+                        "path": ["hero", "nestedObject", "deeperObject"],
                     },
                 ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def does_not_deduplicate_fields_present_in_a_parent_defer_payload():
+    async def deduplicates_fields_present_in_a_parent_defer_payload():
         document = parse(
             """
             query {
@@ -944,24 +1197,25 @@ def describe_execute_defer_directive():
                         "path": ["hero"],
                     },
                 ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "data": {
-                            "foo": "foo",
                             "bar": "bar",
                         },
                         "path": ["hero", "nestedObject", "deeperObject"],
                     },
                 ],
+                "completed": [{"path": ["hero", "nestedObject", "deeperObject"]}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def does_not_deduplicate_fields_with_deferred_fragments_at_multiple_levels():
+    async def deduplicates_fields_with_deferred_fragments_at_multiple_levels():
         document = parse(
             """
             query {
@@ -1014,58 +1268,51 @@ def describe_execute_defer_directive():
 
         assert result == [
             {
-                "data": {"hero": {"nestedObject": {"deeperObject": {"foo": "foo"}}}},
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "data": {
-                            "nestedObject": {
-                                "deeperObject": {
-                                    "foo": "foo",
-                                    "bar": "bar",
-                                },
-                            }
-                        },
-                        "path": ["hero"],
-                    },
-                ],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "data": {
+                "data": {
+                    "hero": {
+                        "nestedObject": {
                             "deeperObject": {
                                 "foo": "foo",
-                                "bar": "bar",
-                                "baz": "baz",
-                            }
+                            },
                         },
-                        "path": ["hero", "nestedObject"],
                     },
-                ],
+                },
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
-                        "data": {
-                            "foo": "foo",
-                            "bar": "bar",
-                            "baz": "baz",
-                            "bak": "bak",
-                        },
+                        "data": {"bar": "bar"},
                         "path": ["hero", "nestedObject", "deeperObject"],
                     },
                 ],
+                "completed": [{"path": ["hero"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"baz": "baz"},
+                        "path": ["hero", "nestedObject", "deeperObject"],
+                    },
+                ],
+                "hasNext": True,
+                "completed": [{"path": ["hero", "nestedObject"]}],
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"bak": "bak"},
+                        "path": ["hero", "nestedObject", "deeperObject"],
+                    },
+                ],
+                "completed": [{"path": ["hero", "nestedObject", "deeperObject"]}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def does_not_combine_fields_from_deferred_fragments_branches_same_level():
+    async def deduplicates_fields_from_deferred_fragments_branches_same_level():
         document = parse(
             """
             query {
@@ -1109,10 +1356,10 @@ def describe_execute_defer_directive():
                         },
                         "path": ["hero", "nestedObject", "deeperObject"],
                     },
-                    {
-                        "data": {"nestedObject": {"deeperObject": {}}},
-                        "path": ["hero"],
-                    },
+                ],
+                "completed": [
+                    {"path": ["hero"]},
+                    {"path": ["hero", "nestedObject", "deeperObject"]},
                 ],
                 "hasNext": True,
             },
@@ -1120,18 +1367,18 @@ def describe_execute_defer_directive():
                 "incremental": [
                     {
                         "data": {
-                            "foo": "foo",
                             "bar": "bar",
                         },
                         "path": ["hero", "nestedObject", "deeperObject"],
                     },
                 ],
+                "completed": [{"path": ["hero", "nestedObject", "deeperObject"]}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def does_not_combine_fields_from_deferred_fragments_branches_multi_levels():
+    async def deduplicates_fields_from_deferred_fragments_branches_multi_levels():
         document = parse(
             """
             query {
@@ -1179,16 +1426,17 @@ def describe_execute_defer_directive():
                         "path": ["a", "b"],
                     },
                     {
-                        "data": {"a": {"b": {"e": {"f": "f"}}}, "g": {"h": "h"}},
+                        "data": {"g": {"h": "h"}},
                         "path": [],
                     },
                 ],
+                "completed": [{"path": ["a", "b"]}, {"path": []}],
                 "hasNext": False,
             },
         ]
 
     @pytest.mark.asyncio
-    async def preserves_error_boundaries_null_first():
+    async def nulls_cross_defer_boundaries_null_first():
         document = parse(
             """
             query {
@@ -1227,11 +1475,16 @@ def describe_execute_defer_directive():
             {
                 "incremental": [
                     {
-                        "data": {"b": {"c": {"d": "d"}}},
+                        "data": {"b": {"c": {}}},
                         "path": ["a"],
                     },
                     {
-                        "data": {"a": {"b": {"c": None}, "someField": "someField"}},
+                        "data": {"d": "d"},
+                        "path": ["a", "b", "c"],
+                    },
+                ],
+                "completed": [
+                    {
                         "path": [],
                         "errors": [
                             {
@@ -1242,12 +1495,13 @@ def describe_execute_defer_directive():
                             },
                         ],
                     },
+                    {"path": ["a"]},
                 ],
                 "hasNext": False,
             },
         ]
 
-    async def preserves_error_boundaries_value_first():
+    async def nulls_cross_defer_boundaries_value_first():
         document = parse(
             """
             query {
@@ -1291,7 +1545,16 @@ def describe_execute_defer_directive():
             {
                 "incremental": [
                     {
-                        "data": {"b": {"c": None}, "someField": "someField"},
+                        "data": {"b": {"c": {}}},
+                        "path": ["a"],
+                    },
+                    {
+                        "data": {"d": "d"},
+                        "path": ["a", "b", "c"],
+                    },
+                ],
+                "completed": [
+                    {
                         "path": ["a"],
                         "errors": [
                             {
@@ -1303,7 +1566,6 @@ def describe_execute_defer_directive():
                         ],
                     },
                     {
-                        "data": {"a": {"b": {"c": {"d": "d"}}}},
                         "path": [],
                     },
                 ],
@@ -1311,7 +1573,7 @@ def describe_execute_defer_directive():
             },
         ]
 
-    async def correctly_handle_a_slow_null():
+    async def filters_a_payload_with_a_null_that_cannot_be_merged():
         document = parse(
             """
             query {
@@ -1338,14 +1600,11 @@ def describe_execute_defer_directive():
             """
         )
 
-        async def slow_null(_info) -> None:
-            await sleep(0)
-
         result = await complete(
             document,
             {
                 "a": {
-                    "b": {"c": {"d": "d", "nonNullErrorField": slow_null}},
+                    "b": {"c": {"d": "d", "nonNullErrorField": Resolvers.slow_null}},
                     "someField": "someField",
                 }
             },
@@ -1359,16 +1618,20 @@ def describe_execute_defer_directive():
             {
                 "incremental": [
                     {
-                        "data": {"b": {"c": {"d": "d"}}},
+                        "data": {"b": {"c": {}}},
                         "path": ["a"],
                     },
+                    {
+                        "data": {"d": "d"},
+                        "path": ["a", "b", "c"],
+                    },
                 ],
+                "completed": [{"path": ["a"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
+                "completed": [
                     {
-                        "data": {"a": {"b": {"c": None}, "someField": "someField"}},
                         "path": [],
                         "errors": [
                             {
@@ -1406,29 +1669,17 @@ def describe_execute_defer_directive():
             },
         )
 
-        assert result == [
-            {
-                "data": {"hero": None},
-                "errors": [
-                    {
-                        "message": "Cannot return null"
-                        " for non-nullable field Hero.nonNullName.",
-                        "locations": [{"line": 4, "column": 17}],
-                        "path": ["hero", "nonNullName"],
-                    },
-                ],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "data": {"hero": {"name": "Luke"}},
-                        "path": [],
-                    },
-                ],
-                "hasNext": False,
-            },
-        ]
+        assert result == {
+            "data": {"hero": None},
+            "errors": [
+                {
+                    "message": "Cannot return null"
+                    " for non-nullable field Hero.nonNullName.",
+                    "locations": [{"line": 4, "column": 17}],
+                    "path": ["hero", "nonNullName"],
+                },
+            ],
+        }
 
     async def cancels_deferred_fields_when_deferred_result_exhibits_null_bubbling():
         document = parse(
@@ -1470,11 +1721,12 @@ def describe_execute_defer_directive():
                         ],
                     },
                 ],
+                "completed": [{"path": []}],
                 "hasNext": False,
             },
         ]
 
-    async def does_not_deduplicate_list_fields():
+    async def deduplicates_list_fields():
         document = parse(
             """
             query {
@@ -1508,23 +1760,12 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {
-                            "friends": [
-                                {"name": "Han"},
-                                {"name": "Leia"},
-                                {"name": "C-3PO"},
-                            ]
-                        },
-                        "path": ["hero"],
-                    }
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
-    async def does_not_deduplicate_async_iterable_list_fields():
+    async def deduplicates_async_iterable_list_fields():
         document = parse(
             """
             query {
@@ -1542,14 +1783,10 @@ def describe_execute_defer_directive():
             """
         )
 
-        async def resolve_friends(_info):
-            await sleep(0)
-            yield friends[0]
-
         result = await complete(
             document,
             {
-                "hero": {**hero, "friends": resolve_friends},
+                "hero": {**hero, "friends": Resolvers.first_friend},
             },
         )
 
@@ -1559,17 +1796,12 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {"friends": [{"name": "Han"}]},
-                        "path": ["hero"],
-                    }
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
-    async def does_not_deduplicate_empty_async_iterable_list_fields():
+    async def deduplicates_empty_async_iterable_list_fields():
         document = parse(
             """
             query {
@@ -1605,12 +1837,7 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {"friends": []},
-                        "path": ["hero"],
-                    }
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
@@ -1650,15 +1877,24 @@ def describe_execute_defer_directive():
             {
                 "incremental": [
                     {
-                        "data": {"friends": [{"id": "2"}, {"id": "3"}, {"id": "4"}]},
-                        "path": ["hero"],
-                    }
+                        "data": {"id": "2"},
+                        "path": ["hero", "friends", 0],
+                    },
+                    {
+                        "data": {"id": "3"},
+                        "path": ["hero", "friends", 1],
+                    },
+                    {
+                        "data": {"id": "4"},
+                        "path": ["hero", "friends", 2],
+                    },
                 ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
-    async def does_not_deduplicate_list_fields_that_return_empty_lists():
+    async def deduplicates_list_fields_that_return_empty_lists():
         document = parse(
             """
             query {
@@ -1685,17 +1921,12 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {"friends": []},
-                        "path": ["hero"],
-                    }
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
-    async def does_not_deduplicate_null_object_fields():
+    async def deduplicates_null_object_fields():
         document = parse(
             """
             query {
@@ -1722,17 +1953,12 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {"nestedObject": None},
-                        "path": ["hero"],
-                    }
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
 
-    async def does_not_deduplicate_async_object_fields():
+    async def deduplicates_async_object_fields():
         document = parse(
             """
             query {
@@ -1763,12 +1989,7 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {"nestedObject": {"name": "foo"}},
-                        "path": ["hero"],
-                    }
-                ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
@@ -1806,6 +2027,7 @@ def describe_execute_defer_directive():
                         ],
                     },
                 ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": False,
             },
         ]
@@ -1832,9 +2054,8 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
-                "incremental": [
+                "completed": [
                     {
-                        "data": None,
                         "path": ["hero"],
                         "errors": [
                             {
@@ -1903,9 +2124,8 @@ def describe_execute_defer_directive():
         assert result == [
             {"data": {"hero": {"id": "1"}}, "hasNext": True},
             {
-                "incremental": [
+                "completed": [
                     {
-                        "data": None,
                         "path": ["hero"],
                         "errors": [
                             {
@@ -1953,6 +2173,7 @@ def describe_execute_defer_directive():
                         "path": ["hero"],
                     }
                 ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": True,
             },
             {
@@ -1969,6 +2190,11 @@ def describe_execute_defer_directive():
                         "data": {"name": "C-3PO"},
                         "path": ["hero", "friends", 2],
                     },
+                ],
+                "completed": [
+                    {"path": ["hero", "friends", 0]},
+                    {"path": ["hero", "friends", 1]},
+                    {"path": ["hero", "friends", 2]},
                 ],
                 "hasNext": False,
             },
@@ -2004,8 +2230,9 @@ def describe_execute_defer_directive():
                     {
                         "data": {"name": "Luke", "friends": [{}, {}, {}]},
                         "path": ["hero"],
-                    },
+                    }
                 ],
+                "completed": [{"path": ["hero"]}],
                 "hasNext": True,
             },
             {
@@ -2022,6 +2249,11 @@ def describe_execute_defer_directive():
                         "data": {"name": "C-3PO"},
                         "path": ["hero", "friends", 2],
                     },
+                ],
+                "completed": [
+                    {"path": ["hero", "friends", 0]},
+                    {"path": ["hero", "friends", 1]},
+                    {"path": ["hero", "friends", 2]},
                 ],
                 "hasNext": False,
             },
@@ -2046,7 +2278,7 @@ def describe_execute_defer_directive():
         )
 
         result = await complete(
-            document, {"hero": {**hero, "friends": Resolvers.friends}}
+            document, {"hero": {**hero, "friends": Resolvers.first_friend}}
         )
 
         assert result == {

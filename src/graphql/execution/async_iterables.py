@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import AbstractAsyncContextManager
+from contextlib import AbstractAsyncContextManager, suppress
 from typing import (
     AsyncGenerator,
     AsyncIterable,
@@ -19,6 +19,8 @@ T = TypeVar("T")
 V = TypeVar("V")
 
 AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
+
+suppress_exceptions = suppress(Exception)
 
 
 class aclosing(AbstractAsyncContextManager, Generic[T]):  # noqa: N801
@@ -40,7 +42,8 @@ class aclosing(AbstractAsyncContextManager, Generic[T]):  # noqa: N801
         except AttributeError:
             pass  # do not complain if the iterator has no aclose() method
         else:
-            await aclose()
+            with suppress_exceptions:  # or if the aclose() method fails
+                await aclose()
 
 
 async def map_async_iterable(

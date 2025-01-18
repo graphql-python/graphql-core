@@ -49,10 +49,16 @@ def describe_customize_execution():
                 source,
                 field_group,
                 path,
-                incremental_data_record=None,
+                incremental_data_record,
+                defer_map,
             ):
                 result = super().execute_field(
-                    parent_type, source, field_group, path, incremental_data_record
+                    parent_type,
+                    source,
+                    field_group,
+                    path,
+                    incremental_data_record,
+                    defer_map,
                 )
                 return result * 2  # type: ignore
 

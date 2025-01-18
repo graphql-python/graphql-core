@@ -320,6 +320,8 @@ timeout = "100"
 filterwarnings = "ignore::pytest.PytestConfigWarning"
 # All tests can be found in the tests directory.
 testpaths = ["tests"]
+# Use the functions scope as the default for asynchronous tests.
+asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["poetry_core>=1.6.1,<2"]
