@@ -755,8 +755,7 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.TYPE_CHANGED_KIND,
-                "TypeThatChangesType changed from an Object type to an"
-                " Interface type.",
+                "TypeThatChangesType changed from an Object type to an Interface type.",
             ),
             (
                 BreakingChangeType.FIELD_REMOVED,

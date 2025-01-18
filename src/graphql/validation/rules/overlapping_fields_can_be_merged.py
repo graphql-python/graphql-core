@@ -44,8 +44,7 @@ __all__ = ["OverlappingFieldsCanBeMergedRule"]
 def reason_message(reason: ConflictReasonMessage) -> str:
     if isinstance(reason, list):
         return " and ".join(
-            f"subfields '{response_name}' conflict"
-            f" because {reason_message(sub_reason)}"
+            f"subfields '{response_name}' conflict because {reason_message(sub_reason)}"
             for response_name, sub_reason in reason
         )
     return reason

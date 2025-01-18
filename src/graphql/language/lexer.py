@@ -342,7 +342,7 @@ class Lexer:
         raise GraphQLSyntaxError(
             self.source,
             position,
-            f"Invalid Unicode escape sequence: '{body[position: position + size]}'.",
+            f"Invalid Unicode escape sequence: '{body[position : position + size]}'.",
         )
 
     def read_escaped_unicode_fixed_width(self, position: int) -> EscapeSequence:
@@ -368,7 +368,7 @@ class Lexer:
         raise GraphQLSyntaxError(
             self.source,
             position,
-            f"Invalid Unicode escape sequence: '{body[position: position + 6]}'.",
+            f"Invalid Unicode escape sequence: '{body[position : position + 6]}'.",
         )
 
     def read_escaped_character(self, position: int) -> EscapeSequence:
@@ -380,7 +380,7 @@ class Lexer:
         raise GraphQLSyntaxError(
             self.source,
             position,
-            f"Invalid character escape sequence: '{body[position: position + 2]}'.",
+            f"Invalid character escape sequence: '{body[position : position + 2]}'.",
         )
 
     def read_block_string(self, start: int) -> Token:

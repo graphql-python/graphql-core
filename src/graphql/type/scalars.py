@@ -315,7 +315,7 @@ specified_scalar_types: Mapping[str, GraphQLScalarType] = {
         GraphQLBoolean,
         GraphQLID,
     )
-}
+}  # pyright: ignore
 
 
 def is_specified_scalar_type(type_: GraphQLNamedType) -> TypeGuard[GraphQLScalarType]:

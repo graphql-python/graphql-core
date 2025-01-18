@@ -23,14 +23,14 @@ from graphql.utilities import build_schema
 def sync_and_async(spec):
     """Decorator for running a test synchronously and asynchronously."""
     return pytest.mark.asyncio(
-        pytest.mark.parametrize("sync", (True, False), ids=("sync", "async"))(spec)
+        pytest.mark.parametrize("sync", [True, False], ids=("sync", "async"))(spec)
     )
 
 
 def access_variants(spec):
     """Decorator for tests with dict and object access, including inheritance."""
     return pytest.mark.asyncio(
-        pytest.mark.parametrize("access", ("dict", "object", "inheritance"))(spec)
+        pytest.mark.parametrize("access", ["dict", "object", "inheritance"])(spec)
     )
 
 

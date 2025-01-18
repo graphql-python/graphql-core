@@ -375,8 +375,7 @@ def describe_visit_with_type_info():
 
         assert print_ast(edited_ast) == print_ast(
             parse(
-                "{ human(id: 4) { name, pets { __typename } },"
-                " alien { __typename } }"
+                "{ human(id: 4) { name, pets { __typename } }, alien { __typename } }"
             )
         )
 

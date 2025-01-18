@@ -224,7 +224,7 @@ def describe_graphql_error():
         extensions = {"foo": "bar "}
         e_full = GraphQLError("msg", field_node, None, None, path, None, extensions)
         assert str(e_full) == (
-            "msg\n\nGraphQL request:2:3\n" "1 | {\n2 |   field\n  |   ^\n3 | }"
+            "msg\n\nGraphQL request:2:3\n1 | {\n2 |   field\n  |   ^\n3 | }"
         )
         assert repr(e_full) == (
             "GraphQLError('msg', locations=[SourceLocation(line=2, column=3)],"

@@ -1363,8 +1363,7 @@ def describe_extend_schema():
         with pytest.raises(TypeError) as exc_info:
             extend_schema(schema, extend_ast)
         assert str(exc_info.value).startswith(
-            "Directive '@include' already exists in the schema."
-            " It cannot be redefined."
+            "Directive '@include' already exists in the schema. It cannot be redefined."
         )
 
     def does_not_allow_replacing_an_existing_enum_value():

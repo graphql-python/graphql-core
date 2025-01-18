@@ -78,7 +78,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
                 "article": GraphQLField(
                     BlogArticle,
                     args={"id": GraphQLArgument(GraphQLID)},
-                    resolve=lambda _obj, _info, id: Article(id),
+                    resolve=lambda _obj, _info, id: Article(id),  # noqa: A006
                 ),
                 "feed": GraphQLField(
                     GraphQLList(BlogArticle),

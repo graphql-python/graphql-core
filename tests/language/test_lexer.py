@@ -394,8 +394,7 @@ def describe_lexer():
             TokenKind.BLOCK_STRING, 0, 19, 1, 1, "slashes \\\\ \\/"
         )
         assert lex_one(
-            '"""\n\n        spans\n          multiple\n'
-            '            lines\n\n        """'
+            '"""\n\n        spans\n          multiple\n            lines\n\n        """'
         ) == Token(TokenKind.BLOCK_STRING, 0, 68, 1, 1, "spans\n  multiple\n    lines")
 
     def advance_line_after_lexing_multiline_block_string():

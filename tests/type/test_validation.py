@@ -242,8 +242,7 @@ def describe_type_system_a_schema_must_have_object_root_types():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Query root type must be Object type,"
-                " it cannot be Query.",
+                "message": "Query root type must be Object type, it cannot be Query.",
                 "locations": [(2, 13)],
             }
         ]

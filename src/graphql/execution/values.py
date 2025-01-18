@@ -175,8 +175,7 @@ def get_argument_values(
                 coerced_values[arg_def.out_name or name] = arg_def.default_value
             elif is_non_null_type(arg_type):  # pragma: no cover else
                 msg = (
-                    f"Argument '{name}' of required type '{arg_type}'"
-                    " was not provided."
+                    f"Argument '{name}' of required type '{arg_type}' was not provided."
                 )
                 raise GraphQLError(msg, node)
             continue  # pragma: no cover

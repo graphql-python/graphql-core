@@ -386,8 +386,7 @@ class GraphQLScalarType(GraphQLNamedType):
             self.parse_literal = parse_literal  # type: ignore
         if parse_literal is not None and parse_value is None:
             msg = (
-                f"{name} must provide"
-                " both 'parse_value' and 'parse_literal' functions."
+                f"{name} must provide both 'parse_value' and 'parse_literal' functions."
             )
             raise TypeError(msg)
         self.specified_by_url = specified_by_url

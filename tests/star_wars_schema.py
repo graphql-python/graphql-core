@@ -140,8 +140,7 @@ human_type = GraphQLObjectType(
         "name": GraphQLField(GraphQLString, description="The name of the human."),
         "friends": GraphQLField(
             GraphQLList(character_interface),
-            description="The friends of the human,"
-            " or an empty list if they have none.",
+            description="The friends of the human, or an empty list if they have none.",
             resolve=lambda human, _info: get_friends(human),
         ),
         "appearsIn": GraphQLField(
@@ -182,8 +181,7 @@ droid_type = GraphQLObjectType(
         "name": GraphQLField(GraphQLString, description="The name of the droid."),
         "friends": GraphQLField(
             GraphQLList(character_interface),
-            description="The friends of the droid,"
-            " or an empty list if they have none.",
+            description="The friends of the droid, or an empty list if they have none.",
             resolve=lambda droid, _info: get_friends(droid),
         ),
         "appearsIn": GraphQLField(
@@ -238,7 +236,7 @@ query_type = GraphQLObjectType(
                     GraphQLNonNull(GraphQLString), description="id of the human"
                 )
             },
-            resolve=lambda _source, _info, id: get_human(id),
+            resolve=lambda _source, _info, id: get_human(id),  # noqa: A006
         ),
         "droid": GraphQLField(
             droid_type,
@@ -247,7 +245,7 @@ query_type = GraphQLObjectType(
                     GraphQLNonNull(GraphQLString), description="id of the droid"
                 )
             },
-            resolve=lambda _source, _info, id: get_droid(id),
+            resolve=lambda _source, _info, id: get_droid(id),  # noqa: A006
         ),
     },
 )

@@ -71,8 +71,7 @@ def describe_validate_supports_full_validation():
             "Cannot query field 'human' on type 'QueryRoot'. Did you mean 'human'?",
             "Cannot query field 'meowsVolume' on type 'Cat'."
             " Did you mean 'meowsVolume'?",
-            "Cannot query field 'barkVolume' on type 'Dog'."
-            " Did you mean 'barkVolume'?",
+            "Cannot query field 'barkVolume' on type 'Dog'. Did you mean 'barkVolume'?",
         ]
 
     def validates_using_a_custom_rule():

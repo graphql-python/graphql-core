@@ -47,8 +47,7 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
             elif field_name in field_names:
                 self.report_error(
                     GraphQLError(
-                        f"Field '{type_name}.{field_name}'"
-                        " can only be defined once.",
+                        f"Field '{type_name}.{field_name}' can only be defined once.",
                         [field_names[field_name], field_def.name],
                     )
                 )

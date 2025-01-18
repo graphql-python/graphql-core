@@ -639,8 +639,7 @@ _TypeKind: GraphQLEnumType = GraphQLEnumType(
         ),
         "NON_NULL": GraphQLEnumValue(
             TypeKind.NON_NULL,
-            description="Indicates this type is a non-null."
-            " `ofType` is a valid field.",
+            description="Indicates this type is a non-null. `ofType` is a valid field.",
         ),
     },
 )

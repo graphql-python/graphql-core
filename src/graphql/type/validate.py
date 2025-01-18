@@ -454,8 +454,7 @@ class SchemaValidationContext:
 
         if not fields:
             self.report_error(
-                f"Input Object type {input_obj.name}"
-                " must define one or more fields.",
+                f"Input Object type {input_obj.name} must define one or more fields.",
                 [input_obj.ast_node, *input_obj.extension_ast_nodes],
             )
 

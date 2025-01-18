@@ -198,8 +198,7 @@ def describe_type_system_scalars():
         with pytest.raises(TypeError) as exc_info:
             GraphQLScalarType("SomeScalar", parse_literal=parse_literal)
         assert str(exc_info.value) == (
-            "SomeScalar must provide both"
-            " 'parse_value' and 'parse_literal' functions."
+            "SomeScalar must provide both 'parse_value' and 'parse_literal' functions."
         )
 
     def pickles_a_custom_scalar_type():
