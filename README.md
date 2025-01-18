@@ -10,14 +10,14 @@ a query language for APIs created by Facebook.
 ![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-An extensive test suite with over 2300 unit tests and 100% coverage comprises a
-replication of the complete test suite of GraphQL.js, making sure this port is
-reliable and compatible with GraphQL.js.
+An extensive test suite with over 2200 unit tests and 100% coverage replicates the
+complete test suite of GraphQL.js, ensuring that this port is reliable and compatible
+with GraphQL.js.
 
-The current stable version 3.2.4 of GraphQL-core is up-to-date with GraphQL.js
-version 16.8.2 and supports Python version 3.6 to 3.12.
+The current stable version 3.2.5 of GraphQL-core is up-to-date with GraphQL.js
+version 16.8.2 and supports Python versions 3.6 to 3.13.
 
-You can also try out the latest alpha version 3.3.0a6 of GraphQL-core
+You can also try out the latest alpha version 3.3.0a6 of GraphQL-core,
 which is up-to-date with GraphQL.js version 17.0.0a2.
 Please note that this new minor version of GraphQL-core does not support
 Python 3.6 anymore.
@@ -26,13 +26,12 @@ Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
 Changes in the major version of GraphQL.js are reflected in the minor version of
 GraphQL-core instead. This means there can be breaking changes in the API
 when the minor version changes, and only patch releases are fully backward compatible.
-Therefore, we recommend something like `=~ 3.2.0` as version specifier
+Therefore, we recommend using something like `~= 3.2.0` as the version specifier
 when including GraphQL-core as a dependency.
-
 
 ## Documentation
 
-A more detailed documentation for GraphQL-core 3 can be found at
+More detailed documentation for GraphQL-core 3 can be found at
 [graphql-core-3.readthedocs.io](https://graphql-core-3.readthedocs.io/).
 
 The documentation for GraphQL.js can be found at [graphql.org/graphql-js/](https://graphql.org/graphql-js/).
@@ -47,10 +46,10 @@ examples.
 
 A general overview of GraphQL is available in the
 [README](https://github.com/graphql/graphql-spec/blob/main/README.md) for the
-[Specification for GraphQL](https://github.com/graphql/graphql-spec). That overview
-describes a simple set of GraphQL examples that exist as [tests](tests) in this
-repository. A good way to get started with this repository is to walk through that
-README and the corresponding tests in parallel.
+[Specification for GraphQL](https://github.com/graphql/graphql-spec). This overview
+includes a simple set of GraphQL examples that are also available as [tests](tests)
+in this repository. A good way to get started with this repository is to walk through
+that README and the corresponding tests in parallel.
 
 
 ## Installation
@@ -174,17 +173,17 @@ asyncio.run(main())
 
 ## Goals and restrictions
 
-GraphQL-core tries to reproduce the code of the reference implementation GraphQL.js
-in Python as closely as possible and to stay up-to-date with the latest development of
-GraphQL.js.
+GraphQL-core aims to reproduce the code of the reference implementation GraphQL.js
+in Python as closely as possible while staying up-to-date with the latest development
+of GraphQL.js.
 
-GraphQL-core 3 (formerly known as GraphQL-core-next) has been created as a modern
+GraphQL-core 3 (formerly known as GraphQL-core-next) was created as a modern
 alternative to [GraphQL-core 2](https://github.com/graphql-python/graphql-core-legacy),
-a prior work by Syrus Akbary, based on an older version of GraphQL.js and also
-targeting older Python versions. Some parts of GraphQL-core 3 have been inspired by
-GraphQL-core 2 or directly taken over with only slight modifications, but most of the
-code has been re-implemented from scratch, replicating the latest code in GraphQL.js
-very closely and adding type hints for Python.
+a prior work by Syrus Akbary based on an older version of GraphQL.js that still
+supported legacy Python versions. While some parts of GraphQL-core 3 were inspired by
+GraphQL-core 2 or directly taken over with slight modifications, most of the code has
+been re-implemented from scratch. This re-implementation closely replicates the latest
+code in GraphQL.js and adds type hints for Python.
 
 Design goals for the GraphQL-core 3 library were:
 
