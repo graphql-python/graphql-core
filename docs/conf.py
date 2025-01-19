@@ -153,6 +153,7 @@ EnterLeaveVisitor
 ExperimentalIncrementalExecutionResults
 FieldGroup
 FormattedIncrementalResult
+FormattedPendingResult
 FormattedSourceLocation
 GraphQLAbstractType
 GraphQLCompositeType
@@ -167,6 +168,7 @@ IncrementalDataRecord
 IncrementalResult
 InitialResultRecord
 Middleware
+PendingResult
 StreamItemsRecord
 StreamRecord
 SubsequentDataRecord
@@ -183,8 +185,10 @@ graphql.execution.incremental_publisher.CompletedResult
 graphql.execution.incremental_publisher.DeferredFragmentRecord
 graphql.execution.incremental_publisher.DeferredGroupedFieldSetRecord
 graphql.execution.incremental_publisher.FormattedCompletedResult
+graphql.execution.incremental_publisher.FormattedPendingResult
 graphql.execution.incremental_publisher.IncrementalPublisher
 graphql.execution.incremental_publisher.InitialResultRecord
+graphql.execution.incremental_publisher.PendingResult
 graphql.execution.incremental_publisher.StreamItemsRecord
 graphql.execution.incremental_publisher.StreamRecord
 graphql.execution.Middleware

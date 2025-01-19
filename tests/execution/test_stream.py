@@ -199,9 +199,9 @@ def describe_execute_stream_directive():
         assert result != tuple(args.values())[:1]
         assert result != (["hello", "world"], [])
         assert result == args
-        assert result == dict(list(args.items())[:2])
-        assert result == dict(list(args.items())[:3])
-        assert result != dict(list(args.items())[:2] + [("path", ["foo", 2])])
+        assert result != {**args, "items": ["hello", "foo"]}
+        assert result != {**args, "errors": []}
+        assert result != {**args, "path": ["foo", 2]}
         assert result != {**args, "extensions": {"baz": 1}}
 
     @pytest.mark.asyncio
@@ -215,6 +215,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "scalarList": ["apple"],
                 },
+                "pending": [{"path": ["scalarList"]}],
                 "hasNext": True,
             },
             {
@@ -239,6 +240,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "scalarList": [],
                 },
+                "pending": [{"path": ["scalarList"]}],
                 "hasNext": True,
             },
             {
@@ -305,6 +307,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "scalarList": ["apple"],
                 },
+                "pending": [{"path": ["scalarList"], "label": "scalar-stream"}],
                 "hasNext": True,
             },
             {
@@ -375,6 +378,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "scalarList": ["apple", "banana"],
                 },
+                "pending": [{"path": ["scalarList"]}],
                 "hasNext": True,
             },
             {
@@ -407,6 +411,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "scalarListList": [["apple", "apple", "apple"]],
                 },
+                "pending": [{"path": ["scalarListList"]}],
                 "hasNext": True,
             },
             {
@@ -458,6 +463,7 @@ def describe_execute_stream_directive():
                         {"name": "Han", "id": "2"},
                     ],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -495,6 +501,7 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"friendList": []},
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -562,6 +569,7 @@ def describe_execute_stream_directive():
                         {"name": "Han", "id": "2"},
                     ]
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -612,6 +620,7 @@ def describe_execute_stream_directive():
                         "path": ["friendList", 1],
                     }
                 ],
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -655,6 +664,7 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"friendList": [{"name": "Luke", "id": "1"}]},
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -706,6 +716,7 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"friendList": []},
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -767,6 +778,7 @@ def describe_execute_stream_directive():
                         {"name": "Han", "id": "2"},
                     ]
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -840,6 +852,7 @@ def describe_execute_stream_directive():
                             {"name": "Han", "id": "2"},
                         ]
                     },
+                    "pending": [{"path": ["friendList"]}],
                     "hasNext": True,
                 },
             },
@@ -914,6 +927,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "friendList": [{"name": "Luke", "id": "1"}],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -953,6 +967,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"name": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -998,6 +1013,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"name": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -1037,6 +1053,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "scalarList": ["Luke"],
                 },
+                "pending": [{"path": ["scalarList"]}],
                 "hasNext": True,
             },
             {
@@ -1090,6 +1107,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "friendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -1151,6 +1169,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "friendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -1213,6 +1232,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -1263,6 +1283,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -1315,6 +1336,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "friendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -1381,6 +1403,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -1443,6 +1466,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -1512,6 +1536,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"nonNullName": "Luke"}],
                 },
+                "pending": [{"path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
@@ -1666,6 +1691,10 @@ def describe_execute_stream_directive():
                     "otherNestedObject": {},
                     "nestedObject": {"nestedFriendList": []},
                 },
+                "pending": [
+                    {"path": ["otherNestedObject"]},
+                    {"path": ["nestedObject", "nestedFriendList"]},
+                ],
                 "hasNext": True,
             },
             {
@@ -1738,6 +1767,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "nestedObject": {},
                 },
+                "pending": [{"path": ["nestedObject"]}],
                 "hasNext": True,
             },
             {
@@ -1801,6 +1831,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "friendList": [],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -1875,7 +1906,11 @@ def describe_execute_stream_directive():
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
-        assert result1 == {"data": {"nestedObject": {}}, "hasNext": True}
+        assert result1 == {
+            "data": {"nestedObject": {}},
+            "pending": [{"path": ["nestedObject"]}],
+            "hasNext": True,
+        }
 
         assert not finished
 
@@ -1944,6 +1979,7 @@ def describe_execute_stream_directive():
                 "data": {
                     "friendList": [{"id": "1", "name": "Luke"}],
                 },
+                "pending": [{"path": ["friendList"]}],
                 "hasNext": True,
             },
             {
@@ -2012,6 +2048,10 @@ def describe_execute_stream_directive():
                         "nestedFriendList": [],
                     },
                 },
+                "pending": [
+                    {"path": ["nestedObject"]},
+                    {"path": ["nestedObject", "nestedFriendList"]},
+                ],
                 "hasNext": True,
             },
             {
@@ -2082,11 +2122,16 @@ def describe_execute_stream_directive():
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
-        assert result1 == {"data": {"nestedObject": {}}, "hasNext": True}
+        assert result1 == {
+            "data": {"nestedObject": {}},
+            "pending": [{"path": ["nestedObject"]}],
+            "hasNext": True,
+        }
 
         resolve_slow_field.set()
         result2 = await anext(iterator)
         assert result2.formatted == {
+            "pending": [{"path": ["nestedObject", "nestedFriendList"]}],
             "incremental": [
                 {
                     "data": {"scalarField": "slow", "nestedFriendList": []},
@@ -2166,11 +2211,19 @@ def describe_execute_stream_directive():
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
-        assert result1 == {"data": {"friendList": [{"id": "1"}]}, "hasNext": True}
+        assert result1 == {
+            "data": {"friendList": [{"id": "1"}]},
+            "pending": [
+                {"path": ["friendList", 0], "label": "DeferName"},
+                {"path": ["friendList"], "label": "stream-label"},
+            ],
+            "hasNext": True,
+        }
 
         resolve_iterable.set()
         result2 = await anext(iterator)
         assert result2.formatted == {
+            "pending": [{"path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [
                 {
                     "data": {"name": "Luke"},
@@ -2251,11 +2304,19 @@ def describe_execute_stream_directive():
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
-        assert result1 == {"data": {"friendList": [{"id": "1"}]}, "hasNext": True}
+        assert result1 == {
+            "data": {"friendList": [{"id": "1"}]},
+            "pending": [
+                {"path": ["friendList", 0], "label": "DeferName"},
+                {"path": ["friendList"], "label": "stream-label"},
+            ],
+            "hasNext": True,
+        }
 
         resolve_slow_field.set()
         result2 = await anext(iterator)
         assert result2.formatted == {
+            "pending": [{"path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [
                 {
                     "data": {"name": "Luke"},
@@ -2322,7 +2383,11 @@ def describe_execute_stream_directive():
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
-        assert result1 == {"data": {"friendList": [{"id": "1"}]}, "hasNext": True}
+        assert result1 == {
+            "data": {"friendList": [{"id": "1"}]},
+            "pending": [{"path": ["friendList", 0]}, {"path": ["friendList"]}],
+            "hasNext": True,
+        }
 
         await iterator.aclose()
         with pytest.raises(StopAsyncIteration):
@@ -2369,6 +2434,7 @@ def describe_execute_stream_directive():
         result1 = execute_result.initial_result
         assert result1 == {
             "data": {"friendList": [{"id": "1", "name": "Luke"}]},
+            "pending": [{"path": ["friendList"]}],
             "hasNext": True,
         }
 
@@ -2408,7 +2474,11 @@ def describe_execute_stream_directive():
         iterator = execute_result.subsequent_results
 
         result1 = execute_result.initial_result
-        assert result1 == {"data": {"friendList": [{"id": "1"}]}, "hasNext": True}
+        assert result1 == {
+            "data": {"friendList": [{"id": "1"}]},
+            "pending": [{"path": ["friendList", 0]}, {"path": ["friendList"]}],
+            "hasNext": True,
+        }
 
         with pytest.raises(RuntimeError, match="bad"):
             await iterator.athrow(RuntimeError("bad"))

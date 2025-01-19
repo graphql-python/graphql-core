@@ -55,15 +55,15 @@ def describe_execution_result():
         res = ExecutionResult(data, errors)
         assert res == {"data": data, "errors": errors}
         assert res == {"data": data, "errors": errors, "extensions": None}
-        assert res != {"data": data, "errors": None}
-        assert res != {"data": None, "errors": errors}
+        assert res == {"data": data, "errors": errors, "extensions": {}}
+        assert res != {"errors": errors}
+        assert res != {"data": data}
         assert res != {"data": data, "errors": errors, "extensions": extensions}
         res = ExecutionResult(data, errors, extensions)
-        assert res == {"data": data, "errors": errors}
         assert res == {"data": data, "errors": errors, "extensions": extensions}
-        assert res != {"data": data, "errors": None}
-        assert res != {"data": None, "errors": errors}
-        assert res != {"data": data, "errors": errors, "extensions": None}
+        assert res != {"errors": errors, "extensions": extensions}
+        assert res != {"data": data, "extensions": extensions}
+        assert res != {"data": data, "errors": errors}
 
     def compares_to_tuple():
         res = ExecutionResult(data, errors)

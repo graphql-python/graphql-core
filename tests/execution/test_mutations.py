@@ -242,7 +242,11 @@ def describe_execute_handles_mutation_execution_ordering():
             patches.append(patch.formatted)
 
         assert patches == [
-            {"data": {"first": {}, "second": {"theNumber": 2}}, "hasNext": True},
+            {
+                "data": {"first": {}, "second": {"theNumber": 2}},
+                "pending": [{"path": ["first"], "label": "defer-label"}],
+                "hasNext": True,
+            },
             {
                 "incremental": [
                     {
@@ -313,7 +317,11 @@ def describe_execute_handles_mutation_execution_ordering():
             patches.append(patch.formatted)
 
         assert patches == [
-            {"data": {"second": {"theNumber": 2}}, "hasNext": True},
+            {
+                "data": {"second": {"theNumber": 2}},
+                "pending": [{"path": [], "label": "defer-label"}],
+                "hasNext": True,
+            },
             {
                 "incremental": [
                     {

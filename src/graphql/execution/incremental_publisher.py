@@ -13,7 +13,6 @@ from typing import (
     Collection,
     Iterator,
     NamedTuple,
-    Sequence,
     Union,
 )
 
@@ -21,6 +20,8 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
+
+from ..pyutils import RefSet
 
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
@@ -53,6 +54,63 @@ __all__ = [
 ASYNC_DELAY = 1 / 512  # wait time in seconds for deferring execution
 
 suppress_key_error = suppress(KeyError)
+
+
+class FormattedPendingResult(TypedDict, total=False):
+    """Formatted pending execution result"""
+
+    path: list[str | int]
+    label: str
+
+
+class PendingResult:
+    """Pending execution result"""
+
+    path: list[str | int]
+    label: str | None
+
+    __slots__ = "label", "path"
+
+    def __init__(
+        self,
+        path: list[str | int],
+        label: str | None = None,
+    ) -> None:
+        self.path = path
+        self.label = label
+
+    def __repr__(self) -> str:
+        name = self.__class__.__name__
+        args: list[str] = [f"path={self.path!r}"]
+        if self.label:
+            args.append(f"label={self.label!r}")
+        return f"{name}({', '.join(args)})"
+
+    @property
+    def formatted(self) -> FormattedPendingResult:
+        """Get pending result formatted according to the specification."""
+        formatted: FormattedPendingResult = {"path": self.path}
+        if self.label is not None:
+            formatted["label"] = self.label
+        return formatted
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, dict):
+            return (other.get("path") or None) == (self.path or None) and (
+                other.get("label") or None
+            ) == (self.label or None)
+
+        if isinstance(other, tuple):
+            size = len(other)
+            return 1 < size < 3 and (self.path, self.label)[:size] == other
+        return (
+            isinstance(other, self.__class__)
+            and other.path == self.path
+            and other.label == self.label
+        )
+
+    def __ne__(self, other: object) -> bool:
+        return not self == other
 
 
 class FormattedCompletedResult(TypedDict, total=False):
@@ -93,7 +151,7 @@ class CompletedResult:
 
     @property
     def formatted(self) -> FormattedCompletedResult:
-        """Get execution result formatted according to the specification."""
+        """Get completed result formatted according to the specification."""
         formatted: FormattedCompletedResult = {"path": self.path}
         if self.label is not None:
             formatted["label"] = self.label
@@ -104,9 +162,9 @@ class CompletedResult:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
-                other.get("path") == self.path
-                and ("label" not in other or other["label"] == self.label)
-                and ("errors" not in other or other["errors"] == self.errors)
+                (other.get("path") or None) == (self.path or None)
+                and (other.get("label") or None) == (self.label or None)
+                and (other.get("errors") or None) == (self.errors or None)
             )
         if isinstance(other, tuple):
             size = len(other)
@@ -125,6 +183,7 @@ class CompletedResult:
 class IncrementalUpdate(NamedTuple):
     """Incremental update"""
 
+    pending: list[PendingResult]
     incremental: list[IncrementalResult]
     completed: list[CompletedResult]
 
@@ -181,13 +240,11 @@ class ExecutionResult:
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
-            if "extensions" not in other:
-                return other == {"data": self.data, "errors": self.errors}
-            return other == {
-                "data": self.data,
-                "errors": self.errors,
-                "extensions": self.extensions,
-            }
+            return (
+                (other.get("data") == self.data)
+                and (other.get("errors") or None) == (self.errors or None)
+                and (other.get("extensions") or None) == (self.extensions or None)
+            )
         if isinstance(other, tuple):
             if len(other) == 2:
                 return other == (self.data, self.errors)
@@ -208,40 +265,42 @@ class FormattedInitialIncrementalExecutionResult(TypedDict, total=False):
 
     data: dict[str, Any] | None
     errors: list[GraphQLFormattedError]
+    pending: list[FormattedPendingResult]
     hasNext: bool
     incremental: list[FormattedIncrementalResult]
     extensions: dict[str, Any]
 
 
 class InitialIncrementalExecutionResult:
-    """Initial incremental execution result.
-
-    - ``has_next`` is True if a future payload is expected.
-    - ``incremental`` is a list of the results from defer/stream directives.
-    """
+    """Initial incremental execution result."""
 
     data: dict[str, Any] | None
     errors: list[GraphQLError] | None
+    pending: list[PendingResult]
     has_next: bool
     extensions: dict[str, Any] | None
 
-    __slots__ = "data", "errors", "extensions", "has_next"
+    __slots__ = "data", "errors", "extensions", "has_next", "pending"
 
     def __init__(
         self,
         data: dict[str, Any] | None = None,
         errors: list[GraphQLError] | None = None,
+        pending: list[PendingResult] | None = None,
         has_next: bool = False,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
         self.errors = errors
+        self.pending = pending or []
         self.has_next = has_next
         self.extensions = extensions
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
         args: list[str] = [f"data={self.data!r}, errors={self.errors!r}"]
+        if self.pending:
+            args.append(f"pending={self.pending!r}")
         if self.has_next:
             args.append("has_next")
         if self.extensions:
@@ -254,6 +313,7 @@ class InitialIncrementalExecutionResult:
         formatted: FormattedInitialIncrementalExecutionResult = {"data": self.data}
         if self.errors is not None:
             formatted["errors"] = [error.formatted for error in self.errors]
+        formatted["pending"] = [pending.formatted for pending in self.pending]
         formatted["hasNext"] = self.has_next
         if self.extensions is not None:
             formatted["extensions"] = self.extensions
@@ -263,19 +323,19 @@ class InitialIncrementalExecutionResult:
         if isinstance(other, dict):
             return (
                 other.get("data") == self.data
-                and other.get("errors") == self.errors
-                and ("hasNext" not in other or other["hasNext"] == self.has_next)
-                and (
-                    "extensions" not in other or other["extensions"] == self.extensions
-                )
+                and (other.get("errors") or None) == (self.errors or None)
+                and (other.get("pending") or None) == (self.pending or None)
+                and (other.get("hasNext") or None) == (self.has_next or None)
+                and (other.get("extensions") or None) == (self.extensions or None)
             )
         if isinstance(other, tuple):
             size = len(other)
             return (
-                1 < size < 5
+                1 < size < 6
                 and (
                     self.data,
                     self.errors,
+                    self.pending,
                     self.has_next,
                     self.extensions,
                 )[:size]
@@ -285,6 +345,7 @@ class InitialIncrementalExecutionResult:
             isinstance(other, self.__class__)
             and other.data == self.data
             and other.errors == self.errors
+            and other.pending == self.pending
             and other.has_next == self.has_next
             and other.extensions == self.extensions
         )
@@ -356,11 +417,9 @@ class IncrementalDeferResult:
         if isinstance(other, dict):
             return (
                 other.get("data") == self.data
-                and other.get("errors") == self.errors
-                and ("path" not in other or other["path"] == self.path)
-                and (
-                    "extensions" not in other or other["extensions"] == self.extensions
-                )
+                and (other.get("errors") or None) == (self.errors or None)
+                and (other.get("path") or None) == (self.path or None)
+                and (other.get("extensions") or None) == (self.extensions or None)
             )
         if isinstance(other, tuple):
             size = len(other)
@@ -435,12 +494,10 @@ class IncrementalStreamResult:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
-                other.get("items") == self.items
-                and other.get("errors") == self.errors
-                and ("path" not in other or other["path"] == self.path)
-                and (
-                    "extensions" not in other or other["extensions"] == self.extensions
-                )
+                (other.get("items") or None) == (self.items or None)
+                and (other.get("errors") or None) == (self.errors or None)
+                and (other.get("path", None) == (self.path or None))
+                and (other.get("extensions", None) == (self.extensions or None))
             )
         if isinstance(other, tuple):
             size = len(other)
@@ -472,33 +529,33 @@ class FormattedSubsequentIncrementalExecutionResult(TypedDict, total=False):
     """Formatted subsequent incremental execution result"""
 
     hasNext: bool
+    pending: list[FormattedPendingResult]
     incremental: list[FormattedIncrementalResult]
     completed: list[FormattedCompletedResult]
     extensions: dict[str, Any]
 
 
 class SubsequentIncrementalExecutionResult:
-    """Subsequent incremental execution result.
+    """Subsequent incremental execution result."""
 
-    - ``has_next`` is True if a future payload is expected.
-    - ``incremental`` is a list of the results from defer/stream directives.
-    """
-
-    __slots__ = "completed", "extensions", "has_next", "incremental"
+    __slots__ = "completed", "extensions", "has_next", "incremental", "pending"
 
     has_next: bool
-    incremental: Sequence[IncrementalResult] | None
-    completed: Sequence[CompletedResult] | None
+    pending: list[PendingResult] | None
+    incremental: list[IncrementalResult] | None
+    completed: list[CompletedResult] | None
     extensions: dict[str, Any] | None
 
     def __init__(
         self,
         has_next: bool = False,
-        incremental: Sequence[IncrementalResult] | None = None,
-        completed: Sequence[CompletedResult] | None = None,
+        pending: list[PendingResult] | None = None,
+        incremental: list[IncrementalResult] | None = None,
+        completed: list[CompletedResult] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         self.has_next = has_next
+        self.pending = pending or []
         self.incremental = incremental
         self.completed = completed
         self.extensions = extensions
@@ -508,6 +565,8 @@ class SubsequentIncrementalExecutionResult:
         args: list[str] = []
         if self.has_next:
             args.append("has_next")
+        if self.pending:
+            args.append(f"pending[{len(self.pending)}]")
         if self.incremental:
             args.append(f"incremental[{len(self.incremental)}]")
         if self.completed:
@@ -521,6 +580,8 @@ class SubsequentIncrementalExecutionResult:
         """Get execution result formatted according to the specification."""
         formatted: FormattedSubsequentIncrementalExecutionResult = {}
         formatted["hasNext"] = self.has_next
+        if self.pending:
+            formatted["pending"] = [result.formatted for result in self.pending]
         if self.incremental:
             formatted["incremental"] = [result.formatted for result in self.incremental]
         if self.completed:
@@ -532,22 +593,19 @@ class SubsequentIncrementalExecutionResult:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
-                ("hasNext" in other and other["hasNext"] == self.has_next)
-                and (
-                    "incremental" not in other
-                    or other["incremental"] == self.incremental
-                )
-                and ("completed" not in other or other["completed"] == self.completed)
-                and (
-                    "extensions" not in other or other["extensions"] == self.extensions
-                )
+                (other.get("hasNext") or None) == (self.has_next or None)
+                and (other.get("pending") or None) == (self.pending or None)
+                and (other.get("incremental") or None) == (self.incremental or None)
+                and (other.get("completed") or None) == (self.completed or None)
+                and (other.get("extensions") or None) == (self.extensions or None)
             )
         if isinstance(other, tuple):
             size = len(other)
             return (
-                1 < size < 5
+                1 < size < 6
                 and (
                     self.has_next,
+                    self.pending,
                     self.incremental,
                     self.completed,
                     self.extensions,
@@ -557,6 +615,7 @@ class SubsequentIncrementalExecutionResult:
         return (
             isinstance(other, self.__class__)
             and other.has_next == self.has_next
+            and self.pending == other.pending
             and other.incremental == self.incremental
             and other.completed == self.completed
             and other.extensions == self.extensions
@@ -729,11 +788,19 @@ class IncrementalPublisher:
                     error.message,
                 )
             )
-        if self._pending:
+        pending = self._pending
+        if pending:
+            pending_sources: RefSet[DeferredFragmentRecord | StreamRecord] = RefSet(
+                subsequent_result_record.stream_record
+                if isinstance(subsequent_result_record, StreamItemsRecord)
+                else subsequent_result_record
+                for subsequent_result_record in pending
+            )
             return ExperimentalIncrementalExecutionResults(
                 initial_result=InitialIncrementalExecutionResult(
                     data,
                     errors,
+                    pending=self._pending_sources_to_results(pending_sources),
                     has_next=True,
                 ),
                 subsequent_results=self._subscribe(),
@@ -782,6 +849,19 @@ class IncrementalPublisher:
                 early_returns.append(early_return())
         if early_returns:
             self._add_task(gather(*early_returns))
+
+    def _pending_sources_to_results(
+        self,
+        pending_sources: RefSet[DeferredFragmentRecord | StreamRecord],
+    ) -> list[PendingResult]:
+        """Convert pending sources to pending results."""
+        pending_results: list[PendingResult] = []
+        for pending_source in pending_sources:
+            pending_source.pending_sent = True
+            pending_results.append(
+                PendingResult(pending_source.path, pending_source.label)
+            )
+        return pending_results
 
     async def _subscribe(
         self,
@@ -854,14 +934,18 @@ class IncrementalPublisher:
     ) -> SubsequentIncrementalExecutionResult | None:
         """Get the incremental result with the completed records."""
         update = self._process_pending(completed_records)
-        incremental, completed = update.incremental, update.completed
+        pending, incremental, completed = (
+            update.pending,
+            update.incremental,
+            update.completed,
+        )
 
         has_next = bool(self._pending)
         if not incremental and not completed and has_next:
             return None
 
         return SubsequentIncrementalExecutionResult(
-            has_next, incremental or None, completed or None
+            has_next, pending or None, incremental or None, completed or None
         )
 
     def _process_pending(
@@ -869,6 +953,7 @@ class IncrementalPublisher:
         completed_records: Collection[SubsequentResultRecord],
     ) -> IncrementalUpdate:
         """Process the pending records."""
+        new_pending_sources: RefSet[DeferredFragmentRecord | StreamRecord] = RefSet()
         incremental_results: list[IncrementalResult] = []
         completed_results: list[CompletedResult] = []
         to_result = self._completed_record_to_result
@@ -876,13 +961,20 @@ class IncrementalPublisher:
             for child in subsequent_result_record.children:
                 if child.filtered:
                     continue
+                pending_source: DeferredFragmentRecord | StreamRecord = (
+                    child.stream_record
+                    if isinstance(child, StreamItemsRecord)
+                    else child
+                )
+                if not pending_source.pending_sent:
+                    new_pending_sources.add(pending_source)
                 self._publish(child)
             incremental_result: IncrementalResult
             if isinstance(subsequent_result_record, StreamItemsRecord):
                 if subsequent_result_record.is_final_record:
-                    completed_results.append(
-                        to_result(subsequent_result_record.stream_record)
-                    )
+                    stream_record = subsequent_result_record.stream_record
+                    new_pending_sources.discard(stream_record)
+                    completed_results.append(to_result(stream_record))
                 if subsequent_result_record.is_completed_async_iterator:
                     # async iterable resolver finished but there may be pending payload
                     continue
@@ -895,6 +987,7 @@ class IncrementalPublisher:
                 )
                 incremental_results.append(incremental_result)
             else:
+                new_pending_sources.discard(subsequent_result_record)
                 completed_results.append(to_result(subsequent_result_record))
                 if subsequent_result_record.errors:
                     continue
@@ -909,7 +1002,11 @@ class IncrementalPublisher:
                             deferred_grouped_field_set_record.path,
                         )
                         incremental_results.append(incremental_result)
-        return IncrementalUpdate(incremental_results, completed_results)
+        return IncrementalUpdate(
+            self._pending_sources_to_results(new_pending_sources),
+            incremental_results,
+            completed_results,
+        )
 
     @staticmethod
     def _completed_record_to_result(
@@ -1052,6 +1149,7 @@ class DeferredFragmentRecord:
     deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
     errors: list[GraphQLError]
     filtered: bool
+    pending_sent: bool
     _pending: dict[DeferredGroupedFieldSetRecord, None]
 
     def __init__(self, path: Path | None = None, label: str | None = None) -> None:
@@ -1059,6 +1157,7 @@ class DeferredFragmentRecord:
         self.label = label
         self.children = {}
         self.filtered = False
+        self.pending_sent = False
         self.deferred_grouped_field_set_records = {}
         self.errors = []
         self._pending = {}
@@ -1080,6 +1179,7 @@ class StreamRecord:
     path: list[str | int]
     errors: list[GraphQLError]
     early_return: Callable[[], Awaitable[Any]] | None
+    pending_sent: bool
 
     def __init__(
         self,
@@ -1091,6 +1191,7 @@ class StreamRecord:
         self.label = label
         self.errors = []
         self.early_return = early_return
+        self.pending_sent = False
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
