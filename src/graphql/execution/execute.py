@@ -1941,11 +1941,13 @@ def add_new_deferred_fragments(
        with the calculated parent has been added; the record will be released only
        after the parent has completed.
     """
-    new_defer_map: RefMap[DeferUsage, DeferredFragmentRecord]
     if not new_defer_usages:
         # Given no DeferUsages, return the existing map, creating one if necessary.
         return RefMap() if defer_map is None else defer_map
+
+    # Create a copy of the old map.
     new_defer_map = RefMap() if defer_map is None else RefMap(defer_map.items())
+
     # For each new DeferUsage object:
     for defer_usage in new_defer_usages:
         ancestors = defer_usage.ancestors
