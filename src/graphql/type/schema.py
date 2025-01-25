@@ -13,16 +13,17 @@ from typing import (
 )
 
 from ..error import GraphQLError
-from ..language import ast, OperationType
+from ..language import OperationType, ast
 from ..pyutils import inspect, is_collection, is_description
 from .definition import (
     GraphQLAbstractType,
-    GraphQLInterfaceType,
     GraphQLInputObjectType,
+    GraphQLInputType,
+    GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
-    GraphQLUnionType,
     GraphQLType,
+    GraphQLUnionType,
     GraphQLWrappingType,
     get_named_type,
     is_input_object_type,
@@ -31,7 +32,7 @@ from .definition import (
     is_union_type,
     is_wrapping_type,
 )
-from .directives import GraphQLDirective, specified_directives, is_directive
+from .directives import GraphQLDirective, is_directive, specified_directives
 from .introspection import introspection_types
 
 try:
@@ -310,8 +311,8 @@ class GraphQLSchema:
     def __deepcopy__(self, memo_: Dict) -> "GraphQLSchema":
         from ..type import (
             is_introspection_type,
-            is_specified_scalar_type,
             is_specified_directive,
+            is_specified_scalar_type,
         )
 
         type_map: TypeMap = {
@@ -326,6 +327,8 @@ class GraphQLSchema:
             directive if is_specified_directive(directive) else copy(directive)
             for directive in self.directives
         ]
+        for directive in directives:
+            remap_directive(directive, type_map)
         return self.__class__(
             self.query_type and cast(GraphQLObjectType, type_map[self.query_type.name]),
             self.mutation_type
@@ -461,12 +464,7 @@ def remapped_type(type_: GraphQLType, type_map: TypeMap) -> GraphQLType:
 
 def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
     """Change all references in the given named type to use this type map."""
-    if is_union_type(type_):
-        type_ = cast(GraphQLUnionType, type_)
-        type_.types = [
-            type_map.get(member_type.name, member_type) for member_type in type_.types
-        ]
-    elif is_object_type(type_) or is_interface_type(type_):
+    if is_object_type(type_) or is_interface_type(type_):
         type_ = cast(Union[GraphQLObjectType, GraphQLInterfaceType], type_)
         type_.interfaces = [
             type_map.get(interface_type.name, interface_type)
@@ -482,6 +480,11 @@ def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
                 arg.type = remapped_type(arg.type, type_map)
                 args[arg_name] = arg
             fields[field_name] = field
+    elif is_union_type(type_):
+        type_ = cast(GraphQLUnionType, type_)
+        type_.types = [
+            type_map.get(member_type.name, member_type) for member_type in type_.types
+        ]
     elif is_input_object_type(type_):
         type_ = cast(GraphQLInputObjectType, type_)
         fields = type_.fields
@@ -489,3 +492,11 @@ def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
             field = copy(field)
             field.type = remapped_type(field.type, type_map)
             fields[field_name] = field
+
+def remap_directive(directive: GraphQLDirective, type_map: TypeMap) -> None:
+    """Change all references in the given directive to use this type map."""
+    args = directive.args
+    for arg_name, arg in args.items():
+        arg = copy(arg)  # noqa: PLW2901
+        arg.type = cast(GraphQLInputType, remapped_type(arg.type, type_map))
+        args[arg_name] = arg
