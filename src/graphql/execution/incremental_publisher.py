@@ -1017,6 +1017,8 @@ class IncrementalPublisher:
                 if subsequent_result_record.stream_record.errors:
                     continue
                 incremental_result = IncrementalStreamResult(
+                    # safe because `items` is always defined
+                    # when the record is completed
                     subsequent_result_record.items,
                     # safe because `id` is defined
                     # once the stream has been released as pending
@@ -1068,6 +1070,7 @@ class IncrementalPublisher:
         sub_path = deferred_grouped_field_set_record.path[len(longest_path) :]
         id_ = record_with_longest_path.id
         return IncrementalDeferResult(
+            # safe because `data` is always defined when the record is completed
             data,  # type: ignore
             # safe because `id` is defined
             # once the fragment has been released as pending
@@ -1298,7 +1301,6 @@ class StreamItemsRecord:
         self.errors = []
         self.is_completed_async_iterator = self.is_completed = False
         self.is_final_record = self.filtered = False
-        self.items = []
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
