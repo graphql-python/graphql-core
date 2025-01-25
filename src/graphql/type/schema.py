@@ -21,6 +21,7 @@ from .definition import (
     GraphQLAbstractType,
     GraphQLCompositeType,
     GraphQLField,
+    GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
@@ -293,6 +294,8 @@ class GraphQLSchema:
             directive if is_specified_directive(directive) else copy(directive)
             for directive in self.directives
         ]
+        for directive in directives:
+            remap_directive(directive, type_map)
         return self.__class__(
             self.query_type and cast(GraphQLObjectType, type_map[self.query_type.name]),
             self.mutation_type
@@ -458,11 +461,7 @@ def remapped_type(type_: GraphQLType, type_map: TypeMap) -> GraphQLType:
 
 def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
     """Change all references in the given named type to use this type map."""
-    if is_union_type(type_):
-        type_.types = [
-            type_map.get(member_type.name, member_type) for member_type in type_.types
-        ]
-    elif is_object_type(type_) or is_interface_type(type_):
+    if is_object_type(type_) or is_interface_type(type_):
         type_.interfaces = [
             type_map.get(interface_type.name, interface_type)
             for interface_type in type_.interfaces
@@ -477,9 +476,22 @@ def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
                 arg.type = remapped_type(arg.type, type_map)
                 args[arg_name] = arg
             fields[field_name] = field
+    elif is_union_type(type_):
+        type_.types = [
+            type_map.get(member_type.name, member_type) for member_type in type_.types
+        ]
     elif is_input_object_type(type_):
         fields = type_.fields
         for field_name, field in fields.items():
             field = copy(field)  # noqa: PLW2901
             field.type = remapped_type(field.type, type_map)
             fields[field_name] = field
+
+
+def remap_directive(directive: GraphQLDirective, type_map: TypeMap) -> None:
+    """Change all references in the given directive to use this type map."""
+    args = directive.args
+    for arg_name, arg in args.items():
+        arg = copy(arg)  # noqa: PLW2901
+        arg.type = cast(GraphQLInputType, remapped_type(arg.type, type_map))
+        args[arg_name] = arg

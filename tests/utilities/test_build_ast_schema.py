@@ -1222,6 +1222,25 @@ def describe_schema_builder():
             # check that printing the copied schema gives the same SDL
             assert print_schema(copied) == sdl
 
+        def can_deep_copy_schema_with_directive_using_args_of_custom_type():
+            sdl = dedent("""
+                directive @someDirective(someArg: SomeEnum) on FIELD_DEFINITION
+
+                enum SomeEnum {
+                  ONE
+                  TWO
+                }
+
+                type Query {
+                  someField: String @someDirective(someArg: ONE)
+                }
+            """)
+            schema = build_schema(sdl)
+            copied = deepcopy(schema)
+            # custom directives on field definitions cannot be reproduced
+            expected_sdl = sdl.replace(" @someDirective(someArg: ONE)", "")
+            assert print_schema(copied) == expected_sdl
+
         def can_pickle_and_unpickle_star_wars_schema():
             # create a schema from the star wars SDL
             schema = build_schema(sdl, assume_valid_sdl=True)
