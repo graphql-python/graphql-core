@@ -261,12 +261,13 @@ GraphQLSpecifiedByDirective = GraphQLDirective(
     description="Exposes a URL that specifies the behavior of this scalar.",
 )
 
-# Used to declare an Input Object as a OneOf Input Objects.
+# Used to indicate an Input Object is a OneOf Input Object.
 GraphQLOneOfDirective = GraphQLDirective(
     name="oneOf",
     locations=[DirectiveLocation.INPUT_OBJECT],
     args={},
-    description="Indicates an Input Object is a OneOf Input Object.",
+    description="Indicates exactly one field must be supplied"
+    " and this field must not be `null`.",
 )
 
 specified_directives: tuple[GraphQLDirective, ...] = (
