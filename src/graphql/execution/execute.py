@@ -1925,15 +1925,38 @@ def add_new_deferred_fragments(
     defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None = None,
     path: Path | None = None,
 ) -> RefMap[DeferUsage, DeferredFragmentRecord]:
-    """Add new deferred fragments to the defer map."""
+    """Add new deferred fragments to the defer map.
+
+    Instantiates new DeferredFragmentRecords for the given path within an
+    incremental data record, returning an updated map of DeferUsage
+    objects to DeferredFragmentRecords.
+
+    Note: As defer directives may be used with operations returning lists,
+          a DeferUsage object may correspond to many DeferredFragmentRecords.
+
+    DeferredFragmentRecord creation includes the following steps:
+    1. The new DeferredFragmentRecord is instantiated at the given path.
+    2. The parent result record is calculated from the given incremental data record.
+    3. The IncrementalPublisher is notified that a new DeferredFragmentRecord
+       with the calculated parent has been added; the record will be released only
+       after the parent has completed.
+    """
     new_defer_map: RefMap[DeferUsage, DeferredFragmentRecord]
     if not new_defer_usages:
+        # Given no DeferUsages, return the existing map, creating one if necessary.
         return RefMap() if defer_map is None else defer_map
     new_defer_map = RefMap() if defer_map is None else RefMap(defer_map.items())
+    # For each new DeferUsage object:
     for defer_usage in new_defer_usages:
         ancestors = defer_usage.ancestors
         parent_defer_usage = ancestors[0] if ancestors else None
 
+        # If the parent target is defined, the parent target is a DeferUsage object
+        # and the parent result record is the DeferredFragmentRecord corresponding
+        # to that DeferUsage.
+        # If the parent target is not defined, the parent result record is either:
+        #  - the InitialResultRecord, or
+        #  - a StreamItemsRecord, as `@defer` may be nested under `@stream`.
         parent = (
             cast(Union[InitialResultRecord, StreamItemsRecord], incremental_data_record)
             if parent_defer_usage is None
@@ -1942,12 +1965,15 @@ def add_new_deferred_fragments(
             )
         )
 
+        # Instantiate the new record.
         deferred_fragment_record = DeferredFragmentRecord(path, defer_usage.label)
 
+        # Report the new record to the Incremental Publisher.
         incremental_publisher.report_new_defer_fragment_record(
             deferred_fragment_record, parent
         )
 
+        # Update the map.
         new_defer_map[defer_usage] = deferred_fragment_record
 
     return new_defer_map
