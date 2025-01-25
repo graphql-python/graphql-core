@@ -148,9 +148,9 @@ def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
 
 def describe_execute_stream_directive():
     def can_format_and_print_incremental_stream_result():
-        result = IncrementalStreamResult()
-        assert result.formatted == {"items": None}
-        assert str(result) == "IncrementalStreamResult(items=None, errors=None)"
+        result = IncrementalStreamResult(items=[], path=[])
+        assert result.formatted == {"items": [], "path": []}
+        assert str(result) == "IncrementalStreamResult(items=[], path=[])"
 
         result = IncrementalStreamResult(
             items=["hello", "world"],
@@ -166,7 +166,7 @@ def describe_execute_stream_directive():
         }
         assert (
             str(result) == "IncrementalStreamResult(items=['hello', 'world'],"
-            " errors=[GraphQLError('msg')], path=['foo', 1], extensions={'baz': 2})"
+            " path=['foo', 1], errors=[GraphQLError('msg')], extensions={'baz': 2})"
         )
 
     def can_print_stream_record():

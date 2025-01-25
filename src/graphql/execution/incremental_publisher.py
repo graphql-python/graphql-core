@@ -364,39 +364,39 @@ class ExperimentalIncrementalExecutionResults(NamedTuple):
 class FormattedIncrementalDeferResult(TypedDict, total=False):
     """Formatted incremental deferred execution result"""
 
-    data: dict[str, Any] | None
-    errors: list[GraphQLFormattedError]
+    data: dict[str, Any]
     path: list[str | int]
+    errors: list[GraphQLFormattedError]
     extensions: dict[str, Any]
 
 
 class IncrementalDeferResult:
     """Incremental deferred execution result"""
 
-    data: dict[str, Any] | None
+    data: dict[str, Any]
+    path: list[str | int]
     errors: list[GraphQLError] | None
-    path: list[str | int] | None
     extensions: dict[str, Any] | None
 
     __slots__ = "data", "errors", "extensions", "path"
 
     def __init__(
         self,
-        data: dict[str, Any] | None = None,
+        data: dict[str, Any],
+        path: list[str | int],
         errors: list[GraphQLError] | None = None,
-        path: list[str | int] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
-        self.errors = errors
         self.path = path
+        self.errors = errors
         self.extensions = extensions
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"data={self.data!r}, errors={self.errors!r}"]
-        if self.path:
-            args.append(f"path={self.path!r}")
+        args: list[str] = [f"data={self.data!r}, path={self.path!r}"]
+        if self.errors:
+            args.append(f"errors={self.errors!r}")
         if self.extensions:
             args.append(f"extensions={self.extensions}")
         return f"{name}({', '.join(args)})"
@@ -404,11 +404,12 @@ class IncrementalDeferResult:
     @property
     def formatted(self) -> FormattedIncrementalDeferResult:
         """Get execution result formatted according to the specification."""
-        formatted: FormattedIncrementalDeferResult = {"data": self.data}
+        formatted: FormattedIncrementalDeferResult = {
+            "data": self.data,
+            "path": self.path,
+        }
         if self.errors is not None:
             formatted["errors"] = [error.formatted for error in self.errors]
-        if self.path is not None:
-            formatted["path"] = self.path
         if self.extensions is not None:
             formatted["extensions"] = self.extensions
         return formatted
@@ -442,39 +443,39 @@ class IncrementalDeferResult:
 class FormattedIncrementalStreamResult(TypedDict, total=False):
     """Formatted incremental stream execution result"""
 
-    items: list[Any] | None
-    errors: list[GraphQLFormattedError]
+    items: list[Any]
     path: list[str | int]
+    errors: list[GraphQLFormattedError]
     extensions: dict[str, Any]
 
 
 class IncrementalStreamResult:
     """Incremental streamed execution result"""
 
-    items: list[Any] | None
+    items: list[Any]
+    path: list[str | int]
     errors: list[GraphQLError] | None
-    path: list[str | int] | None
     extensions: dict[str, Any] | None
 
     __slots__ = "errors", "extensions", "items", "label", "path"
 
     def __init__(
         self,
-        items: list[Any] | None = None,
+        items: list[Any],
+        path: list[str | int],
         errors: list[GraphQLError] | None = None,
-        path: list[str | int] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         self.items = items
-        self.errors = errors
         self.path = path
+        self.errors = errors
         self.extensions = extensions
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"items={self.items!r}, errors={self.errors!r}"]
-        if self.path:
-            args.append(f"path={self.path!r}")
+        args: list[str] = [f"items={self.items!r}, path={self.path!r}"]
+        if self.errors:
+            args.append(f"errors={self.errors!r}")
         if self.extensions:
             args.append(f"extensions={self.extensions}")
         return f"{name}({', '.join(args)})"
@@ -482,11 +483,12 @@ class IncrementalStreamResult:
     @property
     def formatted(self) -> FormattedIncrementalStreamResult:
         """Get execution result formatted according to the specification."""
-        formatted: FormattedIncrementalStreamResult = {"items": self.items}
-        if self.errors is not None:
+        formatted: FormattedIncrementalStreamResult = {
+            "items": self.items,
+            "path": self.path,
+        }
+        if self.errors:
             formatted["errors"] = [error.formatted for error in self.errors]
-        if self.path is not None:
-            formatted["path"] = self.path
         if self.extensions is not None:
             formatted["extensions"] = self.extensions
         return formatted
@@ -982,8 +984,8 @@ class IncrementalPublisher:
                     continue
                 incremental_result = IncrementalStreamResult(
                     subsequent_result_record.items,
-                    subsequent_result_record.errors or None,
                     subsequent_result_record.stream_record.path,
+                    subsequent_result_record.errors or None,
                 )
                 incremental_results.append(incremental_result)
             else:
@@ -997,9 +999,9 @@ class IncrementalPublisher:
                     if not deferred_grouped_field_set_record.sent:
                         deferred_grouped_field_set_record.sent = True
                         incremental_result = IncrementalDeferResult(
-                            deferred_grouped_field_set_record.data,
-                            deferred_grouped_field_set_record.errors or None,
+                            deferred_grouped_field_set_record.data,  # type: ignore
                             deferred_grouped_field_set_record.path,
+                            deferred_grouped_field_set_record.errors or None,
                         )
                         incremental_results.append(incremental_result)
         return IncrementalUpdate(

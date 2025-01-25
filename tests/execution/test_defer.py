@@ -256,9 +256,9 @@ def describe_execute_defer_directive():
         assert result != {**args, "errors": [{"message": "oops"}]}
 
     def can_format_and_print_incremental_defer_result():
-        result = IncrementalDeferResult()
-        assert result.formatted == {"data": None}
-        assert str(result) == "IncrementalDeferResult(data=None, errors=None)"
+        result = IncrementalDeferResult(data={}, path=[])
+        assert result.formatted == {"data": {}, "path": []}
+        assert str(result) == "IncrementalDeferResult(data={}, path=[])"
 
         result = IncrementalDeferResult(
             data={"hello": "world"},
@@ -274,7 +274,7 @@ def describe_execute_defer_directive():
         }
         assert (
             str(result) == "IncrementalDeferResult(data={'hello': 'world'},"
-            " errors=[GraphQLError('msg')], path=['foo', 1], extensions={'baz': 2})"
+            " path=['foo', 1], errors=[GraphQLError('msg')], extensions={'baz': 2})"
         )
 
     # noinspection PyTypeChecker
@@ -422,7 +422,7 @@ def describe_execute_defer_directive():
         assert str(result) == "SubsequentIncrementalExecutionResult(has_next)"
 
         pending = [PendingResult(["bar"])]
-        incremental = [cast(IncrementalResult, IncrementalDeferResult())]
+        incremental = [cast(IncrementalResult, IncrementalDeferResult({"one": 1}, [1]))]
         completed = [CompletedResult(["foo", 1])]
         result = SubsequentIncrementalExecutionResult(
             has_next=True,
@@ -434,7 +434,7 @@ def describe_execute_defer_directive():
         assert result.formatted == {
             "hasNext": True,
             "pending": [{"path": ["bar"]}],
-            "incremental": [{"data": None}],
+            "incremental": [{"data": {"one": 1}, "path": [1]}],
             "completed": [{"path": ["foo", 1]}],
             "extensions": {"baz": 2},
         }
@@ -445,7 +445,7 @@ def describe_execute_defer_directive():
 
     def can_compare_subsequent_incremental_execution_result():
         pending = [PendingResult(["bar"])]
-        incremental = [cast(IncrementalResult, IncrementalDeferResult())]
+        incremental = [cast(IncrementalResult, IncrementalDeferResult({"one": 1}, [1]))]
         completed = [CompletedResult(path=["foo", 1])]
         args: dict[str, Any] = {
             "has_next": True,
