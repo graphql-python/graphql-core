@@ -59,6 +59,7 @@ suppress_key_error = suppress(KeyError)
 class FormattedPendingResult(TypedDict, total=False):
     """Formatted pending execution result"""
 
+    id: str
     path: list[str | int]
     label: str
 
@@ -66,22 +67,25 @@ class FormattedPendingResult(TypedDict, total=False):
 class PendingResult:
     """Pending execution result"""
 
+    id: str
     path: list[str | int]
     label: str | None
 
-    __slots__ = "label", "path"
+    __slots__ = "id", "label", "path"
 
     def __init__(
         self,
+        id: str,  # noqa: A002
         path: list[str | int],
         label: str | None = None,
     ) -> None:
+        self.id = id
         self.path = path
         self.label = label
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"path={self.path!r}"]
+        args: list[str] = [f"id={self.id!r}, path={self.path!r}"]
         if self.label:
             args.append(f"label={self.label!r}")
         return f"{name}({', '.join(args)})"
@@ -89,22 +93,25 @@ class PendingResult:
     @property
     def formatted(self) -> FormattedPendingResult:
         """Get pending result formatted according to the specification."""
-        formatted: FormattedPendingResult = {"path": self.path}
+        formatted: FormattedPendingResult = {"id": self.id, "path": self.path}
         if self.label is not None:
             formatted["label"] = self.label
         return formatted
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
-            return (other.get("path") or None) == (self.path or None) and (
-                other.get("label") or None
-            ) == (self.label or None)
+            return (
+                other.get("id") == self.id
+                and (other.get("path") or None) == (self.path or None)
+                and (other.get("label") or None) == (self.label or None)
+            )
 
         if isinstance(other, tuple):
             size = len(other)
-            return 1 < size < 3 and (self.path, self.label)[:size] == other
+            return 1 < size < 4 and (self.id, self.path, self.label)[:size] == other
         return (
             isinstance(other, self.__class__)
+            and other.id == self.id
             and other.path == self.path
             and other.label == self.label
         )
@@ -116,35 +123,29 @@ class PendingResult:
 class FormattedCompletedResult(TypedDict, total=False):
     """Formatted completed execution result"""
 
-    path: list[str | int]
-    label: str
+    id: str
     errors: list[GraphQLFormattedError]
 
 
 class CompletedResult:
     """Completed execution result"""
 
-    path: list[str | int]
-    label: str | None
+    id: str
     errors: list[GraphQLError] | None
 
-    __slots__ = "errors", "label", "path"
+    __slots__ = "errors", "id"
 
     def __init__(
         self,
-        path: list[str | int],
-        label: str | None = None,
+        id: str,  # noqa: A002
         errors: list[GraphQLError] | None = None,
     ) -> None:
-        self.path = path
-        self.label = label
+        self.id = id
         self.errors = errors
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"path={self.path!r}"]
-        if self.label:
-            args.append(f"label={self.label!r}")
+        args: list[str] = [f"id={self.id!r}"]
         if self.errors:
             args.append(f"errors={self.errors!r}")
         return f"{name}({', '.join(args)})"
@@ -152,27 +153,22 @@ class CompletedResult:
     @property
     def formatted(self) -> FormattedCompletedResult:
         """Get completed result formatted according to the specification."""
-        formatted: FormattedCompletedResult = {"path": self.path}
-        if self.label is not None:
-            formatted["label"] = self.label
+        formatted: FormattedCompletedResult = {"id": self.id}
         if self.errors is not None:
             formatted["errors"] = [error.formatted for error in self.errors]
         return formatted
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
-            return (
-                (other.get("path") or None) == (self.path or None)
-                and (other.get("label") or None) == (self.label or None)
-                and (other.get("errors") or None) == (self.errors or None)
+            return other.get("id") == self.id and (other.get("errors") or None) == (
+                self.errors or None
             )
         if isinstance(other, tuple):
             size = len(other)
-            return 1 < size < 4 and (self.path, self.label, self.errors)[:size] == other
+            return 1 < size < 3 and (self.id, self.errors)[:size] == other
         return (
             isinstance(other, self.__class__)
-            and other.path == self.path
-            and other.label == self.label
+            and other.id == self.id
             and other.errors == self.errors
         )
 
@@ -222,7 +218,7 @@ class ExecutionResult:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        ext = "" if self.extensions is None else f", extensions={self.extensions}"
+        ext = "" if self.extensions is None else f", extensions={self.extensions!r}"
         return f"{name}(data={self.data!r}, errors={self.errors!r}{ext})"
 
     def __iter__(self) -> Iterator[Any]:
@@ -298,13 +294,15 @@ class InitialIncrementalExecutionResult:
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"data={self.data!r}, errors={self.errors!r}"]
+        args: list[str] = [f"data={self.data!r}"]
+        if self.errors:
+            args.append(f"errors={self.errors!r}")
         if self.pending:
             args.append(f"pending={self.pending!r}")
         if self.has_next:
             args.append("has_next")
         if self.extensions:
-            args.append(f"extensions={self.extensions}")
+            args.append(f"extensions={self.extensions!r}")
         return f"{name}({', '.join(args)})"
 
     @property
@@ -365,7 +363,8 @@ class FormattedIncrementalDeferResult(TypedDict, total=False):
     """Formatted incremental deferred execution result"""
 
     data: dict[str, Any]
-    path: list[str | int]
+    id: str
+    subPath: list[str | int]
     errors: list[GraphQLFormattedError]
     extensions: dict[str, Any]
 
@@ -374,31 +373,36 @@ class IncrementalDeferResult:
     """Incremental deferred execution result"""
 
     data: dict[str, Any]
-    path: list[str | int]
+    id: str
+    sub_path: list[str | int] | None
     errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "data", "errors", "extensions", "path"
+    __slots__ = "data", "errors", "extensions", "id", "sub_path"
 
     def __init__(
         self,
         data: dict[str, Any],
-        path: list[str | int],
+        id: str,  # noqa: A002
+        sub_path: list[str | int] | None = None,
         errors: list[GraphQLError] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         self.data = data
-        self.path = path
+        self.id = id
+        self.sub_path = sub_path
         self.errors = errors
         self.extensions = extensions
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"data={self.data!r}, path={self.path!r}"]
-        if self.errors:
+        args: list[str] = [f"data={self.data!r}, id={self.id!r}"]
+        if self.sub_path is not None:
+            args.append(f"sub_path={self.sub_path!r}")
+        if self.errors is not None:
             args.append(f"errors={self.errors!r}")
-        if self.extensions:
-            args.append(f"extensions={self.extensions}")
+        if self.extensions is not None:
+            args.append(f"extensions={self.extensions!r}")
         return f"{name}({', '.join(args)})"
 
     @property
@@ -406,8 +410,10 @@ class IncrementalDeferResult:
         """Get execution result formatted according to the specification."""
         formatted: FormattedIncrementalDeferResult = {
             "data": self.data,
-            "path": self.path,
+            "id": self.id,
         }
+        if self.sub_path is not None:
+            formatted["subPath"] = self.sub_path
         if self.errors is not None:
             formatted["errors"] = [error.formatted for error in self.errors]
         if self.extensions is not None:
@@ -418,21 +424,26 @@ class IncrementalDeferResult:
         if isinstance(other, dict):
             return (
                 other.get("data") == self.data
+                and other.get("id") == self.id
+                and (other.get("subPath") or None) == (self.sub_path or None)
                 and (other.get("errors") or None) == (self.errors or None)
-                and (other.get("path") or None) == (self.path or None)
                 and (other.get("extensions") or None) == (self.extensions or None)
             )
         if isinstance(other, tuple):
             size = len(other)
             return (
-                1 < size < 5
-                and (self.data, self.errors, self.path, self.extensions)[:size] == other
+                1 < size < 6
+                and (self.data, self.id, self.sub_path, self.errors, self.extensions)[
+                    :size
+                ]
+                == other
             )
         return (
             isinstance(other, self.__class__)
             and other.data == self.data
+            and other.id == self.id
+            and other.sub_path == self.sub_path
             and other.errors == self.errors
-            and other.path == self.path
             and other.extensions == self.extensions
         )
 
@@ -444,7 +455,8 @@ class FormattedIncrementalStreamResult(TypedDict, total=False):
     """Formatted incremental stream execution result"""
 
     items: list[Any]
-    path: list[str | int]
+    id: str
+    subPath: list[str | int]
     errors: list[GraphQLFormattedError]
     extensions: dict[str, Any]
 
@@ -453,31 +465,36 @@ class IncrementalStreamResult:
     """Incremental streamed execution result"""
 
     items: list[Any]
-    path: list[str | int]
+    id: str
+    sub_path: list[str | int] | None
     errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "errors", "extensions", "items", "label", "path"
+    __slots__ = "errors", "extensions", "id", "items", "label", "sub_path"
 
     def __init__(
         self,
         items: list[Any],
-        path: list[str | int],
+        id: str,  # noqa: A002
+        sub_path: list[str | int] | None = None,
         errors: list[GraphQLError] | None = None,
         extensions: dict[str, Any] | None = None,
     ) -> None:
         self.items = items
-        self.path = path
+        self.id = id
+        self.sub_path = sub_path
         self.errors = errors
         self.extensions = extensions
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"items={self.items!r}, path={self.path!r}"]
-        if self.errors:
+        args: list[str] = [f"items={self.items!r}, id={self.id!r}"]
+        if self.sub_path is not None:
+            args.append(f"sub_path={self.sub_path!r}")
+        if self.errors is not None:
             args.append(f"errors={self.errors!r}")
-        if self.extensions:
-            args.append(f"extensions={self.extensions}")
+        if self.extensions is not None:
+            args.append(f"extensions={self.extensions!r}")
         return f"{name}({', '.join(args)})"
 
     @property
@@ -485,9 +502,11 @@ class IncrementalStreamResult:
         """Get execution result formatted according to the specification."""
         formatted: FormattedIncrementalStreamResult = {
             "items": self.items,
-            "path": self.path,
+            "id": self.id,
         }
-        if self.errors:
+        if self.sub_path is not None:
+            formatted["subPath"] = self.sub_path
+        if self.errors is not None:
             formatted["errors"] = [error.formatted for error in self.errors]
         if self.extensions is not None:
             formatted["extensions"] = self.extensions
@@ -496,23 +515,27 @@ class IncrementalStreamResult:
     def __eq__(self, other: object) -> bool:
         if isinstance(other, dict):
             return (
-                (other.get("items") or None) == (self.items or None)
+                other.get("items") == self.items
+                and other.get("id") == self.id
+                and (other.get("subPath", None) == (self.sub_path or None))
                 and (other.get("errors") or None) == (self.errors or None)
-                and (other.get("path", None) == (self.path or None))
                 and (other.get("extensions", None) == (self.extensions or None))
             )
         if isinstance(other, tuple):
             size = len(other)
             return (
-                1 < size < 5
-                and (self.items, self.errors, self.path, self.extensions)[:size]
+                1 < size < 6
+                and (self.items, self.id, self.sub_path, self.errors, self.extensions)[
+                    :size
+                ]
                 == other
             )
         return (
             isinstance(other, self.__class__)
             and other.items == self.items
+            and other.id == self.id
+            and other.sub_path == self.sub_path
             and other.errors == self.errors
-            and other.path == self.path
             and other.extensions == self.extensions
         )
 
@@ -574,7 +597,7 @@ class SubsequentIncrementalExecutionResult:
         if self.completed:
             args.append(f"completed[{len(self.completed)}]")
         if self.extensions:
-            args.append(f"extensions={self.extensions}")
+            args.append(f"extensions={self.extensions!r}")
         return f"{name}({', '.join(args)})"
 
     @property
@@ -654,15 +677,18 @@ class IncrementalPublisher:
     and thereby achieve more deterministic results.
     """
 
+    _next_id: int
     _released: dict[SubsequentResultRecord, None]
     _pending: dict[SubsequentResultRecord, None]
     _resolve: Event | None
+    _tasks: set[Awaitable]
 
     def __init__(self) -> None:
+        self._next_id = 0
         self._released = {}
         self._pending = {}
         self._resolve = None  # lazy initialization
-        self._tasks: set[Awaitable] = set()
+        self._tasks = set()
 
     @staticmethod
     def report_new_defer_fragment_record(
@@ -860,10 +886,18 @@ class IncrementalPublisher:
         pending_results: list[PendingResult] = []
         for pending_source in pending_sources:
             pending_source.pending_sent = True
+            id_ = self._get_next_id()
+            pending_source.id = id_
             pending_results.append(
-                PendingResult(pending_source.path, pending_source.label)
+                PendingResult(id_, pending_source.path, pending_source.label)
             )
         return pending_results
+
+    def _get_next_id(self) -> str:
+        """Get the next ID for pending results."""
+        id_ = self._next_id
+        self._next_id += 1
+        return str(id_)
 
     async def _subscribe(
         self,
@@ -984,9 +1018,12 @@ class IncrementalPublisher:
                     continue
                 incremental_result = IncrementalStreamResult(
                     subsequent_result_record.items,
-                    subsequent_result_record.stream_record.path,
-                    subsequent_result_record.errors or None,
+                    # safe because `id` is defined
+                    # once the stream has been released as pending
+                    subsequent_result_record.stream_record.id,  # type: ignore
                 )
+                if subsequent_result_record.errors:
+                    incremental_result.errors = subsequent_result_record.errors
                 incremental_results.append(incremental_result)
             else:
                 new_pending_sources.discard(subsequent_result_record)
@@ -998,16 +1035,44 @@ class IncrementalPublisher:
                 ) in subsequent_result_record.deferred_grouped_field_set_records:
                     if not deferred_grouped_field_set_record.sent:
                         deferred_grouped_field_set_record.sent = True
-                        incremental_result = IncrementalDeferResult(
-                            deferred_grouped_field_set_record.data,  # type: ignore
-                            deferred_grouped_field_set_record.path,
-                            deferred_grouped_field_set_record.errors or None,
+                        incremental_result = self._get_incremental_defer_result(
+                            deferred_grouped_field_set_record
                         )
+                        if deferred_grouped_field_set_record.errors:
+                            incremental_result.errors = (
+                                deferred_grouped_field_set_record.errors
+                            )
                         incremental_results.append(incremental_result)
         return IncrementalUpdate(
             self._pending_sources_to_results(new_pending_sources),
             incremental_results,
             completed_results,
+        )
+
+    def _get_incremental_defer_result(
+        self, deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
+    ) -> IncrementalDeferResult:
+        """Get the incremental defer result from the grouped field set record."""
+        data = deferred_grouped_field_set_record.data
+        fragment_records = deferred_grouped_field_set_record.deferred_fragment_records
+        max_length = len(fragment_records[0].path)
+        max_index = 0
+        for i in range(1, len(fragment_records)):
+            fragment_record = fragment_records[i]
+            length = len(fragment_record.path)
+            if length > max_length:
+                max_length = length
+                max_index = i
+        record_with_longest_path = fragment_records[max_index]
+        longest_path = record_with_longest_path.path
+        sub_path = deferred_grouped_field_set_record.path[len(longest_path) :]
+        id_ = record_with_longest_path.id
+        return IncrementalDeferResult(
+            data,  # type: ignore
+            # safe because `id` is defined
+            # once the fragment has been released as pending
+            id_,  # type: ignore
+            sub_path or None,
         )
 
     @staticmethod
@@ -1016,8 +1081,8 @@ class IncrementalPublisher:
     ) -> CompletedResult:
         """Convert the completed record to a result."""
         return CompletedResult(
-            completed_record.path,
-            completed_record.label or None,
+            # safe because `id` is defined once the stream has been released as pending
+            completed_record.id,  # type: ignore
             completed_record.errors or None,
         )
 
@@ -1147,6 +1212,7 @@ class DeferredFragmentRecord:
 
     path: list[str | int]
     label: str | None
+    id: str | None
     children: dict[SubsequentResultRecord, None]
     deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
     errors: list[GraphQLError]
@@ -1157,6 +1223,7 @@ class DeferredFragmentRecord:
     def __init__(self, path: Path | None = None, label: str | None = None) -> None:
         self.path = path.as_list() if path else []
         self.label = label
+        self.id = None
         self.children = {}
         self.filtered = False
         self.pending_sent = False
@@ -1179,6 +1246,7 @@ class StreamRecord:
 
     label: str | None
     path: list[str | int]
+    id: str | None
     errors: list[GraphQLError]
     early_return: Callable[[], Awaitable[Any]] | None
     pending_sent: bool
@@ -1191,6 +1259,7 @@ class StreamRecord:
     ) -> None:
         self.path = path.as_list()
         self.label = label
+        self.id = None
         self.errors = []
         self.early_return = early_return
         self.pending_sent = False

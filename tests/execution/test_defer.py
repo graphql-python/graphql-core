@@ -196,93 +196,86 @@ def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
 
 def describe_execute_defer_directive():
     def can_format_and_print_pending_result():
-        result = PendingResult([])
-        assert result.formatted == {"path": []}
-        assert str(result) == "PendingResult(path=[])"
+        result = PendingResult("foo", [])
+        assert result.formatted == {"id": "foo", "path": []}
+        assert str(result) == "PendingResult(id='foo', path=[])"
 
-        result = PendingResult(path=["foo", 1], label="bar")
-        assert result.formatted == {
-            "path": ["foo", 1],
-            "label": "bar",
-        }
-        assert str(result) == "PendingResult(path=['foo', 1], label='bar')"
+        result = PendingResult(id="foo", path=["bar", 1], label="baz")
+        assert result.formatted == {"id": "foo", "path": ["bar", 1], "label": "baz"}
+        assert str(result) == "PendingResult(id='foo', path=['bar', 1], label='baz')"
 
     def can_compare_pending_result():
-        args: dict[str, Any] = {"path": ["foo", 1], "label": "bar"}
+        args: dict[str, Any] = {"id": "foo", "path": ["bar", 1], "label": "baz"}
         result = PendingResult(**args)
         assert result == PendingResult(**args)
-        assert result != CompletedResult(**modified_args(args, path=["foo", 2]))
-        assert result != CompletedResult(**modified_args(args, label="baz"))
+        assert result != PendingResult(**modified_args(args, id="bar"))
+        assert result != PendingResult(**modified_args(args, path=["bar", 2]))
+        assert result != PendingResult(**modified_args(args, label="bar"))
         assert result == tuple(args.values())
+        assert result == tuple(args.values())[:2]
         assert result != tuple(args.values())[:1]
-        assert result != tuple(args.values())[:1] + ("baz",)
+        assert result != tuple(args.values())[:1] + (["bar", 2],)
         assert result == args
-        assert result != {**args, "path": ["foo", 2]}
-        assert result != {**args, "label": "baz"}
+        assert result != {**args, "id": "bar"}
+        assert result != {**args, "path": ["bar", 2]}
+        assert result != {**args, "label": "bar"}
 
     def can_format_and_print_completed_result():
-        result = CompletedResult([])
-        assert result.formatted == {"path": []}
-        assert str(result) == "CompletedResult(path=[])"
+        result = CompletedResult("foo")
+        assert result.formatted == {"id": "foo"}
+        assert str(result) == "CompletedResult(id='foo')"
 
-        result = CompletedResult(
-            path=["foo", 1], label="bar", errors=[GraphQLError("oops")]
-        )
-        assert result.formatted == {
-            "path": ["foo", 1],
-            "label": "bar",
-            "errors": [{"message": "oops"}],
-        }
-        assert (
-            str(result) == "CompletedResult(path=['foo', 1], label='bar',"
-            " errors=[GraphQLError('oops')])"
-        )
+        result = CompletedResult(id="foo", errors=[GraphQLError("oops")])
+        assert result.formatted == {"id": "foo", "errors": [{"message": "oops"}]}
+        assert str(result) == "CompletedResult(id='foo', errors=[GraphQLError('oops')])"
 
     def can_compare_completed_result():
-        args: dict[str, Any] = {"path": ["foo", 1], "label": "bar", "errors": []}
+        args: dict[str, Any] = {"id": "foo", "errors": []}
         result = CompletedResult(**args)
         assert result == CompletedResult(**args)
-        assert result != CompletedResult(**modified_args(args, path=["foo", 2]))
-        assert result != CompletedResult(**modified_args(args, label="baz"))
+        assert result != CompletedResult(**modified_args(args, id="bar"))
         assert result != CompletedResult(
             **modified_args(args, errors=[GraphQLError("oops")])
         )
         assert result == tuple(args.values())
-        assert result == tuple(args.values())[:2]
         assert result != tuple(args.values())[:1]
+        assert result != tuple(args.values())[:1] + ([GraphQLError("oops")],)
         assert result == args
-        assert result != {**args, "path": ["foo", 2]}
-        assert result != {**args, "label": "baz"}
+        assert result != {**args, "id": "bar"}
         assert result != {**args, "errors": [{"message": "oops"}]}
 
     def can_format_and_print_incremental_defer_result():
-        result = IncrementalDeferResult(data={}, path=[])
-        assert result.formatted == {"data": {}, "path": []}
-        assert str(result) == "IncrementalDeferResult(data={}, path=[])"
+        result = IncrementalDeferResult(data={}, id="foo")
+        assert result.formatted == {"data": {}, "id": "foo"}
+        assert str(result) == "IncrementalDeferResult(data={}, id='foo')"
 
         result = IncrementalDeferResult(
             data={"hello": "world"},
-            errors=[GraphQLError("msg")],
-            path=["foo", 1],
+            id="foo",
+            sub_path=["bar", 1],
+            errors=[GraphQLError("oops")],
             extensions={"baz": 2},
         )
         assert result.formatted == {
             "data": {"hello": "world"},
-            "errors": [{"message": "msg"}],
+            "id": "foo",
+            "subPath": ["bar", 1],
+            "errors": [{"message": "oops"}],
             "extensions": {"baz": 2},
-            "path": ["foo", 1],
         }
         assert (
             str(result) == "IncrementalDeferResult(data={'hello': 'world'},"
-            " path=['foo', 1], errors=[GraphQLError('msg')], extensions={'baz': 2})"
+            " id='foo', sub_path=['bar', 1], errors=[GraphQLError('oops')],"
+            " extensions={'baz': 2})"
         )
 
     # noinspection PyTypeChecker
     def can_compare_incremental_defer_result():
         args: dict[str, Any] = {
             "data": {"hello": "world"},
-            "errors": [GraphQLError("msg")],
-            "path": ["foo", 1],
+            "id": "foo",
+            "sub_path": ["bar", 1],
+            "errors": [GraphQLError("oops")],
             "extensions": {"baz": 2},
         }
         result = IncrementalDeferResult(**args)
@@ -290,8 +283,11 @@ def describe_execute_defer_directive():
         assert result != IncrementalDeferResult(
             **modified_args(args, data={"hello": "foo"})
         )
+        assert result != IncrementalDeferResult(**modified_args(args, id="bar"))
+        assert result != IncrementalDeferResult(
+            **modified_args(args, sub_path=["bar", 2])
+        )
         assert result != IncrementalDeferResult(**modified_args(args, errors=[]))
-        assert result != IncrementalDeferResult(**modified_args(args, path=["foo", 2]))
         assert result != IncrementalDeferResult(
             **modified_args(args, extensions={"baz": 1})
         )
@@ -300,52 +296,50 @@ def describe_execute_defer_directive():
         assert result == tuple(args.values())[:3]
         assert result == tuple(args.values())[:2]
         assert result != tuple(args.values())[:1]
-        assert result != ({"hello": "world"}, [])
+        assert result != ({"hello": "world"}, "bar")
+        args["subPath"] = args.pop("sub_path")
         assert result == args
         assert result != {**args, "data": {"hello": "foo"}}
+        assert result != {**args, "id": "bar"}
+        assert result != {**args, "subPath": ["bar", 2]}
         assert result != {**args, "errors": []}
-        assert result != {**args, "path": ["foo", 2]}
         assert result != {**args, "extensions": {"baz": 1}}
 
     def can_format_and_print_initial_incremental_execution_result():
         result = InitialIncrementalExecutionResult()
         assert result.formatted == {"data": None, "hasNext": False, "pending": []}
-        assert (
-            str(result) == "InitialIncrementalExecutionResult(data=None, errors=None)"
-        )
+        assert str(result) == "InitialIncrementalExecutionResult(data=None)"
 
         result = InitialIncrementalExecutionResult(has_next=True)
         assert result.formatted == {"data": None, "hasNext": True, "pending": []}
-        assert (
-            str(result)
-            == "InitialIncrementalExecutionResult(data=None, errors=None, has_next)"
-        )
+        assert str(result) == "InitialIncrementalExecutionResult(data=None, has_next)"
 
         result = InitialIncrementalExecutionResult(
             data={"hello": "world"},
             errors=[GraphQLError("msg")],
-            pending=[PendingResult(["bar"])],
+            pending=[PendingResult("foo", ["bar"])],
             has_next=True,
             extensions={"baz": 2},
         )
         assert result.formatted == {
             "data": {"hello": "world"},
             "errors": [{"message": "msg"}],
-            "pending": [{"path": ["bar"]}],
+            "pending": [{"id": "foo", "path": ["bar"]}],
             "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert (
             str(result) == "InitialIncrementalExecutionResult("
             "data={'hello': 'world'}, errors=[GraphQLError('msg')],"
-            " pending=[PendingResult(path=['bar'])], has_next, extensions={'baz': 2})"
+            " pending=[PendingResult(id='foo', path=['bar'])], has_next,"
+            " extensions={'baz': 2})"
         )
 
     def can_compare_initial_incremental_execution_result():
         args: dict[str, Any] = {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "pending": [PendingResult(["bar"])],
+            "pending": [PendingResult("foo", ["bar"])],
             "has_next": True,
             "extensions": {"baz": 2},
         }
@@ -377,38 +371,38 @@ def describe_execute_defer_directive():
         assert result == {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "pending": [PendingResult(["bar"])],
+            "pending": [PendingResult("foo", ["bar"])],
             "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert result != {
             "errors": [GraphQLError("msg")],
-            "pending": [PendingResult(["bar"])],
+            "pending": [PendingResult("foo", ["bar"])],
             "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert result != {
             "data": {"hello": "world"},
-            "pending": [PendingResult(["bar"])],
-            "hasNext": True,
-            "extensions": {"baz": 2},
-        }
-        assert result != {
-            "data": {"hello": "world"},
-            "errors": [GraphQLError("msg")],
+            "pending": [PendingResult("foo", ["bar"])],
             "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert result != {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "pending": [PendingResult(["bar"])],
+            "hasNext": True,
             "extensions": {"baz": 2},
         }
         assert result != {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
-            "pending": [PendingResult(["bar"])],
+            "pending": [PendingResult("foo", ["bar"])],
+            "extensions": {"baz": 2},
+        }
+        assert result != {
+            "data": {"hello": "world"},
+            "errors": [GraphQLError("msg")],
+            "pending": [PendingResult("foo", ["bar"])],
             "hasNext": True,
         }
 
@@ -421,9 +415,11 @@ def describe_execute_defer_directive():
         assert result.formatted == {"hasNext": True}
         assert str(result) == "SubsequentIncrementalExecutionResult(has_next)"
 
-        pending = [PendingResult(["bar"])]
-        incremental = [cast(IncrementalResult, IncrementalDeferResult({"one": 1}, [1]))]
-        completed = [CompletedResult(["foo", 1])]
+        pending = [PendingResult("foo", ["bar"])]
+        incremental = [
+            cast(IncrementalResult, IncrementalDeferResult({"foo": 1}, "bar"))
+        ]
+        completed = [CompletedResult("foo")]
         result = SubsequentIncrementalExecutionResult(
             has_next=True,
             pending=pending,
@@ -433,9 +429,9 @@ def describe_execute_defer_directive():
         )
         assert result.formatted == {
             "hasNext": True,
-            "pending": [{"path": ["bar"]}],
-            "incremental": [{"data": {"one": 1}, "path": [1]}],
-            "completed": [{"path": ["foo", 1]}],
+            "pending": [{"id": "foo", "path": ["bar"]}],
+            "incremental": [{"data": {"foo": 1}, "id": "bar"}],
+            "completed": [{"id": "foo"}],
             "extensions": {"baz": 2},
         }
         assert (
@@ -444,9 +440,11 @@ def describe_execute_defer_directive():
         )
 
     def can_compare_subsequent_incremental_execution_result():
-        pending = [PendingResult(["bar"])]
-        incremental = [cast(IncrementalResult, IncrementalDeferResult({"one": 1}, [1]))]
-        completed = [CompletedResult(path=["foo", 1])]
+        pending = [PendingResult("foo", ["bar"])]
+        incremental = [
+            cast(IncrementalResult, IncrementalDeferResult({"foo": 1}, "bar"))
+        ]
+        completed = [CompletedResult("foo")]
         args: dict[str, Any] = {
             "has_next": True,
             "pending": pending,
@@ -571,12 +569,12 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
-                "completed": [{"path": ["hero"]}],
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -598,14 +596,7 @@ def describe_execute_defer_directive():
         )
         result = await complete(document)
 
-        assert result == {
-            "data": {
-                "hero": {
-                    "id": "1",
-                    "name": "Luke",
-                },
-            },
-        }
+        assert result == {"data": {"hero": {"id": "1", "name": "Luke"}}}
 
     @pytest.mark.asyncio
     async def does_not_disable_defer_with_null_if_argument():
@@ -627,12 +618,12 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
-                "completed": [{"path": ["hero"]}],
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -677,12 +668,12 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {},
-                "pending": [{"path": [], "label": "DeferQuery"}],
+                "pending": [{"id": "0", "path": [], "label": "DeferQuery"}],
                 "hasNext": True,
             },
             {
-                "incremental": [{"data": {"hero": {"id": "1"}}, "path": []}],
-                "completed": [{"path": [], "label": "DeferQuery"}],
+                "incremental": [{"data": {"hero": {"id": "1"}}, "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -706,7 +697,7 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {},
-                "pending": [{"path": [], "label": "DeferQuery"}],
+                "pending": [{"id": "0", "path": [], "label": "DeferQuery"}],
                 "hasNext": True,
             },
             {
@@ -720,10 +711,10 @@ def describe_execute_defer_directive():
                                 "path": ["hero", "name"],
                             }
                         ],
-                        "path": [],
+                        "id": "0",
                     }
                 ],
-                "completed": [{"path": [], "label": "DeferQuery"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -754,17 +745,14 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {}},
                 "pending": [
-                    {"path": ["hero"], "label": "DeferTop"},
-                    {"path": ["hero"], "label": "DeferNested"},
+                    {"id": "0", "path": ["hero"], "label": "DeferTop"},
+                    {"id": "1", "path": ["hero"], "label": "DeferNested"},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"id": "1"},
-                        "path": ["hero"],
-                    },
+                    {"data": {"id": "1"}, "id": "0"},
                     {
                         "data": {
                             "friends": [
@@ -773,13 +761,10 @@ def describe_execute_defer_directive():
                                 {"name": "C-3PO"},
                             ]
                         },
-                        "path": ["hero"],
+                        "id": "1",
                     },
                 ],
-                "completed": [
-                    {"path": ["hero"], "label": "DeferTop"},
-                    {"path": ["hero"], "label": "DeferNested"},
-                ],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -804,13 +789,10 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"name": "Luke"}},
-                "pending": [{"path": ["hero"], "label": "DeferTop"}],
+                "pending": [{"id": "0", "path": ["hero"], "label": "DeferTop"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"], "label": "DeferTop"}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -833,13 +815,10 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"name": "Luke"}},
-                "pending": [{"path": ["hero"], "label": "DeferTop"}],
+                "pending": [{"id": "0", "path": ["hero"], "label": "DeferTop"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"], "label": "DeferTop"}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -861,12 +840,12 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"], "label": "InlineDeferred"}],
+                "pending": [{"id": "0", "path": ["hero"], "label": "InlineDeferred"}],
                 "hasNext": True,
             },
             {
-                "incremental": [{"data": {"name": "Luke"}, "path": ["hero"]}],
-                "completed": [{"path": ["hero"], "label": "InlineDeferred"}],
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -890,11 +869,12 @@ def describe_execute_defer_directive():
         result = await complete(document)
 
         assert result == [
-            {"data": {"hero": {}}, "pending": [{"path": ["hero"]}], "hasNext": True},
             {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
+                "data": {"hero": {}},
+                "pending": [{"id": "0", "path": ["hero"]}],
+                "hasNext": True,
             },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -919,26 +899,17 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {}},
                 "pending": [
-                    {"path": ["hero"], "label": "DeferID"},
-                    {"path": ["hero"], "label": "DeferName"},
+                    {"id": "0", "path": ["hero"], "label": "DeferID"},
+                    {"id": "1", "path": ["hero"], "label": "DeferName"},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"id": "1"},
-                        "path": ["hero"],
-                    },
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                    },
+                    {"data": {"id": "1"}, "id": "0"},
+                    {"data": {"name": "Luke"}, "id": "1"},
                 ],
-                "completed": [
-                    {"path": ["hero"], "label": "DeferID"},
-                    {"path": ["hero"], "label": "DeferName"},
-                ],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -967,30 +938,18 @@ def describe_execute_defer_directive():
             {
                 "data": {},
                 "pending": [
-                    {"path": [], "label": "DeferID"},
-                    {"path": [], "label": "DeferName"},
+                    {"id": "0", "path": [], "label": "DeferID"},
+                    {"id": "1", "path": [], "label": "DeferName"},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"hero": {}},
-                        "path": [],
-                    },
-                    {
-                        "data": {"id": "1"},
-                        "path": ["hero"],
-                    },
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                    },
+                    {"data": {"hero": {}}, "id": "0"},
+                    {"data": {"id": "1"}, "id": "0", "subPath": ["hero"]},
+                    {"data": {"name": "Luke"}, "id": "1", "subPath": ["hero"]},
                 ],
-                "completed": [
-                    {"path": [], "label": "DeferID"},
-                    {"path": [], "label": "DeferName"},
-                ],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1031,30 +990,18 @@ def describe_execute_defer_directive():
             {
                 "data": {},
                 "pending": [
-                    {"path": [], "label": "DeferID"},
-                    {"path": [], "label": "DeferName"},
+                    {"id": "0", "path": [], "label": "DeferID"},
+                    {"id": "1", "path": [], "label": "DeferName"},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"hero": {}},
-                        "path": [],
-                    },
-                    {
-                        "data": {"id": "1"},
-                        "path": ["hero"],
-                    },
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                    },
+                    {"data": {"hero": {}}, "id": "0"},
+                    {"data": {"id": "1"}, "id": "0", "subPath": ["hero"]},
+                    {"data": {"name": "Luke"}, "id": "1", "subPath": ["hero"]},
                 ],
-                "completed": [
-                    {"path": [], "label": "DeferID"},
-                    {"path": [], "label": "DeferName"},
-                ],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1083,26 +1030,17 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {}},
                 "pending": [
-                    {"path": [], "label": "DeferName"},
-                    {"path": ["hero"], "label": "DeferID"},
+                    {"id": "0", "path": [], "label": "DeferName"},
+                    {"id": "1", "path": ["hero"], "label": "DeferID"},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"id": "1"},
-                        "path": ["hero"],
-                    },
-                    {
-                        "data": {"name": "Luke"},
-                        "path": ["hero"],
-                    },
+                    {"data": {"id": "1"}, "id": "1"},
+                    {"data": {"name": "Luke"}, "id": "0", "subPath": ["hero"]},
                 ],
-                "completed": [
-                    {"path": ["hero"], "label": "DeferID"},
-                    {"path": [], "label": "DeferName"},
-                ],
+                "completed": [{"id": "1"}, {"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1128,36 +1066,18 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {},
-                "pending": [{"path": [], "label": "DeferName"}],
+                "pending": [{"id": "0", "path": [], "label": "DeferName"}],
                 "hasNext": True,
             },
             {
-                "pending": [{"path": ["hero"], "label": "DeferID"}],
-                "incremental": [
-                    {
-                        "data": {
-                            "hero": {
-                                "name": "Luke",
-                            },
-                        },
-                        "path": [],
-                    },
-                ],
-                "completed": [
-                    {"path": [], "label": "DeferName"},
-                ],
+                "pending": [{"id": "1", "path": ["hero"], "label": "DeferID"}],
+                "incremental": [{"data": {"hero": {"name": "Luke"}}, "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {
-                            "id": "1",
-                        },
-                        "path": ["hero"],
-                    },
-                ],
-                "completed": [{"path": ["hero"], "label": "DeferID"}],
+                "incremental": [{"data": {"id": "1"}, "id": "1"}],
+                "completed": [{"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1197,49 +1117,40 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {"friends": [{}, {}, {}]}},
                 "pending": [
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
-                    {"path": ["hero", "friends", 2]},
-                    {"path": ["hero", "friends", 2]},
-                    {"path": ["hero", "friends", 2]},
+                    {"id": "0", "path": ["hero", "friends", 0]},
+                    {"id": "1", "path": ["hero", "friends", 0]},
+                    {"id": "2", "path": ["hero", "friends", 0]},
+                    {"id": "3", "path": ["hero", "friends", 0]},
+                    {"id": "4", "path": ["hero", "friends", 1]},
+                    {"id": "5", "path": ["hero", "friends", 1]},
+                    {"id": "6", "path": ["hero", "friends", 1]},
+                    {"id": "7", "path": ["hero", "friends", 1]},
+                    {"id": "8", "path": ["hero", "friends", 2]},
+                    {"id": "9", "path": ["hero", "friends", 2]},
+                    {"id": "10", "path": ["hero", "friends", 2]},
+                    {"id": "11", "path": ["hero", "friends", 2]},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"id": "2", "name": "Han"},
-                        "path": ["hero", "friends", 0],
-                    },
-                    {
-                        "data": {"id": "3", "name": "Leia"},
-                        "path": ["hero", "friends", 1],
-                    },
-                    {
-                        "data": {"id": "4", "name": "C-3PO"},
-                        "path": ["hero", "friends", 2],
-                    },
+                    {"data": {"id": "2", "name": "Han"}, "id": "0"},
+                    {"data": {"id": "3", "name": "Leia"}, "id": "4"},
+                    {"data": {"id": "4", "name": "C-3PO"}, "id": "8"},
                 ],
                 "completed": [
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
-                    {"path": ["hero", "friends", 2]},
-                    {"path": ["hero", "friends", 2]},
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
+                    {"id": "1"},
+                    {"id": "2"},
+                    {"id": "3"},
+                    {"id": "5"},
+                    {"id": "6"},
+                    {"id": "7"},
+                    {"id": "9"},
+                    {"id": "10"},
+                    {"id": "11"},
+                    {"id": "0"},
+                    {"id": "4"},
+                    {"id": "8"},
                 ],
                 "hasNext": False,
             },
@@ -1295,17 +1206,18 @@ def describe_execute_defer_directive():
                         "anotherNestedObject": {"deeperObject": {"foo": "foo"}},
                     }
                 },
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "data": {"bar": "bar"},
-                        "path": ["hero", "nestedObject", "deeperObject"],
+                        "id": "0",
+                        "subPath": ["nestedObject", "deeperObject"],
                     },
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1339,36 +1251,25 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
-                "pending": [{"path": ["hero", "nestedObject", "deeperObject"]}],
+                "pending": [
+                    {"id": "1", "path": ["hero", "nestedObject", "deeperObject"]}
+                ],
                 "incremental": [
                     {
-                        "data": {
-                            "nestedObject": {
-                                "deeperObject": {
-                                    "foo": "foo",
-                                },
-                            }
-                        },
-                        "path": ["hero"],
+                        "data": {"nestedObject": {"deeperObject": {"foo": "foo"}}},
+                        "id": "0",
                     },
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {
-                            "bar": "bar",
-                        },
-                        "path": ["hero", "nestedObject", "deeperObject"],
-                    },
-                ],
-                "completed": [{"path": ["hero", "nestedObject", "deeperObject"]}],
+                "incremental": [{"data": {"bar": "bar"}, "id": "1"}],
+                "completed": [{"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1436,39 +1337,34 @@ def describe_execute_defer_directive():
                         },
                     },
                 },
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
-                "pending": [{"path": ["hero", "nestedObject"]}],
+                "pending": [{"id": "1", "path": ["hero", "nestedObject"]}],
                 "incremental": [
                     {
                         "data": {"bar": "bar"},
-                        "path": ["hero", "nestedObject", "deeperObject"],
+                        "id": "0",
+                        "subPath": ["nestedObject", "deeperObject"],
                     },
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
-                "pending": [{"path": ["hero", "nestedObject", "deeperObject"]}],
+                "pending": [
+                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]}
+                ],
                 "incremental": [
-                    {
-                        "data": {"baz": "baz"},
-                        "path": ["hero", "nestedObject", "deeperObject"],
-                    },
+                    {"data": {"baz": "baz"}, "id": "1", "subPath": ["deeperObject"]},
                 ],
                 "hasNext": True,
-                "completed": [{"path": ["hero", "nestedObject"]}],
+                "completed": [{"id": "1"}],
             },
             {
-                "incremental": [
-                    {
-                        "data": {"bak": "bak"},
-                        "path": ["hero", "nestedObject", "deeperObject"],
-                    },
-                ],
-                "completed": [{"path": ["hero", "nestedObject", "deeperObject"]}],
+                "incremental": [{"data": {"bak": "bak"}, "id": "2"}],
+                "completed": [{"id": "2"}],
                 "hasNext": False,
             },
         ]
@@ -1509,37 +1405,22 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {"nestedObject": {"deeperObject": {}}}},
                 "pending": [
-                    {"path": ["hero"]},
-                    {"path": ["hero", "nestedObject", "deeperObject"]},
+                    {"id": "0", "path": ["hero"]},
+                    {"id": "1", "path": ["hero", "nestedObject", "deeperObject"]},
                 ],
                 "hasNext": True,
             },
             {
-                "pending": [{"path": ["hero", "nestedObject", "deeperObject"]}],
-                "incremental": [
-                    {
-                        "data": {
-                            "foo": "foo",
-                        },
-                        "path": ["hero", "nestedObject", "deeperObject"],
-                    },
+                "pending": [
+                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]}
                 ],
-                "completed": [
-                    {"path": ["hero"]},
-                    {"path": ["hero", "nestedObject", "deeperObject"]},
-                ],
+                "incremental": [{"data": {"foo": "foo"}, "id": "1"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "data": {
-                            "bar": "bar",
-                        },
-                        "path": ["hero", "nestedObject", "deeperObject"],
-                    },
-                ],
-                "completed": [{"path": ["hero", "nestedObject", "deeperObject"]}],
+                "incremental": [{"data": {"bar": "bar"}, "id": "2"}],
+                "completed": [{"id": "2"}],
                 "hasNext": False,
             },
         ]
@@ -1584,21 +1465,15 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {"b": {"c": {"d": "d"}}}},
-                "pending": [{"path": []}, {"path": ["a", "b"]}],
+                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a", "b"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"e": {"f": "f"}},
-                        "path": ["a", "b"],
-                    },
-                    {
-                        "data": {"g": {"h": "h"}},
-                        "path": [],
-                    },
+                    {"data": {"e": {"f": "f"}}, "id": "1"},
+                    {"data": {"g": {"h": "h"}}, "id": "0"},
                 ],
-                "completed": [{"path": ["a", "b"]}, {"path": []}],
+                "completed": [{"id": "1"}, {"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1638,23 +1513,17 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {}},
-                "pending": [{"path": []}, {"path": ["a"]}],
+                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"b": {"c": {}}},
-                        "path": ["a"],
-                    },
-                    {
-                        "data": {"d": "d"},
-                        "path": ["a", "b", "c"],
-                    },
+                    {"data": {"b": {"c": {}}}, "id": "1"},
+                    {"data": {"d": "d"}, "id": "1", "subPath": ["b", "c"]},
                 ],
                 "completed": [
                     {
-                        "path": [],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null"
@@ -1664,7 +1533,7 @@ def describe_execute_defer_directive():
                             },
                         ],
                     },
-                    {"path": ["a"]},
+                    {"id": "1"},
                 ],
                 "hasNext": False,
             },
@@ -1709,23 +1578,17 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {}},
-                "pending": [{"path": []}, {"path": ["a"]}],
+                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"b": {"c": {}}},
-                        "path": ["a"],
-                    },
-                    {
-                        "data": {"d": "d"},
-                        "path": ["a", "b", "c"],
-                    },
+                    {"data": {"b": {"c": {}}}, "id": "1"},
+                    {"data": {"d": "d"}, "id": "0", "subPath": ["a", "b", "c"]},
                 ],
                 "completed": [
                     {
-                        "path": ["a"],
+                        "id": "1",
                         "errors": [
                             {
                                 "message": "Cannot return null"
@@ -1735,9 +1598,7 @@ def describe_execute_defer_directive():
                             },
                         ],
                     },
-                    {
-                        "path": [],
-                    },
+                    {"id": "0"},
                 ],
                 "hasNext": False,
             },
@@ -1783,27 +1644,21 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {}},
-                "pending": [{"path": []}, {"path": ["a"]}],
+                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"b": {"c": {}}},
-                        "path": ["a"],
-                    },
-                    {
-                        "data": {"d": "d"},
-                        "path": ["a", "b", "c"],
-                    },
+                    {"data": {"b": {"c": {}}}, "id": "1"},
+                    {"data": {"d": "d"}, "id": "1", "subPath": ["b", "c"]},
                 ],
-                "completed": [{"path": ["a"]}],
+                "completed": [{"id": "1"}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": [],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null"
@@ -1834,10 +1689,7 @@ def describe_execute_defer_directive():
             """
         )
         result = await complete(
-            document,
-            {
-                "hero": {**hero, "nonNullName": lambda _info: None},
-            },
+            document, {"hero": {**hero, "nonNullName": lambda _info: None}}
         )
 
         assert result == {
@@ -1866,23 +1718,20 @@ def describe_execute_defer_directive():
             """
         )
         result = await complete(
-            document,
-            {
-                "hero": {**hero, "nonNullName": lambda _info: None},
-            },
+            document, {"hero": {**hero, "nonNullName": lambda _info: None}}
         )
 
         assert result == [
             {
                 "data": {},
-                "pending": [{"path": []}],
+                "pending": [{"id": "0", "path": []}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "data": {"hero": None},
-                        "path": [],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null"
@@ -1893,7 +1742,7 @@ def describe_execute_defer_directive():
                         ],
                     },
                 ],
-                "completed": [{"path": []}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1929,13 +1778,10 @@ def describe_execute_defer_directive():
                         ]
                     }
                 },
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     async def deduplicates_async_iterable_list_fields():
@@ -1957,22 +1803,16 @@ def describe_execute_defer_directive():
         )
 
         result = await complete(
-            document,
-            {
-                "hero": {**hero, "friends": Resolvers.first_friend},
-            },
+            document, {"hero": {**hero, "friends": Resolvers.first_friend}}
         )
 
         assert result == [
             {
                 "data": {"hero": {"friends": [{"name": "Han"}]}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     async def deduplicates_empty_async_iterable_list_fields():
@@ -1999,22 +1839,16 @@ def describe_execute_defer_directive():
                 yield friend  # pragma: no cover
 
         result = await complete(
-            document,
-            {
-                "hero": {**hero, "friends": resolve_friends},
-            },
+            document, {"hero": {**hero, "friends": resolve_friends}}
         )
 
         assert result == [
             {
                 "data": {"hero": {"friends": []}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     async def does_not_deduplicate_list_fields_with_non_overlapping_fields():
@@ -2047,25 +1881,16 @@ def describe_execute_defer_directive():
                         ]
                     }
                 },
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"id": "2"},
-                        "path": ["hero", "friends", 0],
-                    },
-                    {
-                        "data": {"id": "3"},
-                        "path": ["hero", "friends", 1],
-                    },
-                    {
-                        "data": {"id": "4"},
-                        "path": ["hero", "friends", 2],
-                    },
+                    {"data": {"id": "2"}, "id": "0", "subPath": ["friends", 0]},
+                    {"data": {"id": "3"}, "id": "0", "subPath": ["friends", 1]},
+                    {"data": {"id": "4"}, "id": "0", "subPath": ["friends", 2]},
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -2094,13 +1919,10 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"friends": []}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     async def deduplicates_null_object_fields():
@@ -2127,13 +1949,10 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"nestedObject": None}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     async def deduplicates_async_object_fields():
@@ -2164,13 +1983,10 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"nestedObject": {"name": "foo"}}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["hero"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -2193,14 +2009,14 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "data": {"name": None},
-                        "path": ["hero"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "bad",
@@ -2210,7 +2026,7 @@ def describe_execute_defer_directive():
                         ],
                     },
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -2237,13 +2053,13 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["hero"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
@@ -2311,13 +2127,13 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["hero"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
@@ -2358,44 +2174,28 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "pending": [
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
+                    {"id": "1", "path": ["hero", "friends", 0]},
+                    {"id": "2", "path": ["hero", "friends", 1]},
+                    {"id": "3", "path": ["hero", "friends", 2]},
                 ],
                 "incremental": [
-                    {
-                        "data": {"name": "slow", "friends": [{}, {}, {}]},
-                        "path": ["hero"],
-                    }
+                    {"data": {"name": "slow", "friends": [{}, {}, {}]}, "id": "0"}
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"name": "Han"},
-                        "path": ["hero", "friends", 0],
-                    },
-                    {
-                        "data": {"name": "Leia"},
-                        "path": ["hero", "friends", 1],
-                    },
-                    {
-                        "data": {"name": "C-3PO"},
-                        "path": ["hero", "friends", 2],
-                    },
+                    {"data": {"name": "Han"}, "id": "1"},
+                    {"data": {"name": "Leia"}, "id": "2"},
+                    {"data": {"name": "C-3PO"}, "id": "3"},
                 ],
-                "completed": [
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
-                ],
+                "completed": [{"id": "1"}, {"id": "2"}, {"id": "3"}],
                 "hasNext": False,
             },
         ]
@@ -2426,44 +2226,28 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {"id": "1"}},
-                "pending": [{"path": ["hero"]}],
+                "pending": [{"id": "0", "path": ["hero"]}],
                 "hasNext": True,
             },
             {
                 "pending": [
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
+                    {"id": "1", "path": ["hero", "friends", 0]},
+                    {"id": "2", "path": ["hero", "friends", 1]},
+                    {"id": "3", "path": ["hero", "friends", 2]},
                 ],
                 "incremental": [
-                    {
-                        "data": {"name": "Luke", "friends": [{}, {}, {}]},
-                        "path": ["hero"],
-                    }
+                    {"data": {"name": "Luke", "friends": [{}, {}, {}]}, "id": "0"}
                 ],
-                "completed": [{"path": ["hero"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "data": {"name": "Han"},
-                        "path": ["hero", "friends", 0],
-                    },
-                    {
-                        "data": {"name": "Leia"},
-                        "path": ["hero", "friends", 1],
-                    },
-                    {
-                        "data": {"name": "C-3PO"},
-                        "path": ["hero", "friends", 2],
-                    },
+                    {"data": {"name": "Han"}, "id": "1"},
+                    {"data": {"name": "Leia"}, "id": "2"},
+                    {"data": {"name": "C-3PO"}, "id": "3"},
                 ],
-                "completed": [
-                    {"path": ["hero", "friends", 0]},
-                    {"path": ["hero", "friends", 1]},
-                    {"path": ["hero", "friends", 2]},
-                ],
+                "completed": [{"id": "1"}, {"id": "2"}, {"id": "3"}],
                 "hasNext": False,
             },
         ]

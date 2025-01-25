@@ -148,39 +148,39 @@ def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
 
 def describe_execute_stream_directive():
     def can_format_and_print_incremental_stream_result():
-        result = IncrementalStreamResult(items=[], path=[])
-        assert result.formatted == {"items": [], "path": []}
-        assert str(result) == "IncrementalStreamResult(items=[], path=[])"
+        result = IncrementalStreamResult(items=["hello", "world"], id="foo")
+        assert result.formatted == {"items": ["hello", "world"], "id": "foo"}
+        assert (
+            str(result) == "IncrementalStreamResult(items=['hello', 'world'], id='foo')"
+        )
 
         result = IncrementalStreamResult(
             items=["hello", "world"],
-            errors=[GraphQLError("msg")],
-            path=["foo", 1],
+            id="foo",
+            sub_path=["bar", 1],
+            errors=[GraphQLError("oops")],
             extensions={"baz": 2},
         )
         assert result.formatted == {
             "items": ["hello", "world"],
-            "errors": [{"message": "msg"}],
+            "id": "foo",
+            "subPath": ["bar", 1],
+            "errors": [{"message": "oops"}],
             "extensions": {"baz": 2},
-            "path": ["foo", 1],
         }
         assert (
             str(result) == "IncrementalStreamResult(items=['hello', 'world'],"
-            " path=['foo', 1], errors=[GraphQLError('msg')], extensions={'baz': 2})"
+            " id='foo', sub_path=['bar', 1], errors=[GraphQLError('oops')],"
+            " extensions={'baz': 2})"
         )
-
-    def can_print_stream_record():
-        record = StreamRecord(Path(None, 0, None))
-        assert str(record) == "StreamRecord(path=[0])"
-        record = StreamRecord(Path(None, "bar", "Bar"), "foo")
-        assert str(record) == "StreamRecord(path=['bar'], label='foo')"
 
     # noinspection PyTypeChecker
     def can_compare_incremental_stream_result():
         args: dict[str, Any] = {
             "items": ["hello", "world"],
-            "errors": [GraphQLError("msg")],
-            "path": ["foo", 1],
+            "id": "foo",
+            "sub_path": ["bar", 1],
+            "errors": [GraphQLError("oops")],
             "extensions": {"baz": 2},
         }
         result = IncrementalStreamResult(**args)
@@ -188,21 +188,33 @@ def describe_execute_stream_directive():
         assert result != IncrementalStreamResult(
             **modified_args(args, items=["hello", "foo"])
         )
+        assert result != IncrementalStreamResult(**modified_args(args, id="bar"))
+        assert result != IncrementalStreamResult(
+            **modified_args(args, sub_path=["bar", 2])
+        )
         assert result != IncrementalStreamResult(**modified_args(args, errors=[]))
-        assert result != IncrementalStreamResult(**modified_args(args, path=["foo", 2]))
         assert result != IncrementalStreamResult(
             **modified_args(args, extensions={"baz": 1})
         )
         assert result == tuple(args.values())
+        assert result == tuple(args.values())[:4]
         assert result == tuple(args.values())[:3]
         assert result == tuple(args.values())[:2]
         assert result != tuple(args.values())[:1]
-        assert result != (["hello", "world"], [])
+        assert result != (["hello", "world"], "bar")
+        args["subPath"] = args.pop("sub_path")
         assert result == args
         assert result != {**args, "items": ["hello", "foo"]}
+        assert result != {**args, "id": "bar"}
+        assert result != {**args, "subPath": ["bar", 2]}
         assert result != {**args, "errors": []}
-        assert result != {**args, "path": ["foo", 2]}
         assert result != {**args, "extensions": {"baz": 1}}
+
+    def can_print_stream_record():
+        record = StreamRecord(Path(None, 0, None))
+        assert str(record) == "StreamRecord(path=[0])"
+        record = StreamRecord(Path(None, "bar", "Bar"), "foo")
+        assert str(record) == "StreamRecord(path=['bar'], label='foo')"
 
     @pytest.mark.asyncio
     async def can_stream_a_list_field():
@@ -212,19 +224,14 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "scalarList": ["apple"],
-                },
-                "pending": [{"path": ["scalarList"]}],
+                "data": {"scalarList": ["apple"]},
+                "pending": [{"id": "0", "path": ["scalarList"]}],
                 "hasNext": True,
             },
+            {"incremental": [{"items": ["banana"], "id": "0"}], "hasNext": True},
             {
-                "incremental": [{"items": ["banana"], "path": ["scalarList"]}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"items": ["coconut"], "path": ["scalarList"]}],
-                "completed": [{"path": ["scalarList"]}],
+                "incremental": [{"items": ["coconut"], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -237,23 +244,15 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "scalarList": [],
-                },
-                "pending": [{"path": ["scalarList"]}],
+                "data": {"scalarList": []},
+                "pending": [{"id": "0", "path": ["scalarList"]}],
                 "hasNext": True,
             },
+            {"incremental": [{"items": ["apple"], "id": "0"}], "hasNext": True},
+            {"incremental": [{"items": ["banana"], "id": "0"}], "hasNext": True},
             {
-                "incremental": [{"items": ["apple"], "path": ["scalarList"]}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"items": ["banana"], "path": ["scalarList"]}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"items": ["coconut"], "path": ["scalarList"]}],
-                "completed": [{"path": ["scalarList"]}],
+                "incremental": [{"items": ["coconut"], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -265,9 +264,7 @@ def describe_execute_stream_directive():
             document, {"scalarList": ["apple", "banana", "coconut"]}
         )
         assert result == {
-            "data": {
-                "scalarList": None,
-            },
+            "data": {"scalarList": None},
             "errors": [
                 {
                     "message": "initialCount must be a positive integer",
@@ -282,9 +279,7 @@ def describe_execute_stream_directive():
         document = parse("{ scalarList @stream(initialCount: 1.5) }")
         result = await complete(document, {"scalarList": ["apple", "half of a banana"]})
         assert result == {
-            "data": {
-                "scalarList": None,
-            },
+            "data": {"scalarList": None},
             "errors": [
                 {
                     "message": "Argument 'initialCount' has invalid value 1.5.",
@@ -304,29 +299,16 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "scalarList": ["apple"],
-                },
-                "pending": [{"path": ["scalarList"], "label": "scalar-stream"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "items": ["banana"],
-                        "path": ["scalarList"],
-                    }
+                "data": {"scalarList": ["apple"]},
+                "pending": [
+                    {"id": "0", "path": ["scalarList"], "label": "scalar-stream"}
                 ],
                 "hasNext": True,
             },
+            {"incremental": [{"items": ["banana"], "id": "0"}], "hasNext": True},
             {
-                "incremental": [
-                    {
-                        "items": ["coconut"],
-                        "path": ["scalarList"],
-                    }
-                ],
-                "completed": [{"path": ["scalarList"], "label": "scalar-stream"}],
+                "incremental": [{"items": ["coconut"], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -339,12 +321,7 @@ def describe_execute_stream_directive():
             "data": {"scalarList": None},
             "errors": [
                 {
-                    "locations": [
-                        {
-                            "line": 1,
-                            "column": 46,
-                        }
-                    ],
+                    "locations": [{"line": 1, "column": 46}],
                     "message": "Argument 'label' has invalid value 42.",
                     "path": ["scalarList"],
                 }
@@ -357,11 +334,7 @@ def describe_execute_stream_directive():
         result = await complete(
             document, {"scalarList": ["apple", "banana", "coconut"]}
         )
-        assert result == {
-            "data": {
-                "scalarList": ["apple", "banana", "coconut"],
-            },
-        }
+        assert result == {"data": {"scalarList": ["apple", "banana", "coconut"]}}
 
     @pytest.mark.asyncio
     @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
@@ -375,20 +348,13 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "scalarList": ["apple", "banana"],
-                },
-                "pending": [{"path": ["scalarList"]}],
+                "data": {"scalarList": ["apple", "banana"]},
+                "pending": [{"id": "0", "path": ["scalarList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": ["coconut"],
-                        "path": ["scalarList"],
-                    }
-                ],
-                "completed": [{"path": ["scalarList"]}],
+                "incremental": [{"items": ["coconut"], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -408,29 +374,19 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "scalarListList": [["apple", "apple", "apple"]],
-                },
-                "pending": [{"path": ["scalarListList"]}],
+                "data": {"scalarListList": [["apple", "apple", "apple"]]},
+                "pending": [{"id": "0", "path": ["scalarListList"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"items": [["banana", "banana", "banana"]], "id": "0"}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {
-                        "items": [["banana", "banana", "banana"]],
-                        "path": ["scalarListList"],
-                    }
+                    {"items": [["coconut", "coconut", "coconut"]], "id": "0"}
                 ],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
-                    {
-                        "items": [["coconut", "coconut", "coconut"]],
-                        "path": ["scalarListList"],
-                    }
-                ],
-                "completed": [{"path": ["scalarListList"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -463,17 +419,12 @@ def describe_execute_stream_directive():
                         {"name": "Han", "id": "2"},
                     ],
                 },
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -501,35 +452,20 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"friendList": []},
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Luke", "id": "1"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"name": "Luke", "id": "1"}], "id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Han", "id": "2"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"name": "Han", "id": "2"}], "id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -569,17 +505,12 @@ def describe_execute_stream_directive():
                         {"name": "Han", "id": "2"},
                     ]
                 },
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -620,17 +551,12 @@ def describe_execute_stream_directive():
                         "path": ["friendList", 1],
                     }
                 ],
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -664,14 +590,14 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"friendList": [{"name": "Luke", "id": "1"}]},
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "items": [None],
-                        "path": ["friendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "bad",
@@ -684,13 +610,8 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -716,40 +637,22 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"friendList": []},
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Luke", "id": "1"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"name": "Luke", "id": "1"}], "id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Han", "id": "2"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"name": "Han", "id": "2"}], "id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["friendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -778,22 +681,14 @@ def describe_execute_stream_directive():
                         {"name": "Han", "id": "2"},
                     ]
                 },
-                "pending": [{"path": ["friendList"]}],
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"name": "Leia", "id": "3"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"name": "Leia", "id": "3"}], "id": "0"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["friendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -852,7 +747,7 @@ def describe_execute_stream_directive():
                             {"name": "Han", "id": "2"},
                         ]
                     },
-                    "pending": [{"path": ["friendList"]}],
+                    "pending": [{"id": "0", "path": ["friendList"]}],
                     "hasNext": True,
                 },
             },
@@ -860,17 +755,14 @@ def describe_execute_stream_directive():
                 "done": False,
                 "value": {
                     "incremental": [
-                        {
-                            "items": [{"name": "Leia", "id": "3"}],
-                            "path": ["friendList"],
-                        }
+                        {"items": [{"name": "Leia", "id": "3"}], "id": "0"}
                     ],
                     "hasNext": True,
                 },
             },
             {
                 "done": False,
-                "value": {"completed": [{"path": ["friendList"]}], "hasNext": False},
+                "value": {"completed": [{"id": "0"}], "hasNext": False},
             },
             {"done": True, "value": None},
         ]
@@ -924,16 +816,14 @@ def describe_execute_stream_directive():
         result = await complete(document, {"friendList": friend_list})
         assert result == [
             {
-                "data": {
-                    "friendList": [{"name": "Luke", "id": "1"}],
-                },
-                "pending": [{"path": ["friendList"]}],
+                "data": {"friendList": [{"name": "Luke", "id": "1"}]},
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["friendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "bad",
@@ -964,16 +854,14 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "nonNullFriendList": [{"name": "Luke"}],
-                },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "data": {"nonNullFriendList": [{"name": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
@@ -1010,16 +898,14 @@ def describe_execute_stream_directive():
         result = await complete(document, {"nonNullFriendList": friend_list})
         assert result == [
             {
-                "data": {
-                    "nonNullFriendList": [{"name": "Luke"}],
-                },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "data": {"nonNullFriendList": [{"name": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
@@ -1050,17 +936,15 @@ def describe_execute_stream_directive():
         result = await complete(document, {"scalarList": scalar_list})
         assert result == [
             {
-                "data": {
-                    "scalarList": ["Luke"],
-                },
-                "pending": [{"path": ["scalarList"]}],
+                "data": {"scalarList": ["Luke"]},
+                "pending": [{"id": "0", "path": ["scalarList"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "items": [None],
-                        "path": ["scalarList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "String cannot represent value: {}",
@@ -1070,7 +954,7 @@ def describe_execute_stream_directive():
                         ],
                     },
                 ],
-                "completed": [{"path": ["scalarList"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1104,17 +988,15 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "friendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["friendList"]}],
+                "data": {"friendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "items": [None],
-                        "path": ["friendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1127,13 +1009,8 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"nonNullName": "Han"}],
-                        "path": ["friendList"],
-                    },
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"nonNullName": "Han"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1166,17 +1043,15 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "friendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["friendList"]}],
+                "data": {"friendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "items": [None],
-                        "path": ["friendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1189,13 +1064,8 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"nonNullName": "Han"}],
-                        "path": ["friendList"],
-                    }
-                ],
-                "completed": [{"path": ["friendList"]}],
+                "incremental": [{"items": [{"nonNullName": "Han"}], "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1229,16 +1099,14 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "nonNullFriendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "data": {"nonNullFriendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1283,13 +1151,13 @@ def describe_execute_stream_directive():
                 "data": {
                     "nonNullFriendList": [{"nonNullName": "Luke"}],
                 },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1333,17 +1201,15 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "friendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["friendList"]}],
+                "data": {"friendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "items": [None],
-                        "path": ["friendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1356,18 +1222,10 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"nonNullName": "Han"}],
-                        "path": ["friendList"],
-                    },
-                ],
+                "incremental": [{"items": [{"nonNullName": "Han"}], "id": "0"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["friendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -1394,22 +1252,18 @@ def describe_execute_stream_directive():
 
         result = await complete(
             document,
-            {
-                "nonNullFriendList": get_friends,
-            },
+            {"nonNullFriendList": get_friends},
         )
         assert result == [
             {
-                "data": {
-                    "nonNullFriendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "data": {"nonNullFriendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1463,16 +1317,14 @@ def describe_execute_stream_directive():
         result = await complete(document, {"nonNullFriendList": async_iterable})
         assert result == [
             {
-                "data": {
-                    "nonNullFriendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "data": {"nonNullFriendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1533,16 +1385,14 @@ def describe_execute_stream_directive():
         result = await complete(document, {"nonNullFriendList": async_iterable})
         assert result == [
             {
-                "data": {
-                    "nonNullFriendList": [{"nonNullName": "Luke"}],
-                },
-                "pending": [{"path": ["nonNullFriendList"]}],
+                "data": {"nonNullFriendList": [{"nonNullName": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "path": ["nonNullFriendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1593,18 +1443,11 @@ def describe_execute_stream_directive():
                 {
                     "message": "Cannot return null for non-nullable field"
                     " NestedObject.nonNullScalarField.",
-                    "locations": [
-                        {
-                            "line": 4,
-                            "column": 17,
-                        }
-                    ],
+                    "locations": [{"line": 4, "column": 17}],
                     "path": ["nestedObject", "nonNullScalarField"],
                 },
             ],
-            "data": {
-                "nestedObject": None,
-            },
+            "data": {"nestedObject": None},
         }
 
     @pytest.mark.asyncio
@@ -1644,9 +1487,7 @@ def describe_execute_stream_directive():
                     "path": ["nestedObject", "nonNullScalarField"],
                 },
             ],
-            "data": {
-                "nestedObject": None,
-            },
+            "data": {"nestedObject": None},
         }
 
     @pytest.mark.asyncio
@@ -1692,8 +1533,8 @@ def describe_execute_stream_directive():
                     "nestedObject": {"nestedFriendList": []},
                 },
                 "pending": [
-                    {"path": ["otherNestedObject"]},
-                    {"path": ["nestedObject", "nestedFriendList"]},
+                    {"id": "0", "path": ["otherNestedObject"]},
+                    {"id": "1", "path": ["nestedObject", "nestedFriendList"]},
                 ],
                 "hasNext": True,
             },
@@ -1701,7 +1542,7 @@ def describe_execute_stream_directive():
                 "incremental": [
                     {
                         "data": {"scalarField": None},
-                        "path": ["otherNestedObject"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
@@ -1710,18 +1551,12 @@ def describe_execute_stream_directive():
                             },
                         ],
                     },
-                    {
-                        "items": [{"name": "Luke"}],
-                        "path": ["nestedObject", "nestedFriendList"],
-                    },
+                    {"items": [{"name": "Luke"}], "id": "1"},
                 ],
-                "completed": [{"path": ["otherNestedObject"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["nestedObject", "nestedFriendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "1"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -1764,19 +1599,15 @@ def describe_execute_stream_directive():
 
         assert result == [
             {
-                "data": {
-                    "nestedObject": {},
-                },
-                "pending": [{"path": ["nestedObject"]}],
+                "data": {"nestedObject": {}},
+                "pending": [{"id": "0", "path": ["nestedObject"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
-                        "data": {
-                            "deeperNestedObject": None,
-                        },
-                        "path": ["nestedObject"],
+                        "data": {"deeperNestedObject": None},
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
@@ -1791,7 +1622,7 @@ def describe_execute_stream_directive():
                         ],
                     },
                 ],
-                "completed": [{"path": ["nestedObject"]}],
+                "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
@@ -1828,17 +1659,15 @@ def describe_execute_stream_directive():
 
         assert result == [
             {
-                "data": {
-                    "friendList": [],
-                },
-                "pending": [{"path": ["friendList"]}],
+                "data": {"friendList": []},
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {
                         "items": [None],
-                        "path": ["friendList"],
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null for non-nullable field"
@@ -1851,10 +1680,7 @@ def describe_execute_stream_directive():
                 ],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["friendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.timeout(1)
@@ -1908,7 +1734,7 @@ def describe_execute_stream_directive():
         result1 = execute_result.initial_result
         assert result1 == {
             "data": {"nestedObject": {}},
-            "pending": [{"path": ["nestedObject"]}],
+            "pending": [{"id": "0", "path": ["nestedObject"]}],
             "hasNext": True,
         }
 
@@ -1919,7 +1745,7 @@ def describe_execute_stream_directive():
             "incremental": [
                 {
                     "data": {"deeperNestedObject": None},
-                    "path": ["nestedObject"],
+                    "id": "0",
                     "errors": [
                         {
                             "message": "Cannot return null for non-nullable field"
@@ -1934,7 +1760,7 @@ def describe_execute_stream_directive():
                     ],
                 },
             ],
-            "completed": [{"path": ["nestedObject"]}],
+            "completed": [{"id": "0"}],
             "hasNext": False,
         }
 
@@ -1976,34 +1802,19 @@ def describe_execute_stream_directive():
         )
         assert result == [
             {
-                "data": {
-                    "friendList": [{"id": "1", "name": "Luke"}],
-                },
-                "pending": [{"path": ["friendList"]}],
+                "data": {"friendList": [{"id": "1", "name": "Luke"}]},
+                "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"id": "2", "name": "Han"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"id": "3", "name": "Leia"}],
-                        "path": ["friendList"],
-                    }
-                ],
+                "incremental": [{"items": [{"id": "3", "name": "Leia"}], "id": "0"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["friendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -2043,40 +1854,23 @@ def describe_execute_stream_directive():
 
         assert result == [
             {
-                "data": {
-                    "nestedObject": {
-                        "nestedFriendList": [],
-                    },
-                },
+                "data": {"nestedObject": {"nestedFriendList": []}},
                 "pending": [
-                    {"path": ["nestedObject"]},
-                    {"path": ["nestedObject", "nestedFriendList"]},
+                    {"id": "0", "path": ["nestedObject"]},
+                    {"id": "1", "path": ["nestedObject", "nestedFriendList"]},
                 ],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"id": "1", "name": "Luke"}],
-                        "path": ["nestedObject", "nestedFriendList"],
-                    },
-                ],
-                "completed": [{"path": ["nestedObject"]}],
+                "incremental": [{"items": [{"id": "1", "name": "Luke"}], "id": "1"}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [{"id": "2", "name": "Han"}],
-                        "path": ["nestedObject", "nestedFriendList"],
-                    },
-                ],
+                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "1"}],
                 "hasNext": True,
             },
-            {
-                "completed": [{"path": ["nestedObject", "nestedFriendList"]}],
-                "hasNext": False,
-            },
+            {"completed": [{"id": "1"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
@@ -2124,48 +1918,32 @@ def describe_execute_stream_directive():
         result1 = execute_result.initial_result
         assert result1 == {
             "data": {"nestedObject": {}},
-            "pending": [{"path": ["nestedObject"]}],
+            "pending": [{"id": "0", "path": ["nestedObject"]}],
             "hasNext": True,
         }
 
         resolve_slow_field.set()
         result2 = await anext(iterator)
         assert result2.formatted == {
-            "pending": [{"path": ["nestedObject", "nestedFriendList"]}],
+            "pending": [{"id": "1", "path": ["nestedObject", "nestedFriendList"]}],
             "incremental": [
-                {
-                    "data": {"scalarField": "slow", "nestedFriendList": []},
-                    "path": ["nestedObject"],
-                },
+                {"data": {"scalarField": "slow", "nestedFriendList": []}, "id": "0"},
             ],
-            "completed": [{"path": ["nestedObject"]}],
+            "completed": [{"id": "0"}],
             "hasNext": True,
         }
         result3 = await anext(iterator)
         assert result3.formatted == {
-            "incremental": [
-                {
-                    "items": [{"name": "Luke"}],
-                    "path": ["nestedObject", "nestedFriendList"],
-                },
-            ],
+            "incremental": [{"items": [{"name": "Luke"}], "id": "1"}],
             "hasNext": True,
         }
         result4 = await anext(iterator)
         assert result4.formatted == {
-            "incremental": [
-                {
-                    "items": [{"name": "Han"}],
-                    "path": ["nestedObject", "nestedFriendList"],
-                },
-            ],
+            "incremental": [{"items": [{"name": "Han"}], "id": "1"}],
             "hasNext": True,
         }
         result5 = await anext(iterator)
-        assert result5.formatted == {
-            "completed": [{"path": ["nestedObject", "nestedFriendList"]}],
-            "hasNext": False,
-        }
+        assert result5.formatted == {"completed": [{"id": "1"}], "hasNext": False}
 
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
@@ -2214,8 +1992,8 @@ def describe_execute_stream_directive():
         assert result1 == {
             "data": {"friendList": [{"id": "1"}]},
             "pending": [
-                {"path": ["friendList", 0], "label": "DeferName"},
-                {"path": ["friendList"], "label": "stream-label"},
+                {"id": "0", "path": ["friendList", 0], "label": "DeferName"},
+                {"id": "1", "path": ["friendList"], "label": "stream-label"},
             ],
             "hasNext": True,
         }
@@ -2223,41 +2001,25 @@ def describe_execute_stream_directive():
         resolve_iterable.set()
         result2 = await anext(iterator)
         assert result2.formatted == {
-            "pending": [{"path": ["friendList", 1], "label": "DeferName"}],
+            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [
-                {
-                    "data": {"name": "Luke"},
-                    "path": ["friendList", 0],
-                },
-                {
-                    "items": [{"id": "2"}],
-                    "path": ["friendList"],
-                },
+                {"data": {"name": "Luke"}, "id": "0"},
+                {"items": [{"id": "2"}], "id": "1"},
             ],
-            "completed": [{"path": ["friendList", 0], "label": "DeferName"}],
+            "completed": [{"id": "0"}],
             "hasNext": True,
         }
 
         resolve_slow_field.set()
         result3 = await anext(iterator)
         assert result3.formatted == {
-            "completed": [
-                {
-                    "path": ["friendList"],
-                    "label": "stream-label",
-                },
-            ],
+            "completed": [{"id": "1"}],
             "hasNext": True,
         }
         result4 = await anext(iterator)
         assert result4.formatted == {
-            "incremental": [
-                {
-                    "data": {"name": "Han"},
-                    "path": ["friendList", 1],
-                },
-            ],
-            "completed": [{"path": ["friendList", 1], "label": "DeferName"}],
+            "incremental": [{"data": {"name": "Han"}, "id": "2"}],
+            "completed": [{"id": "2"}],
             "hasNext": False,
         }
 
@@ -2307,8 +2069,8 @@ def describe_execute_stream_directive():
         assert result1 == {
             "data": {"friendList": [{"id": "1"}]},
             "pending": [
-                {"path": ["friendList", 0], "label": "DeferName"},
-                {"path": ["friendList"], "label": "stream-label"},
+                {"id": "0", "path": ["friendList", 0], "label": "DeferName"},
+                {"id": "1", "path": ["friendList"], "label": "stream-label"},
             ],
             "hasNext": True,
         }
@@ -2316,37 +2078,28 @@ def describe_execute_stream_directive():
         resolve_slow_field.set()
         result2 = await anext(iterator)
         assert result2.formatted == {
-            "pending": [{"path": ["friendList", 1], "label": "DeferName"}],
+            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [
-                {
-                    "data": {"name": "Luke"},
-                    "path": ["friendList", 0],
-                },
-                {
-                    "items": [{"id": "2"}],
-                    "path": ["friendList"],
-                },
+                {"data": {"name": "Luke"}, "id": "0"},
+                {"items": [{"id": "2"}], "id": "1"},
             ],
-            "completed": [{"path": ["friendList", 0], "label": "DeferName"}],
+            "completed": [{"id": "0"}],
             "hasNext": True,
         }
 
         result3 = await anext(iterator)
         assert result3.formatted == {
             "incremental": [
-                {
-                    "data": {"name": "Han"},
-                    "path": ["friendList", 1],
-                },
+                {"data": {"name": "Han"}, "id": "2"},
             ],
-            "completed": [{"path": ["friendList", 1], "label": "DeferName"}],
+            "completed": [{"id": "2"}],
             "hasNext": True,
         }
 
         resolve_iterable.set()
         result4 = await anext(iterator)
         assert result4.formatted == {
-            "completed": [{"path": ["friendList"], "label": "stream-label"}],
+            "completed": [{"id": "1"}],
             "hasNext": False,
         }
 
@@ -2385,7 +2138,10 @@ def describe_execute_stream_directive():
         result1 = execute_result.initial_result
         assert result1 == {
             "data": {"friendList": [{"id": "1"}]},
-            "pending": [{"path": ["friendList", 0]}, {"path": ["friendList"]}],
+            "pending": [
+                {"id": "0", "path": ["friendList", 0]},
+                {"id": "1", "path": ["friendList"]},
+            ],
             "hasNext": True,
         }
 
@@ -2434,7 +2190,7 @@ def describe_execute_stream_directive():
         result1 = execute_result.initial_result
         assert result1 == {
             "data": {"friendList": [{"id": "1", "name": "Luke"}]},
-            "pending": [{"path": ["friendList"]}],
+            "pending": [{"id": "0", "path": ["friendList"]}],
             "hasNext": True,
         }
 
@@ -2476,7 +2232,10 @@ def describe_execute_stream_directive():
         result1 = execute_result.initial_result
         assert result1 == {
             "data": {"friendList": [{"id": "1"}]},
-            "pending": [{"path": ["friendList", 0]}, {"path": ["friendList"]}],
+            "pending": [
+                {"id": "0", "path": ["friendList", 0]},
+                {"id": "1", "path": ["friendList"]},
+            ],
             "hasNext": True,
         }
 
