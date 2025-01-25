@@ -6,9 +6,10 @@ a query language for APIs created by Facebook.
 
 [![PyPI version](https://badge.fury.io/py/graphql-core.svg)](https://badge.fury.io/py/graphql-core)
 [![Documentation Status](https://readthedocs.org/projects/graphql-core-3/badge/)](https://graphql-core-3.readthedocs.io)
-![Test Status](https://github.com/graphql-python/graphql-core/actions/workflows/test.yml/badge.svg)
-![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
-[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Test Status](https://github.com/graphql-python/graphql-core/actions/workflows/test.yml/badge.svg)](https://github.com/graphql-python/graphql-core/actions/workflows/test.yml)
+[![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/graphql-python/graphql-core)
+[![Code style](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 An extensive test suite with over 2200 unit tests and 100% coverage replicates the
 complete test suite of GraphQL.js, ensuring that this port is reliable and compatible
