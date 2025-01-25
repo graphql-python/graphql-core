@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import ensure_future, gather, shield, wait_for
 from contextlib import suppress
+from copy import copy
 from typing import (
     Any,
     AsyncGenerator,
@@ -219,6 +220,7 @@ class ExecutionContext:
         subscribe_field_resolver: GraphQLFieldResolver | None = None,
         middleware: Middleware | None = None,
         is_awaitable: Callable[[Any], bool] | None = None,
+        **custom_args: Any,
     ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
 
@@ -292,24 +294,14 @@ class ExecutionContext:
             IncrementalPublisher(),
             middleware_manager,
             is_awaitable,
+            **custom_args,
         )
 
     def build_per_event_execution_context(self, payload: Any) -> ExecutionContext:
         """Create a copy of the execution context for usage with subscribe events."""
-        return self.__class__(
-            self.schema,
-            self.fragments,
-            payload,
-            self.context_value,
-            self.operation,
-            self.variable_values,
-            self.field_resolver,
-            self.type_resolver,
-            self.subscribe_field_resolver,
-            self.incremental_publisher,
-            self.middleware_manager,
-            self.is_awaitable,
-        )
+        context = copy(self)
+        context.root_value = payload
+        return context
 
     def execute_operation(
         self, initial_result_record: InitialResultRecord
@@ -1709,6 +1701,7 @@ def execute(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], bool] | None = None,
+    **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -1741,6 +1734,7 @@ def execute(
         middleware,
         execution_context_class,
         is_awaitable,
+        **custom_context_args,
     )
     if isinstance(result, ExecutionResult):
         return result
@@ -1769,6 +1763,7 @@ def experimental_execute_incrementally(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], bool] | None = None,
+    **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
 
@@ -1797,6 +1792,7 @@ def experimental_execute_incrementally(
         subscribe_field_resolver,
         middleware,
         is_awaitable,
+        **custom_context_args,
     )
 
     # Return early errors if execution context failed.
@@ -2127,6 +2123,7 @@ def subscribe(
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     middleware: MiddlewareManager | None = None,
+    **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -2167,6 +2164,7 @@ def subscribe(
         type_resolver,
         subscribe_field_resolver,
         middleware=middleware,
+        **custom_context_args,
     )
 
     # Return early errors if execution context failed.
@@ -2202,6 +2200,7 @@ def create_source_event_stream(
     type_resolver: GraphQLTypeResolver | None = None,
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
+    **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
     """Create source event stream
 
@@ -2238,6 +2237,7 @@ def create_source_event_stream(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        **custom_context_args,
     )
 
     # Return early errors if execution context failed.

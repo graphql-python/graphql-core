@@ -43,6 +43,10 @@ def describe_customize_execution():
         )
 
         class TestExecutionContext(ExecutionContext):
+            def __init__(self, *args, **kwargs):
+                assert kwargs.pop("custom_arg", None) == "baz"
+                super().__init__(*args, **kwargs)
+
             def execute_field(
                 self,
                 parent_type,
@@ -62,7 +66,12 @@ def describe_customize_execution():
                 )
                 return result * 2  # type: ignore
 
-        assert execute(schema, query, execution_context_class=TestExecutionContext) == (
+        assert execute(
+            schema,
+            query,
+            execution_context_class=TestExecutionContext,
+            custom_arg="baz",
+        ) == (
             {"foo": "barbar"},
             None,
         )
@@ -101,6 +110,10 @@ def describe_customize_subscription():
     @pytest.mark.asyncio
     async def uses_a_custom_execution_context_class():
         class TestExecutionContext(ExecutionContext):
+            def __init__(self, *args, **kwargs):
+                assert kwargs.pop("custom_arg", None) == "baz"
+                super().__init__(*args, **kwargs)
+
             def build_resolve_info(self, *args, **kwargs):
                 resolve_info = super().build_resolve_info(*args, **kwargs)
                 resolve_info.context["foo"] = "bar"
@@ -132,6 +145,7 @@ def describe_customize_subscription():
             document,
             context_value={},
             execution_context_class=TestExecutionContext,
+            custom_arg="baz",
         )
         assert isasyncgen(subscription)
 
