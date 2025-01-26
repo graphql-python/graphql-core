@@ -3,7 +3,7 @@ from typing import Any, NamedTuple, Optional
 
 from pytest import mark
 
-from graphql.execution import execute, execute_sync, ExecutionResult
+from graphql.execution import ExecutionResult, execute, execute_sync
 from graphql.language import parse
 from graphql.type import (
     GraphQLBoolean,
@@ -40,9 +40,7 @@ async def execute_query(
     assert isinstance(schema, GraphQLSchema)
     assert isinstance(query, str)
     document = parse(query)
-    result = (execute_sync if sync else execute)(
-        schema, document, root_value
-    )  # type: ignore
+    result = (execute_sync if sync else execute)(schema, document, root_value)
     if not sync and isawaitable(result):
         result = await result
     assert isinstance(result, ExecutionResult)

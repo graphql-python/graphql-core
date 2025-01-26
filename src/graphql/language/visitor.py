@@ -14,8 +14,7 @@ from typing import (
 
 from ..pyutils import inspect, snake_to_camel
 from . import ast
-
-from .ast import Node, QUERY_DOCUMENT_KEYS
+from .ast import QUERY_DOCUMENT_KEYS, Node
 
 __all__ = [
     "Visitor",
@@ -288,7 +287,7 @@ def visit(
         else:
             stack = Stack(in_array, idx, keys, edits, stack)
             in_array = isinstance(node, tuple)
-            keys = node if in_array else visitor_keys.get(node.kind, ())
+            keys = node if in_array else visitor_keys.get(node.kind, ())  # type: ignore
             idx = -1
             edits = []
             if parent:
