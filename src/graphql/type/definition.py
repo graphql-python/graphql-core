@@ -1389,7 +1389,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
 
     Example::
 
-        NonNullFloat = GraphQLNonNull(GraphQLFloat())
+        NonNullFloat = GraphQLNonNull(GraphQLFloat)
 
         class GeoPoint(GraphQLInputObjectType):
             name = 'GeoPoint'
@@ -1397,7 +1397,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 'lat': GraphQLInputField(NonNullFloat),
                 'lon': GraphQLInputField(NonNullFloat),
                 'alt': GraphQLInputField(
-                          GraphQLFloat(), default_value=0)
+                          GraphQLFloat, default_value=0)
             }
 
     The outbound values will be Python dictionaries by default, but you can have them
@@ -1651,7 +1651,7 @@ class GraphQLNonNull(GraphQLWrappingType[GNT], Generic[GNT]):
         class RowType(GraphQLObjectType):
             name = 'Row'
             fields = {
-                'id': GraphQLField(GraphQLNonNull(GraphQLString()))
+                'id': GraphQLField(GraphQLNonNull(GraphQLString))
             }
 
     Note: the enforcement of non-nullability occurs within the executor.
