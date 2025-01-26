@@ -493,6 +493,7 @@ def remap_named_type(type_: GraphQLNamedType, type_map: TypeMap) -> None:
             field.type = remapped_type(field.type, type_map)
             fields[field_name] = field
 
+
 def remap_directive(directive: GraphQLDirective, type_map: TypeMap) -> None:
     """Change all references in the given directive to use this type map."""
     args = directive.args
