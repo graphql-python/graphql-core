@@ -2,14 +2,16 @@ from collections import ChainMap
 from typing import Any
 
 from graphql.error import GraphQLError
-from graphql.execution import execute_sync, ExecutionResult
-from graphql.language import parse, SourceLocation
+from graphql.execution import ExecutionResult, execute_sync
+from graphql.language import SourceLocation, parse
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
+    GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInt,
+    GraphQLList,
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
@@ -212,6 +214,91 @@ def describe_execute_resolve_function():
             },
             None,
         )
+
+    def transforms_default_values_using_out_names():
+        # This is an extension of GraphQL.js.
+        resolver_kwargs: Any
+
+        def search_resolver(_obj: None, _info, **kwargs):
+            nonlocal resolver_kwargs
+            resolver_kwargs = kwargs
+            return [{"id": "42"}]
+
+        filters_type = GraphQLInputObjectType(
+            "SearchFilters",
+            {"pageSize": GraphQLInputField(GraphQLInt, out_name="page_size")},
+        )
+        result_type = GraphQLObjectType("SearchResult", {"id": GraphQLField(GraphQLID)})
+        query = GraphQLObjectType(
+            "Query",
+            {
+                "search": GraphQLField(
+                    GraphQLList(result_type),
+                    {
+                        "searchFilters": GraphQLArgument(
+                            filters_type, {"pageSize": 10}, out_name="search_filters"
+                        )
+                    },
+                    resolve=search_resolver,
+                )
+            },
+        )
+        schema = GraphQLSchema(query)
+
+        resolver_kwargs = None
+        result = execute_sync(schema, parse("{ search { id } }"))
+        assert result == ({"search": [{"id": "42"}]}, None)
+        assert resolver_kwargs == {"search_filters": {"page_size": 10}}
+
+        resolver_kwargs = None
+        result = execute_sync(
+            schema, parse("{ search(searchFilters:{pageSize: 25}) { id } }")
+        )
+        assert result == ({"search": [{"id": "42"}]}, None)
+        assert resolver_kwargs == {"search_filters": {"page_size": 25}}
+
+        resolver_kwargs = None
+        result = execute_sync(
+            schema,
+            parse(
+                """
+                    query ($searchFilters: SearchFilters) {
+                      search(searchFilters: $searchFilters) { id }
+                }
+                """
+            ),
+        )
+        assert result == ({"search": [{"id": "42"}]}, None)
+        assert resolver_kwargs == {"search_filters": {"page_size": 10}}
+
+        resolver_kwargs = None
+        result = execute_sync(
+            schema,
+            parse(
+                """
+                    query ($searchFilters: SearchFilters) {
+                      search(searchFilters: $searchFilters) { id }
+                }
+                """
+            ),
+            variable_values={"searchFilters": {"pageSize": 25}},
+        )
+        assert result == ({"search": [{"id": "42"}]}, None)
+        assert resolver_kwargs == {"search_filters": {"page_size": 25}}
+
+        resolver_kwargs = None
+        result = execute_sync(
+            schema,
+            parse(
+                """
+                    query ($searchFilters: SearchFilters = {pageSize: 25}) {
+                      search(searchFilters: $searchFilters) { id }
+                }
+                """
+            ),
+        )
+        assert result == ({"search": [{"id": "42"}]}, None)
+        assert resolver_kwargs == {"search_filters": {"page_size": 25}}
 
     def pass_error_from_resolver_wrapped_as_located_graphql_error():
         def resolve(_obj, _info):

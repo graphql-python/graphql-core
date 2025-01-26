@@ -23,6 +23,7 @@ from ..type import (
     GraphQLField,
     GraphQLInputType,
     GraphQLSchema,
+    is_input_object_type,
     is_input_type,
     is_non_null_type,
 )
@@ -160,8 +161,13 @@ def get_argument_values(
         argument_node = arg_node_map.get(name)
 
         if argument_node is None:
-            if arg_def.default_value is not Undefined:
-                coerced_values[arg_def.out_name or name] = arg_def.default_value
+            value = arg_def.default_value
+            if value is not Undefined:
+                if is_input_object_type(arg_def.type):
+                    # coerce input value so that out_names are used
+                    value = coerce_input_value(value, arg_def.type)
+
+                coerced_values[arg_def.out_name or name] = value
             elif is_non_null_type(arg_type):  # pragma: no cover else
                 raise GraphQLError(
                     f"Argument '{name}' of required type '{arg_type}'"
@@ -176,8 +182,12 @@ def get_argument_values(
         if isinstance(value_node, VariableNode):
             variable_name = value_node.name.value
             if variable_values is None or variable_name not in variable_values:
-                if arg_def.default_value is not Undefined:
-                    coerced_values[arg_def.out_name or name] = arg_def.default_value
+                value = arg_def.default_value
+                if value is not Undefined:
+                    if is_input_object_type(arg_def.type):
+                        # coerce input value so that out_names are used
+                        value = coerce_input_value(value, arg_def.type)
+                    coerced_values[arg_def.out_name or name] = value
                 elif is_non_null_type(arg_type):  # pragma: no cover else
                     raise GraphQLError(
                         f"Argument '{name}' of required type '{arg_type}'"
