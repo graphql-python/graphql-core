@@ -302,7 +302,5 @@ class IntrospectionSchema(MaybeWithDescription):
     directives: list[IntrospectionDirective]
 
 
-class IntrospectionQuery(TypedDict):
-    """The root typed dictionary for schema introspections."""
-
-    __schema: IntrospectionSchema
+# The root typed dictionary for schema introspections.
+IntrospectionQuery = TypedDict("IntrospectionQuery", [("__schema", IntrospectionSchema)])
