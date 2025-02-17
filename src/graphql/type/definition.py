@@ -833,9 +833,7 @@ class GraphQLObjectType(GraphQLNamedType):
             )
         return {
             assert_name(name): (
-                value
-                if isinstance(value, GraphQLField)
-                else GraphQLField(value)  # type: ignore
+                value if isinstance(value, GraphQLField) else GraphQLField(value)
             )
             for name, value in fields.items()
         }
@@ -969,9 +967,7 @@ class GraphQLInterfaceType(GraphQLNamedType):
             )
         return {
             assert_name(name): (
-                value
-                if isinstance(value, GraphQLField)
-                else GraphQLField(value)  # type: ignore
+                value if isinstance(value, GraphQLField) else GraphQLField(value)
             )
             for name, value in fields.items()
         }
@@ -1492,7 +1488,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
             assert_name(name): (
                 value
                 if isinstance(value, GraphQLInputField)
-                else GraphQLInputField(value)  # type: ignore
+                else GraphQLInputField(value)
             )
             for name, value in fields.items()
         }

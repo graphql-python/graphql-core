@@ -292,7 +292,9 @@ class IntrospectionSchema(MaybeWithDescription):
     directives: List[IntrospectionDirective]
 
 
-class IntrospectionQuery(TypedDict):
-    """The root typed dictionary for schema introspections."""
-
-    __schema: IntrospectionSchema
+# The root typed dictionary for schema introspections.
+# Note: We don't use class syntax here since the key looks like a private attribute.
+IntrospectionQuery = TypedDict(
+    "IntrospectionQuery",
+    {"__schema": IntrospectionSchema},
+)
