@@ -303,4 +303,4 @@ class IntrospectionSchema(MaybeWithDescription):
 
 
 # The root typed dictionary for schema introspections.
-IntrospectionQuery = TypedDict("IntrospectionQuery", [("__schema", IntrospectionSchema)])
+IntrospectionQuery = TypedDict("IntrospectionQuery", {"__schema": IntrospectionSchema})
