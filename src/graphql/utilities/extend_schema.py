@@ -405,7 +405,7 @@ class ExtendSchemaImpl:
     ) -> list[GraphQLInterfaceType]:
         """Extend a GraphQL object type interface."""
         return [
-            cast(GraphQLInterfaceType, self.replace_named_type(interface))
+            cast("GraphQLInterfaceType", self.replace_named_type(interface))
             for interface in kwargs["interfaces"]
         ] + self.build_interfaces(extensions)
 
@@ -443,7 +443,7 @@ class ExtendSchemaImpl:
     ) -> list[GraphQLInterfaceType]:
         """Extend GraphQL interface type interfaces."""
         return [
-            cast(GraphQLInterfaceType, self.replace_named_type(interface))
+            cast("GraphQLInterfaceType", self.replace_named_type(interface))
             for interface in kwargs["interfaces"]
         ] + self.build_interfaces(extensions)
 
@@ -483,7 +483,7 @@ class ExtendSchemaImpl:
     ) -> list[GraphQLObjectType]:
         """Extend types of a GraphQL union type."""
         return [
-            cast(GraphQLObjectType, self.replace_named_type(member_type))
+            cast("GraphQLObjectType", self.replace_named_type(member_type))
             for member_type in kwargs["types"]
         ] + self.build_union_types(extensions)
 
@@ -551,9 +551,9 @@ class ExtendSchemaImpl:
             return GraphQLList(self.get_wrapped_type(node.type))
         if isinstance(node, NonNullTypeNode):
             return GraphQLNonNull(
-                cast(GraphQLNullableType, self.get_wrapped_type(node.type))
+                cast("GraphQLNullableType", self.get_wrapped_type(node.type))
             )
-        return self.get_named_type(cast(NamedTypeNode, node))
+        return self.get_named_type(cast("NamedTypeNode", node))
 
     def build_directive(self, node: DirectiveDefinitionNode) -> GraphQLDirective:
         """Build a GraphQL directive for a given directive definition node."""
@@ -585,7 +585,7 @@ class ExtendSchemaImpl:
                 # value, that would throw immediately while type system validation
                 # with validate_schema() will produce more actionable results.
                 field_map[field.name.value] = GraphQLField(
-                    type_=cast(GraphQLOutputType, self.get_wrapped_type(field.type)),
+                    type_=cast("GraphQLOutputType", self.get_wrapped_type(field.type)),
                     description=field.description.value if field.description else None,
                     args=self.build_argument_map(field.arguments),
                     deprecation_reason=get_deprecation_reason(field),
@@ -603,7 +603,7 @@ class ExtendSchemaImpl:
             # Note: While this could make assertions to get the correctly typed
             # value, that would throw immediately while type system validation
             # with validate_schema() will produce more actionable results.
-            type_ = cast(GraphQLInputType, self.get_wrapped_type(arg.type))
+            type_ = cast("GraphQLInputType", self.get_wrapped_type(arg.type))
             arg_map[arg.name.value] = GraphQLArgument(
                 type_=type_,
                 description=arg.description.value if arg.description else None,
@@ -624,7 +624,7 @@ class ExtendSchemaImpl:
                 # Note: While this could make assertions to get the correctly typed
                 # value, that would throw immediately while type system validation
                 # with validate_schema() will produce more actionable results.
-                type_ = cast(GraphQLInputType, self.get_wrapped_type(field.type))
+                type_ = cast("GraphQLInputType", self.get_wrapped_type(field.type))
                 input_field_map[field.name.value] = GraphQLInputField(
                     type_=type_,
                     description=field.description.value if field.description else None,
@@ -668,7 +668,7 @@ class ExtendSchemaImpl:
         # value, that would throw immediately while type system validation
         # with validate_schema() will produce more actionable results.
         return [
-            cast(GraphQLInterfaceType, self.get_named_type(type_))
+            cast("GraphQLInterfaceType", self.get_named_type(type_))
             for node in nodes
             for type_ in node.interfaces or []
         ]
@@ -682,7 +682,7 @@ class ExtendSchemaImpl:
         # value, that would throw immediately while type system validation
         # with validate_schema() will produce more actionable results.
         return [
-            cast(GraphQLObjectType, self.get_named_type(type_))
+            cast("GraphQLObjectType", self.get_named_type(type_))
             for node in nodes
             for type_ in node.types or []
         ]

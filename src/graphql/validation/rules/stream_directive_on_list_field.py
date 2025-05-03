@@ -28,7 +28,7 @@ class StreamDirectiveOnListField(ASTValidationRule):
         _path: Any,
         _ancestors: list[Node],
     ) -> None:
-        context = cast(ValidationContext, self.context)
+        context = cast("ValidationContext", self.context)
         field_def = context.get_field_def()
         parent_type = context.get_parent_type()
         if (

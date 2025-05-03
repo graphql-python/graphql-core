@@ -581,7 +581,9 @@ def describe_visitor():
             name: NameNode
             selection_set: SelectionSetNode | None
 
-        custom_selection_set = cast(FieldNode, custom_ast.definitions[0]).selection_set
+        custom_selection_set = cast(
+            "FieldNode", custom_ast.definitions[0]
+        ).selection_set
         assert custom_selection_set is not None
         custom_selection_set.selections = (
             *custom_selection_set.selections,

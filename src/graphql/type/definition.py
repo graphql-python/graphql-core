@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -18,6 +17,18 @@ from typing import (
     cast,
     overload,
 )
+
+try:
+    from typing import TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import TypedDict
+try:
+    from typing import TypeAlias, TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias, TypeGuard
+
+if TYPE_CHECKING:
+    from enum import Enum
 
 from ..error import GraphQLError
 from ..language import (
@@ -57,17 +68,9 @@ from ..pyutils import (
 from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 from .assert_name import assert_enum_value_name, assert_name
 
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-try:
-    from typing import TypeAlias, TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias, TypeGuard
-
 if TYPE_CHECKING:
     from .schema import GraphQLSchema
+
 
 __all__ = [
     "GraphQLAbstractType",
@@ -503,7 +506,7 @@ class GraphQLField:
             args = {
                 assert_name(name): value
                 if isinstance(value, GraphQLArgument)
-                else GraphQLArgument(cast(GraphQLInputType, value))
+                else GraphQLArgument(cast("GraphQLInputType", value))
                 for name, value in args.items()
             }
         else:
@@ -1077,7 +1080,7 @@ class GraphQLEnumType(GraphQLNamedType):
             extension_ast_nodes=extension_ast_nodes,
         )
         try:  # check for enum
-            values = cast(Enum, values).__members__  # type: ignore
+            values = cast("Enum", values).__members__  # type: ignore
         except AttributeError:
             if not isinstance(values, Mapping) or not all(
                 isinstance(name, str) for name in values
@@ -1090,9 +1093,9 @@ class GraphQLEnumType(GraphQLNamedType):
                         " with value names as keys."
                     )
                     raise TypeError(msg) from error
-            values = cast(Dict[str, Any], values)
+            values = cast("Dict[str, Any]", values)
         else:
-            values = cast(Dict[str, Enum], values)
+            values = cast("Dict[str, Enum]", values)
             if names_as_values is False:
                 values = {key: value.value for key, value in values.items()}
             elif names_as_values is True:
@@ -1662,7 +1665,7 @@ def get_nullable_type(
     """Unwrap possible non-null type"""
     if is_non_null_type(type_):
         type_ = type_.of_type
-    return cast(Optional[GraphQLNullableType], type_)
+    return cast("Optional[GraphQLNullableType]", type_)
 
 
 # These named types do not include modifiers like List or NonNull.
@@ -1707,7 +1710,7 @@ def get_named_type(type_: GraphQLType | None) -> GraphQLNamedType | None:
         unwrapped_type = type_
         while is_wrapping_type(unwrapped_type):
             unwrapped_type = unwrapped_type.of_type
-        return cast(GraphQLNamedType, unwrapped_type)
+        return cast("GraphQLNamedType", unwrapped_type)
     return None
 
 

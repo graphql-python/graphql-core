@@ -41,7 +41,7 @@ def async_reduce(
                 )
                 return await result if is_awaitable(result) else result  # type: ignore
 
-            accumulator = async_callback(cast(Awaitable[U], accumulator), value)
+            accumulator = async_callback(cast("Awaitable[U]", accumulator), value)
         else:
-            accumulator = callback(cast(U, accumulator), value)
+            accumulator = callback(cast("U", accumulator), value)
     return accumulator

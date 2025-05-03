@@ -262,7 +262,7 @@ def describe_mutation():
             return receive
 
         # noinspection PyProtectedMember
-        pubsub = context["registry"]._pubsub  # noqa: SLF001s
+        pubsub = context["registry"]._pubsub  # noqa: SLF001
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))
 

@@ -34,7 +34,7 @@ class LazyString:
         return str(self.text)
 
 
-lazy_string = cast(str, LazyString("Why am I so lazy?"))
+lazy_string = cast("str", LazyString("Why am I so lazy?"))
 
 
 @contextmanager
@@ -186,8 +186,8 @@ def describe_description():
         with registered(Lazy):
             field = GraphQLField(
                 GraphQLString,
-                description=cast(str, description),
-                deprecation_reason=cast(str, deprecation_reason),
+                description=cast("str", description),
+                deprecation_reason=cast("str", deprecation_reason),
             )
 
         schema = GraphQLSchema(GraphQLObjectType("Query", {"lazyField": field}))
@@ -222,8 +222,8 @@ def describe_description():
         with registered(Lazy):
             field = GraphQLField(
                 GraphQLString,
-                description=cast(str, description),
-                deprecation_reason=cast(str, deprecation_reason),
+                description=cast("str", description),
+                deprecation_reason=cast("str", deprecation_reason),
             )
 
         schema = GraphQLSchema(GraphQLObjectType("Query", {"lazyField": field}))

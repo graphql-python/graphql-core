@@ -39,7 +39,7 @@ class ExecutableDefinitionsRule(ASTValidationRule):
                     )
                     else "'{}'".format(
                         cast(
-                            Union[DirectiveDefinitionNode, TypeDefinitionNode],
+                            "Union[DirectiveDefinitionNode, TypeDefinitionNode]",
                             definition,
                         ).name.value
                     )

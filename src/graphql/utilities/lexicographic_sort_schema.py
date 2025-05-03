@@ -51,7 +51,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             return GraphQLList(replace_type(type_.of_type))
         if is_non_null_type(type_):
             return GraphQLNonNull(replace_type(type_.of_type))
-        return replace_named_type(cast(GraphQLNamedType, type_))
+        return replace_named_type(cast("GraphQLNamedType", type_))
 
     def replace_named_type(type_: GraphQLNamedType) -> GraphQLNamedType:
         return type_map[type_.name]
@@ -76,7 +76,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             args[name] = GraphQLArgument(
                 **merge_kwargs(
                     arg.to_kwargs(),
-                    type_=replace_type(cast(GraphQLNamedType, arg.type)),
+                    type_=replace_type(cast("GraphQLNamedType", arg.type)),
                 )
             )
         return args
@@ -87,7 +87,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             fields[name] = GraphQLField(
                 **merge_kwargs(
                     field.to_kwargs(),
-                    type_=replace_type(cast(GraphQLNamedType, field.type)),
+                    type_=replace_type(cast("GraphQLNamedType", field.type)),
                     args=sort_args(field.args),
                 )
             )
@@ -99,7 +99,8 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         return {
             name: GraphQLInputField(
                 cast(
-                    GraphQLInputType, replace_type(cast(GraphQLNamedType, field.type))
+                    "GraphQLInputType",
+                    replace_type(cast("GraphQLNamedType", field.type)),
                 ),
                 description=field.description,
                 default_value=field.default_value,
@@ -174,12 +175,14 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             sort_directive(directive)
             for directive in sorted(schema.directives, key=sort_by_name_key)
         ],
-        query=cast(Optional[GraphQLObjectType], replace_maybe_type(schema.query_type)),
+        query=cast(
+            "Optional[GraphQLObjectType]", replace_maybe_type(schema.query_type)
+        ),
         mutation=cast(
-            Optional[GraphQLObjectType], replace_maybe_type(schema.mutation_type)
+            "Optional[GraphQLObjectType]", replace_maybe_type(schema.mutation_type)
         ),
         subscription=cast(
-            Optional[GraphQLObjectType], replace_maybe_type(schema.subscription_type)
+            "Optional[GraphQLObjectType]", replace_maybe_type(schema.subscription_type)
         ),
         ast_node=schema.ast_node,
     )

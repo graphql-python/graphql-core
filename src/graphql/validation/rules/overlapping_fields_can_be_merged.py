@@ -538,8 +538,8 @@ def find_conflict(
     )
 
     # The return type for each field.
-    type1 = cast(Optional[GraphQLOutputType], def1 and def1.type)
-    type2 = cast(Optional[GraphQLOutputType], def2 and def2.type)
+    type1 = cast("Optional[GraphQLOutputType]", def1 and def1.type)
+    type2 = cast("Optional[GraphQLOutputType]", def2 and def2.type)
 
     if not are_mutually_exclusive:
         # Two aliases must refer to the same field.
@@ -739,7 +739,7 @@ def collect_fields_and_fragment_names(
             if not node_and_defs.get(response_name):
                 node_and_defs[response_name] = []
             node_and_defs[response_name].append(
-                cast(NodeAndDef, (parent_type, selection, field_def))
+                cast("NodeAndDef", (parent_type, selection, field_def))
             )
         elif isinstance(selection, FragmentSpreadNode):
             fragment_names[selection.name.value] = True

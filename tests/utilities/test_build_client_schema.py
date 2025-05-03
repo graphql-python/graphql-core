@@ -1,4 +1,4 @@
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -23,14 +23,16 @@ from graphql.utilities import (
     introspection_from_schema,
     print_schema,
 )
-from graphql.utilities.get_introspection_query import (
-    IntrospectionEnumType,
-    IntrospectionInputObjectType,
-    IntrospectionInterfaceType,
-    IntrospectionObjectType,
-    IntrospectionType,
-    IntrospectionUnionType,
-)
+
+if TYPE_CHECKING:
+    from graphql.utilities.get_introspection_query import (
+        IntrospectionEnumType,
+        IntrospectionInputObjectType,
+        IntrospectionInterfaceType,
+        IntrospectionObjectType,
+        IntrospectionType,
+        IntrospectionUnionType,
+    )
 
 from ..utils import dedent
 
@@ -715,7 +717,9 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_type_reference_is_missing_name():
             introspection = introspection_from_schema(dummy_schema)
-            query_type = cast(IntrospectionType, introspection["__schema"]["queryType"])
+            query_type = cast(
+                "IntrospectionType", introspection["__schema"]["queryType"]
+            )
             assert query_type["name"] == "Query"
             del query_type["name"]  # type: ignore
 
@@ -745,7 +749,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_interfaces():
             introspection = introspection_from_schema(dummy_schema)
             query_type_introspection = cast(
-                IntrospectionObjectType,
+                "IntrospectionObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -767,7 +771,7 @@ def describe_type_system_build_schema_from_introspection():
         def legacy_support_for_interfaces_with_null_as_interfaces_field():
             introspection = introspection_from_schema(dummy_schema)
             some_interface_introspection = cast(
-                IntrospectionInterfaceType,
+                "IntrospectionInterfaceType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -784,7 +788,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_fields():
             introspection = introspection_from_schema(dummy_schema)
             query_type_introspection = cast(
-                IntrospectionObjectType,
+                "IntrospectionObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -806,7 +810,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_field_args():
             introspection = introspection_from_schema(dummy_schema)
             query_type_introspection = cast(
-                IntrospectionObjectType,
+                "IntrospectionObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -828,7 +832,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_output_type_is_used_as_an_arg_type():
             introspection = introspection_from_schema(dummy_schema)
             query_type_introspection = cast(
-                IntrospectionObjectType,
+                "IntrospectionObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -852,7 +856,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_output_type_is_used_as_an_input_value_type():
             introspection = introspection_from_schema(dummy_schema)
             input_object_type_introspection = cast(
-                IntrospectionInputObjectType,
+                "IntrospectionInputObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -876,7 +880,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_input_type_is_used_as_a_field_type():
             introspection = introspection_from_schema(dummy_schema)
             query_type_introspection = cast(
-                IntrospectionObjectType,
+                "IntrospectionObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -900,7 +904,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_possible_types():
             introspection = introspection_from_schema(dummy_schema)
             some_union_introspection = cast(
-                IntrospectionUnionType,
+                "IntrospectionUnionType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -921,7 +925,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_enum_values():
             introspection = introspection_from_schema(dummy_schema)
             some_enum_introspection = cast(
-                IntrospectionEnumType,
+                "IntrospectionEnumType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -942,7 +946,7 @@ def describe_type_system_build_schema_from_introspection():
         def throws_when_missing_input_fields():
             introspection = introspection_from_schema(dummy_schema)
             some_input_object_introspection = cast(
-                IntrospectionInputObjectType,
+                "IntrospectionInputObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]
@@ -1055,7 +1059,7 @@ def describe_type_system_build_schema_from_introspection():
             schema = build_schema(sdl, assume_valid=True)
             introspection = introspection_from_schema(schema)
             foo_introspection = cast(
-                IntrospectionObjectType,
+                "IntrospectionObjectType",
                 next(
                     type_
                     for type_ in introspection["__schema"]["types"]

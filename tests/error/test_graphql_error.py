@@ -25,7 +25,7 @@ source = Source(
 
 ast = parse(source)
 operation_node = ast.definitions[0]
-operation_node = cast(OperationDefinitionNode, operation_node)
+operation_node = cast("OperationDefinitionNode", operation_node)
 assert operation_node
 assert operation_node.kind == "operation_definition"
 field_node = operation_node.selection_set.selections[0]
@@ -299,7 +299,7 @@ def describe_to_string():
             )
         )
         op_a = doc_a.definitions[0]
-        op_a = cast(ObjectTypeDefinitionNode, op_a)
+        op_a = cast("ObjectTypeDefinitionNode", op_a)
         assert op_a
         assert op_a.kind == "object_type_definition"
         assert op_a.fields
@@ -317,7 +317,7 @@ def describe_to_string():
             )
         )
         op_b = doc_b.definitions[0]
-        op_b = cast(ObjectTypeDefinitionNode, op_b)
+        op_b = cast("ObjectTypeDefinitionNode", op_b)
         assert op_b
         assert op_b.kind == "object_type_definition"
         assert op_b.fields

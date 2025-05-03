@@ -11,7 +11,7 @@ __all__ = ["identity_func"]
 
 T = TypeVar("T")
 
-DEFAULT_VALUE = cast(Any, Undefined)
+DEFAULT_VALUE = cast("Any", Undefined)
 
 
 def identity_func(x: T = DEFAULT_VALUE, *_args: Any) -> T:

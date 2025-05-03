@@ -94,7 +94,7 @@ def is_sdl_node(
         value is not None
         and not isinstance(value, list)
         and (
-            is_type_system_definition_node(cast(Node, value))
-            or is_type_system_extension_node(cast(Node, value))
+            is_type_system_definition_node(cast("Node", value))
+            or is_type_system_extension_node(cast("Node", value))
         )
     )

@@ -160,7 +160,7 @@ def coerce_input_value(
         # Scalars and Enums determine if an input value is valid via `parse_value()`,
         # which can throw to indicate failure. If it throws, maintain a reference
         # to the original error.
-        type_ = cast(GraphQLScalarType, type_)
+        type_ = cast("GraphQLScalarType", type_)
         try:
             parse_result = type_.parse_value(input_value)
         except GraphQLError as error:

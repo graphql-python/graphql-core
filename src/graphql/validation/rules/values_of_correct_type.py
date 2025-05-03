@@ -157,7 +157,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
         # Scalars determine if a literal value is valid via `parse_literal()` which may
         # throw or return an invalid value to indicate failure.
-        type_ = cast(GraphQLScalarType, type_)
+        type_ = cast("GraphQLScalarType", type_)
         try:
             parse_result = type_.parse_literal(node)
             if parse_result is Undefined:
@@ -218,7 +218,7 @@ def validate_one_of_input_object(
 
     is_variable = value and isinstance(value, VariableNode)
     if is_variable:
-        variable_name = cast(VariableNode, value).name.value
+        variable_name = cast("VariableNode", value).name.value
         definition = variable_definitions[variable_name]
         is_nullable_variable = not isinstance(definition.type, NonNullTypeNode)
 

@@ -297,11 +297,12 @@ class GraphQLSchema:
         for directive in directives:
             remap_directive(directive, type_map)
         return self.__class__(
-            self.query_type and cast(GraphQLObjectType, type_map[self.query_type.name]),
+            self.query_type
+            and cast("GraphQLObjectType", type_map[self.query_type.name]),
             self.mutation_type
-            and cast(GraphQLObjectType, type_map[self.mutation_type.name]),
+            and cast("GraphQLObjectType", type_map[self.mutation_type.name]),
             self.subscription_type
-            and cast(GraphQLObjectType, type_map[self.subscription_type.name]),
+            and cast("GraphQLObjectType", type_map[self.subscription_type.name]),
             types,
             directives,
             self.description,
@@ -327,7 +328,7 @@ class GraphQLSchema:
             abstract_type.types
             if is_union_type(abstract_type)
             else self.get_implementations(
-                cast(GraphQLInterfaceType, abstract_type)
+                cast("GraphQLInterfaceType", abstract_type)
             ).objects
         )
 
@@ -354,7 +355,7 @@ class GraphQLSchema:
                     add(type_.name)
             else:
                 implementations = self.get_implementations(
-                    cast(GraphQLInterfaceType, abstract_type)
+                    cast("GraphQLInterfaceType", abstract_type)
                 )
                 for type_ in implementations.objects:
                     add(type_.name)
@@ -410,7 +411,7 @@ class TypeSet(Dict[GraphQLNamedType, None]):
 
     @classmethod
     def with_initial_types(cls, types: Collection[GraphQLType]) -> TypeSet:
-        return cast(TypeSet, super().fromkeys(types))
+        return cast("TypeSet", super().fromkeys(types))
 
     def collect_referenced_types(self, type_: GraphQLType) -> None:
         """Recursive function supplementing the type starting from an initial type."""
@@ -455,7 +456,7 @@ def remapped_type(type_: GraphQLType, type_map: TypeMap) -> GraphQLType:
     """Get a copy of the given type that uses this type map."""
     if is_wrapping_type(type_):
         return type_.__class__(remapped_type(type_.of_type, type_map))
-    type_ = cast(GraphQLNamedType, type_)
+    type_ = cast("GraphQLNamedType", type_)
     return type_map.get(type_.name, type_)
 
 
@@ -493,5 +494,5 @@ def remap_directive(directive: GraphQLDirective, type_map: TypeMap) -> None:
     args = directive.args
     for arg_name, arg in args.items():
         arg = copy(arg)  # noqa: PLW2901
-        arg.type = cast(GraphQLInputType, remapped_type(arg.type, type_map))
+        arg.type = cast("GraphQLInputType", remapped_type(arg.type, type_map))
         args[arg_name] = arg

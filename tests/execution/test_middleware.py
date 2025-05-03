@@ -323,7 +323,7 @@ def describe_middleware():
                     GraphQLSchema(test_type),
                     doc,
                     None,
-                    middleware=cast(Middleware, {"bad": "value"}),
+                    middleware=cast("Middleware", {"bad": "value"}),
                 )
 
             assert str(exc_info.value) == (

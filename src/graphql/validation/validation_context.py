@@ -143,7 +143,7 @@ class ASTValidationContext:
                         append_spread(selection)
                     else:
                         set_to_visit = cast(
-                            NodeWithSelectionSet, selection
+                            "NodeWithSelectionSet", selection
                         ).selection_set
                         if set_to_visit:
                             append_set(set_to_visit)

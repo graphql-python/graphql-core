@@ -245,16 +245,16 @@ def describe_execute_handles_basic_execution_tasks():
         execute_sync(schema, document, root_value, variable_values=variable_values)
 
         assert len(resolved_infos) == 1
-        operation = cast(OperationDefinitionNode, document.definitions[0])
+        operation = cast("OperationDefinitionNode", document.definitions[0])
         assert operation
         assert operation.kind == "operation_definition"
-        field = cast(FieldNode, operation.selection_set.selections[0])
+        field = cast("FieldNode", operation.selection_set.selections[0])
 
         assert resolved_infos[0] == GraphQLResolveInfo(
             field_name="test",
             field_nodes=[field],
             return_type=GraphQLString,
-            parent_type=cast(GraphQLObjectType, schema.query_type),
+            parent_type=cast("GraphQLObjectType", schema.query_type),
             path=ResponsePath(None, "result", "Test"),
             schema=schema,
             fragments={},

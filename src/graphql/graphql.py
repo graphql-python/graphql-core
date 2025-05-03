@@ -96,9 +96,9 @@ async def graphql(
     )
 
     if default_is_awaitable(result):
-        return await cast(Awaitable[ExecutionResult], result)
+        return await cast("Awaitable[ExecutionResult]", result)
 
-    return cast(ExecutionResult, result)
+    return cast("ExecutionResult", result)
 
 
 def assume_not_awaitable(_value: Any) -> bool:
@@ -149,11 +149,11 @@ def graphql_sync(
 
     # Assert that the execution was synchronous.
     if default_is_awaitable(result):
-        ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
+        ensure_future(cast("Awaitable[ExecutionResult]", result)).cancel()
         msg = "GraphQL execution failed to complete synchronously."
         raise RuntimeError(msg)
 
-    return cast(ExecutionResult, result)
+    return cast("ExecutionResult", result)
 
 
 def graphql_impl(

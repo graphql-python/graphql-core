@@ -79,7 +79,7 @@ class GraphQLDirective:
             locations = tuple(
                 value
                 if isinstance(value, DirectiveLocation)
-                else DirectiveLocation[cast(str, value)]
+                else DirectiveLocation[cast("str", value)]
                 for value in locations
             )
         except (KeyError, TypeError) as error:
@@ -92,7 +92,7 @@ class GraphQLDirective:
             args = {
                 assert_name(name): value
                 if isinstance(value, GraphQLArgument)
-                else GraphQLArgument(cast(GraphQLInputType, value))
+                else GraphQLArgument(cast("GraphQLInputType", value))
                 for name, value in args.items()
             }
         else:

@@ -38,7 +38,7 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
 
         schema = context.schema
         defined_directives = (
-            schema.directives if schema else cast(List, specified_directives)
+            schema.directives if schema else cast("List", specified_directives)
         )
         for directive in defined_directives:
             unique_directive_map[directive.name] = not directive.is_repeatable
@@ -60,7 +60,7 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
         directives = getattr(node, "directives", None)
         if not directives:
             return
-        directives = cast(List[DirectiveNode], directives)
+        directives = cast("List[DirectiveNode]", directives)
 
         if isinstance(node, (SchemaDefinitionNode, SchemaExtensionNode)):
             seen_directives = self.schema_directives

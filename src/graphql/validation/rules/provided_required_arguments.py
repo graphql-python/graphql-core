@@ -41,7 +41,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
 
         schema = context.schema
         defined_directives = schema.directives if schema else specified_directives
-        for directive in cast(List, defined_directives):
+        for directive in cast("List", defined_directives):
             required_args_map[directive.name] = {
                 name: arg
                 for name, arg in directive.args.items()
@@ -71,7 +71,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
                     arg_type_str = (
                         str(arg_type)
                         if is_type(arg_type)
-                        else print_ast(cast(TypeNode, arg_type))
+                        else print_ast(cast("TypeNode", arg_type))
                     )
                     self.report_error(
                         GraphQLError(

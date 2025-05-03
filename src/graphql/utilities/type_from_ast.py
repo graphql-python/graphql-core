@@ -58,7 +58,7 @@ def type_from_ast(
         return GraphQLList(inner_type) if inner_type else None
     if isinstance(type_node, NonNullTypeNode):
         inner_type = type_from_ast(schema, type_node.type)
-        inner_type = cast(GraphQLNullableType, inner_type)
+        inner_type = cast("GraphQLNullableType", inner_type)
         return GraphQLNonNull(inner_type) if inner_type else None
     if isinstance(type_node, NamedTypeNode):
         return schema.get_type(type_node.name.value)

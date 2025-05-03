@@ -29,7 +29,7 @@ class DeferStreamDirectiveOnRootField(ASTValidationRule):
         _path: Any,
         _ancestors: list[Node],
     ) -> None:
-        context = cast(ValidationContext, self.context)
+        context = cast("ValidationContext", self.context)
         parent_type = context.get_parent_type()
         if not parent_type:
             return

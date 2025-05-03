@@ -417,7 +417,7 @@ def describe_execute_defer_directive():
 
         pending = [PendingResult("foo", ["bar"])]
         incremental = [
-            cast(IncrementalResult, IncrementalDeferResult({"foo": 1}, "bar"))
+            cast("IncrementalResult", IncrementalDeferResult({"foo": 1}, "bar"))
         ]
         completed = [CompletedResult("foo")]
         result = SubsequentIncrementalExecutionResult(
@@ -442,7 +442,7 @@ def describe_execute_defer_directive():
     def can_compare_subsequent_incremental_execution_result():
         pending = [PendingResult("foo", ["bar"])]
         incremental = [
-            cast(IncrementalResult, IncrementalDeferResult({"foo": 1}, "bar"))
+            cast("IncrementalResult", IncrementalDeferResult({"foo": 1}, "bar"))
         ]
         completed = [CompletedResult("foo")]
         args: dict[str, Any] = {

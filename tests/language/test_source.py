@@ -81,7 +81,7 @@ def describe_source():
 
     def rejects_invalid_location_offset():
         def create_source(location_offset: tuple[int, int]) -> Source:
-            return Source("", "", cast(SourceLocation, location_offset))
+            return Source("", "", cast("SourceLocation", location_offset))
 
         with pytest.raises(TypeError):
             create_source(None)  # type: ignore

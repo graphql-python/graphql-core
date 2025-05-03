@@ -181,11 +181,11 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        selection_set = cast(OperationDefinitionNode, definitions[0]).selection_set
+        selection_set = cast("OperationDefinitionNode", definitions[0]).selection_set
         selections = selection_set.selections
         assert isinstance(selections, tuple)
         assert len(selections) == 1
-        arguments = cast(FieldNode, selections[0]).arguments
+        arguments = cast("FieldNode", selections[0]).arguments
         assert isinstance(arguments, tuple)
         assert len(arguments) == 1
         value = arguments[0].value
@@ -263,7 +263,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -328,7 +328,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -352,7 +352,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -376,7 +376,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -400,7 +400,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -424,7 +424,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -483,7 +483,7 @@ def describe_parser():
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
-        definition = cast(OperationDefinitionNode, definitions[0])
+        definition = cast("OperationDefinitionNode", definitions[0])
         assert isinstance(definition, DefinitionNode)
         assert definition.loc == (0, 40)
         assert definition.operation == OperationType.QUERY

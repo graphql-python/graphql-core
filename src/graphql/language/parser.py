@@ -255,7 +255,7 @@ class Parser:
         experimental_client_controlled_nullability: bool = False,
     ) -> None:
         if not is_source(source):
-            source = Source(cast(str, source))
+            source = Source(cast("str", source))
 
         self._no_location = no_location
         self._max_tokens = max_tokens
@@ -319,7 +319,7 @@ class Parser:
         )
 
         if keyword_token.kind is TokenKind.NAME:
-            token_name = cast(str, keyword_token.value)
+            token_name = cast("str", keyword_token.value)
             method_name = self._parse_type_system_definition_method_names.get(
                 token_name
             )
@@ -472,7 +472,9 @@ class Parser:
         """Arguments[Const]: (Argument[?Const]+)"""
         item = self.parse_const_argument if is_const else self.parse_argument
         return self.optional_many(
-            TokenKind.PAREN_L, cast(Callable[[], ArgumentNode], item), TokenKind.PAREN_R
+            TokenKind.PAREN_L,
+            cast("Callable[[], ArgumentNode]", item),
+            TokenKind.PAREN_R,
         )
 
     def parse_argument(self, is_const: bool = False) -> ArgumentNode:
@@ -487,7 +489,7 @@ class Parser:
 
     def parse_const_argument(self) -> ConstArgumentNode:
         """Argument[Const]: Name : Value[Const]"""
-        return cast(ConstArgumentNode, self.parse_argument(True))
+        return cast("ConstArgumentNode", self.parse_argument(True))
 
     # Implement the parsing rules in the Fragments section.
 
@@ -641,7 +643,7 @@ class Parser:
         return self.parse_variable()
 
     def parse_const_value_literal(self) -> ConstValueNode:
-        return cast(ConstValueNode, self.parse_value_literal(True))
+        return cast("ConstValueNode", self.parse_value_literal(True))
 
     # Implement the parsing rules in the Directives section.
 
@@ -654,7 +656,7 @@ class Parser:
         return directives
 
     def parse_const_directives(self) -> list[ConstDirectiveNode]:
-        return cast(List[ConstDirectiveNode], self.parse_directives(True))
+        return cast("List[ConstDirectiveNode]", self.parse_directives(True))
 
     def parse_directive(self, is_const: bool) -> DirectiveNode:
         """Directive[Const]: @ Name Arguments[?Const]?"""
@@ -704,7 +706,7 @@ class Parser:
         keyword_token = self._lexer.lookahead()
         if keyword_token.kind == TokenKind.NAME:
             method_name = self._parse_type_extension_method_names.get(
-                cast(str, keyword_token.value)
+                cast("str", keyword_token.value)
             )
             if method_name:  # pragma: no cover
                 return getattr(self, f"parse_{method_name}")()

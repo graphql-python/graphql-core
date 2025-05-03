@@ -555,7 +555,7 @@ def describe_type_system_printer():
     def prints_empty_types():
         schema = GraphQLSchema(
             types=[
-                GraphQLEnumType("SomeEnum", cast(Dict[str, Any], {})),
+                GraphQLEnumType("SomeEnum", cast("Dict[str, Any]", {})),
                 GraphQLInputObjectType("SomeInputObject", {}),
                 GraphQLInterfaceType("SomeInterface", {}),
                 GraphQLObjectType("SomeObject", {}),

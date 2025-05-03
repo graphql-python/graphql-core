@@ -15,7 +15,7 @@ T = TypeVar("T")
 def assert_equal_awaitables_or_values(*items: T) -> T:
     """Check whether the items are the same and either all awaitables or all values."""
     if all(is_awaitable(item) for item in items):
-        awaitable_items = cast(Tuple[Awaitable], items)
+        awaitable_items = cast("Tuple[Awaitable]", items)
 
         async def assert_matching_awaitables():
             return assert_matching_values(*(await asyncio.gather(*awaitable_items)))

@@ -975,7 +975,7 @@ class ExecutionContext:
 
         if stream_record is not None:
             self.incremental_publisher.set_is_final_record(
-                cast(StreamItemsRecord, current_parents)
+                cast("StreamItemsRecord", current_parents)
             )
 
         if not awaitable_indices:
@@ -1113,7 +1113,7 @@ class ExecutionContext:
         runtime_type = resolve_type_fn(result, info, return_type)
 
         if self.is_awaitable(runtime_type):
-            runtime_type = cast(Awaitable, runtime_type)
+            runtime_type = cast("Awaitable", runtime_type)
 
             async def await_complete_object_value() -> Any:
                 value = self.complete_object_value(
@@ -1136,7 +1136,7 @@ class ExecutionContext:
                 return value  # pragma: no cover
 
             return await_complete_object_value()
-        runtime_type = cast(Optional[str], runtime_type)
+        runtime_type = cast("Optional[str]", runtime_type)
 
         return self.complete_object_value(
             self.ensure_valid_runtime_type(
@@ -1358,9 +1358,9 @@ class ExecutionContext:
             # typecast to ExecutionResult, not possible to return
             # ExperimentalIncrementalExecutionResults when operation is 'subscription'.
             return (
-                await cast(Awaitable[ExecutionResult], result)
+                await cast("Awaitable[ExecutionResult]", result)
                 if self.is_awaitable(result)
-                else cast(ExecutionResult, result)
+                else cast("ExecutionResult", result)
             )
 
         return map_async_iterable(result_or_stream, callback)
@@ -1424,7 +1424,7 @@ class ExecutionContext:
             )
 
             if self.is_awaitable(incremental_result):
-                incremental_result = cast(Awaitable, incremental_result)
+                incremental_result = cast("Awaitable", incremental_result)
 
                 async def await_incremental_result() -> None:
                     try:
@@ -1897,11 +1897,11 @@ def execute_sync(
         result, ExperimentalIncrementalExecutionResults
     ):
         if default_is_awaitable(result):
-            ensure_future(cast(Awaitable[ExecutionResult], result)).cancel()
+            ensure_future(cast("Awaitable[ExecutionResult]", result)).cancel()
         msg = "GraphQL execution failed to complete synchronously."
         raise RuntimeError(msg)
 
-    return cast(ExecutionResult, result)
+    return cast("ExecutionResult", result)
 
 
 def invalid_return_type_error(
@@ -1956,7 +1956,9 @@ def add_new_deferred_fragments(
         #  - the InitialResultRecord, or
         #  - a StreamItemsRecord, as `@defer` may be nested under `@stream`.
         parent = (
-            cast(Union[InitialResultRecord, StreamItemsRecord], incremental_data_record)
+            cast(
+                "Union[InitialResultRecord, StreamItemsRecord]", incremental_data_record
+            )
             if parent_defer_usage is None
             else deferred_fragment_record_from_defer_usage(
                 parent_defer_usage, new_defer_map
@@ -2069,7 +2071,7 @@ def default_type_resolver(
             is_type_of_result = type_.is_type_of(value, info)
 
             if is_awaitable(is_type_of_result):
-                append_awaitable_results(cast(Awaitable, is_type_of_result))
+                append_awaitable_results(cast("Awaitable", is_type_of_result))
                 append_awaitable_types(type_)
             elif is_type_of_result:
                 return type_.name
@@ -2257,7 +2259,7 @@ def create_source_event_stream_impl(
         return ExecutionResult(None, errors=[error])
 
     if context.is_awaitable(event_stream):
-        awaitable_event_stream = cast(Awaitable, event_stream)
+        awaitable_event_stream = cast("Awaitable", event_stream)
 
         # noinspection PyShadowingNames
         async def await_event_stream() -> AsyncIterable[Any] | ExecutionResult:

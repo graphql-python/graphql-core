@@ -51,4 +51,4 @@ def introspection_from_schema(
     if not result.data:  # pragma: no cover
         msg = "Introspection did not return a result"
         raise GraphQLError(msg)
-    return cast(IntrospectionQuery, result.data)
+    return cast("IntrospectionQuery", result.data)

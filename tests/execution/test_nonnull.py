@@ -111,7 +111,7 @@ def patch(data: str) -> str:
 async def execute_sync_and_async(query: str, root_value: Any) -> ExecutionResult:
     sync_result = execute_sync(schema, parse(query), root_value)
     async_result = await cast(
-        Awaitable[ExecutionResult], execute(schema, parse(patch(query)), root_value)
+        "Awaitable[ExecutionResult]", execute(schema, parse(patch(query)), root_value)
     )
 
     assert repr(async_result) == patch(repr(sync_result))
@@ -218,14 +218,14 @@ def describe_execute_handles_non_nullable_types():
         @pytest.mark.asyncio
         async def returns_null():
             result = await cast(
-                Awaitable[ExecutionResult], execute_query(query, NullingData())
+                "Awaitable[ExecutionResult]", execute_query(query, NullingData())
             )
             assert result == (data, None)
 
         @pytest.mark.asyncio
         async def throws():
             result = await cast(
-                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+                "Awaitable[ExecutionResult]", execute_query(query, ThrowingData())
             )
             assert result == (
                 data,
@@ -352,7 +352,7 @@ def describe_execute_handles_non_nullable_types():
         @pytest.mark.asyncio
         async def returns_null():
             result = await cast(
-                Awaitable[ExecutionResult], execute_query(query, NullingData())
+                "Awaitable[ExecutionResult]", execute_query(query, NullingData())
             )
             assert result == (
                 data,
@@ -415,7 +415,7 @@ def describe_execute_handles_non_nullable_types():
         @pytest.mark.asyncio
         async def throws():
             result = await cast(
-                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+                "Awaitable[ExecutionResult]", execute_query(query, ThrowingData())
             )
             assert result == (
                 data,

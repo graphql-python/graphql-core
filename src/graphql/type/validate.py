@@ -101,7 +101,7 @@ class SchemaValidationContext:
     ) -> None:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
-        nodes = cast(Optional[Collection[Node]], nodes)
+        nodes = cast("Optional[Collection[Node]]", nodes)
         self.errors.append(GraphQLError(message, nodes))
 
     def validate_root_types(self) -> None:
@@ -183,7 +183,7 @@ class SchemaValidationContext:
         try:
             if not name:
                 name = node.name
-            name = cast(str, name)
+            name = cast("str", name)
             ast_node = node.ast_node
         except AttributeError:  # pragma: no cover
             pass
@@ -561,7 +561,7 @@ class InputObjectCircularRefsValidator:
                         " within itself through a series of non-null fields:"
                         f" '{'.'.join(field_names)}'.",
                         cast(
-                            Collection[Node],
+                            "Collection[Node]",
                             map(attrgetter("ast_node"), map(itemgetter(1), cycle_path)),
                         ),
                     )

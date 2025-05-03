@@ -68,11 +68,11 @@ def build_ast_schema(
             # validation with validate_schema() will produce more actionable results.
             type_name = type_.name
             if type_name == "Query":
-                schema_kwargs["query"] = cast(GraphQLObjectType, type_)
+                schema_kwargs["query"] = cast("GraphQLObjectType", type_)
             elif type_name == "Mutation":
-                schema_kwargs["mutation"] = cast(GraphQLObjectType, type_)
+                schema_kwargs["mutation"] = cast("GraphQLObjectType", type_)
             elif type_name == "Subscription":
-                schema_kwargs["subscription"] = cast(GraphQLObjectType, type_)
+                schema_kwargs["subscription"] = cast("GraphQLObjectType", type_)
 
     # If specified directives were not explicitly declared, add them.
     directives = schema_kwargs["directives"]

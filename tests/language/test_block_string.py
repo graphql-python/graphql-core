@@ -148,8 +148,8 @@ def describe_is_printable_as_block_string():
             def __str__(self) -> str:
                 return self.string
 
-        _assert_printable(cast(str, LazyString("")))
-        _assert_non_printable(cast(str, LazyString(" ")))
+        _assert_printable(cast("str", LazyString("")))
+        _assert_non_printable(cast("str", LazyString(" ")))
 
 
 def describe_print_block_string():
@@ -212,4 +212,4 @@ def describe_print_block_string():
             def __str__(self) -> str:
                 return "lazy"
 
-        _assert_block_string(cast(str, LazyString()), '"""lazy"""')
+        _assert_block_string(cast("str", LazyString()), '"""lazy"""')

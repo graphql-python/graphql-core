@@ -11,7 +11,7 @@ def describe_located_error():
 
     def passes_graphql_error_through():
         path = ["path", 3, "to", "field"]
-        e = GraphQLError("msg", None, None, None, cast(Any, path))
+        e = GraphQLError("msg", None, None, None, cast("Any", path))
         assert located_error(e, [], []) == e
 
     def passes_graphql_error_ish_through():
@@ -21,7 +21,7 @@ def describe_located_error():
 
     def does_not_pass_through_elasticsearch_like_errors():
         e = Exception("I am from elasticsearch")
-        cast(Any, e).path = "/something/feed/_search"
+        cast("Any", e).path = "/something/feed/_search"
         assert located_error(e, [], []) is not e
 
     def handles_lazy_error_messages():

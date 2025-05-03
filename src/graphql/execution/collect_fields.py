@@ -394,7 +394,7 @@ def build_grouped_field_sets(
         # All TargetSets that causes new grouped field sets consist only of DeferUsages
         # and have should_initiate_defer defined
 
-        new_grouped_field_set_details[cast(DeferUsageSet, masking_targets)] = (
+        new_grouped_field_set_details[cast("DeferUsageSet", masking_targets)] = (
             GroupedFieldSetDetails(new_grouped_field_set, should_initiate_defer)
         )
 

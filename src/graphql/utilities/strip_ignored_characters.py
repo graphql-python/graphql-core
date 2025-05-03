@@ -68,7 +68,7 @@ def strip_ignored_characters(source: str | Source) -> str:
         """Type description""" type Foo{"""Field description""" bar:String}
     '''
     if not is_source(source):
-        source = Source(cast(str, source))
+        source = Source(cast("str", source))
 
     body = source.body
     lexer = Lexer(source)

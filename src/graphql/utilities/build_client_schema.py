@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Callable, Collection, cast
+from typing import TYPE_CHECKING, Callable, Collection, cast
 
 from ..language import DirectiveLocation, parse_value
 from ..pyutils import Undefined, inspect
@@ -33,21 +33,24 @@ from ..type import (
     is_output_type,
     specified_scalar_types,
 )
-from .get_introspection_query import (
-    IntrospectionDirective,
-    IntrospectionEnumType,
-    IntrospectionField,
-    IntrospectionInputObjectType,
-    IntrospectionInputValue,
-    IntrospectionInterfaceType,
-    IntrospectionObjectType,
-    IntrospectionQuery,
-    IntrospectionScalarType,
-    IntrospectionType,
-    IntrospectionTypeRef,
-    IntrospectionUnionType,
-)
 from .value_from_ast import value_from_ast
+
+if TYPE_CHECKING:
+    from .get_introspection_query import (
+        IntrospectionDirective,
+        IntrospectionEnumType,
+        IntrospectionField,
+        IntrospectionInputObjectType,
+        IntrospectionInputValue,
+        IntrospectionInterfaceType,
+        IntrospectionObjectType,
+        IntrospectionQuery,
+        IntrospectionScalarType,
+        IntrospectionType,
+        IntrospectionTypeRef,
+        IntrospectionUnionType,
+    )
+
 
 __all__ = ["build_client_schema"]
 
@@ -90,17 +93,17 @@ def build_client_schema(
             if not item_ref:
                 msg = "Decorated type deeper than introspection query."
                 raise TypeError(msg)
-            item_ref = cast(IntrospectionTypeRef, item_ref)
+            item_ref = cast("IntrospectionTypeRef", item_ref)
             return GraphQLList(get_type(item_ref))
         if kind == TypeKind.NON_NULL.name:
             nullable_ref = type_ref.get("ofType")
             if not nullable_ref:
                 msg = "Decorated type deeper than introspection query."
                 raise TypeError(msg)
-            nullable_ref = cast(IntrospectionTypeRef, nullable_ref)
+            nullable_ref = cast("IntrospectionTypeRef", nullable_ref)
             nullable_type = get_type(nullable_ref)
             return GraphQLNonNull(assert_nullable_type(nullable_type))
-        type_ref = cast(IntrospectionType, type_ref)
+        type_ref = cast("IntrospectionType", type_ref)
         return get_named_type(type_ref)
 
     def get_named_type(type_ref: IntrospectionType) -> GraphQLNamedType:
@@ -145,7 +148,7 @@ def build_client_schema(
     ) -> GraphQLScalarType:
         name = scalar_introspection["name"]
         try:
-            return cast(GraphQLScalarType, GraphQLScalarType.reserved_types[name])
+            return cast("GraphQLScalarType", GraphQLScalarType.reserved_types[name])
         except KeyError:
             return GraphQLScalarType(
                 name=name,
@@ -168,7 +171,7 @@ def build_client_schema(
                 f" {inspect(implementing_introspection)}."
             )
             raise TypeError(msg)
-        interfaces = cast(Collection[IntrospectionInterfaceType], maybe_interfaces)
+        interfaces = cast("Collection[IntrospectionInterfaceType]", maybe_interfaces)
         return [get_interface_type(interface) for interface in interfaces]
 
     def build_object_def(
@@ -176,7 +179,7 @@ def build_client_schema(
     ) -> GraphQLObjectType:
         name = object_introspection["name"]
         try:
-            return cast(GraphQLObjectType, GraphQLObjectType.reserved_types[name])
+            return cast("GraphQLObjectType", GraphQLObjectType.reserved_types[name])
         except KeyError:
             return GraphQLObjectType(
                 name=name,
@@ -205,7 +208,9 @@ def build_client_schema(
                 f" {inspect(union_introspection)}."
             )
             raise TypeError(msg)
-        possible_types = cast(Collection[IntrospectionObjectType], maybe_possible_types)
+        possible_types = cast(
+            "Collection[IntrospectionObjectType]", maybe_possible_types
+        )
         return GraphQLUnionType(
             name=union_introspection["name"],
             description=union_introspection.get("description"),
@@ -221,7 +226,7 @@ def build_client_schema(
             raise TypeError(msg)
         name = enum_introspection["name"]
         try:
-            return cast(GraphQLEnumType, GraphQLEnumType.reserved_types[name])
+            return cast("GraphQLEnumType", GraphQLEnumType.reserved_types[name])
         except KeyError:
             return GraphQLEnumType(
                 name=name,
@@ -275,7 +280,7 @@ def build_client_schema(
         }
 
     def build_field(field_introspection: IntrospectionField) -> GraphQLField:
-        type_introspection = cast(IntrospectionType, field_introspection["type"])
+        type_introspection = cast("IntrospectionType", field_introspection["type"])
         type_ = get_type(type_introspection)
         if not is_output_type(type_):
             msg = (
@@ -310,7 +315,7 @@ def build_client_schema(
     def build_argument(
         argument_introspection: IntrospectionInputValue,
     ) -> GraphQLArgument:
-        type_introspection = cast(IntrospectionType, argument_introspection["type"])
+        type_introspection = cast("IntrospectionType", argument_introspection["type"])
         type_ = get_type(type_introspection)
         if not is_input_type(type_):
             msg = (
@@ -345,7 +350,9 @@ def build_client_schema(
     def build_input_value(
         input_value_introspection: IntrospectionInputValue,
     ) -> GraphQLInputField:
-        type_introspection = cast(IntrospectionType, input_value_introspection["type"])
+        type_introspection = cast(
+            "IntrospectionType", input_value_introspection["type"]
+        )
         type_ = get_type(type_introspection)
         if not is_input_type(type_):
             msg = (
@@ -388,7 +395,7 @@ def build_client_schema(
             is_repeatable=directive_introspection.get("isRepeatable", False),
             locations=list(
                 cast(
-                    Collection[DirectiveLocation],
+                    "Collection[DirectiveLocation]",
                     directive_introspection.get("locations"),
                 )
             ),
