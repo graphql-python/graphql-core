@@ -232,6 +232,8 @@ in addition to using [mypy](https://mypy-lang.org/) as type checker.
   Arminio, is a new GraphQL library for Python 3, inspired by dataclasses,
   that is also using GraphQL-core 3 as underpinning.
 
+* [Typed GraphQL](https://github.com/willemt/typed-graphql), thin layer over GraphQL-core that uses native Python types for creating GraphQL schemas.
+
 
 ## Changelog
 
