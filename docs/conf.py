@@ -142,7 +142,7 @@ ignore_references = set(
     """
 GNT GT KT T VT
 TContext
-enum.Enum
+Enum
 traceback
 types.TracebackType
 TypeMap
@@ -157,6 +157,7 @@ FormattedPendingResult
 FormattedSourceLocation
 GraphQLAbstractType
 GraphQLCompositeType
+GraphQLEnumValueMap
 GraphQLErrorExtensions
 GraphQLFieldResolver
 GraphQLInputType
@@ -175,6 +176,7 @@ SubsequentDataRecord
 asyncio.events.AbstractEventLoop
 collections.abc.MutableMapping
 collections.abc.MutableSet
+enum.Enum
 graphql.execution.collect_fields.DeferUsage
 graphql.execution.collect_fields.CollectFieldsResult
 graphql.execution.collect_fields.FieldGroup
