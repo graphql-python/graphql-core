@@ -11,6 +11,7 @@ from graphql.type import (
     GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
+    GraphQLNonNull,
     GraphQLObjectType,
     GraphQLSchema,
     GraphQLString,
@@ -193,3 +194,42 @@ def describe_parallel_execution():
             {"foo": [{"foo": "bar", "foobar": 1}, {"foo": "baz", "foobaz": 2}]},
             None,
         )
+
+    @pytest.mark.asyncio
+    async def cancel_on_exception():
+        barrier = Barrier(2)
+        completed = False
+
+        async def succeed(*_args):
+            nonlocal completed
+            await barrier.wait()
+            completed = True  # pragma: no cover
+
+        async def fail(*_args):
+            raise RuntimeError("Oops")
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(GraphQLNonNull(GraphQLBoolean), resolve=fail),
+                    "bar": GraphQLField(GraphQLBoolean, resolve=succeed),
+                },
+            )
+        )
+
+        ast = parse("{foo, bar}")
+
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await asyncio.wait_for(awaitable_result, 1.0)
+
+        assert result == (
+            None,
+            [{"message": "Oops", "locations": [(1, 2)], "path": ["foo"]}],
+        )
+
+        # Unblock succeed() and check that it does not complete
+        await barrier.wait()
+        await asyncio.sleep(0)
+        assert not completed

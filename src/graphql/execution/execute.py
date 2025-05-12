@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from asyncio import ensure_future, gather, shield, wait_for
+from asyncio import (
+    CancelledError,
+    create_task,
+    ensure_future,
+    gather,
+    shield,
+    wait_for,
+)
 from contextlib import suppress
 from copy import copy
 from typing import (
@@ -459,12 +466,23 @@ class ExecutionContext:
                 field = awaitable_fields[0]
                 results[field] = await results[field]
             else:
-                results.update(
-                    zip(
-                        awaitable_fields,
-                        await gather(*(results[field] for field in awaitable_fields)),
-                    )
-                )
+                tasks = {
+                    create_task(results[field]): field  # type: ignore[arg-type]
+                    for field in awaitable_fields
+                }
+
+                try:
+                    awaited_results = await gather(*tasks)
+                except Exception:
+                    # Cancel unfinished tasks before raising the exception
+                    for task in tasks:
+                        if not task.done():
+                            task.cancel()
+                    await gather(*tasks, return_exceptions=True)
+                    raise
+
+                results.update(zip(awaitable_fields, awaited_results))
+
             return results
 
         return get_results()
@@ -538,6 +556,10 @@ class ExecutionContext:
                     try:
                         return await completed
                     except Exception as raw_error:
+                        # Before Python 3.8 CancelledError inherits Exception and
+                        # so gets caught here.
+                        if isinstance(raw_error, CancelledError):
+                            raise  # pragma: no cover
                         self.handle_field_error(
                             raw_error,
                             return_type,
@@ -745,6 +767,10 @@ class ExecutionContext:
             if self.is_awaitable(completed):
                 completed = await completed
         except Exception as raw_error:
+            # Before Python 3.8 CancelledError inherits Exception and
+            # so gets caught here.
+            if isinstance(raw_error, CancelledError):
+                raise  # pragma: no cover
             self.handle_field_error(
                 raw_error, return_type, field_group, path, incremental_data_record
             )
