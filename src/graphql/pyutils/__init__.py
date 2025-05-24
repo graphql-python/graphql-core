@@ -9,6 +9,7 @@ These functions are not part of the module interface and are subject to change.
 """
 
 from .async_reduce import async_reduce
+from .gather_with_cancel import gather_with_cancel
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
 from .description import (
@@ -52,6 +53,7 @@ __all__ = [
     "cached_property",
     "camel_to_snake",
     "did_you_mean",
+    "gather_with_cancel",
     "group_by",
     "identity_func",
     "inspect",

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from asyncio import (
     CancelledError,
-    create_task,
     ensure_future,
-    gather,
     shield,
     wait_for,
 )
@@ -52,6 +50,7 @@ from ..pyutils import (
     RefMap,
     Undefined,
     async_reduce,
+    gather_with_cancel,
     inspect,
     is_iterable,
 )
@@ -466,21 +465,9 @@ class ExecutionContext:
                 field = awaitable_fields[0]
                 results[field] = await results[field]
             else:
-                tasks = [
-                    create_task(results[field])  # type: ignore[arg-type]
-                    for field in awaitable_fields
-                ]
-
-                try:
-                    awaited_results = await gather(*tasks)
-                except Exception:
-                    # Cancel unfinished tasks before raising the exception
-                    for task in tasks:
-                        if not task.done():
-                            task.cancel()
-                    await gather(*tasks, return_exceptions=True)
-                    raise
-
+                awaited_results = await gather_with_cancel(
+                    *(results[field] for field in awaitable_fields)
+                )
                 results.update(zip(awaitable_fields, awaited_results))
 
             return results
@@ -911,20 +898,9 @@ class ExecutionContext:
             index = awaitable_indices[0]
             completed_results[index] = await completed_results[index]
         else:
-            tasks = [
-                create_task(completed_results[index]) for index in awaitable_indices
-            ]
-
-            try:
-                awaited_results = await gather(*tasks)
-            except Exception:
-                # Cancel unfinished tasks before raising the exception
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                await gather(*tasks, return_exceptions=True)
-                raise
-
+            awaited_results = await gather_with_cancel(
+                *(completed_results[index] for index in awaitable_indices)
+            )
             for index, sub_result in zip(awaitable_indices, awaited_results):
                 completed_results[index] = sub_result
         return completed_results
@@ -1023,20 +999,9 @@ class ExecutionContext:
                 index = awaitable_indices[0]
                 completed_results[index] = await completed_results[index]
             else:
-                tasks = [
-                    create_task(completed_results[index]) for index in awaitable_indices
-                ]
-
-                try:
-                    awaited_results = await gather(*tasks)
-                except Exception:
-                    # Cancel unfinished tasks before raising the exception
-                    for task in tasks:
-                        if not task.done():
-                            task.cancel()
-                    await gather(*tasks, return_exceptions=True)
-                    raise
-
+                awaited_results = await gather_with_cancel(
+                    *(completed_results[index] for index in awaitable_indices)
+                )
                 for index, sub_result in zip(awaitable_indices, awaited_results):
                     completed_results[index] = sub_result
             return completed_results
@@ -2123,21 +2088,7 @@ def default_type_resolver(
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
         async def get_type() -> str | None:
-            tasks = [
-                create_task(result)  # type: ignore[arg-type]
-                for result in awaitable_is_type_of_results
-            ]
-
-            try:
-                is_type_of_results = await gather(*tasks)
-            except Exception:
-                # Cancel unfinished tasks before raising the exception
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                await gather(*tasks, return_exceptions=True)
-                raise
-
+            is_type_of_results = await gather_with_cancel(*awaitable_is_type_of_results)
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
                     return type_.name

@@ -234,6 +234,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
         )
 
     @pytest.mark.asyncio
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def handles_errors_from_complete_value_in_async_iterables():
         async def list_field():
             yield "two"
