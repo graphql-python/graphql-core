@@ -195,136 +195,144 @@ def describe_parallel_execution():
             None,
         )
 
-    @pytest.mark.asyncio
-    async def cancel_selection_sets_on_exception():
-        barrier = Barrier(2)
-        completed = False
+    def describe_cancel_on_exception():
+        """Tests for cancellation of parallel execution on exception.
 
-        async def succeed(*_args):
-            nonlocal completed
-            await barrier.wait()
-            completed = True  # pragma: no cover
+        These tests are specifically targeted at the Python asyncio implementation.
+        """
 
-        async def fail(*_args):
-            raise RuntimeError("Oops")
+        @pytest.mark.asyncio
+        async def cancel_selection_sets():
+            barrier = Barrier(2)
+            completed = False
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(GraphQLNonNull(GraphQLBoolean), resolve=fail),
-                    "bar": GraphQLField(GraphQLBoolean, resolve=succeed),
-                },
+            async def succeed(*_args):
+                nonlocal completed
+                await barrier.wait()
+                completed = True  # pragma: no cover
+
+            async def fail(*_args):
+                raise RuntimeError("Oops")
+
+            schema = GraphQLSchema(
+                GraphQLObjectType(
+                    "Query",
+                    {
+                        "foo": GraphQLField(
+                            GraphQLNonNull(GraphQLBoolean), resolve=fail
+                        ),
+                        "bar": GraphQLField(GraphQLBoolean, resolve=succeed),
+                    },
+                )
             )
-        )
 
-        ast = parse("{foo, bar}")
+            ast = parse("{foo, bar}")
 
-        awaitable_result = execute(schema, ast)
-        assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1)
+            awaitable_result = execute(schema, ast)
+            assert isinstance(awaitable_result, Awaitable)
+            result = await asyncio.wait_for(awaitable_result, 1)
 
-        assert result == (
-            None,
-            [{"message": "Oops", "locations": [(1, 2)], "path": ["foo"]}],
-        )
-
-        assert not completed
-
-        # Unblock succeed() and check that it does not complete
-        await barrier.wait()
-        await asyncio.sleep(0)
-        assert not completed
-
-    @pytest.mark.asyncio
-    async def cancel_lists_on_exception():
-        barrier = Barrier(2)
-        completed = False
-
-        async def succeed(*_args):
-            nonlocal completed
-            await barrier.wait()
-            completed = True  # pragma: no cover
-
-        async def fail(*_args):
-            raise RuntimeError("Oops")
-
-        async def resolve_list(*args):
-            return [fail(*args), succeed(*args)]
-
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        GraphQLList(GraphQLNonNull(GraphQLBoolean)),
-                        resolve=resolve_list,
-                    )
-                },
+            assert result == (
+                None,
+                [{"message": "Oops", "locations": [(1, 2)], "path": ["foo"]}],
             )
-        )
 
-        ast = parse("{foo}")
+            assert not completed
 
-        awaitable_result = execute(schema, ast)
-        assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1)
-
-        assert result == (
-            {"foo": None},
-            [{"message": "Oops", "locations": [(1, 2)], "path": ["foo", 0]}],
-        )
-
-        assert not completed
-
-        # Unblock succeed() and check that it does not complete
-        await barrier.wait()
-        await asyncio.sleep(0)
-        assert not completed
-
-    @pytest.mark.asyncio
-    async def cancel_async_iterator_on_exception():
-        barrier = Barrier(2)
-        completed = False
-
-        async def succeed(*_args):
-            nonlocal completed
+            # Unblock succeed() and check that it does not complete
             await barrier.wait()
-            completed = True  # pragma: no cover
+            await asyncio.sleep(0)
+            assert not completed
 
-        async def fail(*_args):
-            raise RuntimeError("Oops")
+        @pytest.mark.asyncio
+        async def cancel_lists():
+            barrier = Barrier(2)
+            completed = False
 
-        async def resolve_iterator(*args):
-            yield fail(*args)
-            yield succeed(*args)
+            async def succeed(*_args):
+                nonlocal completed
+                await barrier.wait()
+                completed = True  # pragma: no cover
 
-        schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "foo": GraphQLField(
-                        GraphQLList(GraphQLNonNull(GraphQLBoolean)),
-                        resolve=resolve_iterator,
-                    )
-                },
+            async def fail(*_args):
+                raise RuntimeError("Oops")
+
+            async def resolve_list(*args):
+                return [fail(*args), succeed(*args)]
+
+            schema = GraphQLSchema(
+                GraphQLObjectType(
+                    "Query",
+                    {
+                        "foo": GraphQLField(
+                            GraphQLList(GraphQLNonNull(GraphQLBoolean)),
+                            resolve=resolve_list,
+                        )
+                    },
+                )
             )
-        )
 
-        ast = parse("{foo}")
+            ast = parse("{foo}")
 
-        awaitable_result = execute(schema, ast)
-        assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1)
+            awaitable_result = execute(schema, ast)
+            assert isinstance(awaitable_result, Awaitable)
+            result = await asyncio.wait_for(awaitable_result, 1)
 
-        assert result == (
-            {"foo": None},
-            [{"message": "Oops", "locations": [(1, 2)], "path": ["foo", 0]}],
-        )
+            assert result == (
+                {"foo": None},
+                [{"message": "Oops", "locations": [(1, 2)], "path": ["foo", 0]}],
+            )
 
-        assert not completed
+            assert not completed
 
-        # Unblock succeed() and check that it does not complete
-        await barrier.wait()
-        await asyncio.sleep(0)
-        assert not completed
+            # Unblock succeed() and check that it does not complete
+            await barrier.wait()
+            await asyncio.sleep(0)
+            assert not completed
+
+        @pytest.mark.asyncio
+        async def cancel_async_iterators():
+            barrier = Barrier(2)
+            completed = False
+
+            async def succeed(*_args):
+                nonlocal completed
+                await barrier.wait()
+                completed = True  # pragma: no cover
+
+            async def fail(*_args):
+                raise RuntimeError("Oops")
+
+            async def resolve_iterator(*args):
+                yield fail(*args)
+                yield succeed(*args)
+
+            schema = GraphQLSchema(
+                GraphQLObjectType(
+                    "Query",
+                    {
+                        "foo": GraphQLField(
+                            GraphQLList(GraphQLNonNull(GraphQLBoolean)),
+                            resolve=resolve_iterator,
+                        )
+                    },
+                )
+            )
+
+            ast = parse("{foo}")
+
+            awaitable_result = execute(schema, ast)
+            assert isinstance(awaitable_result, Awaitable)
+            result = await asyncio.wait_for(awaitable_result, 1)
+
+            assert result == (
+                {"foo": None},
+                [{"message": "Oops", "locations": [(1, 2)], "path": ["foo", 0]}],
+            )
+
+            assert not completed
+
+            # Unblock succeed() and check that it does not complete
+            await barrier.wait()
+            await asyncio.sleep(0)
+            assert not completed
