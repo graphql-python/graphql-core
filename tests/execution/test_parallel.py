@@ -336,3 +336,84 @@ def describe_parallel_execution():
             await barrier.wait()
             await asyncio.sleep(0)
             assert not completed
+
+        @pytest.mark.asyncio
+        async def cancel_type_resolver():
+            FooType = GraphQLInterfaceType("Foo", {"foo": GraphQLField(GraphQLString)})
+
+            barrier = Barrier(3)
+            completed = False
+
+            async def is_type_of_bar(*_args):
+                raise RuntimeError("Oops")
+
+            BarType = GraphQLObjectType(
+                "Bar",
+                {
+                    "foo": GraphQLField(GraphQLString),
+                },
+                interfaces=[FooType],
+                is_type_of=is_type_of_bar,
+            )
+
+            async def is_type_of_baz(*_args):
+                nonlocal completed
+                await barrier.wait()
+                completed = True  # pragma: no cover
+
+            BazType = GraphQLObjectType(
+                "Baz",
+                {
+                    "foo": GraphQLField(GraphQLString),
+                },
+                interfaces=[FooType],
+                is_type_of=is_type_of_baz,
+            )
+
+            schema = GraphQLSchema(
+                GraphQLObjectType(
+                    "Query",
+                    {
+                        "foo": GraphQLField(
+                            GraphQLList(FooType),
+                            resolve=lambda *_args: [
+                                {"foo": "bar"},
+                                {"foo": "baz"},
+                            ],
+                        )
+                    },
+                ),
+                types=[BarType, BazType],
+            )
+
+            ast = parse(
+                """
+                {
+                foo {
+                    foo
+                    ... on Bar { foobar }
+                    ... on Baz { foobaz }
+                }
+                }
+                """
+            )
+
+            # raises TimeoutError if not parallel
+            awaitable_result = execute(schema, ast)
+            assert isinstance(awaitable_result, Awaitable)
+            result = await asyncio.wait_for(awaitable_result, 1)
+
+            assert result == (
+                {"foo": [None, None]},
+                [
+                    {"message": "Oops", "locations": [(3, 17)], "path": ["foo", 0]},
+                    {"message": "Oops", "locations": [(3, 17)], "path": ["foo", 1]},
+                ],
+            )
+
+            assert not completed
+
+            # Unblock succeed() and check that it does not complete
+            await barrier.wait()
+            await asyncio.sleep(0)
+            assert not completed

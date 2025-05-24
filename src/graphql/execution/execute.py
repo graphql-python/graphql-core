@@ -2105,25 +2105,39 @@ def default_type_resolver(
     # Otherwise, test each possible type.
     possible_types = info.schema.get_possible_types(abstract_type)
     is_awaitable = info.is_awaitable
-    awaitable_is_type_of_results: list[Awaitable] = []
-    append_awaitable_results = awaitable_is_type_of_results.append
+    awaitable_is_type_of_results: list[Awaitable[bool]] = []
+    append_awaitable_result = awaitable_is_type_of_results.append
     awaitable_types: list[GraphQLObjectType] = []
-    append_awaitable_types = awaitable_types.append
+    append_awaitable_type = awaitable_types.append
 
     for type_ in possible_types:
         if type_.is_type_of:
             is_type_of_result = type_.is_type_of(value, info)
 
             if is_awaitable(is_type_of_result):
-                append_awaitable_results(cast("Awaitable", is_type_of_result))
-                append_awaitable_types(type_)
+                append_awaitable_result(cast("Awaitable[bool]", is_type_of_result))
+                append_awaitable_type(type_)
             elif is_type_of_result:
                 return type_.name
 
     if awaitable_is_type_of_results:
         # noinspection PyShadowingNames
         async def get_type() -> str | None:
-            is_type_of_results = await gather(*awaitable_is_type_of_results)
+            tasks = [
+                create_task(result)  # type: ignore[arg-type]
+                for result in awaitable_is_type_of_results
+            ]
+
+            try:
+                is_type_of_results = await gather(*tasks)
+            except Exception:
+                # Cancel unfinished tasks before raising the exception
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                await gather(*tasks, return_exceptions=True)
+                raise
+
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
                 if is_type_of_result:
                     return type_.name
