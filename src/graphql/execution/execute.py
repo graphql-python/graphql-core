@@ -911,13 +911,22 @@ class ExecutionContext:
             index = awaitable_indices[0]
             completed_results[index] = await completed_results[index]
         else:
-            for index, result in zip(
-                awaitable_indices,
-                await gather(
-                    *(completed_results[index] for index in awaitable_indices)
-                ),
-            ):
-                completed_results[index] = result
+            tasks = [
+                create_task(completed_results[index]) for index in awaitable_indices
+            ]
+
+            try:
+                awaited_results = await gather(*tasks)
+            except Exception:
+                # Cancel unfinished tasks before raising the exception
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                await gather(*tasks, return_exceptions=True)
+                raise
+
+            for index, sub_result in zip(awaitable_indices, awaited_results):
+                completed_results[index] = sub_result
         return completed_results
 
     def complete_list_value(

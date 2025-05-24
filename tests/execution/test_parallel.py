@@ -281,3 +281,50 @@ def describe_parallel_execution():
         await barrier.wait()
         await asyncio.sleep(0)
         assert not completed
+
+    @pytest.mark.asyncio
+    async def cancel_async_iterator_on_exception():
+        barrier = Barrier(2)
+        completed = False
+
+        async def succeed(*_args):
+            nonlocal completed
+            await barrier.wait()
+            completed = True  # pragma: no cover
+
+        async def fail(*_args):
+            raise RuntimeError("Oops")
+
+        async def resolve_iterator(*args):
+            yield fail(*args)
+            yield succeed(*args)
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(
+                        GraphQLList(GraphQLNonNull(GraphQLBoolean)),
+                        resolve=resolve_iterator,
+                    )
+                },
+            )
+        )
+
+        ast = parse("{foo}")
+
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await asyncio.wait_for(awaitable_result, 1)
+
+        assert result == (
+            {"foo": None},
+            [{"message": "Oops", "locations": [(1, 2)], "path": ["foo", 0]}],
+        )
+
+        assert not completed
+
+        # Unblock succeed() and check that it does not complete
+        await barrier.wait()
+        await asyncio.sleep(0)
+        assert not completed
