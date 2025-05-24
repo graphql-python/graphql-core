@@ -1057,24 +1057,25 @@ class IncrementalPublisher:
         """Get the incremental defer result from the grouped field set record."""
         data = deferred_grouped_field_set_record.data
         fragment_records = deferred_grouped_field_set_record.deferred_fragment_records
-        max_length = len(fragment_records[0].path)
-        max_index = 0
-        for i in range(1, len(fragment_records)):
-            fragment_record = fragment_records[i]
+        max_length: int | None = None
+        id_with_longest_path: str | None = None
+        for fragment_record in fragment_records:
+            if fragment_record.id is None:
+                continue
             length = len(fragment_record.path)
-            if length > max_length:
+            if max_length is None or length > max_length:
                 max_length = length
-                max_index = i
-        record_with_longest_path = fragment_records[max_index]
-        longest_path = record_with_longest_path.path
-        sub_path = deferred_grouped_field_set_record.path[len(longest_path) :]
-        id_ = record_with_longest_path.id
+                id_with_longest_path = fragment_record.id
+
+        sub_path = deferred_grouped_field_set_record.path[max_length:]
+
         return IncrementalDeferResult(
             # safe because `data` is always defined when the record is completed
             data,  # type: ignore
-            # safe because `id` is defined
-            # once the fragment has been released as pending
-            id_,  # type: ignore
+            # safe because `id` is always defined once the fragment has been released
+            # as pending and at least one fragment has been completed, so must have been
+            # released as pending
+            id_with_longest_path,  # type: ignore
             sub_path or None,
         )
 
