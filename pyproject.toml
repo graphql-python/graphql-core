@@ -71,7 +71,7 @@ pytest-cov = [
     { version = "^4.1", python = "<3.8" },
 ]
 pytest-describe = "^2.2"
-pytest-timeout = "^2.3"
+pytest-timeout = "^2.4"
 pytest-codspeed = [
     { version = "^3.1.2", python = ">=3.9" },
     { version = "^2.2.1", python = "<3.8" }
