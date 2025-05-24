@@ -76,7 +76,7 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        result = await asyncio.wait_for(awaitable_result, 1)
 
         assert result == ({"foo": True, "bar": True}, None)
 
@@ -125,7 +125,7 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        result = await asyncio.wait_for(awaitable_result, 1)
 
         assert result == ({"foo": [True, True]}, None)
 
@@ -188,7 +188,7 @@ def describe_parallel_execution():
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        result = await asyncio.wait_for(awaitable_result, 1)
 
         assert result == (
             {"foo": [{"foo": "bar", "foobar": 1}, {"foo": "baz", "foobaz": 2}]},
@@ -196,7 +196,7 @@ def describe_parallel_execution():
         )
 
     @pytest.mark.asyncio
-    async def cancel_on_exception():
+    async def cancel_selection_sets_on_exception():
         barrier = Barrier(2)
         completed = False
 
@@ -222,12 +222,60 @@ def describe_parallel_execution():
 
         awaitable_result = execute(schema, ast)
         assert isinstance(awaitable_result, Awaitable)
-        result = await asyncio.wait_for(awaitable_result, 1.0)
+        result = await asyncio.wait_for(awaitable_result, 1)
 
         assert result == (
             None,
             [{"message": "Oops", "locations": [(1, 2)], "path": ["foo"]}],
         )
+
+        assert not completed
+
+        # Unblock succeed() and check that it does not complete
+        await barrier.wait()
+        await asyncio.sleep(0)
+        assert not completed
+
+    @pytest.mark.asyncio
+    async def cancel_lists_on_exception():
+        barrier = Barrier(2)
+        completed = False
+
+        async def succeed(*_args):
+            nonlocal completed
+            await barrier.wait()
+            completed = True  # pragma: no cover
+
+        async def fail(*_args):
+            raise RuntimeError("Oops")
+
+        async def resolve_list(*args):
+            return [fail(*args), succeed(*args)]
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "foo": GraphQLField(
+                        GraphQLList(GraphQLNonNull(GraphQLBoolean)),
+                        resolve=resolve_list,
+                    )
+                },
+            )
+        )
+
+        ast = parse("{foo}")
+
+        awaitable_result = execute(schema, ast)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await asyncio.wait_for(awaitable_result, 1)
+
+        assert result == (
+            {"foo": None},
+            [{"message": "Oops", "locations": [(1, 2)], "path": ["foo", 0]}],
+        )
+
+        assert not completed
 
         # Unblock succeed() and check that it does not complete
         await barrier.wait()
