@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from asyncio import Event, create_task, gather, sleep, wait_for
 from typing import Callable
 

@@ -25,7 +25,7 @@ async def gather_with_cancel(*awaitables: Awaitable[Any]) -> list[Any]:
             for aw in awaitables
         ]
     except TypeError:
-        return await gather(*awaitables)  # type: ignore[arg-type]
+        return await gather(*awaitables)
     try:
         return await gather(*tasks)
     except Exception:

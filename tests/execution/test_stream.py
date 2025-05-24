@@ -1559,6 +1559,7 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
         document = parse(
             """
