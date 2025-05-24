@@ -337,7 +337,6 @@ def describe_execute_stream_directive():
         assert result == {"data": {"scalarList": ["apple", "banana", "coconut"]}}
 
     @pytest.mark.asyncio
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def does_not_disable_stream_with_null_if_argument():
         document = parse(
             "query ($shouldStream: Boolean)"
@@ -1560,7 +1559,6 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
         document = parse(
             """
@@ -1628,7 +1626,6 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.asyncio
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def filters_defer_payloads_that_are_nulled_in_a_stream_response():
         document = parse(
             """

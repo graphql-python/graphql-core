@@ -114,7 +114,6 @@ def describe_execute_synchronously_when_possible():
             cleanup()
 
         @pytest.mark.asyncio
-        @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_iterable_execution_with_check_sync():
             doc = """
                 query Example {
@@ -134,7 +133,6 @@ def describe_execute_synchronously_when_possible():
             cleanup()
 
         @pytest.mark.asyncio
-        @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_iterable_execution_without_check_sync():
             doc = """
                 query Example {

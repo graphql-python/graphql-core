@@ -377,7 +377,6 @@ def describe_subscription_initialization_phase():
             subscribe_with_bad_args(schema=schema, document={})  # type: ignore
 
     @pytest.mark.asyncio
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def throws_an_error_if_subscribe_does_not_return_an_iterator():
         expected_result = (
             None,

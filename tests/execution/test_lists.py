@@ -50,7 +50,6 @@ def describe_execute_accepts_any_iterable_as_list_value():
         result = _complete(list_field)
         assert result == ({"listField": list(list_field)}, None)
 
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def accepts_a_set_as_a_list_value():
         # Note that sets are not ordered in Python.
         list_field = {"apple", "banana", "coconut"}
