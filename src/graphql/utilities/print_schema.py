@@ -214,7 +214,12 @@ def print_input_object(type_: GraphQLInputObjectType) -> str:
         print_description(field, "  ", not i) + "  " + print_input_value(name, field)
         for i, (name, field) in enumerate(type_.fields.items())
     ]
-    return print_description(type_) + f"input {type_.name}" + print_block(fields)
+    return (
+        print_description(type_)
+        + f"input {type_.name}"
+        + (" @oneOf" if type_.is_one_of else "")
+        + print_block(fields)
+    )
 
 
 def print_fields(type_: GraphQLObjectType | GraphQLInterfaceType) -> str:

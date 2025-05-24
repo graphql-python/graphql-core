@@ -514,6 +514,22 @@ def describe_type_system_printer():
             """
         )
 
+    def prints_input_type_with_one_of_directive():
+        input_type = GraphQLInputObjectType(
+            name="InputType",
+            fields={"int": GraphQLInputField(GraphQLInt)},
+            is_one_of=True,
+        )
+
+        schema = GraphQLSchema(types=[input_type])
+        assert expect_printed_schema(schema) == dedent(
+            """
+            input InputType @oneOf {
+              int: Int
+            }
+            """
+        )
+
     def prints_custom_scalar():
         odd_type = GraphQLScalarType(name="Odd")
 
