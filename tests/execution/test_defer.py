@@ -786,14 +786,7 @@ def describe_execute_defer_directive():
         )
         result = await complete(document)
 
-        assert result == [
-            {
-                "data": {"hero": {"name": "Luke"}},
-                "pending": [{"id": "0", "path": ["hero"], "label": "DeferTop"}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"name": "Luke"}}}
 
     @pytest.mark.asyncio
     async def can_defer_a_fragment_that_is_also_not_deferred_with_non_deferred_first():
@@ -812,14 +805,7 @@ def describe_execute_defer_directive():
         )
         result = await complete(document)
 
-        assert result == [
-            {
-                "data": {"hero": {"name": "Luke"}},
-                "pending": [{"id": "0", "path": ["hero"], "label": "DeferTop"}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"name": "Luke"}}}
 
     @pytest.mark.asyncio
     async def can_defer_an_inline_fragment():
@@ -868,14 +854,7 @@ def describe_execute_defer_directive():
         )
         result = await complete(document)
 
-        assert result == [
-            {
-                "data": {"hero": {}},
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {}}}
 
     @pytest.mark.asyncio
     async def separately_emits_defer_fragments_different_labels_varying_fields():
@@ -1118,40 +1097,18 @@ def describe_execute_defer_directive():
                 "data": {"hero": {"friends": [{}, {}, {}]}},
                 "pending": [
                     {"id": "0", "path": ["hero", "friends", 0]},
-                    {"id": "1", "path": ["hero", "friends", 0]},
-                    {"id": "2", "path": ["hero", "friends", 0]},
-                    {"id": "3", "path": ["hero", "friends", 0]},
-                    {"id": "4", "path": ["hero", "friends", 1]},
-                    {"id": "5", "path": ["hero", "friends", 1]},
-                    {"id": "6", "path": ["hero", "friends", 1]},
-                    {"id": "7", "path": ["hero", "friends", 1]},
-                    {"id": "8", "path": ["hero", "friends", 2]},
-                    {"id": "9", "path": ["hero", "friends", 2]},
-                    {"id": "10", "path": ["hero", "friends", 2]},
-                    {"id": "11", "path": ["hero", "friends", 2]},
+                    {"id": "1", "path": ["hero", "friends", 1]},
+                    {"id": "2", "path": ["hero", "friends", 2]},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
                     {"data": {"id": "2", "name": "Han"}, "id": "0"},
-                    {"data": {"id": "3", "name": "Leia"}, "id": "4"},
-                    {"data": {"id": "4", "name": "C-3PO"}, "id": "8"},
+                    {"data": {"id": "3", "name": "Leia"}, "id": "1"},
+                    {"data": {"id": "4", "name": "C-3PO"}, "id": "2"},
                 ],
-                "completed": [
-                    {"id": "1"},
-                    {"id": "2"},
-                    {"id": "3"},
-                    {"id": "5"},
-                    {"id": "6"},
-                    {"id": "7"},
-                    {"id": "9"},
-                    {"id": "10"},
-                    {"id": "11"},
-                    {"id": "0"},
-                    {"id": "4"},
-                    {"id": "8"},
-                ],
+                "completed": [{"id": "0"}, {"id": "1"}, {"id": "2"}],
                 "hasNext": False,
             },
         ]
@@ -1767,22 +1724,13 @@ def describe_execute_defer_directive():
 
         result = await complete(document)
 
-        assert result == [
-            {
-                "data": {
-                    "hero": {
-                        "friends": [
-                            {"name": "Han"},
-                            {"name": "Leia"},
-                            {"name": "C-3PO"},
-                        ]
-                    }
-                },
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
+        assert result == {
+            "data": {
+                "hero": {
+                    "friends": [{"name": "Han"}, {"name": "Leia"}, {"name": "C-3PO"}]
+                }
             },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        }
 
     async def deduplicates_async_iterable_list_fields():
         document = parse(
@@ -1806,14 +1754,7 @@ def describe_execute_defer_directive():
             document, {"hero": {**hero, "friends": Resolvers.first_friend}}
         )
 
-        assert result == [
-            {
-                "data": {"hero": {"friends": [{"name": "Han"}]}},
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"friends": [{"name": "Han"}]}}}
 
     async def deduplicates_empty_async_iterable_list_fields():
         document = parse(
@@ -1842,14 +1783,7 @@ def describe_execute_defer_directive():
             document, {"hero": {**hero, "friends": resolve_friends}}
         )
 
-        assert result == [
-            {
-                "data": {"hero": {"friends": []}},
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"friends": []}}}
 
     async def does_not_deduplicate_list_fields_with_non_overlapping_fields():
         document = parse(
@@ -1916,14 +1850,7 @@ def describe_execute_defer_directive():
             document, {"hero": {**hero, "friends": lambda _info: []}}
         )
 
-        assert result == [
-            {
-                "data": {"hero": {"friends": []}},
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"friends": []}}}
 
     async def deduplicates_null_object_fields():
         document = parse(
@@ -1946,14 +1873,7 @@ def describe_execute_defer_directive():
             document, {"hero": {**hero, "nestedObject": lambda _info: None}}
         )
 
-        assert result == [
-            {
-                "data": {"hero": {"nestedObject": None}},
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"nestedObject": None}}}
 
     async def deduplicates_async_object_fields():
         document = parse(
@@ -1980,14 +1900,7 @@ def describe_execute_defer_directive():
             document, {"hero": {"nestedObject": resolve_nested_object}}
         )
 
-        assert result == [
-            {
-                "data": {"hero": {"nestedObject": {"name": "foo"}}},
-                "pending": [{"id": "0", "path": ["hero"]}],
-                "hasNext": True,
-            },
-            {"completed": [{"id": "0"}], "hasNext": False},
-        ]
+        assert result == {"data": {"hero": {"nestedObject": {"name": "foo"}}}}
 
     @pytest.mark.asyncio
     async def handles_errors_thrown_in_deferred_fragments():

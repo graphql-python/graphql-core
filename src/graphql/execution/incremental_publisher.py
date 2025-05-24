@@ -1098,7 +1098,10 @@ class IncrementalPublisher:
                 self._introduce(subsequent_result_record)
         elif subsequent_result_record._pending:  # noqa: SLF001
             self._introduce(subsequent_result_record)
-        else:
+        elif (
+            subsequent_result_record.deferred_grouped_field_set_records
+            or subsequent_result_record.children
+        ):
             self._push(subsequent_result_record)
 
     @staticmethod

@@ -1854,21 +1854,19 @@ def describe_execute_stream_directive():
             {
                 "data": {"nestedObject": {"nestedFriendList": []}},
                 "pending": [
-                    {"id": "0", "path": ["nestedObject"]},
-                    {"id": "1", "path": ["nestedObject", "nestedFriendList"]},
+                    {"id": "0", "path": ["nestedObject", "nestedFriendList"]},
                 ],
                 "hasNext": True,
             },
             {
-                "incremental": [{"items": [{"id": "1", "name": "Luke"}], "id": "1"}],
-                "completed": [{"id": "0"}],
+                "incremental": [{"items": [{"id": "1", "name": "Luke"}], "id": "0"}],
                 "hasNext": True,
             },
             {
-                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "1"}],
+                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "0"}],
                 "hasNext": True,
             },
-            {"completed": [{"id": "1"}], "hasNext": False},
+            {"completed": [{"id": "0"}], "hasNext": False},
         ]
 
     @pytest.mark.asyncio
