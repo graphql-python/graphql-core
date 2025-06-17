@@ -1362,22 +1362,17 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {"nestedObject": {"deeperObject": {}}}},
                 "pending": [
-                    {"id": "0", "path": ["hero"]},
+                    {"id": "0", "path": ["hero", "nestedObject", "deeperObject"]},
                     {"id": "1", "path": ["hero", "nestedObject", "deeperObject"]},
                 ],
                 "hasNext": True,
             },
             {
-                "pending": [
-                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]}
+                "incremental": [
+                    {"data": {"foo": "foo"}, "id": "0"},
+                    {"data": {"bar": "bar"}, "id": "1"},
                 ],
-                "incremental": [{"data": {"foo": "foo"}, "id": "1"}],
                 "completed": [{"id": "0"}, {"id": "1"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"data": {"bar": "bar"}, "id": "2"}],
-                "completed": [{"id": "2"}],
                 "hasNext": False,
             },
         ]

@@ -802,10 +802,7 @@ class IncrementalPublisher:
         self, initial_result_record: InitialResultRecord, data: dict[str, Any] | None
     ) -> ExecutionResult | ExperimentalIncrementalExecutionResults:
         """Build response for the given data."""
-        for child in initial_result_record.children:
-            if child.filtered:
-                continue
-            self._publish(child)
+        pending_sources = self._publish(initial_result_record.children)
 
         errors = initial_result_record.errors or None
         if errors:
@@ -816,14 +813,7 @@ class IncrementalPublisher:
                     error.message,
                 )
             )
-        pending = self._pending
-        if pending:
-            pending_sources: RefSet[DeferredFragmentRecord | StreamRecord] = RefSet(
-                subsequent_result_record.stream_record
-                if isinstance(subsequent_result_record, StreamItemsRecord)
-                else subsequent_result_record
-                for subsequent_result_record in pending
-            )
+        if pending_sources:
             return ExperimentalIncrementalExecutionResults(
                 initial_result=InitialIncrementalExecutionResult(
                     data,
@@ -994,17 +984,7 @@ class IncrementalPublisher:
         completed_results: list[CompletedResult] = []
         to_result = self._completed_record_to_result
         for subsequent_result_record in completed_records:
-            for child in subsequent_result_record.children:
-                if child.filtered:
-                    continue
-                pending_source: DeferredFragmentRecord | StreamRecord = (
-                    child.stream_record
-                    if isinstance(child, StreamItemsRecord)
-                    else child
-                )
-                if not pending_source.pending_sent:
-                    new_pending_sources.add(pending_source)
-                self._publish(child)
+            self._publish(subsequent_result_record.children, new_pending_sources)
             incremental_result: IncrementalResult
             if isinstance(subsequent_result_record, StreamItemsRecord):
                 if subsequent_result_record.is_final_record:
@@ -1060,7 +1040,7 @@ class IncrementalPublisher:
         max_length: int | None = None
         id_with_longest_path: str | None = None
         for fragment_record in fragment_records:
-            if fragment_record.id is None:
+            if fragment_record.id is None:  # pragma: no cover
                 continue
             length = len(fragment_record.path)
             if max_length is None or length > max_length:
@@ -1090,20 +1070,45 @@ class IncrementalPublisher:
             completed_record.errors or None,
         )
 
-    def _publish(self, subsequent_result_record: SubsequentResultRecord) -> None:
-        """Publish the given incremental data record."""
-        if isinstance(subsequent_result_record, StreamItemsRecord):
-            if subsequent_result_record.is_completed:
-                self._push(subsequent_result_record)
-            else:
+    def _publish(
+        self,
+        subsequent_result_records: dict[SubsequentResultRecord, None],
+        pending_sources: RefSet[DeferredFragmentRecord | StreamRecord] | None = None,
+    ) -> RefSet[DeferredFragmentRecord | StreamRecord]:
+        """Publish the given set of incremental data record."""
+        if pending_sources is None:
+            pending_sources = RefSet()
+        empty_records: list[SubsequentResultRecord] = []
+
+        for subsequent_result_record in subsequent_result_records:
+            if subsequent_result_record.filtered:
+                continue
+            if isinstance(subsequent_result_record, StreamItemsRecord):
+                if subsequent_result_record.is_completed:
+                    self._push(subsequent_result_record)
+                else:
+                    self._introduce(subsequent_result_record)
+
+                stream = subsequent_result_record.stream_record
+                if not stream.pending_sent:
+                    pending_sources.add(stream)
+                continue
+
+            if subsequent_result_record._pending:  # noqa: SLF001
                 self._introduce(subsequent_result_record)
-        elif subsequent_result_record._pending:  # noqa: SLF001
-            self._introduce(subsequent_result_record)
-        elif (
-            subsequent_result_record.deferred_grouped_field_set_records
-            or subsequent_result_record.children
-        ):
-            self._push(subsequent_result_record)
+            elif not subsequent_result_record.deferred_grouped_field_set_records:
+                empty_records.append(subsequent_result_record)
+                continue
+            else:
+                self._push(subsequent_result_record)
+
+            if not subsequent_result_record.pending_sent:  # pragma: no cover else
+                pending_sources.add(subsequent_result_record)
+
+        for empty_record in empty_records:
+            self._publish(empty_record.children, pending_sources)
+
+        return pending_sources
 
     @staticmethod
     def _get_children(
