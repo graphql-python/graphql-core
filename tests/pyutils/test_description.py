@@ -170,7 +170,7 @@ def describe_description():
                 assert directive.description is lazy_string
                 assert str(directive.description).endswith("lazy?")
 
-    def handels_introspection():
+    def handles_introspection():
         class Lazy:
             def __init__(self, text: str):
                 self.text = text
