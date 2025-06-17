@@ -197,7 +197,7 @@ def describe_description():
                 with raises(TypeError, match="Expected name to be a string\\."):
                     GraphQLDirective(lazy_string, [])
 
-    def handels_introspection():
+    def handles_introspection():
         class Lazy:
             def __init__(self, text: str):
                 self.text = text
