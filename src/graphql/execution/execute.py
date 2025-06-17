@@ -40,6 +40,7 @@ except ImportError:  # Python < 3.7
 from ..error import GraphQLError, located_error
 from ..language import (
     DocumentNode,
+    FieldNode,
     FragmentDefinitionNode,
     OperationDefinitionNode,
     OperationType,
@@ -75,18 +76,15 @@ from ..type import (
     is_object_type,
 )
 from .async_iterables import map_async_iterable
-from .collect_fields import (
-    NON_DEFERRED_TARGET_SET,
-    CollectFieldsResult,
-    DeferUsage,
+from .build_field_plan import (
     DeferUsageSet,
-    FieldDetails,
     FieldGroup,
+    FieldPlan,
     GroupedFieldSet,
-    GroupedFieldSetDetails,
-    collect_fields,
-    collect_subfields,
+    NewGroupedFieldSetDetails,
+    build_field_plan,
 )
+from .collect_fields import DeferUsage, FieldDetails, collect_fields, collect_subfields
 from .incremental_publisher import (
     ASYNC_DELAY,
     DeferredFragmentRecord,
@@ -208,7 +206,7 @@ class ExecutionContext:
         if is_awaitable:
             self.is_awaitable = is_awaitable
         self._canceled_iterators: set[AsyncIterator] = set()
-        self._subfields_cache: dict[tuple, CollectFieldsResult] = {}
+        self._field_plan_cache: dict[tuple, FieldPlan] = {}
         self._tasks: set[Awaitable] = set()
         self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
 
@@ -326,10 +324,11 @@ class ExecutionContext:
             )
             raise GraphQLError(msg, operation)
 
-        grouped_field_set, new_grouped_field_set_details, new_defer_usages = (
-            collect_fields(
-                schema, self.fragments, self.variable_values, root_type, operation
-            )
+        fields = collect_fields(
+            schema, self.fragments, self.variable_values, root_type, operation
+        )
+        grouped_field_set, new_grouped_field_set_details_map, new_defer_usages = (
+            build_field_plan(fields)
         )
 
         incremental_publisher = self.incremental_publisher
@@ -341,7 +340,7 @@ class ExecutionContext:
 
         new_deferred_grouped_field_set_records = add_new_deferred_grouped_field_sets(
             incremental_publisher,
-            new_grouped_field_set_details,
+            new_grouped_field_set_details_map,
             new_defer_map,
             path,
         )
@@ -502,7 +501,9 @@ class ExecutionContext:
         if self.middleware_manager:
             resolve_fn = self.middleware_manager.get_field_resolver(resolve_fn)
 
-        info = self.build_resolve_info(field_def, field_group, parent_type, path)
+        info = self.build_resolve_info(
+            field_def, field_group.to_nodes(), parent_type, path
+        )
 
         # Get the resolve function, regardless of if its result is normal or abrupt
         # (error).
@@ -575,7 +576,7 @@ class ExecutionContext:
     def build_resolve_info(
         self,
         field_def: GraphQLField,
-        field_group: FieldGroup,
+        field_nodes: list[FieldNode],
         parent_type: GraphQLObjectType,
         path: Path,
     ) -> GraphQLResolveInfo:
@@ -586,8 +587,8 @@ class ExecutionContext:
         # The resolve function's first argument is a collection of information about
         # the current execution state.
         return GraphQLResolveInfo(
-            field_group.fields[0].node.name.value,
-            field_group.to_nodes(),
+            field_nodes[0].name.value,
+            field_nodes,
             field_def.type,
             parent_type,
             path,
@@ -807,8 +808,7 @@ class ExecutionContext:
             [
                 FieldDetails(field_details.node, None)
                 for field_details in field_group.fields
-            ],
-            NON_DEFERRED_TARGET_SET,
+            ]
         )
 
         stream_usage = StreamUsage(
@@ -1273,8 +1273,8 @@ class ExecutionContext:
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
     ) -> AwaitableOrValue[dict[str, Any]]:
         """Collect sub-fields to execute to complete this value."""
-        grouped_field_set, new_grouped_field_set_details, new_defer_usages = (
-            self.collect_subfields(return_type, field_group)
+        grouped_field_set, new_grouped_field_set_details_map, new_defer_usages = (
+            self.build_sub_field_plan(return_type, field_group)
         )
 
         incremental_publisher = self.incremental_publisher
@@ -1286,7 +1286,10 @@ class ExecutionContext:
             path,
         )
         new_deferred_grouped_field_set_records = add_new_deferred_grouped_field_sets(
-            incremental_publisher, new_grouped_field_set_details, new_defer_map, path
+            incremental_publisher,
+            new_grouped_field_set_details_map,
+            new_defer_map,
+            path,
         )
 
         sub_fields = self.execute_fields(
@@ -1308,17 +1311,16 @@ class ExecutionContext:
 
         return sub_fields
 
-    def collect_subfields(
+    def build_sub_field_plan(
         self, return_type: GraphQLObjectType, field_group: FieldGroup
-    ) -> CollectFieldsResult:
+    ) -> FieldPlan:
         """Collect subfields.
 
-        A cached collection of relevant subfields with regard to the return type is
-        kept in the execution context as ``_subfields_cache``. This ensures the
-        subfields are not repeatedly calculated, which saves overhead when resolving
-        lists of values.
+        A memoized function for building subfield plans with regard to the return type.
+        Memoizing ensures the  subfields are not repeatedly calculated, which saves
+        overhead when resolving lists of values.
         """
-        cache = self._subfields_cache
+        cache = self._field_plan_cache
         # We cannot use the field_group itself as key for the cache, since it
         # is not hashable as a list. We also do not want to use the field_group
         # itself (converted to a tuple) as keys, since hashing them is slow.
@@ -1331,18 +1333,21 @@ class ExecutionContext:
             if len(field_group) == 1  # optimize most frequent case
             else (return_type, *map(id, field_group))
         )
-        sub_fields_and_patches = cache.get(key)
-        if sub_fields_and_patches is None:
-            sub_fields_and_patches = collect_subfields(
+        plan = cache.get(key)
+        if plan is None:
+            sub_fields = collect_subfields(
                 self.schema,
                 self.fragments,
                 self.variable_values,
                 self.operation,
                 return_type,
-                field_group,
+                field_group.fields,
             )
-            cache[key] = sub_fields_and_patches
-        return sub_fields_and_patches
+            plan = build_field_plan(
+                sub_fields, field_group.defer_usages, field_group.known_defer_usages
+            )
+            cache[key] = plan
+        return plan
 
     def map_source_to_response(
         self, result_or_stream: ExecutionResult | AsyncIterable[Any]
@@ -1954,14 +1959,10 @@ def add_new_deferred_fragments(
     new_defer_map = RefMap() if defer_map is None else RefMap(defer_map.items())
 
     # For each new DeferUsage object:
-    for defer_usage in new_defer_usages:
-        ancestors = defer_usage.ancestors
-        parent_defer_usage = ancestors[0] if ancestors else None
+    for new_defer_usage in new_defer_usages:
+        parent_defer_usage = new_defer_usage.parent_defer_usage
 
-        # If the parent target is defined, the parent target is a DeferUsage object
-        # and the parent result record is the DeferredFragmentRecord corresponding
-        # to that DeferUsage.
-        # If the parent target is not defined, the parent result record is either:
+        # If the parent defer usage is not defined, the parent result record is either:
         #  - the InitialResultRecord, or
         #  - a StreamItemsRecord, as `@defer` may be nested under `@stream`.
         parent = (
@@ -1975,7 +1976,7 @@ def add_new_deferred_fragments(
         )
 
         # Instantiate the new record.
-        deferred_fragment_record = DeferredFragmentRecord(path, defer_usage.label)
+        deferred_fragment_record = DeferredFragmentRecord(path, new_defer_usage.label)
 
         # Report the new record to the Incremental Publisher.
         incremental_publisher.report_new_defer_fragment_record(
@@ -1983,7 +1984,7 @@ def add_new_deferred_fragments(
         )
 
         # Update the map.
-        new_defer_map[defer_usage] = deferred_fragment_record
+        new_defer_map[new_defer_usage] = deferred_fragment_record
 
     return new_defer_map
 
@@ -1997,7 +1998,9 @@ def deferred_fragment_record_from_defer_usage(
 
 def add_new_deferred_grouped_field_sets(
     incremental_publisher: IncrementalPublisher,
-    new_grouped_field_set_details: Mapping[DeferUsageSet, GroupedFieldSetDetails],
+    new_grouped_field_set_details_map: Mapping[
+        DeferUsageSet, NewGroupedFieldSetDetails
+    ],
     defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
     path: Path | None = None,
 ) -> list[DeferredGroupedFieldSetRecord]:
@@ -2005,16 +2008,16 @@ def add_new_deferred_grouped_field_sets(
     new_deferred_grouped_field_set_records: list[DeferredGroupedFieldSetRecord] = []
 
     for (
-        new_grouped_field_set_defer_usages,
-        grouped_field_set_details,
-    ) in new_grouped_field_set_details.items():
+        defer_usage_set,
+        [grouped_field_set, should_initiate_defer],
+    ) in new_grouped_field_set_details_map.items():
         deferred_fragment_records = get_deferred_fragment_records(
-            new_grouped_field_set_defer_usages, defer_map
+            defer_usage_set, defer_map
         )
         deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
             deferred_fragment_records,
-            grouped_field_set_details.grouped_field_set,
-            grouped_field_set_details.should_initiate_defer,
+            grouped_field_set,
+            should_initiate_defer,
             path,
         )
         incremental_publisher.report_new_deferred_grouped_filed_set_record(
@@ -2292,24 +2295,26 @@ def execute_subscription(
         msg = "Schema is not configured to execute subscription operation."
         raise GraphQLError(msg, context.operation)
 
-    grouped_field_set = collect_fields(
+    fields = collect_fields(
         schema,
         context.fragments,
         context.variable_values,
         root_type,
         context.operation,
-    ).grouped_field_set
-    first_root_field = next(iter(grouped_field_set.items()))
-    response_name, field_group = first_root_field
-    field_name = field_group.fields[0].node.name.value
+    )
+
+    first_root_field = next(iter(fields.items()))
+    response_name, field_details_list = first_root_field
+    field_name = field_details_list[0].node.name.value
     field_def = schema.get_field(root_type, field_name)
 
+    field_nodes = [field_details.node for field_details in field_details_list]
     if not field_def:
         msg = f"The subscription field '{field_name}' is not defined."
-        raise GraphQLError(msg, field_group.to_nodes())
+        raise GraphQLError(msg, field_nodes)
 
     path = Path(None, response_name, root_type.name)
-    info = context.build_resolve_info(field_def, field_group, root_type, path)
+    info = context.build_resolve_info(field_def, field_nodes, root_type, path)
 
     # Implements the "ResolveFieldEventStream" algorithm from GraphQL specification.
     # It differs from "ResolveFieldValue" due to providing a different `resolveFn`.
@@ -2317,9 +2322,7 @@ def execute_subscription(
     try:
         # Build a dictionary of arguments from the field.arguments AST, using the
         # variables scope to fulfill any variable references.
-        args = get_argument_values(
-            field_def, field_group.fields[0].node, context.variable_values
-        )
+        args = get_argument_values(field_def, field_nodes[0], context.variable_values)
 
         # Call the `subscribe()` resolver or the default resolver to produce an
         # AsyncIterable yielding raw payloads.
@@ -2332,16 +2335,14 @@ def execute_subscription(
                 try:
                     return assert_event_stream(await result)
                 except Exception as error:
-                    raise located_error(
-                        error, field_group.to_nodes(), path.as_list()
-                    ) from error
+                    raise located_error(error, field_nodes, path.as_list()) from error
 
             return await_result()
 
         return assert_event_stream(result)
 
     except Exception as error:
-        raise located_error(error, field_group.to_nodes(), path.as_list()) from error
+        raise located_error(error, field_nodes, path.as_list()) from error
 
 
 def assert_event_stream(result: Any) -> AsyncIterable:

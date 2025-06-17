@@ -26,7 +26,7 @@ from ..pyutils import RefSet
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
     from ..pyutils import Path
-    from .collect_fields import GroupedFieldSet
+    from .build_field_plan import GroupedFieldSet
 
 __all__ = [
     "ASYNC_DELAY",
