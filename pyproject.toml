@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graphql-core"
-version = "3.3.0a8"
+version = "3.3.0a9"
 description = """\
 GraphQL-core is a Python port of GraphQL.js,\
  the JavaScript reference implementation for GraphQL."""
@@ -85,9 +85,9 @@ tox = [
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.11,<0.12"
+ruff = ">=0.12,<0.13"
 mypy = [
-    { version = "^1.15", python = ">=3.9" },
+    { version = "^1.16", python = ">=3.9" },
     { version = "~1.14", python = ">=3.8,<3.9" },
     { version = "~1.4", python = "<3.8" }
 ]
