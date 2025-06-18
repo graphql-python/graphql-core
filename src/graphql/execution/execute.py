@@ -79,7 +79,6 @@ from .async_iterables import map_async_iterable
 from .build_field_plan import (
     DeferUsageSet,
     FieldGroup,
-    FieldPlan,
     GroupedFieldSet,
     NewGroupedFieldSetDetails,
     build_field_plan,
@@ -156,6 +155,14 @@ class StreamUsage(NamedTuple):
     field_group: FieldGroup
 
 
+class SubFieldPlan(NamedTuple):
+    """A plan for executing fields with defer usages."""
+
+    grouped_field_set: GroupedFieldSet
+    new_grouped_field_set_details_map: RefMap[DeferUsageSet, NewGroupedFieldSetDetails]
+    new_defer_usages: list[DeferUsage]
+
+
 class ExecutionContext:
     """Data that must be available at all points during query execution.
 
@@ -206,7 +213,7 @@ class ExecutionContext:
         if is_awaitable:
             self.is_awaitable = is_awaitable
         self._canceled_iterators: set[AsyncIterator] = set()
-        self._field_plan_cache: dict[tuple, FieldPlan] = {}
+        self._sub_field_plan_cache: dict[tuple, SubFieldPlan] = {}
         self._tasks: set[Awaitable] = set()
         self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
 
@@ -324,12 +331,10 @@ class ExecutionContext:
             )
             raise GraphQLError(msg, operation)
 
-        fields = collect_fields(
+        fields, new_defer_usages = collect_fields(
             schema, self.fragments, self.variable_values, root_type, operation
         )
-        grouped_field_set, new_grouped_field_set_details_map, new_defer_usages = (
-            build_field_plan(fields)
-        )
+        grouped_field_set, new_grouped_field_set_details_map = build_field_plan(fields)
 
         incremental_publisher = self.incremental_publisher
         new_defer_map = add_new_deferred_fragments(
@@ -1313,14 +1318,14 @@ class ExecutionContext:
 
     def build_sub_field_plan(
         self, return_type: GraphQLObjectType, field_group: FieldGroup
-    ) -> FieldPlan:
+    ) -> SubFieldPlan:
         """Collect subfields.
 
         A memoized function for building subfield plans with regard to the return type.
         Memoizing ensures the  subfields are not repeatedly calculated, which saves
         overhead when resolving lists of values.
         """
-        cache = self._field_plan_cache
+        cache = self._sub_field_plan_cache
         # We cannot use the field_group itself as key for the cache, since it
         # is not hashable as a list. We also do not want to use the field_group
         # itself (converted to a tuple) as keys, since hashing them is slow.
@@ -1333,9 +1338,9 @@ class ExecutionContext:
             if len(field_group) == 1  # optimize most frequent case
             else (return_type, *map(id, field_group))
         )
-        plan = cache.get(key)
-        if plan is None:
-            sub_fields = collect_subfields(
+        sub_field_plan = cache.get(key)
+        if sub_field_plan is None:
+            sub_fields, new_defer_usages = collect_subfields(
                 self.schema,
                 self.fragments,
                 self.variable_values,
@@ -1343,11 +1348,10 @@ class ExecutionContext:
                 return_type,
                 field_group.fields,
             )
-            plan = build_field_plan(
-                sub_fields, field_group.defer_usages, field_group.known_defer_usages
-            )
-            cache[key] = plan
-        return plan
+            field_plan = build_field_plan(sub_fields, field_group.defer_usages)
+            sub_field_plan = SubFieldPlan(*field_plan, new_defer_usages)
+            cache[key] = sub_field_plan
+        return sub_field_plan
 
     def map_source_to_response(
         self, result_or_stream: ExecutionResult | AsyncIterable[Any]
@@ -2301,7 +2305,7 @@ def execute_subscription(
         context.variable_values,
         root_type,
         context.operation,
-    )
+    ).fields
 
     first_root_field = next(iter(fields.items()))
     response_name, field_details_list = first_root_field

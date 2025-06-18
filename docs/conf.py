@@ -184,6 +184,7 @@ ignore_references = {
     "graphql.execution.build_field_plan.FieldPlan",
     "graphql.execution.collect_fields.DeferUsage",
     "graphql.execution.execute.StreamArguments",
+    "graphql.execution.execute.SubFieldPlan",
     "graphql.execution.execute.StreamUsage",
     "graphql.execution.map_async_iterable.map_async_iterable",
     "graphql.execution.incremental_publisher.CompletedResult",

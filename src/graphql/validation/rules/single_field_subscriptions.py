@@ -52,7 +52,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 variable_values,
                 subscription_type,
                 node,
-            )
+            ).fields
             if len(fields) > 1:
                 field_groups = list(fields.values())
                 extra_field_groups = field_groups[1:]

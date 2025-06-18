@@ -744,15 +744,17 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"hero": {}},
-                "pending": [
-                    {"id": "0", "path": ["hero"], "label": "DeferTop"},
-                    {"id": "1", "path": ["hero"], "label": "DeferNested"},
-                ],
+                "pending": [{"id": "0", "path": ["hero"], "label": "DeferTop"}],
+                "hasNext": True,
+            },
+            {
+                "pending": [{"id": "1", "path": ["hero"], "label": "DeferNested"}],
+                "incremental": [{"data": {"id": "1"}, "id": "0"}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {"data": {"id": "1"}, "id": "0"},
                     {
                         "data": {
                             "friends": [
@@ -764,7 +766,7 @@ def describe_execute_defer_directive():
                         "id": "1",
                     },
                 ],
-                "completed": [{"id": "0"}, {"id": "1"}],
+                "completed": [{"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -855,6 +857,36 @@ def describe_execute_defer_directive():
         result = await complete(document)
 
         assert result == {"data": {"hero": {}}}
+
+    @pytest.mark.asyncio
+    async def emits_children_of_empty_defer_fragments():
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ... @defer {
+                  ... @defer {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "pending": [{"id": "0", "path": ["hero"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
 
     @pytest.mark.asyncio
     async def separately_emits_defer_fragments_different_labels_varying_fields():

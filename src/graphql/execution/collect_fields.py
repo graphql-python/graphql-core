@@ -27,6 +27,7 @@ from .values import get_directive_values
 
 __all__ = [
     "CollectFieldsContext",
+    "CollectedFields",
     "DeferUsage",
     "FieldDetails",
     "collect_fields",
@@ -69,13 +70,20 @@ class CollectFieldsContext(NamedTuple):
     visited_fragment_names: set[str]
 
 
+class CollectedFields(NamedTuple):
+    """Collected fields with new defer usages."""
+
+    fields: dict[str, list[FieldDetails]]
+    new_defer_usages: list[DeferUsage]
+
+
 def collect_fields(
     schema: GraphQLSchema,
     fragments: dict[str, FragmentDefinitionNode],
     variable_values: dict[str, Any],
     runtime_type: GraphQLObjectType,
     operation: OperationDefinitionNode,
-) -> dict[str, list[FieldDetails]]:
+) -> CollectedFields:
     """Collect fields.
 
     Given a selection_set, collects all the fields and returns them.
@@ -87,6 +95,7 @@ def collect_fields(
     For internal use only.
     """
     grouped_field_set: dict[str, list[FieldDetails]] = defaultdict(list)
+    new_defer_usages: list[DeferUsage] = []
     context = CollectFieldsContext(
         schema,
         fragments,
@@ -96,8 +105,10 @@ def collect_fields(
         set(),
     )
 
-    collect_fields_impl(context, operation.selection_set, grouped_field_set)
-    return grouped_field_set
+    collect_fields_impl(
+        context, operation.selection_set, grouped_field_set, new_defer_usages
+    )
+    return CollectedFields(grouped_field_set, new_defer_usages)
 
 
 def collect_subfields(
@@ -107,7 +118,7 @@ def collect_subfields(
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
     field_details: list[FieldDetails],
-) -> dict[str, list[FieldDetails]]:
+) -> CollectedFields:
     """Collect subfields.
 
     Given a list of field nodes, collects all the subfields of the passed in fields,
@@ -128,6 +139,7 @@ def collect_subfields(
         set(),
     )
     sub_grouped_field_set: dict[str, list[FieldDetails]] = defaultdict(list)
+    new_defer_usages: list[DeferUsage] = []
 
     for field_detail in field_details:
         node = field_detail.node
@@ -136,17 +148,18 @@ def collect_subfields(
                 context,
                 node.selection_set,
                 sub_grouped_field_set,
+                new_defer_usages,
                 field_detail.defer_usage,
             )
 
-    return sub_grouped_field_set
+    return CollectedFields(sub_grouped_field_set, new_defer_usages)
 
 
 def collect_fields_impl(
     context: CollectFieldsContext,
     selection_set: SelectionSetNode,
     grouped_field_set: dict[str, list[FieldDetails]],
-    parent_defer_usage: DeferUsage | None = None,
+    new_defer_usages: list[DeferUsage],
     defer_usage: DeferUsage | None = None,
 ) -> None:
     """Collect fields (internal implementation)."""
@@ -164,9 +177,7 @@ def collect_fields_impl(
             if not should_include_node(variable_values, selection):
                 continue
             key = get_field_entry_key(selection)
-            grouped_field_set[key].append(
-                FieldDetails(selection, defer_usage or parent_defer_usage)
-            )
+            grouped_field_set[key].append(FieldDetails(selection, defer_usage))
         elif isinstance(selection, InlineFragmentNode):
             if not should_include_node(
                 variable_values, selection
@@ -174,21 +185,31 @@ def collect_fields_impl(
                 continue
 
             new_defer_usage = get_defer_usage(
-                operation, variable_values, selection, parent_defer_usage
+                operation, variable_values, selection, defer_usage
             )
 
-            collect_fields_impl(
-                context,
-                selection.selection_set,
-                grouped_field_set,
-                parent_defer_usage,
-                new_defer_usage or defer_usage,
-            )
+            if new_defer_usage is None:
+                collect_fields_impl(
+                    context,
+                    selection.selection_set,
+                    grouped_field_set,
+                    new_defer_usages,
+                    defer_usage,
+                )
+            else:
+                new_defer_usages.append(new_defer_usage)
+                collect_fields_impl(
+                    context,
+                    selection.selection_set,
+                    grouped_field_set,
+                    new_defer_usages,
+                    new_defer_usage,
+                )
         elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover else
             frag_name = selection.name.value
 
             new_defer_usage = get_defer_usage(
-                operation, variable_values, selection, parent_defer_usage
+                operation, variable_values, selection, defer_usage
             )
 
             if new_defer_usage is None and (
@@ -205,14 +226,22 @@ def collect_fields_impl(
 
             if new_defer_usage is None:
                 visited_fragment_names.add(frag_name)
-
-            collect_fields_impl(
-                context,
-                fragment.selection_set,
-                grouped_field_set,
-                parent_defer_usage,
-                new_defer_usage or defer_usage,
-            )
+                collect_fields_impl(
+                    context,
+                    fragment.selection_set,
+                    grouped_field_set,
+                    new_defer_usages,
+                    defer_usage,
+                )
+            else:
+                new_defer_usages.append(new_defer_usage)
+                collect_fields_impl(
+                    context,
+                    fragment.selection_set,
+                    grouped_field_set,
+                    new_defer_usages,
+                    new_defer_usage,
+                )
 
 
 def get_defer_usage(
