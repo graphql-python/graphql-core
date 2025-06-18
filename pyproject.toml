@@ -165,6 +165,7 @@ ignore = [
   "D401",  # do not always require imperative mood in first line
   "FBT001", "FBT002", "FBT003",  # allow boolean parameters
   "ISC001",  # allow string literal concatenation for auto-formatting
+  "PLC0415",  # allow run-time imports to avoid circular dependencies
   "PGH003",  # type ignores do not need to be specific
   "PLR2004",  # allow some "magic" values
   "PYI034",  # do not check return value of new method

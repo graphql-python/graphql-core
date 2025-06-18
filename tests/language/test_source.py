@@ -69,6 +69,13 @@ def describe_source():
         assert not source == "bar"  # noqa: SIM201
         assert source != "bar"
 
+    def can_be_hashed():
+        source = Source("foo")
+        same_source = Source("foo")
+        assert hash(source) == hash(same_source)
+        different_source = Source("bar")
+        assert hash(source) != hash(different_source)
+
     def can_create_weak_reference():
         source = Source("foo")
         ref = weakref.ref(source)

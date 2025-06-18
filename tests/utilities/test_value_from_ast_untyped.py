@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from math import nan
+from math import isnan, nan
 from typing import Any
 
 from graphql.language import FloatValueNode, IntValueNode, parse_value
@@ -14,8 +14,8 @@ def describe_value_from_ast_untyped():
             assert value is None
         elif expected is Undefined:
             assert value is Undefined
-        elif expected is nan:
-            assert value is nan
+        elif isinstance(expected, float) and isnan(expected):
+            assert isnan(value)
         else:
             assert value == expected
 
@@ -65,7 +65,7 @@ def describe_value_from_ast_untyped():
         _expect_value_from_vars("$testVariable", None, Undefined)
 
     def parse_invalid_int_as_nan():
-        assert value_from_ast_untyped(IntValueNode(value="invalid")) is nan
+        assert isnan(value_from_ast_untyped(IntValueNode(value="invalid")))
 
     def parse_invalid_float_as_nan():
-        assert value_from_ast_untyped(FloatValueNode(value="invalid")) is nan
+        assert isnan(value_from_ast_untyped(FloatValueNode(value="invalid")))

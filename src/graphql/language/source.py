@@ -72,6 +72,9 @@ class Source:
     def __ne__(self, other: object) -> bool:
         return not self == other
 
+    def __hash__(self) -> int:
+        return hash(self.body)
+
 
 def is_source(source: Any) -> TypeGuard[Source]:
     """Test if the given value is a Source object.

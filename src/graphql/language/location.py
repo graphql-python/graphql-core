@@ -41,6 +41,9 @@ class SourceLocation(NamedTuple):
     def __ne__(self, other: object) -> bool:
         return not self == other
 
+    def __hash__(self) -> int:
+        return hash((self.line, self.column))
+
 
 def get_location(source: Source, position: int) -> SourceLocation:
     """Get the line and column for a character position in the source.

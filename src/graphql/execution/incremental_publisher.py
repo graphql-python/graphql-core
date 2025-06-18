@@ -64,7 +64,7 @@ class FormattedPendingResult(TypedDict, total=False):
     label: str
 
 
-class PendingResult:
+class PendingResult:  # noqa: PLW1641
     """Pending execution result"""
 
     id: str
@@ -127,7 +127,7 @@ class FormattedCompletedResult(TypedDict, total=False):
     errors: list[GraphQLFormattedError]
 
 
-class CompletedResult:
+class CompletedResult:  # noqa: PLW1641
     """Completed execution result"""
 
     id: str
@@ -192,7 +192,7 @@ class FormattedExecutionResult(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-class ExecutionResult:
+class ExecutionResult:  # noqa: PLW1641
     """The result of GraphQL execution.
 
     - ``data`` is the result of a successful execution of the query.
@@ -267,7 +267,7 @@ class FormattedInitialIncrementalExecutionResult(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-class InitialIncrementalExecutionResult:
+class InitialIncrementalExecutionResult:  # noqa: PLW1641
     """Initial incremental execution result."""
 
     data: dict[str, Any] | None
@@ -369,7 +369,7 @@ class FormattedIncrementalDeferResult(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-class IncrementalDeferResult:
+class IncrementalDeferResult:  # noqa: PLW1641
     """Incremental deferred execution result"""
 
     data: dict[str, Any]
@@ -461,7 +461,7 @@ class FormattedIncrementalStreamResult(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-class IncrementalStreamResult:
+class IncrementalStreamResult:  # noqa: PLW1641
     """Incremental streamed execution result"""
 
     items: list[Any]
@@ -560,7 +560,7 @@ class FormattedSubsequentIncrementalExecutionResult(TypedDict, total=False):
     extensions: dict[str, Any]
 
 
-class SubsequentIncrementalExecutionResult:
+class SubsequentIncrementalExecutionResult:  # noqa: PLW1641
     """Subsequent incremental execution result."""
 
     __slots__ = "completed", "extensions", "has_next", "incremental", "pending"

@@ -48,7 +48,7 @@ def ast_to_dict(
         res.update(
             {
                 key: ast_to_dict(getattr(node, key), locations, cache)
-                for key in ("kind",) + node.keys[1:]
+                for key in ("kind", *node.keys[1:])
             }
         )
         if locations:

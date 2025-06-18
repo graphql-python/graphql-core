@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from math import nan
+from math import isnan, nan
 from typing import Any, NamedTuple
 
 import pytest
@@ -91,7 +91,7 @@ def describe_coerce_input_value():
 
         def returns_no_error_for_nan_result():
             result = _coerce_value({"value": nan}, TestScalar)
-            assert expect_value(result) is nan
+            assert isnan(expect_value(result))
 
         def returns_an_error_for_undefined_result():
             result = _coerce_value({"value": Undefined}, TestScalar)
@@ -371,7 +371,7 @@ def describe_coerce_input_value():
             result = _coerce_value({}, _get_test_input_object(nan))
             result_value = expect_value(result)
             assert "foo" in result_value
-            assert result_value["foo"] is nan
+            assert isnan(result_value["foo"])
 
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)

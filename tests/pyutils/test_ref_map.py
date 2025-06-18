@@ -28,7 +28,7 @@ def describe_object_map():
         assert list(m.items()) == [("a", 1), ("b", 2), ("c", 3)]
         for k, v in m.items():
             assert k in m
-            assert m[k] == v
+            assert m[k] == v  # noqa: PLR1733
             assert m.get(k) == v
             assert v not in m
             with pytest.raises(KeyError):
@@ -65,7 +65,7 @@ def describe_object_map():
         assert list(m.items()) == [(obj1, 1), (obj2, 2), (obj3, 3)]
         for k, v in m.items():
             assert k in m
-            assert m[k] == v
+            assert m[k] == v  # noqa: PLR1733
             assert m.get(k) == v
             assert v not in m
             with pytest.raises(KeyError):

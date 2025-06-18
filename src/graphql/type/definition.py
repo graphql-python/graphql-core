@@ -479,7 +479,7 @@ class GraphQLFieldKwargs(TypedDict, total=False):
     ast_node: FieldDefinitionNode | None
 
 
-class GraphQLField:
+class GraphQLField:  # noqa: PLW1641
     """Definition of a GraphQL field"""
 
     type: GraphQLOutputType
@@ -644,7 +644,7 @@ class GraphQLArgumentKwargs(TypedDict, total=False):
     ast_node: InputValueDefinitionNode | None
 
 
-class GraphQLArgument:
+class GraphQLArgument:  # noqa: PLW1641
     """Definition of a GraphQL argument"""
 
     type: GraphQLInputType
@@ -1219,7 +1219,7 @@ class GraphQLEnumValueKwargs(TypedDict, total=False):
     ast_node: EnumValueDefinitionNode | None
 
 
-class GraphQLEnumValue:
+class GraphQLEnumValue:  # noqa: PLW1641
     """A GraphQL enum value."""
 
     value: Any
@@ -1394,7 +1394,7 @@ class GraphQLInputFieldKwargs(TypedDict, total=False):
     ast_node: InputValueDefinitionNode | None
 
 
-class GraphQLInputField:
+class GraphQLInputField:  # noqa: PLW1641
     """Definition of a GraphQL input field"""
 
     type: GraphQLInputType

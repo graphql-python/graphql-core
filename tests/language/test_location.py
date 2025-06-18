@@ -41,3 +41,10 @@ def describe_source_location():
         different_location = SourceLocation(2, 2).formatted
         assert not location == different_location  # noqa: SIM201
         assert location != different_location
+
+    def can_be_hashed():
+        location = SourceLocation(1, 2)
+        same_location = SourceLocation(1, 2)
+        assert hash(location) == hash(same_location)
+        different_location = SourceLocation(2, 2)
+        assert hash(location) != hash(different_location)

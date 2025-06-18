@@ -214,7 +214,7 @@ def describe_execute_defer_directive():
         assert result == tuple(args.values())
         assert result == tuple(args.values())[:2]
         assert result != tuple(args.values())[:1]
-        assert result != tuple(args.values())[:1] + (["bar", 2],)
+        assert result != (*tuple(args.values())[:1], ["bar", 2])
         assert result == args
         assert result != {**args, "id": "bar"}
         assert result != {**args, "path": ["bar", 2]}
@@ -239,7 +239,7 @@ def describe_execute_defer_directive():
         )
         assert result == tuple(args.values())
         assert result != tuple(args.values())[:1]
-        assert result != tuple(args.values())[:1] + ([GraphQLError("oops")],)
+        assert result != (*tuple(args.values())[:1], [GraphQLError("oops")])
         assert result == args
         assert result != {**args, "id": "bar"}
         assert result != {**args, "errors": [{"message": "oops"}]}

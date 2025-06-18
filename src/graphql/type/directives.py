@@ -49,7 +49,7 @@ class GraphQLDirectiveKwargs(TypedDict, total=False):
     ast_node: ast.DirectiveDefinitionNode | None
 
 
-class GraphQLDirective:
+class GraphQLDirective:  # noqa: PLW1641
     """GraphQL Directive
 
     Directives are used by the GraphQL runtime as a way of modifying execution behavior.
