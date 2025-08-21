@@ -35,3 +35,11 @@ def describe_located_error():
                 super().__init__()
 
         assert str(located_error(LazyError())) == "lazy"
+
+    def handles_error_with_str_source():
+        class CustomException(Exception):
+            def __init__(self, message, source):
+                super().__init__(message)
+                self.source = source
+        e = located_error(CustomException("msg", "source"))
+        assert e.source and e.source.get_location(0)
