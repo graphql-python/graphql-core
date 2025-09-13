@@ -256,7 +256,7 @@ def build_client_schema(
             fields=lambda: build_input_value_def_map(
                 input_object_introspection["inputFields"]
             ),
-            is_one_of= input_object_introspection.get("isOneOf"),
+            is_one_of=input_object_introspection.get("isOneOf"),
         )
 
     type_builders: dict[str, Callable[[IntrospectionType], GraphQLNamedType]] = {

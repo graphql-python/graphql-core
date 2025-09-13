@@ -55,7 +55,7 @@ def get_introspection_query(
     maybe_specified_by_url = "specifiedByURL" if specified_by_url else ""
     maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     maybe_schema_description = maybe_description if schema_description else ""
-    maybe_input_object_one_of = 'isOneOf' if input_object_one_of else  "";
+    maybe_input_object_one_of = "isOneOf" if input_object_one_of else ""
 
     def input_deprecation(string: str) -> str | None:
         return string if input_value_deprecation else ""
