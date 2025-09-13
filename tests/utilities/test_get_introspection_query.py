@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import re
 from typing import Pattern
-
-from wheel.macosx_libfile import version_min_command_fields
-
 from graphql.language import parse
 from graphql.utilities import build_schema, get_introspection_query
 from graphql.validation import validate
