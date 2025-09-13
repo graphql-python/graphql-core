@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Pattern
 
+from wheel.macosx_libfile import version_min_command_fields
+
 from graphql.language import parse
 from graphql.utilities import build_schema, get_introspection_query
 from graphql.validation import validate
@@ -79,6 +81,11 @@ def describe_get_introspection_query():
         ExcpectIntrospectionQuery(input_value_deprecation=False).to_match(
             "deprecationReason", 2
         )
+
+    def includes_input_object_one_of_field():
+        ExcpectIntrospectionQuery().to_not_match("isOneOf")
+        ExcpectIntrospectionQuery(input_object_one_of=True).to_match("isOneOf")
+        ExcpectIntrospectionQuery(input_object_one_of=False).to_not_match("isOneOf")
 
     def includes_deprecated_input_field_and_args():
         ExcpectIntrospectionQuery().to_match("includeDeprecated: true", 2)
