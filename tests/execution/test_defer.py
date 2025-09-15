@@ -36,6 +36,8 @@ from graphql.type import (
     GraphQLString,
 )
 
+pytestmark = pytest.mark.anyio
+
 friend_type = GraphQLObjectType(
     "Friend",
     {
@@ -549,7 +551,6 @@ def describe_execute_defer_directive():
             str(record) == "StreamItemsRecord(stream_record=StreamRecord(path=['bar']))"
         )
 
-    @pytest.mark.asyncio
     async def can_defer_fragments_containing_scalar_types():
         document = parse(
             """
@@ -579,7 +580,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def can_disable_defer_using_if_argument():
         document = parse(
             """
@@ -598,7 +598,6 @@ def describe_execute_defer_directive():
 
         assert result == {"data": {"hero": {"id": "1", "name": "Luke"}}}
 
-    @pytest.mark.asyncio
     async def does_not_disable_defer_with_null_if_argument():
         document = parse(
             """
@@ -628,7 +627,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def throws_an_error_for_defer_directive_with_non_string_label():
         document = parse(
             """
@@ -649,7 +647,6 @@ def describe_execute_defer_directive():
             ],
         }
 
-    @pytest.mark.asyncio
     async def can_defer_fragments_on_the_top_level_query_field():
         document = parse(
             """
@@ -678,7 +675,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def can_defer_fragments_with_errors_on_the_top_level_query_field():
         document = parse(
             """
@@ -719,7 +715,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def can_defer_a_fragment_within_an_already_deferred_fragment():
         document = parse(
             """
@@ -771,7 +766,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def can_defer_a_fragment_that_is_also_not_deferred_with_deferred_first():
         document = parse(
             """
@@ -790,7 +784,6 @@ def describe_execute_defer_directive():
 
         assert result == {"data": {"hero": {"name": "Luke"}}}
 
-    @pytest.mark.asyncio
     async def can_defer_a_fragment_that_is_also_not_deferred_with_non_deferred_first():
         document = parse(
             """
@@ -809,7 +802,6 @@ def describe_execute_defer_directive():
 
         assert result == {"data": {"hero": {"name": "Luke"}}}
 
-    @pytest.mark.asyncio
     async def can_defer_an_inline_fragment():
         document = parse(
             """
@@ -838,7 +830,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def does_not_emit_empty_defer_fragments():
         document = parse(
             """
@@ -858,7 +849,6 @@ def describe_execute_defer_directive():
 
         assert result == {"data": {"hero": {}}}
 
-    @pytest.mark.asyncio
     async def emits_children_of_empty_defer_fragments():
         document = parse(
             """
@@ -888,7 +878,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def separately_emits_defer_fragments_different_labels_varying_fields():
         document = parse(
             """
@@ -925,7 +914,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def separately_emits_defer_fragments_different_labels_varying_subfields():
         document = parse(
             """
@@ -965,7 +953,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def separately_emits_defer_fragments_different_labels_var_subfields_async():
         document = parse(
             """
@@ -1017,7 +1004,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def separately_emits_defer_fragments_var_subfields_same_prio_diff_level():
         document = parse(
             """
@@ -1056,7 +1042,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def separately_emits_nested_defer_frags_var_subfields_same_prio_diff_level():
         document = parse(
             """
@@ -1093,7 +1078,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def can_deduplicate_multiple_defers_on_the_same_object():
         document = parse(
             """
@@ -1145,7 +1129,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def deduplicates_fields_present_in_the_initial_payload():
         document = parse(
             """
@@ -1211,7 +1194,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def deduplicates_fields_present_in_a_parent_defer_payload():
         document = parse(
             """
@@ -1263,7 +1245,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def deduplicates_fields_with_deferred_fragments_at_multiple_levels():
         document = parse(
             """
@@ -1358,7 +1339,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def deduplicates_fields_from_deferred_fragments_branches_same_level():
         document = parse(
             """
@@ -1409,7 +1389,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def deduplicates_fields_from_deferred_fragments_branches_multi_levels():
         document = parse(
             """
@@ -1462,7 +1441,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def nulls_cross_defer_boundaries_null_first():
         document = parse(
             """
@@ -1929,7 +1907,6 @@ def describe_execute_defer_directive():
 
         assert result == {"data": {"hero": {"nestedObject": {"name": "foo"}}}}
 
-    @pytest.mark.asyncio
     async def handles_errors_thrown_in_deferred_fragments():
         document = parse(
             """
@@ -1971,7 +1948,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def handles_non_nullable_errors_thrown_in_deferred_fragments():
         document = parse(
             """
@@ -2014,7 +1990,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def handles_non_nullable_errors_thrown_outside_deferred_fragments():
         document = parse(
             """
@@ -2045,7 +2020,6 @@ def describe_execute_defer_directive():
             ],
         }
 
-    @pytest.mark.asyncio
     async def handles_async_non_nullable_errors_thrown_in_deferred_fragments():
         document = parse(
             """
@@ -2088,7 +2062,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def returns_payloads_in_correct_order():
         document = parse(
             """
@@ -2140,7 +2113,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def returns_payloads_from_synchronous_data_in_correct_order():
         document = parse(
             """
@@ -2192,7 +2164,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.asyncio
     async def filters_deferred_payloads_when_list_item_from_async_iterable_nulled():
         document = parse(
             """
@@ -2226,7 +2197,6 @@ def describe_execute_defer_directive():
             ],
         }
 
-    @pytest.mark.asyncio
     async def original_execute_function_throws_error_if_deferred_and_all_is_sync():
         document = parse(
             """
@@ -2244,7 +2214,6 @@ def describe_execute_defer_directive():
             " multiple payloads (due to @defer or @stream directive)"
         )
 
-    @pytest.mark.asyncio
     async def original_execute_function_throws_error_if_deferred_and_not_all_is_sync():
         document = parse(
             """

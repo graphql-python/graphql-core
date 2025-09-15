@@ -7,6 +7,8 @@ import pytest
 
 from graphql.pyutils import gather_with_cancel, is_awaitable
 
+pytestmark = pytest.mark.anyio
+
 
 class Controller:
     def reset(self, wait=False):
@@ -52,7 +54,6 @@ with_all_types_of_awaitables = pytest.mark.parametrize(
 
 def describe_gather_with_cancel():
     @with_all_types_of_awaitables
-    @pytest.mark.asyncio
     async def gathers_all_values(type_of_awaitable: str):
         factory = awaitable_factories[type_of_awaitable]
         values = list(range(3))
@@ -73,7 +74,6 @@ def describe_gather_with_cancel():
         assert awaited == values
 
     @with_all_types_of_awaitables
-    @pytest.mark.asyncio
     async def raises_on_exception(type_of_awaitable: str):
         factory = awaitable_factories[type_of_awaitable]
         values = list(range(4))
@@ -96,7 +96,6 @@ def describe_gather_with_cancel():
         assert controller.returned == values[:-1]
 
     @with_all_types_of_awaitables
-    @pytest.mark.asyncio
     async def cancels_on_exception(type_of_awaitable: str):
         factory = awaitable_factories[type_of_awaitable]
         values = list(range(4))

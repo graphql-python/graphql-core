@@ -18,6 +18,8 @@ from graphql.type import (
     GraphQLString,
 )
 
+pytestmark = pytest.mark.anyio
+
 inspect_module = import_module(inspect.__module__)
 
 
@@ -139,7 +141,6 @@ def describe_inspect():
         assert inspect(test_generator) == "<generator function test_generator>"
         assert inspect(test_generator()) == "<generator test_generator>"
 
-    @pytest.mark.asyncio
     async def inspect_coroutine():
         async def test_coroutine():
             pass

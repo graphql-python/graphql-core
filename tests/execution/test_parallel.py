@@ -17,6 +17,8 @@ from graphql.type import (
     GraphQLString,
 )
 
+pytestmark = pytest.mark.anyio
+
 
 class Barrier:
     """Barrier that makes progress only after a certain number of waits."""
@@ -33,7 +35,6 @@ class Barrier:
 
 
 def describe_parallel_execution():
-    @pytest.mark.asyncio
     async def resolve_single_field():
         # make sure that the special case of resolving a single field works
         async def resolve(*_args):
@@ -54,7 +55,6 @@ def describe_parallel_execution():
 
         assert result == ({"foo": True}, None)
 
-    @pytest.mark.asyncio
     async def resolve_fields_in_parallel():
         barrier = Barrier(2)
 
@@ -80,7 +80,6 @@ def describe_parallel_execution():
 
         assert result == ({"foo": True, "bar": True}, None)
 
-    @pytest.mark.asyncio
     async def resolve_single_element_list():
         # make sure that the special case of resolving a single element list works
         async def resolve(*_args):
@@ -99,7 +98,6 @@ def describe_parallel_execution():
 
         assert result == ({"foo": [True]}, None)
 
-    @pytest.mark.asyncio
     async def resolve_list_in_parallel():
         barrier = Barrier(2)
 
@@ -129,7 +127,6 @@ def describe_parallel_execution():
 
         assert result == ({"foo": [True, True]}, None)
 
-    @pytest.mark.asyncio
     async def resolve_is_type_of_in_parallel():
         FooType = GraphQLInterfaceType("Foo", {"foo": GraphQLField(GraphQLString)})
 
@@ -201,7 +198,6 @@ def describe_parallel_execution():
         These tests are specifically targeted at the Python asyncio implementation.
         """
 
-        @pytest.mark.asyncio
         async def cancel_selection_sets():
             barrier = Barrier(2)
             completed = False
@@ -244,7 +240,6 @@ def describe_parallel_execution():
             await asyncio.sleep(0)
             assert not completed
 
-        @pytest.mark.asyncio
         async def cancel_lists():
             barrier = Barrier(2)
             completed = False
@@ -290,7 +285,6 @@ def describe_parallel_execution():
             await asyncio.sleep(0)
             assert not completed
 
-        @pytest.mark.asyncio
         async def cancel_async_iterators():
             barrier = Barrier(2)
             completed = False
@@ -337,7 +331,6 @@ def describe_parallel_execution():
             await asyncio.sleep(0)
             assert not completed
 
-        @pytest.mark.asyncio
         async def cancel_type_resolver():
             FooType = GraphQLInterfaceType("Foo", {"foo": GraphQLField(GraphQLString)})
 

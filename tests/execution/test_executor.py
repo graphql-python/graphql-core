@@ -28,6 +28,8 @@ from graphql.type import (
     ResponsePath,
 )
 
+pytestmark = pytest.mark.anyio
+
 
 def describe_execute_handles_basic_execution_tasks():
     def accepts_positional_arguments():
@@ -42,7 +44,6 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert result == ({"a": "rootValue"}, None)
 
-    @pytest.mark.asyncio
     async def executes_arbitrary_code():
         # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class Data:
@@ -376,7 +377,6 @@ def describe_execute_handles_basic_execution_tasks():
         assert len(resolved_args) == 1
         assert resolved_args[0] == {"numArg": 123, "stringArg": "foo"}
 
-    @pytest.mark.asyncio
     async def nulls_out_error_subtrees():
         document = parse(
             """
@@ -865,7 +865,6 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
-    @pytest.mark.asyncio
     async def correct_field_ordering_despite_execution_order():
         schema = GraphQLSchema(
             GraphQLObjectType(
@@ -981,7 +980,6 @@ def describe_execute_handles_basic_execution_tasks():
             None,
         )
 
-    @pytest.mark.asyncio
     async def fails_when_is_type_of_check_is_not_met():
         class Special:
             value: str

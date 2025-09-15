@@ -52,6 +52,7 @@ typing-extensions = [
 optional = true
 
 [tool.poetry.group.test.dependencies]
+anyio = { version = ">= 3.7.1" }
 pytest = [
     { version = "^8.3", python = ">=3.8" },
     { version = "^7.4", python = "<3.8" }
@@ -321,7 +322,7 @@ addopts = "--benchmark-disable"
 # Deactivate default name pattern for test classes (we use pytest_describe).
 python_classes = "PyTest*"
 # Handle all async fixtures and tests automatically by asyncio,
-asyncio_mode = "auto"
+asyncio_mode = "strict"
 # Set a timeout in seconds for aborting tests that run too long.
 timeout = "100"
 # Ignore config options not (yet) available in older Python versions.

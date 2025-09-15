@@ -6,6 +6,8 @@ import pytest
 
 from graphql.pyutils import is_awaitable
 
+pytestmark = pytest.mark.anyio
+
 
 def describe_is_awaitable():
     def declines_the_none_value():
@@ -67,7 +69,6 @@ def describe_is_awaitable():
         assert not isawaitable(some_async_function)
         assert not is_awaitable(some_async_function)
 
-    @pytest.mark.asyncio
     async def recognizes_a_coroutine_object():
         async def some_async_function():
             return True
@@ -84,6 +85,7 @@ def describe_is_awaitable():
         python_version >= (3, 11),
         reason="Generator-based coroutines not supported any more since Python 3.11",
     )
+    @pytest.mark.parametrize("anyio_backend", ["asyncio"], indirect=True)
     async def recognizes_an_old_style_coroutine():  # pragma: no cover
         @asyncio.coroutine  # type: ignore
         def some_function():
@@ -93,7 +95,6 @@ def describe_is_awaitable():
         assert is_awaitable(some_old_style_coroutine)
         assert is_awaitable(some_old_style_coroutine)
 
-    @pytest.mark.asyncio
     async def recognizes_a_future_object():
         async def some_async_function():
             return True
@@ -106,7 +107,6 @@ def describe_is_awaitable():
 
         assert await some_future is True
 
-    @pytest.mark.asyncio
     async def declines_an_async_generator():
         async def some_async_generator_function():
             yield True
