@@ -1,6 +1,7 @@
 from typing import Any, cast
 
 from graphql.error import GraphQLError, located_error
+from graphql.language import Source
 
 
 def describe_located_error():
@@ -36,10 +37,35 @@ def describe_located_error():
 
         assert str(located_error(LazyError())) == "lazy"
 
+    def handles_error_with_proper_source():
+        class CustomError(Exception):
+            source = Source("foo")
+
+        e = located_error(CustomError())
+
+        assert e.source
+        assert isinstance(e.source, Source)
+        assert e.source.body == "foo"
+
     def handles_error_with_str_source():
-        class CustomException(Exception):
-            def __init__(self, message, source):
-                super().__init__(message)
-                self.source = source
-        e = located_error(CustomException("msg", "source"))
-        assert e.source and e.source.get_location(0)
+        class CustomError(Exception):
+            source = "foo"
+
+        e = located_error(CustomError())
+
+        assert e.source
+        assert isinstance(e.source, Source)
+        assert e.source.body == "foo"
+
+    def handles_error_with_non_source():
+        class CustomError(Exception):
+            source = Exception("Not a source")
+
+        e = located_error(CustomError())
+
+        assert e.source is None
+
+    def handles_error_without_source():
+        e = located_error(ValueError("No source"))
+
+        assert e.source is None

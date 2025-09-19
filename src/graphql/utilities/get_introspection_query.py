@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 try:
     from typing import Literal, TypedDict
 except ImportError:  # Python < 3.8
-    from typing_extensions import Literal, TypedDict  # type: ignore
+    from typing_extensions import Literal, TypedDict
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
