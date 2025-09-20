@@ -294,6 +294,7 @@ disallow_untyped_defs = false
 [tool.pyright]
 reportIncompatibleVariableOverride = false
 reportMissingTypeArgument = false
+reportReturnType = false
 reportUnknownArgumentType = false
 reportUnknownMemberType = false
 reportUnknownParameterType = false

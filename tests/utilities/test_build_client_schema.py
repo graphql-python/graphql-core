@@ -594,6 +594,22 @@ def describe_type_system_build_schema_from_introspection():
 
         assert cycle_introspection(sdl) == sdl
 
+    def builds_a_schema_with_one_of_directive():
+        sdl = dedent(
+            """
+            type Query {
+              someField(someArg: SomeInputObject): String
+            }
+
+            input SomeInputObject @oneOf {
+              someInputField1: String
+              someInputField2: String
+            }
+            """
+        )
+
+        assert cycle_introspection(sdl) == sdl
+
     def can_use_client_schema_for_limited_execution():
         schema = build_schema(
             """
