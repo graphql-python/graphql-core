@@ -113,7 +113,7 @@ def describe_type_system_directive():
         assert directive != other_directive
 
     def rejects_a_directive_with_incorrectly_typed_name():
-        with pytest.raises(TypeError, match="missing .* required .* 'name'"):
+        with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLDirective()  # type: ignore
         with pytest.raises(TypeError) as exc_info:

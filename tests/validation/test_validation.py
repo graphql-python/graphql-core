@@ -163,5 +163,5 @@ def describe_validate_limit_maximum_number_of_validation_errors():
             def enter_field(self, *_args):
                 raise RuntimeError("Error from custom rule!")
 
-        with pytest.raises(RuntimeError, match="^Error from custom rule!$"):
+        with pytest.raises(RuntimeError, match=r"^Error from custom rule!$"):
             validate(test_schema, doc, [CustomRule], max_errors=1)

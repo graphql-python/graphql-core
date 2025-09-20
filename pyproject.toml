@@ -52,15 +52,10 @@ typing-extensions = [
 optional = true
 
 [tool.poetry.group.test.dependencies]
-anyio = { version = ">= 3.7.1" }
+anyio = { version = "^3.7.1" }
 pytest = [
     { version = "^8.3", python = ">=3.8" },
     { version = "^7.4", python = "<3.8" }
-]
-pytest-asyncio = [
-    { version = "^0.25.2", python = ">=3.9" },
-    { version = "~0.24.0", python = ">=3.8,<3.9" },
-    { version = "~0.21.1", python = "<3.8" }
 ]
 pytest-benchmark = [
     { version = "^5.1", python = ">=3.9" },
@@ -86,9 +81,9 @@ tox = [
 optional = true
 
 [tool.poetry.group.lint.dependencies]
-ruff = ">=0.12,<0.13"
+ruff = ">=0.13,<0.14"
 mypy = [
-    { version = "^1.16", python = ">=3.9" },
+    { version = "^1.18", python = ">=3.9" },
     { version = "~1.14", python = ">=3.8,<3.9" },
     { version = "~1.4", python = "<3.8" }
 ]

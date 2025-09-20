@@ -169,7 +169,7 @@ def describe_type_system_scalars():
         assert scalar.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_a_scalar_type_with_incorrectly_typed_name():
-        with pytest.raises(TypeError, match="missing .* required .* 'name'"):
+        with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLScalarType()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
@@ -445,7 +445,7 @@ def describe_type_system_objects():
         assert object_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_an_object_type_with_incorrectly_typed_name():
-        with pytest.raises(TypeError, match="missing .* required .* 'name'"):
+        with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLObjectType()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
@@ -909,7 +909,7 @@ def describe_type_system_enums():
         assert enum_type.extension_ast_nodes == tuple(extension_ast_nodes)
 
     def rejects_an_enum_type_with_incorrectly_typed_name():
-        with pytest.raises(TypeError, match="missing .* required .* 'name'"):
+        with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
             # noinspection PyArgumentList
             GraphQLEnumType()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
@@ -939,7 +939,7 @@ def describe_type_system_enums():
         assert msg == "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
 
     def rejects_an_enum_type_without_values():
-        with pytest.raises(TypeError, match="missing .* required .* 'values'"):
+        with pytest.raises(TypeError, match=r"missing .* required .* 'values'"):
             # noinspection PyArgumentList
             GraphQLEnumType("SomeEnum")  # type: ignore
         with pytest.raises(TypeError) as exc_info:
@@ -1072,7 +1072,7 @@ def describe_type_system_input_objects():
             assert input_field.out_name is None
 
         def rejects_an_input_object_type_with_incorrectly_typed_name():
-            with pytest.raises(TypeError, match="missing .* required .* 'name'"):
+            with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
                 # noinspection PyArgumentList
                 GraphQLInputObjectType()  # type: ignore
             with pytest.raises(TypeError) as exc_info:

@@ -506,7 +506,7 @@ def describe_subscription():
         tasks = [
             create_task(task()) for task in (mutate_users, receive_one, receive_all)
         ]
-        done, pending = await wait(tasks, timeout=1)
+        _done, pending = await wait(tasks, timeout=1)
         assert not pending
 
         expected_data: list[dict[str, Any]] = [
