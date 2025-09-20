@@ -6,6 +6,8 @@ from graphql.execution import ExecutionContext, execute, subscribe
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
+pytestmark = pytest.mark.anyio
+
 try:
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
@@ -78,7 +80,6 @@ def describe_customize_execution():
 
 
 def describe_customize_subscription():
-    @pytest.mark.asyncio
     async def uses_a_custom_subscribe_field_resolver():
         schema = GraphQLSchema(
             query=GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)}),
@@ -107,7 +108,6 @@ def describe_customize_subscription():
 
         await subscription.aclose()
 
-    @pytest.mark.asyncio
     async def uses_a_custom_execution_context_class():
         class TestExecutionContext(ExecutionContext):
             def __init__(self, *args, **kwargs):

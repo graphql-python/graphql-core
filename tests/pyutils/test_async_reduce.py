@@ -4,6 +4,8 @@ import pytest
 
 from graphql.pyutils import async_reduce, is_awaitable
 
+pytestmark = pytest.mark.anyio
+
 
 def describe_async_reduce():
     def works_like_reduce_for_lists_of_ints():
@@ -17,7 +19,6 @@ def describe_async_reduce():
         assert result == 42
         assert result == reduce(callback, values, initial_value)
 
-    @pytest.mark.asyncio
     async def works_with_sync_values_and_sync_initial_value():
         def callback(accumulator, current_value):
             return accumulator + "-" + current_value
@@ -27,7 +28,6 @@ def describe_async_reduce():
         assert not is_awaitable(result)
         assert result == "foo-bar-baz"
 
-    @pytest.mark.asyncio
     async def works_with_async_initial_value():
         async def async_initial_value():
             return "foo"
@@ -40,7 +40,6 @@ def describe_async_reduce():
         assert is_awaitable(result)
         assert await result == "foo-bar-baz"
 
-    @pytest.mark.asyncio
     async def works_with_async_callback():
         async def async_callback(accumulator, current_value):
             return accumulator + "-" + current_value
@@ -50,7 +49,6 @@ def describe_async_reduce():
         assert is_awaitable(result)
         assert await result == "foo-bar-baz"
 
-    @pytest.mark.asyncio
     async def works_with_async_callback_and_async_initial_value():
         async def async_initial_value():
             return 1 / 8

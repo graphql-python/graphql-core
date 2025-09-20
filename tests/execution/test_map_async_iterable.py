@@ -2,6 +2,9 @@ import pytest
 
 from graphql.execution import map_async_iterable
 
+pytestmark = pytest.mark.anyio
+
+
 try:  # pragma: no cover
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
@@ -22,7 +25,6 @@ async def throw(_x: int) -> int:
 
 
 def describe_map_async_iterable():
-    @pytest.mark.asyncio
     async def maps_over_async_generator():
         async def source():
             yield 1
@@ -37,7 +39,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             assert await anext(doubles)
 
-    @pytest.mark.asyncio
     async def maps_over_async_iterable():
         items = [1, 2, 3]
 
@@ -58,7 +59,6 @@ def describe_map_async_iterable():
         assert not items
         assert values == [2, 4, 6]
 
-    @pytest.mark.asyncio
     async def compatible_with_async_for():
         async def source():
             yield 1
@@ -71,7 +71,6 @@ def describe_map_async_iterable():
 
         assert values == [2, 4, 6]
 
-    @pytest.mark.asyncio
     async def allows_returning_early_from_mapped_async_generator():
         async def source():
             yield 1
@@ -92,7 +91,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def allows_returning_early_from_mapped_async_iterable():
         items = [1, 2, 3]
 
@@ -120,7 +118,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def allows_throwing_errors_through_async_iterable():
         items = [1, 2, 3]
 
@@ -151,7 +148,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def allows_throwing_errors_with_traceback_through_async_iterables():
         class Iterable:
             def __aiter__(self):
@@ -178,7 +174,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(one)
 
-    @pytest.mark.asyncio
     async def does_not_map_over_thrown_errors():
         async def source():
             yield 1
@@ -193,7 +188,6 @@ def describe_map_async_iterable():
 
         assert str(exc_info.value) == "Goodbye"
 
-    @pytest.mark.asyncio
     async def does_not_map_over_externally_thrown_errors():
         async def source():
             yield 1
@@ -207,7 +201,6 @@ def describe_map_async_iterable():
 
         assert str(exc_info.value) == "Goodbye"
 
-    @pytest.mark.asyncio
     async def iterable_is_closed_when_mapped_iterable_is_closed():
         class Iterable:
             def __init__(self):
@@ -231,7 +224,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def iterable_is_closed_on_callback_error():
         class Iterable:
             def __init__(self):
@@ -254,7 +246,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def iterable_exits_on_callback_error():
         exited = False
 
@@ -273,7 +264,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def mapped_iterable_is_closed_when_iterable_cannot_be_closed():
         class Iterable:
             def __aiter__(self):
@@ -288,7 +278,6 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
-    @pytest.mark.asyncio
     async def ignores_that_iterable_cannot_be_closed_on_callback_error():
         class Iterable:
             def __aiter__(self):
