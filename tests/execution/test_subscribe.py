@@ -36,7 +36,10 @@ from graphql.type import (
 from ..fixtures import cleanup
 from ..utils.assert_equal_awaitables_or_values import assert_equal_awaitables_or_values
 
-pytestmark = pytest.mark.anyio
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+]
 
 try:
     from typing import TypedDict

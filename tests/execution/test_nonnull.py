@@ -232,14 +232,24 @@ def describe_execute_handles_non_nullable_types():
                         "locations": [(4, 17)],
                     },
                     {
-                        "message": str(promise_error),
-                        "path": ["syncNest", "promise"],
-                        "locations": [(5, 17)],
-                    },
-                    {
                         "message": str(sync_error),
                         "path": ["syncNest", "syncNest", "sync"],
                         "locations": [(6, 28)],
+                    },
+                    {
+                        "message": str(sync_error),
+                        "path": ["promiseNest", "sync"],
+                        "locations": [(10, 17)],
+                    },
+                    {
+                        "message": str(sync_error),
+                        "path": ["promiseNest", "syncNest", "sync"],
+                        "locations": [(12, 28)],
+                    },
+                    {
+                        "message": str(promise_error),
+                        "path": ["syncNest", "promise"],
+                        "locations": [(5, 17)],
                     },
                     {
                         "message": str(promise_error),
@@ -257,19 +267,9 @@ def describe_execute_handles_non_nullable_types():
                         "locations": [(7, 36)],
                     },
                     {
-                        "message": str(sync_error),
-                        "path": ["promiseNest", "sync"],
-                        "locations": [(10, 17)],
-                    },
-                    {
                         "message": str(promise_error),
                         "path": ["promiseNest", "promise"],
                         "locations": [(11, 17)],
-                    },
-                    {
-                        "message": str(sync_error),
-                        "path": ["promiseNest", "syncNest", "sync"],
-                        "locations": [(12, 28)],
                     },
                     {
                         "message": str(promise_error),

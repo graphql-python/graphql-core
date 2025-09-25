@@ -55,7 +55,7 @@ def describe_customize_execution():
                 source,
                 field_group,
                 path,
-                incremental_data_record,
+                errors,
                 defer_map,
             ):
                 result = super().execute_field(
@@ -63,10 +63,11 @@ def describe_customize_execution():
                     source,
                     field_group,
                     path,
-                    incremental_data_record,
+                    errors,
                     defer_map,
                 )
-                return result * 2  # type: ignore
+                assert isinstance(result, tuple)
+                return result[0] * 2, result[1]
 
         assert execute(
             schema,

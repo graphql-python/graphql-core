@@ -5,7 +5,6 @@ fulfilling a GraphQL request.
 """
 
 from .execute import (
-    ASYNC_DELAY,
     create_source_event_stream,
     execute,
     experimental_execute_incrementally,
@@ -36,7 +35,6 @@ from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 __all__ = [
-    "ASYNC_DELAY",
     "ExecutionContext",
     "ExecutionResult",
     "ExperimentalIncrementalExecutionResults",

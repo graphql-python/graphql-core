@@ -288,7 +288,10 @@ module = [
 disallow_untyped_defs = false
 
 [tool.pyright]
+# silence pyright since we're using mypy already
+reportArgumentType = false
 reportIncompatibleVariableOverride = false
+reportMissingModuleSource = false
 reportMissingTypeArgument = false
 reportReturnType = false
 reportUnknownArgumentType = false

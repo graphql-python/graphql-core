@@ -19,10 +19,7 @@ from graphql.execution import (
 from graphql.execution.incremental_publisher import (
     CompletedResult,
     DeferredFragmentRecord,
-    DeferredGroupedFieldSetRecord,
     PendingResult,
-    StreamItemsRecord,
-    StreamRecord,
 )
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import Path, is_awaitable
@@ -511,45 +508,11 @@ def describe_execute_defer_directive():
             "completed": completed,
         }
 
-    def can_print_deferred_grouped_field_set_record():
-        record = DeferredGroupedFieldSetRecord([], {}, False)
-        assert (
-            str(record) == "DeferredGroupedFieldSetRecord("
-            "deferred_fragment_records=[], grouped_field_set={})"
-        )
-        record = DeferredGroupedFieldSetRecord([], {}, True, Path(None, "foo", "Foo"))
-        assert (
-            str(record) == "DeferredGroupedFieldSetRecord("
-            "deferred_fragment_records=[], grouped_field_set={}, path=['foo'])"
-        )
-
     def can_print_deferred_fragment_record():
-        record = DeferredFragmentRecord(None, None)
+        record = DeferredFragmentRecord()
         assert str(record) == "DeferredFragmentRecord()"
         record = DeferredFragmentRecord(Path(None, "bar", "Bar"), "foo")
         assert str(record) == "DeferredFragmentRecord(path=['bar'], label='foo')"
-
-    def can_print_stream_record():
-        record = StreamRecord(Path(None, "bar", "Bar"), "foo")
-        assert str(record) == "StreamRecord(path=['bar'], label='foo')"
-        record.path = []
-        assert str(record) == "StreamRecord(label='foo')"
-        record.label = None
-        assert str(record) == "StreamRecord()"
-
-    def can_print_stream_items_record():
-        record = StreamItemsRecord(
-            StreamRecord(Path(None, "bar", "Bar"), "foo"),
-            Path(None, "baz", "Baz"),
-        )
-        assert (
-            str(record) == "StreamItemsRecord(stream_record=StreamRecord("
-            "path=['bar'], label='foo'), path=['baz'])"
-        )
-        record = StreamItemsRecord(StreamRecord(Path(None, "bar", "Bar")))
-        assert (
-            str(record) == "StreamItemsRecord(stream_record=StreamRecord(path=['bar']))"
-        )
 
     async def can_defer_fragments_containing_scalar_types():
         document = parse(
@@ -744,12 +707,8 @@ def describe_execute_defer_directive():
             },
             {
                 "pending": [{"id": "1", "path": ["hero"], "label": "DeferNested"}],
-                "incremental": [{"data": {"id": "1"}, "id": "0"}],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
                 "incremental": [
+                    {"data": {"id": "1"}, "id": "0"},
                     {
                         "data": {
                             "friends": [
@@ -761,7 +720,7 @@ def describe_execute_defer_directive():
                         "id": "1",
                     },
                 ],
-                "completed": [{"id": "1"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1027,17 +986,17 @@ def describe_execute_defer_directive():
             {
                 "data": {"hero": {}},
                 "pending": [
-                    {"id": "0", "path": [], "label": "DeferName"},
-                    {"id": "1", "path": ["hero"], "label": "DeferID"},
+                    {"id": "0", "path": ["hero"], "label": "DeferID"},
+                    {"id": "1", "path": [], "label": "DeferName"},
                 ],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {"data": {"id": "1"}, "id": "1"},
-                    {"data": {"name": "Luke"}, "id": "0", "subPath": ["hero"]},
+                    {"data": {"id": "1"}, "id": "0"},
+                    {"data": {"name": "Luke"}, "id": "1", "subPath": ["hero"]},
                 ],
-                "completed": [{"id": "1"}, {"id": "0"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1311,30 +1270,24 @@ def describe_execute_defer_directive():
                 "hasNext": True,
             },
             {
-                "pending": [{"id": "1", "path": ["hero", "nestedObject"]}],
+                "pending": [
+                    {"id": "1", "path": ["hero", "nestedObject"]},
+                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]},
+                ],
                 "incremental": [
                     {
                         "data": {"bar": "bar"},
                         "id": "0",
                         "subPath": ["nestedObject", "deeperObject"],
                     },
+                    {
+                        "data": {"baz": "baz"},
+                        "id": "1",
+                        "subPath": ["deeperObject"],
+                    },
+                    {"data": {"bak": "bak"}, "id": "2"},
                 ],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "pending": [
-                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]}
-                ],
-                "incremental": [
-                    {"data": {"baz": "baz"}, "id": "1", "subPath": ["deeperObject"]},
-                ],
-                "hasNext": True,
-                "completed": [{"id": "1"}],
-            },
-            {
-                "incremental": [{"data": {"bak": "bak"}, "id": "2"}],
-                "completed": [{"id": "2"}],
+                "completed": [{"id": "0"}, {"id": "1"}, {"id": "2"}],
                 "hasNext": False,
             },
         ]
@@ -1428,15 +1381,15 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {"b": {"c": {"d": "d"}}}},
-                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a", "b"]}],
+                "pending": [{"id": "0", "path": ["a", "b"]}, {"id": "1", "path": []}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {"data": {"e": {"f": "f"}}, "id": "1"},
-                    {"data": {"g": {"h": "h"}}, "id": "0"},
+                    {"data": {"e": {"f": "f"}}, "id": "0"},
+                    {"data": {"g": {"h": "h"}}, "id": "1"},
                 ],
-                "completed": [{"id": "1"}, {"id": "0"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1549,6 +1502,7 @@ def describe_execute_defer_directive():
                     {"data": {"d": "d"}, "id": "0", "subPath": ["a", "b", "c"]},
                 ],
                 "completed": [
+                    {"id": "0"},
                     {
                         "id": "1",
                         "errors": [
@@ -1560,7 +1514,6 @@ def describe_execute_defer_directive():
                             },
                         ],
                     },
-                    {"id": "0"},
                 ],
                 "hasNext": False,
             },

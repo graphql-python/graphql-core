@@ -2,34 +2,47 @@
 
 from __future__ import annotations
 
-from asyncio import Event, ensure_future, gather, sleep
+from asyncio import Event, Task, ensure_future, gather
 from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
     Awaitable,
-    Callable,
-    Collection,
     Iterator,
     NamedTuple,
     Union,
+    cast,
 )
+
+try:
+    from typing import Protocol
+except ImportError:  # Python < 3.8
+    from typing_extensions import Protocol
 
 try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
 
-from ..pyutils import RefSet
+try:
+    from typing import NotRequired
+except ImportError:  # Python < 3.11
+    from typing_extensions import NotRequired
+
+from ..pyutils import AwaitableOrValue, is_awaitable
 
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
     from ..pyutils import Path
-    from .build_field_plan import GroupedFieldSet
 
 __all__ = [
-    "ASYNC_DELAY",
+    "BareDeferredGroupedFieldSetResult",
+    "BareStreamItemsResult",
     "DeferredFragmentRecord",
     "ExecutionResult",
     "ExperimentalIncrementalExecutionResults",
@@ -42,26 +55,35 @@ __all__ = [
     "IncrementalDataRecord",
     "IncrementalDeferResult",
     "IncrementalPublisher",
+    "IncrementalPublisherContext",
     "IncrementalResult",
     "IncrementalStreamResult",
     "InitialIncrementalExecutionResult",
-    "InitialResultRecord",
+    "NonReconcilableStreamItemsResult",
+    "ReconcilableStreamItemsResult",
     "StreamItemsRecord",
+    "StreamItemsResult",
     "SubsequentIncrementalExecutionResult",
+    "SubsequentResultRecord",
+    "TerminatingStreamItemsResult",
+    "build_incremental_response",
+    "is_cancellable_stream_record",
+    "is_deferred_fragment_record",
+    "is_deferred_grouped_field_set_record",
+    "is_deferred_grouped_field_set_result",
+    "is_non_reconcilable_deferred_grouped_field_set_result",
+    "is_reconcilable_stream_items_result",
 ]
-
-
-ASYNC_DELAY = 1 / 512  # wait time in seconds for deferring execution
 
 suppress_key_error = suppress(KeyError)
 
 
-class FormattedPendingResult(TypedDict, total=False):
+class FormattedPendingResult(TypedDict):
     """Formatted pending execution result"""
 
     id: str
     path: list[str | int]
-    label: str
+    label: NotRequired[str]
 
 
 class PendingResult:  # noqa: PLW1641
@@ -120,11 +142,11 @@ class PendingResult:  # noqa: PLW1641
         return not self == other
 
 
-class FormattedCompletedResult(TypedDict, total=False):
+class FormattedCompletedResult(TypedDict):
     """Formatted completed execution result"""
 
     id: str
-    errors: list[GraphQLFormattedError]
+    errors: NotRequired[list[GraphQLFormattedError]]
 
 
 class CompletedResult:  # noqa: PLW1641
@@ -176,14 +198,6 @@ class CompletedResult:  # noqa: PLW1641
         return not self == other
 
 
-class IncrementalUpdate(NamedTuple):
-    """Incremental update"""
-
-    pending: list[PendingResult]
-    incremental: list[IncrementalResult]
-    completed: list[CompletedResult]
-
-
 class FormattedExecutionResult(TypedDict, total=False):
     """Formatted execution result"""
 
@@ -200,11 +214,11 @@ class ExecutionResult:  # noqa: PLW1641
     - ``extensions`` is reserved for adding non-standard properties.
     """
 
-    __slots__ = "data", "errors", "extensions"
-
     data: dict[str, Any] | None
     errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
+
+    __slots__ = "data", "errors", "extensions"
 
     def __init__(
         self,
@@ -256,15 +270,15 @@ class ExecutionResult:  # noqa: PLW1641
         return not self == other
 
 
-class FormattedInitialIncrementalExecutionResult(TypedDict, total=False):
+class FormattedInitialIncrementalExecutionResult(TypedDict):
     """Formatted initial incremental execution result"""
 
-    data: dict[str, Any] | None
-    errors: list[GraphQLFormattedError]
+    data: NotRequired[dict[str, Any] | None]
+    errors: NotRequired[list[GraphQLFormattedError]]
     pending: list[FormattedPendingResult]
     hasNext: bool
     incremental: list[FormattedIncrementalResult]
-    extensions: dict[str, Any]
+    extensions: NotRequired[dict[str, Any]]
 
 
 class InitialIncrementalExecutionResult:  # noqa: PLW1641
@@ -308,7 +322,7 @@ class InitialIncrementalExecutionResult:  # noqa: PLW1641
     @property
     def formatted(self) -> FormattedInitialIncrementalExecutionResult:
         """Get execution result formatted according to the specification."""
-        formatted: FormattedInitialIncrementalExecutionResult = {"data": self.data}
+        formatted: FormattedInitialIncrementalExecutionResult = {"data": self.data}  # type: ignore
         if self.errors is not None:
             formatted["errors"] = [error.formatted for error in self.errors]
         formatted["pending"] = [pending.formatted for pending in self.pending]
@@ -359,26 +373,39 @@ class ExperimentalIncrementalExecutionResults(NamedTuple):
     subsequent_results: AsyncGenerator[SubsequentIncrementalExecutionResult, None]
 
 
-class FormattedIncrementalDeferResult(TypedDict, total=False):
+class BareDeferredGroupedFieldSetResult:
+    """Bare deferred grouped field set result."""
+
+    errors: list[GraphQLError] | None
+    data: dict[str, Any]
+
+    __slots__ = "data", "errors"
+
+    def __init__(
+        self, data: dict[str, Any], errors: list[GraphQLError] | None = None
+    ) -> None:
+        self.data = data
+        self.errors = errors
+
+
+class FormattedIncrementalDeferResult(TypedDict):
     """Formatted incremental deferred execution result"""
 
+    errors: NotRequired[list[GraphQLFormattedError]]
     data: dict[str, Any]
     id: str
-    subPath: list[str | int]
-    errors: list[GraphQLFormattedError]
-    extensions: dict[str, Any]
+    subPath: NotRequired[list[str | int]]
+    extensions: NotRequired[dict[str, Any]]
 
 
-class IncrementalDeferResult:  # noqa: PLW1641
+class IncrementalDeferResult(BareDeferredGroupedFieldSetResult):  # noqa: PLW1641
     """Incremental deferred execution result"""
 
-    data: dict[str, Any]
     id: str
     sub_path: list[str | int] | None
-    errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "data", "errors", "extensions", "id", "sub_path"
+    __slots__ = "extensions", "id", "sub_path"
 
     def __init__(
         self,
@@ -451,26 +478,41 @@ class IncrementalDeferResult:  # noqa: PLW1641
         return not self == other
 
 
-class FormattedIncrementalStreamResult(TypedDict, total=False):
+class BareStreamItemsResult:
+    """Bare stream items result."""
+
+    errors: list[GraphQLError] | None
+    items: list[Any]
+
+    __slots__ = "errors", "items"
+
+    def __init__(
+        self,
+        items: list[Any],
+        errors: list[GraphQLError] | None = None,
+    ) -> None:
+        self.items = items
+        self.errors = errors
+
+
+class FormattedIncrementalStreamResult(TypedDict):
     """Formatted incremental stream execution result"""
 
+    errors: NotRequired[list[GraphQLFormattedError]]
     items: list[Any]
     id: str
-    subPath: list[str | int]
-    errors: list[GraphQLFormattedError]
-    extensions: dict[str, Any]
+    subPath: NotRequired[list[str | int]]
+    extensions: NotRequired[dict[str, Any]]
 
 
-class IncrementalStreamResult:  # noqa: PLW1641
+class IncrementalStreamResult(BareStreamItemsResult):
     """Incremental streamed execution result"""
 
-    items: list[Any]
     id: str
     sub_path: list[str | int] | None
-    errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "errors", "extensions", "id", "items", "label", "sub_path"
+    __slots__ = "extensions", "id", "sub_path"
 
     def __init__(
         self,
@@ -542,6 +584,20 @@ class IncrementalStreamResult:  # noqa: PLW1641
     def __ne__(self, other: object) -> bool:
         return not self == other
 
+    def __hash__(self) -> int:
+        sub_path = self.sub_path
+        errors = self.errors
+        extensions = self.extensions
+        return hash(
+            (
+                tuple(self.items),
+                self.id,
+                None if sub_path is None else tuple(sub_path),
+                None if errors is None else tuple(errors),
+                None if extensions is None else tuple(extensions.items()),
+            )
+        )
+
 
 FormattedIncrementalResult = Union[
     FormattedIncrementalDeferResult, FormattedIncrementalStreamResult
@@ -550,26 +606,26 @@ FormattedIncrementalResult = Union[
 IncrementalResult = Union[IncrementalDeferResult, IncrementalStreamResult]
 
 
-class FormattedSubsequentIncrementalExecutionResult(TypedDict, total=False):
+class FormattedSubsequentIncrementalExecutionResult(TypedDict):
     """Formatted subsequent incremental execution result"""
 
+    pending: NotRequired[list[FormattedPendingResult]]
+    incremental: NotRequired[list[FormattedIncrementalResult]]
+    completed: NotRequired[list[FormattedCompletedResult]]
     hasNext: bool
-    pending: list[FormattedPendingResult]
-    incremental: list[FormattedIncrementalResult]
-    completed: list[FormattedCompletedResult]
-    extensions: dict[str, Any]
+    extensions: NotRequired[dict[str, Any]]
 
 
 class SubsequentIncrementalExecutionResult:  # noqa: PLW1641
     """Subsequent incremental execution result."""
 
-    __slots__ = "completed", "extensions", "has_next", "incremental", "pending"
-
-    has_next: bool
     pending: list[PendingResult] | None
     incremental: list[IncrementalResult] | None
     completed: list[CompletedResult] | None
+    has_next: bool
     extensions: dict[str, Any] | None
+
+    __slots__ = "completed", "extensions", "has_next", "incremental", "pending"
 
     def __init__(
         self,
@@ -603,8 +659,9 @@ class SubsequentIncrementalExecutionResult:  # noqa: PLW1641
     @property
     def formatted(self) -> FormattedSubsequentIncrementalExecutionResult:
         """Get execution result formatted according to the specification."""
-        formatted: FormattedSubsequentIncrementalExecutionResult = {}
-        formatted["hasNext"] = self.has_next
+        formatted: FormattedSubsequentIncrementalExecutionResult = {
+            "hasNext": self.has_next
+        }
         if self.pending:
             formatted["pending"] = [result.formatted for result in self.pending]
         if self.incremental:
@@ -650,11 +707,253 @@ class SubsequentIncrementalExecutionResult:  # noqa: PLW1641
         return not self == other
 
 
-class InitialResult(NamedTuple):
-    """The state of the initial result"""
+class DeferredGroupedFieldSetRecord:
+    """Deferred grouped field set record"""
 
-    children: dict[IncrementalDataRecord, None]
-    is_completed: bool
+    deferred_fragment_records: list[DeferredFragmentRecord]
+    result: AwaitableOrValue[DeferredGroupedFieldSetResult]
+
+    __slots__ = "deferred_fragment_records", "result"
+
+    def __init__(
+        self,
+        deferred_fragment_records: list[DeferredFragmentRecord],
+        result: AwaitableOrValue[DeferredGroupedFieldSetResult],
+    ) -> None:
+        self.result = result
+        self.deferred_fragment_records = deferred_fragment_records
+
+
+class SubsequentResultRecord:
+    """Subsequent result record"""
+
+    path: Path | None
+    label: str | None
+    id: str | None
+
+    __slots__ = "id", "label", "path"
+
+    def __init__(self, path: Path | None, label: str | None = None) -> None:
+        self.path = path
+        self.label = label
+        self.id = None
+
+    def __repr__(self) -> str:
+        name = self.__class__.__name__
+        args: list[str] = []
+        if self.path:
+            args.append(f"path={self.path.as_list()!r}")
+        if self.label:
+            args.append(f"label={self.label!r}")
+        return f"{name}({', '.join(args)})"
+
+
+class DeferredFragmentRecord(SubsequentResultRecord):
+    """Deferred fragment record"""
+
+    parent: DeferredFragmentRecord | None
+    expected_reconcilable_results: int
+    results: list[DeferredGroupedFieldSetResult]
+    reconcilable_results: list[ReconcilableDeferredGroupedFieldSetResult]
+    children: dict[DeferredFragmentRecord, None]
+
+    __slots__ = (
+        "children",
+        "expected_reconcilable_results",
+        "parent",
+        "reconcilable_results",
+        "results",
+    )
+
+    def __init__(
+        self,
+        path: Path | None = None,
+        label: str | None = None,
+        parent: DeferredFragmentRecord | None = None,
+    ) -> None:
+        super().__init__(path, label)
+        self.parent = parent
+        self.expected_reconcilable_results = 0
+        self.results = []
+        self.reconcilable_results = []
+        self.children = {}
+
+
+def is_deferred_fragment_record(
+    subsequent_result_record: SubsequentResultRecord,
+) -> TypeGuard[DeferredFragmentRecord]:
+    """Check if the subsequent result record is a deferred fragment record."""
+    return isinstance(subsequent_result_record, DeferredFragmentRecord)
+
+
+def is_deferred_grouped_field_set_record(
+    incremental_data_record: IncrementalDataRecord,
+) -> TypeGuard[DeferredGroupedFieldSetRecord]:
+    """Check if the incremental data record is a deferred grouped field set record."""
+    return isinstance(incremental_data_record, DeferredGroupedFieldSetRecord)
+
+
+class ReconcilableDeferredGroupedFieldSetResult:
+    """Reconcilable deferred grouped field set result"""
+
+    deferred_fragment_records: list[DeferredFragmentRecord]
+    path: list[str | int]
+    result: BareDeferredGroupedFieldSetResult
+    incremental_data_records: list[IncrementalDataRecord]
+    sent: bool
+    errors: None = None
+
+    __slots__ = (
+        "deferred_fragment_records",
+        "incremental_data_records",
+        "path",
+        "result",
+        "sent",
+    )
+
+    def __init__(
+        self,
+        deferred_fragment_records: list[DeferredFragmentRecord],
+        path: list[str | int],
+        result: BareDeferredGroupedFieldSetResult,
+        incremental_data_records: list[IncrementalDataRecord],
+    ) -> None:
+        self.deferred_fragment_records = deferred_fragment_records
+        self.path = path
+        self.result = result
+        self.incremental_data_records = incremental_data_records
+        self.sent = False
+
+
+class NonReconcilableDeferredGroupedFieldSetResult:
+    """Non-reconcilable deferred grouped field set result"""
+
+    errors: list[GraphQLError]
+    deferred_fragment_records: list[DeferredFragmentRecord]
+    path: list[str | int]
+    result: None = None
+
+    __slots__ = "deferred_fragment_records", "errors", "path"
+
+    def __init__(
+        self,
+        deferred_fragment_records: list[DeferredFragmentRecord],
+        path: list[str | int],
+        errors: list[GraphQLError],
+    ) -> None:
+        self.deferred_fragment_records = deferred_fragment_records
+        self.path = path
+        self.errors = errors
+
+
+def is_non_reconcilable_deferred_grouped_field_set_result(
+    deferred_grouped_field_set_result: DeferredGroupedFieldSetResult,
+) -> TypeGuard[NonReconcilableDeferredGroupedFieldSetResult]:
+    """Check if the deferred grouped field set result is non-reconcilable."""
+    return isinstance(
+        deferred_grouped_field_set_result, NonReconcilableDeferredGroupedFieldSetResult
+    )
+
+
+DeferredGroupedFieldSetResult = Union[
+    ReconcilableDeferredGroupedFieldSetResult,
+    NonReconcilableDeferredGroupedFieldSetResult,
+]
+
+
+def is_deferred_grouped_field_set_result(
+    subsequent_result: DeferredGroupedFieldSetResult | StreamItemsResult,
+) -> TypeGuard[DeferredGroupedFieldSetResult]:
+    """Check if the subsequent result is a deferred grouped field set result."""
+    return isinstance(
+        subsequent_result,
+        (
+            ReconcilableDeferredGroupedFieldSetResult,
+            NonReconcilableDeferredGroupedFieldSetResult,
+        ),  # we could use the union type here in Python >= 3.10
+    )
+
+
+class CancellableStreamRecord(SubsequentResultRecord):
+    """Cancellable stream record"""
+
+    early_return: Awaitable[None]
+
+    __slots__ = ("early_return",)
+
+    def __init__(
+        self,
+        early_return: Awaitable[None],
+        path: Path | None = None,
+        label: str | None = None,
+    ) -> None:
+        super().__init__(path, label)
+        self.early_return = early_return
+
+
+def is_cancellable_stream_record(
+    subsequent_result_record: SubsequentResultRecord,
+) -> TypeGuard[CancellableStreamRecord]:
+    """Check if the subsequent result record is a cancellable stream record."""
+    return isinstance(subsequent_result_record, CancellableStreamRecord)
+
+
+class ReconcilableStreamItemsResult(NamedTuple):
+    """Reconcilable stream items result"""
+
+    stream_record: SubsequentResultRecord
+    result: BareStreamItemsResult
+    incremental_data_records: list[IncrementalDataRecord]
+    errors: None = None
+
+
+def is_reconcilable_stream_items_result(
+    stream_items_result: StreamItemsResult,
+) -> TypeGuard[ReconcilableStreamItemsResult]:
+    """Check if a stream items result is reconcilable."""
+    return isinstance(stream_items_result, ReconcilableStreamItemsResult)
+
+
+class TerminatingStreamItemsResult(NamedTuple):
+    """Terminating stream items result"""
+
+    stream_record: SubsequentResultRecord
+    result: None = None
+    incremental_data_record: None = None
+    errors: None = None
+
+
+class NonReconcilableStreamItemsResult(NamedTuple):
+    """Non-reconcilable stream items result"""
+
+    stream_record: SubsequentResultRecord
+    errors: list[GraphQLError]
+    result: None = None
+
+
+StreamItemsResult = Union[
+    ReconcilableStreamItemsResult,
+    TerminatingStreamItemsResult,
+    NonReconcilableStreamItemsResult,
+]
+
+
+class StreamItemsRecord(NamedTuple):
+    """Stream items record"""
+
+    stream_record: SubsequentResultRecord
+    result: AwaitableOrValue[StreamItemsResult]
+
+
+IncrementalDataRecord = Union[DeferredGroupedFieldSetRecord, StreamItemsRecord]
+
+IncrementalDataRecordResult = Union[DeferredGroupedFieldSetResult, StreamItemsResult]
+
+
+class IncrementalPublisherContext(Protocol):
+    """The context for incremental publishing."""
+
+    cancellable_streams: set[CancellableStreamRecord]
 
 
 class IncrementalPublisher:
@@ -663,224 +962,170 @@ class IncrementalPublisher:
     This class is used to publish incremental results to the client, enabling
     semi-concurrent execution while preserving result order.
 
-    The internal publishing state is managed as follows:
-
-    ``_released``: the set of Subsequent Result records that are ready to be sent to the
-    client, i.e. their parents have completed and they have also completed.
-
-    ``_pending``: the set of Subsequent Result records that are definitely pending, i.e.
-    their parents have completed so that they can no longer be filtered. This includes
-    all Subsequent Result records in `released`, as well as the records that have not
-    yet completed.
-
-    Note: Instead of sets we use dicts (with values set to None) which preserve order
-    and thereby achieve more deterministic results.
+    For internal use only.
     """
 
+    _context: IncrementalPublisherContext
     _next_id: int
-    _released: dict[SubsequentResultRecord, None]
     _pending: dict[SubsequentResultRecord, None]
-    _resolve: Event | None
-    _tasks: set[Awaitable]
+    _completed_result_queue: list[IncrementalDataRecordResult]
+    _new_pending: dict[SubsequentResultRecord, None]
+    _incremental: list[IncrementalResult]
+    _completed: list[CompletedResult]
 
-    def __init__(self) -> None:
+    _resolve: Event | None
+    _tasks: set[Task[Any]]
+
+    def __init__(self, context: IncrementalPublisherContext) -> None:
+        self._context = context
         self._next_id = 0
-        self._released = {}
         self._pending = {}
+        self._completed_result_queue = []
+        self._new_pending = {}
+        self._incremental = []
+        self._completed = []
         self._resolve = None  # lazy initialization
         self._tasks = set()
 
-    @staticmethod
-    def report_new_defer_fragment_record(
-        deferred_fragment_record: DeferredFragmentRecord,
-        parent_incremental_result_record: InitialResultRecord
-        | DeferredFragmentRecord
-        | StreamItemsRecord,
-    ) -> None:
-        """Report a new deferred fragment record."""
-        parent_incremental_result_record.children[deferred_fragment_record] = None
-
-    @staticmethod
-    def report_new_deferred_grouped_filed_set_record(
-        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
-    ) -> None:
-        """Report a new deferred grouped field set record."""
-        for (
-            deferred_fragment_record
-        ) in deferred_grouped_field_set_record.deferred_fragment_records:
-            deferred_fragment_record._pending[deferred_grouped_field_set_record] = None  # noqa: SLF001
-            deferred_fragment_record.deferred_grouped_field_set_records[
-                deferred_grouped_field_set_record
-            ] = None
-
-    @staticmethod
-    def report_new_stream_items_record(
-        stream_items_record: StreamItemsRecord,
-        parent_incremental_data_record: IncrementalDataRecord,
-    ) -> None:
-        """Report a new stream items record."""
-        if isinstance(parent_incremental_data_record, DeferredGroupedFieldSetRecord):
-            for parent in parent_incremental_data_record.deferred_fragment_records:
-                parent.children[stream_items_record] = None
-        else:
-            parent_incremental_data_record.children[stream_items_record] = None
-
-    def complete_deferred_grouped_field_set(
+    def build_response(
         self,
-        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
         data: dict[str, Any],
-    ) -> None:
-        """Complete the given deferred grouped field set record with the given data."""
-        deferred_grouped_field_set_record.data = data
-        for (
-            deferred_fragment_record
-        ) in deferred_grouped_field_set_record.deferred_fragment_records:
-            pending = deferred_fragment_record._pending  # noqa: SLF001
-            del pending[deferred_grouped_field_set_record]
-            if not pending:
-                self.complete_deferred_fragment_record(deferred_fragment_record)
+        errors: list[GraphQLError],
+        incremental_data_records: list[IncrementalDataRecord],
+    ) -> ExperimentalIncrementalExecutionResults:
+        """Build response."""
+        self._add_incremental_data_records(incremental_data_records)
+        self._prune_empty()
 
-    def mark_errored_deferred_grouped_field_set(
-        self,
-        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
-        error: GraphQLError,
-    ) -> None:
-        """Mark the given deferred grouped field set record as errored."""
-        for (
-            deferred_fragment_record
-        ) in deferred_grouped_field_set_record.deferred_fragment_records:
-            deferred_fragment_record.errors.append(error)
-            self.complete_deferred_fragment_record(deferred_fragment_record)
+        pending = self._pending_sources_to_results()
 
-    def complete_deferred_fragment_record(
-        self, deferred_fragment_record: DeferredFragmentRecord
-    ) -> None:
-        """Complete the given deferred fragment record."""
-        self._release(deferred_fragment_record)
-
-    def complete_stream_items_record(
-        self,
-        stream_items_record: StreamItemsRecord,
-        items: list[Any],
-    ) -> None:
-        """Complete the given stream items record."""
-        stream_items_record.items = items
-        stream_items_record.is_completed = True
-        self._release(stream_items_record)
-
-    def mark_errored_stream_items_record(
-        self, stream_items_record: StreamItemsRecord, error: GraphQLError
-    ) -> None:
-        """Mark the given stream items record as errored."""
-        stream_items_record.stream_record.errors.append(error)
-        self.set_is_final_record(stream_items_record)
-        stream_items_record.is_completed = True
-        early_return = stream_items_record.stream_record.early_return
-        if early_return:
-            self._add_task(early_return())
-        self._release(stream_items_record)
-
-    @staticmethod
-    def set_is_final_record(stream_items_record: StreamItemsRecord) -> None:
-        """Mark stream items record as final."""
-        stream_items_record.is_final_record = True
-
-    def set_is_completed_async_iterator(
-        self, stream_items_record: StreamItemsRecord
-    ) -> None:
-        """Mark async iterator for stream items as completed."""
-        stream_items_record.is_completed_async_iterator = True
-        self.set_is_final_record(stream_items_record)
-
-    def add_field_error(
-        self, incremental_data_record: IncrementalDataRecord, error: GraphQLError
-    ) -> None:
-        """Add a field error to the given incremental data record."""
-        incremental_data_record.errors.append(error)
-
-    def build_data_response(
-        self, initial_result_record: InitialResultRecord, data: dict[str, Any] | None
-    ) -> ExecutionResult | ExperimentalIncrementalExecutionResults:
-        """Build response for the given data."""
-        pending_sources = self._publish(initial_result_record.children)
-
-        errors = initial_result_record.errors or None
-        if errors:
-            errors.sort(
-                key=lambda error: (
-                    error.locations or [],
-                    error.path or [],
-                    error.message,
-                )
-            )
-        if pending_sources:
-            return ExperimentalIncrementalExecutionResults(
-                initial_result=InitialIncrementalExecutionResult(
-                    data,
-                    errors,
-                    pending=self._pending_sources_to_results(pending_sources),
-                    has_next=True,
-                ),
-                subsequent_results=self._subscribe(),
-            )
-        return ExecutionResult(data, errors)
-
-    def build_error_response(
-        self, initial_result_record: InitialResultRecord, error: GraphQLError
-    ) -> ExecutionResult:
-        """Build response for the given error."""
-        errors = initial_result_record.errors
-        errors.append(error)
-        # Sort the error list in order to make it deterministic, since we might have
-        # been using parallel execution.
-        errors.sort(
-            key=lambda error: (error.locations or [], error.path or [], error.message)
+        initial_result = InitialIncrementalExecutionResult(
+            data,
+            errors or None,
+            pending=pending,
+            has_next=True,
         )
-        return ExecutionResult(None, errors)
 
-    def filter(
-        self,
-        null_path: Path | None,
-        erroring_incremental_data_record: IncrementalDataRecord,
+        return ExperimentalIncrementalExecutionResults(
+            initial_result, self._subscribe()
+        )
+
+    def _add_incremental_data_records(
+        self, incremental_data_records: list[IncrementalDataRecord]
     ) -> None:
-        """Filter out the given erroring incremental data record."""
-        null_path_list = null_path.as_list() if null_path else []
+        """Add incremental data records."""
+        for incremental_data_record in incremental_data_records:
+            if is_deferred_grouped_field_set_record(incremental_data_record):
+                for (
+                    deferred_fragment_record
+                ) in incremental_data_record.deferred_fragment_records:
+                    deferred_fragment_record.expected_reconcilable_results += 1
+                    self._add_deferred_fragment_record(deferred_fragment_record)
 
-        streams: list[StreamRecord] = []
+                deferred_result = incremental_data_record.result
+                if is_awaitable(deferred_result):
 
-        children = self._get_children(erroring_incremental_data_record)
-        descendants = self._get_descendants(children)
+                    async def enqueue_deferred(
+                        deferred_result: Awaitable[DeferredGroupedFieldSetResult],
+                    ) -> None:
+                        self._enqueue_completed_deferred_grouped_field_set(
+                            await deferred_result
+                        )
 
-        for child in descendants:
-            if not self._nulls_child_subsequent_result_record(child, null_path_list):
+                    self._add_task(enqueue_deferred(deferred_result))
+                else:
+                    self._enqueue_completed_deferred_grouped_field_set(
+                        deferred_result,  # type: ignore
+                    )
                 continue
 
-            child.filtered = True
+            incremental_data_record = cast("StreamItemsRecord", incremental_data_record)
+            stream_record = incremental_data_record.stream_record
+            if stream_record.id is None:
+                self._new_pending[stream_record] = None
 
-            if isinstance(child, StreamItemsRecord):
-                streams.append(child.stream_record)
+            stream_result = incremental_data_record.result
+            if is_awaitable(stream_result):
 
-        early_returns = []
-        for stream in streams:
-            early_return = stream.early_return
-            if early_return:
-                early_returns.append(early_return())
-        if early_returns:
-            self._add_task(gather(*early_returns))
+                async def enqueue_stream(
+                    stream_result: Awaitable[StreamItemsResult],
+                ) -> None:
+                    self._enqueue_completed_stream_items(await stream_result)
 
-    def _pending_sources_to_results(
-        self,
-        pending_sources: RefSet[DeferredFragmentRecord | StreamRecord],
-    ) -> list[PendingResult]:
+                self._add_task(enqueue_stream(stream_result))
+            else:
+                self._enqueue_completed_stream_items(stream_result)  # type: ignore
+
+    def _add_deferred_fragment_record(
+        self, deferred_fragment_record: DeferredFragmentRecord
+    ) -> None:
+        """Add deferred fragment record."""
+        parent = deferred_fragment_record.parent
+        if parent is None:
+            if deferred_fragment_record.id is not None:
+                return
+            self._new_pending[deferred_fragment_record] = None
+            return
+        if deferred_fragment_record in parent.children:
+            return
+        parent.children[deferred_fragment_record] = None
+        self._add_deferred_fragment_record(parent)
+
+    def _prune_empty(self) -> None:
+        """Prune empty."""
+        maybe_empty_new_pending = self._new_pending
+        self._new_pending = {}
+        for node in maybe_empty_new_pending:
+            if is_deferred_fragment_record(node):
+                if node.expected_reconcilable_results:
+                    self._new_pending[node] = None
+                    continue
+                for child in node.children:
+                    self._add_non_empty_new_pending(child)
+            else:
+                self._new_pending[node] = None
+
+    def _add_non_empty_new_pending(
+        self, deferred_fragment_record: DeferredFragmentRecord
+    ) -> None:
+        """Add non-empty new pending."""
+        if deferred_fragment_record.expected_reconcilable_results:
+            self._new_pending[deferred_fragment_record] = None
+            return
+        for child in deferred_fragment_record.children:  # pragma: no cover
+            self._add_non_empty_new_pending(child)
+
+    def _enqueue_completed_deferred_grouped_field_set(
+        self, result: DeferredGroupedFieldSetResult
+    ) -> None:
+        """Enqueue completed deferred grouped field set result."""
+        has_pending_parent = False
+        for deferred_fragment_record in result.deferred_fragment_records:
+            if deferred_fragment_record.id is not None:
+                has_pending_parent = True
+            deferred_fragment_record.results.append(result)
+        if has_pending_parent:
+            self._completed_result_queue.append(result)
+            self._trigger()
+
+    def _enqueue_completed_stream_items(self, result: StreamItemsResult) -> None:
+        """Enqueue completed stream items result."""
+        self._completed_result_queue.append(result)
+        self._trigger()
+
+    def _pending_sources_to_results(self) -> list[PendingResult]:
         """Convert pending sources to pending results."""
         pending_results: list[PendingResult] = []
-        for pending_source in pending_sources:
-            pending_source.pending_sent = True
+        for pending_source in self._new_pending:
             id_ = self._get_next_id()
+            self._pending[pending_source] = None
             pending_source.id = id_
+            path = pending_source.path
+            label = pending_source.label
             pending_results.append(
-                PendingResult(id_, pending_source.path, pending_source.label)
+                PendingResult(id_, path.as_list() if path else [], label)
             )
+        self._new_pending.clear()
         return pending_results
 
     def _get_next_id(self) -> str:
@@ -893,44 +1138,62 @@ class IncrementalPublisher:
         self,
     ) -> AsyncGenerator[SubsequentIncrementalExecutionResult, None]:
         """Subscribe to the incremental results."""
-        is_done = False
-        pending = self._pending
-
-        await sleep(0)  # execute pending tasks
-
         try:
+            is_done = False
             while not is_done:
-                released = self._released
-                for item in released:
-                    with suppress_key_error:
-                        del pending[item]
-                self._released = {}
+                pending: list[PendingResult] = []
 
-                result = self._get_incremental_result(released)
+                completed_result_queue = self._completed_result_queue
 
-                if not self._pending:
-                    is_done = True
+                while completed_result_queue:
+                    completed_result = completed_result_queue.pop(0)
+                    if is_deferred_grouped_field_set_result(completed_result):
+                        self._handle_completed_deferred_grouped_field_set(
+                            completed_result
+                        )
+                    else:
+                        completed_result = cast("StreamItemsResult", completed_result)
+                        await self._handle_completed_stream_items(completed_result)
 
-                if result is not None:
-                    yield result
+                    pending.extend(self._pending_sources_to_results())
+
+                if self._incremental or self._completed:
+                    has_next = bool(self._pending)
+
+                    if not has_next:
+                        is_done = True
+
+                    subsequent_incremental_execution_result = (
+                        SubsequentIncrementalExecutionResult(
+                            has_next=has_next,
+                            pending=pending or None,
+                            incremental=self._incremental or None,
+                            completed=self._completed or None,
+                        )
+                    )
+
+                    self._incremental = []
+                    self._completed = []
+
+                    yield subsequent_incremental_execution_result
+
                 else:
                     resolve = self._resolve
                     if resolve is None:
                         self._resolve = resolve = Event()
                     await resolve.wait()
+
         finally:
-            streams: list[StreamRecord] = []
-            descendants = self._get_descendants(pending)
-            for subsequent_result_record in descendants:  # pragma: no cover
-                if isinstance(subsequent_result_record, StreamItemsRecord):
-                    streams.append(subsequent_result_record.stream_record)
-            early_returns = []
-            for stream in streams:  # pragma: no cover
-                early_return = stream.early_return
-                if early_return:
-                    early_returns.append(early_return())
-            if early_returns:  # pragma: no cover
-                await gather(*early_returns)
+            await self._return_stream_iterators()
+
+    async def _return_stream_iterators(self) -> None:
+        """Finish all stream iterators."""
+        early_returns = [
+            stream_record.early_return
+            for stream_record in self._context.cancellable_streams
+        ]
+        if early_returns:
+            await gather(*early_returns, return_exceptions=True)
 
     def _trigger(self) -> None:
         """Trigger the resolve event."""
@@ -939,230 +1202,129 @@ class IncrementalPublisher:
             resolve.set()
         self._resolve = Event()
 
-    def _introduce(self, item: SubsequentResultRecord) -> None:
-        """Introduce a new IncrementalDataRecord."""
-        self._pending[item] = None
-
-    def _release(self, item: SubsequentResultRecord) -> None:
-        """Release the given IncrementalDataRecord."""
-        if item in self._pending:
-            self._released[item] = None
-            self._trigger()
-
-    def _push(self, item: SubsequentResultRecord) -> None:
-        """Push the given IncrementalDataRecord."""
-        self._released[item] = None
-        self._pending[item] = None
-        self._trigger()
-
-    def _get_incremental_result(
-        self, completed_records: Collection[SubsequentResultRecord]
-    ) -> SubsequentIncrementalExecutionResult | None:
-        """Get the incremental result with the completed records."""
-        update = self._process_pending(completed_records)
-        pending, incremental, completed = (
-            update.pending,
-            update.incremental,
-            update.completed,
-        )
-
-        has_next = bool(self._pending)
-        if not incremental and not completed and has_next:
-            return None
-
-        return SubsequentIncrementalExecutionResult(
-            has_next, pending or None, incremental or None, completed or None
-        )
-
-    def _process_pending(
-        self,
-        completed_records: Collection[SubsequentResultRecord],
-    ) -> IncrementalUpdate:
-        """Process the pending records."""
-        new_pending_sources: RefSet[DeferredFragmentRecord | StreamRecord] = RefSet()
-        incremental_results: list[IncrementalResult] = []
-        completed_results: list[CompletedResult] = []
-        to_result = self._completed_record_to_result
-        for subsequent_result_record in completed_records:
-            self._publish(subsequent_result_record.children, new_pending_sources)
-            incremental_result: IncrementalResult
-            if isinstance(subsequent_result_record, StreamItemsRecord):
-                if subsequent_result_record.is_final_record:
-                    stream_record = subsequent_result_record.stream_record
-                    new_pending_sources.discard(stream_record)
-                    completed_results.append(to_result(stream_record))
-                if subsequent_result_record.is_completed_async_iterator:
-                    # async iterable resolver finished but there may be pending payload
-                    continue
-                if subsequent_result_record.stream_record.errors:
-                    continue
-                incremental_result = IncrementalStreamResult(
-                    # safe because `items` is always defined
-                    # when the record is completed
-                    subsequent_result_record.items,
-                    # safe because `id` is defined
-                    # once the stream has been released as pending
-                    subsequent_result_record.stream_record.id,  # type: ignore
-                )
-                if subsequent_result_record.errors:
-                    incremental_result.errors = subsequent_result_record.errors
-                incremental_results.append(incremental_result)
-            else:
-                new_pending_sources.discard(subsequent_result_record)
-                completed_results.append(to_result(subsequent_result_record))
-                if subsequent_result_record.errors:
-                    continue
-                for (
-                    deferred_grouped_field_set_record
-                ) in subsequent_result_record.deferred_grouped_field_set_records:
-                    if not deferred_grouped_field_set_record.sent:
-                        deferred_grouped_field_set_record.sent = True
-                        incremental_result = self._get_incremental_defer_result(
-                            deferred_grouped_field_set_record
-                        )
-                        if deferred_grouped_field_set_record.errors:
-                            incremental_result.errors = (
-                                deferred_grouped_field_set_record.errors
-                            )
-                        incremental_results.append(incremental_result)
-        return IncrementalUpdate(
-            self._pending_sources_to_results(new_pending_sources),
-            incremental_results,
-            completed_results,
-        )
-
-    def _get_incremental_defer_result(
-        self, deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
-    ) -> IncrementalDeferResult:
-        """Get the incremental defer result from the grouped field set record."""
-        data = deferred_grouped_field_set_record.data
-        fragment_records = deferred_grouped_field_set_record.deferred_fragment_records
-        max_length: int | None = None
-        id_with_longest_path: str | None = None
-        for fragment_record in fragment_records:
-            if fragment_record.id is None:  # pragma: no cover
-                continue
-            length = len(fragment_record.path)
-            if max_length is None or length > max_length:
-                max_length = length
-                id_with_longest_path = fragment_record.id
-
-        sub_path = deferred_grouped_field_set_record.path[max_length:]
-
-        return IncrementalDeferResult(
-            # safe because `data` is always defined when the record is completed
-            data,  # type: ignore
-            # safe because `id` is always defined once the fragment has been released
-            # as pending and at least one fragment has been completed, so must have been
-            # released as pending
-            id_with_longest_path,  # type: ignore
-            sub_path or None,
-        )
-
-    @staticmethod
-    def _completed_record_to_result(
-        completed_record: DeferredFragmentRecord | StreamRecord,
-    ) -> CompletedResult:
-        """Convert the completed record to a result."""
-        return CompletedResult(
-            # safe because `id` is defined once the stream has been released as pending
-            completed_record.id,  # type: ignore
-            completed_record.errors or None,
-        )
-
-    def _publish(
-        self,
-        subsequent_result_records: dict[SubsequentResultRecord, None],
-        pending_sources: RefSet[DeferredFragmentRecord | StreamRecord] | None = None,
-    ) -> RefSet[DeferredFragmentRecord | StreamRecord]:
-        """Publish the given set of incremental data record."""
-        if pending_sources is None:
-            pending_sources = RefSet()
-        empty_records: list[SubsequentResultRecord] = []
-
-        for subsequent_result_record in subsequent_result_records:
-            if subsequent_result_record.filtered:
-                continue
-            if isinstance(subsequent_result_record, StreamItemsRecord):
-                if subsequent_result_record.is_completed:
-                    self._push(subsequent_result_record)
-                else:
-                    self._introduce(subsequent_result_record)
-
-                stream = subsequent_result_record.stream_record
-                if not stream.pending_sent:
-                    pending_sources.add(stream)
-                continue
-
-            if subsequent_result_record._pending:  # noqa: SLF001
-                self._introduce(subsequent_result_record)
-            elif not subsequent_result_record.deferred_grouped_field_set_records:
-                empty_records.append(subsequent_result_record)
-                continue
-            else:
-                self._push(subsequent_result_record)
-
-            if not subsequent_result_record.pending_sent:  # pragma: no cover else
-                pending_sources.add(subsequent_result_record)
-
-        for empty_record in empty_records:
-            self._publish(empty_record.children, pending_sources)
-
-        return pending_sources
-
-    @staticmethod
-    def _get_children(
-        erroring_incremental_data_record: IncrementalDataRecord,
-    ) -> dict[SubsequentResultRecord, None]:
-        """Get the children of the given erroring incremental data record."""
-        children: dict[SubsequentResultRecord, None] = {}
-        if isinstance(erroring_incremental_data_record, DeferredGroupedFieldSetRecord):
+    def _handle_completed_deferred_grouped_field_set(
+        self, deferred_grouped_field_set_result: DeferredGroupedFieldSetResult
+    ) -> None:
+        """Handle completed deferred grouped field set result."""
+        if is_non_reconcilable_deferred_grouped_field_set_result(
+            deferred_grouped_field_set_result
+        ):
             for (
-                erroring_incremental_result_record
-            ) in erroring_incremental_data_record.deferred_fragment_records:
-                for child in erroring_incremental_result_record.children:
-                    children[child] = None
+                deferred_fragment_record
+            ) in deferred_grouped_field_set_result.deferred_fragment_records:
+                id_ = deferred_fragment_record.id
+                if id_ is not None:  # pragma: no branch
+                    self._completed.append(
+                        CompletedResult(id_, deferred_grouped_field_set_result.errors)
+                    )
+                    del self._pending[deferred_fragment_record]
+            return
+        deferred_grouped_field_set_result = cast(
+            "ReconcilableDeferredGroupedFieldSetResult",
+            deferred_grouped_field_set_result,
+        )
+        for (
+            deferred_fragment_record
+        ) in deferred_grouped_field_set_result.deferred_fragment_records:
+            deferred_fragment_record.reconcilable_results.append(
+                deferred_grouped_field_set_result
+            )
+        self._add_incremental_data_records(
+            deferred_grouped_field_set_result.incremental_data_records
+        )
+        append_incremental = self._incremental.append
+        for (
+            deferred_fragment_record
+        ) in deferred_grouped_field_set_result.deferred_fragment_records:
+            id_ = deferred_fragment_record.id
+            if id_ is None:
+                continue  # pragma: no cover
+            reconcilable_results = deferred_fragment_record.reconcilable_results
+            if deferred_fragment_record.expected_reconcilable_results != len(
+                reconcilable_results
+            ):
+                continue
+            for reconcilable_result in reconcilable_results:
+                if reconcilable_result.sent:
+                    continue
+                reconcilable_result.sent = True
+                best_id, sub_path = self._get_best_id_and_sub_path(
+                    id_, deferred_fragment_record, reconcilable_result
+                )
+                result = reconcilable_result.result
+                incremental_entry = IncrementalDeferResult(
+                    data=result.data,
+                    id=best_id,
+                    sub_path=sub_path,
+                    errors=result.errors,
+                )
+                append_incremental(incremental_entry)
+            self._completed.append(CompletedResult(id_))
+            del self._pending[deferred_fragment_record]
+            extend_completed = self._completed_result_queue.extend
+            for child in deferred_fragment_record.children:
+                self._new_pending[child] = None
+                extend_completed(child.results)
+
+        self._prune_empty()
+
+    async def _handle_completed_stream_items(
+        self, stream_items_result: StreamItemsResult
+    ) -> None:
+        """Handle completed stream."""
+        stream_record = stream_items_result.stream_record
+        id_ = stream_record.id
+        if id_ is None:
+            return  # pragma: no cover
+        if stream_items_result.errors is not None:
+            self._completed.append(CompletedResult(id_, stream_items_result.errors))
+            del self._pending[stream_record]
+            if is_cancellable_stream_record(stream_record):
+                self._context.cancellable_streams.discard(stream_record)
+                with suppress(Exception):
+                    await stream_record.early_return
+        elif stream_items_result.result is None:
+            self._completed.append(CompletedResult(id_))
+            del self._pending[stream_record]
+            if is_cancellable_stream_record(stream_record):
+                self._context.cancellable_streams.discard(stream_record)
         else:
-            for child in erroring_incremental_data_record.children:
-                children[child] = None
-        return children
+            result = stream_items_result.result
+            incremental_entry = IncrementalStreamResult(
+                items=result.items, id=id_, errors=result.errors
+            )
+            self._incremental.append(incremental_entry)
+            if stream_items_result.incremental_data_records:  # pragma: no branch
+                self._add_incremental_data_records(
+                    stream_items_result.incremental_data_records
+                )
+                self._prune_empty()
 
-    def _get_descendants(
+    def _get_best_id_and_sub_path(
         self,
-        children: dict[SubsequentResultRecord, None],
-        descendants: dict[SubsequentResultRecord, None] | None = None,
-    ) -> dict[SubsequentResultRecord, None]:
-        """Get the descendants of the given children."""
-        if descendants is None:
-            descendants = {}
-        for child in children:
-            descendants[child] = None
-            self._get_descendants(child.children, descendants)
-        return descendants
-
-    def _nulls_child_subsequent_result_record(
-        self,
-        subsequent_result_record: SubsequentResultRecord,
-        null_path: list[str | int],
-    ) -> bool:
-        """Check whether the given subsequent result record is nulled."""
-        incremental_data_records: (
-            list[SubsequentResultRecord] | dict[DeferredGroupedFieldSetRecord, None]
-        ) = (
-            [subsequent_result_record]
-            if isinstance(subsequent_result_record, StreamItemsRecord)
-            else subsequent_result_record.deferred_grouped_field_set_records
-        )
-        return any(
-            self._matches_path(incremental_data_record.path, null_path)
-            for incremental_data_record in incremental_data_records
-        )
-
-    def _matches_path(
-        self, test_path: list[str | int], base_path: list[str | int]
-    ) -> bool:
-        """Get whether the given test path matches the base path."""
-        return all(item == test_path[i] for i, item in enumerate(base_path))
+        initial_id: str,
+        initial_deferred_fragment_record: DeferredFragmentRecord,
+        deferred_grouped_field_set_result: DeferredGroupedFieldSetResult,
+    ) -> tuple[str, list[str | int] | None]:
+        """Get the best ID and sub path for the deferred grouped field set result."""
+        path = initial_deferred_fragment_record.path
+        max_length = len(path.as_list()) if path else 0
+        best_id = initial_id
+        for (
+            deferred_fragment_record
+        ) in deferred_grouped_field_set_result.deferred_fragment_records:
+            if deferred_fragment_record is initial_deferred_fragment_record:
+                continue
+            id_ = deferred_fragment_record.id
+            if id_ is None:
+                continue  # pragma: no cover
+            fragment_path = deferred_fragment_record.path
+            length = len(fragment_path.as_list()) if fragment_path else 0
+            if length > max_length:
+                max_length = length
+                best_id = id_
+        sub_path = deferred_grouped_field_set_result.path[max_length:]
+        return (best_id, sub_path or None)
 
     def _add_task(self, awaitable: Awaitable[Any]) -> None:
         """Add the given task to the tasks set for later execution."""
@@ -1172,155 +1334,14 @@ class IncrementalPublisher:
         task.add_done_callback(tasks.discard)
 
 
-class InitialResultRecord:
-    """Initial result record"""
-
-    errors: list[GraphQLError]
-    children: dict[SubsequentResultRecord, None]
-
-    def __init__(self) -> None:
-        self.errors = []
-        self.children = {}
-
-
-class DeferredGroupedFieldSetRecord:
-    """Deferred grouped field set record"""
-
-    path: list[str | int]
-    deferred_fragment_records: list[DeferredFragmentRecord]
-    grouped_field_set: GroupedFieldSet
-    should_initiate_defer: bool
-    errors: list[GraphQLError]
-    data: dict[str, Any] | None
-    sent: bool
-
-    def __init__(
-        self,
-        deferred_fragment_records: list[DeferredFragmentRecord],
-        grouped_field_set: GroupedFieldSet,
-        should_initiate_defer: bool,
-        path: Path | None = None,
-    ) -> None:
-        self.path = path.as_list() if path else []
-        self.deferred_fragment_records = deferred_fragment_records
-        self.grouped_field_set = grouped_field_set
-        self.should_initiate_defer = should_initiate_defer
-        self.errors = []
-        self.sent = False
-
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        args: list[str] = [
-            f"deferred_fragment_records={self.deferred_fragment_records!r}",
-            f"grouped_field_set={self.grouped_field_set!r}",
-        ]
-        if self.path:
-            args.append(f"path={self.path!r}")
-        return f"{name}({', '.join(args)})"
-
-
-class DeferredFragmentRecord:
-    """Deferred fragment record"""
-
-    path: list[str | int]
-    label: str | None
-    id: str | None
-    children: dict[SubsequentResultRecord, None]
-    deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
-    errors: list[GraphQLError]
-    filtered: bool
-    pending_sent: bool
-    _pending: dict[DeferredGroupedFieldSetRecord, None]
-
-    def __init__(self, path: Path | None = None, label: str | None = None) -> None:
-        self.path = path.as_list() if path else []
-        self.label = label
-        self.id = None
-        self.children = {}
-        self.filtered = False
-        self.pending_sent = False
-        self.deferred_grouped_field_set_records = {}
-        self.errors = []
-        self._pending = {}
-
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        args: list[str] = []
-        if self.path:
-            args.append(f"path={self.path!r}")
-        if self.label:
-            args.append(f"label={self.label!r}")
-        return f"{name}({', '.join(args)})"
-
-
-class StreamRecord:
-    """Stream record"""
-
-    label: str | None
-    path: list[str | int]
-    id: str | None
-    errors: list[GraphQLError]
-    early_return: Callable[[], Awaitable[Any]] | None
-    pending_sent: bool
-
-    def __init__(
-        self,
-        path: Path,
-        label: str | None = None,
-        early_return: Callable[[], Awaitable[Any]] | None = None,
-    ) -> None:
-        self.path = path.as_list()
-        self.label = label
-        self.id = None
-        self.errors = []
-        self.early_return = early_return
-        self.pending_sent = False
-
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        args: list[str] = []
-        if self.path:
-            args.append(f"path={self.path!r}")
-        if self.label:
-            args.append(f"label={self.label!r}")
-        return f"{name}({', '.join(args)})"
-
-
-class StreamItemsRecord:
-    """Stream items record"""
-
-    errors: list[GraphQLError]
-    stream_record: StreamRecord
-    path: list[str | int]
-    items: list[str]
-    children: dict[SubsequentResultRecord, None]
-    is_final_record: bool
-    is_completed_async_iterator: bool
-    is_completed: bool
-    filtered: bool
-
-    def __init__(
-        self,
-        stream_record: StreamRecord,
-        path: Path | None = None,
-    ) -> None:
-        self.stream_record = stream_record
-        self.path = path.as_list() if path else []
-        self.children = {}
-        self.errors = []
-        self.is_completed_async_iterator = self.is_completed = False
-        self.is_final_record = self.filtered = False
-
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        args: list[str] = [f"stream_record={self.stream_record!r}"]
-        if self.path:
-            args.append(f"path={self.path!r}")
-        return f"{name}({', '.join(args)})"
-
-
-IncrementalDataRecord = Union[
-    InitialResultRecord, DeferredGroupedFieldSetRecord, StreamItemsRecord
-]
-
-SubsequentResultRecord = Union[DeferredFragmentRecord, StreamItemsRecord]
+def build_incremental_response(
+    context: IncrementalPublisherContext,
+    result: dict[str, Any],
+    errors: list[GraphQLError],
+    incremental_data_records: list[IncrementalDataRecord],
+) -> ExperimentalIncrementalExecutionResults:
+    """Build an incremental response."""
+    incremental_publisher = IncrementalPublisher(context)
+    return incremental_publisher.build_response(
+        result, errors, incremental_data_records
+    )

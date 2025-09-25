@@ -9,7 +9,10 @@ from graphql.validation import validate
 
 from ..fixtures import cleanup
 
-pytestmark = pytest.mark.anyio
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+]
 
 
 def describe_execute_synchronously_when_possible():
@@ -82,7 +85,6 @@ def describe_execute_synchronously_when_possible():
                 None,
             )
 
-        @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_execution_with_check_sync():
             doc = "query Example { syncField, asyncField }"
             with pytest.raises(RuntimeError) as exc_info:
@@ -94,7 +96,6 @@ def describe_execute_synchronously_when_possible():
             del exc_info
             cleanup()
 
-        @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"
             result = execute_sync(schema, document=parse(doc), root_value="rootValue")
@@ -184,7 +185,6 @@ def describe_execute_synchronously_when_possible():
                 None,
             )
 
-        @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_operation_with_check_sync():
             doc = "query Example { syncField, asyncField }"
             with pytest.raises(RuntimeError) as exc_info:
@@ -194,7 +194,6 @@ def describe_execute_synchronously_when_possible():
             del exc_info
             cleanup()
 
-        @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
         async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"
             result = graphql_sync(schema, doc, "rootValue")

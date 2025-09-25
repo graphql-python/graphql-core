@@ -567,6 +567,54 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
+    async def handles_async_bubbling_errors_combined_with_non_bubbling():
+        async def resolve_null(*_args):
+            await asyncio.sleep(0)
+
+        async def resolve_error(*_args):
+            await asyncio.sleep(0)
+            raise RuntimeError("Oops")
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "asyncNonNullError": GraphQLField(
+                        GraphQLNonNull(GraphQLString), resolve=resolve_null
+                    ),
+                    "asyncError": GraphQLField(GraphQLString, resolve=resolve_error),
+                },
+            )
+        )
+
+        # Order is important here, as the nullable error should resolve first
+
+        document = parse(
+            """
+            {
+                asyncError
+                asyncNonNullError
+            }
+            """
+        )
+
+        awaitable_result = execute(schema, document)
+        assert isinstance(awaitable_result, Awaitable)
+        result = await awaitable_result
+
+        assert result == (
+            None,
+            [
+                {"message": "Oops", "locations": [(3, 17)], "path": ["asyncError"]},
+                {
+                    "message": "Cannot return null for non-nullable field"
+                    " Query.asyncNonNullError.",
+                    "locations": [(4, 17)],
+                    "path": ["asyncNonNullError"],
+                },
+            ],
+        )
+
     @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def full_response_path_is_included_for_non_nullable_fields():
         def resolve_ok(*_args):

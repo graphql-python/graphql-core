@@ -21,7 +21,6 @@ __all__ = [
     "FieldGroup",
     "FieldPlan",
     "GroupedFieldSet",
-    "NewGroupedFieldSetDetails",
     "build_field_plan",
 ]
 
@@ -46,18 +45,11 @@ else:  # Python >= 3.9
     GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
 
 
-class NewGroupedFieldSetDetails(NamedTuple):
-    """Details of a new grouped field set."""
-
-    grouped_field_set: GroupedFieldSet
-    should_initiate_defer: bool
-
-
 class FieldPlan(NamedTuple):
     """A plan for executing fields."""
 
     grouped_field_set: GroupedFieldSet
-    new_grouped_field_set_details_map: RefMap[DeferUsageSet, NewGroupedFieldSetDetails]
+    new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet]
 
 
 def build_field_plan(
@@ -70,9 +62,7 @@ def build_field_plan(
 
     grouped_field_set: GroupedFieldSet = {}
 
-    new_grouped_field_set_details_map: RefMap[
-        DeferUsageSet, NewGroupedFieldSetDetails
-    ] = RefMap()
+    new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet] = RefMap()
 
     map_: dict[str, tuple[DeferUsageSet, list[FieldDetails]]] = {}
 
@@ -108,23 +98,14 @@ def build_field_plan(
 
         for (
             new_grouped_field_set_defer_usage_set,
-            new_grouped_field_set_details,
-        ) in new_grouped_field_set_details_map.items():
+            new_grouped_field_set_field_group,
+        ) in new_grouped_field_sets.items():
             if new_grouped_field_set_defer_usage_set == defer_usage_set:
-                new_grouped_field_set = new_grouped_field_set_details.grouped_field_set
+                new_grouped_field_set = new_grouped_field_set_field_group
                 break
         else:
             new_grouped_field_set = {}
-            new_grouped_field_set_details = NewGroupedFieldSetDetails(
-                new_grouped_field_set,
-                any(
-                    defer_usage not in parent_defer_usages
-                    for defer_usage in defer_usage_set
-                ),
-            )
-            new_grouped_field_set_details_map[defer_usage_set] = (
-                new_grouped_field_set_details
-            )
+            new_grouped_field_sets[defer_usage_set] = new_grouped_field_set
 
         field_group = new_grouped_field_set.get(response_key)
         if field_group is None:  # pragma: no cover else
@@ -132,4 +113,4 @@ def build_field_plan(
             new_grouped_field_set[response_key] = field_group
         field_group.fields.extend(field_details_list)
 
-    return FieldPlan(grouped_field_set, new_grouped_field_set_details_map)
+    return FieldPlan(grouped_field_set, new_grouped_field_sets)
