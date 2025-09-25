@@ -13,23 +13,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
         id: setup-python
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           architecture: x64
 
-      - name: Install with poetry
+      - name: Install tox
         run: |
-          pipx install poetry
-          poetry env use 3.12
-          poetry install --with test
+          python -m pip install --upgrade pip
+          python -m pip install tox tox-uv uv
 
       - name: Run benchmarks with CodSpeed
-        uses: CodSpeedHQ/action@v3
+        uses: CodSpeedHQ/action@v4
         with:
+          mode: instrumentation
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: poetry run pytest tests --benchmark-enable --codspeed
+          run: tox -e py313 -- -k benchmarks --benchmark-enable --codspeed

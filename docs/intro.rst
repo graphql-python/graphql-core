@@ -33,9 +33,9 @@ You can install GraphQL-core 3 using pip_::
 
     pip install graphql-core
 
-You can also install GraphQL-core 3 with poetry_, if you prefer that::
+You can also install GraphQL-core 3 with uv_, if you prefer that::
 
-    poetry install
+    uv pip install graphql-core
 
 Now you can start using GraphQL-core 3 by importing from the top-level
 :mod:`graphql` package. Nearly everything defined in the sub-packages
@@ -94,4 +94,4 @@ in the current development or want to report issues or send pull requests.
 .. _Execution: https://facebook.github.io/graphql/draft/#sec-Execution
 .. _Response: https://facebook.github.io/graphql/draft/#sec-Response
 .. _pip: https://pip.pypa.io/
-.. _poetry: https://github.com/python-poetry/poetry
+.. _uv: https://github.com/astral-sh/uv

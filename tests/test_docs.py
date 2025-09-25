@@ -59,8 +59,8 @@ def describe_introduction():
         pip_install = intro.pop(0)
         assert "pip install" in pip_install
         assert "graphql-core" in pip_install
-        poetry_install = intro.pop(0)
-        assert "poetry install" in poetry_install
+        uv_install = intro.pop(0)
+        assert "uv pip install" in uv_install
         create_schema = intro.pop(0)
         assert "schema = GraphQLSchema(" in create_schema
         scope: Scope = {}

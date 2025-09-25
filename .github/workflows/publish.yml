@@ -11,17 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v6
       with:
-        python-version: '3.12'
+        python-version: '3.13'
 
-    - name: Build wheel and source tarball
+    - name: Build wheel and source tarball with uv_build
       run: |
-        pip install poetry
-        poetry build
+        python -m pip install --upgrade pip
+        python -m pip install uv_build
+        python -m uv_build build
     - name: Publish a Python distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:

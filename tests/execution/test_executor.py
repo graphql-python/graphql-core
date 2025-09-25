@@ -28,7 +28,11 @@ from graphql.type import (
     ResponsePath,
 )
 
-pytestmark = pytest.mark.anyio
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning"),
+]
 
 
 def describe_execute_handles_basic_execution_tasks():
@@ -615,7 +619,6 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def full_response_path_is_included_for_non_nullable_fields():
         def resolve_ok(*_args):
             return {}
