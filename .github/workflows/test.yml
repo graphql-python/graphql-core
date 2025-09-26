@@ -32,7 +32,7 @@ jobs:
 
       - name: Install tox and plugins
         run: |
-          uv pip install --system tox tox-gh-actions tox-uv
+          uv pip install tox tox-gh-actions tox-uv
 
       - name: Run unit tests with tox
         run: tox
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install tox and plugins (with Python 3.13)
         run: |
-          uv pip install --system tox tox-gh-actions tox-uv
+          uv pip install tox tox-gh-actions tox-uv
 
       - name: Run unit tests with tox for target
         shell: bash
