@@ -14,14 +14,25 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up CPython with uv
+        if: ${{ !contains(matrix.python-version, 'pypy') }}
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up PyPy without uv
+        if: ${{ contains(matrix.python-version, 'pypy') }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set up uv for PyPy
+        if: ${{ contains(matrix.python-version, 'pypy') }}
+        uses: astral-sh/setup-uv@v6
+
       - name: Install tox and plugins
         run: |
-          python -m pip install tox tox-gh-actions tox-uv uv
+          uv pip install --system tox tox-gh-actions tox-uv
 
       - name: Run unit tests with tox
         run: tox
@@ -37,22 +48,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python 3.13 (tox runner)
+      - name: Set up target Python ${{ matrix.python-version }} (for tox discovery)
         uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Python 3.13 (tox runner) with uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.13'
 
       - name: Install tox and plugins (with Python 3.13)
         run: |
-          python3.13 -m pip install tox tox-gh-actions tox-uv uv
-
-      - name: Set up target Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
+          uv pip install --system tox tox-gh-actions tox-uv
 
       - name: Run unit tests with tox for target
         shell: bash
         run: |
           ENV="py${{ matrix.python-version }}"; ENV=${ENV/./}
-          python3.13 -m tox -e "$ENV"
+          python -m tox -e "$ENV"
