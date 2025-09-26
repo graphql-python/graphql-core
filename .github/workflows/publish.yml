@@ -11,16 +11,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v5
+    - name: Checkout project
+      id: checkout
+      uses: actions/checkout@v5
 
-    - name: Set up Python with uv
+    - name: Set up Python 3.13
+      id: setup-python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.13"
+
+    - name: Install uv
+      id: setup-uv
       uses: astral-sh/setup-uv@v6
       with:
-        python-version: '3.13'
+        enable-cache: true
 
     - name: Build wheel and source tarball with uv
+      id: build
       run: uv build
+
     - name: Publish a Python distribution to PyPI
+      id: publish
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__

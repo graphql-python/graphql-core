@@ -12,29 +12,29 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', 'pypy3.9', 'pypy3.10']
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout project
+        id: checkout
+        uses: actions/checkout@v5
 
-      - name: Set up CPython with uv
-        if: ${{ !contains(matrix.python-version, 'pypy') }}
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Set up PyPy without uv
-        if: ${{ contains(matrix.python-version, 'pypy') }}
+      - name: Set up Python ${{ matrix.python-version }}
+        id: setup-python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up uv for PyPy
-        if: ${{ contains(matrix.python-version, 'pypy') }}
+      - name: Install uv
+        id: setup-uv
         uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Install tox and plugins
+        id: install-tox
         run: |
-          uv pip install tox tox-gh-actions tox-uv
+          uv pip install tox tox-uv tox-gh-actions
 
       - name: Run unit tests with tox
+        id: test
         run: tox
 
   tests-old:
@@ -46,24 +46,36 @@ jobs:
         python-version: ['3.7', '3.8']
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout project
+        id: checkout
+        uses: actions/checkout@v5
 
-      - name: Set up target Python ${{ matrix.python-version }} (for tox discovery)
+      - name: Set up Python 3.13 (tox runner)
+        id: setup-python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        id: setup-uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install tox and plugins
+        id: install-tox
+        run: |
+          uv pip install tox tox-uv tox-gh-actions
+
+      - name: Set up target Python ${{ matrix.python-version }}
+        id: setup-target-python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up Python 3.13 (tox runner) with uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: '3.13'
-
-      - name: Install tox and plugins (with Python 3.13)
-        run: |
-          uv pip install tox tox-gh-actions tox-uv
-
       - name: Run unit tests with tox for target
+        id: test
         shell: bash
         run: |
           ENV="py${{ matrix.python-version }}"; ENV=${ENV/./}
-          python -m tox -e "$ENV"
+          python3.13 -m tox -e "$ENV"
