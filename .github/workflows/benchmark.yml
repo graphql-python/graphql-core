@@ -33,7 +33,7 @@ jobs:
       - name: Install tox
         id: install-tox
         run: |
-          uv pip install tox tox-uv
+          uv pip install --system tox tox-uv
 
       - name: Run benchmarks with CodSpeed
         id: run-benchmarks
