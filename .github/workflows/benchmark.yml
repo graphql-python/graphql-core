@@ -13,21 +13,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout project
+        id: checkout
+        uses: actions/checkout@v5
 
       - name: Set up Python 3.13
-        uses: actions/setup-python@v6
         id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           architecture: x64
 
+      - name: Install uv
+        id: setup-uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Install tox
+        id: install-tox
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install tox tox-uv uv
+          uv pip install --system tox tox-uv
 
       - name: Run benchmarks with CodSpeed
+        id: run-benchmarks
         uses: CodSpeedHQ/action@v4
         with:
           mode: instrumentation
