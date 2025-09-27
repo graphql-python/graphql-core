@@ -938,11 +938,21 @@ StreamItemsResult = Union[
 ]
 
 
-class StreamItemsRecord(NamedTuple):
+class StreamItemsRecord:
     """Stream items record"""
+
+    __slots__ = "result", "stream_record"
 
     stream_record: SubsequentResultRecord
     result: AwaitableOrValue[StreamItemsResult]
+
+    def __init__(
+        self,
+        stream_record: SubsequentResultRecord,
+        result: AwaitableOrValue[StreamItemsResult],
+    ) -> None:
+        self.stream_record = stream_record
+        self.result = result
 
 
 IncrementalDataRecord = Union[DeferredGroupedFieldSetRecord, StreamItemsRecord]

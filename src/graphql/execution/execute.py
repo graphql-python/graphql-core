@@ -1717,11 +1717,13 @@ class ExecutionContext(IncrementalPublisherContext):
         item_type: GraphQLOutputType,
     ) -> StreamItemsRecord:
         """Get the first sync stream items."""
-        is_awaitable = self.is_awaitable
-        path = stream_record.path
-        initial_path = Path(path, initial_index, None)
 
         async def await_result() -> StreamItemsResult:
+            is_awaitable = self.is_awaitable
+            prepend_next_stream_items = self.prepend_next_stream_items
+            path = stream_record.path
+            initial_path = Path(path, initial_index, None)
+
             result = self.complete_stream_items(
                 stream_record,
                 initial_path,
@@ -1731,8 +1733,8 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 item_type,
             )
-            results = [result]
-            append_result = results.append
+            first_stream_items = StreamItemsRecord(stream_record, result)
+            current_stream_items = first_stream_items
             current_index = initial_index
             errored_synchronously = False
             for item in iterator:
@@ -1752,33 +1754,27 @@ class ExecutionContext(IncrementalPublisherContext):
                     info,
                     item_type,
                 )
-                append_result(result)
 
-            current_index = len(results) - 1
+                next_stream_items = StreamItemsRecord(stream_record, result)
+                current_stream_items.result = prepend_next_stream_items(
+                    current_stream_items.result, next_stream_items
+                )
+                current_stream_items = next_stream_items
+
             # If a non-reconcilable stream items result was encountered,
             # then the stream terminates in error. Otherwise, add a stream terminator.
-            prepend_next_stream_items = self.prepend_next_stream_items
-            current_result = (
-                results[current_index]
-                if errored_synchronously
-                else prepend_next_stream_items(
-                    results[current_index],
+            if not errored_synchronously:
+                current_stream_items.result = prepend_next_stream_items(
+                    current_stream_items.result,
                     StreamItemsRecord(
                         stream_record, TerminatingStreamItemsResult(stream_record)
                     ),
                 )
-            )
 
-            while current_index > 0:
-                current_index -= 1
-                current_result = prepend_next_stream_items(
-                    results[current_index],
-                    StreamItemsRecord(stream_record, current_result),
-                )
-
-            if is_awaitable(current_result):
-                return await current_result  # type: ignore
-            return current_result  # type: ignore
+            result = first_stream_items.result
+            if is_awaitable(result):
+                return await result  # type: ignore
+            return result  # type: ignore
 
         return StreamItemsRecord(stream_record, await_result())
 
