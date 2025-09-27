@@ -1057,9 +1057,30 @@ class ExecutionContext(IncrementalPublisherContext):
             )
             raise GraphQLError(msg)
 
-        # This is specified as a simple map, however we're optimizing the path where
-        # the list contains no coroutine objects by avoiding creating another coroutine
-        # object.
+        return self.complete_iterable_value(
+            item_type,
+            field_group,
+            info,
+            path,
+            result,
+            incremental_context,
+            defer_map,
+        )
+
+    def complete_iterable_value(
+        self,
+        item_type: GraphQLOutputType,
+        field_group: FieldGroup,
+        info: GraphQLResolveInfo,
+        path: Path,
+        items: Iterable[Any],
+        incremental_context: IncrementalContext | None,
+        defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
+    ) -> AwaitableOrValue[GraphQLWrappedResult[list[Any]]]:
+        """Complete an iterable value."""
+        # This is specified as a simple map, however we're optimizing the path
+        # where the list contains no awaitable routine objects by avoiding creating
+        # another awaitable object.
         is_awaitable = self.is_awaitable
         complete_list_item_value = self.complete_list_item_value
         complete_awaitable_list_item_value = self.complete_awaitable_list_item_value
@@ -1070,7 +1091,7 @@ class ExecutionContext(IncrementalPublisherContext):
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
         stream_usage = self.get_stream_usage(field_group, path)
-        iterator = iter(result)
+        iterator = iter(items)
         index = 0
         while True:
             try:
