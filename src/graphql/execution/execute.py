@@ -927,13 +927,12 @@ class ExecutionContext(IncrementalPublisherContext):
         recursively until all the results are completed.
         """
         is_awaitable = self.is_awaitable
-        complete_awaitable_value = self.complete_awaitable_value
         complete_list_item_value = self.complete_list_item_value
+        complete_awaitable_list_item_value = self.complete_awaitable_list_item_value
         graphql_wrapped_result: GraphQLWrappedResult[list[Any]] = ([], [])
         completed_results, incomplete_results = graphql_wrapped_result
         append_completed = completed_results.append
         append_incomplete = incomplete_results.append
-        extend_incomplete = incomplete_results.extend
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
         stream_usage = self.get_stream_usage(field_group, path)
@@ -978,21 +977,18 @@ class ExecutionContext(IncrementalPublisherContext):
                 ) from raw_error
 
             if is_awaitable(item):
-
-                async def resolve_item(item: Any, item_path: Path) -> Any:
-                    resolved = await complete_awaitable_value(
+                append_completed(
+                    complete_awaitable_list_item_value(
+                        item,
+                        graphql_wrapped_result,
                         item_type,
                         field_group,
                         info,
                         item_path,
-                        item,
                         incremental_context,
                         defer_map,
                     )
-                    extend_incomplete(resolved[1])  # pragma: no cover
-                    return resolved[0]  # pragma: no cover
-
-                append_completed(resolve_item(item, item_path))
+                )
                 append_awaitable(index)
 
             elif complete_list_item_value(
@@ -1065,13 +1061,12 @@ class ExecutionContext(IncrementalPublisherContext):
         # the list contains no coroutine objects by avoiding creating another coroutine
         # object.
         is_awaitable = self.is_awaitable
-        complete_awaitable_value = self.complete_awaitable_value
         complete_list_item_value = self.complete_list_item_value
+        complete_awaitable_list_item_value = self.complete_awaitable_list_item_value
         graphql_wrapped_result: GraphQLWrappedResult[list[Any]] = ([], [])
         completed_results, incomplete_results = graphql_wrapped_result
         append_completed = completed_results.append
         append_incomplete = incomplete_results.append
-        extend_incomplete = incomplete_results.extend
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
         stream_usage = self.get_stream_usage(field_group, path)
@@ -1102,21 +1097,18 @@ class ExecutionContext(IncrementalPublisherContext):
             item_path = path.add_key(index, None)
 
             if is_awaitable(item):
-
-                async def resolve_item(item: Any, item_path: Path) -> Any:
-                    resolved = await complete_awaitable_value(
+                append_completed(
+                    complete_awaitable_list_item_value(
+                        item,
+                        graphql_wrapped_result,
                         item_type,
                         field_group,
                         info,
                         item_path,
-                        item,
                         incremental_context,
                         defer_map,
                     )
-                    extend_incomplete(resolved[1])
-                    return resolved[0]
-
-                append_completed(resolve_item(item, item_path))
+                )
                 append_awaitable(index)
 
             elif complete_list_item_value(
@@ -1219,6 +1211,44 @@ class ExecutionContext(IncrementalPublisherContext):
             complete_results.append(None)
 
         return False
+
+    async def complete_awaitable_list_item_value(
+        self,
+        item: Any,
+        parent: GraphQLWrappedResult[list[Any]],
+        item_type: GraphQLOutputType,
+        field_group: FieldGroup,
+        info: GraphQLResolveInfo,
+        item_path: Path,
+        incremental_context: IncrementalContext | None,
+        defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
+    ) -> Any:
+        """Complete an awaitable list item value."""
+        try:
+            resolved = await item
+            completed = self.complete_value(
+                item_type,
+                field_group,
+                info,
+                item_path,
+                resolved,
+                incremental_context,
+                defer_map,
+            )
+            if self.is_awaitable(completed):
+                completed = await completed  # type: ignore
+            parent[1].extend(completed[1])  # type: ignore
+            return completed[0]  # type: ignore
+        except Exception as raw_error:
+            errors = (incremental_context or self).errors
+            self.handle_field_error(
+                raw_error,
+                item_type,
+                field_group,
+                item_path,
+                errors,
+            )
+            return None
 
     @staticmethod
     def complete_leaf_value(return_type: GraphQLLeafType, result: Any) -> Any:
