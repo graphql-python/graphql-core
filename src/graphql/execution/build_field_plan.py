@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import sys
-from typing import TYPE_CHECKING, Dict, NamedTuple
+from typing import NamedTuple
 
 from ..pyutils import RefMap, RefSet
-from .collect_fields import DeferUsage, FieldDetails
-
-if TYPE_CHECKING:
-    from ..language import FieldNode
+from .collect_fields import DeferUsage, FieldGroup, GroupedFieldSet
 
 try:
     from typing import TypeAlias
@@ -18,7 +14,6 @@ except ImportError:  # Python < 3.10
 
 __all__ = [
     "DeferUsageSet",
-    "FieldGroup",
     "FieldPlan",
     "GroupedFieldSet",
     "build_field_plan",
@@ -26,23 +21,6 @@ __all__ = [
 
 
 DeferUsageSet: TypeAlias = RefSet[DeferUsage]
-
-
-class FieldGroup(NamedTuple):
-    """A group of fields with defer usages."""
-
-    fields: list[FieldDetails]
-    defer_usages: DeferUsageSet | None = None
-
-    def to_nodes(self) -> list[FieldNode]:
-        """Return the field nodes in this group."""
-        return [field_details.node for field_details in self.fields]
-
-
-if sys.version_info < (3, 9):
-    GroupedFieldSet: TypeAlias = Dict[str, FieldGroup]
-else:  # Python >= 3.9
-    GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
 
 
 class FieldPlan(NamedTuple):
@@ -53,7 +31,7 @@ class FieldPlan(NamedTuple):
 
 
 def build_field_plan(
-    fields: dict[str, list[FieldDetails]],
+    original_grouped_field_set: GroupedFieldSet,
     parent_defer_usages: DeferUsageSet | None = None,
 ) -> FieldPlan:
     """Build a plan for executing fields."""
@@ -64,12 +42,12 @@ def build_field_plan(
 
     new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet] = RefMap()
 
-    map_: dict[str, tuple[DeferUsageSet, list[FieldDetails]]] = {}
+    map_: dict[str, tuple[DeferUsageSet, FieldGroup]] = {}
 
-    for response_key, field_details_list in fields.items():
+    for response_key, field_group in original_grouped_field_set.items():
         defer_usage_set: RefSet[DeferUsage] = RefSet()
         in_original_result = False
-        for field_details in field_details_list:
+        for field_details in field_group:
             defer_usage = field_details.defer_usage
             if defer_usage is None:
                 in_original_result = True
@@ -85,15 +63,11 @@ def build_field_plan(
                     ancestor in defer_usage_set for ancestor in defer_usage.ancestors
                 )
             }
-        map_[response_key] = (defer_usage_set, field_details_list)
+        map_[response_key] = (defer_usage_set, field_group)
 
-    for response_key, [defer_usage_set, field_details_list] in map_.items():
+    for response_key, [defer_usage_set, field_group] in map_.items():
         if defer_usage_set == parent_defer_usages:
-            field_group = grouped_field_set.get(response_key)
-            if field_group is None:  # pragma: no cover else
-                field_group = FieldGroup([], defer_usage_set)
-                grouped_field_set[response_key] = field_group
-            field_group.fields.extend(field_details_list)
+            grouped_field_set[response_key] = field_group
             continue
 
         for (
@@ -107,10 +81,6 @@ def build_field_plan(
             new_grouped_field_set = {}
             new_grouped_field_sets[defer_usage_set] = new_grouped_field_set
 
-        field_group = new_grouped_field_set.get(response_key)
-        if field_group is None:  # pragma: no cover else
-            field_group = FieldGroup([], defer_usage_set)
-            new_grouped_field_set[response_key] = field_group
-        field_group.fields.extend(field_details_list)
+        new_grouped_field_set[response_key] = field_group
 
     return FieldPlan(grouped_field_set, new_grouped_field_sets)

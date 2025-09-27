@@ -276,6 +276,7 @@ disallow_untyped_defs = false
 # silence pyright since we're using mypy already
 reportArgumentType = false
 reportIncompatibleVariableOverride = false
+reportInvalidTypeForm = false
 reportMissingModuleSource = false
 reportMissingTypeArgument = false
 reportReturnType = false

@@ -172,6 +172,7 @@ ignore_references = {
     "GraphQLTypeResolver",
     "GraphQLWrappedResult",
     "GroupedFieldSet",
+    "IncrementalContext",
     "IncrementalDataRecord",
     "IncrementalResult",
     "Middleware",
@@ -188,7 +189,10 @@ ignore_references = {
     "enum.Enum",
     "graphql.execution.build_field_plan.FieldGroup",
     "graphql.execution.build_field_plan.FieldPlan",
+    "graphql.execution.collect_fields.CollectedFields",
     "graphql.execution.collect_fields.DeferUsage",
+    "graphql.execution.collect_fields.FieldDetails",
+    "graphql.execution.execute.IncrementalContext",
     "graphql.execution.execute.StreamArguments",
     "graphql.execution.execute.SubFieldPlan",
     "graphql.execution.execute.StreamUsage",
@@ -224,7 +228,7 @@ ignore_references = {
     "graphql.validation.rules.provided_required_arguments.ProvidedRequiredArgumentsOnDirectivesRule",
 }
 
-ignore_references.update(__builtins__.keys())
+ignore_references.update(__builtins__)
 
 
 def on_missing_reference(app, env, node, contnode):

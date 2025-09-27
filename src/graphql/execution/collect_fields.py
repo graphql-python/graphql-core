@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections import defaultdict
 from typing import Any, NamedTuple
 
@@ -25,11 +26,18 @@ from ..type import (
 from ..utilities.type_from_ast import type_from_ast
 from .values import get_directive_values
 
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
 __all__ = [
     "CollectFieldsContext",
     "CollectedFields",
     "DeferUsage",
     "FieldDetails",
+    "FieldGroup",
+    "GroupedFieldSet",
     "collect_fields",
     "collect_subfields",
 ]
@@ -59,6 +67,16 @@ class FieldDetails(NamedTuple):
     defer_usage: DeferUsage | None
 
 
+if sys.version_info < (3, 9):
+    from typing import Dict, List
+
+    FieldGroup: TypeAlias = List[FieldDetails]
+    GroupedFieldSet: TypeAlias = Dict[str, FieldGroup]
+else:  # Python >= 3.9
+    FieldGroup: TypeAlias = list[FieldDetails]
+    GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
+
+
 class CollectFieldsContext(NamedTuple):
     """Context for collecting fields."""
 
@@ -73,7 +91,7 @@ class CollectFieldsContext(NamedTuple):
 class CollectedFields(NamedTuple):
     """Collected fields with new defer usages."""
 
-    fields: dict[str, list[FieldDetails]]
+    grouped_field_set: GroupedFieldSet
     new_defer_usages: list[DeferUsage]
 
 
@@ -117,7 +135,7 @@ def collect_subfields(
     variable_values: dict[str, Any],
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
-    field_details: list[FieldDetails],
+    field_group: FieldGroup,
 ) -> CollectedFields:
     """Collect subfields.
 
@@ -141,7 +159,7 @@ def collect_subfields(
     sub_grouped_field_set: dict[str, list[FieldDetails]] = defaultdict(list)
     new_defer_usages: list[DeferUsage] = []
 
-    for field_detail in field_details:
+    for field_detail in field_group:
         node = field_detail.node
         if node.selection_set:
             collect_fields_impl(

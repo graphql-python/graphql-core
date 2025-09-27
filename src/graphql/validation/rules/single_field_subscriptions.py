@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ...error import GraphQLError
-from ...execution.collect_fields import FieldDetails, collect_fields
+from ...execution.collect_fields import FieldGroup, collect_fields
 from ...language import (
     FieldNode,
     FragmentDefinitionNode,
@@ -17,8 +17,8 @@ from . import ValidationRule
 __all__ = ["SingleFieldSubscriptionsRule"]
 
 
-def to_nodes(field_details_list: list[FieldDetails]) -> list[FieldNode]:
-    return [field_details.node for field_details in field_details_list]
+def to_nodes(field_group: FieldGroup) -> list[FieldNode]:
+    return [field_details.node for field_details in field_group]
 
 
 class SingleFieldSubscriptionsRule(ValidationRule):
@@ -46,15 +46,15 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 for definition in document.definitions
                 if isinstance(definition, FragmentDefinitionNode)
             }
-            fields = collect_fields(
+            grouped_field_set = collect_fields(
                 schema,
                 fragments,
                 variable_values,
                 subscription_type,
                 node,
-            ).fields
-            if len(fields) > 1:
-                field_groups = list(fields.values())
+            ).grouped_field_set
+            if len(grouped_field_set) > 1:
+                field_groups = list(grouped_field_set.values())
                 extra_field_groups = field_groups[1:]
                 extra_field_selection = [
                     node
@@ -72,7 +72,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                         extra_field_selection,
                     )
                 )
-            for field_group in fields.values():
+            for field_group in grouped_field_set.values():
                 field_name = to_nodes(field_group)[0].name.value
                 if field_name.startswith("__"):
                     self.report_error(

@@ -79,10 +79,17 @@ from .async_iterables import map_async_iterable
 from .build_field_plan import (
     DeferUsageSet,
     FieldGroup,
+    FieldPlan,
     GroupedFieldSet,
     build_field_plan,
 )
-from .collect_fields import DeferUsage, FieldDetails, collect_fields, collect_subfields
+from .collect_fields import (
+    CollectedFields,
+    DeferUsage,
+    FieldDetails,
+    collect_fields,
+    collect_subfields,
+)
 from .incremental_publisher import (
     BareDeferredGroupedFieldSetResult,
     BareStreamItemsResult,
@@ -174,6 +181,13 @@ class SubFieldPlan(NamedTuple):
     new_defer_usages: list[DeferUsage]
 
 
+class IncrementalContext(NamedTuple):
+    """A context for incremental execution."""
+
+    errors: list[GraphQLError]
+    defer_usage_set: DeferUsageSet | None = None
+
+
 class ExecutionContext(IncrementalPublisherContext):
     """Data that must be available at all points during query execution.
 
@@ -190,6 +204,7 @@ class ExecutionContext(IncrementalPublisherContext):
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
+    errors: list[GraphQLError]
     cancellable_streams: set[CancellableStreamRecord]
     middleware_manager: MiddlewareManager | None
 
@@ -221,10 +236,12 @@ class ExecutionContext(IncrementalPublisherContext):
         self.middleware_manager = middleware_manager
         if is_awaitable:
             self.is_awaitable = is_awaitable
+        self.errors = []
         self.cancellable_streams = set()
         self._canceled_iterators: set[AsyncIterator] = set()
-        self._sub_field_plan_cache: dict[tuple, SubFieldPlan] = {}
+        self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
+        self._field_plans: RefMap[GroupedFieldSet, FieldPlan] = RefMap()
 
     @classmethod
     def build(
@@ -320,6 +337,7 @@ class ExecutionContext(IncrementalPublisherContext):
         """Create a copy of the execution context for usage with subscribe events."""
         context = copy(self)
         context.root_value = payload
+        context.errors = []
         return context
 
     def execute_operation(
@@ -341,7 +359,6 @@ class ExecutionContext(IncrementalPublisherContext):
         at which point we still log the error and null the parent field, which
         in this case is the entire response.
         """
-        errors: list[GraphQLError] = []
         try:
             operation = self.operation
             schema = self.schema
@@ -352,44 +369,44 @@ class ExecutionContext(IncrementalPublisherContext):
                     f" {operation.operation.value} operation."
                 )
                 raise GraphQLError(msg, operation)  # noqa: TRY301
-
-            fields, new_defer_usages = collect_fields(
-                schema, self.fragments, self.variable_values, root_type, operation
-            )
-            grouped_field_set, new_grouped_field_sets = build_field_plan(fields)
-
-            new_defer_map = add_new_deferred_fragments(new_defer_usages, RefMap())
-
             root_value = self.root_value
 
-            # noinspection PyTypeChecker
-            graphql_wrapped_result = (
-                self.execute_fields_serially
-                if operation.operation == OperationType.MUTATION
-                else self.execute_fields
-            )(
-                root_type,
-                root_value,
-                None,
-                grouped_field_set,
-                errors,
-                new_defer_map,
+            collected_fields = collect_fields(
+                schema, self.fragments, self.variable_values, root_type, operation
             )
+            grouped_field_set, new_defer_usages = collected_fields
 
-            new_deferred_grouped_field_set_records = (
-                self.execute_deferred_grouped_field_sets(
+            if new_defer_usages:
+                field_plan = build_field_plan(grouped_field_set)
+                grouped_field_set = field_plan.grouped_field_set
+                new_grouped_field_sets = field_plan.new_grouped_field_sets
+                new_defer_map = add_new_deferred_fragments(new_defer_usages, RefMap())
+                graphql_wrapped_result = self.execute_root_grouped_field_set(
+                    operation.operation,
                     root_type,
                     root_value,
-                    None,
-                    None,
-                    new_grouped_field_sets,
+                    grouped_field_set,
                     new_defer_map,
                 )
-            )
+                if new_grouped_field_sets:
+                    new_deferred_grouped_field_set_records = (
+                        self.execute_deferred_grouped_field_sets(
+                            root_type,
+                            root_value,
+                            None,
+                            None,
+                            new_grouped_field_sets,
+                            new_defer_map,
+                        )
+                    )
+                    graphql_wrapped_result = self.with_new_deferred_grouped_field_sets(
+                        graphql_wrapped_result, new_deferred_grouped_field_set_records
+                    )
 
-            graphql_wrapped_result = self.with_new_deferred_grouped_field_sets(
-                graphql_wrapped_result, new_deferred_grouped_field_set_records
-            )
+            else:
+                graphql_wrapped_result = self.execute_root_grouped_field_set(
+                    operation.operation, root_type, root_value, grouped_field_set, None
+                )
 
             if self.is_awaitable(graphql_wrapped_result):
 
@@ -399,17 +416,40 @@ class ExecutionContext(IncrementalPublisherContext):
                     try:
                         resolved = await graphql_wrapped_result  # type: ignore
                     except GraphQLError as error:
-                        return ExecutionResult(None, [*errors, error])
-                    return self.build_data_response(resolved[0], errors, resolved[1])
+                        return ExecutionResult(None, [*self.errors, error])
+                    return self.build_data_response(resolved[0], resolved[1])
 
                 return await_result()
 
             resolved = cast("GraphQLWrappedResult", graphql_wrapped_result)
 
         except GraphQLError as error:
-            return ExecutionResult(None, [*errors, error])
+            return ExecutionResult(None, [*self.errors, error])
 
-        return self.build_data_response(resolved[0], errors, resolved[1])
+        return self.build_data_response(resolved[0], resolved[1])
+
+    def execute_root_grouped_field_set(
+        self,
+        operation: OperationType,
+        root_type: GraphQLObjectType,
+        root_value: Any,
+        grouped_field_set: GroupedFieldSet,
+        defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
+    ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
+        """Execute the root grouped field set."""
+        # noinspection PyTypeChecker
+        return (
+            self.execute_fields_serially
+            if operation == OperationType.MUTATION
+            else self.execute_fields
+        )(
+            root_type,
+            root_value,
+            None,
+            grouped_field_set,
+            None,
+            defer_map,
+        )
 
     def execute_fields_serially(
         self,
@@ -417,7 +457,7 @@ class ExecutionContext(IncrementalPublisherContext):
         source_value: Any,
         path: Path | None,
         grouped_field_set: GroupedFieldSet,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Execute the given fields serially.
@@ -438,7 +478,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 source_value,
                 field_group,
                 field_path,
-                errors,
+                incremental_context,
                 defer_map,
             )
             if result is Undefined:
@@ -467,7 +507,7 @@ class ExecutionContext(IncrementalPublisherContext):
         source_value: Any,
         path: Path | None,
         grouped_field_set: GroupedFieldSet,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Execute the given fields concurrently.
@@ -488,7 +528,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 source_value,
                 field_group,
                 field_path,
-                errors,
+                incremental_context,
                 defer_map,
             )
             if result is not Undefined:
@@ -536,7 +576,7 @@ class ExecutionContext(IncrementalPublisherContext):
         source: Any,
         field_group: FieldGroup,
         path: Path,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[Any]] | UndefinedType:
         """Resolve the field on the given source object.
@@ -547,7 +587,7 @@ class ExecutionContext(IncrementalPublisherContext):
         calling its resolve function, then calls complete_value to await coroutine
         objects, serialize scalars, or execute the sub-selection-set for objects.
         """
-        field_name = field_group.fields[0].node.name.value
+        field_name = field_group[0].node.name.value
         field_def = self.schema.get_field(parent_type, field_name)
         if not field_def:
             return Undefined
@@ -559,7 +599,7 @@ class ExecutionContext(IncrementalPublisherContext):
             resolve_fn = self.middleware_manager.get_field_resolver(resolve_fn)
 
         info = self.build_resolve_info(
-            field_def, field_group.to_nodes(), parent_type, path
+            field_def, to_nodes(field_group), parent_type, path
         )
 
         # Get the resolve function, regardless of if its result is normal or abrupt
@@ -568,7 +608,7 @@ class ExecutionContext(IncrementalPublisherContext):
             # Build a dictionary of arguments from the field.arguments AST, using the
             # variables scope to fulfill any variable references.
             args = get_argument_values(
-                field_def, field_group.fields[0].node, self.variable_values
+                field_def, field_group[0].node, self.variable_values
             )
 
             # Note that contrary to the JavaScript implementation, we pass the context
@@ -582,7 +622,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     info,
                     path,
                     result,
-                    errors,
+                    incremental_context,
                     defer_map,
                 )
 
@@ -592,7 +632,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 result,
-                errors,
+                incremental_context,
                 defer_map,
             )
             if self.is_awaitable(completed):
@@ -605,6 +645,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         # so gets caught here.
                         if isinstance(raw_error, CancelledError):
                             raise  # pragma: no cover
+                        errors = (incremental_context or self).errors
                         self.handle_field_error(
                             raw_error,
                             return_type,
@@ -617,6 +658,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 return await_completed()
 
         except Exception as raw_error:
+            errors = (incremental_context or self).errors
             self.handle_field_error(
                 raw_error,
                 return_type,
@@ -665,7 +707,7 @@ class ExecutionContext(IncrementalPublisherContext):
         errors: list[GraphQLError],
     ) -> None:
         """Handle error properly according to the field type."""
-        error = located_error(raw_error, field_group.to_nodes(), path.as_list())
+        error = located_error(raw_error, to_nodes(field_group), path.as_list())
 
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
@@ -683,7 +725,7 @@ class ExecutionContext(IncrementalPublisherContext):
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[Any]]:
         """Complete a value.
@@ -721,7 +763,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 result,
-                errors,
+                incremental_context,
                 defer_map,
             )
             if isinstance(completed, tuple) and completed[0] is None:
@@ -744,7 +786,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 result,
-                errors,
+                incremental_context,
                 defer_map,
             )
 
@@ -762,7 +804,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 result,
-                errors,
+                incremental_context,
                 defer_map,
             )
 
@@ -774,7 +816,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 result,
-                errors,
+                incremental_context,
                 defer_map,
             )
 
@@ -792,7 +834,7 @@ class ExecutionContext(IncrementalPublisherContext):
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> GraphQLWrappedResult[Any]:
         """Complete an awaitable value."""
@@ -804,7 +846,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 resolved,
-                errors,
+                incremental_context,
                 defer_map,
             )
             if self.is_awaitable(completed):
@@ -814,6 +856,7 @@ class ExecutionContext(IncrementalPublisherContext):
             # so gets caught here.
             if isinstance(raw_error, CancelledError):
                 raise  # pragma: no cover
+            errors = (incremental_context or self).errors
             self.handle_field_error(raw_error, return_type, field_group, path, errors)
             completed = None, []
         return completed  # type: ignore
@@ -838,7 +881,7 @@ class ExecutionContext(IncrementalPublisherContext):
         # validation only allows equivalent streams on multiple fields, so it is
         # safe to only check the first field_node for the stream directive
         stream = get_directive_values(
-            GraphQLStreamDirective, field_group.fields[0].node, self.variable_values
+            GraphQLStreamDirective, field_group[0].node, self.variable_values
         )
 
         if not stream or stream.get("if") is False:
@@ -856,12 +899,9 @@ class ExecutionContext(IncrementalPublisherContext):
             )
             raise TypeError(msg)
 
-        streamed_field_group = FieldGroup(
-            [
-                FieldDetails(field_details.node, None)
-                for field_details in field_group.fields
-            ]
-        )
+        streamed_field_group: FieldGroup = [
+            FieldDetails(field_details.node, None) for field_details in field_group
+        ]
 
         stream_usage = StreamUsage(
             stream.get("label"), stream["initialCount"], streamed_field_group
@@ -878,7 +918,7 @@ class ExecutionContext(IncrementalPublisherContext):
         info: GraphQLResolveInfo,
         path: Path,
         async_iterator: AsyncIterator[Any],
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> GraphQLWrappedResult[list[Any]]:
         """Complete an async iterator.
@@ -934,7 +974,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 break
             except Exception as raw_error:
                 raise located_error(
-                    raw_error, field_group.to_nodes(), path.as_list()
+                    raw_error, to_nodes(field_group), path.as_list()
                 ) from raw_error
 
             if is_awaitable(item):
@@ -946,7 +986,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         info,
                         item_path,
                         item,
-                        errors,
+                        incremental_context,
                         defer_map,
                     )
                     extend_incomplete(resolved[1])  # pragma: no cover
@@ -963,7 +1003,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 field_group,
                 info,
                 item_path,
-                errors,
+                incremental_context,
                 defer_map,
             ):
                 append_awaitable(index)
@@ -992,7 +1032,7 @@ class ExecutionContext(IncrementalPublisherContext):
         info: GraphQLResolveInfo,
         path: Path,
         result: AsyncIterable[Any] | Iterable[Any],
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[list[Any]]]:
         """Complete a list value.
@@ -1010,7 +1050,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 path,
                 async_iterator,
-                errors,
+                incremental_context,
                 defer_map,
             )
 
@@ -1070,7 +1110,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         info,
                         item_path,
                         item,
-                        errors,
+                        incremental_context,
                         defer_map,
                     )
                     extend_incomplete(resolved[1])
@@ -1087,7 +1127,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 field_group,
                 info,
                 item_path,
-                errors,
+                incremental_context,
                 defer_map,
             ):
                 append_awaitable(index)
@@ -1122,7 +1162,7 @@ class ExecutionContext(IncrementalPublisherContext):
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_path: Path,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> bool:
         """Complete a list item value by adding it to the completed results.
@@ -1138,7 +1178,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 info,
                 item_path,
                 item,
-                errors,
+                incremental_context,
                 defer_map,
             )
 
@@ -1148,6 +1188,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     try:
                         resolved = await completed_item  # type: ignore
                     except Exception as raw_error:
+                        errors = (incremental_context or self).errors
                         self.handle_field_error(
                             raw_error,
                             item_type,
@@ -1167,6 +1208,7 @@ class ExecutionContext(IncrementalPublisherContext):
             parent[1].extend(completed_item[1])
 
         except Exception as raw_error:
+            errors = (incremental_context or self).errors
             self.handle_field_error(
                 raw_error,
                 item_type,
@@ -1202,7 +1244,7 @@ class ExecutionContext(IncrementalPublisherContext):
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Complete an abstract value.
@@ -1229,7 +1271,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     info,
                     path,
                     result,
-                    errors,
+                    incremental_context,
                     defer_map,
                 )
                 if self.is_awaitable(value):
@@ -1247,7 +1289,7 @@ class ExecutionContext(IncrementalPublisherContext):
             info,
             path,
             result,
-            errors,
+            incremental_context,
             defer_map,
         )
 
@@ -1269,7 +1311,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 " a 'resolve_type' function or each possible type should provide"
                 " an 'is_type_of' function."
             )
-            raise GraphQLError(msg, field_group.to_nodes())
+            raise GraphQLError(msg, to_nodes(field_group))
 
         if is_object_type(runtime_type_name):  # pragma: no cover
             msg = (
@@ -1285,7 +1327,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 f" for field '{info.parent_type.name}.{info.field_name}' with value"
                 f" {inspect(result)}, received '{inspect(runtime_type_name)}'."
             )
-            raise GraphQLError(msg, field_group.to_nodes())
+            raise GraphQLError(msg, to_nodes(field_group))
 
         runtime_type = self.schema.get_type(runtime_type_name)
 
@@ -1294,21 +1336,21 @@ class ExecutionContext(IncrementalPublisherContext):
                 f"Abstract type '{return_type.name}' was resolved to a type"
                 f" '{runtime_type_name}' that does not exist inside the schema."
             )
-            raise GraphQLError(msg, field_group.to_nodes())
+            raise GraphQLError(msg, to_nodes(field_group))
 
         if not is_object_type(runtime_type):
             msg = (
                 f"Abstract type '{return_type.name}' was resolved"
                 f" to a non-object type '{runtime_type_name}'."
             )
-            raise GraphQLError(msg, field_group.to_nodes())
+            raise GraphQLError(msg, to_nodes(field_group))
 
         if not self.schema.is_sub_type(return_type, runtime_type):
             msg = (
                 f"Runtime Object type '{runtime_type.name}' is not a possible"
                 f" type for '{return_type.name}'."
             )
-            raise GraphQLError(msg, field_group.to_nodes())
+            raise GraphQLError(msg, to_nodes(field_group))
 
         # noinspection PyTypeChecker
         return runtime_type
@@ -1320,7 +1362,7 @@ class ExecutionContext(IncrementalPublisherContext):
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Complete an Object value by executing all sub-selections."""
@@ -1344,7 +1386,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         field_group,
                         path,
                         result,
-                        errors,
+                        incremental_context,
                         defer_map,
                     )
                     if self.is_awaitable(graphql_wrapped_result):  # pragma: no cover
@@ -1357,7 +1399,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 raise invalid_return_type_error(return_type, result, field_group)
 
         return self.collect_and_execute_subfields(
-            return_type, field_group, path, result, errors, defer_map
+            return_type, field_group, path, result, incremental_context, defer_map
         )
 
     def collect_and_execute_subfields(
@@ -1366,13 +1408,22 @@ class ExecutionContext(IncrementalPublisherContext):
         field_group: FieldGroup,
         path: Path,
         result: Any,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Collect sub-fields to execute to complete this value."""
-        grouped_field_set, new_grouped_field_sets, new_defer_usages = (
-            self.build_sub_field_plan(return_type, field_group)
+        collected_subfields = self.collect_subfields(return_type, field_group)
+        grouped_field_set, new_defer_usages = collected_subfields
+        if defer_map is None and not new_defer_usages:
+            return self.execute_fields(
+                return_type, result, path, grouped_field_set, incremental_context, None
+            )
+        sub_field_plan = self.build_sub_field_plan(
+            grouped_field_set,
+            incremental_context.defer_usage_set if incremental_context else None,
         )
+
+        grouped_field_set, new_grouped_field_sets = sub_field_plan
 
         new_defer_map = add_new_deferred_fragments(
             new_defer_usages,
@@ -1385,35 +1436,39 @@ class ExecutionContext(IncrementalPublisherContext):
             result,
             path,
             grouped_field_set,
-            errors,
+            incremental_context,
             new_defer_map,
         )
 
-        new_deferred_grouped_field_set_records = (
-            self.execute_deferred_grouped_field_sets(
-                return_type,
-                result,
-                path,
-                field_group.defer_usages,
-                new_grouped_field_sets,
-                new_defer_map,
+        if new_grouped_field_sets:
+            new_deferred_grouped_field_set_records = (
+                self.execute_deferred_grouped_field_sets(
+                    return_type,
+                    result,
+                    path,
+                    incremental_context.defer_usage_set
+                    if incremental_context
+                    else None,
+                    new_grouped_field_sets,
+                    new_defer_map,
+                )
             )
-        )
+            return self.with_new_deferred_grouped_field_sets(
+                sub_fields, new_deferred_grouped_field_set_records
+            )
 
-        return self.with_new_deferred_grouped_field_sets(
-            sub_fields, new_deferred_grouped_field_set_records
-        )
+        return sub_fields
 
-    def build_sub_field_plan(
+    def collect_subfields(
         self, return_type: GraphQLObjectType, field_group: FieldGroup
-    ) -> SubFieldPlan:
+    ) -> CollectedFields:
         """Collect subfields.
 
-        A memoized function for building subfield plans with regard to the return type.
-        Memoizing ensures the  subfields are not repeatedly calculated, which saves
+        A memoized function collecting relevant subfields regarding the return type.
+        Memoizing ensures the subfields are not repeatedly calculated, which saves
         overhead when resolving lists of values.
         """
-        cache = self._sub_field_plan_cache
+        relevant_sub_fields = self._relevant_sub_fields
         # We cannot use the field_group itself as key for the cache, since it
         # is not hashable as a list. We also do not want to use the field_group
         # itself (converted to a tuple) as keys, since hashing them is slow.
@@ -1426,20 +1481,32 @@ class ExecutionContext(IncrementalPublisherContext):
             if len(field_group) == 1  # optimize most frequent case
             else (return_type, *map(id, field_group))
         )
-        sub_field_plan = cache.get(key)
-        if sub_field_plan is None:
-            sub_fields, new_defer_usages = collect_subfields(
+        collected_fields: CollectedFields | None = relevant_sub_fields.get(key)
+        if collected_fields is None:
+            collected_fields = collect_subfields(
                 self.schema,
                 self.fragments,
                 self.variable_values,
                 self.operation,
                 return_type,
-                field_group.fields,
+                field_group,
             )
-            field_plan = build_field_plan(sub_fields, field_group.defer_usages)
-            sub_field_plan = SubFieldPlan(*field_plan, new_defer_usages)
-            cache[key] = sub_field_plan
-        return sub_field_plan
+            relevant_sub_fields[key] = collected_fields
+        return collected_fields
+
+    def build_sub_field_plan(
+        self,
+        original_grouped_field_set: GroupedFieldSet,
+        defer_usage_set: DeferUsageSet | None,
+    ) -> FieldPlan:
+        """Build a cached sub-field plan."""
+        field_plans = self._field_plans
+        field_plan = field_plans.get(original_grouped_field_set)
+        if field_plan is not None:
+            return field_plan
+        field_plan = build_field_plan(original_grouped_field_set, defer_usage_set)
+        field_plans[original_grouped_field_set] = field_plan
+        return field_plan
 
     def map_source_to_response(
         self, result_or_stream: ExecutionResult | AsyncIterable[Any]
@@ -1495,6 +1562,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 async def executor(
                     deferred_fragment_records: list[DeferredFragmentRecord],
                     grouped_field_set: GroupedFieldSet,
+                    defer_usage_set: DeferUsageSet,
                 ) -> DeferredGroupedFieldSetResult:
                     result = self.execute_deferred_grouped_field_set(
                         deferred_fragment_records,
@@ -1502,7 +1570,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         source_value,
                         path,
                         grouped_field_set,
-                        [],
+                        IncrementalContext([], defer_usage_set),
                         defer_map,
                     )
                     if self.is_awaitable(result):
@@ -1511,7 +1579,9 @@ class ExecutionContext(IncrementalPublisherContext):
 
                 deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
                     deferred_fragment_records,
-                    executor(deferred_fragment_records, grouped_field_set),
+                    executor(
+                        deferred_fragment_records, grouped_field_set, defer_usage_set
+                    ),
                 )
             else:
                 executed = self.execute_deferred_grouped_field_set(
@@ -1520,7 +1590,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     source_value,
                     path,
                     grouped_field_set,
-                    [],
+                    IncrementalContext([], defer_usage_set),
                     defer_map,
                 )
                 deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
@@ -1538,7 +1608,7 @@ class ExecutionContext(IncrementalPublisherContext):
         source_value: Any,
         path: Path | None,
         grouped_field_set: GroupedFieldSet,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
     ) -> AwaitableOrValue[DeferredGroupedFieldSetResult]:
         """Execute deferred grouped field set."""
@@ -1548,14 +1618,14 @@ class ExecutionContext(IncrementalPublisherContext):
                 source_value,
                 path,
                 grouped_field_set,
-                errors,
+                incremental_context,
                 defer_map,
             )
         except GraphQLError as error:
             return NonReconcilableDeferredGroupedFieldSetResult(
                 deferred_fragment_records,
                 path.as_list() if path else [],
-                [*errors, error],
+                [*incremental_context.errors, error],
             )
 
         if self.is_awaitable(result):
@@ -1567,16 +1637,19 @@ class ExecutionContext(IncrementalPublisherContext):
                     return NonReconcilableDeferredGroupedFieldSetResult(
                         deferred_fragment_records,
                         path.as_list() if path else [],
-                        [*errors, error],
+                        [*incremental_context.errors, error],
                     )
                 return build_deferred_grouped_field_set_result(
-                    errors, deferred_fragment_records, path, awaited_result
+                    incremental_context.errors,
+                    deferred_fragment_records,
+                    path,
+                    awaited_result,
                 )
 
             return await_result()
 
         return build_deferred_grouped_field_set_result(
-            errors,
+            incremental_context.errors,
             deferred_fragment_records,
             path,
             result,  # type: ignore
@@ -1602,7 +1675,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 stream_record,
                 initial_path,
                 initial_item,
-                [],
+                IncrementalContext([]),
                 field_group,
                 info,
                 item_type,
@@ -1620,7 +1693,13 @@ class ExecutionContext(IncrementalPublisherContext):
                 current_index += 1
                 current_path = Path(path, current_index, None)
                 result = self.complete_stream_items(
-                    stream_record, current_path, item, [], field_group, info, item_type
+                    stream_record,
+                    current_path,
+                    item,
+                    IncrementalContext([]),
+                    field_group,
+                    info,
+                    item_type,
                 )
                 append_result(result)
 
@@ -1694,13 +1773,19 @@ class ExecutionContext(IncrementalPublisherContext):
         except Exception as error:
             return NonReconcilableStreamItemsResult(
                 stream_record,
-                [located_error(error, field_group.to_nodes(), path.as_list())],
+                [located_error(error, to_nodes(field_group), path.as_list())],
             )
 
         item_path = path.add_key(index, None)
 
         result = self.complete_stream_items(
-            stream_record, item_path, item, [], field_group, info, item_type
+            stream_record,
+            item_path,
+            item,
+            IncrementalContext([]),
+            field_group,
+            info,
+            item_type,
         )
 
         next_stream_items_record = StreamItemsRecord(
@@ -1721,7 +1806,7 @@ class ExecutionContext(IncrementalPublisherContext):
         stream_record: SubsequentResultRecord,
         item_path: Path,
         item: Any,
-        errors: list[GraphQLError],
+        incremental_context: IncrementalContext,
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
@@ -1733,28 +1818,48 @@ class ExecutionContext(IncrementalPublisherContext):
             async def await_item() -> StreamItemsResult:
                 try:
                     awaited_item = await self.complete_awaitable_value(
-                        item_type, field_group, info, item_path, item, errors, RefMap()
+                        item_type,
+                        field_group,
+                        info,
+                        item_path,
+                        item,
+                        incremental_context,
+                        RefMap(),
                     )
                 except GraphQLError as error:
                     return NonReconcilableStreamItemsResult(
-                        stream_record, [*errors, error]
+                        stream_record, [*incremental_context.errors, error]
                     )
-                return build_stream_items_result(errors, stream_record, awaited_item)
+                return build_stream_items_result(
+                    incremental_context.errors, stream_record, awaited_item
+                )
 
             return await_item()
 
         try:
             try:
                 result = self.complete_value(
-                    item_type, field_group, info, item_path, item, errors, RefMap()
+                    item_type,
+                    field_group,
+                    info,
+                    item_path,
+                    item,
+                    incremental_context,
+                    RefMap(),
                 )
             except Exception as raw_error:
                 self.handle_field_error(
-                    raw_error, item_type, field_group, item_path, errors
+                    raw_error,
+                    item_type,
+                    field_group,
+                    item_path,
+                    incremental_context.errors,
                 )
                 result = (None, [])
         except GraphQLError as error:
-            return NonReconcilableStreamItemsResult(stream_record, [*errors, error])
+            return NonReconcilableStreamItemsResult(
+                stream_record, [*incremental_context.errors, error]
+            )
 
         if is_awaitable(result):
 
@@ -1764,18 +1869,28 @@ class ExecutionContext(IncrementalPublisherContext):
                         awaited_item = await result  # type: ignore
                     except Exception as raw_error:
                         self.handle_field_error(
-                            raw_error, item_type, field_group, item_path, errors
+                            raw_error,
+                            item_type,
+                            field_group,
+                            item_path,
+                            incremental_context.errors,
                         )
                         awaited_item = None, []
                 except GraphQLError as error:
                     return NonReconcilableStreamItemsResult(
-                        stream_record, [*errors, error]
+                        stream_record, [*incremental_context.errors, error]
                     )
-                return build_stream_items_result(errors, stream_record, awaited_item)
+                return build_stream_items_result(
+                    incremental_context.errors, stream_record, awaited_item
+                )
 
             return await_item()
 
-        return build_stream_items_result(errors, stream_record, result)  # type: ignore
+        return build_stream_items_result(
+            incremental_context.errors,
+            stream_record,
+            result,  # type: ignore
+        )
 
     def prepend_next_stream_items(
         self,
@@ -1818,18 +1933,22 @@ class ExecutionContext(IncrementalPublisherContext):
     def build_data_response(
         self,
         data: dict[str, Any],
-        errors: list[GraphQLError],
         incremental_data_records: list[IncrementalDataRecord],
     ) -> ExecutionResult | ExperimentalIncrementalExecutionResults:
         """Build the data response."""
         if not incremental_data_records:
-            return ExecutionResult(data, errors or None)
+            return ExecutionResult(data, self.errors or None)
         return build_incremental_response(
             self,
             data,
-            errors,
+            self.errors,
             incremental_data_records,
         )
+
+
+def to_nodes(field_group: FieldGroup) -> list[FieldNode]:
+    """Convert a field group to a list of field nodes."""
+    return [field_details.node for field_details in field_group]
 
 
 T = TypeVar("T")
@@ -2030,7 +2149,7 @@ def invalid_return_type_error(
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
         f"Expected value of type '{return_type.name}' but got: {inspect(result)}.",
-        field_group.to_nodes(),
+        to_nodes(field_group),
     )
 
 
@@ -2410,20 +2529,20 @@ def execute_subscription(
         msg = "Schema is not configured to execute subscription operation."
         raise GraphQLError(msg, context.operation)
 
-    fields = collect_fields(
+    grouped_field_set = collect_fields(
         schema,
         context.fragments,
         context.variable_values,
         root_type,
         context.operation,
-    ).fields
+    ).grouped_field_set
 
-    first_root_field = next(iter(fields.items()))
-    response_name, field_details_list = first_root_field
-    field_name = field_details_list[0].node.name.value
+    first_root_field = next(iter(grouped_field_set.items()))
+    response_name, field_group = first_root_field
+    field_name = field_group[0].node.name.value
     field_def = schema.get_field(root_type, field_name)
 
-    field_nodes = [field_details.node for field_details in field_details_list]
+    field_nodes = [field_details.node for field_details in field_group]
     if not field_def:
         msg = f"The subscription field '{field_name}' is not defined."
         raise GraphQLError(msg, field_nodes)
