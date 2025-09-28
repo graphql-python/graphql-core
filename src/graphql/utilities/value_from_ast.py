@@ -110,7 +110,7 @@ def value_from_ast(
                 if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_obj[field.out_name or field_name] = field.default_value
-                elif is_non_null_type(field.type):  # pragma: no cover else
+                elif is_non_null_type(field.type):  # pragma: no branch
                     return Undefined
                 continue
             field_value = value_from_ast(field_node.value, field.type, variables)

@@ -134,7 +134,7 @@ def build_client_schema(
     def build_type(type_: IntrospectionType) -> GraphQLNamedType:
         if type_ and "name" in type_ and "kind" in type_:
             builder = type_builders.get(type_["kind"])
-            if builder:  # pragma: no cover else
+            if builder:  # pragma: no branch
                 return builder(type_)
         msg = (
             "Invalid or incomplete introspection result."

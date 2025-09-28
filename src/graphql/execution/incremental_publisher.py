@@ -11,6 +11,7 @@ from typing import (
     Awaitable,
     Iterator,
     NamedTuple,
+    Sequence,
     Union,
     cast,
 )
@@ -799,7 +800,7 @@ class ReconcilableDeferredGroupedFieldSetResult:
     deferred_fragment_records: list[DeferredFragmentRecord]
     path: list[str | int]
     result: BareDeferredGroupedFieldSetResult
-    incremental_data_records: list[IncrementalDataRecord]
+    incremental_data_records: list[IncrementalDataRecord] | None
     sent: bool
     errors: None = None
 
@@ -816,7 +817,7 @@ class ReconcilableDeferredGroupedFieldSetResult:
         deferred_fragment_records: list[DeferredFragmentRecord],
         path: list[str | int],
         result: BareDeferredGroupedFieldSetResult,
-        incremental_data_records: list[IncrementalDataRecord],
+        incremental_data_records: list[IncrementalDataRecord] | None = None,
     ) -> None:
         self.deferred_fragment_records = deferred_fragment_records
         self.path = path
@@ -903,7 +904,7 @@ class ReconcilableStreamItemsResult(NamedTuple):
 
     stream_record: SubsequentResultRecord
     result: BareStreamItemsResult
-    incremental_data_records: list[IncrementalDataRecord]
+    incremental_data_records: list[IncrementalDataRecord] | None = None
     errors: None = None
 
 
@@ -963,7 +964,7 @@ IncrementalDataRecordResult = Union[DeferredGroupedFieldSetResult, StreamItemsRe
 class IncrementalPublisherContext(Protocol):
     """The context for incremental publishing."""
 
-    cancellable_streams: set[CancellableStreamRecord]
+    cancellable_streams: set[CancellableStreamRecord] | None
 
 
 class IncrementalPublisher:
@@ -1000,8 +1001,8 @@ class IncrementalPublisher:
     def build_response(
         self,
         data: dict[str, Any],
-        errors: list[GraphQLError],
-        incremental_data_records: list[IncrementalDataRecord],
+        errors: list[GraphQLError] | None,
+        incremental_data_records: Sequence[IncrementalDataRecord],
     ) -> ExperimentalIncrementalExecutionResults:
         """Build response."""
         self._add_incremental_data_records(incremental_data_records)
@@ -1021,7 +1022,7 @@ class IncrementalPublisher:
         )
 
     def _add_incremental_data_records(
-        self, incremental_data_records: list[IncrementalDataRecord]
+        self, incremental_data_records: Sequence[IncrementalDataRecord]
     ) -> None:
         """Add incremental data records."""
         for incremental_data_record in incremental_data_records:
@@ -1198,9 +1199,11 @@ class IncrementalPublisher:
 
     async def _return_stream_iterators(self) -> None:
         """Finish all stream iterators."""
+        cancellable_streams = self._context.cancellable_streams
+        if cancellable_streams is None:
+            return
         early_returns = [
-            stream_record.early_return
-            for stream_record in self._context.cancellable_streams
+            stream_record.early_return for stream_record in cancellable_streams
         ]
         if early_returns:
             await gather(*early_returns, return_exceptions=True)
@@ -1239,9 +1242,11 @@ class IncrementalPublisher:
             deferred_fragment_record.reconcilable_results.append(
                 deferred_grouped_field_set_result
             )
-        self._add_incremental_data_records(
+        incremental_data_records = (
             deferred_grouped_field_set_result.incremental_data_records
         )
+        if incremental_data_records is not None:
+            self._add_incremental_data_records(incremental_data_records)
         append_incremental = self._incremental.append
         for (
             deferred_fragment_record
@@ -1290,14 +1295,18 @@ class IncrementalPublisher:
             self._completed.append(CompletedResult(id_, stream_items_result.errors))
             del self._pending[stream_record]
             if is_cancellable_stream_record(stream_record):
-                self._context.cancellable_streams.discard(stream_record)
+                cancellable_streams = self._context.cancellable_streams
+                if cancellable_streams:  # pragma: no branch
+                    cancellable_streams.discard(stream_record)
                 with suppress(Exception):
                     await stream_record.early_return
         elif stream_items_result.result is None:
             self._completed.append(CompletedResult(id_))
             del self._pending[stream_record]
             if is_cancellable_stream_record(stream_record):
-                self._context.cancellable_streams.discard(stream_record)
+                cancellable_streams = self._context.cancellable_streams
+                if cancellable_streams:  # pragma: no branch
+                    cancellable_streams.discard(stream_record)
         else:
             result = stream_items_result.result
             incremental_entry = IncrementalStreamResult(
@@ -1347,8 +1356,8 @@ class IncrementalPublisher:
 def build_incremental_response(
     context: IncrementalPublisherContext,
     result: dict[str, Any],
-    errors: list[GraphQLError],
-    incremental_data_records: list[IncrementalDataRecord],
+    errors: list[GraphQLError] | None,
+    incremental_data_records: Sequence[IncrementalDataRecord],
 ) -> ExperimentalIncrementalExecutionResults:
     """Build an incremental response."""
     incremental_publisher = IncrementalPublisher(context)

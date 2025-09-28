@@ -13,6 +13,7 @@ from .execute import (
     default_type_resolver,
     subscribe,
     ExecutionContext,
+    GraphQLWrappedResult,
     Middleware,
 )
 from .incremental_publisher import (
@@ -44,6 +45,7 @@ __all__ = [
     "FormattedIncrementalStreamResult",
     "FormattedInitialIncrementalExecutionResult",
     "FormattedSubsequentIncrementalExecutionResult",
+    "GraphQLWrappedResult",
     "IncrementalDeferResult",
     "IncrementalResult",
     "IncrementalStreamResult",

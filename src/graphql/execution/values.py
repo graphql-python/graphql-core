@@ -105,7 +105,7 @@ def coerce_variable_values(
                 coerced_values[var_name] = value_from_ast(
                     var_def_node.default_value, var_type
                 )
-            elif is_non_null_type(var_type):  # pragma: no cover else
+            elif is_non_null_type(var_type):  # pragma: no branch
                 var_type_str = inspect(var_type)
                 on_error(
                     GraphQLError(
@@ -178,7 +178,7 @@ def get_argument_values(
                     # coerce input value so that out_names are used
                     value = coerce_input_value(value, arg_def.type)
                 coerced_values[arg_def.out_name or name] = value
-            elif is_non_null_type(arg_type):  # pragma: no cover else
+            elif is_non_null_type(arg_type):  # pragma: no branch
                 msg = (
                     f"Argument '{name}' of required type '{arg_type}' was not provided."
                 )
@@ -197,7 +197,7 @@ def get_argument_values(
                         # coerce input value so that out_names are used
                         value = coerce_input_value(value, arg_def.type)
                     coerced_values[arg_def.out_name or name] = value
-                elif is_non_null_type(arg_type):  # pragma: no cover else
+                elif is_non_null_type(arg_type):  # pragma: no branch
                     msg = (
                         f"Argument '{name}' of required type '{arg_type}'"
                         f" was provided the variable '${variable_name}'"

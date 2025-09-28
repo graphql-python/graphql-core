@@ -192,6 +192,7 @@ ignore_references = {
     "graphql.execution.collect_fields.CollectedFields",
     "graphql.execution.collect_fields.DeferUsage",
     "graphql.execution.collect_fields.FieldDetails",
+    "graphql.execution.execute.GraphQLWrappedResult",
     "graphql.execution.execute.IncrementalContext",
     "graphql.execution.execute.StreamArguments",
     "graphql.execution.execute.SubFieldPlan",

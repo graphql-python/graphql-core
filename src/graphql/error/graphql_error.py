@@ -151,7 +151,7 @@ class GraphQLError(Exception):
         self.source = source
         if not source and node_locations:
             loc = node_locations[0]
-            if loc.source:  # pragma: no cover else
+            if loc.source:  # pragma: no branch
                 self.source = loc.source
         if not positions and node_locations:
             positions = [loc.start for loc in node_locations]

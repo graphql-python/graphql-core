@@ -494,13 +494,13 @@ def describe_subscription():
         async def receive_one():
             async for result in subscription_one:  # pragma: no cover
                 received_one.append(result)
-                if len(received_one) == 3:  # pragma: no cover else
+                if len(received_one) == 3:  # pragma: no branch
                     break
 
         async def receive_all():
             async for result in subscription_all:  # pragma: no cover
                 received_all.append(result)
-                if len(received_all) == 6:  # pragma: no cover else
+                if len(received_all) == 6:  # pragma: no branch
                     break
 
         tasks = [

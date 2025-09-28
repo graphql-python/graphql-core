@@ -275,6 +275,7 @@ disallow_untyped_defs = false
 [tool.pyright]
 # silence pyright since we're using mypy already
 reportArgumentType = false
+reportAssignmentType = false
 reportAttributeAccessIssue = false
 reportIncompatibleVariableOverride = false
 reportInvalidTypeForm = false

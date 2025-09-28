@@ -223,7 +223,7 @@ def collect_fields_impl(
                     new_defer_usages,
                     new_defer_usage,
                 )
-        elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover else
+        elif isinstance(selection, FragmentSpreadNode):  # pragma: no branch
             frag_name = selection.name.value
 
             new_defer_usage = get_defer_usage(

@@ -40,9 +40,7 @@ def separate_operations(document_ast: DocumentNode) -> dict[str, DocumentNode]:
     for definition_node in document_ast.definitions:
         if isinstance(definition_node, OperationDefinitionNode):
             operations.append(definition_node)
-        elif isinstance(
-            definition_node, FragmentDefinitionNode
-        ):  # pragma: no cover else
+        elif isinstance(definition_node, FragmentDefinitionNode):  # pragma: no branch
             dep_graph[definition_node.name.value] = collect_dependencies(
                 definition_node.selection_set
             )

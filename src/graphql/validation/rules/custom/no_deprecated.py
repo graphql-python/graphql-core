@@ -93,7 +93,7 @@ class NoDeprecatedCustomRule(ValidationRule):
         enum_value_def = context.get_enum_value()
         if enum_value_def:
             deprecation_reason = enum_value_def.deprecation_reason
-            if deprecation_reason is not None:  # pragma: no cover else
+            if deprecation_reason is not None:  # pragma: no branch
                 enum_type_def = get_named_type(context.get_input_type())
                 enum_type_name = enum_type_def.name  # type: ignore
                 self.report_error(

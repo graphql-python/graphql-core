@@ -511,7 +511,7 @@ def get_operation_type_node(
     for ast_node in [schema.ast_node, *(schema.extension_ast_nodes or ())]:
         if ast_node:
             operation_types = ast_node.operation_types
-            if operation_types:  # pragma: no cover else
+            if operation_types:  # pragma: no branch
                 for operation_type in operation_types:
                     if operation_type.operation == operation:
                         return operation_type.type
@@ -580,7 +580,7 @@ def get_all_implements_interface_nodes(
     implements_nodes: list[NamedTypeNode] = []
     for node in nodes:
         iface_nodes = node.interfaces
-        if iface_nodes:  # pragma: no cover else
+        if iface_nodes:  # pragma: no branch
             implements_nodes.extend(
                 iface_node
                 for iface_node in iface_nodes
@@ -599,7 +599,7 @@ def get_union_member_type_nodes(
     member_type_nodes: list[NamedTypeNode] = []
     for node in nodes:
         type_nodes = node.types
-        if type_nodes:  # pragma: no cover else
+        if type_nodes:  # pragma: no branch
             member_type_nodes.extend(
                 type_node
                 for type_node in type_nodes
@@ -616,6 +616,6 @@ def get_deprecated_directive_node(
         for directive in directives:
             if (
                 directive.name.value == GraphQLDeprecatedDirective.name
-            ):  # pragma: no cover else
+            ):  # pragma: no branch
                 return directive
     return None  # pragma: no cover
