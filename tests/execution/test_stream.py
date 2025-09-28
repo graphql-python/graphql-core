@@ -32,6 +32,7 @@ pytestmark = [
 try:  # pragma: no cover
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
+
     async def anext(iterator):
         """Return the next item from an async iterator."""
         return await iterator.__anext__()

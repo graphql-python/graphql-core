@@ -8,8 +8,7 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
 from .error import GraphQLError
 from .execution import ExecutionContext, ExecutionResult, Middleware, execute
 from .language import Source, parse
-from .pyutils import AwaitableOrValue
-from .pyutils import is_awaitable as default_is_awaitable
+from .pyutils.is_awaitable import is_awaitable as default_is_awaitable
 from .type import (
     GraphQLFieldResolver,
     GraphQLSchema,
@@ -18,6 +17,8 @@ from .type import (
 )
 
 if TYPE_CHECKING:
+    from .pyutils import AwaitableOrValue
+
     try:
         from typing import TypeGuard
     except ImportError:  # Python < 3.10
@@ -155,7 +156,7 @@ def graphql_sync(
 
     # Assert that the execution was synchronous.
     if default_is_awaitable(result):
-        ensure_future(cast("Awaitable[ExecutionResult]", result)).cancel()
+        ensure_future(result).cancel()
         msg = "GraphQL execution failed to complete synchronously."
         raise RuntimeError(msg)
 

@@ -48,7 +48,7 @@ from ..pyutils import (
     inspect,
     is_iterable,
 )
-from ..pyutils import is_awaitable as default_is_awaitable
+from ..pyutils.is_awaitable import is_awaitable as default_is_awaitable
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
@@ -84,6 +84,11 @@ from .collect_fields import (
     collect_subfields,
 )
 from .incremental_publisher import (
+    IncrementalPublisherContext,
+    build_incremental_response,
+)
+from .middleware import MiddlewareManager
+from .types import (
     BareDeferredGroupedFieldSetResult,
     BareStreamItemsResult,
     CancellableStreamRecord,
@@ -93,7 +98,6 @@ from .incremental_publisher import (
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalDataRecord,
-    IncrementalPublisherContext,
     NonReconcilableDeferredGroupedFieldSetResult,
     NonReconcilableStreamItemsResult,
     ReconcilableDeferredGroupedFieldSetResult,
@@ -102,10 +106,8 @@ from .incremental_publisher import (
     StreamItemsResult,
     SubsequentResultRecord,
     TerminatingStreamItemsResult,
-    build_incremental_response,
     is_reconcilable_stream_items_result,
 )
-from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 if TYPE_CHECKING:
@@ -119,6 +121,7 @@ if TYPE_CHECKING:
 try:  # pragma: no cover
     anext  # noqa: B018  # pyright: ignore
 except NameError:  # pragma: no cover (Python < 3.10)
+
     async def anext(iterator: AsyncIterator) -> Any:
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
@@ -644,6 +647,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_map,
             )
             if self.is_awaitable(completed):
+
                 async def await_completed() -> Any:
                     try:
                         return await completed
@@ -1211,6 +1215,7 @@ class ExecutionContext(IncrementalPublisherContext):
             )
 
             if is_awaitable(completed_item):
+
                 async def await_completed() -> Any:
                     try:
                         resolved = await completed_item  # type: ignore
@@ -2667,6 +2672,7 @@ def execute_subscription(
 
         result = resolve_fn(context.root_value, info, **args)
         if context.is_awaitable(result):
+
             async def await_result() -> AsyncIterable[Any]:
                 try:
                     return assert_event_stream(await result)

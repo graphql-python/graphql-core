@@ -7,19 +7,17 @@ import pytest
 
 from graphql.error import GraphQLError
 from graphql.execution import (
+    CompletedResult,
+    DeferredFragmentRecord,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalDeferResult,
     IncrementalResult,
     InitialIncrementalExecutionResult,
+    PendingResult,
     SubsequentIncrementalExecutionResult,
     execute,
     experimental_execute_incrementally,
-)
-from graphql.execution.incremental_publisher import (
-    CompletedResult,
-    DeferredFragmentRecord,
-    PendingResult,
 )
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import Path, is_awaitable
