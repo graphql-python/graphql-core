@@ -186,8 +186,10 @@ class SubFieldPlan(NamedTuple):
 class IncrementalContext:
     """A context for incremental execution."""
 
-    errors: list[GraphQLError] | None = None
-    defer_usage_set: DeferUsageSet | None = None
+    errors: list[GraphQLError] | None
+    defer_usage_set: DeferUsageSet | None
+
+    __slots__ = "defer_usage_set", "errors"
 
     def __init__(self, defer_usage_set: DeferUsageSet | None = None) -> None:
         self.errors = None
