@@ -346,7 +346,6 @@ def describe_type_system_schema():
     def describe_validity():
         def describe_when_not_assumed_valid():
             def configures_the_schema_to_still_needing_validation():
-                # noinspection PyProtectedMember
                 assert GraphQLSchema(assume_valid=False).validation_errors is None
 
     def describe_a_schema_must_contain_uniquely_named_types():
@@ -422,7 +421,6 @@ def describe_type_system_schema():
 
         def describe_when_assumed_valid():
             def configures_the_schema_to_have_no_errors():
-                # noinspection PyProtectedMember
                 assert GraphQLSchema(assume_valid=True).validation_errors == []
 
     def describe_ast_nodes():

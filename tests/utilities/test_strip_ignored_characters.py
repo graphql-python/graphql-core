@@ -171,7 +171,6 @@ def describe_strip_ignored_characters():
         ExpectStripped('""",|"""').to_stay_the_same()
 
     def strips_ignored_characters_inside_block_strings():
-        # noinspection PyShadowingNames
         def expect_stripped_string(block_str: str):
             original_value = lex_value(block_str)
             stripped_value = lex_value(strip_ignored_characters(block_str))
@@ -206,7 +205,6 @@ def describe_strip_ignored_characters():
         expect_stripped_string('"""\n a\n b"""').to_equal('"""a\nb"""')
         expect_stripped_string('"""\na\n b\nc"""').to_equal('"""a\n b\nc"""')
 
-    # noinspection PyShadowingNames
     def strips_kitchen_sink_query_but_maintains_the_exact_same_ast(
         kitchen_sink_query,  # noqa: F811
     ):
@@ -225,7 +223,6 @@ def describe_strip_ignored_characters():
         )
         assert stripped_ast == query_ast
 
-    # noinspection PyShadowingNames
     def strips_kitchen_sink_sdl_but_maintains_the_exact_same_ast(
         kitchen_sink_sdl,  # noqa: F811
     ):

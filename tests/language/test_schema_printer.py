@@ -16,12 +16,10 @@ def describe_printer_sdl_document():
     def produces_helpful_error_messages():
         bad_ast = {"random": "Data"}
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             print_ast(bad_ast)  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Not an AST Node: {'random': 'Data'}."
 
-    # noinspection PyShadowingNames
     def prints_kitchen_sink_without_altering_ast(kitchen_sink_sdl):  # noqa: F811
         ast = parse(kitchen_sink_sdl, no_location=True)
 

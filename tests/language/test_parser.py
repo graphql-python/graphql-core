@@ -192,7 +192,6 @@ def describe_parser():
         assert isinstance(value, StringValueNode)
         assert value.value == "Has a \u0a0a multi-byte character."
 
-    # noinspection PyShadowingNames
     def parses_kitchen_sink(kitchen_sink_query):  # noqa: F811
         parse_ccn(kitchen_sink_query)
 

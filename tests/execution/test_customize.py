@@ -11,7 +11,6 @@ pytestmark = pytest.mark.anyio
 try:
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
-    # noinspection PyShadowingBuiltins
     async def anext(iterator):
         """Return the next item from an async iterator."""
         return await iterator.__anext__()

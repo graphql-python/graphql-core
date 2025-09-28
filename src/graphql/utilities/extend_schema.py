@@ -279,7 +279,6 @@ class ExtendSchemaImpl:
             assume_valid=assume_valid,
         )
 
-    # noinspection PyTypeChecker,PyUnresolvedReferences
     def replace_type(self, type_: GraphQLType) -> GraphQLType:
         """Replace a GraphQL type."""
         if is_list_type(type_):
@@ -295,7 +294,6 @@ class ExtendSchemaImpl:
         # validation with validate_schema() will produce more actionable results.
         return self.type_map[type_.name]
 
-    # noinspection PyShadowingNames
     def replace_directive(self, directive: GraphQLDirective) -> GraphQLDirective:
         """Replace a GraphQL directive."""
         if is_specified_directive(directive):
@@ -351,7 +349,6 @@ class ExtendSchemaImpl:
             **self.build_input_field_map(extensions),
         }
 
-    # noinspection PyShadowingNames
     def extend_input_object_type(
         self,
         type_: GraphQLInputObjectType,
@@ -421,7 +418,6 @@ class ExtendSchemaImpl:
             **self.build_field_map(extensions),
         }
 
-    # noinspection PyShadowingNames
     def extend_object_type(self, type_: GraphQLObjectType) -> GraphQLObjectType:
         """Extend a GraphQL object type."""
         kwargs = type_.to_kwargs()
@@ -459,7 +455,6 @@ class ExtendSchemaImpl:
             **self.build_field_map(extensions),
         }
 
-    # noinspection PyShadowingNames
     def extend_interface_type(
         self, type_: GraphQLInterfaceType
     ) -> GraphQLInterfaceType:
@@ -500,7 +495,6 @@ class ExtendSchemaImpl:
             ),
         )
 
-    # noinspection PyShadowingNames
     def extend_field(self, field: GraphQLField) -> GraphQLField:
         """Extend a GraphQL field."""
         return GraphQLField(
@@ -520,7 +514,6 @@ class ExtendSchemaImpl:
             )
         )
 
-    # noinspection PyShadowingNames
     def get_operation_types(
         self, nodes: Collection[SchemaDefinitionNode | SchemaExtensionNode]
     ) -> dict[OperationType, GraphQLNamedType]:
@@ -534,7 +527,6 @@ class ExtendSchemaImpl:
             for operation_type in node.operation_types or []
         }
 
-    # noinspection PyShadowingNames
     def get_named_type(self, node: NamedTypeNode) -> GraphQLNamedType:
         """Get name GraphQL type for a given named type node."""
         name = node.name.value

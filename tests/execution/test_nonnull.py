@@ -25,7 +25,6 @@ promise_error = RuntimeError("promise")
 promise_non_null_error = RuntimeError("promiseNonNull")
 
 
-# noinspection PyPep8Naming,PyMethodMayBeStatic
 class ThrowingData:
     def sync(self, _info):
         raise sync_error
@@ -52,7 +51,6 @@ class ThrowingData:
         return ThrowingData()
 
 
-# noinspection PyPep8Naming,PyMethodMayBeStatic
 class NullingData:
     def sync(self, _info):
         return None
@@ -502,7 +500,6 @@ def describe_execute_handles_non_nullable_types():
             )
 
     def describe_handles_non_null_argument():
-        # noinspection PyPep8Naming
         schema_with_non_null_arg = GraphQLSchema(
             GraphQLObjectType(
                 "Query",

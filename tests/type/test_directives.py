@@ -59,7 +59,6 @@ def describe_type_system_directive():
         assert directive.locations == tuple(locations)
 
     def directive_accepts_input_types_as_arguments():
-        # noinspection PyTypeChecker
         directive = GraphQLDirective(
             name="Foo",
             locations=[],
@@ -70,7 +69,6 @@ def describe_type_system_directive():
         assert arg.type is GraphQLString
 
     def directive_accepts_strings_as_locations():
-        # noinspection PyTypeChecker
         directive = GraphQLDirective(
             name="Foo",
             locations=["SCHEMA", "OBJECT"],  # type: ignore
@@ -114,14 +112,11 @@ def describe_type_system_directive():
 
     def rejects_a_directive_with_incorrectly_typed_name():
         with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
-            # noinspection PyArgumentList
             GraphQLDirective()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLDirective(None, [])  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLDirective(42, {})  # type: ignore
         assert str(exc_info.value) == "Expected name to be a string."
 
@@ -148,7 +143,6 @@ def describe_type_system_directive():
 
     def rejects_a_directive_with_undefined_locations():
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=None)  # type: ignore
         assert str(exc_info.value) == (
             "Foo locations must be specified"
@@ -157,14 +151,12 @@ def describe_type_system_directive():
 
     def rejects_a_directive_with_incorrectly_typed_locations():
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations="bad")  # type: ignore
         assert (
             str(exc_info.value) == "Foo locations must be specified"
             " as a collection of DirectiveLocation enum values."
         )
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=["bad"])  # type: ignore
         assert str(exc_info.value) == (
             "Foo locations must be specified"

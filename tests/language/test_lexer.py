@@ -126,13 +126,11 @@ def describe_lexer():
             """
         )
 
-    # noinspection PyArgumentEqualDefault
     def lexes_empty_string():
         token = lex_one('""')
         assert token == Token(TokenKind.STRING, 0, 2, 1, 1, "")
         assert token.value == ""
 
-    # noinspection PyArgumentEqualDefault
     def lexes_strings():
         assert lex_one('""') == Token(TokenKind.STRING, 0, 2, 1, 1, "")
         assert lex_one('"simple"') == Token(TokenKind.STRING, 0, 8, 1, 1, "simple")
@@ -345,7 +343,6 @@ def describe_lexer():
             (1, 6),
         )
 
-    # noinspection PyArgumentEqualDefault
     def lexes_block_strings():
         assert lex_one('""""""') == Token(TokenKind.BLOCK_STRING, 0, 6, 1, 1, "")
         assert lex_one('"""simple"""') == Token(
@@ -417,7 +414,6 @@ def describe_lexer():
             (1, 31),
         )
 
-    # noinspection PyArgumentEqualDefault
     def lexes_numbers():
         assert lex_one("0") == Token(TokenKind.INT, 0, 1, 1, 1, "0")
         assert lex_one("1") == Token(TokenKind.INT, 0, 1, 1, 1, "1")
@@ -513,7 +509,6 @@ def describe_lexer():
             "1.234_5", "Invalid number, expected digit but got: '_'.", (1, 6)
         )
 
-    # noinspection PyArgumentEqualDefault
     def lexes_punctuation():
         assert lex_one("!") == Token(TokenKind.BANG, 0, 1, 1, 1, None)
         assert lex_one("?") == Token(TokenKind.QUESTION_MARK, 0, 1, 1, 1, None)
@@ -546,7 +541,6 @@ def describe_lexer():
         assert_syntax_error("\udbff", "Invalid character: U+DBFF.", (1, 1))
         assert_syntax_error("\udead", "Invalid character: U+DEAD.", (1, 1))
 
-    # noinspection PyArgumentEqualDefault
     def lex_reports_useful_information_for_dashes_in_names():
         source = Source("a-b")
         lexer = Lexer(source)

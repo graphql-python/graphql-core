@@ -119,7 +119,6 @@ if TYPE_CHECKING:
 try:  # pragma: no cover
     anext  # noqa: B018  # pyright: ignore
 except NameError:  # pragma: no cover (Python < 3.10)
-    # noinspection PyShadowingBuiltins
     async def anext(iterator: AsyncIterator) -> Any:
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
@@ -445,7 +444,6 @@ class ExecutionContext(IncrementalPublisherContext):
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Execute the root grouped field set."""
-        # noinspection PyTypeChecker
         return (
             self.execute_fields_serially
             if operation == OperationType.MUTATION
@@ -506,7 +504,6 @@ class ExecutionContext(IncrementalPublisherContext):
             graphql_wrapped_result.add_increments(resolved.increments)
             return graphql_wrapped_result
 
-        # noinspection PyTypeChecker
         return async_reduce(
             reducer, grouped_field_set.items(), GraphQLWrappedResult({})
         )
@@ -647,7 +644,6 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_map,
             )
             if self.is_awaitable(completed):
-                # noinspection PyShadowingNames
                 async def await_completed() -> Any:
                     try:
                         return await completed
@@ -1168,7 +1164,6 @@ class ExecutionContext(IncrementalPublisherContext):
         if not awaitable_indices:
             return graphql_wrapped_result
 
-        # noinspection PyShadowingNames
         async def get_completed_results() -> GraphQLWrappedResult[list[Any]]:
             if len(awaitable_indices) == 1:
                 # If there is only one index, avoid the overhead of parallelization.
@@ -1216,7 +1211,6 @@ class ExecutionContext(IncrementalPublisherContext):
             )
 
             if is_awaitable(completed_item):
-                # noinspection PyShadowingNames
                 async def await_completed() -> Any:
                     try:
                         resolved = await completed_item  # type: ignore
@@ -1421,7 +1415,6 @@ class ExecutionContext(IncrementalPublisherContext):
             )
             raise GraphQLError(msg, to_nodes(field_group))
 
-        # noinspection PyTypeChecker
         return runtime_type
 
     def complete_object_value(
@@ -2674,7 +2667,6 @@ def execute_subscription(
 
         result = resolve_fn(context.root_value, info, **args)
         if context.is_awaitable(result):
-            # noinspection PyShadowingNames
             async def await_result() -> AsyncIterable[Any]:
                 try:
                     return assert_event_stream(await result)

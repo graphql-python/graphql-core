@@ -175,14 +175,11 @@ def describe_type_system_scalars():
 
     def rejects_a_scalar_type_with_incorrectly_typed_name():
         with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
-            # noinspection PyArgumentList
             GraphQLScalarType()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLScalarType(None)  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLScalarType(42, {})  # type: ignore
         assert str(exc_info.value) == "Expected name to be a string."
 
@@ -451,14 +448,11 @@ def describe_type_system_objects():
 
     def rejects_an_object_type_with_incorrectly_typed_name():
         with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
-            # noinspection PyArgumentList
             GraphQLObjectType()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLObjectType(None, {})  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLObjectType(42, {})  # type: ignore
         assert str(exc_info.value) == "Expected name to be a string."
 
@@ -666,7 +660,6 @@ def describe_type_system_unions():
         with pytest.raises(
             TypeError, match="missing 1 required positional argument: 'types'"
         ):
-            # noinspection PyArgumentList
             GraphQLUnionType("SomeUnion")  # type: ignore
         union_type = GraphQLUnionType("SomeUnion", None)  # type: ignore
         assert union_type.types == ()
@@ -870,7 +863,6 @@ def describe_type_system_enums():
         assert msg == "Value 'fooValue' does not exist in 'SomeEnum' enum."
         assert enum_type.parse_value("BAR") == ["barValue"]
         with pytest.raises(GraphQLError) as exc_info:
-            # noinspection PyTypeChecker
             enum_type.parse_value(["barValue"])  # type: ignore
         msg = exc_info.value.message
         assert msg == "Enum 'SomeEnum' cannot represent non-string value: ['barValue']."
@@ -915,14 +907,11 @@ def describe_type_system_enums():
 
     def rejects_an_enum_type_with_incorrectly_typed_name():
         with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
-            # noinspection PyArgumentList
             GraphQLEnumType()  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLEnumType(None, {})  # type: ignore
         assert str(exc_info.value) == "Must provide name."
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLEnumType(42, {})  # type: ignore
         assert str(exc_info.value) == "Expected name to be a string."
 
@@ -945,10 +934,8 @@ def describe_type_system_enums():
 
     def rejects_an_enum_type_without_values():
         with pytest.raises(TypeError, match=r"missing .* required .* 'values'"):
-            # noinspection PyArgumentList
             GraphQLEnumType("SomeEnum")  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLEnumType("SomeEnum", values=None)  # type: ignore
         assert str(exc_info.value) == (
             "SomeEnum values must be an Enum or a mapping with value names as keys."
@@ -956,7 +943,6 @@ def describe_type_system_enums():
 
     def rejects_an_enum_type_with_incorrectly_typed_values():
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
         assert str(exc_info.value) == (
             "SomeEnum values must be an Enum or a mapping with value names as keys."
@@ -1078,14 +1064,11 @@ def describe_type_system_input_objects():
 
         def rejects_an_input_object_type_with_incorrectly_typed_name():
             with pytest.raises(TypeError, match=r"missing .* required .* 'name'"):
-                # noinspection PyArgumentList
                 GraphQLInputObjectType()  # type: ignore
             with pytest.raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
                 GraphQLInputObjectType(None, {})  # type: ignore
             assert str(exc_info.value) == "Must provide name."
             with pytest.raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
                 GraphQLInputObjectType(42, {})  # type: ignore
             assert str(exc_info.value) == "Expected name to be a string."
 
@@ -1150,7 +1133,6 @@ def describe_type_system_arguments():
 
     def rejects_an_argument_without_type():
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            # noinspection PyArgumentList
             GraphQLArgument()  # type: ignore
 
 
@@ -1182,7 +1164,6 @@ def describe_type_system_input_fields():
 
     def rejects_an_input_field_without_type():
         with pytest.raises(TypeError, match="missing 1 required positional argument"):
-            # noinspection PyArgumentList
             GraphQLInputField()  # type: ignore
 
     def deprecation_reason_is_preserved_on_fields():

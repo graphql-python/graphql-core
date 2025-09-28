@@ -32,7 +32,6 @@ def describe_value_from_ast():
         return value_from_ast(ast, type_, variables)
 
     def rejects_empty_input():
-        # noinspection PyTypeChecker
         assert value_from_ast(None, GraphQLBoolean) is Undefined
 
     def converts_according_to_input_coercion_rules():

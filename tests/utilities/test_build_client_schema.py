@@ -670,7 +670,6 @@ def describe_type_system_build_schema_from_introspection():
 
         def throws_when_introspection_is_missing_schema_property():
             with pytest.raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
                 build_client_schema(None)  # type: ignore
 
             assert str(exc_info.value) == (
@@ -680,7 +679,6 @@ def describe_type_system_build_schema_from_introspection():
             )
 
             with pytest.raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
                 build_client_schema({})  # type: ignore
 
             assert str(exc_info.value) == (

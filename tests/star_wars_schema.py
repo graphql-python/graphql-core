@@ -212,7 +212,6 @@ droid_type = GraphQLObjectType(
 #     droid(id: String!): Droid
 #   }
 
-# noinspection PyShadowingBuiltins
 query_type = GraphQLObjectType(
     "Query",
     lambda: {

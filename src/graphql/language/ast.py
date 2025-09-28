@@ -404,7 +404,6 @@ class Node:
 
     def __deepcopy__(self, memo: dict) -> Node:
         """Create a deep copy of the node"""
-        # noinspection PyArgumentList
         return self.__class__(
             **{key: deepcopy(getattr(self, key), memo) for key in self.keys}
         )
@@ -422,7 +421,6 @@ class Node:
         cls.kind = camel_to_snake(name)
         keys: list[str] = []
         for base in cls.__bases__:
-            # noinspection PyUnresolvedReferences
             keys.extend(base.keys)  # type: ignore
         keys.extend(cls.__slots__)
         cls.keys = tuple(keys)

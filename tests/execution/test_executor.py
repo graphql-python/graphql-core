@@ -49,7 +49,6 @@ def describe_execute_handles_basic_execution_tasks():
         assert result == ({"a": "rootValue"}, None)
 
     async def executes_arbitrary_code():
-        # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class Data:
             def a(self, _info):
                 return "Apple"
@@ -78,7 +77,6 @@ def describe_execute_handles_basic_execution_tasks():
             def promise(self, _info):
                 return promise_data()
 
-        # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class DeepData:
             def a(self, _info):
                 return "Already Been Done"
@@ -418,7 +416,6 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Data:
             def syncOk(self, _info):
                 return "sync ok"
@@ -932,7 +929,6 @@ def describe_execute_handles_basic_execution_tasks():
 
         document = parse("{ a, b, c, d, e}")
 
-        # noinspection PyMethodMayBeStatic,PyMethodMayBeStatic
         class Data:
             def a(self, _info):
                 return "a"

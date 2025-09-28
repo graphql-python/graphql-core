@@ -9,7 +9,6 @@ schema = GraphQLSchema(
 )
 
 
-# noinspection PyMethodMayBeStatic
 class RootValue:
     def a(self, *_args):
         return "a"

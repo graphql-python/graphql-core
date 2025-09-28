@@ -420,7 +420,6 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             None,
         )
 
-        # noinspection PyShadowingNames
         def _root_value(access: str) -> Any:
             if access == "dict":
                 return {

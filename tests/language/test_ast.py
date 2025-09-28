@@ -208,7 +208,6 @@ def describe_node_class():
         assert node3 != node
         assert hash(node3) != hash(node)
 
-    # noinspection PyProtectedMember
     def caches_are_hashed():
         node = SampleTestNode(alpha=1)
         assert not hasattr(node, "_hash")

@@ -154,7 +154,6 @@ class DirectiveFields(GraphQLFieldMap):
     def locations(directive, _info):
         return directive.locations
 
-    # noinspection PyPep8Naming
     @staticmethod
     def args(directive, _info, includeDeprecated=False):
         items = directive.args.items()
@@ -343,7 +342,6 @@ class TypeFields(GraphQLFieldMap):
     def specified_by_url(type_, _info):
         return getattr(type_, "specified_by_url", None)
 
-    # noinspection PyPep8Naming
     @staticmethod
     def fields(type_, _info, includeDeprecated=False):
         if not (is_object_type(type_) or is_interface_type(type_)):
@@ -369,7 +367,6 @@ class TypeFields(GraphQLFieldMap):
             info.schema.get_possible_types(type_) if is_abstract_type(type_) else None
         )
 
-    # noinspection PyPep8Naming
     @staticmethod
     def enum_values(type_, _info, includeDeprecated=False):
         if not is_enum_type(type_):
@@ -381,7 +378,6 @@ class TypeFields(GraphQLFieldMap):
             else [item for item in items if item[1].deprecation_reason is None]
         )
 
-    # noinspection PyPep8Naming
     @staticmethod
     def input_fields(type_, _info, includeDeprecated=False):
         if not is_input_object_type(type_):
@@ -450,7 +446,6 @@ class FieldFields(GraphQLFieldMap):
     def description(item, _info):
         return item[1].description
 
-    # noinspection PyPep8Naming
     @staticmethod
     def args(item, _info, includeDeprecated=False):
         items = item[1].args.items()

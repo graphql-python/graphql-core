@@ -483,7 +483,6 @@ def describe_execute_union_and_intersection_types():
             None,
         )
 
-    # noinspection PyPep8Naming
     def gets_execution_info_in_resolver():
         encountered = {}
 

@@ -110,7 +110,6 @@ def describe_schema_builder():
         )
         source = "{ add(x: 34, y: 55) }"
 
-        # noinspection PyMethodMayBeStatic
         class RootValue:
             def add(self, _info, x, y):
                 return x + y

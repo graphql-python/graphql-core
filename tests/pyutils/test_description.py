@@ -96,12 +96,10 @@ def describe_description():
 
     def can_only_register_types():
         with pytest.raises(TypeError, match="Only types can be registered\\."):
-            # noinspection PyTypeChecker
             register_description("foo")  # type: ignore
 
     def can_only_unregister_types():
         with pytest.raises(TypeError, match="Only types can be unregistered\\."):
-            # noinspection PyTypeChecker
             unregister_description("foo")  # type: ignore
 
     def describe_graphql_types():

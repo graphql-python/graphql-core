@@ -144,7 +144,6 @@ class TypeInfo:
         if method:
             method()
 
-    # noinspection PyUnusedLocal
     def enter_selection_set(self, _node: SelectionSetNode) -> None:
         named_type = get_named_type(self.get_type())
         self._parent_type_stack.append(
@@ -196,7 +195,6 @@ class TypeInfo:
         )
         self._input_type_stack.append(arg_type if is_input_type(arg_type) else None)
 
-    # noinspection PyUnusedLocal
     def enter_list_value(self, _node: ListValueNode) -> None:
         list_type = get_nullable_type(self.get_input_type())
         item_type = list_type.of_type if is_list_type(list_type) else list_type

@@ -8,7 +8,6 @@ document = parse("{ listField }")
 
 
 class Data:
-    # noinspection PyPep8Naming
     @staticmethod
     async def listField(_info):
         for index in range(1000):

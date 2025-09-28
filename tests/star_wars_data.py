@@ -22,24 +22,20 @@ class Character:
     appearsIn: Collection[str]
 
 
-# noinspection PyPep8Naming
 class Human(Character):
     type = "Human"
     homePlanet: str
 
-    # noinspection PyShadowingBuiltins
     def __init__(self, id, name, friends, appearsIn, homePlanet):  # noqa: A002
         self.id, self.name = id, name
         self.friends, self.appearsIn = friends, appearsIn
         self.homePlanet = homePlanet
 
 
-# noinspection PyPep8Naming
 class Droid(Character):
     type = "Droid"
     primaryFunction: str
 
-    # noinspection PyShadowingBuiltins
     def __init__(self, id, name, friends, appearsIn, primaryFunction):  # noqa: A002
         self.id, self.name = id, name
         self.friends, self.appearsIn = friends, appearsIn
@@ -109,7 +105,6 @@ artoo = Droid(
 droid_data: dict[str, Droid] = {"2000": threepio, "2001": artoo}
 
 
-# noinspection PyShadowingBuiltins
 async def get_character(id: str) -> Character | None:  # noqa: A002
     """Helper function to get a character by ID."""
     # We use an async function just to illustrate that GraphQL-core supports it.
@@ -131,19 +126,16 @@ def get_hero(episode: int) -> Character:
     return artoo
 
 
-# noinspection PyShadowingBuiltins
 def get_human(id: str) -> Human | None:  # noqa: A002
     """Allows us to query for the human with the given id."""
     return human_data.get(id)
 
 
-# noinspection PyShadowingBuiltins
 def get_droid(id: str) -> Droid | None:  # noqa: A002
     """Allows us to query for the droid with the given id."""
     return droid_data.get(id)
 
 
-# noinspection PyUnusedLocal
 def get_secret_backstory(character: Character) -> str:  # noqa: ARG001
     """Raise an error when attempting to get the secret backstory."""
     raise RuntimeError("secretBackstory is secret.")

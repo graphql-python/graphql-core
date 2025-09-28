@@ -319,7 +319,6 @@ def does_fragment_condition_match(
     if conditional_type is type_:
         return True
     if is_abstract_type(conditional_type):
-        # noinspection PyTypeChecker
         return schema.is_sub_type(conditional_type, type_)
     return False
 

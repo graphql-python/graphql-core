@@ -23,7 +23,6 @@ from graphql.type import (
 pytestmark = pytest.mark.anyio
 
 
-# noinspection PyPep8Naming
 class NumberHolder:
     theNumber: int
 
@@ -31,7 +30,6 @@ class NumberHolder:
         self.theNumber = originalNumber
 
 
-# noinspection PyPep8Naming
 class Root:
     numberHolder: NumberHolder
 
@@ -69,7 +67,6 @@ numberHolderType = GraphQLObjectType(
     },
 )
 
-# noinspection PyPep8Naming
 schema = GraphQLSchema(
     GraphQLObjectType("Query", {"numberHolder": GraphQLField(numberHolderType)}),
     GraphQLObjectType(

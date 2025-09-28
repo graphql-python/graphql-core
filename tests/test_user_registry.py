@@ -77,7 +77,6 @@ class UserRegistry:
     async def update(self, id_: str, **kwargs) -> User:
         """Update a user object in the registry"""
         await sleep(0)
-        # noinspection PyProtectedMember
         user = self._registry[id_]._replace(**kwargs)
         self._registry[id_] = user
         self.emit_event(MutationEnum.UPDATED, user)
@@ -139,13 +138,11 @@ async def resolve_create_user(_root, info, data):
     return await info.context["registry"].create(**data)
 
 
-# noinspection PyShadowingBuiltins
 async def resolve_update_user(_root, info, id, data):  # noqa: A002
     """Resolver function for updating a user object"""
     return await info.context["registry"].update(id, **data)
 
 
-# noinspection PyShadowingBuiltins
 async def resolve_delete_user(_root, info, id):  # noqa: A002
     """Resolver function for deleting a user object"""
     user = await info.context["registry"].get(id)
@@ -153,7 +150,6 @@ async def resolve_delete_user(_root, info, id):  # noqa: A002
     return True
 
 
-# noinspection PyShadowingBuiltins
 async def subscribe_user(_root, info, id=None):  # noqa: A002
     """Subscribe to mutations of a specific user object or all user objects"""
     async_iterator = info.context["registry"].event_iterator(id)
@@ -161,7 +157,6 @@ async def subscribe_user(_root, info, id=None):  # noqa: A002
         yield await event if is_awaitable(event) else event  # pragma: no cover exit
 
 
-# noinspection PyShadowingBuiltins,PyUnusedLocal
 async def resolve_subscription_user(event, info, id):  # noqa: ARG001, A002
     """Resolver function for user subscriptions"""
     user = event["user"]
@@ -261,7 +256,6 @@ def describe_mutation():
 
             return receive
 
-        # noinspection PyProtectedMember
         pubsub = context["registry"]._pubsub  # noqa: SLF001
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))
@@ -312,7 +306,6 @@ def describe_mutation():
 
             return receive
 
-        # noinspection PyProtectedMember
         pubsub = context["registry"]._pubsub  # noqa: SLF001
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))
@@ -367,7 +360,6 @@ def describe_mutation():
 
             return receive
 
-        # noinspection PyProtectedMember
         pubsub = context["registry"]._pubsub  # noqa: SLF001
         pubsub[None].subscribers.add(subscriber("User"))
         pubsub["0"].subscribers.add(subscriber("User 0"))

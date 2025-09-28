@@ -19,7 +19,6 @@ from graphql.type import (
 def describe_execute_handles_execution_with_a_complex_schema():
     def executes_using_a_schema():
         class Article:
-            # noinspection PyShadowingBuiltins
             def __init__(self, id: int):  # noqa: A002
                 self.id = id
                 self.isPublished = True
@@ -71,7 +70,6 @@ def describe_execute_handles_execution_with_a_complex_schema():
             },
         )
 
-        # noinspection PyShadowingBuiltins
         BlogQuery = GraphQLObjectType(
             "Query",
             {
@@ -89,7 +87,6 @@ def describe_execute_handles_execution_with_a_complex_schema():
 
         BlogSchema = GraphQLSchema(BlogQuery)
 
-        # noinspection PyPep8Naming,PyMethodMayBeStatic
         class Author:
             def pic(self, _info, width: int, height: int) -> Pic:
                 return Pic(123, width, height)

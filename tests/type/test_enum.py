@@ -28,7 +28,6 @@ class ColorTypeEnumValues(Enum):
 
 
 class Complex1:
-    # noinspection PyMethodMayBeStatic
     some_random_object = datetime.now()  # noqa: DTZ005
 
 

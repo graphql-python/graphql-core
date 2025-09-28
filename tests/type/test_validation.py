@@ -1012,7 +1012,6 @@ def describe_type_system_object_fields_must_have_output_types():
         assert validate_schema(schema) == []
 
     def rejects_an_empty_object_field_type():
-        # noinspection PyTypeChecker
         schema = _schema_with_object_field(None)  # type: ignore
         assert validate_schema(schema) == [
             {
@@ -1069,7 +1068,6 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
             "BadObject",
             {"f": GraphQLField(GraphQLString)},
         )
-        # noinspection PyTypeChecker
         query_type.interfaces = (None,)
         schema = GraphQLSchema(query_type)
 
@@ -1307,7 +1305,6 @@ def describe_type_system_interface_fields_must_have_output_types():
         assert validate_schema(schema) == []
 
     def rejects_an_empty_interface_field_type():
-        # noinspection PyTypeChecker
         schema = _schema_with_interface_field(None)  # type: ignore
         assert validate_schema(schema) == [
             {
@@ -1421,7 +1418,6 @@ def describe_type_system_arguments_must_have_input_types():
         assert validate_schema(schema) == []
 
     def rejects_an_empty_field_arg_type():
-        # noinspection PyTypeChecker
         schema = _schema_with_arg(None)  # type: ignore
         assert validate_schema(schema) == [
             {
@@ -1538,7 +1534,6 @@ def describe_type_system_input_object_fields_must_have_input_types():
         assert validate_schema(schema) == []
 
     def rejects_an_empty_input_field_type():
-        # noinspection PyTypeChecker
         schema = _schema_with_input_field(None)  # type: ignore
         assert validate_schema(schema) == [
             {

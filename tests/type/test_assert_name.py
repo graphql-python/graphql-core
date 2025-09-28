@@ -35,7 +35,6 @@ def describe_assert_enum_value_name():
 
     def throws_for_non_strings():
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             assert_enum_value_name({})  # type: ignore
         msg = str(exc_info.value)
         assert msg == "Expected name to be a string."

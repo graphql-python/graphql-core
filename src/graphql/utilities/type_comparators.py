@@ -25,12 +25,10 @@ def is_equal_type(type_a: GraphQLType, type_b: GraphQLType) -> bool:
 
     # If either type is non-null, the other must also be non-null.
     if is_non_null_type(type_a) and is_non_null_type(type_b):
-        # noinspection PyUnresolvedReferences
         return is_equal_type(type_a.of_type, type_b.of_type)
 
     # If either type is a list, the other must also be a list.
     if is_list_type(type_a) and is_list_type(type_b):
-        # noinspection PyUnresolvedReferences
         return is_equal_type(type_a.of_type, type_b.of_type)
 
     # Otherwise the types are not equal.

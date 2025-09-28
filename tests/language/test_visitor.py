@@ -86,7 +86,6 @@ def get_value(node):
 def describe_visitor():
     def visit_with_invalid_node():
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             visit("invalid", Visitor())  # type: ignore
         assert str(exc_info.value) == "Not an AST Node: 'invalid'."
 
@@ -98,7 +97,6 @@ def describe_visitor():
                 pass
 
         with pytest.raises(TypeError) as exc_info:
-            # noinspection PyTypeChecker
             visit(ast, TestVisitor())  # type: ignore
         assert str(exc_info.value) == "Not an AST Visitor: <TestVisitor instance>."
 
@@ -734,7 +732,6 @@ def describe_visitor():
             ["leave", "document", None],
         ]
 
-    # noinspection PyShadowingNames
     def visits_kitchen_sink(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query, experimental_client_controlled_nullability=True)
         visited: list[Any] = []

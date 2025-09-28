@@ -24,7 +24,6 @@ def suggestion_list(input_: str, options: Collection[str]) -> list[str]:
         if distance is not None:
             options_by_distance[option] = distance
 
-    # noinspection PyShadowingNames
     return sorted(
         options_by_distance,
         key=lambda option: (

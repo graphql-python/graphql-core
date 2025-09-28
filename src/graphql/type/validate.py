@@ -57,7 +57,6 @@ def validate_schema(schema: GraphQLSchema) -> list[GraphQLError]:
     assert_schema(schema)
 
     # If this Schema has already been validated, return the previous results.
-    # noinspection PyProtectedMember
     errors = schema._validation_errors  # noqa: SLF001
     if errors is None:
         # Validate the schema, producing a list of errors.

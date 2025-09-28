@@ -49,7 +49,6 @@ except ImportError:  # Python < 3.8
 try:
     anext  # noqa: B018
 except NameError:  # pragma: no cover (Python < 3.10)
-    # noinspection PyShadowingBuiltins
     async def anext(iterator):
         """Return the next item from an async iterator."""
         return await iterator.__anext__()
@@ -613,7 +612,6 @@ def describe_subscription_publish_phase():
         )
 
         # The client decides to disconnect.
-        # noinspection PyUnresolvedReferences
         with suppress(RuntimeError):  # suppress error for Python < 3.8
             await subscription.aclose()  # type: ignore
 

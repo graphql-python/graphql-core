@@ -15,7 +15,6 @@ def describe_middleware():
         def default():
             doc = parse("{ field }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def field(self, _info):
                     return "resolved"
@@ -34,7 +33,6 @@ def describe_middleware():
         def single_function():
             doc = parse("{ first second }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def first(self, _info):
                     return "one"
@@ -63,7 +61,6 @@ def describe_middleware():
         def two_functions_and_field_resolvers():
             doc = parse("{ first second }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 first = "one"
                 second = "two"
@@ -96,7 +93,6 @@ def describe_middleware():
         async def single_async_function():
             doc = parse("{ first second }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 async def first(self, _info):
                     return "one"
@@ -126,7 +122,6 @@ def describe_middleware():
         def single_object():
             doc = parse("{ first second }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def first(self, _info):
                     return "one"
@@ -143,7 +138,6 @@ def describe_middleware():
             )
 
             class ReverseMiddleware:
-                # noinspection PyMethodMayBeStatic
                 def resolve(self, next_, *args, **kwargs):
                     return next_(*args, **kwargs)[::-1]
 
@@ -173,7 +167,6 @@ def describe_middleware():
         def with_function_and_object():
             doc = parse("{ field }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def field(self, _info):
                     return "resolved"
@@ -186,7 +179,6 @@ def describe_middleware():
                 return next_(*args, **kwargs)[::-1]
 
             class CaptitalizeMiddleware:
-                # noinspection PyMethodMayBeStatic
                 def resolve(self, next_, *args, **kwargs):
                     return next_(*args, **kwargs).capitalize()
 
@@ -205,7 +197,6 @@ def describe_middleware():
         async def with_async_function_and_object():
             doc = parse("{ field }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 async def field(self, _info):
                     return "resolved"
@@ -218,7 +209,6 @@ def describe_middleware():
                 return (await next_(*args, **kwargs))[::-1]
 
             class CaptitalizeMiddleware:
-                # noinspection PyMethodMayBeStatic
                 async def resolve(self, next_, *args, **kwargs):
                     return (await next_(*args, **kwargs)).capitalize()
 
@@ -280,7 +270,6 @@ def describe_middleware():
         def no_middleware():
             doc = parse("{ field }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def field(self, _info):
                     return "resolved"
@@ -296,7 +285,6 @@ def describe_middleware():
         def empty_middleware_list():
             doc = parse("{ field }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def field(self, _info):
                     return "resolved"
@@ -317,7 +305,6 @@ def describe_middleware():
             )
 
             with pytest.raises(TypeError) as exc_info:
-                # noinspection PyTypeChecker
                 execute(
                     GraphQLSchema(test_type),
                     doc,
@@ -334,7 +321,6 @@ def describe_middleware():
         def list_of_functions():
             doc = parse("{ field }")
 
-            # noinspection PyMethodMayBeStatic
             class Data:
                 def field(self, _info):
                     return "resolved"
@@ -349,7 +335,6 @@ def describe_middleware():
                 def __init__(self, name):
                     self.name = name
 
-                # noinspection PyMethodMayBeStatic
                 def resolve(self, next_, *args, **kwargs):
                     log.append(f"enter {self.name}")
                     value = next_(*args, **kwargs)

@@ -432,7 +432,6 @@ class GraphQLScalarType(GraphQLNamedType):
 
     def to_kwargs(self) -> GraphQLScalarTypeKwargs:
         """Get corresponding arguments."""
-        # noinspection PyArgumentList
         return GraphQLScalarTypeKwargs(
             super().to_kwargs(),  # type: ignore
             serialize=None
@@ -771,7 +770,6 @@ class GraphQLObjectType(GraphQLNamedType):
 
     def to_kwargs(self) -> GraphQLObjectTypeKwargs:
         """Get corresponding arguments."""
-        # noinspection PyArgumentList
         return GraphQLObjectTypeKwargs(
             super().to_kwargs(),  # type: ignore
             fields=self.fields.copy(),
@@ -876,7 +874,6 @@ class GraphQLInterfaceType(GraphQLNamedType):
 
     def to_kwargs(self) -> GraphQLInterfaceTypeKwargs:
         """Get corresponding arguments."""
-        # noinspection PyArgumentList
         return GraphQLInterfaceTypeKwargs(
             super().to_kwargs(),  # type: ignore
             fields=self.fields.copy(),
@@ -981,7 +978,6 @@ class GraphQLUnionType(GraphQLNamedType):
 
     def to_kwargs(self) -> GraphQLUnionTypeKwargs:
         """Get corresponding arguments."""
-        # noinspection PyArgumentList
         return GraphQLUnionTypeKwargs(
             super().to_kwargs(),  # type: ignore
             types=self.types,
@@ -1112,7 +1108,6 @@ class GraphQLEnumType(GraphQLNamedType):
 
     def to_kwargs(self) -> GraphQLEnumTypeKwargs:
         """Get corresponding arguments."""
-        # noinspection PyArgumentList
         return GraphQLEnumTypeKwargs(
             super().to_kwargs(),  # type: ignore
             values=self.values.copy(),
@@ -1341,7 +1336,6 @@ class GraphQLInputObjectType(GraphQLNamedType):
 
     def to_kwargs(self) -> GraphQLInputObjectTypeKwargs:
         """Get corresponding arguments."""
-        # noinspection PyArgumentList
         return GraphQLInputObjectTypeKwargs(
             super().to_kwargs(),  # type: ignore
             fields=self.fields.copy(),

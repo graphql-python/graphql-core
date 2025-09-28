@@ -132,7 +132,6 @@ def value_from_ast(
         # Scalars fulfill parsing a literal value via `parse_literal()`. Invalid values
         # represent a failure to parse correctly, in which case Undefined is returned.
         type_ = cast("GraphQLScalarType", type_)
-        # noinspection PyBroadException
         try:
             if variables:
                 result = type_.parse_literal(value_node, variables)

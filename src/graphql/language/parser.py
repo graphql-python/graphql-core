@@ -582,7 +582,6 @@ class Parser:
         """ListValue[Const]"""
         start = self._lexer.token
         item = partial(self.parse_value_literal, is_const)
-        # noinspection PyTypeChecker
         return ListValueNode(
             values=self.any(TokenKind.BRACKET_L, item, TokenKind.BRACKET_R),
             loc=self.loc(start),

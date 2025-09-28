@@ -22,7 +22,6 @@ def describe_source():
         assert source.location_offset is location_offset
 
     def accepts_tuple_as_location_offset():
-        # noinspection PyTypeChecker
         source = Source("", "", (2, 3))  # type: ignore
         assert isinstance(source.location_offset, SourceLocation)
         assert source.location_offset == (2, 3)

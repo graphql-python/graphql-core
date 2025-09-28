@@ -275,7 +275,6 @@ def describe_execute_defer_directive():
             " extensions={'baz': 2})"
         )
 
-    # noinspection PyTypeChecker
     def can_compare_incremental_defer_result():
         """Can compare an IncrementalDeferResult"""
         args: dict[str, Any] = {

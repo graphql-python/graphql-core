@@ -373,7 +373,6 @@ def describe_formatted():
         }
 
     def uses_default_message():
-        # noinspection PyTypeChecker
         formatted = GraphQLError(None).formatted  # type: ignore
 
         assert formatted == {
