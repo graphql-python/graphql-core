@@ -50,6 +50,7 @@ __all__ = [
     "InitialIncrementalExecutionResult",
     "NonReconcilableStreamItemsResult",
     "PendingResult",
+    "ReconcilableDeferredGroupedFieldSetResult",
     "ReconcilableStreamItemsResult",
     "StreamItemsRecord",
     "StreamItemsResult",
