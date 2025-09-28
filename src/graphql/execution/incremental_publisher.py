@@ -16,30 +16,25 @@ from typing import (
     cast,
 )
 
-try:
-    from typing import Protocol
-except ImportError:  # Python < 3.8
-    from typing_extensions import Protocol
-
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
-
-try:
-    from typing import NotRequired
-except ImportError:  # Python < 3.11
-    from typing_extensions import NotRequired
-
 from ..pyutils import AwaitableOrValue, is_awaitable
+
+try:
+    from typing import Protocol, TypedDict
+except ImportError:  # Python < 3.8
+    from typing_extensions import Protocol, TypedDict
 
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
     from ..pyutils import Path
+
+    try:
+        from typing import TypeGuard
+    except ImportError:  # Python < 3.10
+        from typing_extensions import TypeGuard
+    try:
+        from typing import NotRequired
+    except ImportError:  # Python < 3.11
+        from typing_extensions import NotRequired
 
 __all__ = [
     "BareDeferredGroupedFieldSetResult",

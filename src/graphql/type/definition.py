@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Collection,
     Dict,
@@ -22,13 +23,14 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
-try:
-    from typing import TypeAlias, TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias, TypeGuard
 
 if TYPE_CHECKING:
     from enum import Enum
+
+    try:
+        from typing import TypeAlias, TypeGuard
+    except ImportError:  # Python < 3.10
+        from typing_extensions import TypeAlias, TypeGuard
 
 from ..error import GraphQLError
 from ..language import (
@@ -579,7 +581,7 @@ try:
         operation: OperationDefinitionNode
         variable_values: dict[str, Any]
         context: TContext
-        is_awaitable: Callable[[Any], bool]
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
 except TypeError as error:  # pragma: no cover
     if "Multiple inheritance with NamedTuple is not supported" not in str(error):
         raise  # only catch expected error for Python 3.9 and 3.10
@@ -605,7 +607,7 @@ except TypeError as error:  # pragma: no cover
         operation: OperationDefinitionNode
         variable_values: dict[str, Any]
         context: Any
-        is_awaitable: Callable[[Any], bool]
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
 
 
 # Note: Contrary to the Javascript implementation of GraphQLFieldResolver,

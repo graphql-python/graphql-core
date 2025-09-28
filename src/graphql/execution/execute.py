@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import (
     CancelledError,
+    TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
 )
 from contextlib import suppress
@@ -28,15 +29,6 @@ from typing import (
     Union,
     cast,
 )
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-try:  # only needed for Python < 3.11
-    from asyncio.exceptions import TimeoutError  # noqa: A004
-except ImportError:  # Python < 3.7
-    from concurrent.futures import TimeoutError  # noqa: A004
 
 from ..error import GraphQLError, located_error
 from ..language import (
@@ -118,6 +110,11 @@ from .values import get_argument_values, get_directive_values, get_variable_valu
 
 if TYPE_CHECKING:
     from graphql.pyutils.undefined import UndefinedType
+
+    try:
+        from typing import TypeAlias, TypeGuard
+    except ImportError:  # Python < 3.10
+        from typing_extensions import TypeAlias, TypeGuard
 
 try:  # pragma: no cover
     anext  # noqa: B018  # pyright: ignore
@@ -216,7 +213,9 @@ class ExecutionContext(IncrementalPublisherContext):
     cancellable_streams: set[CancellableStreamRecord] | None
     middleware_manager: MiddlewareManager | None
 
-    is_awaitable: Callable[[Any], bool] = staticmethod(default_is_awaitable)
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
+        default_is_awaitable  # type: ignore
+    )
 
     def __init__(
         self,
@@ -230,7 +229,7 @@ class ExecutionContext(IncrementalPublisherContext):
         type_resolver: GraphQLTypeResolver,
         subscribe_field_resolver: GraphQLFieldResolver,
         middleware_manager: MiddlewareManager | None,
-        is_awaitable: Callable[[Any], bool] | None,
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     ) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -242,8 +241,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.type_resolver = type_resolver
         self.subscribe_field_resolver = subscribe_field_resolver
         self.middleware_manager = middleware_manager
-        if is_awaitable:
-            self.is_awaitable = is_awaitable
+        self.is_awaitable = is_awaitable or default_is_awaitable
         self.errors = None
         self.cancellable_streams = None
         self._canceled_iterators: set[AsyncIterator] = set()
@@ -264,7 +262,7 @@ class ExecutionContext(IncrementalPublisherContext):
         type_resolver: GraphQLTypeResolver | None = None,
         subscribe_field_resolver: GraphQLFieldResolver | None = None,
         middleware: Middleware | None = None,
-        is_awaitable: Callable[[Any], bool] | None = None,
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         **custom_args: Any,
     ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
@@ -422,7 +420,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     ExecutionResult | ExperimentalIncrementalExecutionResults
                 ):
                     try:
-                        resolved = await graphql_wrapped_result  # type: ignore
+                        resolved = await graphql_wrapped_result
                     except GraphQLError as error:
                         return ExecutionResult(None, with_error(self.errors, error))
                     return self.build_data_response(
@@ -496,7 +494,7 @@ class ExecutionContext(IncrementalPublisherContext):
             if is_awaitable(result):
 
                 async def set_result() -> GraphQLWrappedResult[dict[str, Any]]:
-                    resolved = await result  # type: ignore
+                    resolved = await result
                     graphql_wrapped_result.result[response_name] = resolved.result
                     graphql_wrapped_result.add_increments(resolved.increments)
                     return graphql_wrapped_result
@@ -553,11 +551,12 @@ class ExecutionContext(IncrementalPublisherContext):
                         add_increments(resolved.increments)
                         return resolved.result
 
-                    results[response_name] = resolve(result)  # type: ignore
+                    results[response_name] = resolve(result)
                     append_awaitable(response_name)
                 else:
-                    results[response_name] = result.result  # type: ignore
-                    add_increments(result.increments)  # type: ignore
+                    result = cast("GraphQLWrappedResult[dict[str, Any]]", result)
+                    results[response_name] = result.result
+                    add_increments(result.increments)
 
         # If there are no coroutines, we can just return the object.
         if not awaitable_fields:
@@ -651,7 +650,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 # noinspection PyShadowingNames
                 async def await_completed() -> Any:
                     try:
-                        return await completed  # type: ignore
+                        return await completed
                     except Exception as raw_error:
                         # Before Python 3.8 CancelledError inherits Exception and
                         # so gets caught here.
@@ -864,7 +863,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_map,
             )
             if self.is_awaitable(completed):
-                completed = await completed  # type: ignore
+                completed = await completed
         except Exception as raw_error:
             # Before Python 3.8 CancelledError inherits Exception and
             # so gets caught here.
@@ -1276,8 +1275,9 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_map,
             )
             if self.is_awaitable(completed):
-                completed = await completed  # type: ignore
-            parent.add_increments(completed.increments)  # type: ignore
+                completed = await completed
+            completed = cast("GraphQLWrappedResult[list[Any]]", completed)
+            parent.add_increments(completed.increments)
         except Exception as raw_error:
             self.handle_field_error(
                 raw_error,
@@ -1288,7 +1288,7 @@ class ExecutionContext(IncrementalPublisherContext):
             )
             return None
         else:
-            return completed.result  # type: ignore
+            return completed.result
 
     @staticmethod
     def complete_leaf_value(return_type: GraphQLLeafType, result: Any) -> Any:
@@ -1326,7 +1326,6 @@ class ExecutionContext(IncrementalPublisherContext):
         runtime_type = resolve_type_fn(result, info, return_type)
 
         if self.is_awaitable(runtime_type):
-            runtime_type = cast("Awaitable", runtime_type)
 
             async def await_complete_object_value() -> Any:
                 value = self.complete_object_value(
@@ -1345,7 +1344,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     defer_map,
                 )
                 if self.is_awaitable(value):
-                    return await value  # type: ignore
+                    return await value
                 return value  # pragma: no cover
 
             return await_complete_object_value()
@@ -1447,7 +1446,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 async def execute_subfields_async() -> GraphQLWrappedResult[
                     dict[str, Any]
                 ]:
-                    if not await is_type_of:  # type: ignore
+                    if not await is_type_of:
                         raise invalid_return_type_error(
                             return_type, result, field_group
                         )
@@ -1460,8 +1459,10 @@ class ExecutionContext(IncrementalPublisherContext):
                         defer_map,
                     )
                     if self.is_awaitable(graphql_wrapped_result):  # pragma: no cover
-                        return await graphql_wrapped_result  # type: ignore
-                    return graphql_wrapped_result  # type: ignore
+                        return await graphql_wrapped_result
+                    return cast(
+                        "GraphQLWrappedResult[dict[str, Any]]", graphql_wrapped_result
+                    )
 
                 return execute_subfields_async()
 
@@ -1644,8 +1645,8 @@ class ExecutionContext(IncrementalPublisherContext):
                         defer_map,
                     )
                     if self.is_awaitable(result):
-                        return await result  # type: ignore
-                    return result  # type: ignore
+                        return await result
+                    return cast("DeferredGroupedFieldSetResult", result)
 
                 deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
                     deferred_fragment_records,
@@ -1702,7 +1703,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
             async def await_result() -> DeferredGroupedFieldSetResult:
                 try:
-                    awaited_result = await result  # type: ignore
+                    awaited_result = await result
                 except GraphQLError as error:
                     return NonReconcilableDeferredGroupedFieldSetResult(
                         deferred_fragment_records,
@@ -1792,8 +1793,8 @@ class ExecutionContext(IncrementalPublisherContext):
 
             result = first_stream_items.result
             if is_awaitable(result):
-                return await result  # type: ignore
-            return result  # type: ignore
+                return await result
+            return cast("StreamItemsResult", result)
 
         return StreamItemsRecord(stream_record, await_result())
 
@@ -1864,8 +1865,8 @@ class ExecutionContext(IncrementalPublisherContext):
         result = self.prepend_next_stream_items(result, next_stream_items_record)
 
         if self.is_awaitable(result):
-            return await result  # type: ignore
-        return result  # type: ignore
+            return await result
+        return cast("StreamItemsResult", result)
 
     def complete_stream_items(
         self,
@@ -1932,7 +1933,7 @@ class ExecutionContext(IncrementalPublisherContext):
             async def await_item() -> StreamItemsResult:
                 try:
                     try:
-                        awaited_item = await result  # type: ignore
+                        awaited_item = await result
                     except Exception as raw_error:
                         self.handle_field_error(
                             raw_error,
@@ -1967,13 +1968,13 @@ class ExecutionContext(IncrementalPublisherContext):
         if self.is_awaitable(result):
 
             async def await_result() -> StreamItemsResult:
-                resolved = await result  # type: ignore
+                resolved = await result
                 return prepend_next_resolved_stream_items(resolved, next_stream_items)
 
             return await_result()
 
         return prepend_next_resolved_stream_items(
-            result,  # type: ignore
+            cast("StreamItemsResult", result),
             next_stream_items,
         )
 
@@ -1986,7 +1987,7 @@ class ExecutionContext(IncrementalPublisherContext):
         if self.is_awaitable(result):
 
             async def await_result() -> GraphQLWrappedResult[dict[str, Any]]:
-                resolved = await result  # type: ignore
+                resolved = await result
                 resolved.add_increments(new_deferred_grouped_field_set_records)
                 return resolved
 
@@ -2091,7 +2092,7 @@ def execute(
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
-    is_awaitable: Callable[[Any], bool] | None = None,
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -2153,7 +2154,7 @@ def experimental_execute_incrementally(
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
-    is_awaitable: Callable[[Any], bool] | None = None,
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
@@ -2193,7 +2194,7 @@ def experimental_execute_incrementally(
     return context.execute_operation()
 
 
-def assume_not_awaitable(_value: Any) -> bool:
+def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
     """Replacement for is_awaitable if everything is assumed to be synchronous."""
     return False
 
@@ -2221,7 +2222,7 @@ def execute_sync(
     Set check_sync to True to still run checks that no awaitable values are returned.
     """
     is_awaitable = (
-        check_sync
+        cast("Callable[[Any], TypeGuard[Awaitable]]", check_sync)
         if callable(check_sync)
         else (None if check_sync else assume_not_awaitable)
     )
@@ -2434,7 +2435,7 @@ def default_type_resolver(
                 return type_.name
 
     if awaitable_is_type_of_results:
-        # noinspection PyShadowingNames
+
         async def get_type() -> str | None:
             is_type_of_results = await gather_with_cancel(*awaitable_is_type_of_results)
             for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
@@ -2533,9 +2534,9 @@ def subscribe(
     result_or_stream = create_source_event_stream_impl(context)
 
     if context.is_awaitable(result_or_stream):
-        # noinspection PyShadowingNames
+
         async def await_result() -> Any:
-            awaited_result_or_stream = await result_or_stream  # type: ignore
+            awaited_result_or_stream = await result_or_stream
             if isinstance(awaited_result_or_stream, ExecutionResult):
                 return awaited_result_or_stream
             return context.map_source_to_response(awaited_result_or_stream)
@@ -2616,12 +2617,10 @@ def create_source_event_stream_impl(
         return ExecutionResult(None, errors=[error])
 
     if context.is_awaitable(event_stream):
-        awaitable_event_stream = cast("Awaitable", event_stream)
 
-        # noinspection PyShadowingNames
         async def await_event_stream() -> AsyncIterable[Any] | ExecutionResult:
             try:
-                return await awaitable_event_stream
+                return await event_stream
             except GraphQLError as error:
                 return ExecutionResult(None, errors=[error])
 

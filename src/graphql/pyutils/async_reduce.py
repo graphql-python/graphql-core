@@ -9,6 +9,11 @@ from .is_awaitable import is_awaitable as default_is_awaitable
 if TYPE_CHECKING:
     from .awaitable_or_value import AwaitableOrValue
 
+    try:
+        from typing import TypeGuard
+    except ImportError:  # Python < 3.10
+        from typing_extensions import TypeGuard
+
 __all__ = ["async_reduce"]
 
 T = TypeVar("T")
@@ -19,7 +24,7 @@ def async_reduce(
     callback: Callable[[U, T], AwaitableOrValue[U]],
     values: Collection[T],
     initial_value: AwaitableOrValue[U],
-    is_awaitable: Callable[[Any], bool] = default_is_awaitable,
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = default_is_awaitable,
 ) -> AwaitableOrValue[U]:
     """Reduce the given potentially awaitable values using a callback function.
 

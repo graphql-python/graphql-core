@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from asyncio import ensure_future
-from typing import Any, Awaitable, Callable, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
 
 from .error import GraphQLError
 from .execution import ExecutionContext, ExecutionResult, Middleware, execute
@@ -16,6 +16,12 @@ from .type import (
     GraphQLTypeResolver,
     validate_schema,
 )
+
+if TYPE_CHECKING:
+    try:
+        from typing import TypeGuard
+    except ImportError:  # Python < 3.10
+        from typing_extensions import TypeGuard
 
 __all__ = ["graphql", "graphql_sync"]
 
@@ -31,7 +37,7 @@ async def graphql(
     type_resolver: GraphQLTypeResolver | None = None,
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
-    is_awaitable: Callable[[Any], bool] | None = None,
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -101,7 +107,7 @@ async def graphql(
     return cast("ExecutionResult", result)
 
 
-def assume_not_awaitable(_value: Any) -> bool:
+def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
     """Replacement for is_awaitable if everything is assumed to be synchronous."""
     return False
 
@@ -129,7 +135,7 @@ def graphql_sync(
     Set check_sync to True to still run checks that no awaitable values are returned.
     """
     is_awaitable = (
-        check_sync
+        cast("Callable[[Any], TypeGuard[Awaitable]]", check_sync)
         if callable(check_sync)
         else (None if check_sync else assume_not_awaitable)
     )
@@ -167,7 +173,7 @@ def graphql_impl(
     type_resolver: GraphQLTypeResolver | None,
     middleware: Middleware | None,
     execution_context_class: type[ExecutionContext] | None,
-    is_awaitable: Callable[[Any], bool] | None,
+    is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema

@@ -4,7 +4,7 @@ import pickle
 import sys
 from enum import Enum
 from math import isnan, nan
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 try:
     from typing import TypedDict
@@ -57,6 +57,11 @@ from graphql.type import (
     GraphQLUnionType,
     introspection_types,
 )
+
+try:
+    from typing import TypeGuard
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeGuard
 
 ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})
@@ -1302,7 +1307,7 @@ def describe_resolve_info():
         root_value: Any
         operation: OperationDefinitionNode
         variable_values: dict[str, Any]
-        is_awaitable: Callable[[Any], bool]
+        is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
 
     info_args: InfoArgs = {
         "field_name": "foo",
