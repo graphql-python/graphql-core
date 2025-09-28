@@ -138,37 +138,37 @@ schema = GraphQLSchema(query)
 
 
 class Resolvers:
-    """Various resolver functions for testing."""
+    """Various resolver functions for testing"""
 
     @staticmethod
     def null(_info) -> None:
-        """A resolver returning a null value synchronously."""
+        """A resolver returning a null value synchronously"""
         return
 
     @staticmethod
     async def null_async(_info) -> None:
-        """A resolver returning a null value asynchronously."""
+        """A resolver returning a null value asynchronously"""
         return
 
     @staticmethod
     async def slow(_info) -> str:
-        """Simulate a slow async resolver returning a non-null value."""
+        """Simulate a slow async resolver returning a non-null value"""
         await sleep(0)
         return "slow"
 
     @staticmethod
     async def slow_null(_info) -> None:
-        """Simulate a slow async resolver returning a null value."""
+        """Simulate a slow async resolver returning a null value"""
         await sleep(0)
 
     @staticmethod
     def bad(_info) -> str:
-        """Simulate a bad resolver raising an error."""
+        """Simulate a bad resolver raising an error"""
         raise RuntimeError("bad")
 
     @staticmethod
     async def first_friend(_info) -> AsyncGenerator[Friend, None]:
-        """An async generator yielding the first friend."""
+        """An async generator yielding the first friend"""
         yield friends[0]
 
 
@@ -194,7 +194,10 @@ def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
 
 
 def describe_execute_defer_directive():
+    """Execute: Defer Directive"""
+
     def can_format_and_print_pending_result():
+        """Can format and print a PendingResult"""
         result = PendingResult("foo", [])
         assert result.formatted == {"id": "foo", "path": []}
         assert str(result) == "PendingResult(id='foo', path=[])"
@@ -204,6 +207,7 @@ def describe_execute_defer_directive():
         assert str(result) == "PendingResult(id='foo', path=['bar', 1], label='baz')"
 
     def can_compare_pending_result():
+        """Can compare a PendingResult"""
         args: dict[str, Any] = {"id": "foo", "path": ["bar", 1], "label": "baz"}
         result = PendingResult(**args)
         assert result == PendingResult(**args)
@@ -220,6 +224,7 @@ def describe_execute_defer_directive():
         assert result != {**args, "label": "bar"}
 
     def can_format_and_print_completed_result():
+        """Can format and print a CompletedResult"""
         result = CompletedResult("foo")
         assert result.formatted == {"id": "foo"}
         assert str(result) == "CompletedResult(id='foo')"
@@ -229,6 +234,7 @@ def describe_execute_defer_directive():
         assert str(result) == "CompletedResult(id='foo', errors=[GraphQLError('oops')])"
 
     def can_compare_completed_result():
+        """Can compare a CompletedResult"""
         args: dict[str, Any] = {"id": "foo", "errors": []}
         result = CompletedResult(**args)
         assert result == CompletedResult(**args)
@@ -244,6 +250,7 @@ def describe_execute_defer_directive():
         assert result != {**args, "errors": [{"message": "oops"}]}
 
     def can_format_and_print_incremental_defer_result():
+        """Can format and print an IncrementalDeferResult"""
         result = IncrementalDeferResult(data={}, id="foo")
         assert result.formatted == {"data": {}, "id": "foo"}
         assert str(result) == "IncrementalDeferResult(data={}, id='foo')"
@@ -270,6 +277,7 @@ def describe_execute_defer_directive():
 
     # noinspection PyTypeChecker
     def can_compare_incremental_defer_result():
+        """Can compare an IncrementalDeferResult"""
         args: dict[str, Any] = {
             "data": {"hello": "world"},
             "id": "foo",
@@ -305,6 +313,7 @@ def describe_execute_defer_directive():
         assert result != {**args, "extensions": {"baz": 1}}
 
     def can_format_and_print_initial_incremental_execution_result():
+        """Can format and print an InitialIncrementalExecutionResult"""
         result = InitialIncrementalExecutionResult()
         assert result.formatted == {"data": None, "hasNext": False, "pending": []}
         assert str(result) == "InitialIncrementalExecutionResult(data=None)"
@@ -335,6 +344,7 @@ def describe_execute_defer_directive():
         )
 
     def can_compare_initial_incremental_execution_result():
+        """Can compare an InitialIncrementalExecutionResult"""
         args: dict[str, Any] = {
             "data": {"hello": "world"},
             "errors": [GraphQLError("msg")],
@@ -406,6 +416,7 @@ def describe_execute_defer_directive():
         }
 
     def can_format_and_print_subsequent_incremental_execution_result():
+        """Can format and print a SubsequentIncrementalExecutionResult"""
         result = SubsequentIncrementalExecutionResult()
         assert result.formatted == {"hasNext": False}
         assert str(result) == "SubsequentIncrementalExecutionResult()"
@@ -439,6 +450,7 @@ def describe_execute_defer_directive():
         )
 
     def can_compare_subsequent_incremental_execution_result():
+        """Can compare a SubsequentIncrementalExecutionResult"""
         pending = [PendingResult("foo", ["bar"])]
         incremental = [
             cast("IncrementalResult", IncrementalDeferResult({"foo": 1}, "bar"))
@@ -509,12 +521,14 @@ def describe_execute_defer_directive():
         }
 
     def can_print_deferred_fragment_record():
+        """Can print a DeferredFragmentRecord"""
         record = DeferredFragmentRecord()
         assert str(record) == "DeferredFragmentRecord()"
         record = DeferredFragmentRecord(Path(None, "bar", "Bar"), "foo")
         assert str(record) == "DeferredFragmentRecord(path=['bar'], label='foo')"
 
     async def can_defer_fragments_containing_scalar_types():
+        """Can defer fragments containing scalar types"""
         document = parse(
             """
             query HeroNameQuery {
@@ -544,6 +558,7 @@ def describe_execute_defer_directive():
         ]
 
     async def can_disable_defer_using_if_argument():
+        """Can disable defer using if argument"""
         document = parse(
             """
             query HeroNameQuery {
@@ -562,6 +577,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"id": "1", "name": "Luke"}}}
 
     async def does_not_disable_defer_with_null_if_argument():
+        """Does not disable defer with null if argument"""
         document = parse(
             """
             query HeroNameQuery($shouldDefer: Boolean) {
@@ -591,6 +607,7 @@ def describe_execute_defer_directive():
         ]
 
     async def throws_an_error_for_defer_directive_with_non_string_label():
+        """Throws an error for @defer directive with non-string label"""
         document = parse(
             """
             query Deferred {
@@ -611,6 +628,7 @@ def describe_execute_defer_directive():
         }
 
     async def can_defer_fragments_on_the_top_level_query_field():
+        """Can defer fragments on the top level Query field"""
         document = parse(
             """
             query HeroNameQuery {
@@ -639,6 +657,7 @@ def describe_execute_defer_directive():
         ]
 
     async def can_defer_fragments_with_errors_on_the_top_level_query_field():
+        """Can defer fragments with errors on the top level Query field"""
         document = parse(
             """
             query HeroNameQuery {
@@ -679,6 +698,7 @@ def describe_execute_defer_directive():
         ]
 
     async def can_defer_a_fragment_within_an_already_deferred_fragment():
+        """Can defer a fragment within an already deferred fragment"""
         document = parse(
             """
             query HeroNameQuery {
@@ -726,6 +746,7 @@ def describe_execute_defer_directive():
         ]
 
     async def can_defer_a_fragment_that_is_also_not_deferred_with_deferred_first():
+        """Can defer a fragment that is also not deferred, deferred fragment is first"""
         document = parse(
             """
             query HeroNameQuery {
@@ -744,6 +765,10 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"name": "Luke"}}}
 
     async def can_defer_a_fragment_that_is_also_not_deferred_with_non_deferred_first():
+        """Can defer a fragment that is also not deferred, non-deferred first
+
+        Can defer a fragment that is also not deferred, non-deferred fragment is first.
+        """
         document = parse(
             """
             query HeroNameQuery {
@@ -762,6 +787,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"name": "Luke"}}}
 
     async def can_defer_an_inline_fragment():
+        """Can defer an inline fragment"""
         document = parse(
             """
             query HeroNameQuery {
@@ -790,6 +816,7 @@ def describe_execute_defer_directive():
         ]
 
     async def does_not_emit_empty_defer_fragments():
+        """Does not emit empty defer fragments"""
         document = parse(
             """
             query HeroNameQuery {
@@ -809,6 +836,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {}}}
 
     async def emits_children_of_empty_defer_fragments():
+        """Emits children of empty defer fragments"""
         document = parse(
             """
             query HeroNameQuery {
@@ -838,6 +866,10 @@ def describe_execute_defer_directive():
         ]
 
     async def separately_emits_defer_fragments_different_labels_varying_fields():
+        """Separately emits defer fragments with different labels with varying fields
+
+        Can separately emit defer fragments with different labels with varying fields.
+        """
         document = parse(
             """
             query HeroNameQuery {
@@ -874,6 +906,10 @@ def describe_execute_defer_directive():
         ]
 
     async def separately_emits_defer_fragments_different_labels_varying_subfields():
+        """Separately emits defer fragments with different labels, varying subfields
+
+        Can separately emit defer fragments with different labels with varying fields.
+        """
         document = parse(
             """
             query HeroNameQuery {
@@ -913,6 +949,11 @@ def describe_execute_defer_directive():
         ]
 
     async def separately_emits_defer_fragments_different_labels_var_subfields_async():
+        """Separately emits defer fragments, different labels, varying subfields, async
+
+        Separately emits defer fragments with different labels with varying subfields
+        that return awaitables.
+        """
         document = parse(
             """
             query HeroNameQuery {
@@ -964,6 +1005,11 @@ def describe_execute_defer_directive():
         ]
 
     async def separately_emits_defer_fragments_var_subfields_same_prio_diff_level():
+        """Separately emits defer fragments, varying subfields, same prio, diff level
+
+        Separately emits defer fragments with varying subfields of same priorities
+        but different level of defers.
+        """
         document = parse(
             """
             query HeroNameQuery {
@@ -1002,6 +1048,11 @@ def describe_execute_defer_directive():
         ]
 
     async def separately_emits_nested_defer_frags_var_subfields_same_prio_diff_level():
+        """Separately emits nested defer frags, var subfields, same prio, diff level
+
+        Separately emits nested defer fragments with varying subfields of same
+        priorities but different level of defers.
+        """
         document = parse(
             """
             query HeroNameQuery {
@@ -1038,6 +1089,7 @@ def describe_execute_defer_directive():
         ]
 
     async def can_deduplicate_multiple_defers_on_the_same_object():
+        """Can deduplicate multiple defers on the same object"""
         document = parse(
             """
             query {
@@ -1089,6 +1141,7 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_fields_present_in_the_initial_payload():
+        """Deduplicates fields present in the initial payload"""
         document = parse(
             """
             query {
@@ -1154,6 +1207,7 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_fields_present_in_a_parent_defer_payload():
+        """Deduplicates fields present in a parent defer payload"""
         document = parse(
             """
             query {
@@ -1205,6 +1259,7 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_fields_with_deferred_fragments_at_multiple_levels():
+        """Deduplicates fields with deferred fragments at multiple levels"""
         document = parse(
             """
             query {
@@ -1293,6 +1348,11 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_fields_from_deferred_fragments_branches_same_level():
+        """Deduplicates multiple fields from deferred fragments, branches same level
+
+        Deduplicates multiple fields from deferred fragments from different branches
+        occurring at the same level.
+        """
         document = parse(
             """
             query {
@@ -1343,6 +1403,11 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_fields_from_deferred_fragments_branches_multi_levels():
+        """Deduplicates fields from deferred fragments, branches at multiple levels
+
+        Deduplicate fields with deferred fragments in different branches at multiple
+        non-overlapping levels.
+        """
         document = parse(
             """
             query {
@@ -1394,7 +1459,71 @@ def describe_execute_defer_directive():
             },
         ]
 
+    async def correctly_bundles_varying_subfields_ignore_masked():
+        """Correctly bundles varying subfields, ignoring masked fields.
+
+        Correctly bundles varying subfields into incremental data records
+        unique by defer combination,
+        ignoring fields in a fragment masked by a parent defer.
+        """
+        document = parse(
+            """
+            query HeroNameQuery {
+              ... @defer {
+              hero {
+                  id
+                }
+              }
+              ... @defer {
+                hero {
+                  name
+                  shouldBeWithNameDespiteAdditionalDefer: name
+                  ... @defer {
+                    shouldBeWithNameDespiteAdditionalDefer: name
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {},
+                "pending": [
+                    {"id": "0", "path": []},
+                    {"id": "1", "path": []},
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"hero": {}},
+                        "id": "0",
+                    },
+                    {
+                        "data": {"id": "1"},
+                        "id": "0",
+                        "subPath": ["hero"],
+                    },
+                    {
+                        "data": {
+                            "name": "Luke",
+                            "shouldBeWithNameDespiteAdditionalDefer": "Luke",
+                        },
+                        "id": "1",
+                        "subPath": ["hero"],
+                    },
+                ],
+                "completed": [{"id": "0"}, {"id": "1"}],
+                "hasNext": False,
+            },
+        ]
+
     async def nulls_cross_defer_boundaries_null_first():
+        """Nulls cross defer boundaries, null first"""
         document = parse(
             """
             query {
@@ -1455,6 +1584,7 @@ def describe_execute_defer_directive():
         ]
 
     async def nulls_cross_defer_boundaries_value_first():
+        """Nulls cross defer boundaries, value first"""
         document = parse(
             """
             query {
@@ -1520,6 +1650,7 @@ def describe_execute_defer_directive():
         ]
 
     async def filters_a_payload_with_a_null_that_cannot_be_merged():
+        """Filters a payload with a null that cannot be merged"""
         document = parse(
             """
             query {
@@ -1589,6 +1720,7 @@ def describe_execute_defer_directive():
         ]
 
     async def cancels_deferred_fields_when_initial_result_exhibits_null_bubbling():
+        """Cancels deferred fields when initial result exhibits null bubbling"""
         document = parse(
             """
             query {
@@ -1620,6 +1752,7 @@ def describe_execute_defer_directive():
         }
 
     async def cancels_deferred_fields_when_deferred_result_exhibits_null_bubbling():
+        """Cancels deferred fields when deferred result exhibits null bubbling"""
         document = parse(
             """
             query {
@@ -1663,6 +1796,7 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_list_fields():
+        """Deduplicates list fields"""
         document = parse(
             """
             query {
@@ -1691,6 +1825,7 @@ def describe_execute_defer_directive():
         }
 
     async def deduplicates_async_iterable_list_fields():
+        """Deduplicates async iterable list fields"""
         document = parse(
             """
             query {
@@ -1715,6 +1850,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"friends": [{"name": "Han"}]}}}
 
     async def deduplicates_empty_async_iterable_list_fields():
+        """Deduplicates empty async iterable list fields"""
         document = parse(
             """
             query {
@@ -1744,6 +1880,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"friends": []}}}
 
     async def does_not_deduplicate_list_fields_with_non_overlapping_fields():
+        """Does not deduplicate list fields with non-overlapping fields"""
         document = parse(
             """
             query {
@@ -1788,6 +1925,7 @@ def describe_execute_defer_directive():
         ]
 
     async def deduplicates_list_fields_that_return_empty_lists():
+        """Deduplicates list fields that return empty lists"""
         document = parse(
             """
             query {
@@ -1811,6 +1949,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"friends": []}}}
 
     async def deduplicates_null_object_fields():
+        """Deduplicates null object fields"""
         document = parse(
             """
             query {
@@ -1834,6 +1973,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"nestedObject": None}}}
 
     async def deduplicates_async_object_fields():
+        """Deduplicates async object fields"""
         document = parse(
             """
             query {
@@ -1861,6 +2001,7 @@ def describe_execute_defer_directive():
         assert result == {"data": {"hero": {"nestedObject": {"name": "foo"}}}}
 
     async def handles_errors_thrown_in_deferred_fragments():
+        """Handles errors thrown in deferred fragments"""
         document = parse(
             """
             query HeroNameQuery {
@@ -1902,6 +2043,7 @@ def describe_execute_defer_directive():
         ]
 
     async def handles_non_nullable_errors_thrown_in_deferred_fragments():
+        """Handles non-nullable errors thrown in deferred fragments"""
         document = parse(
             """
             query HeroNameQuery {
@@ -1944,6 +2086,7 @@ def describe_execute_defer_directive():
         ]
 
     async def handles_non_nullable_errors_thrown_outside_deferred_fragments():
+        """Handles non-nullable errors thrown outside deferred fragments"""
         document = parse(
             """
             query HeroNameQuery {
@@ -1974,6 +2117,7 @@ def describe_execute_defer_directive():
         }
 
     async def handles_async_non_nullable_errors_thrown_in_deferred_fragments():
+        """Handles async non-nullable errors thrown in deferred fragments"""
         document = parse(
             """
             query HeroNameQuery {
@@ -2016,6 +2160,7 @@ def describe_execute_defer_directive():
         ]
 
     async def returns_payloads_in_correct_order():
+        """Returns payloads in correct order"""
         document = parse(
             """
             query HeroNameQuery {
@@ -2067,6 +2212,7 @@ def describe_execute_defer_directive():
         ]
 
     async def returns_payloads_from_synchronous_data_in_correct_order():
+        """Returns payloads from synchronous data in correct order"""
         document = parse(
             """
             query HeroNameQuery {
@@ -2118,6 +2264,11 @@ def describe_execute_defer_directive():
         ]
 
     async def filters_deferred_payloads_when_list_item_from_async_iterable_nulled():
+        """Filters deferred payloads when list item from async iterable is nulled
+
+        Filters deferred payloads when a list item returned by an async iterable
+        is nulled.
+        """
         document = parse(
             """
             query {
@@ -2151,6 +2302,11 @@ def describe_execute_defer_directive():
         }
 
     async def original_execute_function_throws_error_if_deferred_and_all_is_sync():
+        """Original execute function throws error if deferred and all is sync
+
+        Original execute function throws error if anything is deferred and everything
+        else is sync.
+        """
         document = parse(
             """
             query Deferred {
@@ -2168,6 +2324,11 @@ def describe_execute_defer_directive():
         )
 
     async def original_execute_function_throws_error_if_deferred_and_not_all_is_sync():
+        """Original execute function throws error if deferred and not all is sync
+
+        Original execute function resolves to error if anything is deferred and
+        something else is async.
+        """
         document = parse(
             """
             query Deferred {

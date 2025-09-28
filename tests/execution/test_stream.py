@@ -151,7 +151,10 @@ def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
 
 
 def describe_execute_stream_directive():
+    """Execute: stream directive"""
+
     def can_format_and_print_incremental_stream_result():
+        """Can format and print an IncrementalStreamResult"""
         result = IncrementalStreamResult(items=["hello", "world"], id="foo")
         assert result.formatted == {"items": ["hello", "world"], "id": "foo"}
         assert (
@@ -180,6 +183,7 @@ def describe_execute_stream_directive():
 
     # noinspection PyTypeChecker
     def can_compare_incremental_stream_result():
+        """Can compare an IncrementalStreamResult"""
         args: dict[str, Any] = {
             "items": ["hello", "world"],
             "id": "foo",
@@ -215,6 +219,7 @@ def describe_execute_stream_directive():
         assert result != {**args, "extensions": {"baz": 1}}
 
     def can_hash_incremental_stream_result():
+        """Can hash an IncrementalStreamResult"""
         args: dict[str, Any] = {
             "items": ["hello", "world"],
             "id": "foo",
@@ -241,6 +246,7 @@ def describe_execute_stream_directive():
         )
 
     async def can_stream_a_list_field():
+        """Can stream a list field"""
         document = parse("{ scalarList @stream(initialCount: 1) }")
         result = await complete(
             document, {"scalarList": ["apple", "banana", "coconut"]}
@@ -262,6 +268,7 @@ def describe_execute_stream_directive():
         ]
 
     async def can_use_default_value_of_initial_count():
+        """Can use default value of initialCount"""
         document = parse("{ scalarList @stream }")
         result = await complete(
             document, {"scalarList": ["apple", "banana", "coconut"]}
@@ -284,6 +291,7 @@ def describe_execute_stream_directive():
         ]
 
     async def negative_values_of_initial_count_throw_field_errors():
+        """Negative values of initialCount throw field errors"""
         document = parse("{ scalarList @stream(initialCount: -2) }")
         result = await complete(
             document, {"scalarList": ["apple", "banana", "coconut"]}
@@ -300,6 +308,7 @@ def describe_execute_stream_directive():
         }
 
     async def non_integer_values_of_initial_count_throw_field_errors():
+        """Non-integer values of initialCount throw field errors"""
         document = parse("{ scalarList @stream(initialCount: 1.5) }")
         result = await complete(document, {"scalarList": ["apple", "half of a banana"]})
         assert result == {
@@ -314,6 +323,7 @@ def describe_execute_stream_directive():
         }
 
     async def returns_label_from_stream_directive():
+        """Returns label from stream directive"""
         document = parse(
             '{ scalarList @stream(initialCount: 1, label: "scalar-stream") }'
         )
@@ -339,6 +349,7 @@ def describe_execute_stream_directive():
         ]
 
     async def throws_an_error_for_stream_directive_with_non_string_label():
+        """Throws an error for stream directive with non-string label"""
         document = parse("{ scalarList @stream(initialCount: 1, label: 42) }")
         result = await complete(document, {"scalarList": ["some apples"]})
         assert result == {
@@ -353,6 +364,7 @@ def describe_execute_stream_directive():
         }
 
     async def can_disable_stream_using_if_argument():
+        """Can disable @stream using if argument"""
         document = parse("{ scalarList @stream(initialCount: 0, if: false) }")
         result = await complete(
             document, {"scalarList": ["apple", "banana", "coconut"]}
@@ -360,6 +372,7 @@ def describe_execute_stream_directive():
         assert result == {"data": {"scalarList": ["apple", "banana", "coconut"]}}
 
     async def does_not_disable_stream_with_null_if_argument():
+        """Does not disable stream with null if argument"""
         document = parse(
             "query ($shouldStream: Boolean)"
             " { scalarList @stream(initialCount: 2, if: $shouldStream) }"
@@ -381,6 +394,7 @@ def describe_execute_stream_directive():
         ]
 
     async def can_stream_multi_dimensional_lists():
+        """Can stream multi-dimensional lists"""
         document = parse("{ scalarListList @stream(initialCount: 1) }")
         result = await complete(
             document,
@@ -409,6 +423,7 @@ def describe_execute_stream_directive():
         ]
 
     async def can_stream_a_field_that_returns_a_list_of_awaitables():
+        """Can stream a field that returns a list of awaitables"""
         document = parse(
             """
             query {
@@ -446,6 +461,7 @@ def describe_execute_stream_directive():
         ]
 
     async def can_stream_in_correct_order_with_list_of_awaitables():
+        """Can stream in correct order with list of awaitables"""
         document = parse(
             """
             query {
@@ -486,6 +502,7 @@ def describe_execute_stream_directive():
         ]
 
     async def can_stream_a_field_that_returns_a_list_with_nested_async_fields():
+        """Can stream a field that returns a list with nested async fields"""
         document = parse(
             """
             query {
@@ -530,6 +547,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_error_in_list_of_awaitables_before_initial_count_reached():
+        """Handles error in list of awaitables before initial count reached
+
+        Handles exceptions in a field that returns a list of awaitables before
+        initialCount is reached.
+        """
         document = parse(
             """
             query {
@@ -575,6 +597,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_error_in_list_of_awaitables_after_initial_count_reached():
+        """Handles error in list of awaitables after initial count reached
+
+        Handles exceptions in a field that returns a list of awaitables after
+        initialCount is reached.
+        """
         document = parse(
             """
             query {
@@ -629,6 +656,7 @@ def describe_execute_stream_directive():
         ]
 
     async def can_stream_a_field_that_returns_an_async_iterable():
+        """Can stream a field that returns an async iterable"""
         document = parse(
             """
             query {
@@ -667,6 +695,11 @@ def describe_execute_stream_directive():
         ]
 
     async def can_stream_a_field_that_returns_an_async_iterable_with_initial_count():
+        """Can stream a field that returns an async iterable, with initialCount
+
+        Can stream a field that returns an async iterable, using a non-zero
+        initialCount.
+        """
         document = parse(
             """
             query {
@@ -702,6 +735,11 @@ def describe_execute_stream_directive():
         ]
 
     async def negative_initial_count_throw_error_on_field_returning_async_iterable():
+        """Negative initialCount throw error on field returning async iterable
+
+        Negative values of initialCount throw field errors on a field that returns an
+        async iterable.
+        """
         document = parse(
             """
             query {
@@ -729,6 +767,7 @@ def describe_execute_stream_directive():
         }
 
     async def can_handle_concurrent_calls_to_next_without_waiting():
+        """Can handle concurrent calls to next() without waiting"""
         document = parse(
             """
             query {
@@ -776,6 +815,7 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_error_in_async_iterable_before_initial_count_is_reached():
+        """Handles error raised in async iterable before initialCount is reached"""
         document = parse(
             """
             query {
@@ -804,6 +844,7 @@ def describe_execute_stream_directive():
         }
 
     async def handles_error_in_async_iterable_after_initial_count_is_reached():
+        """Handles error thrown in async iterable after initialCount is reached"""
         document = parse(
             """
             query {
@@ -844,6 +885,7 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_null_for_non_null_list_items_after_initial_count_is_reached():
+        """Handles null returned in non-null list items after initialCount is reached"""
         document = parse(
             """
             query {
@@ -883,6 +925,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_null_for_non_null_async_items_after_initial_count_is_reached():
+        """Handles null in non-null async iterable items after initialCount is reached
+
+        Handles null returned in non-null async iterable list items after initialCount
+        is reached
+        """
         document = parse(
             """
             query {
@@ -926,6 +973,7 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_error_thrown_in_complete_value_after_initial_count_is_reached():
+        """Handles errors thrown by completeValue after initialCount is reached"""
         document = parse(
             """
             query {
@@ -964,6 +1012,7 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_async_error_in_complete_value_after_initial_count_is_reached():
+        """Handles async errors thrown by completeValue after initialCount is reached"""
         document = parse(
             """
             query {
@@ -1019,6 +1068,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_nested_async_error_in_complete_value_after_initial_count():
+        """Handles nested async error thrown in completeValue after initialCount
+
+        Handles nested async errors thrown by completeValue after initialCount is
+        reached.
+        """
         document = parse(
             """
             query {
@@ -1073,6 +1127,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_async_error_in_complete_value_after_initial_count_non_null():
+        """Handles async errors in completeValue after initialCount, non-null list
+
+        Handles async errors thrown by completeValue after initialCount is reached for
+        a non-nullable list.
+        """
         document = parse(
             """
             query {
@@ -1122,6 +1181,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_nested_async_error_in_complete_value_after_initial_non_null():
+        """Handles nested async error in completeValue after initialCount, non-null list
+
+        Handles nested async errors thrown by completeValue after initialCount is
+        reached for a non-nullable list.
+        """
         document = parse(
             """
             query {
@@ -1172,6 +1236,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_async_error_in_complete_value_after_initial_from_async_iterable():
+        """Handles async error in completeValue after initialCount from async iterable
+
+        Handles async errors thrown by completeValue after initialCount is reached
+        from async iterable.
+        """
         document = parse(
             """
             query {
@@ -1228,6 +1297,11 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_async_error_in_complete_value_from_async_generator_non_null():
+        """Handles async error in completeValue from async generator, non-null list
+
+        Handles async errors thrown by completeValue after initialCount is reached
+        from async generator for a non-nullable list.
+        """
         document = parse(
             """
             query {
@@ -1276,9 +1350,12 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_async_errors_in_complete_value_after_initial_count_no_aclose():
-        # Handles async errors thrown by complete_value after initialCount is reached
-        # from async iterable for a non-nullable list when the async iterable does
-        # not provide an aclose method.
+        """Handles async errors in completeValue after initialCount, without aclose
+
+        Handles async errors thrown by completeValue after initialCount is reached
+        from async iterable for a non-nullable list when the async iterable does not
+        provide an aclose() method.
+        """
         document = parse(
             """
             query {
@@ -1336,9 +1413,12 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_async_errors_in_complete_value_after_initial_count_slow_aclose():
-        # Handles async errors thrown by completeValue after initialCount is reached
-        # from async iterable for a non-nullable list when the async iterable provides
-        # concurrent next/return methods and has a slow aclose()
+        """Handles async errors in completeValue after initialCount, with slow aclose
+
+        Handles async errors thrown by completeValue after initialCount is reached
+        from async iterable for a non-nullable list when the async iterable provides
+        concurrent next/return methods and has a slow aclose() method.
+        """
         document = parse(
             """
             query {
@@ -1404,6 +1484,7 @@ def describe_execute_stream_directive():
         assert async_iterable.finished
 
     async def filters_payloads_that_are_nulled():
+        """Filters payloads that are nulled"""
         document = parse(
             """
             query {
@@ -1446,6 +1527,7 @@ def describe_execute_stream_directive():
         }
 
     async def filters_payloads_that_are_nulled_by_a_later_synchronous_error():
+        """Filters payloads that are nulled by a later synchronous error"""
         document = parse(
             """
             query {
@@ -1485,6 +1567,7 @@ def describe_execute_stream_directive():
         }
 
     async def does_not_filter_payloads_when_null_error_is_in_a_different_path():
+        """Does not filter payloads when null error is in a different path"""
         document = parse(
             """
             query {
@@ -1552,6 +1635,7 @@ def describe_execute_stream_directive():
         ]
 
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
+        """Filters stream payloads that are nulled in a deferred payload"""
         document = parse(
             """
             query {
@@ -1618,6 +1702,7 @@ def describe_execute_stream_directive():
         ]
 
     async def filters_defer_payloads_that_are_nulled_in_a_stream_response():
+        """Filters defer payloads that are nulled in a stream response"""
         document = parse(
             """
             query {
@@ -1673,6 +1758,7 @@ def describe_execute_stream_directive():
 
     @pytest.mark.timeout(1)
     async def returns_iterator_and_ignores_error_when_stream_payloads_are_filtered():
+        """Returns iterator and ignores errors when stream payloads are filtered"""
         iterated = False
 
         async def resolve_null(_info):
@@ -1753,6 +1839,7 @@ def describe_execute_stream_directive():
         assert not iterated
 
     async def handles_awaitables_from_complete_value_after_initial_count_is_reached():
+        """Handles awaitables returned by completeValue after initialCount is reached"""
         document = parse(
             """
             query {
@@ -1800,6 +1887,7 @@ def describe_execute_stream_directive():
         ]
 
     async def handles_overlapping_deferred_and_non_deferred_streams():
+        """Handles overlapping deferred and non-deferred streams"""
         document = parse(
             """
             query {
@@ -1853,6 +1941,11 @@ def describe_execute_stream_directive():
         ]
 
     async def returns_payloads_properly_when_parent_deferred_slower_than_stream():
+        """Returns payloads in correct order when parent deferred slower than stream
+
+        Returns payloads in correct order when parent deferred fragment resolves
+        slower than stream.
+        """
         resolve_slow_field = Event()
 
         async def slow_field(_info):
@@ -1928,6 +2021,7 @@ def describe_execute_stream_directive():
 
     @pytest.mark.timeout(1)
     async def can_defer_fields_that_are_resolved_after_async_iterable_is_complete():
+        """Can @defer fields that are resolved after async iterable is complete"""
         resolve_slow_field = Event()
         resolve_iterable = Event()
 
@@ -2005,6 +2099,7 @@ def describe_execute_stream_directive():
             await anext(iterator)
 
     async def can_defer_fields_that_are_resolved_before_async_iterable_is_complete():
+        """Can @defer fields that are resolved before async iterable is complete"""
         resolve_slow_field = Event()
         resolve_iterable = Event()
 
@@ -2084,6 +2179,7 @@ def describe_execute_stream_directive():
             await anext(iterator)
 
     async def finishes_async_iterable_when_finished_generator_is_closed():
+        """Finishes underlying async iterables when returned generator is closed"""
         finished = False
 
         async def iterable(_info):
@@ -2141,7 +2237,9 @@ def describe_execute_stream_directive():
 
         assert finished
 
-    async def finishes_async_iterable_when_underlying_iterator_has_no_close_method():
+    async def finishes_async_iterable_when_underlying_iterator_has_no_aclose_method():
+        """Finishes async iterable when underlying iterable has not aclose method"""
+
         class Iterable:
             def __init__(self):
                 self.index = 0
@@ -2191,6 +2289,7 @@ def describe_execute_stream_directive():
         assert iterable.index == 2
 
     async def finishes_async_iterable_when_error_is_raised_in_finished_generator():
+        """Finishes underlying async iterables when an error is raised in generator"""
         finished = False
 
         async def iterable(_info):
