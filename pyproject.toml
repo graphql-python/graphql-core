@@ -1,6 +1,6 @@
 [project]
 name = "graphql-core"
-version = "3.3.0a9"
+version = "3.3.0a10"
 description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -31,6 +31,7 @@ Homepage = "https://github.com/graphql-python/graphql-core"
 Repository = "https://github.com/graphql-python/graphql-core"
 Documentation = "https://graphql-core-3.readthedocs.io/"
 Changelog = "https://github.com/graphql-python/graphql-core/releases"
+
 [dependency-groups]
 test = [
     "anyio>=3.7.1",
@@ -48,7 +49,6 @@ test = [
     "tox>=4.24; python_version>='3.8'",
     "tox>=3.28,<4; python_version<'3.8'",
 ]
-
 lint = [
     "ruff>=0.13,<0.14",
     "mypy>=1.18; python_version>='3.9'",
@@ -56,7 +56,6 @@ lint = [
     "mypy~=1.4; python_version<'3.8'",
     "bump2version>=1,<2",
 ]
-
 doc = [
     "sphinx>=7,<9; python_version>='3.8'",
     "sphinx>=4,<6; python_version<'3.8'",
@@ -206,7 +205,6 @@ ignore = [
 "tests/test_docs.py" = [
     "S102",  # allow use of exec
 ]
-
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "double"
