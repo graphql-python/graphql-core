@@ -146,6 +146,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                             val.value,
                             description=val.description,
                             deprecation_reason=val.deprecation_reason,
+                            extensions=val.extensions,
                             ast_node=val.ast_node,
                         )
                         for name, val in sorted(type_.values.items())
