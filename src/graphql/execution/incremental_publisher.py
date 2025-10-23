@@ -201,9 +201,9 @@ class IncrementalPublisher:
             deferred_grouped_field_set_result
         ):
             remove_subsequent = self._incremental_graph.remove_subsequent_result_record
-            for (
-                deferred_fragment_record
-            ) in deferred_grouped_field_set_result.deferred_fragment_records:
+            for deferred_fragment_record in (
+                deferred_grouped_field_set_result.deferred_fragment_records
+            ):  # pragma: no branch
                 id_ = deferred_fragment_record.id
                 if id_ is not None:  # pragma: no branch
                     append_completed(
@@ -216,9 +216,9 @@ class IncrementalPublisher:
             "ReconcilableDeferredGroupedFieldSetResult",
             deferred_grouped_field_set_result,
         )
-        for (
-            deferred_fragment_record
-        ) in deferred_grouped_field_set_result.deferred_fragment_records:
+        for deferred_fragment_record in (
+            deferred_grouped_field_set_result.deferred_fragment_records
+        ):  # pragma: no branch
             deferred_fragment_record.reconcilable_results.append(
                 deferred_grouped_field_set_result
             )
@@ -230,9 +230,9 @@ class IncrementalPublisher:
                 incremental_data_records
             )
         complete_deferred = self._incremental_graph.complete_deferred_fragment
-        for (
-            deferred_fragment_record
-        ) in deferred_grouped_field_set_result.deferred_fragment_records:
+        for deferred_fragment_record in (
+            deferred_grouped_field_set_result.deferred_fragment_records
+        ):  # pragma: no branch
             id_ = deferred_fragment_record.id
             if id_ is None:
                 continue  # pragma: no cover
@@ -302,9 +302,9 @@ class IncrementalPublisher:
         path = initial_deferred_fragment_record.path
         max_length = len(path.as_list()) if path else 0
         best_id = initial_id
-        for (
-            deferred_fragment_record
-        ) in deferred_grouped_field_set_result.deferred_fragment_records:
+        for deferred_fragment_record in (
+            deferred_grouped_field_set_result.deferred_fragment_records
+        ):  # pragma: no branch
             if deferred_fragment_record is initial_deferred_fragment_record:
                 continue
             id_ = deferred_fragment_record.id

@@ -61,9 +61,9 @@ class IncrementalGraph:
         """Add incremental data records."""
         for incremental_data_record in incremental_data_records:
             if is_deferred_grouped_field_set_record(incremental_data_record):
-                for (
-                    deferred_fragment_record
-                ) in incremental_data_record.deferred_fragment_records:
+                for deferred_fragment_record in (
+                    incremental_data_record.deferred_fragment_records
+                ):  # pragma: no branch
                     deferred_fragment_record.expected_reconcilable_results += 1
                     self._add_deferred_fragment_record(deferred_fragment_record)
 

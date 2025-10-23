@@ -73,7 +73,7 @@ def build_field_plan(
         for (
             new_grouped_field_set_defer_usage_set,
             new_grouped_field_set_field_group,
-        ) in new_grouped_field_sets.items():
+        ) in new_grouped_field_sets.items():  # pragma: no branch
             if new_grouped_field_set_defer_usage_set == defer_usage_set:
                 new_grouped_field_set = new_grouped_field_set_field_group
                 break

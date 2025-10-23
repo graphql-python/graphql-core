@@ -20,8 +20,7 @@ version 16.8.2 and supports Python versions 3.6 to 3.13.
 
 You can also try out the latest alpha version 3.3.0a10 of GraphQL-core,
 which is up-to-date with GraphQL.js version 17.0.0a3.
-Please note that this new minor version of GraphQL-core does not support
-Python 3.6 anymore.
+This new minor version of GraphQL-core supports Python versions 3.7 to 3.14.
 
 Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
 Changes in the major version of GraphQL.js are reflected in the minor version of
