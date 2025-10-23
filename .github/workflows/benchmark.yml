@@ -17,11 +17,11 @@ jobs:
         id: checkout
         uses: actions/checkout@v5
 
-      - name: Set up Python 3.14
+      - name: Set up Python 3.13
         id: setup-python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.13"
           architecture: x64
 
       - name: Install uv
@@ -39,4 +39,4 @@ jobs:
         with:
           mode: instrumentation
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: tox -e py314 -- -k benchmarks --benchmark-enable --codspeed
+          run: tox -e py313 -- -k benchmarks --benchmark-enable --codspeed
