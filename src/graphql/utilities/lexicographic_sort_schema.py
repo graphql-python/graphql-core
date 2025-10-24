@@ -97,6 +97,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                 ),
                 description=field.description,
                 default_value=field.default_value,
+                extensions=field.extensions,
                 ast_node=field.ast_node,
             )
             for name, field in sorted(fields_map.items())
@@ -143,6 +144,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
                             val.value,
                             description=val.description,
                             deprecation_reason=val.deprecation_reason,
+                            extensions=val.extensions,
                             ast_node=val.ast_node,
                         )
                         for name, val in sorted(type_.values.items())
@@ -179,6 +181,7 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
         subscription=cast(
             Optional[GraphQLObjectType], replace_maybe_type(schema.subscription_type)
         ),
+        extensions=schema.extensions,
         ast_node=schema.ast_node,
     )
 
