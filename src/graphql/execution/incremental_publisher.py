@@ -282,8 +282,9 @@ class IncrementalPublisher:
         """Handle completed stream."""
         stream_record = stream_items_result.stream_record
         id_ = stream_record.id
-        if id_ is None:
-            return  # pragma: no cover
+        if id_ is None:  # pragma: no cover
+            msg = "Missing stream record identifier."
+            raise RuntimeError(msg)
         incremental_graph = self._incremental_graph
         if stream_items_result.errors is not None:
             context.completed.append(CompletedResult(id_, stream_items_result.errors))
