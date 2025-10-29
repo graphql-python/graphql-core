@@ -133,16 +133,22 @@ class IncrementalPublisher:
         """Subscribe to the incremental results."""
         try:
             incremental_graph = self._incremental_graph
-            completed_results = incremental_graph.completed_results
             get_new_pending = incremental_graph.get_new_pending
-            new_result_available = incremental_graph.new_completed_result_available
             check_has_next = incremental_graph.has_next
             pending_sources_to_results = self._pending_sources_to_results
+            completed_incremental_data = incremental_graph.completed_incremental_data()
+            # use the raw iterator rather than 'async for' so as not to end the iterator
+            # when exiting the loop with the next value
+            get_next_results = completed_incremental_data.__aiter__().__anext__
             is_done = False
             while not is_done:
+                try:
+                    completed_results = await get_next_results()
+                except StopAsyncIteration:  # pragma: no cover
+                    break
                 pending: list[PendingResult] = []
 
-                for completed_result in completed_results():
+                for completed_result in completed_results:
                     if is_deferred_grouped_field_set_result(completed_result):
                         self._handle_completed_deferred_grouped_field_set(
                             completed_result
@@ -173,15 +179,12 @@ class IncrementalPublisher:
                     self._completed = []
 
                     yield subsequent_incremental_execution_result
-
-                else:
-                    await new_result_available()
-
         finally:
-            await self._return_stream_iterators()
+            await self._stop_async_iterators()
 
-    async def _return_stream_iterators(self) -> None:
-        """Finish all stream iterators."""
+    async def _stop_async_iterators(self) -> None:
+        """Finish all async iterators."""
+        self._incremental_graph.stop_incremental_data()
         cancellable_streams = self._context.cancellable_streams
         if cancellable_streams is None:
             return

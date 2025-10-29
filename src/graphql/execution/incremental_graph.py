@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from asyncio import Event, Task, ensure_future
+from asyncio import CancelledError, Future, Task, ensure_future
 from typing import (
     TYPE_CHECKING,
     Any,
+    AsyncGenerator,
     Awaitable,
-    Iterator,
+    Generator,
+    Iterable,
     Sequence,
     cast,
 )
@@ -42,17 +44,17 @@ class IncrementalGraph:
 
     _pending: dict[SubsequentResultRecord, None]
     _new_pending: dict[SubsequentResultRecord, None]
-    _completed_result_queue: list[IncrementalDataRecordResult]
+    _completed_queue: list[IncrementalDataRecordResult]
+    _next_queue: list[Future[Iterable[IncrementalDataRecordResult]]]
 
-    _resolve: Event | None
-    _tasks: set[Task[Any]]
+    _tasks: set[Task[Any]]  # benutzt????
 
     def __init__(self) -> None:
         """Initialize the IncrementalGraph."""
         self._pending = {}
         self._new_pending = {}
-        self._completed_result_queue = []
-        self._resolve = None  # lazy initialization
+        self._completed_queue = []
+        self._next_queue = []
         self._tasks = set()
 
     def add_incremental_data_records(
@@ -95,11 +97,11 @@ class IncrementalGraph:
                 async def enqueue_stream(
                     stream_result: Awaitable[StreamItemsResult],
                 ) -> None:
-                    self._enqueue_completed_stream_items(await stream_result)
+                    self._enqueue(await stream_result)
 
                 self._add_task(enqueue_stream(stream_result))
             else:
-                self._enqueue_completed_stream_items(stream_result)  # type: ignore
+                self._enqueue(stream_result)  # type: ignore
 
     def get_new_pending(self) -> list[SubsequentResultRecord]:
         """Get new pending subsequent result records."""
@@ -122,12 +124,21 @@ class IncrementalGraph:
         self._new_pending.clear()
         return new_pending
 
-    def completed_results(self) -> Iterator[IncrementalDataRecordResult]:
-        """Yield completed incremental data record results."""
-        queue = self._completed_result_queue
-        while queue:
-            completed_result = queue.pop(0)
-            yield completed_result
+    async def completed_incremental_data(
+        self,
+    ) -> AsyncGenerator[Iterable[IncrementalDataRecordResult], None]:
+        """Asynchronously yield completed incremental data record results."""
+        while True:
+            if self._completed_queue:
+                first_result = self._completed_queue.pop(0)
+                yield self._yield_current_completed_incremental_data(first_result)
+            else:
+                future: Future[Iterable[IncrementalDataRecordResult]] = Future()
+                self._next_queue.append(future)
+                try:
+                    yield await future
+                except CancelledError:
+                    break  # pragma: no cover
 
     def has_next(self) -> bool:
         """Check if there are more results to process."""
@@ -143,12 +154,12 @@ class IncrementalGraph:
             reconcilable_results
         ):
             return None
-        del self._pending[deferred_fragment_record]
+        self.remove_subsequent_result_record(deferred_fragment_record)
         new_pending = self._new_pending
-        extend = self._completed_result_queue.extend
         for child in deferred_fragment_record.children:
             new_pending[child] = None
-            extend(child.results)
+            for result in child.results:
+                self._enqueue(result)
         return reconcilable_results
 
     def remove_subsequent_result_record(
@@ -157,6 +168,8 @@ class IncrementalGraph:
     ) -> None:
         """Remove a subsequent result record as no longer pending."""
         del self._pending[subsequent_result_record]
+        if not self._pending:
+            self.stop_incremental_data()
 
     def _add_deferred_fragment_record(
         self, deferred_fragment_record: DeferredFragmentRecord
@@ -196,29 +209,8 @@ class IncrementalGraph:
             if deferred_fragment_record.id is not None:
                 has_pending_parent = True
             deferred_fragment_record.results.append(result)
-        append = self._completed_result_queue.append
         if has_pending_parent:
-            append(result)
-            self._trigger()
-
-    def _enqueue_completed_stream_items(self, result: StreamItemsResult) -> None:
-        """Enqueue completed stream items result."""
-        self._completed_result_queue.append(result)
-        self._trigger()
-
-    def _trigger(self) -> None:
-        """Trigger the resolve event."""
-        resolve = self._resolve
-        if resolve is not None:
-            resolve.set()
-        self._resolve = Event()
-
-    async def new_completed_result_available(self) -> None:
-        """Get an awaitable that resolves when a new completed result is available."""
-        resolve = self._resolve
-        if resolve is None:
-            self._resolve = resolve = Event()
-        await resolve.wait()
+            self._enqueue(result)
 
     def _add_task(self, awaitable: Awaitable[Any]) -> None:
         """Add the given task to the tasks set for later execution."""
@@ -226,3 +218,26 @@ class IncrementalGraph:
         task = ensure_future(awaitable)
         tasks.add(task)
         task.add_done_callback(tasks.discard)
+
+    def stop_incremental_data(self) -> None:
+        """Stop the delivery of inclremental data."""
+        for future in self._next_queue:
+            future.cancel()  # pragma: no cover
+
+    def _yield_current_completed_incremental_data(
+        self, first_result: IncrementalDataRecordResult
+    ) -> Generator[IncrementalDataRecordResult, None, None]:
+        """Yield the current completed incremental data."""
+        yield first_result
+        queue = self._completed_queue
+        while queue:
+            yield queue.pop(0)
+
+    def _enqueue(self, completed: IncrementalDataRecordResult) -> None:
+        """Enqueue completed incremental data record result."""
+        try:
+            future = self._next_queue.pop(0)
+        except IndexError:
+            self._completed_queue.append(completed)
+        else:
+            future.set_result(self._yield_current_completed_incremental_data(completed))
