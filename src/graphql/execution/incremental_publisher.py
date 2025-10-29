@@ -218,7 +218,7 @@ class IncrementalPublisher:
         if is_non_reconcilable_deferred_grouped_field_set_result(
             deferred_grouped_field_set_result
         ):
-            remove_subsequent = self._incremental_graph.remove_subsequent_result_record
+            remove_deferred = self._incremental_graph.remove_deferred_fragment
             for deferred_fragment_record in (
                 deferred_grouped_field_set_result.deferred_fragment_records
             ):  # pragma: no branch
@@ -227,19 +227,16 @@ class IncrementalPublisher:
                     append_completed(
                         CompletedResult(id_, deferred_grouped_field_set_result.errors)
                     )
-
-                    remove_subsequent(deferred_fragment_record)
+                    remove_deferred(deferred_fragment_record)
             return
+
         deferred_grouped_field_set_result = cast(
             "ReconcilableDeferredGroupedFieldSetResult",
             deferred_grouped_field_set_result,
         )
-        for deferred_fragment_record in (
-            deferred_grouped_field_set_result.deferred_fragment_records
-        ):  # pragma: no branch
-            deferred_fragment_record.reconcilable_results.append(
-                deferred_grouped_field_set_result
-            )
+        self._incremental_graph.add_completed_reconcilable_deferred_grouped_field_set(
+            deferred_grouped_field_set_result
+        )
         incremental_data_records = (
             deferred_grouped_field_set_result.incremental_data_records
         )
@@ -288,7 +285,7 @@ class IncrementalPublisher:
         incremental_graph = self._incremental_graph
         if stream_items_result.errors is not None:
             context.completed.append(CompletedResult(id_, stream_items_result.errors))
-            incremental_graph.remove_subsequent_result_record(stream_record)
+            incremental_graph.remove_stream(stream_record)
             if is_cancellable_stream_record(stream_record):
                 cancellable_streams = self._context.cancellable_streams
                 if cancellable_streams:  # pragma: no branch
@@ -297,7 +294,7 @@ class IncrementalPublisher:
                     await stream_record.early_return
         elif stream_items_result.result is None:
             context.completed.append(CompletedResult(id_))
-            incremental_graph.remove_subsequent_result_record(stream_record)
+            incremental_graph.remove_stream(stream_record)
             if is_cancellable_stream_record(stream_record):
                 cancellable_streams = self._context.cancellable_streams
                 if cancellable_streams:  # pragma: no branch

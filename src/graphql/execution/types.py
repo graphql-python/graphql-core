@@ -58,7 +58,6 @@ __all__ = [
     "SubsequentResultRecord",
     "TerminatingStreamItemsResult",
     "is_cancellable_stream_record",
-    "is_deferred_fragment_record",
     "is_deferred_grouped_field_set_record",
     "is_deferred_grouped_field_set_result",
     "is_non_reconcilable_deferred_grouped_field_set_result",
@@ -695,13 +694,6 @@ class FormattedCompletedResult(TypedDict):
     errors: NotRequired[list[GraphQLFormattedError]]
 
 
-def is_deferred_fragment_record(
-    subsequent_result_record: SubsequentResultRecord,
-) -> TypeGuard[DeferredFragmentRecord]:
-    """Check if the subsequent result record is a deferred fragment record."""
-    return isinstance(subsequent_result_record, DeferredFragmentRecord)
-
-
 def is_deferred_grouped_field_set_record(
     incremental_data_record: IncrementalDataRecord,
 ) -> TypeGuard[DeferredGroupedFieldSetRecord]:
@@ -838,18 +830,8 @@ class DeferredFragmentRecord(SubsequentResultRecord):
     """
 
     parent: DeferredFragmentRecord | None
-    expected_reconcilable_results: int
-    results: list[DeferredGroupedFieldSetResult]
-    reconcilable_results: list[ReconcilableDeferredGroupedFieldSetResult]
-    children: dict[DeferredFragmentRecord, None]
 
-    __slots__ = (
-        "children",
-        "expected_reconcilable_results",
-        "parent",
-        "reconcilable_results",
-        "results",
-    )
+    __slots__ = ("parent",)
 
     def __init__(
         self,
@@ -859,10 +841,6 @@ class DeferredFragmentRecord(SubsequentResultRecord):
     ) -> None:
         super().__init__(path, label)
         self.parent = parent
-        self.expected_reconcilable_results = 0
-        self.results = []
-        self.reconcilable_results = []
-        self.children = {}
 
 
 class CancellableStreamRecord(SubsequentResultRecord):

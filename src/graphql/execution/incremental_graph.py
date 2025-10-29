@@ -11,11 +11,12 @@ from typing import (
     Generator,
     Iterable,
     Sequence,
+    Union,
     cast,
 )
 
 from graphql.execution.types import (
-    is_deferred_fragment_record,
+    SubsequentResultRecord,
     is_deferred_grouped_field_set_record,
 )
 
@@ -30,10 +31,57 @@ if TYPE_CHECKING:
         ReconcilableDeferredGroupedFieldSetResult,
         StreamItemsRecord,
         StreamItemsResult,
-        SubsequentResultRecord,
     )
 
+    try:
+        from typing import TypeGuard
+    except ImportError:  # Python < 3.10
+        from typing_extensions import TypeGuard
+
 __all__ = ["IncrementalGraph"]
+
+
+class DeferredFragmentNode:
+    """A node representing a deferred fragment in the incremental graph."""
+
+    __slots__ = (
+        "children",
+        "deferred_fragment_record",
+        "expected_reconcilable_results",
+        "reconcilable_results",
+        "results",
+    )
+
+    deferred_fragment_record: DeferredFragmentRecord
+    expected_reconcilable_results: int
+    results: list[DeferredGroupedFieldSetResult]
+    reconcilable_results: list[ReconcilableDeferredGroupedFieldSetResult]
+    children: list[DeferredFragmentNode]
+
+    def __init__(self, deferred_fragment_record: DeferredFragmentRecord) -> None:
+        """Initialize the DeferredFragmentNode."""
+        self.deferred_fragment_record = deferred_fragment_record
+        self.expected_reconcilable_results = 0
+        self.results = []
+        self.reconcilable_results = []
+        self.children = []
+
+
+SubsequentResultNode = Union[DeferredFragmentNode, SubsequentResultRecord]
+
+
+def is_deferred_fragment_node(
+    node: DeferredFragmentNode | None,
+) -> TypeGuard[DeferredFragmentNode]:
+    """Check whether the given node is a deferred fragment node."""
+    return isinstance(node, DeferredFragmentNode)
+
+
+def is_stream_node(
+    node: SubsequentResultNode | None,
+) -> TypeGuard[SubsequentResultRecord]:
+    """Check whether the given result node is a stream node."""
+    return isinstance(node, SubsequentResultRecord)
 
 
 class IncrementalGraph:
@@ -42,8 +90,9 @@ class IncrementalGraph:
     For internal use only.
     """
 
-    _pending: dict[SubsequentResultRecord, None]
-    _new_pending: dict[SubsequentResultRecord, None]
+    _pending: dict[SubsequentResultNode, None]
+    _deferred_fragment_nodes: dict[DeferredFragmentRecord, DeferredFragmentNode]
+    _new_pending: dict[SubsequentResultNode, None]
     _completed_queue: list[IncrementalDataRecordResult]
     _next_queue: list[Future[Iterable[IncrementalDataRecordResult]]]
 
@@ -52,6 +101,7 @@ class IncrementalGraph:
     def __init__(self) -> None:
         """Initialize the IncrementalGraph."""
         self._pending = {}
+        self._deferred_fragment_nodes = {}
         self._new_pending = {}
         self._completed_queue = []
         self._next_queue = []
@@ -66,8 +116,10 @@ class IncrementalGraph:
                 for deferred_fragment_record in (
                     incremental_data_record.deferred_fragment_records
                 ):  # pragma: no branch
-                    deferred_fragment_record.expected_reconcilable_results += 1
-                    self._add_deferred_fragment_record(deferred_fragment_record)
+                    deferred_fragment_node = self._add_deferred_fragment_node(
+                        deferred_fragment_record
+                    )
+                    deferred_fragment_node.expected_reconcilable_results += 1
 
                 deferred_result = incremental_data_record.result
                 if is_awaitable(deferred_result):
@@ -103,6 +155,20 @@ class IncrementalGraph:
             else:
                 self._enqueue(stream_result)  # type: ignore
 
+    def add_completed_reconcilable_deferred_grouped_field_set(
+        self, reconcilable_result: ReconcilableDeferredGroupedFieldSetResult
+    ) -> None:
+        """Add a completed reconcilable deferred grouped field set result."""
+        deferred_fragment_nodes = filter(
+            is_deferred_fragment_node,
+            map(
+                self._deferred_fragment_nodes.get,
+                reconcilable_result.deferred_fragment_records,
+            ),
+        )
+        for deferred_fragment_node in deferred_fragment_nodes:
+            deferred_fragment_node.reconcilable_results.append(reconcilable_result)
+
     def get_new_pending(self) -> list[SubsequentResultRecord]:
         """Get new pending subsequent result records."""
         _pending, _new_pending = self._pending, self._new_pending
@@ -113,17 +179,16 @@ class IncrementalGraph:
         add_iteration = iterate.append
         while iterate:
             node = iterate.pop(0)
-            if is_deferred_fragment_record(node):
-                if node.expected_reconcilable_results:
-                    _pending[node] = None
-                    add_result(node)
-                    continue
-                for child in node.children:
-                    _new_pending[child] = None
-                    add_iteration(child)
-            else:
+            if is_stream_node(node):
                 _pending[node] = None
                 add_result(node)
+            elif node.expected_reconcilable_results:  # type: ignore
+                _pending[node] = None
+                add_result(node.deferred_fragment_record)  # type: ignore
+            else:
+                for child in node.children:  # type: ignore
+                    _new_pending[child] = None
+                    add_iteration(child)
         _new_pending.clear()
         return new_pending
 
@@ -152,53 +217,87 @@ class IncrementalGraph:
         deferred_fragment_record: DeferredFragmentRecord,
     ) -> list[ReconcilableDeferredGroupedFieldSetResult] | None:
         """Complete a deferred fragment."""
-        reconcilable_results = deferred_fragment_record.reconcilable_results
-        if deferred_fragment_record.expected_reconcilable_results != len(
+        try:
+            deferred_fragment_node = self._deferred_fragment_nodes[
+                deferred_fragment_record
+            ]
+        except KeyError:  # pragma: no cover
+            return None
+        reconcilable_results = deferred_fragment_node.reconcilable_results
+        if deferred_fragment_node.expected_reconcilable_results != len(
             reconcilable_results
         ):
             return None
-        self.remove_subsequent_result_record(deferred_fragment_record)
+        self._remove_pending(deferred_fragment_node)
         new_pending = self._new_pending
-        for child in deferred_fragment_record.children:
+        for child in deferred_fragment_node.children:
             new_pending[child] = None
             for result in child.results:
                 self._enqueue(result)
         return reconcilable_results
 
-    def remove_subsequent_result_record(
+    def remove_deferred_fragment(
         self,
-        subsequent_result_record: SubsequentResultRecord,
+        deferred_fragment_record: DeferredFragmentRecord,
     ) -> None:
-        """Remove a subsequent result record as no longer pending."""
-        del self._pending[subsequent_result_record]
+        """Remove a deferred fragment."""
+        try:
+            deferred_fragment_node = self._deferred_fragment_nodes[
+                deferred_fragment_record
+            ]
+        except KeyError:  # pragma: no cover
+            return
+        self._remove_pending(deferred_fragment_node)
+        for child in deferred_fragment_node.children:  # pragma: no cover
+            self.remove_deferred_fragment(child.deferred_fragment_record)
+
+    def remove_stream(self, stream_record: SubsequentResultRecord) -> None:
+        """Remove a stream record as no longer pending."""
+        self._remove_pending(stream_record)
+
+    def _remove_pending(self, subsequent_result_node: SubsequentResultNode) -> None:
+        """Remove a subsequent result node as no longer pending."""
+        del self._pending[subsequent_result_node]
         if not self._pending:
             self.stop_incremental_data()
 
-    def _add_deferred_fragment_record(
+    def _add_deferred_fragment_node(
         self, deferred_fragment_record: DeferredFragmentRecord
-    ) -> None:
-        """Add deferred fragment record."""
-        parent = deferred_fragment_record.parent
-        if parent is None:
-            if deferred_fragment_record.id is not None:
-                return
-            self._new_pending[deferred_fragment_record] = None
-            return
-        if deferred_fragment_record in parent.children:
-            return
-        parent.children[deferred_fragment_record] = None
-        self._add_deferred_fragment_record(parent)
+    ) -> DeferredFragmentNode:
+        """Add a deferred fragment node."""
+        try:
+            deferred_fragment_node = self._deferred_fragment_nodes[
+                deferred_fragment_record
+            ]
+        except KeyError:
+            deferred_fragment_node = DeferredFragmentNode(deferred_fragment_record)
+            self._deferred_fragment_nodes[deferred_fragment_record] = (
+                deferred_fragment_node
+            )
+            parent = deferred_fragment_record.parent
+            if parent is None:
+                self._new_pending[deferred_fragment_node] = None
+            else:
+                parent_node = self._add_deferred_fragment_node(parent)
+                parent_node.children.append(deferred_fragment_node)
+        return deferred_fragment_node
 
     def _enqueue_completed_deferred_grouped_field_set(
         self, result: DeferredGroupedFieldSetResult
     ) -> None:
         """Enqueue completed deferred grouped field set result."""
-        has_pending_parent = False
+        is_pending = False
         for deferred_fragment_record in result.deferred_fragment_records:
-            if deferred_fragment_record.id is not None:
-                has_pending_parent = True
-            deferred_fragment_record.results.append(result)
-        if has_pending_parent:
+            try:
+                deferred_fragment_node = self._deferred_fragment_nodes[
+                    deferred_fragment_record
+                ]
+            except KeyError:  # pragma: no cover
+                continue
+            if deferred_fragment_node in self._pending:
+                is_pending = True
+            deferred_fragment_node.results.append(result)
+        if is_pending:
             self._enqueue(result)
 
     def _add_task(self, awaitable: Awaitable[Any]) -> None:
