@@ -105,23 +105,26 @@ class IncrementalGraph:
 
     def get_new_pending(self) -> list[SubsequentResultRecord]:
         """Get new pending subsequent result records."""
-        maybe_empty_new_pending = self._new_pending
-        pending = self._pending
-        add_non_empty_new_pending = self._add_non_empty_new_pending
+        _pending, _new_pending = self._pending, self._new_pending
         new_pending: list[SubsequentResultRecord] = []
-        append_new_pending = new_pending.append
-        for node in maybe_empty_new_pending:
+        add_result = new_pending.append
+        # avoid iterating over a changing dict
+        iterate = list(_new_pending)
+        add_iteration = iterate.append
+        while iterate:
+            node = iterate.pop(0)
             if is_deferred_fragment_record(node):
                 if node.expected_reconcilable_results:
-                    pending[node] = None
-                    append_new_pending(node)
+                    _pending[node] = None
+                    add_result(node)
                     continue
                 for child in node.children:
-                    add_non_empty_new_pending(child, new_pending)
+                    _new_pending[child] = None
+                    add_iteration(child)
             else:
-                pending[node] = None
-                append_new_pending(node)
-        self._new_pending.clear()
+                _pending[node] = None
+                add_result(node)
+        _new_pending.clear()
         return new_pending
 
     async def completed_incremental_data(
@@ -185,20 +188,6 @@ class IncrementalGraph:
             return
         parent.children[deferred_fragment_record] = None
         self._add_deferred_fragment_record(parent)
-
-    def _add_non_empty_new_pending(
-        self,
-        deferred_fragment_record: DeferredFragmentRecord,
-        new_pending: list[SubsequentResultRecord],
-    ) -> None:
-        """Add non-empty new pending deferred fragment record."""
-        if deferred_fragment_record.expected_reconcilable_results:
-            self._pending[deferred_fragment_record] = None
-            new_pending.append(deferred_fragment_record)
-            return
-        add = self._add_non_empty_new_pending  # pragma: no cover
-        for child in deferred_fragment_record.children:  # pragma: no cover
-            add(child, new_pending)
 
     def _enqueue_completed_deferred_grouped_field_set(
         self, result: DeferredGroupedFieldSetResult
