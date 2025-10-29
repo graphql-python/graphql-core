@@ -1626,15 +1626,19 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_usage_set, defer_map
             )
 
+            deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
+                deferred_fragment_records, cast("DeferredGroupedFieldSetResult", None)
+            )
+
             if should_defer(parent_defer_usages, defer_usage_set):
 
                 async def executor(
-                    deferred_fragment_records: list[DeferredFragmentRecord],
+                    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
                     grouped_field_set: GroupedFieldSet,
                     defer_usage_set: DeferUsageSet,
                 ) -> DeferredGroupedFieldSetResult:
                     result = self.execute_deferred_grouped_field_set(
-                        deferred_fragment_records,
+                        deferred_grouped_field_set_record,
                         parent_type,
                         source_value,
                         path,
@@ -1646,15 +1650,14 @@ class ExecutionContext(IncrementalPublisherContext):
                         return await result
                     return cast("DeferredGroupedFieldSetResult", result)
 
-                deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
-                    deferred_fragment_records,
-                    executor(
-                        deferred_fragment_records, grouped_field_set, defer_usage_set
-                    ),
+                deferred_grouped_field_set_record.result = executor(
+                    deferred_grouped_field_set_record,
+                    grouped_field_set,
+                    defer_usage_set,
                 )
             else:
                 executed = self.execute_deferred_grouped_field_set(
-                    deferred_fragment_records,
+                    deferred_grouped_field_set_record,
                     parent_type,
                     source_value,
                     path,
@@ -1662,9 +1665,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     IncrementalContext(defer_usage_set),
                     defer_map,
                 )
-                deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
-                    deferred_fragment_records, executed
-                )
+                deferred_grouped_field_set_record.result = executed
 
             append_record(deferred_grouped_field_set_record)
 
@@ -1672,7 +1673,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
     def execute_deferred_grouped_field_set(
         self,
-        deferred_fragment_records: list[DeferredFragmentRecord],
+        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
@@ -1692,7 +1693,7 @@ class ExecutionContext(IncrementalPublisherContext):
             )
         except GraphQLError as error:
             return NonReconcilableDeferredGroupedFieldSetResult(
-                deferred_fragment_records,
+                deferred_grouped_field_set_record,
                 path.as_list() if path else [],
                 with_error(incremental_context.errors, error),
             )
@@ -1704,13 +1705,13 @@ class ExecutionContext(IncrementalPublisherContext):
                     awaited_result = await result
                 except GraphQLError as error:
                     return NonReconcilableDeferredGroupedFieldSetResult(
-                        deferred_fragment_records,
+                        deferred_grouped_field_set_record,
                         path.as_list() if path else [],
                         with_error(incremental_context.errors, error),
                     )
                 return build_deferred_grouped_field_set_result(
                     incremental_context.errors,
-                    deferred_fragment_records,
+                    deferred_grouped_field_set_record,
                     path,
                     awaited_result,
                 )
@@ -1719,7 +1720,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
         return build_deferred_grouped_field_set_result(
             incremental_context.errors,
-            deferred_fragment_records,
+            deferred_grouped_field_set_record,
             path,
             result,  # type: ignore
         )
@@ -2330,13 +2331,13 @@ def should_defer(
 
 def build_deferred_grouped_field_set_result(
     errors: list[GraphQLError] | None,
-    deferred_fragment_records: list[DeferredFragmentRecord],
+    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
     path: Path | None,
     result: GraphQLWrappedResult[dict[str, Any]],
 ) -> DeferredGroupedFieldSetResult:
     """Build a deferred grouped fieldset result."""
     return ReconcilableDeferredGroupedFieldSetResult(
-        deferred_fragment_records=deferred_fragment_records,
+        deferred_grouped_field_set_record=deferred_grouped_field_set_record,
         path=path.as_list() if path else [],
         result=BareDeferredGroupedFieldSetResult(result.result, errors or None),
         incremental_data_records=result.increments,

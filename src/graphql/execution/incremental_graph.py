@@ -25,6 +25,7 @@ from ..pyutils.is_awaitable import is_awaitable
 if TYPE_CHECKING:
     from graphql.execution.types import (
         DeferredFragmentRecord,
+        DeferredGroupedFieldSetRecord,
         DeferredGroupedFieldSetResult,
         IncrementalDataRecord,
         IncrementalDataRecordResult,
@@ -48,23 +49,23 @@ class DeferredFragmentNode:
     __slots__ = (
         "children",
         "deferred_fragment_record",
-        "expected_reconcilable_results",
+        "deferred_grouped_field_set_records",
         "reconcilable_results",
         "results",
     )
 
     deferred_fragment_record: DeferredFragmentRecord
-    expected_reconcilable_results: int
+    deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
     results: list[DeferredGroupedFieldSetResult]
-    reconcilable_results: list[ReconcilableDeferredGroupedFieldSetResult]
+    reconcilable_results: dict[ReconcilableDeferredGroupedFieldSetResult, None]
     children: list[DeferredFragmentNode]
 
     def __init__(self, deferred_fragment_record: DeferredFragmentRecord) -> None:
         """Initialize the DeferredFragmentNode."""
         self.deferred_fragment_record = deferred_fragment_record
-        self.expected_reconcilable_results = 0
+        self.deferred_grouped_field_set_records = {}
         self.results = []
-        self.reconcilable_results = []
+        self.reconcilable_results = {}
         self.children = []
 
 
@@ -120,7 +121,9 @@ class IncrementalGraph:
                     deferred_fragment_node = self._add_deferred_fragment_node(
                         deferred_fragment_record
                     )
-                    deferred_fragment_node.expected_reconcilable_results += 1
+                    deferred_fragment_node.deferred_grouped_field_set_records[
+                        incremental_data_record
+                    ] = None
 
                 deferred_result = incremental_data_record.result
                 if is_awaitable(deferred_result):
@@ -160,15 +163,17 @@ class IncrementalGraph:
         self, reconcilable_result: ReconcilableDeferredGroupedFieldSetResult
     ) -> None:
         """Add a completed reconcilable deferred grouped field set result."""
+        record = reconcilable_result.deferred_grouped_field_set_record
         deferred_fragment_nodes = filter(
             is_deferred_fragment_node,
             map(
                 self._deferred_fragment_nodes.get,
-                reconcilable_result.deferred_fragment_records,
+                record.deferred_fragment_records,
             ),
         )
         for deferred_fragment_node in deferred_fragment_nodes:
-            deferred_fragment_node.reconcilable_results.append(reconcilable_result)
+            del deferred_fragment_node.deferred_grouped_field_set_records[record]
+            deferred_fragment_node.reconcilable_results[reconcilable_result] = None
 
     def get_new_pending(self) -> list[SubsequentResultRecord]:
         """Get new pending subsequent result records."""
@@ -183,7 +188,7 @@ class IncrementalGraph:
             if is_stream_node(node):
                 _pending[node] = None
                 add_result(node)
-            elif node.expected_reconcilable_results:  # type: ignore
+            elif node.deferred_grouped_field_set_records:  # type: ignore
                 _pending[node] = None
                 add_result(node.deferred_fragment_record)  # type: ignore
             else:
@@ -218,17 +223,26 @@ class IncrementalGraph:
         deferred_fragment_record: DeferredFragmentRecord,
     ) -> list[ReconcilableDeferredGroupedFieldSetResult] | None:
         """Complete a deferred fragment."""
+        deferred_fragment_nodes = self._deferred_fragment_nodes
         try:
-            deferred_fragment_node = self._deferred_fragment_nodes[
-                deferred_fragment_record
-            ]
+            deferred_fragment_node = deferred_fragment_nodes[deferred_fragment_record]
         except KeyError:  # pragma: no cover
             return None
-        reconcilable_results = deferred_fragment_node.reconcilable_results
-        if deferred_fragment_node.expected_reconcilable_results != len(
-            reconcilable_results
-        ):
+        if deferred_fragment_node.deferred_grouped_field_set_records:
             return None
+        reconcilable_results = list(deferred_fragment_node.reconcilable_results)
+        for reconcilable_result in reconcilable_results:
+            record = reconcilable_result.deferred_grouped_field_set_record
+            for other_deferred_fragment_record in record.deferred_fragment_records:
+                try:
+                    other_deferred_fragment_node = deferred_fragment_nodes[
+                        other_deferred_fragment_record
+                    ]
+                except KeyError:  # pragma: no cover
+                    continue
+                del other_deferred_fragment_node.reconcilable_results[
+                    reconcilable_result
+                ]
         self._remove_pending(deferred_fragment_node)
         new_pending = self._new_pending
         for child in deferred_fragment_node.children:
@@ -288,11 +302,11 @@ class IncrementalGraph:
     ) -> None:
         """Enqueue completed deferred grouped field set result."""
         is_pending = False
-        for deferred_fragment_record in result.deferred_fragment_records:
+        nodes = self._deferred_fragment_nodes
+        record = result.deferred_grouped_field_set_record
+        for deferred_fragment_record in record.deferred_fragment_records:
             try:
-                deferred_fragment_node = self._deferred_fragment_nodes[
-                    deferred_fragment_record
-                ]
+                deferred_fragment_node = nodes[deferred_fragment_record]
             except KeyError:  # pragma: no cover
                 continue
             if deferred_fragment_node in self._pending:

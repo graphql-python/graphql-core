@@ -215,13 +215,12 @@ class IncrementalPublisher:
         """Handle completed deferred grouped field set result."""
         append_completed = context.completed.append
         append_incremental = context.incremental.append
+        record = deferred_grouped_field_set_result.deferred_grouped_field_set_record
         if is_non_reconcilable_deferred_grouped_field_set_result(
             deferred_grouped_field_set_result
         ):
             remove_deferred = self._incremental_graph.remove_deferred_fragment
-            for deferred_fragment_record in (
-                deferred_grouped_field_set_result.deferred_fragment_records
-            ):  # pragma: no branch
+            for deferred_fragment_record in record.deferred_fragment_records:
                 id_ = deferred_fragment_record.id
                 if id_ is not None:  # pragma: no branch
                     append_completed(
@@ -244,10 +243,9 @@ class IncrementalPublisher:
             self._incremental_graph.add_incremental_data_records(
                 incremental_data_records
             )
+
         complete_deferred = self._incremental_graph.complete_deferred_fragment
-        for deferred_fragment_record in (
-            deferred_grouped_field_set_result.deferred_fragment_records
-        ):  # pragma: no branch
+        for deferred_fragment_record in record.deferred_fragment_records:
             id_ = deferred_fragment_record.id
             if id_ is None:
                 continue  # pragma: no cover
@@ -255,9 +253,6 @@ class IncrementalPublisher:
             if reconcilable_results is None:
                 continue
             for reconcilable_result in reconcilable_results:
-                if reconcilable_result.sent:
-                    continue
-                reconcilable_result.sent = True
                 best_id, sub_path = self._get_best_id_and_sub_path(
                     id_, deferred_fragment_record, reconcilable_result
                 )
@@ -320,9 +315,8 @@ class IncrementalPublisher:
         path = initial_deferred_fragment_record.path
         max_length = len(path.as_list()) if path else 0
         best_id = initial_id
-        for deferred_fragment_record in (
-            deferred_grouped_field_set_result.deferred_fragment_records
-        ):  # pragma: no branch
+        record = deferred_grouped_field_set_result.deferred_grouped_field_set_record
+        for deferred_fragment_record in record.deferred_fragment_records:
             if deferred_fragment_record is initial_deferred_fragment_record:
                 continue
             id_ = deferred_fragment_record.id

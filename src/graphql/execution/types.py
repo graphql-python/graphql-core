@@ -704,52 +704,49 @@ def is_deferred_grouped_field_set_record(
 class ReconcilableDeferredGroupedFieldSetResult:
     """Reconcilable deferred grouped field set result"""
 
-    deferred_fragment_records: list[DeferredFragmentRecord]
+    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
     path: list[str | int]
     result: BareDeferredGroupedFieldSetResult
     incremental_data_records: list[IncrementalDataRecord] | None
-    sent: bool
     errors: None = None
 
     __slots__ = (
-        "deferred_fragment_records",
+        "deferred_grouped_field_set_record",
         "incremental_data_records",
         "path",
         "result",
-        "sent",
     )
 
     def __init__(
         self,
-        deferred_fragment_records: list[DeferredFragmentRecord],
+        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
         path: list[str | int],
         result: BareDeferredGroupedFieldSetResult,
         incremental_data_records: list[IncrementalDataRecord] | None = None,
     ) -> None:
-        self.deferred_fragment_records = deferred_fragment_records
+        self.deferred_grouped_field_set_record = deferred_grouped_field_set_record
         self.path = path
         self.result = result
         self.incremental_data_records = incremental_data_records
-        self.sent = False
 
 
 class NonReconcilableDeferredGroupedFieldSetResult:
     """Non-reconcilable deferred grouped field set result"""
 
-    errors: list[GraphQLError]
-    deferred_fragment_records: list[DeferredFragmentRecord]
+    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
     path: list[str | int]
+    errors: list[GraphQLError]
     result: None = None
 
-    __slots__ = "deferred_fragment_records", "errors", "path"
+    __slots__ = "deferred_grouped_field_set_record", "errors", "path"
 
     def __init__(
         self,
-        deferred_fragment_records: list[DeferredFragmentRecord],
+        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
         path: list[str | int],
         errors: list[GraphQLError],
     ) -> None:
-        self.deferred_fragment_records = deferred_fragment_records
+        self.deferred_grouped_field_set_record = deferred_grouped_field_set_record
         self.path = path
         self.errors = errors
 
