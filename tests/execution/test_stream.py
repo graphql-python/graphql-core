@@ -10,9 +10,11 @@ from graphql.execution import (
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalStreamResult,
+    StreamRecord,
     experimental_execute_incrementally,
 )
 from graphql.language import DocumentNode, parse
+from graphql.pyutils import Path
 from graphql.type import (
     GraphQLField,
     GraphQLID,
@@ -243,6 +245,14 @@ def describe_execute_stream_directive():
         assert hash(result) != hash(
             IncrementalStreamResult(**modified_args(args, extensions={"baz": 1}))
         )
+
+    def can_print_stream_record():
+        """Can print a StreamRecord"""
+        path = Path(None, "bar", "Bar")
+        record = StreamRecord(path)
+        assert str(record) == "StreamRecord(path=['bar'])"
+        record = StreamRecord(path, "foo")
+        assert str(record) == "StreamRecord(path=['bar'], label='foo')"
 
     async def can_stream_a_list_field():
         """Can stream a list field"""

@@ -16,7 +16,7 @@ from typing import (
 )
 
 from graphql.execution.types import (
-    SubsequentResultRecord,
+    StreamRecord,
     is_deferred_grouped_field_set_record,
 )
 
@@ -31,6 +31,7 @@ if TYPE_CHECKING:
         ReconcilableDeferredGroupedFieldSetResult,
         StreamItemsRecord,
         StreamItemsResult,
+        SubsequentResultRecord,
     )
 
     try:
@@ -67,7 +68,7 @@ class DeferredFragmentNode:
         self.children = []
 
 
-SubsequentResultNode = Union[DeferredFragmentNode, SubsequentResultRecord]
+SubsequentResultNode = Union[DeferredFragmentNode, StreamRecord]
 
 
 def is_deferred_fragment_node(
@@ -79,9 +80,9 @@ def is_deferred_fragment_node(
 
 def is_stream_node(
     node: SubsequentResultNode | None,
-) -> TypeGuard[SubsequentResultRecord]:
+) -> TypeGuard[StreamRecord]:
     """Check whether the given result node is a stream node."""
-    return isinstance(node, SubsequentResultRecord)
+    return isinstance(node, StreamRecord)
 
 
 class IncrementalGraph:
@@ -251,7 +252,7 @@ class IncrementalGraph:
         for child in deferred_fragment_node.children:  # pragma: no cover
             self.remove_deferred_fragment(child.deferred_fragment_record)
 
-    def remove_stream(self, stream_record: SubsequentResultRecord) -> None:
+    def remove_stream(self, stream_record: StreamRecord) -> None:
         """Remove a stream record as no longer pending."""
         self._remove_pending(stream_record)
 

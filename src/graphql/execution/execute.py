@@ -104,7 +104,7 @@ from .types import (
     ReconcilableStreamItemsResult,
     StreamItemsRecord,
     StreamItemsResult,
-    SubsequentResultRecord,
+    StreamRecord,
     TerminatingStreamItemsResult,
     is_reconcilable_stream_items_result,
 )
@@ -957,10 +957,10 @@ class ExecutionContext(IncrementalPublisherContext):
                     early_return = async_iterator.aclose()  # type: ignore
                 except AttributeError:
                     early_return = None
-                stream_record: SubsequentResultRecord | CancellableStreamRecord
+                stream_record: StreamRecord
 
                 if early_return is None:
-                    stream_record = SubsequentResultRecord(path, stream_usage.label)
+                    stream_record = StreamRecord(path, stream_usage.label)
                 else:
                     stream_record = CancellableStreamRecord(
                         early_return, path, stream_usage.label
@@ -1117,7 +1117,7 @@ class ExecutionContext(IncrementalPublisherContext):
             except StopIteration:
                 break
             if stream_usage and index >= stream_usage.initial_count:
-                stream_record = SubsequentResultRecord(path, stream_usage.label)
+                stream_record = StreamRecord(path, stream_usage.label)
 
                 first_stream_items = self.first_sync_stream_items(
                     stream_record,
@@ -1726,7 +1726,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
     def first_sync_stream_items(
         self,
-        stream_record: SubsequentResultRecord,
+        stream_record: StreamRecord,
         initial_item: AwaitableOrValue[Any],
         initial_index: int,
         iterator: Iterable[Any],
@@ -1798,7 +1798,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
     def first_async_stream_items(
         self,
-        stream_record: SubsequentResultRecord,
+        stream_record: StreamRecord,
         path: Path,
         initial_index: int,
         async_iterator: AsyncIterator[Any],
@@ -1822,7 +1822,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
     async def get_next_async_stream_items_result(
         self,
-        stream_record: SubsequentResultRecord,
+        stream_record: StreamRecord,
         path: Path,
         index: int,
         async_iterator: AsyncIterator[Any],
@@ -1868,7 +1868,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
     def complete_stream_items(
         self,
-        stream_record: SubsequentResultRecord,
+        stream_record: StreamRecord,
         item_path: Path,
         item: Any,
         incremental_context: IncrementalContext,
@@ -2371,7 +2371,7 @@ def prepend_next_resolved_stream_items(
 
 def build_stream_items_result(
     errors: list[GraphQLError] | None,
-    stream_record: SubsequentResultRecord,
+    stream_record: StreamRecord,
     result: GraphQLWrappedResult[Any],
 ) -> StreamItemsResult:
     """Build a stream items result."""

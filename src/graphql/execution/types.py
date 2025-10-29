@@ -799,18 +799,25 @@ class DeferredGroupedFieldSetRecord:
         self.deferred_fragment_records = deferred_fragment_records
 
 
-class SubsequentResultRecord:
-    """Subsequent result record"""
+class DeferredFragmentRecord:
+    """Deferred fragment record"""
 
     path: Path | None
     label: str | None
     id: str | None
+    parent: DeferredFragmentRecord | None
 
-    __slots__ = "id", "label", "path"
+    __slots__ = "id", "label", "parent", "path"
 
-    def __init__(self, path: Path | None, label: str | None = None) -> None:
+    def __init__(
+        self,
+        path: Path | None = None,
+        label: str | None = None,
+        parent: DeferredFragmentRecord | None = None,
+    ) -> None:
         self.path = path
         self.label = label
+        self.parent = parent
         self.id = None
 
     def __repr__(self) -> str:
@@ -823,27 +830,36 @@ class SubsequentResultRecord:
         return f"{name}({', '.join(args)})"
 
 
-class DeferredFragmentRecord(SubsequentResultRecord):
-    """Deferred fragment record
+class StreamRecord:
+    """Stream record"""
 
-    For internal use only.
-    """
+    path: Path
+    label: str | None
+    id: str | None
 
-    parent: DeferredFragmentRecord | None
-
-    __slots__ = ("parent",)
+    __slots__ = "id", "label", "path"
 
     def __init__(
         self,
-        path: Path | None = None,
+        path: Path,
         label: str | None = None,
-        parent: DeferredFragmentRecord | None = None,
     ) -> None:
-        super().__init__(path, label)
-        self.parent = parent
+        self.path = path
+        self.label = label
+        self.id = None
+
+    def __repr__(self) -> str:
+        name = self.__class__.__name__
+        args: list[str] = [f"path={self.path.as_list()!r}"]
+        if self.label:
+            args.append(f"label={self.label!r}")
+        return f"{name}({', '.join(args)})"
 
 
-class CancellableStreamRecord(SubsequentResultRecord):
+SubsequentResultRecord = Union[DeferredFragmentRecord, StreamRecord]
+
+
+class CancellableStreamRecord(StreamRecord):
     """Cancellable stream record"""
 
     early_return: Awaitable[None]
@@ -851,10 +867,7 @@ class CancellableStreamRecord(SubsequentResultRecord):
     __slots__ = ("early_return",)
 
     def __init__(
-        self,
-        early_return: Awaitable[None],
-        path: Path | None = None,
-        label: str | None = None,
+        self, early_return: Awaitable[None], path: Path, label: str | None = None
     ) -> None:
         super().__init__(path, label)
         self.early_return = early_return
@@ -870,7 +883,7 @@ def is_cancellable_stream_record(
 class ReconcilableStreamItemsResult(NamedTuple):
     """Reconcilable stream items result"""
 
-    stream_record: SubsequentResultRecord
+    stream_record: StreamRecord
     result: BareStreamItemsResult
     incremental_data_records: list[IncrementalDataRecord] | None = None
     errors: None = None
@@ -886,7 +899,7 @@ def is_reconcilable_stream_items_result(
 class TerminatingStreamItemsResult(NamedTuple):
     """Terminating stream items result"""
 
-    stream_record: SubsequentResultRecord
+    stream_record: StreamRecord
     result: None = None
     incremental_data_record: None = None
     errors: None = None
@@ -895,7 +908,7 @@ class TerminatingStreamItemsResult(NamedTuple):
 class NonReconcilableStreamItemsResult(NamedTuple):
     """Non-reconcilable stream items result"""
 
-    stream_record: SubsequentResultRecord
+    stream_record: StreamRecord
     errors: list[GraphQLError]
     result: None = None
 
@@ -912,12 +925,12 @@ class StreamItemsRecord:
 
     __slots__ = "result", "stream_record"
 
-    stream_record: SubsequentResultRecord
+    stream_record: StreamRecord
     result: AwaitableOrValue[StreamItemsResult]
 
     def __init__(
         self,
-        stream_record: SubsequentResultRecord,
+        stream_record: StreamRecord,
         result: AwaitableOrValue[StreamItemsResult],
     ) -> None:
         self.stream_record = stream_record
