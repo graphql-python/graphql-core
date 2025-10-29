@@ -254,17 +254,18 @@ class IncrementalGraph:
     def remove_deferred_fragment(
         self,
         deferred_fragment_record: DeferredFragmentRecord,
-    ) -> None:
-        """Remove a deferred fragment."""
+    ) -> bool:
+        """Check if deferred fragment exists and remove it in that case."""
+        deferred_fragment_nodes = self._deferred_fragment_nodes
         try:
-            deferred_fragment_node = self._deferred_fragment_nodes[
-                deferred_fragment_record
-            ]
+            deferred_fragment_node = deferred_fragment_nodes[deferred_fragment_record]
         except KeyError:  # pragma: no cover
-            return
+            return False
         self._remove_pending(deferred_fragment_node)
+        del deferred_fragment_nodes[deferred_fragment_record]
         for child in deferred_fragment_node.children:  # pragma: no cover
             self.remove_deferred_fragment(child.deferred_fragment_record)
+        return True
 
     def remove_stream(self, stream_record: StreamRecord) -> None:
         """Remove a stream record as no longer pending."""

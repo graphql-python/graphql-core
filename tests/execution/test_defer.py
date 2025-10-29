@@ -1580,6 +1580,154 @@ def describe_execute_defer_directive():
             },
         ]
 
+    async def handles_multiple_erroring_deferred_grouped_field_sets():
+        """Handles multiple erroring deferred grouped field sets"""
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  b {
+                    c {
+                      someError: nonNullErrorField
+                    }
+                  }
+                }
+              }
+              ... @defer {
+                a {
+                  b {
+                    c {
+                      anotherError: nonNullErrorField
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"a": {"b": {"c": {"nonNullErrorField": None}}}},
+        )
+        assert result == [
+            {
+                "data": {},
+                "pending": [
+                    {"id": "0", "path": []},
+                    {"id": "1", "path": []},
+                ],
+                "hasNext": True,
+            },
+            {
+                "completed": [
+                    {
+                        "id": "0",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 7, "column": 23}],
+                                "path": ["a", "b", "c", "someError"],
+                            },
+                        ],
+                    },
+                    {
+                        "id": "1",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 16, "column": 23}],
+                                "path": ["a", "b", "c", "anotherError"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    async def handles_multiple_erroring_deferred_grouped_field_sets_for_same_fragment():
+        """Handles multiple erroring deferred grouped field sets for same fragment"""
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  b {
+                    someC: c {
+                      d: d
+                    }
+                    anotherC: c {
+                      d: d
+                    }
+                  }
+                }
+              }
+              ... @defer {
+                a {
+                  b {
+                    someC: c {
+                      someError: nonNullErrorField
+                    }
+                    anotherC: c {
+                      anotherError: nonNullErrorField
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"a": {"b": {"c": {"d": "d", "nonNullErrorField": None}}}},
+        )
+        assert result == [
+            {
+                "data": {},
+                "pending": [
+                    {"id": "0", "path": []},
+                    {"id": "1", "path": []},
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"a": {"b": {"someC": {}, "anotherC": {}}}},
+                        "id": "0",
+                    },
+                    {
+                        "data": {"d": "d"},
+                        "id": "0",
+                        "subPath": ["a", "b", "someC"],
+                    },
+                    {
+                        "data": {"d": "d"},
+                        "id": "0",
+                        "subPath": ["a", "b", "anotherC"],
+                    },
+                ],
+                "completed": [
+                    {
+                        "id": "1",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 19, "column": 23}],
+                                "path": ["a", "b", "someC", "someError"],
+                            },
+                        ],
+                    },
+                    {"id": "0"},
+                ],
+                "hasNext": False,
+            },
+        ]
+
     async def nulls_cross_defer_boundaries_value_first():
         """Nulls cross defer boundaries, value first"""
         document = parse(

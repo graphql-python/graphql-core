@@ -221,12 +221,17 @@ class IncrementalPublisher:
         ):
             remove_deferred = self._incremental_graph.remove_deferred_fragment
             for deferred_fragment_record in record.deferred_fragment_records:
+                if not remove_deferred(deferred_fragment_record):
+                    # multiple deferred grouped field sets could error for a fragment
+                    continue
                 id_ = deferred_fragment_record.id
-                if id_ is not None:  # pragma: no branch
-                    append_completed(
-                        CompletedResult(id_, deferred_grouped_field_set_result.errors)
-                    )
-                    remove_deferred(deferred_fragment_record)
+                if id_ is None:  # pragma: no cover
+                    msg = "Missing deferred fragment record identifier."
+                    raise RuntimeError(msg)
+                append_completed(
+                    CompletedResult(id_, deferred_grouped_field_set_result.errors)
+                )
+                remove_deferred(deferred_fragment_record)
             return
 
         deferred_grouped_field_set_result = cast(
