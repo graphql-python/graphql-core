@@ -26,12 +26,10 @@ if TYPE_CHECKING:
     from graphql.execution.types import (
         DeferredFragmentRecord,
         DeferredGroupedFieldSetRecord,
-        DeferredGroupedFieldSetResult,
         IncrementalDataRecord,
         IncrementalDataRecordResult,
         ReconcilableDeferredGroupedFieldSetResult,
         StreamItemsRecord,
-        StreamItemsResult,
         SubsequentResultRecord,
     )
 
@@ -51,12 +49,10 @@ class DeferredFragmentNode:
         "deferred_fragment_record",
         "deferred_grouped_field_set_records",
         "reconcilable_results",
-        "results",
     )
 
     deferred_fragment_record: DeferredFragmentRecord
     deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
-    results: list[DeferredGroupedFieldSetResult]
     reconcilable_results: dict[ReconcilableDeferredGroupedFieldSetResult, None]
     children: list[DeferredFragmentNode]
 
@@ -64,7 +60,6 @@ class DeferredFragmentNode:
         """Initialize the DeferredFragmentNode."""
         self.deferred_fragment_record = deferred_fragment_record
         self.deferred_grouped_field_set_records = {}
-        self.results = []
         self.reconcilable_results = {}
         self.children = []
 
@@ -95,6 +90,7 @@ class IncrementalGraph:
     _pending: dict[SubsequentResultNode, None]
     _deferred_fragment_nodes: dict[DeferredFragmentRecord, DeferredFragmentNode]
     _new_pending: dict[SubsequentResultNode, None]
+    _new_incremental_data_records: dict[IncrementalDataRecord, None]
     _completed_queue: list[IncrementalDataRecordResult]
     _next_queue: list[Future[Iterable[IncrementalDataRecordResult]]]
 
@@ -105,6 +101,7 @@ class IncrementalGraph:
         self._pending = {}
         self._deferred_fragment_nodes = {}
         self._new_pending = {}
+        self._new_incremental_data_records = {}
         self._completed_queue = []
         self._next_queue = []
         self._tasks = set()
@@ -115,49 +112,10 @@ class IncrementalGraph:
         """Add incremental data records."""
         for incremental_data_record in incremental_data_records:
             if is_deferred_grouped_field_set_record(incremental_data_record):
-                for deferred_fragment_record in (
-                    incremental_data_record.deferred_fragment_records
-                ):  # pragma: no branch
-                    deferred_fragment_node = self._add_deferred_fragment_node(
-                        deferred_fragment_record
-                    )
-                    deferred_fragment_node.deferred_grouped_field_set_records[
-                        incremental_data_record
-                    ] = None
-
-                deferred_result = incremental_data_record.result
-                if is_awaitable(deferred_result):
-
-                    async def enqueue_deferred(
-                        deferred_result: Awaitable[DeferredGroupedFieldSetResult],
-                    ) -> None:
-                        self._enqueue_completed_deferred_grouped_field_set(
-                            await deferred_result
-                        )
-
-                    self._add_task(enqueue_deferred(deferred_result))
-                else:
-                    self._enqueue_completed_deferred_grouped_field_set(
-                        deferred_result,  # type: ignore
-                    )
-                continue
-
-            incremental_data_record = cast("StreamItemsRecord", incremental_data_record)
-            stream_record = incremental_data_record.stream_record
-            if stream_record.id is None:
-                self._new_pending[stream_record] = None
-
-            stream_result = incremental_data_record.result
-            if is_awaitable(stream_result):
-
-                async def enqueue_stream(
-                    stream_result: Awaitable[StreamItemsResult],
-                ) -> None:
-                    self._enqueue(await stream_result)
-
-                self._add_task(enqueue_stream(stream_result))
+                self._add_deferred_grouped_field_set_record(incremental_data_record)
             else:
-                self._enqueue(stream_result)  # type: ignore
+                stream_items_record = cast("StreamItemsRecord", incremental_data_record)
+                self._add_stream_items_record(stream_items_record)
 
     def add_completed_reconcilable_deferred_grouped_field_set(
         self, reconcilable_result: ReconcilableDeferredGroupedFieldSetResult
@@ -178,6 +136,7 @@ class IncrementalGraph:
     def get_new_pending(self) -> list[SubsequentResultRecord]:
         """Get new pending subsequent result records."""
         _pending, _new_pending = self._pending, self._new_pending
+        _new_incremental_data_records = self._new_incremental_data_records
         new_pending: list[SubsequentResultRecord] = []
         add_result = new_pending.append
         # avoid iterating over a changing dict
@@ -189,6 +148,11 @@ class IncrementalGraph:
                 _pending[node] = None
                 add_result(node)
             elif node.deferred_grouped_field_set_records:  # type: ignore
+                records = node.deferred_grouped_field_set_records  # type: ignore
+                for deferred_grouped_field_set_node in records:  # pragma: no branch
+                    _new_incremental_data_records[deferred_grouped_field_set_node] = (
+                        None
+                    )
                 _pending[node] = None
                 add_result(node.deferred_fragment_record)  # type: ignore
             else:
@@ -196,6 +160,22 @@ class IncrementalGraph:
                     _new_pending[child] = None
                     add_iteration(child)
         _new_pending.clear()
+
+        enqueue = self._enqueue
+        for incremental_data_record in _new_incremental_data_records:
+            result = incremental_data_record.result
+            if is_awaitable(result):
+
+                async def enqueue_incremental(
+                    result: Awaitable[IncrementalDataRecordResult],
+                ) -> None:
+                    enqueue(await result)
+
+                self._add_task(enqueue_incremental(result))
+            else:
+                enqueue(result)  # type: ignore
+        _new_incremental_data_records.clear()
+
         return new_pending
 
     async def completed_incremental_data(
@@ -247,8 +227,6 @@ class IncrementalGraph:
         new_pending = self._new_pending
         for child in deferred_fragment_node.children:
             new_pending[child] = None
-            for result in child.results:
-                self._enqueue(result)
         return reconcilable_results
 
     def remove_deferred_fragment(
@@ -277,6 +255,29 @@ class IncrementalGraph:
         if not self._pending:
             self.stop_incremental_data()
 
+    def _add_deferred_grouped_field_set_record(
+        self, deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
+    ) -> None:
+        """Add a deferred grouped field set record."""
+        pending = self._pending
+        new_incremental_data_records = self._new_incremental_data_records
+        add = self._add_deferred_fragment_node
+        records = deferred_grouped_field_set_record.deferred_fragment_records
+        for deferred_fragment_record in records:  # pragma: no branch
+            deferred_fragment_node = add(deferred_fragment_record)
+            if deferred_fragment_node in pending:
+                new_incremental_data_records[deferred_grouped_field_set_record] = None
+            deferred_fragment_node.deferred_grouped_field_set_records[
+                deferred_grouped_field_set_record
+            ] = None
+
+    def _add_stream_items_record(self, stream_items_record: StreamItemsRecord) -> None:
+        """Add a stream items record."""
+        stream_record = stream_items_record.stream_record
+        if stream_record not in self._pending:
+            self._new_pending[stream_record] = None
+        self._new_incremental_data_records[stream_items_record] = None
+
     def _add_deferred_fragment_node(
         self, deferred_fragment_record: DeferredFragmentRecord
     ) -> DeferredFragmentNode:
@@ -297,24 +298,6 @@ class IncrementalGraph:
                 parent_node = self._add_deferred_fragment_node(parent)
                 parent_node.children.append(deferred_fragment_node)
         return deferred_fragment_node
-
-    def _enqueue_completed_deferred_grouped_field_set(
-        self, result: DeferredGroupedFieldSetResult
-    ) -> None:
-        """Enqueue completed deferred grouped field set result."""
-        is_pending = False
-        nodes = self._deferred_fragment_nodes
-        record = result.deferred_grouped_field_set_record
-        for deferred_fragment_record in record.deferred_fragment_records:
-            try:
-                deferred_fragment_node = nodes[deferred_fragment_record]
-            except KeyError:  # pragma: no cover
-                continue
-            if deferred_fragment_node in self._pending:
-                is_pending = True
-            deferred_fragment_node.results.append(result)
-        if is_pending:
-            self._enqueue(result)
 
     def _add_task(self, awaitable: Awaitable[Any]) -> None:
         """Add the given task to the tasks set for later execution."""

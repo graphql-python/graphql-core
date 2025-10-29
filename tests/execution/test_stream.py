@@ -1625,6 +1625,10 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
+                        "items": [{"name": "Luke"}],
+                        "id": "1",
+                    },
+                    {
                         "data": {"scalarField": None},
                         "id": "0",
                         "errors": [
@@ -1635,7 +1639,6 @@ def describe_execute_stream_directive():
                             },
                         ],
                     },
-                    {"items": [{"name": "Luke"}], "id": "1"},
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": True,
@@ -2082,8 +2085,8 @@ def describe_execute_stream_directive():
         assert result2.formatted == {
             "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [
-                {"data": {"name": "Luke"}, "id": "0"},
                 {"items": [{"id": "2"}], "id": "1"},
+                {"data": {"name": "Luke"}, "id": "0"},
             ],
             "completed": [{"id": "0"}],
             "hasNext": True,
@@ -2160,8 +2163,8 @@ def describe_execute_stream_directive():
         assert result2.formatted == {
             "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [
-                {"data": {"name": "Luke"}, "id": "0"},
                 {"items": [{"id": "2"}], "id": "1"},
+                {"data": {"name": "Luke"}, "id": "0"},
             ],
             "completed": [{"id": "0"}],
             "hasNext": True,
@@ -2233,8 +2236,8 @@ def describe_execute_stream_directive():
         assert result2 == {
             "pending": [{"id": "2", "path": ["friendList", 1]}],
             "incremental": [
-                {"data": {"name": "Luke"}, "id": "0"},
                 {"items": [{"id": "2"}], "id": "1"},
+                {"data": {"name": "Luke"}, "id": "0"},
             ],
             "completed": [{"id": "0"}],
             "hasNext": True,

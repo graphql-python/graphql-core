@@ -726,6 +726,12 @@ def describe_execute_defer_directive():
                 "pending": [{"id": "1", "path": ["hero"], "label": "DeferNested"}],
                 "incremental": [
                     {"data": {"id": "1"}, "id": "0"},
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
                     {
                         "data": {
                             "friends": [
@@ -737,7 +743,7 @@ def describe_execute_defer_directive():
                         "id": "1",
                     },
                 ],
-                "completed": [{"id": "0"}, {"id": "1"}],
+                "completed": [{"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1324,7 +1330,6 @@ def describe_execute_defer_directive():
             {
                 "pending": [
                     {"id": "1", "path": ["hero", "nestedObject"]},
-                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]},
                 ],
                 "incremental": [
                     {
@@ -1332,14 +1337,32 @@ def describe_execute_defer_directive():
                         "id": "0",
                         "subPath": ["nestedObject", "deeperObject"],
                     },
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": True,
+            },
+            {
+                "pending": [
+                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]}
+                ],
+                "incremental": [
                     {
                         "data": {"baz": "baz"},
                         "id": "1",
                         "subPath": ["deeperObject"],
                     },
-                    {"data": {"bak": "bak"}, "id": "2"},
                 ],
-                "completed": [{"id": "0"}, {"id": "1"}, {"id": "2"}],
+                "completed": [{"id": "1"}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {"bak": "bak"},
+                        "id": "2",
+                    },
+                ],
+                "completed": [{"id": "2"}],
                 "hasNext": False,
             },
         ]
