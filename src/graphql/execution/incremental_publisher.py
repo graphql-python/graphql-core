@@ -8,6 +8,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
+    NamedTuple,
     Sequence,
     cast,
 )
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
         DeferredFragmentRecord,
         DeferredGroupedFieldSetResult,
         IncrementalDataRecord,
+        IncrementalDataRecordResult,
         IncrementalResult,
         ReconcilableDeferredGroupedFieldSetResult,
         StreamItemsResult,
@@ -60,6 +62,14 @@ class IncrementalPublisherContext(Protocol):
     cancellable_streams: set[CancellableStreamRecord] | None
 
 
+class SubsequentIncrementalExecutionResultContext(NamedTuple):
+    """The context for subsequent incremental execution results."""
+
+    pending: list[PendingResult]
+    incremental: list[IncrementalResult]
+    completed: list[CompletedResult]
+
+
 class IncrementalPublisher:
     """Publish incremental results.
 
@@ -72,15 +82,11 @@ class IncrementalPublisher:
     _context: IncrementalPublisherContext
     _next_id: int
     _incremental_graph: IncrementalGraph
-    _incremental: list[IncrementalResult]
-    _completed: list[CompletedResult]
 
     def __init__(self, context: IncrementalPublisherContext) -> None:
         self._context = context
         self._next_id = 0
         self._incremental_graph = IncrementalGraph()
-        self._incremental = []
-        self._completed = []
 
     def build_response(
         self,
@@ -131,36 +137,26 @@ class IncrementalPublisher:
         self,
     ) -> AsyncGenerator[SubsequentIncrementalExecutionResult, None]:
         """Subscribe to the incremental results."""
+        incremental_graph = self._incremental_graph
+        check_has_next = incremental_graph.has_next
+        handle_completed_incremental_data = self._handle_completed_incremental_data
+        completed_incremental_data = incremental_graph.completed_incremental_data()
+        # use the raw iterator rather than 'async for' so as not to end the iterator
+        # when exiting the loop with the next value
+        get_next_results = completed_incremental_data.__aiter__().__anext__
+        is_done = False
         try:
-            incremental_graph = self._incremental_graph
-            get_new_pending = incremental_graph.get_new_pending
-            check_has_next = incremental_graph.has_next
-            pending_sources_to_results = self._pending_sources_to_results
-            completed_incremental_data = incremental_graph.completed_incremental_data()
-            # use the raw iterator rather than 'async for' so as not to end the iterator
-            # when exiting the loop with the next value
-            get_next_results = completed_incremental_data.__aiter__().__anext__
-            is_done = False
             while not is_done:
                 try:
                     completed_results = await get_next_results()
                 except StopAsyncIteration:  # pragma: no cover
                     break
-                pending: list[PendingResult] = []
 
+                context = SubsequentIncrementalExecutionResultContext([], [], [])
                 for completed_result in completed_results:
-                    if is_deferred_grouped_field_set_result(completed_result):
-                        self._handle_completed_deferred_grouped_field_set(
-                            completed_result
-                        )
-                    else:
-                        completed_result = cast("StreamItemsResult", completed_result)
-                        await self._handle_completed_stream_items(completed_result)
+                    await handle_completed_incremental_data(completed_result, context)
 
-                    new_pending = get_new_pending()
-                    pending.extend(pending_sources_to_results(new_pending))
-
-                if self._incremental or self._completed:
+                if context.incremental or context.completed:
                     has_next = check_has_next()
 
                     if not has_next:
@@ -169,14 +165,11 @@ class IncrementalPublisher:
                     subsequent_incremental_execution_result = (
                         SubsequentIncrementalExecutionResult(
                             has_next=has_next,
-                            pending=pending or None,
-                            incremental=self._incremental or None,
-                            completed=self._completed or None,
+                            pending=context.pending or None,
+                            incremental=context.incremental or None,
+                            completed=context.completed or None,
                         )
                     )
-
-                    self._incremental = []
-                    self._completed = []
 
                     yield subsequent_incremental_execution_result
         finally:
@@ -194,12 +187,34 @@ class IncrementalPublisher:
         if early_returns:
             await gather(*early_returns, return_exceptions=True)
 
+    async def _handle_completed_incremental_data(
+        self,
+        completed_incremental_data: IncrementalDataRecordResult,
+        context: SubsequentIncrementalExecutionResultContext,
+    ) -> None:
+        if is_deferred_grouped_field_set_result(completed_incremental_data):
+            self._handle_completed_deferred_grouped_field_set(
+                completed_incremental_data, context
+            )
+        else:
+            completed_incremental_data = cast(
+                "StreamItemsResult", completed_incremental_data
+            )
+            await self._handle_completed_stream_items(
+                completed_incremental_data, context
+            )
+
+        new_pending = self._incremental_graph.get_new_pending()
+        context.pending.extend(self._pending_sources_to_results(new_pending))
+
     def _handle_completed_deferred_grouped_field_set(
-        self, deferred_grouped_field_set_result: DeferredGroupedFieldSetResult
+        self,
+        deferred_grouped_field_set_result: DeferredGroupedFieldSetResult,
+        context: SubsequentIncrementalExecutionResultContext,
     ) -> None:
         """Handle completed deferred grouped field set result."""
-        append_completed = self._completed.append
-        append_incremental = self._incremental.append
+        append_completed = context.completed.append
+        append_incremental = context.incremental.append
         if is_non_reconcilable_deferred_grouped_field_set_result(
             deferred_grouped_field_set_result
         ):
@@ -260,7 +275,9 @@ class IncrementalPublisher:
             append_completed(CompletedResult(id_))
 
     async def _handle_completed_stream_items(
-        self, stream_items_result: StreamItemsResult
+        self,
+        stream_items_result: StreamItemsResult,
+        context: SubsequentIncrementalExecutionResultContext,
     ) -> None:
         """Handle completed stream."""
         stream_record = stream_items_result.stream_record
@@ -269,7 +286,7 @@ class IncrementalPublisher:
             return  # pragma: no cover
         incremental_graph = self._incremental_graph
         if stream_items_result.errors is not None:
-            self._completed.append(CompletedResult(id_, stream_items_result.errors))
+            context.completed.append(CompletedResult(id_, stream_items_result.errors))
             incremental_graph.remove_subsequent_result_record(stream_record)
             if is_cancellable_stream_record(stream_record):
                 cancellable_streams = self._context.cancellable_streams
@@ -278,7 +295,7 @@ class IncrementalPublisher:
                 with suppress(Exception):
                     await stream_record.early_return
         elif stream_items_result.result is None:
-            self._completed.append(CompletedResult(id_))
+            context.completed.append(CompletedResult(id_))
             incremental_graph.remove_subsequent_result_record(stream_record)
             if is_cancellable_stream_record(stream_record):
                 cancellable_streams = self._context.cancellable_streams
@@ -289,7 +306,7 @@ class IncrementalPublisher:
             incremental_entry = IncrementalStreamResult(
                 items=result.items, id=id_, errors=result.errors
             )
-            self._incremental.append(incremental_entry)
+            context.incremental.append(incremental_entry)
             if stream_items_result.incremental_data_records:  # pragma: no branch
                 incremental_graph.add_incremental_data_records(
                     stream_items_result.incremental_data_records
