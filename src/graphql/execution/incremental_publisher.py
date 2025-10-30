@@ -156,7 +156,7 @@ class IncrementalPublisher:
                 for completed_result in completed_results:
                     await handle_completed_incremental_data(completed_result, context)
 
-                if context.incremental or context.completed:
+                if context.incremental or context.completed:  # pragma: no branch
                     has_next = check_has_next()
 
                     if not has_next:
@@ -192,6 +192,7 @@ class IncrementalPublisher:
         completed_incremental_data: IncrementalDataRecordResult,
         context: SubsequentIncrementalExecutionResultContext,
     ) -> None:
+        """Handle completed incremental data."""
         if is_deferred_grouped_field_set_result(completed_incremental_data):
             self._handle_completed_deferred_grouped_field_set(
                 completed_incremental_data, context
@@ -203,7 +204,6 @@ class IncrementalPublisher:
             await self._handle_completed_stream_items(
                 completed_incremental_data, context
             )
-
         new_pending = self._incremental_graph.get_new_pending()
         context.pending.extend(self._pending_sources_to_results(new_pending))
 

@@ -726,12 +726,6 @@ def describe_execute_defer_directive():
                 "pending": [{"id": "1", "path": ["hero"], "label": "DeferNested"}],
                 "incremental": [
                     {"data": {"id": "1"}, "id": "0"},
-                ],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
                     {
                         "data": {
                             "friends": [
@@ -743,7 +737,7 @@ def describe_execute_defer_directive():
                         "id": "1",
                     },
                 ],
-                "completed": [{"id": "1"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1080,13 +1074,11 @@ def describe_execute_defer_directive():
             },
             {
                 "pending": [{"id": "1", "path": ["hero"], "label": "DeferID"}],
-                "incremental": [{"data": {"hero": {"name": "Luke"}}, "id": "0"}],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"data": {"id": "1"}, "id": "1"}],
-                "completed": [{"id": "1"}],
+                "incremental": [
+                    {"data": {"hero": {"name": "Luke"}}, "id": "0"},
+                    {"data": {"id": "1"}, "id": "1"},
+                ],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1250,13 +1242,9 @@ def describe_execute_defer_directive():
                         "data": {"nestedObject": {"deeperObject": {"foo": "foo"}}},
                         "id": "0",
                     },
+                    {"data": {"bar": "bar"}, "id": "1"},
                 ],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"data": {"bar": "bar"}, "id": "1"}],
-                "completed": [{"id": "1"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1330,6 +1318,7 @@ def describe_execute_defer_directive():
             {
                 "pending": [
                     {"id": "1", "path": ["hero", "nestedObject"]},
+                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]},
                 ],
                 "incremental": [
                     {
@@ -1337,32 +1326,17 @@ def describe_execute_defer_directive():
                         "id": "0",
                         "subPath": ["nestedObject", "deeperObject"],
                     },
-                ],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "pending": [
-                    {"id": "2", "path": ["hero", "nestedObject", "deeperObject"]}
-                ],
-                "incremental": [
                     {
                         "data": {"baz": "baz"},
                         "id": "1",
                         "subPath": ["deeperObject"],
                     },
-                ],
-                "completed": [{"id": "1"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
                     {
                         "data": {"bak": "bak"},
                         "id": "2",
                     },
                 ],
-                "completed": [{"id": "2"}],
+                "completed": [{"id": "0"}, {"id": "1"}, {"id": "2"}],
                 "hasNext": False,
             },
         ]
@@ -2363,18 +2337,12 @@ def describe_execute_defer_directive():
                     {"id": "3", "path": ["hero", "friends", 2]},
                 ],
                 "incremental": [
-                    {"data": {"name": "slow", "friends": [{}, {}, {}]}, "id": "0"}
-                ],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
+                    {"data": {"name": "slow", "friends": [{}, {}, {}]}, "id": "0"},
                     {"data": {"name": "Han"}, "id": "1"},
                     {"data": {"name": "Leia"}, "id": "2"},
                     {"data": {"name": "C-3PO"}, "id": "3"},
                 ],
-                "completed": [{"id": "1"}, {"id": "2"}, {"id": "3"}],
+                "completed": [{"id": "0"}, {"id": "1"}, {"id": "2"}, {"id": "3"}],
                 "hasNext": False,
             },
         ]
@@ -2415,18 +2383,12 @@ def describe_execute_defer_directive():
                     {"id": "3", "path": ["hero", "friends", 2]},
                 ],
                 "incremental": [
-                    {"data": {"name": "Luke", "friends": [{}, {}, {}]}, "id": "0"}
-                ],
-                "completed": [{"id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [
+                    {"data": {"name": "Luke", "friends": [{}, {}, {}]}, "id": "0"},
                     {"data": {"name": "Han"}, "id": "1"},
                     {"data": {"name": "Leia"}, "id": "2"},
                     {"data": {"name": "C-3PO"}, "id": "3"},
                 ],
-                "completed": [{"id": "1"}, {"id": "2"}, {"id": "3"}],
+                "completed": [{"id": "0"}, {"id": "1"}, {"id": "2"}, {"id": "3"}],
                 "hasNext": False,
             },
         ]

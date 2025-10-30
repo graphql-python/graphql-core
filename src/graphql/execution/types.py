@@ -19,7 +19,7 @@ except ImportError:  # Python < 3.8
 
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
-    from ..pyutils import AwaitableOrValue, Path
+    from ..pyutils import BoxedAwaitableOrValue, Path
 
     try:
         from typing import TypeGuard
@@ -783,14 +783,14 @@ class DeferredGroupedFieldSetRecord:
     """Deferred grouped field set record"""
 
     deferred_fragment_records: list[DeferredFragmentRecord]
-    result: AwaitableOrValue[DeferredGroupedFieldSetResult]
+    result: BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]
 
     __slots__ = "deferred_fragment_records", "result"
 
     def __init__(
         self,
         deferred_fragment_records: list[DeferredFragmentRecord],
-        result: AwaitableOrValue[DeferredGroupedFieldSetResult],
+        result: BoxedAwaitableOrValue[DeferredGroupedFieldSetResult],
     ) -> None:
         self.result = result
         self.deferred_fragment_records = deferred_fragment_records
@@ -923,12 +923,12 @@ class StreamItemsRecord:
     __slots__ = "result", "stream_record"
 
     stream_record: StreamRecord
-    result: AwaitableOrValue[StreamItemsResult]
+    result: BoxedAwaitableOrValue[StreamItemsResult]
 
     def __init__(
         self,
         stream_record: StreamRecord,
-        result: AwaitableOrValue[StreamItemsResult],
+        result: BoxedAwaitableOrValue[StreamItemsResult],
     ) -> None:
         self.stream_record = stream_record
         self.result = result

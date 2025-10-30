@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from asyncio import CancelledError, Future, Task, ensure_future
+from asyncio import (
+    CancelledError,
+    Future,
+    Task,
+    ensure_future,
+    get_running_loop,
+    isfuture,
+)
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,8 +26,6 @@ from graphql.execution.types import (
     StreamRecord,
     is_deferred_grouped_field_set_record,
 )
-
-from ..pyutils.is_awaitable import is_awaitable
 
 if TYPE_CHECKING:
     from graphql.execution.types import (
@@ -163,17 +168,17 @@ class IncrementalGraph:
 
         enqueue = self._enqueue
         for incremental_data_record in _new_incremental_data_records:
-            result = incremental_data_record.result
-            if is_awaitable(result):
+            value = incremental_data_record.result.value
+            if isfuture(value):
 
-                async def enqueue_incremental(
-                    result: Awaitable[IncrementalDataRecordResult],
+                async def enqueue_later(
+                    value: Awaitable[IncrementalDataRecordResult],
                 ) -> None:
-                    enqueue(await result)
+                    enqueue(await value)
 
-                self._add_task(enqueue_incremental(result))
+                self._add_task(enqueue_later(value))
             else:
-                enqueue(result)  # type: ignore
+                enqueue(value)
         _new_incremental_data_records.clear()
 
         return new_pending
@@ -182,12 +187,15 @@ class IncrementalGraph:
         self,
     ) -> AsyncGenerator[Iterable[IncrementalDataRecordResult], None]:
         """Asynchronously yield completed incremental data record results."""
+        loop = get_running_loop()
         while True:
             if self._completed_queue:
                 first_result = self._completed_queue.pop(0)
                 yield self._yield_current_completed_incremental_data(first_result)
             else:
-                future: Future[Iterable[IncrementalDataRecordResult]] = Future()
+                future: Future[Iterable[IncrementalDataRecordResult]] = (
+                    loop.create_future()
+                )
                 self._next_queue.append(future)
                 try:
                     yield await future

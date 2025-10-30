@@ -6,6 +6,7 @@ from asyncio import (
     CancelledError,
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
+    sleep,
 )
 from contextlib import suppress
 from copy import copy
@@ -40,6 +41,7 @@ from ..language import (
 )
 from ..pyutils import (
     AwaitableOrValue,
+    BoxedAwaitableOrValue,
     Path,
     RefMap,
     Undefined,
@@ -1627,7 +1629,8 @@ class ExecutionContext(IncrementalPublisherContext):
             )
 
             deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
-                deferred_fragment_records, cast("DeferredGroupedFieldSetResult", None)
+                deferred_fragment_records,
+                cast("BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]", None),
             )
 
             if should_defer(parent_defer_usages, defer_usage_set):
@@ -1650,10 +1653,12 @@ class ExecutionContext(IncrementalPublisherContext):
                         return await result
                     return cast("DeferredGroupedFieldSetResult", result)
 
-                deferred_grouped_field_set_record.result = executor(
-                    deferred_grouped_field_set_record,
-                    grouped_field_set,
-                    defer_usage_set,
+                deferred_grouped_field_set_record.result = BoxedAwaitableOrValue(
+                    executor(
+                        deferred_grouped_field_set_record,
+                        grouped_field_set,
+                        defer_usage_set,
+                    )
                 )
             else:
                 executed = self.execute_deferred_grouped_field_set(
@@ -1665,7 +1670,9 @@ class ExecutionContext(IncrementalPublisherContext):
                     IncrementalContext(defer_usage_set),
                     defer_map,
                 )
-                deferred_grouped_field_set_record.result = executed
+                deferred_grouped_field_set_record.result = BoxedAwaitableOrValue(
+                    executed
+                )
 
             append_record(deferred_grouped_field_set_record)
 
@@ -1743,59 +1750,71 @@ class ExecutionContext(IncrementalPublisherContext):
             path = stream_record.path
             initial_path = Path(path, initial_index, None)
 
-            result = self.complete_stream_items(
-                stream_record,
-                initial_path,
-                initial_item,
-                IncrementalContext(),
-                field_group,
-                info,
-                item_type,
+            result: BoxedAwaitableOrValue[StreamItemsResult] = BoxedAwaitableOrValue(
+                self.complete_stream_items(
+                    stream_record,
+                    initial_path,
+                    initial_item,
+                    IncrementalContext(),
+                    field_group,
+                    info,
+                    item_type,
+                )
             )
             first_stream_items = StreamItemsRecord(stream_record, result)
             current_stream_items = first_stream_items
             current_index = initial_index
             errored_synchronously = False
             for item in iterator:
-                if not is_awaitable(result) and not is_reconcilable_stream_items_result(
-                    result  # type: ignore
+                value = result.value
+                if not is_awaitable(value) and not is_reconcilable_stream_items_result(
+                    value
                 ):
                     errored_synchronously = True
                     break
                 current_index += 1
                 current_path = Path(path, current_index, None)
-                result = self.complete_stream_items(
-                    stream_record,
-                    current_path,
-                    item,
-                    IncrementalContext(),
-                    field_group,
-                    info,
-                    item_type,
+                result = BoxedAwaitableOrValue(
+                    self.complete_stream_items(
+                        stream_record,
+                        current_path,
+                        item,
+                        IncrementalContext(),
+                        field_group,
+                        info,
+                        item_type,
+                    )
                 )
 
                 next_stream_items = StreamItemsRecord(stream_record, result)
-                current_stream_items.result = prepend_next_stream_items(
-                    current_stream_items.result, next_stream_items
+                current_stream_items.result = BoxedAwaitableOrValue(
+                    prepend_next_stream_items(
+                        current_stream_items.result.value, next_stream_items
+                    )
                 )
                 current_stream_items = next_stream_items
 
             # If a non-reconcilable stream items result was encountered,
             # then the stream terminates in error. Otherwise, add a stream terminator.
             if not errored_synchronously:
-                current_stream_items.result = prepend_next_stream_items(
-                    current_stream_items.result,
-                    StreamItemsRecord(
-                        stream_record, TerminatingStreamItemsResult(stream_record)
-                    ),
+                current_stream_items.result = BoxedAwaitableOrValue(
+                    prepend_next_stream_items(
+                        current_stream_items.result.value,
+                        StreamItemsRecord(
+                            stream_record,
+                            BoxedAwaitableOrValue(
+                                TerminatingStreamItemsResult(stream_record),
+                            ),
+                        ),
+                    )
                 )
 
-            result = first_stream_items.result
-            if is_awaitable(result):
-                return await result
-            return cast("StreamItemsResult", result)
+            value = first_stream_items.result.value
+            if is_awaitable(value):
+                return await value
+            return value
 
-        return StreamItemsRecord(stream_record, await_result())
+        return StreamItemsRecord(stream_record, BoxedAwaitableOrValue(await_result()))
 
     def first_async_stream_items(
         self,
@@ -1810,14 +1829,16 @@ class ExecutionContext(IncrementalPublisherContext):
         """Get the first async stream items."""
         return StreamItemsRecord(
             stream_record,
-            self.get_next_async_stream_items_result(
-                stream_record,
-                path,
-                initial_index,
-                async_iterator,
-                field_group,
-                info,
-                item_type,
+            BoxedAwaitableOrValue(
+                self.get_next_async_stream_items_result(
+                    stream_record,
+                    path,
+                    initial_index,
+                    async_iterator,
+                    field_group,
+                    info,
+                    item_type,
+                )
             ),
         )
 
@@ -1856,14 +1877,23 @@ class ExecutionContext(IncrementalPublisherContext):
 
         next_stream_items_record = StreamItemsRecord(
             stream_record,
-            self.get_next_async_stream_items_result(
-                stream_record, path, index, async_iterator, field_group, info, item_type
+            BoxedAwaitableOrValue(
+                self.get_next_async_stream_items_result(
+                    stream_record,
+                    path,
+                    index,
+                    async_iterator,
+                    field_group,
+                    info,
+                    item_type,
+                )
             ),
         )
 
         result = self.prepend_next_stream_items(result, next_stream_items_record)
 
         if self.is_awaitable(result):
+            await sleep(0)
             return await result
         return cast("StreamItemsResult", result)
 
