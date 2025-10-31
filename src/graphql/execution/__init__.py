@@ -24,6 +24,9 @@ from .types import (
     PendingResult,
     SubsequentIncrementalExecutionResult,
     StreamRecord,
+    StreamItemRecord,
+    StreamItemResult,
+    StreamItemsResult,
 )
 from .middleware import MiddlewareManager
 from .values import get_argument_values, get_directive_values, get_variable_values
@@ -61,6 +64,9 @@ __all__ = [
     "Middleware",
     "MiddlewareManager",
     "PendingResult",
+    "StreamItemRecord",
+    "StreamItemResult",
+    "StreamItemsResult",
     "StreamRecord",
     "SubsequentIncrementalExecutionResult",
     "create_source_event_stream",

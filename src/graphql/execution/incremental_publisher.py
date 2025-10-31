@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import gather
+from asyncio import gather, sleep
 from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
@@ -13,8 +13,8 @@ from typing import (
     cast,
 )
 
-from graphql.execution.incremental_graph import IncrementalGraph
-from graphql.execution.types import (
+from .incremental_graph import IncrementalGraph
+from .types import (
     CompletedResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalDeferResult,
@@ -33,7 +33,8 @@ except ImportError:  # Python < 3.8
     from typing_extensions import Protocol
 
 if TYPE_CHECKING:
-    from graphql.execution.types import (
+    from ..error import GraphQLError
+    from .types import (
         CancellableStreamRecord,
         DeferredFragmentRecord,
         DeferredGroupedFieldSetResult,
@@ -44,8 +45,6 @@ if TYPE_CHECKING:
         StreamItemsResult,
         SubsequentResultRecord,
     )
-
-    from ..error import GraphQLError
 
 __all__ = [
     "IncrementalPublisher",
@@ -305,10 +304,10 @@ class IncrementalPublisher:
                 items=result.items, id=id_, errors=result.errors
             )
             context.incremental.append(incremental_entry)
-            if stream_items_result.incremental_data_records:  # pragma: no branch
-                incremental_graph.add_incremental_data_records(
-                    stream_items_result.incremental_data_records
-                )
+            incremental_data_records = stream_items_result.incremental_data_records
+            if incremental_data_records is not None:  # pragma: no branch
+                incremental_graph.add_incremental_data_records(incremental_data_records)
+                await sleep(0)  # allow other tasks to run
 
     def _get_best_id_and_sub_path(
         self,

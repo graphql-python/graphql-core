@@ -55,7 +55,7 @@ test = [
     "tox>=3.28,<4; python_version<'3.8'",
 ]
 lint = [
-    "ruff>=0.13,<0.14",
+    "ruff>=0.14,<0.15",
     "mypy>=1.18; python_version>='3.9'",
     "mypy>=1.14; python_version>='3.8' and python_version<'3.9'",
     "mypy>=1.4; python_version<'3.8'",

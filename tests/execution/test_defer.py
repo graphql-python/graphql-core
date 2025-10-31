@@ -521,8 +521,10 @@ def describe_execute_defer_directive():
         """Can print a DeferredFragmentRecord"""
         record = DeferredFragmentRecord()
         assert str(record) == "DeferredFragmentRecord()"
-        record = DeferredFragmentRecord(Path(None, "bar", "Bar"), "foo")
-        assert str(record) == "DeferredFragmentRecord(path=['bar'], label='foo')"
+        record = DeferredFragmentRecord(record, Path(None, "bar", "Bar"), "foo")
+        assert (
+            str(record) == "DeferredFragmentRecord(parent, path=['bar'], label='foo')"
+        )
 
     async def can_defer_fragments_containing_scalar_types():
         """Can defer fragments containing scalar types"""

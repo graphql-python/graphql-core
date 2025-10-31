@@ -92,7 +92,6 @@ from .incremental_publisher import (
 from .middleware import MiddlewareManager
 from .types import (
     BareDeferredGroupedFieldSetResult,
-    BareStreamItemsResult,
     CancellableStreamRecord,
     DeferredFragmentRecord,
     DeferredGroupedFieldSetRecord,
@@ -101,19 +100,15 @@ from .types import (
     ExperimentalIncrementalExecutionResults,
     IncrementalDataRecord,
     NonReconcilableDeferredGroupedFieldSetResult,
-    NonReconcilableStreamItemsResult,
     ReconcilableDeferredGroupedFieldSetResult,
-    ReconcilableStreamItemsResult,
-    StreamItemsRecord,
-    StreamItemsResult,
+    StreamItemRecord,
+    StreamItemResult,
     StreamRecord,
-    TerminatingStreamItemsResult,
-    is_reconcilable_stream_items_result,
 )
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 if TYPE_CHECKING:
-    from graphql.pyutils.undefined import UndefinedType
+    from ..pyutils import UndefinedType
 
     try:
         from typing import TypeAlias, TypeGuard
@@ -955,6 +950,15 @@ class ExecutionContext(IncrementalPublisherContext):
         index = 0
         while True:
             if stream_usage and index >= stream_usage.initial_count:
+                stream_item_queue = self.build_async_stream_item_queue(
+                    index,
+                    path,
+                    async_iterator,
+                    stream_usage.field_group,
+                    info,
+                    item_type,
+                )
+
                 try:
                     early_return = async_iterator.aclose()  # type: ignore
                 except AttributeError:
@@ -962,26 +966,22 @@ class ExecutionContext(IncrementalPublisherContext):
                 stream_record: StreamRecord
 
                 if early_return is None:
-                    stream_record = StreamRecord(path, stream_usage.label)
+                    stream_record = StreamRecord(
+                        stream_item_queue, path, stream_usage.label
+                    )
                 else:
                     stream_record = CancellableStreamRecord(
-                        early_return, path, stream_usage.label
+                        early_return,
+                        stream_item_queue,
+                        path,
+                        stream_usage.label,
                     )
                     if self.cancellable_streams is None:  # pragma: no branch
                         self.cancellable_streams = set()
                     self.cancellable_streams.add(stream_record)
                     self._canceled_iterators.add(async_iterator)
 
-                first_stream_items = self.first_async_stream_items(
-                    stream_record,
-                    path,
-                    index,
-                    async_iterator,
-                    stream_usage.field_group,
-                    info,
-                    item_type,
-                )
-                add_increment(first_stream_items)
+                add_increment(stream_record)
                 break
 
             item_path = path.add_key(index, None)
@@ -1119,18 +1119,20 @@ class ExecutionContext(IncrementalPublisherContext):
             except StopIteration:
                 break
             if stream_usage and index >= stream_usage.initial_count:
-                stream_record = StreamRecord(path, stream_usage.label)
-
-                first_stream_items = self.first_sync_stream_items(
-                    stream_record,
+                sync_stream_item_queue = self.build_sync_stream_item_queue(
                     item,
                     index,
+                    path,
                     iterator,
                     stream_usage.field_group,
                     info,
                     item_type,
                 )
-                add_increment(first_stream_items)
+                sync_stream_record = StreamRecord(
+                    sync_stream_item_queue, path, stream_usage.label
+                )
+
+                add_increment(sync_stream_record)
                 break
 
             # No need to modify the info object containing the path,
@@ -1732,52 +1734,46 @@ class ExecutionContext(IncrementalPublisherContext):
             result,  # type: ignore
         )
 
-    def first_sync_stream_items(
+    def build_sync_stream_item_queue(
         self,
-        stream_record: StreamRecord,
         initial_item: AwaitableOrValue[Any],
         initial_index: int,
+        stream_path: Path,
         iterator: Iterable[Any],
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-    ) -> StreamItemsRecord:
-        """Get the first sync stream items."""
+    ) -> list[StreamItemRecord]:
+        """Build sync stream item queue."""
+        is_awaitable = self.is_awaitable
+        complete_stream_item = self.complete_stream_item
 
-        async def await_result() -> StreamItemsResult:
-            is_awaitable = self.is_awaitable
-            prepend_next_stream_items = self.prepend_next_stream_items
-            path = stream_record.path
-            initial_path = Path(path, initial_index, None)
+        async def get_stream_item_result() -> StreamItemResult:
+            initial_path = stream_path.add_key(initial_index)
 
-            result: BoxedAwaitableOrValue[StreamItemsResult] = BoxedAwaitableOrValue(
-                self.complete_stream_items(
-                    stream_record,
-                    initial_path,
-                    initial_item,
-                    IncrementalContext(),
-                    field_group,
-                    info,
-                    item_type,
+            first_stream_item: BoxedAwaitableOrValue[StreamItemResult] = (
+                BoxedAwaitableOrValue(
+                    complete_stream_item(
+                        initial_path,
+                        initial_item,
+                        IncrementalContext(),
+                        field_group,
+                        info,
+                        item_type,
+                    )
                 )
             )
-            first_stream_items = StreamItemsRecord(stream_record, result)
-            current_stream_items = first_stream_items
-            current_index = initial_index
-            errored_synchronously = False
+            current_index = initial_index + 1
+            current_stream_item = first_stream_item
             for item in iterator:
-                value = result.value
-                if not is_awaitable(value) and not is_reconcilable_stream_items_result(
-                    value
-                ):
-                    errored_synchronously = True
+                result = current_stream_item.value
+                if not is_awaitable(result) and result.errors:
                     break
-                current_index += 1
-                current_path = Path(path, current_index, None)
-                result = BoxedAwaitableOrValue(
-                    self.complete_stream_items(
-                        stream_record,
-                        current_path,
+
+                item_path = stream_path.add_key(current_index)
+                current_stream_item = BoxedAwaitableOrValue(
+                    complete_stream_item(
+                        item_path,
                         item,
                         IncrementalContext(),
                         field_group,
@@ -1785,88 +1781,72 @@ class ExecutionContext(IncrementalPublisherContext):
                         item_type,
                     )
                 )
+                append_stream_item(current_stream_item)
 
-                next_stream_items = StreamItemsRecord(stream_record, result)
-                current_stream_items.result = BoxedAwaitableOrValue(
-                    prepend_next_stream_items(
-                        current_stream_items.result.value, next_stream_items
-                    )
-                )
-                current_stream_items = next_stream_items
+                current_index = initial_index + 1
 
-            # If a non-reconcilable stream items result was encountered,
-            # then the stream terminates in error. Otherwise, add a stream terminator.
-            if not errored_synchronously:
-                current_stream_items.result = BoxedAwaitableOrValue(
-                    prepend_next_stream_items(
-                        current_stream_items.result.value,
-                        StreamItemsRecord(
-                            stream_record,
-                            BoxedAwaitableOrValue(
-                                TerminatingStreamItemsResult(stream_record),
-                            ),
-                        ),
-                    )
-                )
+            append_stream_item(BoxedAwaitableOrValue(StreamItemResult()))
 
-            value = first_stream_items.result.value
-            if is_awaitable(value):
-                return await value
-            return value
+            return first_stream_item.value
 
-        return StreamItemsRecord(stream_record, BoxedAwaitableOrValue(await_result()))
+        stream_item_queue: list[StreamItemRecord] = [
+            BoxedAwaitableOrValue(get_stream_item_result())
+        ]
+        append_stream_item = stream_item_queue.append
 
-    def first_async_stream_items(
+        return stream_item_queue
+
+    def build_async_stream_item_queue(
         self,
-        stream_record: StreamRecord,
-        path: Path,
         initial_index: int,
+        stream_path: Path,
         async_iterator: AsyncIterator[Any],
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-    ) -> StreamItemsRecord:
-        """Get the first async stream items."""
-        return StreamItemsRecord(
-            stream_record,
+    ) -> list[StreamItemRecord]:
+        """Build async stream item queue."""
+        stream_item_queue: list[StreamItemRecord] = []
+        stream_item_queue.append(
             BoxedAwaitableOrValue(
-                self.get_next_async_stream_items_result(
-                    stream_record,
-                    path,
+                self.get_next_async_stream_item_result(
+                    stream_item_queue,
+                    stream_path,
                     initial_index,
                     async_iterator,
                     field_group,
                     info,
                     item_type,
                 )
-            ),
+            )
         )
+        return stream_item_queue
 
-    async def get_next_async_stream_items_result(
+    async def get_next_async_stream_item_result(
         self,
-        stream_record: StreamRecord,
-        path: Path,
+        stream_item_queue: list[StreamItemRecord],
+        stream_path: Path,
         index: int,
         async_iterator: AsyncIterator[Any],
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-    ) -> StreamItemsResult:
+    ) -> StreamItemResult:
         """Get the next async stream items result."""
         try:
             item = await anext(async_iterator)
         except StopAsyncIteration:
-            return TerminatingStreamItemsResult(stream_record)
+            return StreamItemResult()
         except Exception as error:
-            return NonReconcilableStreamItemsResult(
-                stream_record,
-                [located_error(error, to_nodes(field_group), path.as_list())],
+            return StreamItemResult(
+                errors=[
+                    located_error(error, to_nodes(field_group), stream_path.as_list())
+                ],
             )
 
-        item_path = path.add_key(index, None)
+        item_path = stream_path.add_key(index)
 
-        result = self.complete_stream_items(
-            stream_record,
+        result = self.complete_stream_item(
             item_path,
             item,
             IncrementalContext(),
@@ -1875,12 +1855,11 @@ class ExecutionContext(IncrementalPublisherContext):
             item_type,
         )
 
-        next_stream_items_record = StreamItemsRecord(
-            stream_record,
+        stream_item_queue.append(
             BoxedAwaitableOrValue(
-                self.get_next_async_stream_items_result(
-                    stream_record,
-                    path,
+                self.get_next_async_stream_item_result(
+                    stream_item_queue,
+                    stream_path,
                     index,
                     async_iterator,
                     field_group,
@@ -1890,28 +1869,25 @@ class ExecutionContext(IncrementalPublisherContext):
             ),
         )
 
-        result = self.prepend_next_stream_items(result, next_stream_items_record)
-
         if self.is_awaitable(result):
-            await sleep(0)
+            await sleep(0)  # allow other tasks to run
             return await result
-        return cast("StreamItemsResult", result)
+        return cast("StreamItemResult", result)
 
-    def complete_stream_items(
+    def complete_stream_item(
         self,
-        stream_record: StreamRecord,
         item_path: Path,
         item: Any,
         incremental_context: IncrementalContext,
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
-    ) -> AwaitableOrValue[StreamItemsResult]:
+    ) -> AwaitableOrValue[StreamItemResult]:
         """Complete the stream items."""
         is_awaitable = self.is_awaitable
         if is_awaitable(item):
 
-            async def await_item() -> StreamItemsResult:
+            async def await_stream_item_result() -> StreamItemResult:
                 try:
                     awaited_item = await self.complete_awaitable_value(
                         item_type,
@@ -1923,14 +1899,14 @@ class ExecutionContext(IncrementalPublisherContext):
                         RefMap(),
                     )
                 except GraphQLError as error:
-                    return NonReconcilableStreamItemsResult(
-                        stream_record, with_error(incremental_context.errors, error)
+                    return StreamItemResult(
+                        errors=with_error(incremental_context.errors, error)
                     )
-                return build_stream_items_result(
-                    incremental_context.errors, stream_record, awaited_item
+                return build_stream_item_result(
+                    awaited_item, incremental_context.errors
                 )
 
-            return await_item()
+            return await_stream_item_result()
 
         try:
             try:
@@ -1953,13 +1929,13 @@ class ExecutionContext(IncrementalPublisherContext):
                 )
                 result = GraphQLWrappedResult(None)
         except GraphQLError as error:
-            return NonReconcilableStreamItemsResult(
-                stream_record, with_error(incremental_context.errors, error)
+            return StreamItemResult(
+                errors=with_error(incremental_context.errors, error)
             )
 
         if is_awaitable(result):
 
-            async def await_item() -> StreamItemsResult:
+            async def await_stream_item_result() -> StreamItemResult:
                 try:
                     try:
                         awaited_item = await result
@@ -1973,38 +1949,18 @@ class ExecutionContext(IncrementalPublisherContext):
                         )
                         awaited_item = GraphQLWrappedResult(None)
                 except GraphQLError as error:
-                    return NonReconcilableStreamItemsResult(
-                        stream_record, with_error(incremental_context.errors, error)
+                    return StreamItemResult(
+                        errors=with_error(incremental_context.errors, error)
                     )
-                return build_stream_items_result(
-                    incremental_context.errors, stream_record, awaited_item
+                return build_stream_item_result(
+                    awaited_item, incremental_context.errors
                 )
 
-            return await_item()
+            return await_stream_item_result()
 
-        return build_stream_items_result(
-            incremental_context.errors,
-            stream_record,
+        return build_stream_item_result(
             result,  # type: ignore
-        )
-
-    def prepend_next_stream_items(
-        self,
-        result: AwaitableOrValue[StreamItemsResult],
-        next_stream_items: StreamItemsRecord,
-    ) -> AwaitableOrValue[StreamItemsResult]:
-        """Prepend next stream items to the given result."""
-        if self.is_awaitable(result):
-
-            async def await_result() -> StreamItemsResult:
-                resolved = await result
-                return prepend_next_resolved_stream_items(resolved, next_stream_items)
-
-            return await_result()
-
-        return prepend_next_resolved_stream_items(
-            cast("StreamItemsResult", result),
-            next_stream_items,
+            incremental_context.errors,
         )
 
     def with_new_deferred_grouped_field_sets(
@@ -2335,7 +2291,7 @@ def add_new_deferred_fragments(
 
         # Instantiate the new record.
         deferred_fragment_record = DeferredFragmentRecord(
-            path, new_defer_usage.label, parent
+            parent, path, new_defer_usage.label
         )
 
         # Update the map.
@@ -2384,33 +2340,11 @@ def get_deferred_fragment_records(
     ]
 
 
-def prepend_next_resolved_stream_items(
-    result: StreamItemsResult, next_stream_items: StreamItemsRecord
-) -> StreamItemsResult:
-    """Prepend next stream items to the given resolved result."""
-    if not is_reconcilable_stream_items_result(result):
-        return result
-    incremental_data_records = result.incremental_data_records
-    return ReconcilableStreamItemsResult(
-        result.stream_record,
-        result.result,
-        [next_stream_items]
-        if incremental_data_records is None
-        else [next_stream_items, *incremental_data_records],
-    )
-
-
-def build_stream_items_result(
-    errors: list[GraphQLError] | None,
-    stream_record: StreamRecord,
-    result: GraphQLWrappedResult[Any],
-) -> StreamItemsResult:
-    """Build a stream items result."""
-    return ReconcilableStreamItemsResult(
-        stream_record,
-        BareStreamItemsResult([result.result], errors or None),
-        result.increments,
-    )
+def build_stream_item_result(
+    result: GraphQLWrappedResult[Any], errors: list[GraphQLError] | None = None
+) -> StreamItemResult:
+    """Build a stream item result."""
+    return StreamItemResult(result.result, result.increments, errors)
 
 
 def get_typename(value: Any) -> str | None:

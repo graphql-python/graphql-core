@@ -16,10 +16,16 @@ try:
     from typing import TypedDict
 except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
+try:
+    from typing import TypeAlias
+except ImportError:  # Python < 3.10
+    from typing_extensions import TypeAlias
+
+from ..pyutils import BoxedAwaitableOrValue, Undefined
 
 if TYPE_CHECKING:
     from ..error import GraphQLError, GraphQLFormattedError
-    from ..pyutils import BoxedAwaitableOrValue, Path
+    from ..pyutils import Path
 
     try:
         from typing import TypeGuard
@@ -48,20 +54,17 @@ __all__ = [
     "IncrementalResult",
     "IncrementalStreamResult",
     "InitialIncrementalExecutionResult",
-    "NonReconcilableStreamItemsResult",
     "PendingResult",
     "ReconcilableDeferredGroupedFieldSetResult",
-    "ReconcilableStreamItemsResult",
-    "StreamItemsRecord",
+    "StreamItemRecord",
+    "StreamItemResult",
     "StreamItemsResult",
     "SubsequentIncrementalExecutionResult",
     "SubsequentResultRecord",
-    "TerminatingStreamItemsResult",
     "is_cancellable_stream_record",
     "is_deferred_grouped_field_set_record",
     "is_deferred_grouped_field_set_result",
     "is_non_reconcilable_deferred_grouped_field_set_result",
-    "is_reconcilable_stream_items_result",
 ]
 
 
@@ -575,9 +578,9 @@ class FormattedIncrementalStreamResult(TypedDict):
     extensions: NotRequired[dict[str, Any]]
 
 
-IncrementalResult = Union[IncrementalDeferResult, IncrementalStreamResult]
+IncrementalResult: TypeAlias = Union[IncrementalDeferResult, IncrementalStreamResult]
 
-FormattedIncrementalResult = Union[
+FormattedIncrementalResult: TypeAlias = Union[
     FormattedIncrementalDeferResult, FormattedIncrementalStreamResult
 ]
 
@@ -760,7 +763,7 @@ def is_non_reconcilable_deferred_grouped_field_set_result(
     )
 
 
-DeferredGroupedFieldSetResult = Union[
+DeferredGroupedFieldSetResult: TypeAlias = Union[
     ReconcilableDeferredGroupedFieldSetResult,
     NonReconcilableDeferredGroupedFieldSetResult,
 ]
@@ -799,27 +802,29 @@ class DeferredGroupedFieldSetRecord:
 class DeferredFragmentRecord:
     """Deferred fragment record"""
 
+    parent: DeferredFragmentRecord | None
     path: Path | None
     label: str | None
     id: str | None
-    parent: DeferredFragmentRecord | None
 
     __slots__ = "id", "label", "parent", "path"
 
     def __init__(
         self,
+        parent: DeferredFragmentRecord | None = None,
         path: Path | None = None,
         label: str | None = None,
-        parent: DeferredFragmentRecord | None = None,
     ) -> None:
+        self.parent = parent
         self.path = path
         self.label = label
-        self.parent = parent
         self.id = None
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
         args: list[str] = []
+        if self.parent:
+            args.append("parent")
         if self.path:
             args.append(f"path={self.path.as_list()!r}")
         if self.label:
@@ -827,33 +832,50 @@ class DeferredFragmentRecord:
         return f"{name}({', '.join(args)})"
 
 
+class StreamItemResult(NamedTuple):
+    """Stream item result"""
+
+    item: Any = Undefined
+    incremental_data_records: list[IncrementalDataRecord] | None = None
+    errors: list[GraphQLError] | None = None
+
+
+StreamItemRecord: TypeAlias = BoxedAwaitableOrValue[StreamItemResult]
+
+
 class StreamRecord:
     """Stream record"""
 
+    stream_item_queue: list[StreamItemRecord]
     path: Path
     label: str | None
     id: str | None
 
-    __slots__ = "id", "label", "path"
+    __slots__ = "id", "label", "path", "stream_item_queue"
 
     def __init__(
         self,
+        stream_item_queue: list[StreamItemRecord],
         path: Path,
         label: str | None = None,
     ) -> None:
+        self.stream_item_queue = stream_item_queue
         self.path = path
         self.label = label
         self.id = None
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
-        args: list[str] = [f"path={self.path.as_list()!r}"]
+        args: list[str] = [
+            f"stream_item_queue[{len(self.stream_item_queue)}]",
+            f"path={self.path.as_list()!r}",
+        ]
         if self.label:
             args.append(f"label={self.label!r}")
         return f"{name}({', '.join(args)})"
 
 
-SubsequentResultRecord = Union[DeferredFragmentRecord, StreamRecord]
+SubsequentResultRecord: TypeAlias = Union[DeferredFragmentRecord, StreamRecord]
 
 
 class CancellableStreamRecord(StreamRecord):
@@ -864,9 +886,13 @@ class CancellableStreamRecord(StreamRecord):
     __slots__ = ("early_return",)
 
     def __init__(
-        self, early_return: Awaitable[None], path: Path, label: str | None = None
+        self,
+        early_return: Awaitable[None],
+        stream_item_queue: list[StreamItemRecord],
+        path: Path,
+        label: str | None = None,
     ) -> None:
-        super().__init__(path, label)
+        super().__init__(stream_item_queue, path, label)
         self.early_return = early_return
 
 
@@ -877,63 +903,17 @@ def is_cancellable_stream_record(
     return isinstance(subsequent_result_record, CancellableStreamRecord)
 
 
-class ReconcilableStreamItemsResult(NamedTuple):
-    """Reconcilable stream items result"""
+class StreamItemsResult(NamedTuple):
+    """Stream items result"""
 
     stream_record: StreamRecord
-    result: BareStreamItemsResult
+    result: BareStreamItemsResult | None
     incremental_data_records: list[IncrementalDataRecord] | None = None
-    errors: None = None
+    errors: list[GraphQLError] | None = None
 
 
-def is_reconcilable_stream_items_result(
-    stream_items_result: StreamItemsResult,
-) -> TypeGuard[ReconcilableStreamItemsResult]:
-    """Check if a stream items result is reconcilable."""
-    return isinstance(stream_items_result, ReconcilableStreamItemsResult)
+IncrementalDataRecord: TypeAlias = Union[DeferredGroupedFieldSetRecord, StreamRecord]
 
-
-class TerminatingStreamItemsResult(NamedTuple):
-    """Terminating stream items result"""
-
-    stream_record: StreamRecord
-    result: None = None
-    incremental_data_record: None = None
-    errors: None = None
-
-
-class NonReconcilableStreamItemsResult(NamedTuple):
-    """Non-reconcilable stream items result"""
-
-    stream_record: StreamRecord
-    errors: list[GraphQLError]
-    result: None = None
-
-
-StreamItemsResult = Union[
-    ReconcilableStreamItemsResult,
-    TerminatingStreamItemsResult,
-    NonReconcilableStreamItemsResult,
+IncrementalDataRecordResult: TypeAlias = Union[
+    DeferredGroupedFieldSetResult, StreamItemsResult
 ]
-
-
-class StreamItemsRecord:
-    """Stream items record"""
-
-    __slots__ = "result", "stream_record"
-
-    stream_record: StreamRecord
-    result: BoxedAwaitableOrValue[StreamItemsResult]
-
-    def __init__(
-        self,
-        stream_record: StreamRecord,
-        result: BoxedAwaitableOrValue[StreamItemsResult],
-    ) -> None:
-        self.stream_record = stream_record
-        self.result = result
-
-
-IncrementalDataRecord = Union[DeferredGroupedFieldSetRecord, StreamItemsRecord]
-
-IncrementalDataRecordResult = Union[DeferredGroupedFieldSetResult, StreamItemsResult]

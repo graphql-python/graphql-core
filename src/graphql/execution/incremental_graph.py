@@ -9,6 +9,7 @@ from asyncio import (
     ensure_future,
     get_running_loop,
     isfuture,
+    sleep,
 )
 from typing import (
     TYPE_CHECKING,
@@ -22,19 +23,23 @@ from typing import (
     cast,
 )
 
-from graphql.execution.types import (
+from ..pyutils import Undefined
+from .types import (
+    BareStreamItemsResult,
+    StreamItemRecord,
+    StreamItemsResult,
     StreamRecord,
     is_deferred_grouped_field_set_record,
 )
 
 if TYPE_CHECKING:
-    from graphql.execution.types import (
+    from ..error.graphql_error import GraphQLError
+    from .types import (
         DeferredFragmentRecord,
         DeferredGroupedFieldSetRecord,
         IncrementalDataRecord,
         IncrementalDataRecordResult,
         ReconcilableDeferredGroupedFieldSetResult,
-        StreamItemsRecord,
         SubsequentResultRecord,
     )
 
@@ -80,10 +85,10 @@ def is_deferred_fragment_node(
 
 
 def is_stream_node(
-    node: SubsequentResultNode | None,
+    record: SubsequentResultNode | IncrementalDataRecord,
 ) -> TypeGuard[StreamRecord]:
     """Check whether the given result node is a stream node."""
-    return isinstance(node, StreamRecord)
+    return isinstance(record, StreamRecord)
 
 
 class IncrementalGraph:
@@ -119,8 +124,8 @@ class IncrementalGraph:
             if is_deferred_grouped_field_set_record(incremental_data_record):
                 self._add_deferred_grouped_field_set_record(incremental_data_record)
             else:
-                stream_items_record = cast("StreamItemsRecord", incremental_data_record)
-                self._add_stream_items_record(stream_items_record)
+                stream_record = cast("StreamRecord", incremental_data_record)
+                self._add_stream_record(stream_record)
 
     def add_completed_reconcilable_deferred_grouped_field_set(
         self, reconcilable_result: ReconcilableDeferredGroupedFieldSetResult
@@ -152,6 +157,7 @@ class IncrementalGraph:
             if is_stream_node(node):
                 _pending[node] = None
                 add_result(node)
+                _new_incremental_data_records[node] = None
             elif node.deferred_grouped_field_set_records:  # type: ignore
                 records = node.deferred_grouped_field_set_records  # type: ignore
                 for deferred_grouped_field_set_node in records:  # pragma: no branch
@@ -167,18 +173,27 @@ class IncrementalGraph:
         _new_pending.clear()
 
         enqueue = self._enqueue
+        add_task = self._add_task
         for incremental_data_record in _new_incremental_data_records:
-            value = incremental_data_record.result.value
-            if isfuture(value):
-
-                async def enqueue_later(
-                    value: Awaitable[IncrementalDataRecordResult],
-                ) -> None:
-                    enqueue(await value)
-
-                self._add_task(enqueue_later(value))
+            if is_stream_node(incremental_data_record):
+                add_task(
+                    self._on_stream_items(
+                        incremental_data_record,
+                        incremental_data_record.stream_item_queue,
+                    )
+                )
             else:
-                enqueue(value)
+                value = incremental_data_record.result.value  # type: ignore
+                if isfuture(value):
+
+                    async def enqueue_later(
+                        value: Awaitable[IncrementalDataRecordResult],
+                    ) -> None:
+                        enqueue(await value)
+
+                    add_task(enqueue_later(value))
+                else:
+                    enqueue(value)
         _new_incremental_data_records.clear()
 
         return new_pending
@@ -257,6 +272,11 @@ class IncrementalGraph:
         """Remove a stream record as no longer pending."""
         self._remove_pending(stream_record)
 
+    def stop_incremental_data(self) -> None:
+        """Stop the delivery of inclremental data."""
+        for future in self._next_queue:
+            future.cancel()  # pragma: no cover
+
     def _remove_pending(self, subsequent_result_node: SubsequentResultNode) -> None:
         """Remove a subsequent result node as no longer pending."""
         del self._pending[subsequent_result_node]
@@ -279,12 +299,9 @@ class IncrementalGraph:
                 deferred_grouped_field_set_record
             ] = None
 
-    def _add_stream_items_record(self, stream_items_record: StreamItemsRecord) -> None:
-        """Add a stream items record."""
-        stream_record = stream_items_record.stream_record
-        if stream_record not in self._pending:
-            self._new_pending[stream_record] = None
-        self._new_incremental_data_records[stream_items_record] = None
+    def _add_stream_record(self, stream_record: StreamRecord) -> None:
+        """Add a stream record."""
+        self._new_pending[stream_record] = None
 
     def _add_deferred_fragment_node(
         self, deferred_fragment_record: DeferredFragmentRecord
@@ -307,17 +324,55 @@ class IncrementalGraph:
                 parent_node.children.append(deferred_fragment_node)
         return deferred_fragment_node
 
-    def _add_task(self, awaitable: Awaitable[Any]) -> None:
-        """Add the given task to the tasks set for later execution."""
-        tasks = self._tasks
-        task = ensure_future(awaitable)
-        tasks.add(task)
-        task.add_done_callback(tasks.discard)
-
-    def stop_incremental_data(self) -> None:
-        """Stop the delivery of inclremental data."""
-        for future in self._next_queue:
-            future.cancel()  # pragma: no cover
+    async def _on_stream_items(
+        self,
+        stream_record: StreamRecord,
+        stream_item_queue: list[StreamItemRecord],
+    ) -> None:
+        """Handle stream items."""
+        enqueue = self._enqueue
+        items: list[Any] = []
+        append_item = items.append
+        errors: list[GraphQLError] = []
+        incremental_data_records: list[IncrementalDataRecord] = []
+        while True:
+            try:
+                stream_item_record = stream_item_queue.pop(0)
+            except IndexError:  # pragma: no cover
+                break
+            result = stream_item_record.value
+            if isfuture(result):
+                if items:
+                    enqueue(
+                        StreamItemsResult(
+                            stream_record,
+                            BareStreamItemsResult(items, errors or None),
+                            incremental_data_records,
+                        )
+                    )
+                    items = []
+                    errors = []
+                    incremental_data_records = []
+                await sleep(0)  # allow other tasks to run
+                result = await result
+            if result.item is Undefined:
+                if items:
+                    enqueue(
+                        StreamItemsResult(
+                            stream_record,
+                            BareStreamItemsResult(items, errors or None),
+                            incremental_data_records,
+                        )
+                    )
+                enqueue(
+                    StreamItemsResult(stream_record, None, None, result.errors or None)
+                )
+                return
+            append_item(result.item)
+            if result.errors:
+                errors.extend(result.errors)
+            if result.incremental_data_records:
+                incremental_data_records.extend(result.incremental_data_records)
 
     def _yield_current_completed_incremental_data(
         self, first_result: IncrementalDataRecordResult
@@ -336,3 +391,10 @@ class IncrementalGraph:
             self._completed_queue.append(completed)
         else:
             future.set_result(self._yield_current_completed_incremental_data(completed))
+
+    def _add_task(self, awaitable: Awaitable[Any]) -> None:
+        """Add the given task to the tasks set for later execution."""
+        tasks = self._tasks
+        task = ensure_future(awaitable)
+        tasks.add(task)
+        task.add_done_callback(tasks.discard)

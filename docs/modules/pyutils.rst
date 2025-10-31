@@ -20,6 +20,7 @@ PyUtils
 .. autofunction:: is_iterable
 .. autofunction:: natural_comparison_key
 .. autoclass:: AwaitableOrValue
+.. autoclass:: BoxedAwaitableOrValue
 .. autofunction:: suggestion_list
 .. autoclass:: FrozenError
    :no-members:
