@@ -1,6 +1,6 @@
 # GraphQL-core 3
 
-GraphQL-core 3 is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
+GraphQL-core 3 is a Python 3.7+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
@@ -10,7 +10,7 @@ a query language for APIs created by Facebook.
 ![Lint Status](https://github.com/graphql-python/graphql-core/actions/workflows/lint.yml/badge.svg)
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-The current version 3.2.6 of GraphQL-core is up-to-date with GraphQL.js version 16.8.2.
+The current version 3.2.7 of GraphQL-core is up-to-date with GraphQL.js version 16.8.2.
 
 An extensive test suite with over 2500 unit tests and 100% coverage comprises a
 replication of the complete test suite of GraphQL.js, making sure this port is
@@ -196,7 +196,7 @@ Design goals for the GraphQL-core 3 library were:
 
 Some restrictions (mostly in line with the design goals):
 
-* requires Python 3.6 or newer
+* requires Python 3.7 or newer
 * does not support some already deprecated methods and options of GraphQL.js
 * supports asynchronous operations only via async.io
   (does not support the additional executors in GraphQL-core)

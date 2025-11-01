@@ -21,17 +21,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "tox>=4.24,<5" "tox-gh-actions>=3.2,<4"
+          pip install "tox>=4.24,<5" "tox-gh-actions>=3.5,<4"
 
       - name: Run unit tests with tox
         run: tox
 
   tests-old:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8']
+        python-version: ['3.7', '3.8']
 
     steps:
       - uses: actions/checkout@v5
@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "tox>=3.28,<5" "tox-gh-actions>=2.12,<4"
+          pip install "tox>=4.8,<5" "tox-gh-actions>=3.5,<4"
 
       - name: Run unit tests with tox
         run: tox

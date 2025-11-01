@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "graphql-core"
-version = "3.2.6"
+version = "3.2.7"
 description = """
 GraphQL-core is a Python port of GraphQL.js,\
  the JavaScript reference implementation for GraphQL."""
@@ -18,7 +18,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -48,14 +47,14 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 typing-extensions = [
-    { version = ">=4.1,<5", python = "<3.10" }
+    { version = ">=4.7,<5", python = "<3.10" }
 ]
 
 [tool.black]
 target-version = [
-    'py36', 'py37', 'py38', 'py39', 'py310', 'py311', 'py312', 'py313', 'py314'
+    'py37', 'py38', 'py39', 'py310', 'py311', 'py312', 'py313', 'py314'
 ]
 
 [tool.pyright]
