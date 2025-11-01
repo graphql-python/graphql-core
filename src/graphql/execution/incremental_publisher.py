@@ -230,7 +230,6 @@ class IncrementalPublisher:
                 append_completed(
                     CompletedResult(id_, deferred_grouped_field_set_result.errors)
                 )
-                remove_deferred(deferred_fragment_record)
             return
 
         deferred_grouped_field_set_result = cast(
@@ -250,12 +249,13 @@ class IncrementalPublisher:
 
         complete_deferred = self._incremental_graph.complete_deferred_fragment
         for deferred_fragment_record in record.deferred_fragment_records:
-            id_ = deferred_fragment_record.id
-            if id_ is None:
-                continue  # pragma: no cover
             reconcilable_results = complete_deferred(deferred_fragment_record)
             if reconcilable_results is None:
                 continue
+            id_ = deferred_fragment_record.id
+            if id_ is None:  # pragma: no cover
+                msg = "Missing deferred fragment record identifier."
+                raise RuntimeError(msg)
             for reconcilable_result in reconcilable_results:
                 best_id, sub_path = self._get_best_id_and_sub_path(
                     id_, deferred_fragment_record, reconcilable_result
