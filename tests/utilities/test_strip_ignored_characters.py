@@ -12,7 +12,7 @@ from ..utils import dedent
 
 ignored_tokens = [
     # UnicodeBOM
-    "\uFEFF",  # Byte Order Mark (U+FEFF)
+    "\ufeff",  # Byte Order Mark (U+FEFF)
     # WhiteSpace
     "\t",  # Horizontal Tab (U+0009)
     " ",  # Space (U+0020)

@@ -1721,7 +1721,7 @@ def get_nullable_type(type_: GraphQLNonNull) -> GraphQLNullableType: ...
 
 
 def get_nullable_type(
-    type_: Optional[Union[GraphQLNullableType, GraphQLNonNull]]
+    type_: Optional[Union[GraphQLNullableType, GraphQLNonNull]],
 ) -> Optional[GraphQLNullableType]:
     """Unwrap possible non-null type"""
     if is_non_null_type(type_):

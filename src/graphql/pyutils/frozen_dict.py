@@ -48,5 +48,5 @@ class FrozenDict(Dict[KT, VT]):
     def setdefault(self, key, default=None):
         raise FrozenError
 
-    def update(self, other=None):  # type: ignore
+    def update(self, other=None):
         raise FrozenError

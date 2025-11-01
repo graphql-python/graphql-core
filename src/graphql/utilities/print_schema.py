@@ -144,7 +144,7 @@ def print_scalar(type_: GraphQLScalarType) -> str:
 
 
 def print_implemented_interfaces(
-    type_: Union[GraphQLObjectType, GraphQLInterfaceType]
+    type_: Union[GraphQLObjectType, GraphQLInterfaceType],
 ) -> str:
     interfaces = type_.interfaces
     return " implements " + " & ".join(i.name for i in interfaces) if interfaces else ""

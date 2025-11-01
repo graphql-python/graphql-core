@@ -69,7 +69,7 @@ class Lexer:
             return TokenKind.EOF.value
         char = body[location]
         # Printable ASCII
-        if "\x20" <= char <= "\x7E":
+        if "\x20" <= char <= "\x7e":
             return "'\"'" if char == '"' else f"'{char}'"
         # Unicode code point
         point = ord(

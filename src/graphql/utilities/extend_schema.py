@@ -369,7 +369,7 @@ def extend_schema_impl(
 
     # noinspection PyShadowingNames
     def get_operation_types(
-        nodes: Collection[Union[SchemaDefinitionNode, SchemaExtensionNode]]
+        nodes: Collection[Union[SchemaDefinitionNode, SchemaExtensionNode]],
     ) -> Dict[OperationType, GraphQLNamedType]:
         # Note: While this could make early assertions to get the correctly
         # typed values below, that would throw immediately while type system
@@ -475,7 +475,7 @@ def extend_schema_impl(
         return input_field_map
 
     def build_enum_value_map(
-        nodes: Collection[Union[EnumTypeDefinitionNode, EnumTypeExtensionNode]]
+        nodes: Collection[Union[EnumTypeDefinitionNode, EnumTypeExtensionNode]],
     ) -> GraphQLEnumValueMap:
         enum_value_map: GraphQLEnumValueMap = {}
         for node in nodes:
@@ -681,7 +681,7 @@ std_type_map: Mapping[str, Union[GraphQLNamedType, GraphQLObjectType]] = {
 
 
 def get_deprecation_reason(
-    node: Union[EnumValueDefinitionNode, FieldDefinitionNode, InputValueDefinitionNode]
+    node: Union[EnumValueDefinitionNode, FieldDefinitionNode, InputValueDefinitionNode],
 ) -> Optional[str]:
     """Given a field or enum value node, get deprecation reason as string."""
     from ..execution import get_directive_values
@@ -691,7 +691,7 @@ def get_deprecation_reason(
 
 
 def get_specified_by_url(
-    node: Union[ScalarTypeDefinitionNode, ScalarTypeExtensionNode]
+    node: Union[ScalarTypeDefinitionNode, ScalarTypeExtensionNode],
 ) -> Optional[str]:
     """Given a scalar node, return the string value for the specifiedByURL."""
     from ..execution import get_directive_values
