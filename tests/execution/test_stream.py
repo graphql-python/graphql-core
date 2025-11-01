@@ -261,11 +261,14 @@ def describe_execute_stream_directive():
         record = StreamRecord(queue, path, "foo")
         assert str(record) == f"StreamRecord({expected_args}, label='foo')"
 
-    async def can_stream_a_list_field():
+    @pytest.mark.parametrize("early_execution", [False, True])
+    async def can_stream_a_list_field(early_execution):
         """Can stream a list field"""
         document = parse("{ scalarList @stream(initialCount: 1) }")
         result = await complete(
-            document, {"scalarList": ["apple", "banana", "coconut"]}
+            document,
+            {"scalarList": ["apple", "banana", "coconut"]},
+            enable_early_execution=early_execution,
         )
         assert result == [
             {

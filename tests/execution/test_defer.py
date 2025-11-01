@@ -531,7 +531,8 @@ def describe_execute_defer_directive():
             str(record) == "DeferredFragmentRecord(parent, path=['bar'], label='foo')"
         )
 
-    async def can_defer_fragments_containing_scalar_types():
+    @pytest.mark.parametrize("early_execution", [False, True])
+    async def can_defer_fragments_containing_scalar_types(early_execution):
         """Can defer fragments containing scalar types"""
         document = parse(
             """
@@ -546,7 +547,7 @@ def describe_execute_defer_directive():
             }
             """
         )
-        result = await complete(document)
+        result = await complete(document, enable_early_execution=early_execution)
 
         assert result == [
             {
@@ -743,7 +744,8 @@ def describe_execute_defer_directive():
             ],
         }
 
-    async def can_defer_fragments_on_the_top_level_query_field():
+    @pytest.mark.parametrize("early_execution", [False, True])
+    async def can_defer_fragments_on_the_top_level_query_field(early_execution):
         """Can defer fragments on the top level Query field"""
         document = parse(
             """
@@ -757,7 +759,7 @@ def describe_execute_defer_directive():
             }
             """
         )
-        result = await complete(document)
+        result = await complete(document, enable_early_execution=early_execution)
 
         assert result == [
             {
