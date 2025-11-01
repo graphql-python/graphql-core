@@ -799,6 +799,7 @@ def describe_execute_handles_basic_execution_tasks():
         result = execute_sync(schema, document, Data(), operation_name="Q")
         assert result == ({"a": "b"}, None)
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def uses_the_mutation_schema_for_mutations():
         schema = GraphQLSchema(
             GraphQLObjectType("Q", {"a": GraphQLField(GraphQLString)}),

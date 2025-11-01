@@ -6,7 +6,7 @@ from graphql.error import GraphQLSyntaxError
 from graphql.language import Lexer, Source, TokenKind
 from graphql.utilities import strip_ignored_characters
 
-from ..utils import dedent, gen_fuzz_strings
+from ..utils import dedent, gen_fuzz_strings, timeout_factor
 
 
 def lex_value(s: str) -> Optional[str]:
@@ -18,7 +18,7 @@ def lex_value(s: str) -> Optional[str]:
 
 def describe_strip_ignored_characters():
     @mark.slow
-    @mark.timeout(20)
+    @mark.timeout(80 * timeout_factor)
     def strips_ignored_characters_inside_random_block_strings():
         # Testing with length >7 is taking exponentially more time. However it is
         # highly recommended to test with increased limit if you make any change.

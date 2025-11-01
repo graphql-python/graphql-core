@@ -206,8 +206,8 @@ class GraphQLSchema:
         # Provide specified directives (e.g. @include and @skip) by default
         self.directives = specified_directives if directives is None else directives
 
-        # To preserve order of user-provided types, we add first to add them to
-        # the set of "collected" types, so `collect_referenced_types` ignore them.
+        # To preserve order of user-provided types, we first add them to the set
+        # of "collected" types, so `collect_referenced_types` ignores them.
         if types:
             all_referenced_types = TypeSet.with_initial_types(types)
             collect_referenced_types = all_referenced_types.collect_referenced_types
@@ -260,6 +260,7 @@ class GraphQLSchema:
                     "Schema must contain uniquely named types"
                     f" but contains multiple types named '{type_name}'."
                 )
+
             type_map[type_name] = named_type
 
             if is_interface_type(named_type):

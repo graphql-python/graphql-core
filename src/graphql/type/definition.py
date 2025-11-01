@@ -229,6 +229,23 @@ class GraphQLNamedType(GraphQLType):
     ast_node: Optional[TypeDefinitionNode]
     extension_ast_nodes: Tuple[TypeExtensionNode, ...]
 
+    reserved_types: Dict[str, "GraphQLNamedType"] = {}
+
+    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> "GraphQLNamedType":
+        if name in cls.reserved_types:
+            raise TypeError(f"Redefinition of reserved type {name!r}")
+        return super().__new__(cls)
+
+    def __reduce__(self) -> Tuple[Callable, Tuple]:
+        return self._get_instance, (self.name, tuple(self.to_kwargs().items()))
+
+    @classmethod
+    def _get_instance(cls, name: str, args: Tuple) -> "GraphQLNamedType":
+        try:
+            return cls.reserved_types[name]
+        except KeyError:
+            return cls(**dict(args))
+
     def __init__(
         self,
         name: str,

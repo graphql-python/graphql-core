@@ -1,10 +1,23 @@
-from typing import Any
+import warnings
+from typing import Any, Optional
 
 __all__ = ["Undefined", "UndefinedType"]
 
 
 class UndefinedType(ValueError):
     """Auxiliary class for creating the Undefined singleton."""
+
+    _instance: Optional["UndefinedType"] = None
+
+    def __new__(cls) -> "UndefinedType":
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        else:
+            warnings.warn("Redefinition of 'Undefined'", RuntimeWarning, stacklevel=2)
+        return cls._instance
+
+    def __reduce__(self) -> str:
+        return "Undefined"
 
     def __repr__(self) -> str:
         return "Undefined"

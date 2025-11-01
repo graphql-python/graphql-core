@@ -1,3 +1,4 @@
+import pickle
 from enum import Enum
 from math import isnan, nan
 from typing import Dict, cast
@@ -41,6 +42,7 @@ from graphql.type import (
     GraphQLScalarType,
     GraphQLString,
     GraphQLUnionType,
+    introspection_types,
 )
 from pytest import mark, raises
 
@@ -258,6 +260,17 @@ def describe_type_system_scalars():
             "SomeScalar extension AST nodes must be specified"
             " as a collection of ScalarTypeExtensionNode instances."
         )
+
+    def pickles_a_custom_scalar_type():
+        foo_type = GraphQLScalarType("Foo")
+        cycled_foo_type = pickle.loads(pickle.dumps(foo_type))
+        assert cycled_foo_type.name == foo_type.name
+        assert cycled_foo_type is not foo_type
+
+    def pickles_a_specified_scalar_type():
+        cycled_int_type = pickle.loads(pickle.dumps(GraphQLInt))
+        assert cycled_int_type.name == "Int"
+        assert cycled_int_type is GraphQLInt
 
 
 def describe_type_system_fields():
@@ -1899,3 +1912,11 @@ def describe_type_system_test_utility_methods():
             repr(GraphQLField(GraphQLList(GraphQLInt)))
             == "<GraphQLField <GraphQLList <GraphQLScalarType 'Int'>>>"
         )
+
+
+def describe_type_system_introspection_types():
+    def cannot_redefine_introspection_types():
+        for name, introspection_type in introspection_types.items():
+            assert introspection_type.name == name
+            with raises(TypeError, match=f"Redefinition of reserved type '{name}'"):
+                introspection_type.__class__(**introspection_type.to_kwargs())

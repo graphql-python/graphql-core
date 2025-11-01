@@ -60,10 +60,14 @@ target-version = [
 [tool.pyright]
 # silence pyright since we're using mypy already
 reportArgumentType = false
+reportAssignmentType = false
+reportAttributeAccessIssue = false
 reportIncompatibleVariableOverride = false
+reportInvalidTypeForm = false
 reportMissingModuleSource = false
 reportMissingTypeArgument = false
 reportReturnType = false
+reportTypedDictNotRequiredAccess = false
 reportUnknownArgumentType = false
 reportUnknownMemberType = false
 reportUnknownParameterType = false
