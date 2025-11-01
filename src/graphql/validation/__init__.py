@@ -15,7 +15,7 @@ from .validation_context import (
 from .rules import ValidationRule, ASTValidationRule, SDLValidationRule
 
 # All validation rules in the GraphQL Specification.
-from .specified_rules import specified_rules
+from .specified_rules import specified_rules, recommended_rules
 
 # Spec Section: "Defer And Stream Directive Labels Are Unique"
 from .rules.defer_stream_directive_label import DeferStreamDirectiveLabel
@@ -109,6 +109,9 @@ from .rules.variables_are_input_types import VariablesAreInputTypesRule
 # Spec Section: "All Variable Usages Are Allowed"
 from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 
+# No spec section: "Maximum introspection depth"
+from .rules.max_introspection_depth_rule import MaxIntrospectionDepthRule
+
 # SDL-specific validation rules
 from .rules.lone_schema_definition import LoneSchemaDefinitionRule
 from .rules.unique_operation_types import UniqueOperationTypesRule
@@ -138,6 +141,7 @@ __all__ = [
     "KnownTypeNamesRule",
     "LoneAnonymousOperationRule",
     "LoneSchemaDefinitionRule",
+    "MaxIntrospectionDepthRule",
     "NoDeprecatedCustomRule",
     "NoFragmentCyclesRule",
     "NoSchemaIntrospectionCustomRule",
@@ -170,6 +174,7 @@ __all__ = [
     "ValuesOfCorrectTypeRule",
     "VariablesAreInputTypesRule",
     "VariablesInAllowedPositionRule",
+    "recommended_rules",
     "specified_rules",
     "validate",
 ]

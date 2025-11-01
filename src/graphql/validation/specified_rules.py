@@ -45,6 +45,9 @@ from .rules.lone_anonymous_operation import LoneAnonymousOperationRule
 # Schema definition language:
 from .rules.lone_schema_definition import LoneSchemaDefinitionRule
 
+# No spec section: "Maximum introspection depth"
+from .rules.max_introspection_depth_rule import MaxIntrospectionDepthRule
+
 # Spec Section: "Fragments must not form cycles"
 from .rules.no_fragment_cycles import NoFragmentCyclesRule
 
@@ -115,8 +118,13 @@ from .rules.variables_in_allowed_position import VariablesInAllowedPositionRule
 if TYPE_CHECKING:
     from .rules import ASTValidationRule
 
-__all__ = ["specified_rules", "specified_sdl_rules"]
+__all__ = ["recommended_rules", "specified_rules", "specified_sdl_rules"]
 
+
+# Technically these aren't part of the spec but they are strongly encouraged
+# validation rules.
+
+recommended_rules: tuple[type[ASTValidationRule], ...] = (MaxIntrospectionDepthRule,)
 
 # This list includes all validation rules defined by the GraphQL spec.
 #
@@ -154,6 +162,7 @@ specified_rules: tuple[type[ASTValidationRule], ...] = (
     VariablesInAllowedPositionRule,
     OverlappingFieldsCanBeMergedRule,
     UniqueInputFieldNamesRule,
+    *recommended_rules,
 )
 """A tuple with all validation rules defined by the GraphQL specification.
 

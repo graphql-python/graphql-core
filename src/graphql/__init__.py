@@ -385,6 +385,7 @@ from .validation import (
     SDLValidationRule,
     # All validation rules in the GraphQL Specification.
     specified_rules,
+    recommended_rules,
     # Individual validation rules.
     ExecutableDefinitionsRule,
     FieldsOnCorrectTypeRule,
@@ -412,6 +413,7 @@ from .validation import (
     ValuesOfCorrectTypeRule,
     VariablesAreInputTypesRule,
     VariablesInAllowedPositionRule,
+    MaxIntrospectionDepthRule,
     # SDL-specific validation rules
     LoneSchemaDefinitionRule,
     UniqueOperationTypesRule,
@@ -613,6 +615,7 @@ __all__ = [
     "Location",
     "LoneAnonymousOperationRule",
     "LoneSchemaDefinitionRule",
+    "MaxIntrospectionDepthRule",
     "Middleware",
     "MiddlewareManager",
     "NameNode",
@@ -798,6 +801,7 @@ __all__ = [
     "print_schema",
     "print_source_location",
     "print_type",
+    "recommended_rules",
     "resolve_thunk",
     "separate_operations",
     "specified_directives",
