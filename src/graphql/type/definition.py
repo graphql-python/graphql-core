@@ -116,6 +116,7 @@ __all__ = [
     "GraphQLEnumValue",
     "GraphQLEnumValueKwargs",
     "GraphQLEnumValueMap",
+    "GraphQLEnumValuesDefinition",
     "GraphQLField",
     "GraphQLFieldKwargs",
     "GraphQLFieldMap",
@@ -1106,6 +1107,8 @@ def assert_union_type(type_: Any) -> GraphQLUnionType:
 
 GraphQLEnumValueMap = Dict[str, "GraphQLEnumValue"]
 
+GraphQLEnumValuesDefinition = Union[GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]]
+
 
 class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     values: GraphQLEnumValueMap
@@ -1153,7 +1156,7 @@ class GraphQLEnumType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        values: Union[GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]],
+        values: Thunk[GraphQLEnumValuesDefinition],
         names_as_values: Optional[bool] = False,
         description: Optional[str] = None,
         extensions: Optional[Dict[str, Any]] = None,
@@ -1167,6 +1170,8 @@ class GraphQLEnumType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
+        if not isinstance(values, type):
+            values = resolve_thunk(values)  # type: ignore
         try:  # check for enum
             values = cast(Enum, values).__members__  # type: ignore
         except AttributeError:
@@ -1175,7 +1180,7 @@ class GraphQLEnumType(GraphQLNamedType):
             ):
                 try:
                     # noinspection PyTypeChecker
-                    values = dict(values)
+                    values = dict(values)  # type: ignore
                 except (TypeError, ValueError) as error:
                     raise TypeError(
                         f"{name} values must be an Enum or a mapping"
