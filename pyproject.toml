@@ -1,6 +1,6 @@
 [project]
 name = "graphql-core"
-version = "3.3.0a10"
+version = "3.3.0a11"
 description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -50,7 +50,7 @@ test = [
     "pytest-timeout>=2.4",
     "pytest-codspeed>=3.1; python_version>='3.9'",
     "pytest-codspeed>=2.2,<3; python_version<'3.8'",
-    "tox>=4.31; python_version>='3.10'",
+    "tox>=4.32; python_version>='3.10'",
     "tox>=4.24; python_version>='3.8' and python_version<'3.10'",
     "tox>=3.28,<4; python_version<'3.8'",
 ]
