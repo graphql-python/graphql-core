@@ -286,6 +286,7 @@ reportInvalidTypeForm = false
 reportMissingModuleSource = false
 reportMissingTypeArgument = false
 reportReturnType = false
+reportTypedDictNotRequiredAccess = false
 reportUnknownArgumentType = false
 reportUnknownMemberType = false
 reportUnknownParameterType = false
@@ -314,14 +315,14 @@ addopts = "--benchmark-disable"
 python_classes = "PyTest*"
 # Handle all async fixtures and tests automatically by asyncio,
 asyncio_mode = "strict"
+# Use the functions scope as the default for asynchronous tests.
+asyncio_default_fixture_loop_scope = "function"
 # Set a timeout in seconds for aborting tests that run too long.
 timeout = "100"
 # Ignore config options not (yet) available in older Python versions.
 filterwarnings = "ignore::pytest.PytestConfigWarning"
 # All tests can be found in the tests directory.
 testpaths = ["tests"]
-# Use the functions scope as the default for asynchronous tests.
-asyncio_default_fixture_loop_scope = "function"
 
 [build-system]
 requires = ["uv_build>=0.9,<0.10"]

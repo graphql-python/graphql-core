@@ -1,6 +1,6 @@
 # GraphQL-core 3
 
-GraphQL-core 3 is a Python 3.6+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
+GraphQL-core 3 is a Python 3.7+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
@@ -15,12 +15,12 @@ An extensive test suite with over 2600 unit tests and 100% coverage replicates t
 complete test suite of GraphQL.js, ensuring that this port is reliable and compatible
 with GraphQL.js.
 
-The current stable version 3.2.6 of GraphQL-core is up-to-date with GraphQL.js
-version 16.8.2 and supports Python versions 3.6 to 3.13.
+The current stable version 3.2.7 of GraphQL-core is up-to-date with GraphQL.js
+version 16.9.0 and supports Python versions 3.7 to 3.14.
 
 You can also try out the latest alpha version 3.3.0a11 of GraphQL-core,
 which is up-to-date with GraphQL.js version 17.0.0a5.
-This new minor version of GraphQL-core supports Python versions 3.7 to 3.14.
+This new minor version of GraphQL-core also supports Python versions 3.7 to 3.14.
 
 Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
 Changes in the major version of GraphQL.js are reflected in the minor version of
