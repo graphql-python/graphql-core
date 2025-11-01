@@ -27,6 +27,7 @@ __all__ = [
     "GraphQLDirective",
     "GraphQLDirectiveKwargs",
     "GraphQLIncludeDirective",
+    "GraphQLOneOfDirective",
     "GraphQLSkipDirective",
     "GraphQLSpecifiedByDirective",
     "GraphQLStreamDirective",

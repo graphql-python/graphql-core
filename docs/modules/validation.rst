@@ -137,6 +137,10 @@ Rules
 
 .. autoclass:: VariablesInAllowedPositionRule
 
+**No spec section: "Maximum introspection depth"**
+
+.. autoclass:: MaxIntrospectionDepthRule
+
 **SDL-specific validation rules**
 
 .. autoclass:: LoneSchemaDefinitionRule
