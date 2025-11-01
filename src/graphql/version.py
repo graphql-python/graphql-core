@@ -6,7 +6,7 @@ __all__ = ["version", "version_info", "version_js", "version_info_js"]
 
 version = "3.2.7"
 
-version_js = "16.8.2"
+version_js = "16.9.0"
 
 
 _re_version = re.compile(r"(\d+)\.(\d+)\.(\d+)(\D*)(\d*)")
