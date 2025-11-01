@@ -12,7 +12,7 @@ from typing import (
 )
 
 from ..error import GraphQLError
-from ..pyutils import inspect
+from ..pyutils import Undefined, inspect
 from ..language import (
     DirectiveNode,
     InputValueDefinitionNode,
@@ -492,6 +492,28 @@ class SchemaValidationContext:
                         field.ast_node and field.ast_node.type,
                     ],
                 )
+
+            if input_obj.is_one_of:
+                self.validate_one_of_input_object_field(input_obj, field_name, field)
+
+    def validate_one_of_input_object_field(
+        self,
+        type_: GraphQLInputObjectType,
+        field_name: str,
+        field: GraphQLInputField,
+    ) -> None:
+        if is_non_null_type(field.type):
+            self.report_error(
+                f"OneOf input field {type_.name}.{field_name} must be nullable.",
+                field.ast_node and field.ast_node.type,
+            )
+
+        if field.default_value is not Undefined:
+            self.report_error(
+                f"OneOf input field {type_.name}.{field_name}"
+                " cannot have a default value.",
+                field.ast_node,
+            )
 
 
 def get_operation_type_node(

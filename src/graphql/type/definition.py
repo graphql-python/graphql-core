@@ -1373,6 +1373,7 @@ GraphQLInputFieldOutType = Callable[[Dict[str, Any]], Any]
 class GraphQLInputObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     fields: GraphQLInputFieldMap
     out_type: Optional[GraphQLInputFieldOutType]
+    is_one_of: bool
 
 
 class GraphQLInputObjectType(GraphQLNamedType):
@@ -1402,6 +1403,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
 
     ast_node: Optional[InputObjectTypeDefinitionNode]
     extension_ast_nodes: Tuple[InputObjectTypeExtensionNode, ...]
+    is_one_of: bool
 
     def __init__(
         self,
@@ -1412,6 +1414,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         extensions: Optional[Dict[str, Any]] = None,
         ast_node: Optional[InputObjectTypeDefinitionNode] = None,
         extension_ast_nodes: Optional[Collection[InputObjectTypeExtensionNode]] = None,
+        is_one_of: bool = False,
     ) -> None:
         super().__init__(
             name=name,
@@ -1437,6 +1440,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
         self._fields = fields
         if out_type is not None:
             self.out_type = out_type  # type: ignore
+        self.is_one_of = is_one_of
 
     @staticmethod
     def out_type(value: Dict[str, Any]) -> Any:
@@ -1456,6 +1460,7 @@ class GraphQLInputObjectType(GraphQLNamedType):
                 if self.out_type is GraphQLInputObjectType.out_type
                 else self.out_type
             ),
+            is_one_of=self.is_one_of,
         )
 
     def __copy__(self) -> "GraphQLInputObjectType":  # pragma: no cover

@@ -122,7 +122,11 @@ def coerce_variable_values(
             continue
 
         def on_input_value_error(
-            path: List[Union[str, int]], invalid_value: Any, error: GraphQLError
+            path: List[Union[str, int]],
+            invalid_value: Any,
+            error: GraphQLError,
+            var_name: str = var_name,
+            var_def_node: VariableDefinitionNode = var_def_node,
         ) -> None:
             invalid_str = inspect(invalid_value)
             prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
@@ -196,7 +200,8 @@ def get_argument_values(
                         value_node,
                     )
                 continue  # pragma: no cover
-            is_null = variable_values[variable_name] is None
+            variable_value = variable_values[variable_name]
+            is_null = variable_value is None or variable_value is Undefined
 
         if is_null and is_non_null_type(arg_type):
             raise GraphQLError(

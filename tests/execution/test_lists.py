@@ -73,6 +73,7 @@ def describe_execute_accepts_any_iterable_as_list_value():
             None,
         )
 
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     def does_not_accept_a_dict_as_a_list_value():
         assert _complete({1: "one", 2: "two"}) == (
             {"listField": None},

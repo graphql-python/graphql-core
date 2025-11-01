@@ -120,6 +120,14 @@ def value_from_ast(
                 return Undefined
             coerced_obj[field.out_name or field_name] = field_value
 
+        if type_.is_one_of:
+            keys = list(coerced_obj)
+            if len(keys) != 1:
+                return Undefined
+
+            if coerced_obj[keys[0]] is None:
+                return Undefined
+
         return type_.out_type(coerced_obj)
 
     if is_leaf_type(type_):

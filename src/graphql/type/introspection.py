@@ -282,6 +282,7 @@ __Type: GraphQLObjectType = GraphQLObjectType(
             resolve=TypeResolvers.input_fields,
         ),
         "ofType": GraphQLField(__Type, resolve=TypeResolvers.of_type),
+        "isOneOf": GraphQLField(GraphQLBoolean, resolve=TypeResolvers.is_one_of),
     },
 )
 
@@ -367,6 +368,10 @@ class TypeResolvers:
     @staticmethod
     def of_type(type_, _info):
         return getattr(type_, "of_type", None)
+
+    @staticmethod
+    def is_one_of(type_, _info):
+        return type_.is_one_of if is_input_object_type(type_) else None
 
 
 __Field: GraphQLObjectType = GraphQLObjectType(

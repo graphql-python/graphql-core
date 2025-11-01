@@ -1,4 +1,4 @@
-from typing import cast, Any
+from typing import cast, Any, Dict, Mapping
 
 from ...error import GraphQLError
 from ...language import (
@@ -6,12 +6,15 @@ from ...language import (
     EnumValueNode,
     FloatValueNode,
     IntValueNode,
+    NonNullTypeNode,
     NullValueNode,
     ListValueNode,
     ObjectFieldNode,
     ObjectValueNode,
     StringValueNode,
     ValueNode,
+    VariableDefinitionNode,
+    VariableNode,
     VisitorAction,
     SKIP,
     print_ast,
@@ -28,7 +31,7 @@ from ...type import (
     is_non_null_type,
     is_required_input_field,
 )
-from . import ValidationRule
+from . import ValidationContext, ValidationRule
 
 __all__ = ["ValuesOfCorrectTypeRule"]
 
@@ -41,6 +44,18 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
     See https://spec.graphql.org/draft/#sec-Values-of-Correct-Type
     """
+
+    def __init__(self, context: ValidationContext) -> None:
+        super().__init__(context)
+        self.variable_definitions: dict[str, VariableDefinitionNode] = {}
+
+    def enter_operation_definition(self, *_args: Any) -> None:
+        self.variable_definitions.clear()
+
+    def enter_variable_definition(
+        self, definition: VariableDefinitionNode, *_args: Any
+    ) -> None:
+        self.variable_definitions[definition.variable.name.value] = definition
 
     def enter_list_value(self, node: ListValueNode, *_args: Any) -> VisitorAction:
         # Note: TypeInfo will traverse into a list's item type, so look to the parent
@@ -70,6 +85,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                         node,
                     )
                 )
+        if type_.is_one_of:
+            validate_one_of_input_object(
+                self.context, node, type_, field_node_map, self.variable_definitions
+            )
         return None
 
     def enter_object_field(self, node: ObjectFieldNode, *_args: Any) -> None:
@@ -161,3 +180,51 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
 
         return
+
+
+def validate_one_of_input_object(
+    context: ValidationContext,
+    node: ObjectValueNode,
+    type_: GraphQLInputObjectType,
+    field_node_map: Mapping[str, ObjectFieldNode],
+    variable_definitions: Dict[str, VariableDefinitionNode],
+) -> None:
+    keys = list(field_node_map)
+    is_not_exactly_one_filed = len(keys) != 1
+
+    if is_not_exactly_one_filed:
+        context.report_error(
+            GraphQLError(
+                f"OneOf Input Object '{type_.name}' must specify exactly one key.",
+                node,
+            )
+        )
+        return
+
+    object_field_node = field_node_map.get(keys[0])
+    value = object_field_node.value if object_field_node else None
+    is_null_literal = not value or isinstance(value, NullValueNode)
+
+    if is_null_literal:
+        context.report_error(
+            GraphQLError(
+                f"Field '{type_.name}.{keys[0]}' must be non-null.",
+                node,
+            )
+        )
+        return
+
+    is_variable = value and isinstance(value, VariableNode)
+    if is_variable:
+        variable_name = cast(VariableNode, value).name.value
+        definition = variable_definitions[variable_name]
+        is_nullable_variable = not isinstance(definition.type, NonNullTypeNode)
+
+        if is_nullable_variable:
+            context.report_error(
+                GraphQLError(
+                    f"Variable '{variable_name}' must be non-nullable"
+                    f" to be used for OneOf Input Object '{type_.name}'.",
+                    node,
+                )
+            )

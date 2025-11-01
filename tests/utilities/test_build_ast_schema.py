@@ -21,6 +21,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLSkipDirective,
     GraphQLSpecifiedByDirective,
+    GraphQLOneOfDirective,
     GraphQLString,
     assert_directive,
     assert_enum_type,
@@ -226,11 +227,12 @@ def describe_schema_builder():
     def maintains_include_skip_and_specified_by_url_directives():
         schema = build_schema("type Query")
 
-        assert len(schema.directives) == 4
+        assert len(schema.directives) == 5
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
         assert schema.get_directive("specifiedBy") is GraphQLSpecifiedByDirective
+        assert schema.get_directive("oneOf") is GraphQLOneOfDirective
 
     def overriding_directives_excludes_specified():
         schema = build_schema(
@@ -239,10 +241,11 @@ def describe_schema_builder():
             directive @include on FIELD
             directive @deprecated on FIELD_DEFINITION
             directive @specifiedBy on FIELD_DEFINITION
+            directive @oneOf on OBJECT
             """
         )
 
-        assert len(schema.directives) == 4
+        assert len(schema.directives) == 5
         get_directive = schema.get_directive
         assert get_directive("skip") is not GraphQLSkipDirective
         assert get_directive("skip") is not None
@@ -252,19 +255,22 @@ def describe_schema_builder():
         assert get_directive("deprecated") is not None
         assert get_directive("specifiedBy") is not GraphQLSpecifiedByDirective
         assert get_directive("specifiedBy") is not None
+        assert get_directive("oneOf") is not GraphQLOneOfDirective
+        assert get_directive("oneOf") is not None
 
-    def adding_directives_maintains_include_skip_and_specified_by_directives():
+    def adding_directives_maintains_include_skip_and_three_other_directives():
         schema = build_schema(
             """
             directive @foo(arg: Int) on FIELD
             """
         )
 
-        assert len(schema.directives) == 5
+        assert len(schema.directives) == 6
         assert schema.get_directive("skip") is GraphQLSkipDirective
         assert schema.get_directive("include") is GraphQLIncludeDirective
         assert schema.get_directive("deprecated") is GraphQLDeprecatedDirective
         assert schema.get_directive("specifiedBy") is GraphQLSpecifiedByDirective
+        assert schema.get_directive("oneOf") is GraphQLOneOfDirective
         assert schema.get_directive("foo") is not None
 
     def type_modifiers():

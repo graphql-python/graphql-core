@@ -364,6 +364,17 @@ def describe_introspection():
                                 "isDeprecated": False,
                                 "deprecationReason": None,
                             },
+                            {
+                                "name": "isOneOf",
+                                "args": [],
+                                "type": {
+                                    "kind": "SCALAR",
+                                    "name": "Boolean",
+                                    "ofType": None,
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
                         ],
                         "inputFields": None,
                         "interfaces": [],
@@ -981,6 +992,12 @@ def describe_introspection():
                             }
                         ],
                     },
+                    {
+                        "name": "oneOf",
+                        "isRepeatable": False,
+                        "locations": ["INPUT_OBJECT"],
+                        "args": [],
+                    },
                 ],
             }
         }
@@ -1429,6 +1446,109 @@ def describe_introspection():
                         {"name": "ALSO_NON_DEPRECATED"},
                     ],
                 }
+            },
+            None,
+        )
+
+    def identifies_one_of_for_input_objects():
+        schema = build_schema(
+            """
+            input SomeInputObject @oneOf {
+                a: String
+            }
+
+            input AnotherInputObject {
+                a: String
+                b: String
+            }
+
+            type Query {
+                someField(someArg: SomeInputObject): String
+                anotherField(anotherArg: AnotherInputObject): String
+            }
+            """
+        )
+
+        source = """
+            {
+              oneOfInputObject: __type(name: "SomeInputObject") {
+                isOneOf
+              }
+              inputObject: __type(name: "AnotherInputObject") {
+                isOneOf
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "oneOfInputObject": {
+                    "isOneOf": True,
+                },
+                "inputObject": {
+                    "isOneOf": False,
+                },
+            },
+            None,
+        )
+
+    def returns_null_for_one_of_for_other_types():
+        schema = build_schema(
+            """
+            type SomeObject implements SomeInterface {
+              fieldA: String
+            }
+            enum SomeEnum {
+              SomeObject
+            }
+            interface SomeInterface {
+              fieldA: String
+            }
+            union SomeUnion = SomeObject
+            type Query {
+              someField(enum: SomeEnum): SomeUnion
+              anotherField(enum: SomeEnum): SomeInterface
+            }
+            """
+        )
+
+        source = """
+            {
+              object: __type(name: "SomeObject") {
+                isOneOf
+              }
+              enum: __type(name: "SomeEnum") {
+                isOneOf
+              }
+              interface: __type(name: "SomeInterface") {
+                isOneOf
+              }
+              scalar: __type(name: "String") {
+                isOneOf
+              }
+              union: __type(name: "SomeUnion") {
+                isOneOf
+              }
+            }
+           """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "object": {
+                    "isOneOf": None,
+                },
+                "enum": {
+                    "isOneOf": None,
+                },
+                "interface": {
+                    "isOneOf": None,
+                },
+                "scalar": {
+                    "isOneOf": None,
+                },
+                "union": {
+                    "isOneOf": None,
+                },
             },
             None,
         )

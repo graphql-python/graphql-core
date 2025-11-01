@@ -249,6 +249,99 @@ def describe_coerce_input_value():
             result = _coerce_value({"real": 1, "imag": 2}, ComplexInputObject)
             assert expect_value(result) == 1 + 2j
 
+    def describe_for_graphql_input_object_that_is_one_of():
+        TestInputObject = GraphQLInputObjectType(
+            "TestInputObject",
+            {
+                "foo": GraphQLInputField(GraphQLInt),
+                "bar": GraphQLInputField(GraphQLInt),
+            },
+            is_one_of=True,
+        )
+
+        def returns_no_error_for_a_valid_input():
+            result = _coerce_value({"foo": 123}, TestInputObject)
+            assert expect_value(result) == {"foo": 123}
+
+        def returns_an_error_if_more_than_one_field_is_specified():
+            result = _coerce_value({"foo": 123, "bar": None}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Exactly one key must be specified"
+                    " for OneOf type 'TestInputObject'.",
+                    [],
+                    {"foo": 123, "bar": None},
+                )
+            ]
+
+        def returns_an_error_if_the_one_field_is_null():
+            result = _coerce_value({"bar": None}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Field 'bar' must be non-null.",
+                    ["bar"],
+                    None,
+                )
+            ]
+
+        def returns_an_error_for_an_invalid_field():
+            result = _coerce_value({"foo": nan}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Int cannot represent non-integer value: nan",
+                    ["foo"],
+                    nan,
+                )
+            ]
+
+        def returns_multiple_errors_for_multiple_invalid_fields():
+            result = _coerce_value({"foo": "abc", "bar": "def"}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Int cannot represent non-integer value: 'abc'",
+                    ["foo"],
+                    "abc",
+                ),
+                (
+                    "Int cannot represent non-integer value: 'def'",
+                    ["bar"],
+                    "def",
+                ),
+                (
+                    "Exactly one key must be specified"
+                    " for OneOf type 'TestInputObject'.",
+                    [],
+                    {"foo": "abc", "bar": "def"},
+                ),
+            ]
+
+        def returns_an_error_for_an_unknown_field():
+            result = _coerce_value({"foo": 123, "unknownField": 123}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Field 'unknownField' is not defined by type 'TestInputObject'.",
+                    [],
+                    {"foo": 123, "unknownField": 123},
+                )
+            ]
+
+        def returns_an_error_for_a_misspelled_field():
+            result = _coerce_value({"bart": 123}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Field 'bart' is not defined by type 'TestInputObject'."
+                    " Did you mean 'bar'?",
+                    [],
+                    {"bart": 123},
+                ),
+                (
+                    "Exactly one key must be specified"
+                    " for OneOf type 'TestInputObject'.",
+                    [],
+                    {"bart": 123},
+                ),
+            ]
+
     def describe_for_graphql_input_object_with_default_value():
         def _get_test_input_object(default_value):
             return GraphQLInputObjectType(

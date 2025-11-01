@@ -1741,6 +1741,49 @@ def describe_type_system_input_object_fields_must_have_input_types():
         ]
 
 
+def describe_type_system_one_of_input_object_fields_must_be_nullable():
+    def rejects_non_nullable_fields():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject @oneOf {
+              a: String
+              b: String!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "OneOf input field SomeInputObject.b must be nullable.",
+                "locations": [(8, 18)],
+            }
+        ]
+
+    def rejects_fields_with_default_values():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject @oneOf {
+              a: String
+              b: String = "foo"
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "OneOf input field SomeInputObject.b"
+                " cannot have a default value.",
+                "locations": [(8, 15)],
+            }
+        ]
+
+
 def describe_objects_must_adhere_to_interfaces_they_implement():
     def accepts_an_object_which_implements_an_interface():
         schema = build_schema(

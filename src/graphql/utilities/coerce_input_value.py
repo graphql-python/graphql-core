@@ -127,6 +127,30 @@ def coerce_input_value(
                         + did_you_mean(suggestions)
                     ),
                 )
+
+        if type_.is_one_of:
+            keys = list(coerced_dict)
+            if len(keys) != 1:
+                on_error(
+                    path.as_list() if path else [],
+                    input_value,
+                    GraphQLError(
+                        "Exactly one key must be specified"
+                        f" for OneOf type '{type_.name}'.",
+                    ),
+                )
+            else:
+                key = keys[0]
+                value = coerced_dict[key]
+                if value is None:
+                    on_error(
+                        (path.as_list() if path else []) + [key],
+                        value,
+                        GraphQLError(
+                            f"Field '{key}' must be non-null.",
+                        ),
+                    )
+
         return type_.out_type(coerced_dict)
 
     if is_leaf_type(type_):
