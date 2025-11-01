@@ -208,6 +208,7 @@ class ExecutionContext(IncrementalPublisherContext):
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
+    enable_early_execution: bool
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     middleware_manager: MiddlewareManager | None
@@ -227,7 +228,8 @@ class ExecutionContext(IncrementalPublisherContext):
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
         subscribe_field_resolver: GraphQLFieldResolver,
-        middleware_manager: MiddlewareManager | None,
+        enable_early_execution: bool = False,
+        middleware_manager: MiddlewareManager | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     ) -> None:
         self.schema = schema
@@ -239,6 +241,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.field_resolver = field_resolver
         self.type_resolver = type_resolver
         self.subscribe_field_resolver = subscribe_field_resolver
+        self.enable_early_execution = enable_early_execution
         self.middleware_manager = middleware_manager
         self.is_awaitable = is_awaitable or default_is_awaitable
         self.errors = None
@@ -260,6 +263,7 @@ class ExecutionContext(IncrementalPublisherContext):
         field_resolver: GraphQLFieldResolver | None = None,
         type_resolver: GraphQLTypeResolver | None = None,
         subscribe_field_resolver: GraphQLFieldResolver | None = None,
+        enable_early_execution: bool = False,
         middleware: Middleware | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         **custom_args: Any,
@@ -333,6 +337,7 @@ class ExecutionContext(IncrementalPublisherContext):
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
             subscribe_field_resolver or default_field_resolver,
+            enable_early_execution,
             middleware_manager,
             is_awaitable,
             **custom_args,
@@ -1623,6 +1628,7 @@ class ExecutionContext(IncrementalPublisherContext):
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
     ) -> list[DeferredGroupedFieldSetRecord]:
         """Execute deferred grouped field sets."""
+        is_awaitable = self.is_awaitable
         new_deferred_grouped_field_set_records: list[DeferredGroupedFieldSetRecord] = []
         append_record = new_deferred_grouped_field_set_records.append
         for defer_usage_set, grouped_field_set in new_grouped_field_sets.items():
@@ -1630,41 +1636,18 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_usage_set, defer_map
             )
 
-            deferred_grouped_field_set_record = DeferredGroupedFieldSetRecord(
+            deferred_record = DeferredGroupedFieldSetRecord(
                 deferred_fragment_records,
                 cast("BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]", None),
             )
 
-            if should_defer(parent_defer_usages, defer_usage_set):
-
-                async def executor(
-                    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
-                    grouped_field_set: GroupedFieldSet,
-                    defer_usage_set: DeferUsageSet,
-                ) -> DeferredGroupedFieldSetResult:
-                    result = self.execute_deferred_grouped_field_set(
-                        deferred_grouped_field_set_record,
-                        parent_type,
-                        source_value,
-                        path,
-                        grouped_field_set,
-                        IncrementalContext(defer_usage_set),
-                        defer_map,
-                    )
-                    if self.is_awaitable(result):
-                        return await result
-                    return cast("DeferredGroupedFieldSetResult", result)
-
-                deferred_grouped_field_set_record.result = BoxedAwaitableOrValue(
-                    executor(
-                        deferred_grouped_field_set_record,
-                        grouped_field_set,
-                        defer_usage_set,
-                    )
-                )
-            else:
-                executed = self.execute_deferred_grouped_field_set(
-                    deferred_grouped_field_set_record,
+            def executor(
+                deferred_record: DeferredGroupedFieldSetRecord = deferred_record,
+                grouped_field_set: GroupedFieldSet = grouped_field_set,
+                defer_usage_set: DeferUsageSet = defer_usage_set,
+            ) -> AwaitableOrValue[DeferredGroupedFieldSetResult]:
+                return self.execute_deferred_grouped_field_set(
+                    deferred_record,
                     parent_type,
                     source_value,
                     path,
@@ -1672,11 +1655,40 @@ class ExecutionContext(IncrementalPublisherContext):
                     IncrementalContext(defer_usage_set),
                     defer_map,
                 )
-                deferred_grouped_field_set_record.result = BoxedAwaitableOrValue(
-                    executed
-                )
 
-            append_record(deferred_grouped_field_set_record)
+            should_defer_this_defer_usage_set = should_defer(
+                parent_defer_usages, defer_usage_set
+            )
+
+            if should_defer_this_defer_usage_set:
+                if self.enable_early_execution:
+
+                    async def execute_async(
+                        executor: Callable[
+                            [], AwaitableOrValue[DeferredGroupedFieldSetResult]
+                        ] = executor,
+                    ) -> DeferredGroupedFieldSetResult:
+                        result = executor()
+                        if is_awaitable(result):
+                            return await result
+                        return result  # type: ignore
+
+                    deferred_record.result = BoxedAwaitableOrValue(execute_async())
+                else:
+
+                    def execute_sync(
+                        executor: Callable[
+                            [], AwaitableOrValue[DeferredGroupedFieldSetResult]
+                        ] = executor,
+                    ) -> BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]:
+                        return BoxedAwaitableOrValue(executor())
+
+                    deferred_record.result = execute_sync
+
+            else:
+                deferred_record.result = BoxedAwaitableOrValue(executor())
+
+            append_record(deferred_record)
 
         return new_deferred_grouped_field_set_records
 
@@ -1746,9 +1758,13 @@ class ExecutionContext(IncrementalPublisherContext):
     ) -> list[StreamItemRecord]:
         """Build sync stream item queue."""
         is_awaitable = self.is_awaitable
+        enable_early_execution = self.enable_early_execution
         complete_stream_item = self.complete_stream_item
 
-        async def get_stream_item_result() -> StreamItemResult:
+        stream_item_queue: list[StreamItemRecord] = []
+        append_stream_item = stream_item_queue.append
+
+        def first_executor() -> StreamItemResult:
             initial_path = stream_path.add_key(initial_index)
 
             first_stream_item: BoxedAwaitableOrValue[StreamItemResult] = (
@@ -1763,16 +1779,24 @@ class ExecutionContext(IncrementalPublisherContext):
                     )
                 )
             )
+
             current_index = initial_index + 1
-            current_stream_item = first_stream_item
+            current_stream_item: (
+                BoxedAwaitableOrValue[StreamItemResult]
+                | Callable[[], BoxedAwaitableOrValue[StreamItemResult]]
+            ) = first_stream_item
             for item in iterator:
-                result = current_stream_item.value
-                if not is_awaitable(result) and result.errors:
-                    break
+                if isinstance(current_stream_item, BoxedAwaitableOrValue):
+                    result = current_stream_item.value
+                    if not is_awaitable(result) and result.errors:
+                        break
 
                 item_path = stream_path.add_key(current_index)
-                current_stream_item = BoxedAwaitableOrValue(
-                    complete_stream_item(
+
+                def current_executor(
+                    item: Any = item, item_path: Path = item_path
+                ) -> AwaitableOrValue[StreamItemResult]:
+                    return complete_stream_item(
                         item_path,
                         item,
                         IncrementalContext(),
@@ -1780,7 +1804,14 @@ class ExecutionContext(IncrementalPublisherContext):
                         info,
                         item_type,
                     )
+
+                current_stream_item = (
+                    BoxedAwaitableOrValue(current_executor())
+                    if enable_early_execution
+                    else lambda executor=current_executor:  # type: ignore
+                    BoxedAwaitableOrValue(executor())
                 )
+
                 append_stream_item(current_stream_item)
 
                 current_index = initial_index + 1
@@ -1789,10 +1820,14 @@ class ExecutionContext(IncrementalPublisherContext):
 
             return first_stream_item.value
 
-        stream_item_queue: list[StreamItemRecord] = [
-            BoxedAwaitableOrValue(get_stream_item_result())
-        ]
-        append_stream_item = stream_item_queue.append
+        if enable_early_execution:
+
+            async def await_first_stream_item() -> StreamItemResult:
+                return first_executor()
+
+            append_stream_item(BoxedAwaitableOrValue(await_first_stream_item()))
+        else:
+            append_stream_item(lambda: BoxedAwaitableOrValue(first_executor()))
 
         return stream_item_queue
 
@@ -1806,20 +1841,25 @@ class ExecutionContext(IncrementalPublisherContext):
         item_type: GraphQLOutputType,
     ) -> list[StreamItemRecord]:
         """Build async stream item queue."""
+
+        def executor() -> AwaitableOrValue[StreamItemResult]:
+            return self.get_next_async_stream_item_result(
+                stream_item_queue,
+                stream_path,
+                initial_index,
+                async_iterator,
+                field_group,
+                info,
+                item_type,
+            )
+
         stream_item_queue: list[StreamItemRecord] = []
         stream_item_queue.append(
-            BoxedAwaitableOrValue(
-                self.get_next_async_stream_item_result(
-                    stream_item_queue,
-                    stream_path,
-                    initial_index,
-                    async_iterator,
-                    field_group,
-                    info,
-                    item_type,
-                )
-            )
+            BoxedAwaitableOrValue(executor())
+            if self.enable_early_execution
+            else lambda: BoxedAwaitableOrValue(executor())
         )
+
         return stream_item_queue
 
     async def get_next_async_stream_item_result(
@@ -1855,18 +1895,21 @@ class ExecutionContext(IncrementalPublisherContext):
             item_type,
         )
 
+        def executor() -> AwaitableOrValue[StreamItemResult]:
+            return self.get_next_async_stream_item_result(
+                stream_item_queue,
+                stream_path,
+                index,
+                async_iterator,
+                field_group,
+                info,
+                item_type,
+            )
+
         stream_item_queue.append(
-            BoxedAwaitableOrValue(
-                self.get_next_async_stream_item_result(
-                    stream_item_queue,
-                    stream_path,
-                    index,
-                    async_iterator,
-                    field_group,
-                    info,
-                    item_type,
-                )
-            ),
+            BoxedAwaitableOrValue(executor())
+            if self.enable_early_execution
+            else lambda: BoxedAwaitableOrValue(executor())
         )
 
         if self.is_awaitable(result):
@@ -2075,6 +2118,7 @@ def execute(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    enable_early_execution: bool = False,
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
@@ -2108,6 +2152,7 @@ def execute(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        enable_early_execution,
         middleware,
         execution_context_class,
         is_awaitable,
@@ -2137,6 +2182,7 @@ def experimental_execute_incrementally(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    enable_early_execution: bool = False,
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
@@ -2167,6 +2213,7 @@ def experimental_execute_incrementally(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        enable_early_execution,
         middleware,
         is_awaitable,
         **custom_context_args,
@@ -2222,6 +2269,7 @@ def execute_sync(
         field_resolver,
         type_resolver,
         None,
+        False,
         middleware,
         execution_context_class,
         is_awaitable,
@@ -2444,6 +2492,7 @@ def subscribe(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    enable_early_execution: bool = False,
     execution_context_class: type[ExecutionContext] | None = None,
     middleware: MiddlewareManager | None = None,
     **custom_context_args: Any,
@@ -2486,6 +2535,7 @@ def subscribe(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        enable_early_execution,
         middleware=middleware,
         **custom_context_args,
     )
@@ -2522,6 +2572,7 @@ def create_source_event_stream(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
+    enable_early_execution: bool = False,
     execution_context_class: type[ExecutionContext] | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
@@ -2560,6 +2611,7 @@ def create_source_event_stream(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        enable_early_execution,
         **custom_context_args,
     )
 

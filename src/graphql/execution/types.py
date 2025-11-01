@@ -7,8 +7,10 @@ from typing import (
     Any,
     AsyncGenerator,
     Awaitable,
+    Callable,
     Iterator,
     NamedTuple,
+    TypeVar,
     Union,
 )
 
@@ -578,6 +580,8 @@ class FormattedIncrementalStreamResult(TypedDict):
     extensions: NotRequired[dict[str, Any]]
 
 
+T = TypeVar("T")  # declare T for generic aliases
+
 IncrementalResult: TypeAlias = Union[IncrementalDeferResult, IncrementalStreamResult]
 
 FormattedIncrementalResult: TypeAlias = Union[
@@ -782,18 +786,23 @@ def is_deferred_grouped_field_set_result(
     )
 
 
+ThunkIncrementalResult: TypeAlias = Union[
+    BoxedAwaitableOrValue[T], Callable[[], BoxedAwaitableOrValue[T]]
+]
+
+
 class DeferredGroupedFieldSetRecord:
     """Deferred grouped field set record"""
 
     deferred_fragment_records: list[DeferredFragmentRecord]
-    result: BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]
+    result: ThunkIncrementalResult[DeferredGroupedFieldSetResult]
 
     __slots__ = "deferred_fragment_records", "result"
 
     def __init__(
         self,
         deferred_fragment_records: list[DeferredFragmentRecord],
-        result: BoxedAwaitableOrValue[DeferredGroupedFieldSetResult],
+        result: ThunkIncrementalResult[DeferredGroupedFieldSetResult],
     ) -> None:
         self.result = result
         self.deferred_fragment_records = deferred_fragment_records
@@ -840,7 +849,7 @@ class StreamItemResult(NamedTuple):
     errors: list[GraphQLError] | None = None
 
 
-StreamItemRecord: TypeAlias = BoxedAwaitableOrValue[StreamItemResult]
+StreamItemRecord: TypeAlias = ThunkIncrementalResult[StreamItemResult]
 
 
 class StreamRecord:
@@ -908,7 +917,7 @@ class StreamItemsResult(NamedTuple):
 
     stream_record: StreamRecord
     result: BareStreamItemsResult | None
-    incremental_data_records: list[IncrementalDataRecord] | None = None
+    incremental_data_records: list[IncrementalDataRecord] | None
     errors: list[GraphQLError] | None = None
 
 

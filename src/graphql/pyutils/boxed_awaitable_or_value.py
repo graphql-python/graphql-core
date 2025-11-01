@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from asyncio import Future, ensure_future, isfuture
+from asyncio import CancelledError, Future, ensure_future, isfuture
+from contextlib import suppress
 from typing import Awaitable, Generic, TypeVar
 
 __all__ = ["BoxedAwaitableOrValue"]
@@ -41,4 +42,5 @@ class BoxedAwaitableOrValue(Generic[T]):
 
     def _update_value(self, value: Future[T]) -> None:
         """Update the boxed value when the Awaitable is done."""
-        self._value = value.result()
+        with suppress(CancelledError):
+            self._value = value.result()

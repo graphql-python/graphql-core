@@ -170,9 +170,14 @@ class Resolvers:
         yield friends[0]
 
 
-async def complete(document: DocumentNode, root_value: Any = None) -> Any:
+async def complete(
+    document: DocumentNode, root_value: Any = None, enable_early_execution: bool = False
+) -> Any:
     result = experimental_execute_incrementally(
-        schema, document, root_value or {"hero": hero}
+        schema,
+        document,
+        root_value or {"hero": hero},
+        enable_early_execution=enable_early_execution,
     )
     if is_awaitable(result):
         result = await result
@@ -604,6 +609,118 @@ def describe_execute_defer_directive():
                 "hasNext": False,
             },
         ]
+
+    async def does_not_execute_deferred_fragments_early_when_not_specified():
+        """Does not execute deferred fragments early when not specified"""
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                id
+                ...NameFragment @defer
+              }
+            }
+            fragment NameFragment on Hero {
+              name
+            }
+            """
+        )
+
+        async def resolve_id(_info):
+            await sleep(0)
+            order.append("slow-id")
+            return hero["id"]
+
+        def resolve_name(_info):
+            order.append("fast-name")
+            return hero["name"]
+
+        order: list[str] = []
+        result = await complete(
+            document, {"hero": {**hero, "id": resolve_id, "name": resolve_name}}
+        )
+
+        assert result == [
+            {
+                "data": {
+                    "hero": {
+                        "id": "1",
+                    },
+                },
+                "pending": [{"id": "0", "path": ["hero"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "name": "Luke",
+                        },
+                        "id": "0",
+                    },
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+        assert order == ["slow-id", "fast-name"]
+
+    async def does_execute_deferred_fragments_early_when_specified():
+        """Does execute deferred fragments early when specified"""
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                id
+                ...NameFragment @defer
+              }
+            }
+            fragment NameFragment on Hero {
+              name
+            }
+            """
+        )
+
+        async def resolve_id(_info):
+            await sleep(0)
+            order.append("slow-id")
+            return hero["id"]
+
+        def resolve_name(_info):
+            order.append("fast-name")
+            return hero["name"]
+
+        order: list[str] = []
+        result = await complete(
+            document,
+            {"hero": {**hero, "id": resolve_id, "name": resolve_name}},
+            enable_early_execution=True,
+        )
+
+        assert result == [
+            {
+                "data": {
+                    "hero": {
+                        "id": "1",
+                    },
+                },
+                "pending": [{"id": "0", "path": ["hero"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "data": {
+                            "name": "Luke",
+                        },
+                        "id": "0",
+                    },
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+        assert order == ["fast-name", "slow-id"]
 
     async def throws_an_error_for_defer_directive_with_non_string_label():
         """Throws an error for @defer directive with non-string label"""
@@ -1829,6 +1946,7 @@ def describe_execute_defer_directive():
                     "someField": "someField",
                 }
             },
+            enable_early_execution=True,
         )
 
         assert result == [
@@ -1880,7 +1998,9 @@ def describe_execute_defer_directive():
             """
         )
         result = await complete(
-            document, {"hero": {**hero, "nonNullName": lambda _info: None}}
+            document,
+            {"hero": {**hero, "nonNullName": lambda _info: None}},
+            enable_early_execution=True,
         )
 
         assert result == {
@@ -1910,7 +2030,9 @@ def describe_execute_defer_directive():
             """
         )
         result = await complete(
-            document, {"hero": {**hero, "nonNullName": lambda _info: None}}
+            document,
+            {"hero": {**hero, "nonNullName": lambda _info: None}},
+            enable_early_execution=True,
         )
 
         assert result == [

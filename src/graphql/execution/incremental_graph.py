@@ -23,7 +23,7 @@ from typing import (
     cast,
 )
 
-from ..pyutils import Undefined
+from ..pyutils import BoxedAwaitableOrValue, Undefined
 from .types import (
     BareStreamItemsResult,
     StreamItemRecord,
@@ -104,7 +104,7 @@ class IncrementalGraph:
     _completed_queue: list[IncrementalDataRecordResult]
     _next_queue: list[Future[Iterable[IncrementalDataRecordResult]]]
 
-    _tasks: set[Task[Any]]  # benutzt????
+    _tasks: set[Task[Any]]
 
     def __init__(self) -> None:
         """Initialize the IncrementalGraph."""
@@ -148,7 +148,7 @@ class IncrementalGraph:
         _pending, _new_pending = self._pending, self._new_pending
         _new_incremental_data_records = self._new_incremental_data_records
         new_pending: list[SubsequentResultRecord] = []
-        add_result = new_pending.append
+        add_new = new_pending.append
         # avoid iterating over a changing dict
         iterate = list(_new_pending)
         add_iteration = iterate.append
@@ -156,7 +156,7 @@ class IncrementalGraph:
             node = iterate.pop(0)
             if is_stream_node(node):
                 _pending[node] = None
-                add_result(node)
+                add_new(node)
                 _new_incremental_data_records[node] = None
             elif node.deferred_grouped_field_set_records:  # type: ignore
                 records = node.deferred_grouped_field_set_records  # type: ignore
@@ -165,7 +165,7 @@ class IncrementalGraph:
                         None
                     )
                 _pending[node] = None
-                add_result(node.deferred_fragment_record)  # type: ignore
+                add_new(node.deferred_fragment_record)  # type: ignore
             else:
                 for child in node.children:  # type: ignore
                     _new_pending[child] = None
@@ -183,17 +183,22 @@ class IncrementalGraph:
                     )
                 )
             else:
-                value = incremental_data_record.result.value  # type: ignore
-                if isfuture(value):
+                deferred_result = incremental_data_record.result  # type: ignore
+                result = (
+                    deferred_result.value
+                    if isinstance(deferred_result, BoxedAwaitableOrValue)
+                    else deferred_result().value
+                )
+                if isfuture(result):
 
                     async def enqueue_later(
                         value: Awaitable[IncrementalDataRecordResult],
                     ) -> None:
                         enqueue(await value)
 
-                    add_task(enqueue_later(value))
+                    add_task(enqueue_later(result))
                 else:
-                    enqueue(value)
+                    enqueue(result)
         _new_incremental_data_records.clear()
 
         return new_pending
@@ -340,7 +345,11 @@ class IncrementalGraph:
                 stream_item_record = stream_item_queue.pop(0)
             except IndexError:  # pragma: no cover
                 break
-            result = stream_item_record.value
+            result = (
+                stream_item_record.value
+                if isinstance(stream_item_record, BoxedAwaitableOrValue)
+                else stream_item_record().value
+            )
             if isfuture(result):
                 if items:
                     enqueue(

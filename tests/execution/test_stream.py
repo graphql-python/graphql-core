@@ -94,8 +94,12 @@ query = GraphQLObjectType(
 schema = GraphQLSchema(query)
 
 
-async def complete(document: DocumentNode, root_value: Any = None) -> Any:
-    result = experimental_execute_incrementally(schema, document, root_value)
+async def complete(
+    document: DocumentNode, root_value: Any = None, enable_early_execution: bool = False
+) -> Any:
+    result = experimental_execute_incrementally(
+        schema, document, root_value, enable_early_execution=enable_early_execution
+    )
     if isinstance(result, Awaitable):
         result = await result
 
@@ -508,12 +512,112 @@ def describe_execute_stream_directive():
                             {"name": "Leia", "id": "3"},
                         ],
                         "id": "0",
-                    },
+                    }
+                ],
+                "hasNext": True,
+            },
+            {
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+
+    async def does_not_execute_early_if_not_specified():
+        """Does not execute early if not specified"""
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                id
+              }
+            }
+            """
+        )
+
+        order: list[int] = []
+
+        def slow_friend(f, i):
+            async def resolve_id(_info):
+                slowness = 3 - i
+                for _j in range(slowness):
+                    await sleep(0)
+                order.append(i)
+                return f.id
+
+            return {"id": resolve_id}
+
+        result = await complete(
+            document,
+            {
+                "friendList": lambda _info: [
+                    slow_friend(f, i) for i, f in enumerate(friends)
+                ]
+            },
+        )
+        assert result == [
+            {
+                "data": {"friendList": []},
+                "pending": [{"id": "0", "path": ["friendList"]}],
+                "hasNext": True,
+            },
+            {
+                "hasNext": True,
+                "incremental": [
+                    {"items": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "id": "0"}
+                ],
+            },
+            {"hasNext": False, "completed": [{"id": "0"}]},
+        ]
+        assert order == [0, 1, 2]
+
+    async def executes_early_if_specified():
+        """Executes early if specified"""
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                id
+              }
+            }
+            """
+        )
+
+        order: list[int] = []
+
+        def slow_friend(f, i):
+            async def resolve_id(_info):
+                slowness = 3 - i
+                for _j in range(slowness):
+                    await sleep(0)
+                order.append(i)
+                return f.id
+
+            return {"id": resolve_id}
+
+        result = await complete(
+            document,
+            {
+                "friendList": lambda _info: [
+                    slow_friend(f, i) for i, f in enumerate(friends)
+                ]
+            },
+            enable_early_execution=True,
+        )
+        assert result == [
+            {
+                "data": {"friendList": []},
+                "pending": [{"id": "0", "path": ["friendList"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {"items": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "id": "0"}
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
         ]
+        assert order == [2, 1, 0]
 
     async def can_stream_a_field_that_returns_a_list_with_nested_async_fields():
         """Can stream a field that returns a list with nested async fields"""
@@ -779,6 +883,102 @@ def describe_execute_stream_directive():
             ],
             "data": {"friendList": None},
         }
+
+    async def does_not_execute_early_by_default_when_streaming_async_iterable():
+        """Does not execute early if unspecified, when streaming from async iterable"""
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                id
+              }
+            }
+            """
+        )
+
+        order: list[int] = []
+
+        async def slow_friend(n: int):
+            async def resolve_id(_info):
+                slowness = (3 - n) * 10
+                for _j in range(slowness):
+                    await sleep(0)
+                order.append(n)
+                return friends[n].id
+
+            return {"id": resolve_id}
+
+        async def friend_list(_info):
+            for n in range(3):
+                yield await slow_friend(n)
+
+        result = await complete(document, {"friendList": friend_list})
+        assert result == [
+            {
+                "data": {"friendList": []},
+                "pending": [{"id": "0", "path": ["friendList"]}],
+                "hasNext": True,
+            },
+            {
+                "hasNext": True,
+                "incremental": [
+                    {"items": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "id": "0"}
+                ],
+            },
+            {
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+        assert order == [0, 1, 2]
+
+    async def executes_early_if_specified_when_streaming_async_iterable():
+        """Executes early if specified, when streaming from async iterable"""
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                id
+              }
+            }
+            """
+        )
+
+        order: list[int] = []
+
+        async def slow_friend(n: int):
+            async def resolve_id(_info):
+                slowness = (3 - n) * 10
+                for _j in range(slowness):
+                    await sleep(0)
+                order.append(n)
+                return friends[n].id
+
+            return {"id": resolve_id}
+
+        async def friend_list(_info):
+            for n in range(3):
+                yield await slow_friend(n)
+
+        result = await complete(
+            document, {"friendList": friend_list}, enable_early_execution=True
+        )
+
+        assert result == [
+            {
+                "data": {"friendList": []},
+                "pending": [{"id": "0", "path": ["friendList"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {"items": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "id": "0"}
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+        assert order == [2, 1, 0]
 
     async def can_handle_concurrent_calls_to_next_without_waiting():
         """Can handle concurrent calls to next() without waiting"""
@@ -1290,6 +1490,9 @@ def describe_execute_stream_directive():
                         ],
                     },
                 ],
+                "hasNext": True,
+            },
+            {
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -1622,15 +1825,16 @@ def describe_execute_stream_directive():
                                 "message": "Oops",
                                 "locations": [{"line": 5, "column": 19}],
                                 "path": ["otherNestedObject", "scalarField"],
-                            },
+                            }
                         ],
-                    },
-                    {
-                        "items": [{"name": "Luke"}],
-                        "id": "1",
-                    },
+                    }
                 ],
-                "completed": [{"id": "0"}, {"id": "1"}],
+                "completed": [{"id": "0"}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"items": [{"name": "Luke"}], "id": "1"}],
+                "completed": [{"id": "1"}],
                 "hasNext": False,
             },
         ]
@@ -1758,7 +1962,10 @@ def describe_execute_stream_directive():
         ]
 
     @pytest.mark.timeout(1)
-    async def returns_iterator_and_ignores_error_when_stream_payloads_are_filtered():
+    @pytest.mark.parametrize("early_execution", [False, True])
+    async def returns_iterator_and_ignores_error_when_stream_payloads_are_filtered(
+        early_execution,
+    ):
         """Returns iterator and ignores errors when stream payloads are filtered"""
         iterated = False
 
@@ -1798,6 +2005,7 @@ def describe_execute_stream_directive():
                     }
                 }
             },
+            enable_early_execution=early_execution,
         )
 
         assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
@@ -1811,7 +2019,7 @@ def describe_execute_stream_directive():
         }
 
         result2 = await anext(iterator)
-        assert result2.formatted == {
+        assert result2 == {
             "incremental": [
                 {
                     "data": {"deeperNestedObject": None},
@@ -1837,7 +2045,7 @@ def describe_execute_stream_directive():
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
-        assert iterated
+        assert iterated == early_execution
 
     async def handles_awaitables_from_complete_value_after_initial_count_is_reached():
         """Handles awaitables returned by completeValue after initialCount is reached"""
@@ -2010,7 +2218,7 @@ def describe_execute_stream_directive():
 
         resolve_slow_field.set()
         result2 = await anext(iterator)
-        assert result2.formatted == {
+        assert result2 == {
             "pending": [{"id": "1", "path": ["nestedObject", "nestedFriendList"]}],
             "incremental": [
                 {"data": {"scalarField": "slow", "nestedFriendList": []}, "id": "0"},
@@ -2020,13 +2228,13 @@ def describe_execute_stream_directive():
         }
 
         result3 = await anext(iterator)
-        assert result3.formatted == {
-            "incremental": [
-                {"items": [{"name": "Luke"}, {"name": "Han"}], "id": "1"},
-            ],
-            "completed": [{"id": "1"}],
-            "hasNext": False,
+        assert result3 == {
+            "incremental": [{"items": [{"name": "Luke"}, {"name": "Han"}], "id": "1"}],
+            "hasNext": True,
         }
+
+        result4 = await anext(iterator)
+        assert result4 == {"completed": [{"id": "1"}], "hasNext": False}
 
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
@@ -2082,26 +2290,24 @@ def describe_execute_stream_directive():
         }
 
         result2 = await anext(iterator)
-        assert result2.formatted == {
-            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
-            "incremental": [
-                {"data": {"name": "Luke"}, "id": "0"},
-                {"items": [{"id": "2"}], "id": "1"},
-            ],
+        assert result2 == {
+            "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
             "completed": [{"id": "0"}],
             "hasNext": True,
         }
 
         resolve_iterable.set()
         result3 = await anext(iterator)
-        assert result3.formatted == {
+        assert result3 == {
+            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
+            "incremental": [{"items": [{"id": "2"}], "id": "1"}],
             "completed": [{"id": "1"}],
             "hasNext": True,
         }
 
         resolve_slow_field.set()
         result4 = await anext(iterator)
-        assert result4.formatted == {
+        assert result4 == {
             "incremental": [{"data": {"name": "Han"}, "id": "2"}],
             "completed": [{"id": "2"}],
             "hasNext": False,
@@ -2160,32 +2366,30 @@ def describe_execute_stream_directive():
         }
 
         result2 = await anext(iterator)
-        assert result2.formatted == {
-            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
-            "incremental": [
-                {"data": {"name": "Luke"}, "id": "0"},
-                {"items": [{"id": "2"}], "id": "1"},
-            ],
+        assert result2 == {
+            "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
             "completed": [{"id": "0"}],
             "hasNext": True,
         }
 
-        resolve_iterable.set()
         result3 = await anext(iterator)
-        assert result3.formatted == {
-            "completed": [{"id": "1"}],
+        assert result3 == {
+            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
+            "incremental": [{"items": [{"id": "2"}], "id": "1"}],
             "hasNext": True,
         }
 
         resolve_slow_field.set()
         result4 = await anext(iterator)
-        assert result4.formatted == {
-            "incremental": [
-                {"data": {"name": "Han"}, "id": "2"},
-            ],
+        assert result4 == {
+            "incremental": [{"data": {"name": "Han"}, "id": "2"}],
             "completed": [{"id": "2"}],
-            "hasNext": False,
+            "hasNext": True,
         }
+
+        resolve_iterable.set()
+        result5 = await anext(iterator)
+        assert result5 == {"hasNext": False, "completed": [{"id": "1"}]}
 
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
@@ -2234,15 +2438,11 @@ def describe_execute_stream_directive():
         # we need to run the iterator once before we can close it
         result2 = await anext(iterator)
         assert result2 == {
-            "pending": [{"id": "2", "path": ["friendList", 1]}],
-            "incremental": [
-                {"data": {"name": "Luke"}, "id": "0"},
-                {"items": [{"id": "2"}, {"id": "3"}], "id": "1"},
-                {"data": {"name": "Han"}, "id": "2"},
-            ],
-            "completed": [{"id": "0"}, {"id": "2"}],
+            "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+            "completed": [{"id": "0"}],
             "hasNext": True,
         }
+
         await iterator.aclose()
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
@@ -2298,7 +2498,7 @@ def describe_execute_stream_directive():
             await anext(iterator)
 
         await sleep(0)
-        assert iterable.index == 2
+        assert iterable.index == 1
 
     async def finishes_async_iterable_when_error_is_raised_in_finished_generator():
         """Finishes underlying async iterables when an error is raised in generator"""
