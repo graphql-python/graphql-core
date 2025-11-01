@@ -79,6 +79,11 @@ def describe_get_introspection_query():
             "deprecationReason", 2
         )
 
+    def includes_input_object_one_of_field():
+        ExcpectIntrospectionQuery().to_not_match("isOneOf")
+        ExcpectIntrospectionQuery(input_object_one_of=True).to_match("isOneOf")
+        ExcpectIntrospectionQuery(input_object_one_of=False).to_not_match("isOneOf")
+
     def includes_deprecated_input_field_and_args():
         ExcpectIntrospectionQuery().to_match("includeDeprecated: true", 2)
         ExcpectIntrospectionQuery(input_value_deprecation=True).to_match(
