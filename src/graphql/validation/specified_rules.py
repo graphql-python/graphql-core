@@ -82,6 +82,9 @@ from .rules.overlapping_fields_can_be_merged import OverlappingFieldsCanBeMerged
 # Spec Section: "Input Object Field Uniqueness"
 from .rules.unique_input_field_names import UniqueInputFieldNamesRule
 
+# No spec section: "Maximum introspection depth"
+from .rules.max_introspection_depth_rule import MaxIntrospectionDepthRule
+
 # Schema definition language:
 from .rules.lone_schema_definition import LoneSchemaDefinitionRule
 from .rules.unique_operation_types import UniqueOperationTypesRule
@@ -92,7 +95,13 @@ from .rules.unique_argument_definition_names import UniqueArgumentDefinitionName
 from .rules.unique_directive_names import UniqueDirectiveNamesRule
 from .rules.possible_type_extensions import PossibleTypeExtensionsRule
 
-__all__ = ["specified_rules", "specified_sdl_rules"]
+__all__ = ["specified_rules", "specified_sdl_rules", "recommended_rules"]
+
+# Technically these aren't part of the spec but they are strongly encouraged
+# validation rules.
+
+recommended_rules: Tuple[Type[ASTValidationRule], ...] = (MaxIntrospectionDepthRule,)
+"""A tuple with all recommended validation rules."""
 
 
 # This list includes all validation rules defined by the GraphQL spec.
@@ -127,6 +136,7 @@ specified_rules: Tuple[Type[ASTValidationRule], ...] = (
     VariablesInAllowedPositionRule,
     OverlappingFieldsCanBeMergedRule,
     UniqueInputFieldNamesRule,
+    *recommended_rules,
 )
 """A tuple with all validation rules defined by the GraphQL specification.
 

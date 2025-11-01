@@ -883,6 +883,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
     @mark.asyncio
+    @mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
     async def correct_field_ordering_despite_execution_order():
         schema = GraphQLSchema(
             GraphQLObjectType(
