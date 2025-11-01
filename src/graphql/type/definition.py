@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -13,6 +14,7 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
+    Type,
     TypeVar,
     Union,
     cast,
@@ -25,8 +27,6 @@ except ImportError:  # Python < 3.8
     from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
-    from enum import Enum
-
     try:
         from typing import TypeAlias, TypeGuard
     except ImportError:  # Python < 3.10
@@ -85,6 +85,7 @@ __all__ = [
     "GraphQLEnumValue",
     "GraphQLEnumValueKwargs",
     "GraphQLEnumValueMap",
+    "GraphQLEnumValuesDefinition",
     "GraphQLField",
     "GraphQLFieldKwargs",
     "GraphQLFieldMap",
@@ -1014,6 +1015,10 @@ def assert_union_type(type_: Any) -> GraphQLUnionType:
 
 GraphQLEnumValueMap: TypeAlias = Dict[str, "GraphQLEnumValue"]
 
+GraphQLEnumValuesDefinition: TypeAlias = Union[
+    GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]
+]
+
 
 class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     """Arguments for GraphQL enum types"""
@@ -1063,7 +1068,7 @@ class GraphQLEnumType(GraphQLNamedType):
     def __init__(
         self,
         name: str,
-        values: GraphQLEnumValueMap | Mapping[str, Any] | type[Enum],
+        values: Thunk[GraphQLEnumValuesDefinition],
         names_as_values: bool | None = False,
         description: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -1077,6 +1082,8 @@ class GraphQLEnumType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
+        if not isinstance(values, type):
+            values = resolve_thunk(values)  # type: ignore
         try:  # check for enum
             values = cast("Enum", values).__members__  # type: ignore
         except AttributeError:
@@ -1084,7 +1091,7 @@ class GraphQLEnumType(GraphQLNamedType):
                 isinstance(name, str) for name in values
             ):
                 try:
-                    values = dict(values)  # pyright: ignore
+                    values = dict(values)  # type: ignore
                 except (TypeError, ValueError) as error:
                     msg = (
                         f"{name} values must be an Enum or a mapping"

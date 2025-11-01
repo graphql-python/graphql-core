@@ -42,6 +42,8 @@ ComplexEnum = GraphQLEnumType("Complex", {"ONE": complex1, "TWO": complex2})
 
 ColorType2 = GraphQLEnumType("Color", ColorTypeEnumValues)
 
+ThunkValuesEnum = GraphQLEnumType("ThunkValues", lambda: {"A": "a", "B": "b"})
+
 QueryType = GraphQLObjectType(
     "Query",
     {
@@ -83,6 +85,13 @@ QueryType = GraphQLObjectType(
             else Complex2()
             if args.get("provideBadValue")
             else args.get("fromEnum"),
+        ),
+        "thunkValuesString": GraphQLField(
+            GraphQLString,
+            args={
+                "fromEnum": GraphQLArgument(ThunkValuesEnum),
+            },
+            resolve=lambda _source, _info, fromEnum: fromEnum,
         ),
     },
 )
@@ -345,6 +354,11 @@ def describe_type_system_enum_values():
                 }
             ],
         )
+
+    def may_have_values_specified_via_a_callable():
+        result = execute_query("{ thunkValuesString(fromEnum: B) }")
+
+        assert result == ({"thunkValuesString": "b"}, None)
 
     def can_be_introspected_without_error():
         introspection_from_schema(schema)
