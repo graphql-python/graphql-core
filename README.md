@@ -56,11 +56,15 @@ that README and the corresponding tests in parallel.
 
 GraphQL-core 3 can be installed from PyPI using the built-in pip command:
 
-    python -m pip install graphql-core
+```sh
+python -m pip install graphql-core
+```
 
 Or, if you prefer [uv](https://github.com/astral-sh/uv):
 
-   uv pip install graphql-core
+```sh
+uv pip install graphql-core
+```
 
 
 ## Usage
