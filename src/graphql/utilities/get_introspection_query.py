@@ -43,7 +43,7 @@ def get_introspection_query(
     directive_is_repeatable: bool = False,
     schema_description: bool = False,
     input_value_deprecation: bool = False,
-    input_object_one_of: bool = False,
+    one_of: bool = False,
 ) -> str:
     """Get a query for introspection.
 
@@ -55,7 +55,7 @@ def get_introspection_query(
     maybe_specified_by_url = "specifiedByURL" if specified_by_url else ""
     maybe_directive_is_repeatable = "isRepeatable" if directive_is_repeatable else ""
     maybe_schema_description = maybe_description if schema_description else ""
-    maybe_input_object_one_of = "isOneOf" if input_object_one_of else ""
+    maybe_one_of = "isOneOf" if one_of else ""
 
     def input_deprecation(string: str) -> str | None:
         return string if input_value_deprecation else ""
@@ -88,7 +88,7 @@ def get_introspection_query(
           name
           {maybe_description}
           {maybe_specified_by_url}
-          {maybe_input_object_one_of}
+          {maybe_one_of}
           fields(includeDeprecated: true) {{
             name
             {maybe_description}

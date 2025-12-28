@@ -80,10 +80,10 @@ def describe_get_introspection_query():
             "deprecationReason", 2
         )
 
-    def includes_input_object_one_of_field():
+    def includes_is_one_of_on_input_objects():
         ExcpectIntrospectionQuery().to_not_match("isOneOf")
-        ExcpectIntrospectionQuery(input_object_one_of=True).to_match("isOneOf")
-        ExcpectIntrospectionQuery(input_object_one_of=False).to_not_match("isOneOf")
+        ExcpectIntrospectionQuery(one_of=True).to_match("isOneOf")
+        ExcpectIntrospectionQuery(one_of=False).to_not_match("isOneOf")
 
     def includes_deprecated_input_field_and_args():
         ExcpectIntrospectionQuery().to_match("includeDeprecated: true", 2)
