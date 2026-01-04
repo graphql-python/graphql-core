@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from copy import copy
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -225,9 +224,11 @@ def visit(
                             node[array_key] = edit_value
                     node = tuple(node)
                 else:
-                    node = copy(node)
+                    # Create new node with edited values (immutable-friendly)
+                    values = {k: getattr(node, k) for k in node.keys}
                     for edit_key, edit_value in edits:
-                        setattr(node, edit_key, edit_value)
+                        values[edit_key] = edit_value
+                    node = node.__class__(**values)
             idx = stack.idx
             keys = stack.keys
             edits = stack.edits
