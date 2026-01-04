@@ -14,7 +14,6 @@ from graphql.language import (
     NameNode,
     Node,
     ParallelVisitor,
-    SelectionNode,
     SelectionSetNode,
     Visitor,
     VisitorKeyMap,
@@ -573,7 +572,9 @@ def describe_visitor():
         # so we keep allowing this and test this feature here.
         custom_ast = parse("{ a }")
 
-        class CustomFieldNode(SelectionNode):
+        # Note: CustomFieldNode now subclasses Node directly since
+        # SelectionNode is a type alias (union), not a class.
+        class CustomFieldNode(Node):
             __slots__ = "name", "selection_set"
 
             name: NameNode

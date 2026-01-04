@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypeGuard
+
 from .ast import (
     DefinitionNode,
     ExecutableDefinitionNode,
@@ -9,21 +11,15 @@ from .ast import (
     Node,
     NullabilityAssertionNode,
     ObjectValueNode,
-    SchemaExtensionNode,
     SelectionNode,
     TypeDefinitionNode,
     TypeExtensionNode,
     TypeNode,
     TypeSystemDefinitionNode,
+    TypeSystemExtensionNode,
     ValueNode,
     VariableNode,
 )
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing import TypeGuard
-
 
 __all__ = [
     "is_const_value_node",
@@ -93,9 +89,9 @@ def is_type_definition_node(node: Node) -> TypeGuard[TypeDefinitionNode]:
 
 def is_type_system_extension_node(
     node: Node,
-) -> TypeGuard[SchemaExtensionNode | TypeExtensionNode]:
+) -> TypeGuard[TypeSystemExtensionNode]:
     """Check whether the given node represents a type system extension."""
-    return isinstance(node, (SchemaExtensionNode, TypeExtensionNode))
+    return isinstance(node, TypeSystemExtensionNode)
 
 
 def is_type_extension_node(node: Node) -> TypeGuard[TypeExtensionNode]:

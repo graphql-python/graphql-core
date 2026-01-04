@@ -6,11 +6,6 @@ from copy import copy, deepcopy
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing import TypeAlias
-
 from ..pyutils import camel_to_snake
 
 if TYPE_CHECKING:
@@ -411,13 +406,7 @@ class Node:
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
         name = cls.__name__
-        try:
-            name = name.removeprefix("Const").removesuffix("Node")
-        except AttributeError:  # pragma: no cover (Python < 3.9)
-            if name.startswith("Const"):
-                name = name[5:]
-            if name.endswith("Node"):
-                name = name[:-4]
+        name = name.removeprefix("Const").removesuffix("Node")
         cls.kind = camel_to_snake(name)
         keys: list[str] = []
         for base in cls.__bases__:
@@ -450,23 +439,23 @@ class DocumentNode(Node):
     definitions: tuple[DefinitionNode, ...]
 
 
-class DefinitionNode(Node):
-    __slots__ = ()
+# Operations
 
 
-class ExecutableDefinitionNode(DefinitionNode):
-    __slots__ = "directives", "name", "selection_set", "variable_definitions"
-
-    name: NameNode | None
-    directives: tuple[DirectiveNode, ...]
-    variable_definitions: tuple[VariableDefinitionNode, ...]
-    selection_set: SelectionSetNode
-
-
-class OperationDefinitionNode(ExecutableDefinitionNode):
-    __slots__ = ("operation",)
+class OperationDefinitionNode(Node):
+    __slots__ = (
+        "directives",
+        "name",
+        "operation",
+        "selection_set",
+        "variable_definitions",
+    )
 
     operation: OperationType
+    name: NameNode | None
+    variable_definitions: tuple[VariableDefinitionNode, ...]
+    directives: tuple[DirectiveNode, ...]
+    selection_set: SelectionSetNode
 
 
 class VariableDefinitionNode(Node):
@@ -484,39 +473,71 @@ class SelectionSetNode(Node):
     selections: tuple[SelectionNode, ...]
 
 
-class SelectionNode(Node):
-    __slots__ = ("directives",)
-
-    directives: tuple[DirectiveNode, ...]
+# Selections
 
 
-class FieldNode(SelectionNode):
-    __slots__ = "alias", "arguments", "name", "nullability_assertion", "selection_set"
+class FieldNode(Node):
+    __slots__ = (
+        "alias",
+        "arguments",
+        "directives",
+        "name",
+        "nullability_assertion",
+        "selection_set",
+    )
 
     alias: NameNode | None
     name: NameNode
     arguments: tuple[ArgumentNode, ...]
+    directives: tuple[DirectiveNode, ...]
     # Note: Client Controlled Nullability is experimental
     # and may be changed or removed in the future.
     nullability_assertion: NullabilityAssertionNode
     selection_set: SelectionSetNode | None
 
 
-class NullabilityAssertionNode(Node):
+class FragmentSpreadNode(Node):
+    __slots__ = "directives", "name"
+
+    name: NameNode
+    directives: tuple[DirectiveNode, ...]
+
+
+class InlineFragmentNode(Node):
+    __slots__ = "directives", "selection_set", "type_condition"
+
+    type_condition: NamedTypeNode
+    directives: tuple[DirectiveNode, ...]
+    selection_set: SelectionSetNode
+
+
+SelectionNode = FieldNode | FragmentSpreadNode | InlineFragmentNode
+
+
+# Nullability Assertions
+
+
+class ListNullabilityOperatorNode(Node):
     __slots__ = ("nullability_assertion",)
+
     nullability_assertion: NullabilityAssertionNode | None
 
 
-class ListNullabilityOperatorNode(NullabilityAssertionNode):
-    pass
+class NonNullAssertionNode(Node):
+    __slots__ = ("nullability_assertion",)
+
+    nullability_assertion: ListNullabilityOperatorNode | None
 
 
-class NonNullAssertionNode(NullabilityAssertionNode):
-    nullability_assertion: ListNullabilityOperatorNode
+class ErrorBoundaryNode(Node):
+    __slots__ = ("nullability_assertion",)
+
+    nullability_assertion: ListNullabilityOperatorNode | None
 
 
-class ErrorBoundaryNode(NullabilityAssertionNode):
-    nullability_assertion: ListNullabilityOperatorNode
+NullabilityAssertionNode = (
+    ListNullabilityOperatorNode | NonNullAssertionNode | ErrorBoundaryNode
+)
 
 
 class ArgumentNode(Node):
@@ -533,75 +554,70 @@ class ConstArgumentNode(ArgumentNode):
 # Fragments
 
 
-class FragmentSpreadNode(SelectionNode):
-    __slots__ = ("name",)
+class FragmentDefinitionNode(Node):
+    __slots__ = (
+        "directives",
+        "name",
+        "selection_set",
+        "type_condition",
+        "variable_definitions",
+    )
 
     name: NameNode
-
-
-class InlineFragmentNode(SelectionNode):
-    __slots__ = "selection_set", "type_condition"
-
+    variable_definitions: tuple[VariableDefinitionNode, ...]
     type_condition: NamedTypeNode
+    directives: tuple[DirectiveNode, ...]
     selection_set: SelectionSetNode
 
 
-class FragmentDefinitionNode(ExecutableDefinitionNode):
-    __slots__ = ("type_condition",)
-
-    name: NameNode
-    type_condition: NamedTypeNode
+ExecutableDefinitionNode = OperationDefinitionNode | FragmentDefinitionNode
 
 
 # Values
 
 
-class ValueNode(Node):
-    __slots__ = ()
-
-
-class VariableNode(ValueNode):
+class VariableNode(Node):
     __slots__ = ("name",)
 
     name: NameNode
 
 
-class IntValueNode(ValueNode):
+class IntValueNode(Node):
     __slots__ = ("value",)
 
     value: str
 
 
-class FloatValueNode(ValueNode):
+class FloatValueNode(Node):
     __slots__ = ("value",)
 
     value: str
 
 
-class StringValueNode(ValueNode):
+class StringValueNode(Node):
     __slots__ = "block", "value"
 
     value: str
     block: bool | None
 
 
-class BooleanValueNode(ValueNode):
+class BooleanValueNode(Node):
     __slots__ = ("value",)
 
     value: bool
 
 
-class NullValueNode(ValueNode):
+class NullValueNode(Node):
     __slots__ = ()
 
 
-class EnumValueNode(ValueNode):
+class EnumValueNode(Node):
     __slots__ = ("value",)
 
     value: str
 
 
-class ListValueNode(ValueNode):
+class ListValueNode(Node):
     __slots__ = ("values",)
 
     values: tuple[ValueNode, ...]
@@ -611,7 +627,7 @@ class ConstListValueNode(ListValueNode):
     values: tuple[ConstValueNode, ...]
 
 
-class ObjectValueNode(ValueNode):
+class ObjectValueNode(Node):
     __slots__ = ("fields",)
 
     fields: tuple[ObjectFieldNode, ...]
@@ -632,7 +648,19 @@ class ConstObjectFieldNode(ObjectFieldNode):
     value: ConstValueNode
 
 
-ConstValueNode: TypeAlias = (
+ValueNode = (
+    VariableNode
+    | IntValueNode
+    | FloatValueNode
+    | StringValueNode
+    | BooleanValueNode
+    | NullValueNode
+    | EnumValueNode
+    | ListValueNode
+    | ObjectValueNode
+)
+
+ConstValueNode = (
     IntValueNode
     | FloatValueNode
     | StringValueNode
@@ -661,36 +689,31 @@ class ConstDirectiveNode(DirectiveNode):
 # Type Reference
 
 
-class TypeNode(Node):
-    __slots__ = ()
-
-
-class NamedTypeNode(TypeNode):
+class NamedTypeNode(Node):
     __slots__ = ("name",)
 
     name: NameNode
 
 
-class ListTypeNode(TypeNode):
+class ListTypeNode(Node):
     __slots__ = ("type",)
 
     type: TypeNode
 
 
-class NonNullTypeNode(TypeNode):
+class NonNullTypeNode(Node):
     __slots__ = ("type",)
 
     type: NamedTypeNode | ListTypeNode
 
 
+TypeNode = NamedTypeNode | ListTypeNode | NonNullTypeNode
+
+
 # Type System Definition
 
 
-class TypeSystemDefinitionNode(DefinitionNode):
-    __slots__ = ()
-
-
-class SchemaDefinitionNode(TypeSystemDefinitionNode):
+class SchemaDefinitionNode(Node):
     __slots__ = "description", "directives", "operation_types"
 
     description: StringValueNode | None
@@ -705,32 +728,28 @@ class OperationTypeDefinitionNode(Node):
     type: NamedTypeNode
 
 
-# Type Definition
+# Type Definitions
 
 
-class TypeDefinitionNode(TypeSystemDefinitionNode):
+class ScalarTypeDefinitionNode(Node):
     __slots__ = "description", "directives", "name"
 
     description: StringValueNode | None
     name: NameNode
-    directives: tuple[DirectiveNode, ...]
-
-
-class ScalarTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ()
-
     directives: tuple[ConstDirectiveNode, ...]
 
 
-class ObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = "fields", "interfaces"
+class ObjectTypeDefinitionNode(Node):
+    __slots__ = "description", "directives", "fields", "interfaces", "name"
 
+    description: StringValueNode | None
+    name: NameNode
     interfaces: tuple[NamedTypeNode, ...]
     directives: tuple[ConstDirectiveNode, ...]
     fields: tuple[FieldDefinitionNode, ...]
 
 
-class FieldDefinitionNode(DefinitionNode):
+class FieldDefinitionNode(Node):
     __slots__ = "arguments", "description", "directives", "name", "type"
 
     description: StringValueNode | None
@@ -740,7 +759,7 @@ class FieldDefinitionNode(DefinitionNode):
     type: TypeNode
 
 
-class InputValueDefinitionNode(DefinitionNode):
+class InputValueDefinitionNode(Node):
     __slots__ = "default_value", "description", "directives", "name", "type"
 
     description: StringValueNode | None
@@ -750,29 +769,35 @@ class InputValueDefinitionNode(DefinitionNode):
     default_value: ConstValueNode | None
 
 
-class InterfaceTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = "fields", "interfaces"
+class InterfaceTypeDefinitionNode(Node):
+    __slots__ = "description", "directives", "fields", "interfaces", "name"
 
+    description: StringValueNode | None
+    name: NameNode
     fields: tuple[FieldDefinitionNode, ...]
     directives: tuple[ConstDirectiveNode, ...]
     interfaces: tuple[NamedTypeNode, ...]
 
 
-class UnionTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("types",)
+class UnionTypeDefinitionNode(Node):
+    __slots__ = "description", "directives", "name", "types"
 
+    description: StringValueNode | None
+    name: NameNode
     directives: tuple[ConstDirectiveNode, ...]
     types: tuple[NamedTypeNode, ...]
 
 
-class EnumTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("values",)
+class EnumTypeDefinitionNode(Node):
+    __slots__ = "description", "directives", "name", "values"
 
+    description: StringValueNode | None
+    name: NameNode
     directives: tuple[ConstDirectiveNode, ...]
     values: tuple[EnumValueDefinitionNode, ...]
 
 
-class EnumValueDefinitionNode(DefinitionNode):
+class EnumValueDefinitionNode(Node):
     __slots__ = "description", "directives", "name"
 
     description: StringValueNode | None
@@ -780,17 +805,29 @@ class EnumValueDefinitionNode(DefinitionNode):
     directives: tuple[ConstDirectiveNode, ...]
 
 
-class InputObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("fields",)
+class InputObjectTypeDefinitionNode(Node):
+    __slots__ = "description", "directives", "fields", "name"
 
+    description: StringValueNode | None
+    name: NameNode
     directives: tuple[ConstDirectiveNode, ...]
     fields: tuple[InputValueDefinitionNode, ...]
+
+
+TypeDefinitionNode = (
+    ScalarTypeDefinitionNode
+    | ObjectTypeDefinitionNode
+    | InterfaceTypeDefinitionNode
+    | UnionTypeDefinitionNode
+    | EnumTypeDefinitionNode
+    | InputObjectTypeDefinitionNode
+)
 
 
 # Directive Definitions
 
 
-class DirectiveDefinitionNode(TypeSystemDefinitionNode):
+class DirectiveDefinitionNode(Node):
     __slots__ = "arguments", "description", "locations", "name", "repeatable"
 
     description: StringValueNode | None
@@ -798,6 +835,11 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
     arguments: tuple[InputValueDefinitionNode, ...]
     repeatable: bool
     locations: tuple[NameNode, ...]
+
+
+TypeSystemDefinitionNode = (
+    SchemaDefinitionNode | TypeDefinitionNode | DirectiveDefinitionNode
+)
 
 
 # Type System Extensions
@@ -813,47 +855,72 @@ class SchemaExtensionNode(Node):
 # Type Extensions
 
 
-class TypeExtensionNode(TypeSystemDefinitionNode):
+class ScalarTypeExtensionNode(Node):
     __slots__ = "directives", "name"
 
     name: NameNode
     directives: tuple[ConstDirectiveNode, ...]
 
 
-TypeSystemExtensionNode: TypeAlias = SchemaExtensionNode | TypeExtensionNode
+class ObjectTypeExtensionNode(Node):
+    __slots__ = "directives", "fields", "interfaces", "name"
 
-
-class ScalarTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ()
-
-
-class ObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = "fields", "interfaces"
-
+    name: NameNode
     interfaces: tuple[NamedTypeNode, ...]
+    directives: tuple[ConstDirectiveNode, ...]
     fields: tuple[FieldDefinitionNode, ...]
 
 
-class InterfaceTypeExtensionNode(TypeExtensionNode):
-    __slots__ = "fields", "interfaces"
+class InterfaceTypeExtensionNode(Node):
+    __slots__ = "directives", "fields", "interfaces", "name"
 
+    name: NameNode
     interfaces: tuple[NamedTypeNode, ...]
+    directives: tuple[ConstDirectiveNode, ...]
     fields: tuple[FieldDefinitionNode, ...]
 
 
-class UnionTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("types",)
+class UnionTypeExtensionNode(Node):
+    __slots__ = "directives", "name", "types"
 
+    name: NameNode
+    directives: tuple[ConstDirectiveNode, ...]
     types: tuple[NamedTypeNode, ...]
 
 
-class EnumTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("values",)
+class EnumTypeExtensionNode(Node):
+    __slots__ = "directives", "name", "values"
 
+    name: NameNode
+    directives: tuple[ConstDirectiveNode, ...]
     values: tuple[EnumValueDefinitionNode, ...]
 
 
-class InputObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("fields",)
+class InputObjectTypeExtensionNode(Node):
+    __slots__ = "directives", "fields", "name"
 
+    name: NameNode
+    directives: tuple[ConstDirectiveNode, ...]
     fields: tuple[InputValueDefinitionNode, ...]
+
+
+TypeExtensionNode = (
+    ScalarTypeExtensionNode
+    | ObjectTypeExtensionNode
+    | InterfaceTypeExtensionNode
+    | UnionTypeExtensionNode
+    | EnumTypeExtensionNode
+    | InputObjectTypeExtensionNode
+)
+
+TypeSystemExtensionNode = SchemaExtensionNode | TypeExtensionNode
+
+
+DefinitionNode = (
+    ExecutableDefinitionNode
+    | TypeSystemDefinitionNode
+    | TypeSystemExtensionNode
+    | FieldDefinitionNode
+    | InputValueDefinitionNode
+    | EnumValueDefinitionNode
+)

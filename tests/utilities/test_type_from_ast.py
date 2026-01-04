@@ -1,6 +1,5 @@
-import pytest
 
-from graphql.language import TypeNode, parse_type
+from graphql.language import parse_type
 from graphql.type import GraphQLList, GraphQLNonNull, GraphQLObjectType
 from graphql.utilities import type_from_ast
 
@@ -30,9 +29,6 @@ def describe_type_from_ast():
         assert isinstance(of_type, GraphQLObjectType)
         assert of_type.name == "Cat"
 
-    def for_unspecified_type_node():
-        node = TypeNode()
-        with pytest.raises(TypeError) as exc_info:
-            type_from_ast(test_schema, node)
-        msg = str(exc_info.value)
-        assert msg == "Unexpected type node: <TypeNode instance>."
+    # Note: for_unspecified_type_node test removed because TypeNode is now
+    # a type alias (union) and cannot be instantiated. The type system now
+    # enforces that only concrete type nodes can be created.

@@ -547,7 +547,7 @@ class ExtendSchemaImpl:
             return GraphQLNonNull(
                 cast("GraphQLNullableType", self.get_wrapped_type(node.type))
             )
-        return self.get_named_type(cast("NamedTypeNode", node))
+        return self.get_named_type(node)
 
     def build_directive(self, node: DirectiveDefinitionNode) -> GraphQLDirective:
         """Build a GraphQL directive for a given directive definition node."""
