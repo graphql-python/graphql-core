@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from copy import copy, deepcopy
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
+
+import msgspec
 
 from ..pyutils import camel_to_snake
 
@@ -90,7 +92,7 @@ class Token:
     Represents a range of characters represented by a lexical token within a Source.
     """
 
-    __slots__ = "column", "end", "kind", "line", "next", "prev", "start", "value"
+    __slots__ = ("column", "end", "kind", "line", "next", "prev", "start", "value")
 
     kind: TokenKind  # the kind of token
     start: int  # the character offset at which this Node begins
@@ -336,24 +338,28 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
 # Base AST Node
 
 
-class Node:
-    """AST nodes"""
+class Node(
+    msgspec.Struct,
+    frozen=True,
+    kw_only=True,
+    weakref=True,
+):
+    """AST nodes
 
-    # allow custom attributes and weak references (not used internally)
-    __slots__ = "__dict__", "__weakref__", "_hash", "loc"
+    All AST nodes are immutable msgspec.Struct instances with the following features:
+    - frozen=True: Nodes cannot be modified after creation
+    - kw_only=True: All fields must be passed as keyword arguments
+    - weakref=True: Allow weak references to nodes
+    """
 
-    loc: Location | None
+    loc: Location | None = None
 
-    kind: str = "ast"  # the kind of the node as a snake_case string
-    keys: tuple[str, ...] = ("loc",)  # the names of the attributes of this node
+    kind: ClassVar[str] = "ast"  # the kind of the node as a snake_case string
 
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize the node with the given keyword arguments."""
-        for key in self.keys:
-            value = kwargs.get(key)
-            if isinstance(value, list):
-                value = tuple(value)
-            setattr(self, key, value)
+    @property
+    def keys(self) -> tuple[str, ...]:
+        """Get the names of all fields for this node type."""
+        return tuple(f.name for f in msgspec.structs.fields(self.__class__))
 
     def __repr__(self) -> str:
         """Get a simple representation of the node."""
@@ -369,53 +375,29 @@ class Node:
             rep += f" at {loc}"
         return rep
 
-    def __eq__(self, other: object) -> bool:
-        """Test whether two nodes are equal (recursively)."""
-        return (
-            isinstance(other, Node)
-            and self.__class__ == other.__class__
-            and all(getattr(self, key) == getattr(other, key) for key in self.keys)
-        )
-
-    def __hash__(self) -> int:
-        """Get a cached hash value for the node."""
-        # Caching the hash values improves the performance of AST validators
-        hashed = getattr(self, "_hash", None)
-        if hashed is None:
-            self._hash = id(self)  # avoid recursion
-            hashed = hash(tuple(getattr(self, key) for key in self.keys))
-            self._hash = hashed
-        return hashed
-
-    def __setattr__(self, key: str, value: Any) -> None:
-        # reset cashed hash value if attributes are changed
-        if hasattr(self, "_hash") and key in self.keys:
-            del self._hash
-        super().__setattr__(key, value)
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        name = cls.__name__
+        name = name.removeprefix("Const").removesuffix("Node")
+        cls.kind = camel_to_snake(name)
 
     def __copy__(self) -> Node:
         """Create a shallow copy of the node."""
-        return self.__class__(**{key: getattr(self, key) for key in self.keys})
+        return self.__class__(
+            **{f.name: getattr(self, f.name) for f in msgspec.structs.fields(self)}
+        )
 
     def __deepcopy__(self, memo: dict) -> Node:
         """Create a deep copy of the node"""
         return self.__class__(
-            **{key: deepcopy(getattr(self, key), memo) for key in self.keys}
+            **{
+                f.name: deepcopy(getattr(self, f.name), memo)
+                for f in msgspec.structs.fields(self)
+            }
         )
 
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        name = cls.__name__
-        name = name.removeprefix("Const").removesuffix("Node")
-        cls.kind = camel_to_snake(name)
-        keys: list[str] = []
-        for base in cls.__bases__:
-            keys.extend(base.keys)  # type: ignore
-        keys.extend(cls.__slots__)
-        cls.keys = tuple(keys)
-
     def to_dict(self, locations: bool = False) -> dict:
-        """Concert node to a dictionary."""
+        """Convert node to a dictionary."""
         from ..utilities import ast_to_dict
 
         return ast_to_dict(self, locations)
@@ -424,91 +406,62 @@ class Node:
 # Name
 
 
-class NameNode(Node):
-    __slots__ = ("value",)
-
+class NameNode(Node, frozen=True, kw_only=True):
     value: str
 
 
 # Document
 
 
-class DocumentNode(Node):
-    __slots__ = ("definitions",)
-
-    definitions: tuple[DefinitionNode, ...]
+class DocumentNode(Node, frozen=True, kw_only=True):
+    definitions: tuple[DefinitionNode, ...] = ()
 
 
 # Operations
 
 
-class OperationDefinitionNode(Node):
-    __slots__ = (
-        "directives",
-        "name",
-        "operation",
-        "selection_set",
-        "variable_definitions",
-    )
-
+class OperationDefinitionNode(Node, frozen=True, kw_only=True):
     operation: OperationType
-    name: NameNode | None
-    variable_definitions: tuple[VariableDefinitionNode, ...]
-    directives: tuple[DirectiveNode, ...]
     selection_set: SelectionSetNode
+    name: NameNode | None = None
+    variable_definitions: tuple[VariableDefinitionNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] = ()
 
 
-class VariableDefinitionNode(Node):
-    __slots__ = "default_value", "directives", "type", "variable"
-
+class VariableDefinitionNode(Node, frozen=True, kw_only=True):
     variable: VariableNode
     type: TypeNode
-    default_value: ConstValueNode | None
-    directives: tuple[ConstDirectiveNode, ...]
+    default_value: ConstValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class SelectionSetNode(Node):
-    __slots__ = ("selections",)
-
-    selections: tuple[SelectionNode, ...]
+class SelectionSetNode(Node, frozen=True, kw_only=True):
+    selections: tuple[SelectionNode, ...] = ()
 
 
 # Selections
 
 
-class FieldNode(Node):
-    __slots__ = (
-        "alias",
-        "arguments",
-        "directives",
-        "name",
-        "nullability_assertion",
-        "selection_set",
-    )
-
-    alias: NameNode | None
+class FieldNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    arguments: tuple[ArgumentNode, ...]
-    directives: tuple[DirectiveNode, ...]
+    alias: NameNode | None = None
+    arguments: tuple[ArgumentNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] = ()
     # Note: Client Controlled Nullability is experimental
     # and may be changed or removed in the future.
-    nullability_assertion: NullabilityAssertionNode
-    selection_set: SelectionSetNode | None
+    nullability_assertion: NullabilityAssertionNode | None = None
+    selection_set: SelectionSetNode | None = None
 
 
-class FragmentSpreadNode(Node):
-    __slots__ = "directives", "name"
-
+class FragmentSpreadNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[DirectiveNode, ...]
+    directives: tuple[DirectiveNode, ...] = ()
 
 
-class InlineFragmentNode(Node):
-    __slots__ = "directives", "selection_set", "type_condition"
-
-    type_condition: NamedTypeNode
-    directives: tuple[DirectiveNode, ...]
+class InlineFragmentNode(Node, frozen=True, kw_only=True):
+    type_condition: NamedTypeNode | None
     selection_set: SelectionSetNode
+    directives: tuple[DirectiveNode, ...] = ()
 
 
 SelectionNode = FieldNode | FragmentSpreadNode | InlineFragmentNode
@@ -517,22 +470,16 @@ SelectionNode = FieldNode | FragmentSpreadNode | InlineFragmentNode
 # Nullability Assertions
 
 
-class ListNullabilityOperatorNode(Node):
-    __slots__ = ("nullability_assertion",)
-
-    nullability_assertion: NullabilityAssertionNode | None
+class ListNullabilityOperatorNode(Node, frozen=True, kw_only=True):
+    nullability_assertion: NullabilityAssertionNode | None = None
 
 
-class NonNullAssertionNode(Node):
-    __slots__ = ("nullability_assertion",)
-
-    nullability_assertion: ListNullabilityOperatorNode | None
+class NonNullAssertionNode(Node, frozen=True, kw_only=True):
+    nullability_assertion: ListNullabilityOperatorNode | None = None
 
 
-class ErrorBoundaryNode(Node):
-    __slots__ = ("nullability_assertion",)
-
-    nullability_assertion: ListNullabilityOperatorNode | None
+class ErrorBoundaryNode(Node, frozen=True, kw_only=True):
+    nullability_assertion: ListNullabilityOperatorNode | None = None
 
 
 NullabilityAssertionNode = (
@@ -540,34 +487,24 @@ NullabilityAssertionNode = (
 )
 
 
-class ArgumentNode(Node):
-    __slots__ = "name", "value"
-
+class ArgumentNode(Node, frozen=True, kw_only=True):
     name: NameNode
     value: ValueNode
 
 
-class ConstArgumentNode(ArgumentNode):
+class ConstArgumentNode(ArgumentNode, frozen=True, kw_only=True):
     value: ConstValueNode
 
 
 # Fragments
 
 
-class FragmentDefinitionNode(Node):
-    __slots__ = (
-        "directives",
-        "name",
-        "selection_set",
-        "type_condition",
-        "variable_definitions",
-    )
-
+class FragmentDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    variable_definitions: tuple[VariableDefinitionNode, ...]
     type_condition: NamedTypeNode
-    directives: tuple[DirectiveNode, ...]
     selection_set: SelectionSetNode
+    variable_definitions: tuple[VariableDefinitionNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] = ()
 
 
 ExecutableDefinitionNode = OperationDefinitionNode | FragmentDefinitionNode
@@ -576,75 +513,57 @@ ExecutableDefinitionNode = OperationDefinitionNode | FragmentDefinitionNode
 # Values
 
 
-class VariableNode(Node):
-    __slots__ = ("name",)
-
+class VariableNode(Node, frozen=True, kw_only=True):
     name: NameNode
 
 
-class IntValueNode(Node):
-    __slots__ = ("value",)
-
+class IntValueNode(Node, frozen=True, kw_only=True):
     value: str
 
 
-class FloatValueNode(Node):
-    __slots__ = ("value",)
-
+class FloatValueNode(Node, frozen=True, kw_only=True):
     value: str
 
 
-class StringValueNode(Node):
-    __slots__ = "block", "value"
-
+class StringValueNode(Node, frozen=True, kw_only=True):
     value: str
-    block: bool | None
+    block: bool | None = None
 
 
-class BooleanValueNode(Node):
-    __slots__ = ("value",)
-
+class BooleanValueNode(Node, frozen=True, kw_only=True):
     value: bool
 
 
-class NullValueNode(Node):
-    __slots__ = ()
+class NullValueNode(Node, frozen=True, kw_only=True):
+    pass
 
 
-class EnumValueNode(Node):
-    __slots__ = ("value",)
-
+class EnumValueNode(Node, frozen=True, kw_only=True):
     value: str
 
 
-class ListValueNode(Node):
-    __slots__ = ("values",)
-
-    values: tuple[ValueNode, ...]
+class ListValueNode(Node, frozen=True, kw_only=True):
+    values: tuple[ValueNode, ...] = ()
 
 
-class ConstListValueNode(ListValueNode):
-    values: tuple[ConstValueNode, ...]
+class ConstListValueNode(ListValueNode, frozen=True, kw_only=True):
+    values: tuple[ConstValueNode, ...] = ()
 
 
-class ObjectValueNode(Node):
-    __slots__ = ("fields",)
-
-    fields: tuple[ObjectFieldNode, ...]
+class ObjectValueNode(Node, frozen=True, kw_only=True):
+    fields: tuple[ObjectFieldNode, ...] = ()
 
 
-class ConstObjectValueNode(ObjectValueNode):
-    fields: tuple[ConstObjectFieldNode, ...]
+class ConstObjectValueNode(ObjectValueNode, frozen=True, kw_only=True):
+    fields: tuple[ConstObjectFieldNode, ...] = ()
 
 
-class ObjectFieldNode(Node):
-    __slots__ = "name", "value"
-
+class ObjectFieldNode(Node, frozen=True, kw_only=True):
     name: NameNode
     value: ValueNode
 
 
-class ConstObjectFieldNode(ObjectFieldNode):
+class ConstObjectFieldNode(ObjectFieldNode, frozen=True, kw_only=True):
     value: ConstValueNode
 
 
@@ -675,35 +594,27 @@ ConstValueNode = (
 # Directives
 
 
-class DirectiveNode(Node):
-    __slots__ = "arguments", "name"
-
+class DirectiveNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    arguments: tuple[ArgumentNode, ...]
+    arguments: tuple[ArgumentNode, ...] = ()
 
 
-class ConstDirectiveNode(DirectiveNode):
-    arguments: tuple[ConstArgumentNode, ...]
+class ConstDirectiveNode(DirectiveNode, frozen=True, kw_only=True):
+    arguments: tuple[ConstArgumentNode, ...] = ()
 
 
 # Type Reference
 
 
-class NamedTypeNode(Node):
-    __slots__ = ("name",)
-
+class NamedTypeNode(Node, frozen=True, kw_only=True):
     name: NameNode
 
 
-class ListTypeNode(Node):
-    __slots__ = ("type",)
-
+class ListTypeNode(Node, frozen=True, kw_only=True):
     type: TypeNode
 
 
-class NonNullTypeNode(Node):
-    __slots__ = ("type",)
-
+class NonNullTypeNode(Node, frozen=True, kw_only=True):
     type: NamedTypeNode | ListTypeNode
 
 
@@ -713,17 +624,13 @@ TypeNode = NamedTypeNode | ListTypeNode | NonNullTypeNode
 # Type System Definition
 
 
-class SchemaDefinitionNode(Node):
-    __slots__ = "description", "directives", "operation_types"
-
-    description: StringValueNode | None
-    directives: tuple[ConstDirectiveNode, ...]
-    operation_types: tuple[OperationTypeDefinitionNode, ...]
+class SchemaDefinitionNode(Node, frozen=True, kw_only=True):
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
-class OperationTypeDefinitionNode(Node):
-    __slots__ = "operation", "type"
-
+class OperationTypeDefinitionNode(Node, frozen=True, kw_only=True):
     operation: OperationType
     type: NamedTypeNode
 
@@ -731,87 +638,69 @@ class OperationTypeDefinitionNode(Node):
 # Type Definitions
 
 
-class ScalarTypeDefinitionNode(Node):
-    __slots__ = "description", "directives", "name"
-
-    description: StringValueNode | None
+class ScalarTypeDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class ObjectTypeDefinitionNode(Node):
-    __slots__ = "description", "directives", "fields", "interfaces", "name"
-
-    description: StringValueNode | None
+class ObjectTypeDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    interfaces: tuple[NamedTypeNode, ...]
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[FieldDefinitionNode, ...]
+    description: StringValueNode | None = None
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-class FieldDefinitionNode(Node):
-    __slots__ = "arguments", "description", "directives", "name", "type"
-
-    description: StringValueNode | None
+class FieldDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    arguments: tuple[InputValueDefinitionNode, ...]
     type: TypeNode
+    description: StringValueNode | None = None
+    arguments: tuple[InputValueDefinitionNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class InputValueDefinitionNode(Node):
-    __slots__ = "default_value", "description", "directives", "name", "type"
-
-    description: StringValueNode | None
+class InputValueDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
     type: TypeNode
-    default_value: ConstValueNode | None
+    description: StringValueNode | None = None
+    default_value: ConstValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class InterfaceTypeDefinitionNode(Node):
-    __slots__ = "description", "directives", "fields", "interfaces", "name"
-
-    description: StringValueNode | None
+class InterfaceTypeDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    fields: tuple[FieldDefinitionNode, ...]
-    directives: tuple[ConstDirectiveNode, ...]
-    interfaces: tuple[NamedTypeNode, ...]
+    description: StringValueNode | None = None
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-class UnionTypeDefinitionNode(Node):
-    __slots__ = "description", "directives", "name", "types"
-
-    description: StringValueNode | None
+class UnionTypeDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    types: tuple[NamedTypeNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    types: tuple[NamedTypeNode, ...] = ()
 
 
-class EnumTypeDefinitionNode(Node):
-    __slots__ = "description", "directives", "name", "values"
-
-    description: StringValueNode | None
+class EnumTypeDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    values: tuple[EnumValueDefinitionNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    values: tuple[EnumValueDefinitionNode, ...] = ()
 
 
-class EnumValueDefinitionNode(Node):
-    __slots__ = "description", "directives", "name"
-
-    description: StringValueNode | None
+class EnumValueDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class InputObjectTypeDefinitionNode(Node):
-    __slots__ = "description", "directives", "fields", "name"
-
-    description: StringValueNode | None
+class InputObjectTypeDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[InputValueDefinitionNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    fields: tuple[InputValueDefinitionNode, ...] = ()
 
 
 TypeDefinitionNode = (
@@ -827,14 +716,12 @@ TypeDefinitionNode = (
 # Directive Definitions
 
 
-class DirectiveDefinitionNode(Node):
-    __slots__ = "arguments", "description", "locations", "name", "repeatable"
-
-    description: StringValueNode | None
+class DirectiveDefinitionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    arguments: tuple[InputValueDefinitionNode, ...]
-    repeatable: bool
     locations: tuple[NameNode, ...]
+    description: StringValueNode | None = None
+    arguments: tuple[InputValueDefinitionNode, ...] = ()
+    repeatable: bool = False
 
 
 TypeSystemDefinitionNode = (
@@ -845,63 +732,49 @@ TypeSystemDefinitionNode = (
 # Type System Extensions
 
 
-class SchemaExtensionNode(Node):
-    __slots__ = "directives", "operation_types"
-
-    directives: tuple[ConstDirectiveNode, ...]
-    operation_types: tuple[OperationTypeDefinitionNode, ...]
+class SchemaExtensionNode(Node, frozen=True, kw_only=True):
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
 # Type Extensions
 
 
-class ScalarTypeExtensionNode(Node):
-    __slots__ = "directives", "name"
-
+class ScalarTypeExtensionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class ObjectTypeExtensionNode(Node):
-    __slots__ = "directives", "fields", "interfaces", "name"
-
+class ObjectTypeExtensionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    interfaces: tuple[NamedTypeNode, ...]
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[FieldDefinitionNode, ...]
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-class InterfaceTypeExtensionNode(Node):
-    __slots__ = "directives", "fields", "interfaces", "name"
-
+class InterfaceTypeExtensionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    interfaces: tuple[NamedTypeNode, ...]
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[FieldDefinitionNode, ...]
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-class UnionTypeExtensionNode(Node):
-    __slots__ = "directives", "name", "types"
-
+class UnionTypeExtensionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    types: tuple[NamedTypeNode, ...]
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    types: tuple[NamedTypeNode, ...] = ()
 
 
-class EnumTypeExtensionNode(Node):
-    __slots__ = "directives", "name", "values"
-
+class EnumTypeExtensionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    values: tuple[EnumValueDefinitionNode, ...]
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    values: tuple[EnumValueDefinitionNode, ...] = ()
 
 
-class InputObjectTypeExtensionNode(Node):
-    __slots__ = "directives", "fields", "name"
-
+class InputObjectTypeExtensionNode(Node, frozen=True, kw_only=True):
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[InputValueDefinitionNode, ...]
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    fields: tuple[InputValueDefinitionNode, ...] = ()
 
 
 TypeExtensionNode = (

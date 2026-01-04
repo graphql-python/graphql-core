@@ -272,7 +272,8 @@ class Parser:
     def parse_name(self) -> NameNode:
         """Convert a name lex token into a name parse node."""
         token = self.expect_token(TokenKind.NAME)
-        return NameNode(value=token.value, loc=self.loc(token))
+        # token.value is str | None, but NAME tokens always have a value
+        return NameNode(value=cast("str", token.value), loc=self.loc(token))
 
     # Implement the parsing rules in the Document section.
 
@@ -385,9 +386,12 @@ class Parser:
     def parse_variable_definition(self) -> VariableDefinitionNode:
         """VariableDefinition: Variable: Type DefaultValue? Directives[Const]?"""
         start = self._lexer.token
+        variable = self.parse_variable()
+        # expect_token separated to avoid 'and' returning Token type instead of TypeNode
+        self.expect_token(TokenKind.COLON)
         return VariableDefinitionNode(
-            variable=self.parse_variable(),
-            type=self.expect_token(TokenKind.COLON) and self.parse_type_reference(),
+            variable=variable,
+            type=self.parse_type_reference(),
             default_value=self.parse_const_value_literal()
             if self.expect_optional_token(TokenKind.EQUALS)
             else None,
@@ -460,13 +464,20 @@ class Parser:
                 nullability_assertion=inner_modifier, loc=self.loc(start)
             )
 
+        # Cast narrows type from broader NullabilityAssertionNode union
         if self.expect_optional_token(TokenKind.BANG):
             nullability_assertion = NonNullAssertionNode(
-                nullability_assertion=nullability_assertion, loc=self.loc(start)
+                nullability_assertion=cast(
+                    "ListNullabilityOperatorNode | None", nullability_assertion
+                ),
+                loc=self.loc(start),
             )
         elif self.expect_optional_token(TokenKind.QUESTION_MARK):
             nullability_assertion = ErrorBoundaryNode(
-                nullability_assertion=nullability_assertion, loc=self.loc(start)
+                nullability_assertion=cast(
+                    "ListNullabilityOperatorNode | None", nullability_assertion
+                ),
+                loc=self.loc(start),
             )
 
         return nullability_assertion
@@ -577,7 +588,7 @@ class Parser:
         token = self._lexer.token
         self.advance_lexer()
         return StringValueNode(
-            value=token.value,
+            value=cast("str", token.value),
             block=token.kind == TokenKind.BLOCK_STRING,
             loc=self.loc(token),
         )
@@ -612,16 +623,16 @@ class Parser:
     def parse_int(self, _is_const: bool = False) -> IntValueNode:
         token = self._lexer.token
         self.advance_lexer()
-        return IntValueNode(value=token.value, loc=self.loc(token))
+        return IntValueNode(value=cast("str", token.value), loc=self.loc(token))
 
     def parse_float(self, _is_const: bool = False) -> FloatValueNode:
         token = self._lexer.token
         self.advance_lexer()
-        return FloatValueNode(value=token.value, loc=self.loc(token))
+        return FloatValueNode(value=cast("str", token.value), loc=self.loc(token))
 
     def parse_named_values(self, _is_const: bool = False) -> ValueNode:
         token = self._lexer.token
-        value = token.value
+        value = cast("str", token.value)
         self.advance_lexer()
         if value == "true":
             return BooleanValueNode(value=True, loc=self.loc(token))

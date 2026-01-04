@@ -595,11 +595,11 @@ def describe_visitor():
 
         # Note: CustomFieldNode subclasses Node directly since
         # SelectionNode is a type alias (union), not a class.
-        class CustomFieldNode(Node):
-            __slots__ = "name", "selection_set"
-
-            name: NameNode
-            selection_set: SelectionSetNode | None
+        # With msgspec.Struct, we use frozen=True, kw_only=True syntax.
+        # Fields are nullable for minimal test fixtures.
+        class CustomFieldNode(Node, frozen=True, kw_only=True):
+            name: NameNode | None = None
+            selection_set: SelectionSetNode | None = None
 
         # Build custom AST immutably
         op_def = cast("OperationDefinitionNode", parsed_ast.definitions[0])

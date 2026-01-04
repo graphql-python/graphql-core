@@ -10,6 +10,8 @@ from typing import (
     TypeAlias,
 )
 
+import msgspec.structs
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection
 
@@ -225,10 +227,7 @@ def visit(
                     node = tuple(node)
                 else:
                     # Create new node with edited values (immutable-friendly)
-                    values = {k: getattr(node, k) for k in node.keys}
-                    for edit_key, edit_value in edits:
-                        values[edit_key] = edit_value
-                    node = node.__class__(**values)
+                    node = msgspec.structs.replace(node, **dict(edits))
             idx = stack.idx
             keys = stack.keys
             edits = stack.edits

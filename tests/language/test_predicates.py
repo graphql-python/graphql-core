@@ -2,6 +2,8 @@ import inspect
 from collections.abc import Callable
 from operator import attrgetter
 
+import msgspec
+
 from graphql.language import (
     Node,
     ast,
@@ -19,9 +21,41 @@ from graphql.language import (
     parse_value,
 )
 
+
+def _create_node_instance(node_type: type[Node]) -> Node:
+    """Create a node instance with dummy values for required fields."""
+    # Default values for required fields by field name
+    _dummy_name = ast.NameNode(value="")
+    _dummy_type = ast.NamedTypeNode(name=_dummy_name)
+    defaults = {
+        "value": "",
+        "name": _dummy_name,
+        "type": _dummy_type,
+        "operation": ast.OperationType.QUERY,
+        "selection_set": ast.SelectionSetNode(selections=()),
+        "selections": (),
+        "definitions": (),
+        "variable": ast.VariableNode(name=_dummy_name),
+        "type_condition": _dummy_type,
+        "fields": (),
+        "arguments": (),
+        "values": (),
+        "directives": (),
+        "variable_definitions": (),
+        "interfaces": (),
+        "types": (),
+        "locations": (),
+    }
+    kwargs = {}
+    for field in msgspec.structs.fields(node_type):
+        if field.required and field.name in defaults:
+            kwargs[field.name] = defaults[field.name]
+    return node_type(**kwargs)
+
+
 all_ast_nodes = sorted(
     [
-        node_type()
+        _create_node_instance(node_type)
         for node_type in vars(ast).values()
         if inspect.isclass(node_type)
         and issubclass(node_type, Node)

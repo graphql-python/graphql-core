@@ -8,17 +8,13 @@ from graphql.pyutils import inspect
 
 
 class SampleTestNode(Node):
-    __slots__ = "alpha", "beta"
-
     alpha: int
-    beta: int | None
+    beta: int
 
 
 class SampleNamedNode(Node):
-    __slots__ = "foo", "name"
-
-    foo: str
-    name: NameNode | None
+    foo: str | None = None
+    name: NameNode | None = None
 
 
 def make_loc(start: int = 1, end: int = 3) -> Location:
@@ -175,6 +171,12 @@ def describe_node_class():
         assert node.alpha == 1
         assert node.beta == 2
 
+    def rejects_unknown_keywords():
+        import pytest
+
+        with pytest.raises(TypeError, match="Unexpected keyword argument"):
+            SampleTestNode(alpha=1, beta=2, gamma=3)  # type: ignore[call-arg]
+
     def has_representation_with_loc():
         node = SampleTestNode(alpha=1, beta=2)
         assert repr(node) == "SampleTestNode"
@@ -211,6 +213,9 @@ def describe_node_class():
         assert node2 == node
         node2 = SampleTestNode(alpha=1, beta=1)
         assert node2 != node
+        # Different node types are not equal even with same field values
+        node3 = SampleNamedNode(foo="test")
+        assert node3 != node
 
     def can_hash():
         node = SampleTestNode(alpha=1, beta=2)
@@ -228,6 +233,12 @@ def describe_node_class():
         # Hash should be stable
         hash2 = hash(node)
         assert hash1 == hash2
+        # Equal nodes have equal hashes
+        node2 = SampleTestNode(alpha=1, beta=2)
+        assert hash(node2) == hash1
+        # Different values produce different hashes
+        node3 = SampleTestNode(alpha=2, beta=2)
+        assert hash(node3) != hash1
 
     def can_create_weak_reference():
         node = SampleTestNode(alpha=1, beta=2)
@@ -265,14 +276,14 @@ def describe_node_class():
         assert SampleTestNode.kind == "sample_test"
 
     def provides_proper_kind_if_class_does_not_end_with_node():
-        class Foo(Node):
+        class Foo(Node, frozen=True, kw_only=True):
             pass
 
         assert Foo.kind == "foo"
 
     def provides_keys_as_property():
         node = SampleTestNode(alpha=1, beta=2)
-        assert node.keys == ("loc", "alpha", "beta")
+        assert node.keys == ("alpha", "beta", "loc")
 
     def can_can_convert_to_dict():
         node = SampleTestNode(alpha=1, beta=2)

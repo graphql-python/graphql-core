@@ -19,7 +19,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-dependencies = []
+dependencies = [
+    "msgspec>=0.19",
+]
 
 [project.urls]
 Homepage = "https://github.com/graphql-python/graphql-core"
