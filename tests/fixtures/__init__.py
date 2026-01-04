@@ -12,6 +12,7 @@ __all__ = [
     "cleanup",
     "kitchen_sink_query",
     "kitchen_sink_sdl",
+    "large_query",
 ]
 
 
@@ -54,3 +55,8 @@ def big_schema_sdl():
 @pytest.fixture(scope="module")
 def big_schema_introspection_result():
     return read_json("github_schema")
+
+
+@pytest.fixture(scope="module")
+def large_query():
+    return read_graphql("large_query")
