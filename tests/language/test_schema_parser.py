@@ -78,12 +78,12 @@ def name_node(name: str, loc: Location):
 
 
 def field_node(name: NameNode, type_: TypeNode, loc: Location):
-    return field_node_with_args(name, type_, [], loc)
+    return field_node_with_args(name, type_, (), loc)
 
 
-def field_node_with_args(name: NameNode, type_: TypeNode, args: list, loc: Location):
+def field_node_with_args(name: NameNode, type_: TypeNode, args: tuple, loc: Location):
     return FieldDefinitionNode(
-        name=name, arguments=args, type=type_, directives=[], loc=loc, description=None
+        name=name, arguments=args, type=type_, directives=(), loc=loc, description=None
     )
 
 
@@ -93,7 +93,7 @@ def non_null_type(type_: TypeNode, loc: Location):
 
 def enum_value_node(name: str, loc: Location):
     return EnumValueDefinitionNode(
-        name=name_node(name, loc), directives=[], loc=loc, description=None
+        name=name_node(name, loc), directives=(), loc=loc, description=None
     )
 
 
@@ -104,7 +104,7 @@ def input_value_node(
         name=name,
         type=type_,
         default_value=default_value,
-        directives=[],
+        directives=(),
         loc=loc,
         description=None,
     )
@@ -123,8 +123,8 @@ def list_type_node(type_: TypeNode, loc: Location):
 
 
 def schema_extension_node(
-    directives: list[DirectiveNode],
-    operation_types: list[OperationTypeDefinitionNode],
+    directives: tuple[DirectiveNode, ...],
+    operation_types: tuple[OperationTypeDefinitionNode, ...],
     loc: Location,
 ):
     return SchemaExtensionNode(
@@ -136,7 +136,7 @@ def operation_type_definition(operation: OperationType, type_: TypeNode, loc: Lo
     return OperationTypeDefinitionNode(operation=operation, type=type_, loc=loc)
 
 
-def directive_node(name: NameNode, arguments: list[ArgumentNode], loc: Location):
+def directive_node(name: NameNode, arguments: tuple[ArgumentNode, ...], loc: Location):
     return DirectiveNode(name=name, arguments=arguments, loc=loc)
 
 
@@ -351,14 +351,14 @@ def describe_schema_parser():
         assert doc.loc == (0, 75)
         assert doc.definitions == (
             schema_extension_node(
-                [],
-                [
+                (),
+                (
                     operation_type_definition(
                         OperationType.MUTATION,
                         type_node("Mutation", (53, 61)),
                         (43, 61),
-                    )
-                ],
+                    ),
+                ),
                 (13, 75),
             ),
         )
@@ -370,8 +370,8 @@ def describe_schema_parser():
         assert doc.loc == (0, 24)
         assert doc.definitions == (
             schema_extension_node(
-                [directive_node(name_node("directive", (15, 24)), [], (14, 24))],
-                [],
+                (directive_node(name_node("directive", (15, 24)), (), (14, 24)),),
+                (),
                 (0, 24),
             ),
         )
@@ -571,14 +571,14 @@ def describe_schema_parser():
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (38, 44)),
-                [
+                (
                     input_value_node(
                         name_node("flag", (22, 26)),
                         type_node("Boolean", (28, 35)),
                         None,
                         (22, 35),
-                    )
-                ],
+                    ),
+                ),
                 (16, 44),
             ),
         )
@@ -602,14 +602,14 @@ def describe_schema_parser():
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (45, 51)),
-                [
+                (
                     input_value_node(
                         name_node("flag", (22, 26)),
                         type_node("Boolean", (28, 35)),
                         boolean_value_node(True, (38, 42)),
                         (22, 42),
-                    )
-                ],
+                    ),
+                ),
                 (16, 51),
             ),
         )
@@ -633,14 +633,14 @@ def describe_schema_parser():
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (41, 47)),
-                [
+                (
                     input_value_node(
                         name_node("things", (22, 28)),
                         list_type_node(type_node("String", (31, 37)), (30, 38)),
                         None,
                         (22, 38),
-                    )
-                ],
+                    ),
+                ),
                 (16, 47),
             ),
         )
@@ -664,7 +664,7 @@ def describe_schema_parser():
             field_node_with_args(
                 name_node("world", (16, 21)),
                 type_node("String", (53, 59)),
-                [
+                (
                     input_value_node(
                         name_node("argOne", (22, 28)),
                         type_node("Boolean", (30, 37)),
@@ -677,7 +677,7 @@ def describe_schema_parser():
                         None,
                         (39, 50),
                     ),
-                ],
+                ),
                 (16, 59),
             ),
         )

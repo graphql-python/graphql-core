@@ -35,30 +35,30 @@ This will give the same result as manually creating the AST document::
 
     from graphql.language.ast import *
 
-    document = DocumentNode(definitions=[
+    document = DocumentNode(definitions=(
         ObjectTypeDefinitionNode(
             name=NameNode(value='Query'),
-            fields=[
+            fields=(
                 FieldDefinitionNode(
                     name=NameNode(value='me'),
                     type=NamedTypeNode(name=NameNode(value='User')),
-                    arguments=[], directives=[])
-                ], directives=[], interfaces=[]),
+                    arguments=(), directives=()),
+                ), interfaces=(), directives=()),
         ObjectTypeDefinitionNode(
             name=NameNode(value='User'),
-            fields=[
+            fields=(
                 FieldDefinitionNode(
                     name=NameNode(value='id'),
                     type=NamedTypeNode(
                         name=NameNode(value='ID')),
-                    arguments=[], directives=[]),
+                    arguments=(), directives=()),
                 FieldDefinitionNode(
                     name=NameNode(value='name'),
                     type=NamedTypeNode(
                         name=NameNode(value='String')),
-                    arguments=[], directives=[]),
-                ], directives=[], interfaces=[]),
-        ])
+                    arguments=(), directives=()),
+                ), interfaces=(), directives=()),
+        ))
 
 
 When parsing with ``no_location=False`` (the default), the AST nodes will also have a

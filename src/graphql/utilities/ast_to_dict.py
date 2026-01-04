@@ -45,14 +45,18 @@ def ast_to_dict(
         elif node in cache:
             return cache[node]
         cache[node] = res = {}
+        # Note: We don't use msgspec.structs.asdict() because loc needs special
+        # handling (converted to {start, end} dict rather than full Location object)
+        # Filter out 'loc' - it's handled separately for the locations option
+        fields = [f for f in node.keys if f != "loc"]
         res.update(
             {
                 key: ast_to_dict(getattr(node, key), locations, cache)
-                for key in ("kind", *node.keys[1:])
+                for key in ("kind", *fields)
             }
         )
         if locations:
-            loc = node.loc
+            loc = getattr(node, "loc", None)
             if loc:
                 res["loc"] = {"start": loc.start, "end": loc.end}
         return res
