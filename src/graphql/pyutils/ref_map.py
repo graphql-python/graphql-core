@@ -7,8 +7,9 @@ from collections.abc import MutableMapping
 try:
     MutableMapping[str, int]
 except TypeError:  # Python < 3.9
-    from typing import MutableMapping
-from typing import Any, Iterable, Iterator, TypeVar
+    from collections.abc import MutableMapping
+from collections.abc import Iterable, Iterator
+from typing import Any, TypeVar
 
 __all__ = ["RefMap"]
 

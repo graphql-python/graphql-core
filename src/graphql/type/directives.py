@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Collection, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ..language import DirectiveLocation, ast
 from ..pyutils import inspect
 from .assert_name import assert_name
 from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull
 from .scalars import GraphQLBoolean, GraphQLInt, GraphQLString
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 try:
     from typing import TypedDict
@@ -17,7 +20,7 @@ except ImportError:  # Python < 3.8
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 __all__ = [
     "DEFAULT_DEPRECATION_REASON",

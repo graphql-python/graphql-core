@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from asyncio import Event, create_task, gather, sleep, wait_for
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 
 from graphql.pyutils import gather_with_cancel, is_awaitable
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 pytestmark = pytest.mark.anyio
 

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from typing import Any, Awaitable
+from collections.abc import Awaitable
+from typing import Any
 
 import pytest
 

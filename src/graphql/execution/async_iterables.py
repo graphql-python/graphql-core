@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator, AsyncIterable, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, suppress
 from typing import (
-    AsyncGenerator,
-    AsyncIterable,
-    Awaitable,
-    Callable,
     Generic,
     TypeVar,
-    Union,
 )
 
 __all__ = ["aclosing", "map_async_iterable"]
@@ -18,7 +14,7 @@ __all__ = ["aclosing", "map_async_iterable"]
 T = TypeVar("T")
 V = TypeVar("V")
 
-AsyncIterableOrGenerator = Union[AsyncGenerator[T, None], AsyncIterable[T]]
+AsyncIterableOrGenerator = AsyncGenerator[T, None] | AsyncIterable[T]
 
 suppress_exceptions = suppress(Exception)
 

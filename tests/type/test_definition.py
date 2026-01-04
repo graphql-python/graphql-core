@@ -4,7 +4,7 @@ import pickle
 import sys
 from enum import Enum
 from math import isnan, nan
-from typing import Any, Awaitable, Callable
+from typing import TYPE_CHECKING, Any
 
 try:
     from typing import TypedDict
@@ -58,10 +58,13 @@ from graphql.type import (
     introspection_types,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})

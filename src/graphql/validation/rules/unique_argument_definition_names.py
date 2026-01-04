@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import Any, Collection
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
 from ...language import (
@@ -20,6 +20,9 @@ from ...language import (
 )
 from ...pyutils import group_by
 from . import SDLValidationRule
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = ["UniqueArgumentDefinitionNamesRule"]
 

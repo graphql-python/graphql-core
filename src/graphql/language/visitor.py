@@ -5,24 +5,18 @@ from __future__ import annotations
 from copy import copy
 from enum import Enum
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Callable,
-    Collection,
-    Dict,
     NamedTuple,
-    Optional,
-    Tuple,
+    TypeAlias,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Collection
 
 from ..pyutils import inspect, snake_to_camel
 from . import ast
 from .ast import QUERY_DOCUMENT_KEYS, Node
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = [
     "BREAK",
@@ -48,7 +42,7 @@ class VisitorActionEnum(Enum):
     REMOVE = Ellipsis
 
 
-VisitorAction: TypeAlias = Optional[VisitorActionEnum]
+VisitorAction: TypeAlias = VisitorActionEnum | None
 
 # Note that in GraphQL.js these are defined *differently*:
 # BREAK = {}, SKIP = false, REMOVE = null, IDLE = undefined
@@ -58,7 +52,7 @@ SKIP = VisitorActionEnum.SKIP
 REMOVE = VisitorActionEnum.REMOVE
 IDLE = None
 
-VisitorKeyMap: TypeAlias = Dict[str, Tuple[str, ...]]
+VisitorKeyMap: TypeAlias = dict[str, tuple[str, ...]]
 
 
 class EnterLeaveVisitor(NamedTuple):

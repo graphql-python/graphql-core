@@ -10,7 +10,7 @@ from .collect_fields import DeferUsage, FieldGroup, GroupedFieldSet
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 __all__ = [
     "DeferUsageSet",

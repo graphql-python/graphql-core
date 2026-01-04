@@ -9,7 +9,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', 'pypy3.9', 'pypy3.10', 'pypy3.11']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', 'pypy3.10', 'pypy3.11']
 
     steps:
       - name: Checkout project
@@ -37,44 +37,3 @@ jobs:
       - name: Run unit tests with tox
         id: test
         run: tox
-
-  tests-old:
-    name: 🧪 Tests (older Python versions)
-    runs-on: ubuntu-22.04
-
-    strategy:
-      matrix:
-        python-version: ['3.7', '3.8']
-
-    steps:
-      - name: Checkout project
-        id: checkout
-        uses: actions/checkout@v5
-
-      - name: Set up Python 3.14 (tox runner)
-        id: setup-python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-
-      - name: Install uv
-        id: setup-uv
-        uses: astral-sh/setup-uv@v6
-
-      - name: Install tox and plugins
-        id: install-tox
-        run: |
-          uv pip install --system tox tox-uv tox-gh-actions
-
-      - name: Set up target Python ${{ matrix.python-version }}
-        id: setup-target-python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Run unit tests with tox for target
-        id: test
-        shell: bash
-        run: |
-          ENV="py${{ matrix.python-version }}"; ENV=${ENV/./}
-          python3.14 -m tox -e "$ENV"

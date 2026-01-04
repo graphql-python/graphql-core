@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Collection, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from .is_awaitable import is_awaitable as default_is_awaitable
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Collection
+
     from .awaitable_or_value import AwaitableOrValue
 
     try:
         from typing import TypeGuard
     except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
+        from typing import TypeGuard
 
 __all__ = ["async_reduce"]
 

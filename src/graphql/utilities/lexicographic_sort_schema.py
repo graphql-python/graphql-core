@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Collection, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from ..pyutils import inspect, merge_kwargs, natural_comparison_key
 from ..type import (
@@ -33,6 +33,8 @@ from ..type import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from ..language import DirectiveLocation
 
 __all__ = ["lexicographic_sort_schema"]
@@ -177,14 +179,12 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
             sort_directive(directive)
             for directive in sorted(schema.directives, key=sort_by_name_key)
         ],
-        query=cast(
-            "Optional[GraphQLObjectType]", replace_maybe_type(schema.query_type)
-        ),
+        query=cast("GraphQLObjectType | None", replace_maybe_type(schema.query_type)),
         mutation=cast(
-            "Optional[GraphQLObjectType]", replace_maybe_type(schema.mutation_type)
+            "GraphQLObjectType | None", replace_maybe_type(schema.mutation_type)
         ),
         subscription=cast(
-            "Optional[GraphQLObjectType]", replace_maybe_type(schema.subscription_type)
+            "GraphQLObjectType | None", replace_maybe_type(schema.subscription_type)
         ),
         extensions=schema.extensions,
         ast_node=schema.ast_node,

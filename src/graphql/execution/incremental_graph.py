@@ -14,12 +14,6 @@ from asyncio import (
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
-    Awaitable,
-    Generator,
-    Iterable,
-    Sequence,
-    Union,
     cast,
 )
 
@@ -33,6 +27,9 @@ from .types import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Awaitable, Generator, Iterable, Sequence
+    from typing import TypeGuard
+
     from ..error.graphql_error import GraphQLError
     from .types import (
         DeferredFragmentRecord,
@@ -42,11 +39,6 @@ if TYPE_CHECKING:
         ReconcilableDeferredGroupedFieldSetResult,
         SubsequentResultRecord,
     )
-
-    try:
-        from typing import TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
 
 __all__ = ["IncrementalGraph"]
 
@@ -74,7 +66,7 @@ class DeferredFragmentNode:
         self.children = []
 
 
-SubsequentResultNode = Union[DeferredFragmentNode, StreamRecord]
+SubsequentResultNode = DeferredFragmentNode | StreamRecord
 
 
 def is_deferred_fragment_node(

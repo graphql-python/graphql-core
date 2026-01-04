@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..language import (
     ArgumentNode,
@@ -44,14 +45,14 @@ from .type_from_ast import type_from_ast
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
 GetFieldDefFn: TypeAlias = Callable[
-    [GraphQLSchema, GraphQLCompositeType, FieldNode], Optional[GraphQLField]
+    [GraphQLSchema, GraphQLCompositeType, FieldNode], GraphQLField | None
 ]
 
 

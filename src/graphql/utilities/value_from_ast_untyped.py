@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from math import nan
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from ..pyutils import Undefined, inspect
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from ..language import (
         BooleanValueNode,
         EnumValueNode,

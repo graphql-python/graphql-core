@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, cast
+from typing import Any, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -35,7 +35,7 @@ class KnownDirectivesRule(ASTValidationRule):
 
         schema = context.schema
         defined_directives = (
-            schema.directives if schema else cast("List", specified_directives)
+            schema.directives if schema else cast("list", specified_directives)
         )
         for directive in defined_directives:
             locations_map[directive.name] = directive.locations

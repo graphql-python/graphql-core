@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import TYPE_CHECKING, Callable, Collection, cast
+from typing import TYPE_CHECKING, cast
 
 from ..language import DirectiveLocation, parse_value
 from ..pyutils import Undefined, inspect
@@ -36,6 +36,8 @@ from ..type import (
 from .value_from_ast import value_from_ast
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Collection
+
     from .get_introspection_query import (
         IntrospectionDirective,
         IntrospectionEnumType,

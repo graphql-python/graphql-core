@@ -8,26 +8,24 @@ from asyncio import (
     ensure_future,
     sleep,
 )
-from contextlib import suppress
-from copy import copy
-from typing import (
-    TYPE_CHECKING,
-    Any,
+from collections.abc import (
     AsyncGenerator,
     AsyncIterable,
     AsyncIterator,
     Awaitable,
     Callable,
-    Generic,
     Iterable,
-    List,
     Mapping,
-    NamedTuple,
-    Optional,
     Sequence,
-    Tuple,
+)
+from contextlib import suppress
+from copy import copy
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    NamedTuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -108,20 +106,9 @@ from .types import (
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 if TYPE_CHECKING:
+    from typing import TypeAlias, TypeGuard
+
     from ..pyutils import UndefinedType
-
-    try:
-        from typing import TypeAlias, TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeAlias, TypeGuard
-
-try:  # pragma: no cover
-    anext  # noqa: B018  # pyright: ignore
-except NameError:  # pragma: no cover (Python < 3.10)
-
-    async def anext(iterator: AsyncIterator) -> Any:
-        """Return the next item from an async iterator."""
-        return await iterator.__anext__()
 
 
 __all__ = [
@@ -160,7 +147,7 @@ suppress_timeout_error = suppress(TimeoutError)
 # 3) inline fragment "spreads" e.g. "...on Type { a }"
 
 
-Middleware: TypeAlias = Optional[Union[Tuple, List, MiddlewareManager]]
+Middleware: TypeAlias = tuple | list | MiddlewareManager | None
 
 
 class StreamUsage(NamedTuple):
@@ -577,7 +564,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 awaited_results = await gather_with_cancel(
                     *(results[field] for field in awaitable_fields)
                 )
-                results.update(zip(awaitable_fields, awaited_results))
+                results.update(zip(awaitable_fields, awaited_results, strict=False))
 
             return GraphQLWrappedResult(results, graphql_wrapped_result.increments)
 
@@ -1040,7 +1027,9 @@ class ExecutionContext(IncrementalPublisherContext):
             awaited_results = await gather_with_cancel(
                 *(completed_results[index] for index in awaitable_indices)
             )
-            for index, sub_result in zip(awaitable_indices, awaited_results):
+            for index, sub_result in zip(
+                awaitable_indices, awaited_results, strict=False
+            ):
                 completed_results[index] = sub_result
         return GraphQLWrappedResult(
             completed_results, graphql_wrapped_result.increments
@@ -1186,7 +1175,9 @@ class ExecutionContext(IncrementalPublisherContext):
                 awaited_results = await gather_with_cancel(
                     *(completed_results[index] for index in awaitable_indices)
                 )
-                for index, sub_result in zip(awaitable_indices, awaited_results):
+                for index, sub_result in zip(
+                    awaitable_indices, awaited_results, strict=False
+                ):
                     completed_results[index] = sub_result
             return GraphQLWrappedResult(
                 completed_results, graphql_wrapped_result.increments
@@ -1356,7 +1347,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 return value  # pragma: no cover
 
             return await_complete_object_value()
-        runtime_type = cast("Optional[str]", runtime_type)
+        runtime_type = cast("str | None", runtime_type)
 
         return self.complete_object_value(
             self.ensure_valid_runtime_type(
@@ -2449,7 +2440,9 @@ def default_type_resolver(
 
         async def get_type() -> str | None:
             is_type_of_results = await gather_with_cancel(*awaitable_is_type_of_results)
-            for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
+            for is_type_of_result, type_ in zip(
+                is_type_of_results, awaitable_types, strict=False
+            ):
                 if is_type_of_result:
                     return type_.name
             return None

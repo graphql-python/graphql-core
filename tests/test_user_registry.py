@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from asyncio import create_task, sleep, wait
 from collections import defaultdict
+from collections.abc import AsyncIterable
 from enum import Enum
-from typing import Any, AsyncIterable, NamedTuple
+from typing import Any, NamedTuple
 
 import pytest
 

@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import Any, Awaitable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -16,6 +16,9 @@ from graphql.type import (
     GraphQLString,
 )
 from graphql.utilities import build_schema
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 pytestmark = pytest.mark.anyio
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from collections import defaultdict
 from typing import Any, NamedTuple
 
@@ -29,7 +28,7 @@ from .values import get_directive_values
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 __all__ = [
     "CollectFieldsContext",
@@ -67,14 +66,8 @@ class FieldDetails(NamedTuple):
     defer_usage: DeferUsage | None
 
 
-if sys.version_info < (3, 9):
-    from typing import Dict, List
-
-    FieldGroup: TypeAlias = List[FieldDetails]
-    GroupedFieldSet: TypeAlias = Dict[str, FieldGroup]
-else:  # Python >= 3.9
-    FieldGroup: TypeAlias = list[FieldDetails]
-    GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
+FieldGroup: TypeAlias = list[FieldDetails]
+GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
 
 
 class CollectFieldsContext(NamedTuple):

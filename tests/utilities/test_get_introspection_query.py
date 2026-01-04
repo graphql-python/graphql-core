@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Pattern
+from re import Pattern
 
 from graphql.language import parse
 from graphql.utilities import build_schema, get_introspection_query

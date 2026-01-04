@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .utils import dedent
 
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
-Scope: TypeAlias = Dict[str, Any]
+Scope: TypeAlias = dict[str, Any]
 
 
 def get_snippets(source, indent=4):

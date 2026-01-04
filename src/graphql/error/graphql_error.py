@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from sys import exc_info
-from typing import TYPE_CHECKING, Any, Collection, Dict
+from typing import TYPE_CHECKING, Any
 
 try:
     from typing import TypedDict
@@ -12,9 +12,11 @@ except ImportError:  # Python < 3.8
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from ..language.ast import Node
     from ..language.location import (
         FormattedSourceLocation,
@@ -26,7 +28,7 @@ __all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
 
 
 # Custom extensions
-GraphQLErrorExtensions: TypeAlias = Dict[str, Any]
+GraphQLErrorExtensions: TypeAlias = dict[str, Any]
 # Use a unique identifier name for your extension, for example the name of
 # your library or project. Do not use a shortened identifier as this increases
 # the risk of conflicts. We recommend you add at most one extension key,

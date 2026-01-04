@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from asyncio import CancelledError, Future, ensure_future, isfuture
 from contextlib import suppress
-from typing import Awaitable, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 __all__ = ["BoxedAwaitableOrValue"]
 

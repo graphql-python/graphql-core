@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ..language import (
     DocumentNode,
@@ -17,13 +17,13 @@ from ..language import (
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 __all__ = ["separate_operations"]
 
 
-DepGraph: TypeAlias = Dict[str, List[str]]
+DepGraph: TypeAlias = dict[str, list[str]]
 
 
 def separate_operations(document_ast: DocumentNode) -> dict[str, DocumentNode]:

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from copy import copy, deepcopy
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 from ..pyutils import camel_to_snake
 
@@ -632,16 +632,16 @@ class ConstObjectFieldNode(ObjectFieldNode):
     value: ConstValueNode
 
 
-ConstValueNode: TypeAlias = Union[
-    IntValueNode,
-    FloatValueNode,
-    StringValueNode,
-    BooleanValueNode,
-    NullValueNode,
-    EnumValueNode,
-    ConstListValueNode,
-    ConstObjectValueNode,
-]
+ConstValueNode: TypeAlias = (
+    IntValueNode
+    | FloatValueNode
+    | StringValueNode
+    | BooleanValueNode
+    | NullValueNode
+    | EnumValueNode
+    | ConstListValueNode
+    | ConstObjectValueNode
+)
 
 
 # Directives
@@ -820,7 +820,7 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
     directives: tuple[ConstDirectiveNode, ...]
 
 
-TypeSystemExtensionNode: TypeAlias = Union[SchemaExtensionNode, TypeExtensionNode]
+TypeSystemExtensionNode: TypeAlias = SchemaExtensionNode | TypeExtensionNode
 
 
 class ScalarTypeExtensionNode(TypeExtensionNode):

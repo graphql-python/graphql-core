@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from asyncio import ensure_future
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from .error import GraphQLError
 from .execution import ExecutionContext, ExecutionResult, Middleware, execute
@@ -17,12 +17,14 @@ from .type import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from .pyutils import AwaitableOrValue
 
     try:
         from typing import TypeGuard
     except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
+        from typing import TypeGuard
 
 __all__ = ["graphql", "graphql_sync"]
 

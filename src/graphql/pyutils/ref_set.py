@@ -7,9 +7,10 @@ from collections.abc import MutableSet
 try:
     MutableSet[int]
 except TypeError:  # Python < 3.9
-    from typing import MutableSet
+    from collections.abc import MutableSet
+from collections.abc import Iterable, Iterator
 from contextlib import suppress
-from typing import Any, Iterable, Iterator, TypeVar
+from typing import Any, TypeVar
 
 from .ref_map import RefMap
 

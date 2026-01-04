@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import TYPE_CHECKING, Any, Collection
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
 from ...pyutils import group_by
 from . import ASTValidationRule
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from ...language import ArgumentNode, DirectiveNode, FieldNode
 
 __all__ = ["UniqueArgumentNamesRule"]

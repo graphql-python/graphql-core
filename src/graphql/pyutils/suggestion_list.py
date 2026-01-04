@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Collection
+from typing import TYPE_CHECKING
 
 from .natural_compare import natural_comparison_key
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = ["suggestion_list"]
 

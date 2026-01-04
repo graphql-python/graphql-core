@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Callable, Collection, TypeVar
+from typing import TYPE_CHECKING, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Collection
 
 __all__ = ["group_by"]
 

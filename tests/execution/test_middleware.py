@@ -1,5 +1,6 @@
 import inspect
-from typing import Awaitable, cast
+from collections.abc import Awaitable
+from typing import cast
 
 import pytest
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Union
-
 import pytest
 
 from graphql import graphql_sync
@@ -35,22 +33,19 @@ from ..utils import dedent
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
-TypeWithAstNode: TypeAlias = Union[
-    GraphQLArgument,
-    GraphQLEnumValue,
-    GraphQLField,
-    GraphQLInputField,
-    GraphQLNamedType,
-    GraphQLSchema,
-]
+TypeWithAstNode: TypeAlias = (
+    GraphQLArgument
+    | GraphQLEnumValue
+    | GraphQLField
+    | GraphQLInputField
+    | GraphQLNamedType
+    | GraphQLSchema
+)
 
-TypeWithExtensionAstNodes: TypeAlias = Union[
-    GraphQLNamedType,
-    GraphQLSchema,
-]
+TypeWithExtensionAstNodes: TypeAlias = GraphQLNamedType | GraphQLSchema
 
 
 def expect_extension_ast_nodes(obj: TypeWithExtensionAstNodes, expected: str) -> None:

@@ -1,15 +1,10 @@
 import asyncio
+from collections.abc import AsyncIterable, AsyncIterator, Callable
 from contextlib import suppress
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
-    Callable,
-    Dict,
-    List,
-    Optional,
+    TypedDict,
     TypeVar,
-    Union,
 )
 
 import pytest
@@ -40,20 +35,6 @@ pytestmark = [
     pytest.mark.anyio,
     pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
 ]
-
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-
-try:
-    anext  # noqa: B018
-except NameError:  # pragma: no cover (Python < 3.10)
-
-    async def anext(iterator):
-        """Return the next item from an async iterator."""
-        return await iterator.__anext__()
-
 
 T = TypeVar("T")
 
@@ -121,8 +102,8 @@ email_schema = GraphQLSchema(
 
 
 def create_subscription(
-    pubsub: SimplePubSub, variable_values: Optional[Dict[str, Any]] = None
-) -> AwaitableOrValue[Union[AsyncIterator[ExecutionResult], ExecutionResult]]:
+    pubsub: SimplePubSub, variable_values: dict[str, Any] | None = None
+) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     document = parse(
         """
         subscription (
@@ -151,7 +132,7 @@ def create_subscription(
         """
     )
 
-    emails: List[Email] = [
+    emails: list[Email] = [
         {
             "from": "joe@graphql.org",
             "subject": "Hello",
@@ -165,7 +146,7 @@ def create_subscription(
 
         return {"importantEmail": {"email": new_email, "inbox": data["inbox"]}}
 
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "inbox": {"emails": emails},
         "importantEmail": pubsub.get_subscriber(transform),
     }
@@ -178,7 +159,7 @@ DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString
 
 def subscribe_with_bad_fn(
     subscribe_fn: Callable,
-) -> AwaitableOrValue[Union[ExecutionResult, AsyncIterable[Any]]]:
+) -> AwaitableOrValue[ExecutionResult | AsyncIterable[Any]]:
     schema = GraphQLSchema(
         query=DummyQueryType,
         subscription=GraphQLObjectType(
@@ -193,7 +174,7 @@ def subscribe_with_bad_fn(
 def subscribe_with_bad_args(
     schema: GraphQLSchema,
     document: DocumentNode,
-    variable_values: Optional[Dict[str, Any]] = None,
+    variable_values: dict[str, Any] | None = None,
 ):
     return assert_equal_awaitables_or_values(
         subscribe(schema, document, variable_values=variable_values),
@@ -1117,7 +1098,7 @@ def describe_subscription_publish_phase():
 
     async def should_work_with_custom_async_iterator():
         class MessageGenerator:
-            resolved: List[str] = []
+            resolved: list[str] = []
 
             def __init__(self, values, _info):
                 self.values = values
@@ -1167,7 +1148,7 @@ def describe_subscription_publish_phase():
     async def should_close_custom_async_iterator():
         class MessageGenerator:
             closed: bool = False
-            resolved: List[str] = []
+            resolved: list[str] = []
 
             def __init__(self, values, _info):
                 self.values = values

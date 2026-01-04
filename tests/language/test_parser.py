@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, cast
+from typing import cast
 
 import pytest
 
@@ -45,10 +45,10 @@ from ..utils import dedent
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
-Location: TypeAlias = Optional[Tuple[int, int]]
+Location: TypeAlias = tuple[int, int] | None
 
 
 def parse_ccn(source: str) -> DocumentNode:

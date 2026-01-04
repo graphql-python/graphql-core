@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Collection, Dict, List, Union
+from typing import TYPE_CHECKING, Any
 
 from ..error import GraphQLError
 from ..language import (
@@ -34,14 +34,17 @@ from ..utilities.coerce_input_value import coerce_input_value
 from ..utilities.type_from_ast import type_from_ast
 from ..utilities.value_from_ast import value_from_ast
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Collection
+
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 __all__ = ["get_argument_values", "get_directive_values", "get_variable_values"]
 
-CoercedVariableValues: TypeAlias = Union[List[GraphQLError], Dict[str, Any]]
+CoercedVariableValues: TypeAlias = list[GraphQLError] | dict[str, Any]
 
 
 def get_variable_values(
@@ -224,16 +227,16 @@ def get_argument_values(
     return coerced_values
 
 
-NodeWithDirective: TypeAlias = Union[
-    EnumValueDefinitionNode,
-    ExecutableDefinitionNode,
-    FieldDefinitionNode,
-    InputValueDefinitionNode,
-    SelectionNode,
-    SchemaDefinitionNode,
-    TypeDefinitionNode,
-    TypeExtensionNode,
-]
+NodeWithDirective: TypeAlias = (
+    EnumValueDefinitionNode
+    | ExecutableDefinitionNode
+    | FieldDefinitionNode
+    | InputValueDefinitionNode
+    | SelectionNode
+    | SchemaDefinitionNode
+    | TypeDefinitionNode
+    | TypeExtensionNode
+)
 
 
 def get_directive_values(

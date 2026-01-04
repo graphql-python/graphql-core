@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, Dict, Union
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..language import DirectiveLocation
@@ -11,11 +11,13 @@ if TYPE_CHECKING:
 try:
     from typing import Literal, TypedDict
 except ImportError:  # Python < 3.8
-    from typing_extensions import Literal, TypedDict
+    from typing import Literal
+
+    from typing_extensions import TypedDict
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 __all__ = [
     "IntrospectionDirective",
@@ -177,7 +179,7 @@ def get_introspection_query(
 # - no generic typed dicts, see https://github.com/python/mypy/issues/3863
 
 # simplified IntrospectionNamedType to avoids cycles
-SimpleIntrospectionType: TypeAlias = Dict[str, Any]
+SimpleIntrospectionType: TypeAlias = dict[str, Any]
 
 
 class MaybeWithDescription(TypedDict, total=False):
@@ -258,26 +260,26 @@ class IntrospectionInputObjectType(WithName):
     isOneOf: bool
 
 
-IntrospectionType: TypeAlias = Union[
-    IntrospectionScalarType,
-    IntrospectionObjectType,
-    IntrospectionInterfaceType,
-    IntrospectionUnionType,
-    IntrospectionEnumType,
-    IntrospectionInputObjectType,
-]
+IntrospectionType: TypeAlias = (
+    IntrospectionScalarType
+    | IntrospectionObjectType
+    | IntrospectionInterfaceType
+    | IntrospectionUnionType
+    | IntrospectionEnumType
+    | IntrospectionInputObjectType
+)
 
-IntrospectionOutputType: TypeAlias = Union[
-    IntrospectionScalarType,
-    IntrospectionObjectType,
-    IntrospectionInterfaceType,
-    IntrospectionUnionType,
-    IntrospectionEnumType,
-]
+IntrospectionOutputType: TypeAlias = (
+    IntrospectionScalarType
+    | IntrospectionObjectType
+    | IntrospectionInterfaceType
+    | IntrospectionUnionType
+    | IntrospectionEnumType
+)
 
-IntrospectionInputType: TypeAlias = Union[
-    IntrospectionScalarType, IntrospectionEnumType, IntrospectionInputObjectType
-]
+IntrospectionInputType: TypeAlias = (
+    IntrospectionScalarType | IntrospectionEnumType | IntrospectionInputObjectType
+)
 
 
 class IntrospectionListType(TypedDict):
@@ -290,9 +292,9 @@ class IntrospectionNonNullType(TypedDict):
     ofType: SimpleIntrospectionType  # should be IntrospectionType
 
 
-IntrospectionTypeRef: TypeAlias = Union[
-    IntrospectionType, IntrospectionListType, IntrospectionNonNullType
-]
+IntrospectionTypeRef: TypeAlias = (
+    IntrospectionType | IntrospectionListType | IntrospectionNonNullType
+)
 
 
 class IntrospectionSchema(MaybeWithDescription):

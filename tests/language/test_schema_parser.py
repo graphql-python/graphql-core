@@ -3,7 +3,6 @@ from __future__ import annotations
 import pickle
 from copy import deepcopy
 from textwrap import dedent
-from typing import Optional, Tuple
 
 import pytest
 
@@ -44,10 +43,10 @@ from ..fixtures import kitchen_sink_sdl  # noqa: F401
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
-Location: TypeAlias = Optional[Tuple[int, int]]
+Location: TypeAlias = tuple[int, int] | None
 
 
 def assert_syntax_error(text: str, message: str, location: Location) -> None:

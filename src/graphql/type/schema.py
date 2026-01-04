@@ -6,13 +6,13 @@ from copy import copy, deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
-    Collection,
-    Dict,
     NamedTuple,
     cast,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from ..error import GraphQLError
     from ..language import OperationType, ast
 
@@ -48,11 +48,11 @@ except ImportError:  # Python < 3.8
 try:
     from typing import TypeAlias, TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias, TypeGuard
+    from typing import TypeAlias, TypeGuard
 
 __all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "assert_schema", "is_schema"]
 
-TypeMap: TypeAlias = Dict[str, GraphQLNamedType]
+TypeMap: TypeAlias = dict[str, GraphQLNamedType]
 
 
 class InterfaceImplementations(NamedTuple):
@@ -406,7 +406,7 @@ class GraphQLSchema:
         return self._validation_errors
 
 
-class TypeSet(Dict[GraphQLNamedType, None]):
+class TypeSet(dict[GraphQLNamedType, None]):
     """An ordered set of types that can be collected starting from initial types."""
 
     @classmethod

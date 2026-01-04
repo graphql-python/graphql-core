@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import inspect
 from types import CoroutineType, GeneratorType
-from typing import Any, Awaitable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 
 __all__ = ["is_awaitable"]

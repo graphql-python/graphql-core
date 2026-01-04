@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from asyncio import Task, create_task, gather
-from typing import Any, Awaitable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 __all__ = ["gather_with_cancel"]
 

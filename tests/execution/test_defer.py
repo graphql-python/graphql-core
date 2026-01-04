@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from typing import Any, AsyncGenerator, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import pytest
 
@@ -30,6 +30,9 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 pytestmark = pytest.mark.anyio
 

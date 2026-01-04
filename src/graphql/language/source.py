@@ -9,7 +9,7 @@ from .location import SourceLocation
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 __all__ = ["Source", "is_source"]
 

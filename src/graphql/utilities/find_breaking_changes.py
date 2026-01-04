@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Collection, NamedTuple, Union
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from ..language import print_ast
 from ..pyutils import Undefined, inspect
@@ -34,10 +34,13 @@ from ..type import (
 from ..utilities.sort_value_node import sort_value_node
 from .ast_from_value import ast_from_value
 
+if TYPE_CHECKING:
+    from collections.abc import Collection
+
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 __all__ = [
@@ -96,7 +99,7 @@ class DangerousChange(NamedTuple):
     description: str
 
 
-Change: TypeAlias = Union[BreakingChange, DangerousChange]
+Change: TypeAlias = BreakingChange | DangerousChange
 
 
 def find_breaking_changes(

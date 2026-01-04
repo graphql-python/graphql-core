@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator, Awaitable, Callable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
-    Awaitable,
-    Callable,
-    Iterator,
     NamedTuple,
     TypeVar,
-    Union,
 )
 
 try:
@@ -21,7 +17,7 @@ except ImportError:  # Python < 3.8
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 from ..pyutils import BoxedAwaitableOrValue, Undefined
 
@@ -32,7 +28,7 @@ if TYPE_CHECKING:
     try:
         from typing import TypeGuard
     except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
+        from typing import TypeGuard
     try:
         from typing import NotRequired
     except ImportError:  # Python < 3.11
@@ -582,11 +578,11 @@ class FormattedIncrementalStreamResult(TypedDict):
 
 T = TypeVar("T")  # declare T for generic aliases
 
-IncrementalResult: TypeAlias = Union[IncrementalDeferResult, IncrementalStreamResult]
+IncrementalResult: TypeAlias = IncrementalDeferResult | IncrementalStreamResult
 
-FormattedIncrementalResult: TypeAlias = Union[
-    FormattedIncrementalDeferResult, FormattedIncrementalStreamResult
-]
+FormattedIncrementalResult: TypeAlias = (
+    FormattedIncrementalDeferResult | FormattedIncrementalStreamResult
+)
 
 
 class PendingResult:  # noqa: PLW1641
@@ -767,10 +763,10 @@ def is_non_reconcilable_deferred_grouped_field_set_result(
     )
 
 
-DeferredGroupedFieldSetResult: TypeAlias = Union[
-    ReconcilableDeferredGroupedFieldSetResult,
-    NonReconcilableDeferredGroupedFieldSetResult,
-]
+DeferredGroupedFieldSetResult: TypeAlias = (
+    ReconcilableDeferredGroupedFieldSetResult
+    | NonReconcilableDeferredGroupedFieldSetResult
+)
 
 
 def is_deferred_grouped_field_set_result(
@@ -786,9 +782,9 @@ def is_deferred_grouped_field_set_result(
     )
 
 
-ThunkIncrementalResult: TypeAlias = Union[
-    BoxedAwaitableOrValue[T], Callable[[], BoxedAwaitableOrValue[T]]
-]
+ThunkIncrementalResult: TypeAlias = (
+    BoxedAwaitableOrValue[T] | Callable[[], BoxedAwaitableOrValue[T]]
+)
 
 
 class DeferredGroupedFieldSetRecord:
@@ -884,7 +880,7 @@ class StreamRecord:
         return f"{name}({', '.join(args)})"
 
 
-SubsequentResultRecord: TypeAlias = Union[DeferredFragmentRecord, StreamRecord]
+SubsequentResultRecord: TypeAlias = DeferredFragmentRecord | StreamRecord
 
 
 class CancellableStreamRecord(StreamRecord):
@@ -921,8 +917,8 @@ class StreamItemsResult(NamedTuple):
     errors: list[GraphQLError] | None = None
 
 
-IncrementalDataRecord: TypeAlias = Union[DeferredGroupedFieldSetRecord, StreamRecord]
+IncrementalDataRecord: TypeAlias = DeferredGroupedFieldSetRecord | StreamRecord
 
-IncrementalDataRecordResult: TypeAlias = Union[
-    DeferredGroupedFieldSetResult, StreamItemsResult
-]
+IncrementalDataRecordResult: TypeAlias = (
+    DeferredGroupedFieldSetResult | StreamItemsResult
+)

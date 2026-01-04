@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -36,6 +36,9 @@ from ...type import (
     is_required_input_field,
 )
 from . import ValidationContext, ValidationRule
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = ["ValuesOfCorrectTypeRule"]
 

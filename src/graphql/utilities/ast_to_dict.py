@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Collection, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from ..language import Node, OperationType
 from ..pyutils import is_iterable
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = ["ast_to_dict"]
 

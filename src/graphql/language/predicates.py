@@ -22,7 +22,7 @@ from .ast import (
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 
 __all__ = [

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, cast
+from typing import Any, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -35,7 +35,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
         schema = context.schema
         defined_directives = schema.directives if schema else specified_directives
-        for directive in cast("List", defined_directives):
+        for directive in cast("list", defined_directives):
             directive_args[directive.name] = list(directive.args)
 
         ast_definitions = context.document.definitions

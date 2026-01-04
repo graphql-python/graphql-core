@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Collection, cast
+from typing import TYPE_CHECKING, cast
 
 from graphql.language.block_string import (
     dedent_block_string_lines,
     is_printable_as_block_string,
     print_block_string,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 
 def join_lines(*args: str) -> str:

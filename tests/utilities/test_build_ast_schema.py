@@ -4,7 +4,6 @@ import pickle
 import sys
 from collections import namedtuple
 from copy import deepcopy
-from typing import Union
 
 import pytest
 
@@ -47,7 +46,7 @@ from ..utils import dedent, viral_sdl
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 def cycle_sdl(sdl: str) -> str:
@@ -62,9 +61,13 @@ def cycle_sdl(sdl: str) -> str:
     return print_schema(schema)
 
 
-TypeWithAstNode: TypeAlias = Union[
-    GraphQLArgument, GraphQLEnumValue, GraphQLField, GraphQLInputField, GraphQLNamedType
-]
+TypeWithAstNode: TypeAlias = (
+    GraphQLArgument
+    | GraphQLEnumValue
+    | GraphQLField
+    | GraphQLInputField
+    | GraphQLNamedType
+)
 
 TypeWithExtensionAstNodes: TypeAlias = GraphQLNamedType
 

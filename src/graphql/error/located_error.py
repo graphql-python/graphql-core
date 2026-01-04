@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Collection
+from typing import TYPE_CHECKING
 
 from ..language.source import Source, is_source
 from ..pyutils import inspect
 from .graphql_error import GraphQLError
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from ..language.ast import Node
 
 __all__ = ["located_error"]

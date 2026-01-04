@@ -5,9 +5,8 @@ from __future__ import annotations
 from collections import defaultdict
 from functools import partial
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Collection,
-    Mapping,
     TypeVar,
     cast,
 )
@@ -90,6 +89,9 @@ from ..type import (
     specified_scalar_types,
 )
 from .value_from_ast import value_from_ast
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Mapping
 
 __all__ = [
     "ExtendSchemaImpl",

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Collection
+from collections.abc import Collection
+from typing import TYPE_CHECKING, Any
 
 from .block_string import print_block_string
 from .print_string import print_string
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 __all__ = ["print_ast"]

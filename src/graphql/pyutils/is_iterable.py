@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from array import array
-from typing import Any, Collection, Iterable, Mapping, ValuesView
+from collections.abc import Collection, Iterable, Mapping, ValuesView
+from typing import Any
 
 try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 
 __all__ = ["is_collection", "is_iterable"]

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from asyncio import Event, Lock, gather, sleep
-from typing import Any, Awaitable, NamedTuple
+from collections.abc import Awaitable
+from typing import Any, NamedTuple
 
 import pytest
 
@@ -31,14 +32,6 @@ pytestmark = [
     pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
     pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning"),
 ]
-
-try:  # pragma: no cover
-    anext  # noqa: B018
-except NameError:  # pragma: no cover (Python < 3.10)
-
-    async def anext(iterator):
-        """Return the next item from an async iterator."""
-        return await iterator.__anext__()
 
 
 friend_type = GraphQLObjectType(
