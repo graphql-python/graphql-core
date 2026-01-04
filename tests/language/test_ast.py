@@ -312,3 +312,139 @@ def describe_node_class():
         }
         assert list(res) == ["kind", "alpha", "beta", "loc"]
         assert list(res["loc"]) == ["start", "end"]
+
+
+def describe_document_serialization():
+    """Tests for DocumentNode.to_bytes_unstable() and from_bytes_unstable()."""
+
+    def can_serialize_and_deserialize_simple_document():
+        from graphql import parse
+        from graphql.language.ast import DocumentNode
+
+        doc = parse("{ field }", no_location=True)
+        data = doc.to_bytes_unstable()
+        assert isinstance(data, bytes)
+        assert len(data) > 0
+
+        restored = DocumentNode.from_bytes_unstable(data)
+        assert isinstance(restored, DocumentNode)
+        assert len(restored.definitions) == len(doc.definitions)
+
+    def can_serialize_and_deserialize_complex_document():
+        from graphql import parse
+        from graphql.language.ast import DocumentNode
+
+        query = """
+        query GetUser($id: ID!) {
+          user(id: $id) {
+            id
+            name
+            posts(first: 10) {
+              title
+            }
+          }
+        }
+        """
+        doc = parse(query, no_location=True)
+        data = doc.to_bytes_unstable()
+
+        restored = DocumentNode.from_bytes_unstable(data)
+
+        # Verify structure is preserved
+        assert len(restored.definitions) == 1
+        op = restored.definitions[0]
+        assert op.name.value == "GetUser"
+        assert len(op.variable_definitions) == 1
+        assert op.variable_definitions[0].variable.name.value == "id"
+
+    def serialization_is_compact():
+        from graphql import parse
+
+        query = """
+        query GetUser($id: ID!) {
+          user(id: $id) {
+            id
+            name
+            email
+            posts(first: 10) {
+              edges {
+                node {
+                  title
+                  content
+                  author { name }
+                }
+              }
+            }
+          }
+        }
+        """
+        doc = parse(query, no_location=True)
+        data = doc.to_bytes_unstable()
+
+        # Should be significantly smaller than JSON
+        import msgspec
+
+        json_data = msgspec.json.encode(doc)
+        assert len(data) < len(json_data) * 0.5  # At least 50% smaller
+
+    def benchmark_serialization(benchmark):
+        """Benchmark serialization performance.
+
+        Note: This test uses pytest-benchmark. Run with:
+            pytest tests/language/test_ast.py -k benchmark --benchmark-only
+        """
+        from graphql import parse
+
+        query = """
+        query GetUser($id: ID!) {
+          user(id: $id) {
+            id
+            name
+            email
+            posts(first: 10) {
+              edges {
+                node {
+                  title
+                  content
+                  author { name }
+                }
+              }
+            }
+          }
+        }
+        """
+        doc = parse(query, no_location=True)
+
+        # Benchmark encode
+        result = benchmark(doc.to_bytes_unstable)
+        assert isinstance(result, bytes)
+
+    def benchmark_deserialization(benchmark):
+        """Benchmark deserialization performance."""
+        from graphql import parse
+        from graphql.language.ast import DocumentNode
+
+        query = """
+        query GetUser($id: ID!) {
+          user(id: $id) {
+            id
+            name
+            email
+            posts(first: 10) {
+              edges {
+                node {
+                  title
+                  content
+                  author { name }
+                }
+              }
+            }
+          }
+        }
+        """
+        doc = parse(query, no_location=True)
+        data = doc.to_bytes_unstable()
+
+        # Benchmark decode
+        result = benchmark(DocumentNode.from_bytes_unstable, data)
+        assert isinstance(result, DocumentNode)

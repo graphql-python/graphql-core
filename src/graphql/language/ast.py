@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from enum import Enum
+from enum import Enum, IntEnum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import msgspec
@@ -335,6 +335,87 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
 }
 
 
+# Private IntEnum for compact serialization tags.
+# This is an implementation detail - values may change between versions.
+# May be expanded to a public Kind enum in the future.
+class _NodeKind(IntEnum):
+    UNKNOWN = 0
+    NAME = auto()
+    DOCUMENT = auto()
+    OPERATION_DEFINITION = auto()
+    VARIABLE_DEFINITION = auto()
+    SELECTION_SET = auto()
+    FIELD = auto()
+    FRAGMENT_SPREAD = auto()
+    INLINE_FRAGMENT = auto()
+    LIST_NULLABILITY_OPERATOR = auto()
+    NON_NULL_ASSERTION = auto()
+    ERROR_BOUNDARY = auto()
+    ARGUMENT = auto()
+    CONST_ARGUMENT = auto()
+    FRAGMENT_DEFINITION = auto()
+    VARIABLE = auto()
+    INT_VALUE = auto()
+    FLOAT_VALUE = auto()
+    STRING_VALUE = auto()
+    BOOLEAN_VALUE = auto()
+    NULL_VALUE = auto()
+    ENUM_VALUE = auto()
+    LIST_VALUE = auto()
+    CONST_LIST_VALUE = auto()
+    OBJECT_VALUE = auto()
+    CONST_OBJECT_VALUE = auto()
+    OBJECT_FIELD = auto()
+    CONST_OBJECT_FIELD = auto()
+    DIRECTIVE = auto()
+    CONST_DIRECTIVE = auto()
+    NAMED_TYPE = auto()
+    LIST_TYPE = auto()
+    NON_NULL_TYPE = auto()
+    SCHEMA_DEFINITION = auto()
+    OPERATION_TYPE_DEFINITION = auto()
+    SCALAR_TYPE_DEFINITION = auto()
+    OBJECT_TYPE_DEFINITION = auto()
+    FIELD_DEFINITION = auto()
+    INPUT_VALUE_DEFINITION = auto()
+    INTERFACE_TYPE_DEFINITION = auto()
+    UNION_TYPE_DEFINITION = auto()
+    ENUM_TYPE_DEFINITION = auto()
+    ENUM_VALUE_DEFINITION = auto()
+    INPUT_OBJECT_TYPE_DEFINITION = auto()
+    DIRECTIVE_DEFINITION = auto()
+    SCHEMA_EXTENSION = auto()
+    SCALAR_TYPE_EXTENSION = auto()
+    OBJECT_TYPE_EXTENSION = auto()
+    INTERFACE_TYPE_EXTENSION = auto()
+    UNION_TYPE_EXTENSION = auto()
+    ENUM_TYPE_EXTENSION = auto()
+    INPUT_OBJECT_TYPE_EXTENSION = auto()
+    # Test-only node kinds (used in tests)
+    SAMPLE_TEST = auto()
+    SAMPLE_NAMED = auto()
+    FOO = auto()  # For testing class names without "Node" suffix
+    CUSTOM_FIELD = auto()  # For testing custom node types in test_visitor.py
+
+
+def _node_kind_tag(class_name: str) -> int:
+    """Tag function for msgspec - returns int tag for class name.
+
+    Computes the tag from the class name using the same logic as __init_subclass__
+    uses to derive the kind string, then looks up the corresponding enum value.
+    """
+    if class_name == "Node":
+        return 0  # Base class, not directly serializable
+    # Derive enum name from class name (same logic as __init_subclass__)
+    name = class_name.removeprefix("Const").removesuffix("Node")
+    kind_enum_name = camel_to_snake(name).upper()
+    try:
+        return _NodeKind[kind_enum_name].value
+    except KeyError:
+        msg = f"No serialization tag for node class: {class_name}"
+        raise ValueError(msg) from None
+
+
 # Base AST Node
 
 
@@ -343,13 +424,24 @@ class Node(
     frozen=True,
     kw_only=True,
     weakref=True,
+    omit_defaults=True,
+    array_like=True,
+    tag=_node_kind_tag,
+    tag_field="k",
 ):
-    """AST nodes
+    """AST nodes.
 
-    All AST nodes are immutable msgspec.Struct instances with the following features:
+    All AST nodes are immutable msgspec.Struct instances with the following options:
+
     - frozen=True: Nodes cannot be modified after creation
     - kw_only=True: All fields must be passed as keyword arguments
     - weakref=True: Allow weak references to nodes
+    - array_like=True: Compact array serialization (field order matters)
+    - tag=_node_kind_tag: Integer tags for compact polymorphic serialization
+    - omit_defaults=True: Default values are omitted in serialization
+
+    Note: The serialization format is an implementation detail and may change
+    between library versions. Use DocumentNode.to_bytes_unstable() for serialization.
     """
 
     loc: Location | None = None
@@ -414,7 +506,57 @@ class NameNode(Node, frozen=True, kw_only=True):
 
 
 class DocumentNode(Node, frozen=True, kw_only=True):
+    """A GraphQL Document AST node.
+
+    This is the root node type returned by the parser.
+    """
+
     definitions: tuple[DefinitionNode, ...] = ()
+
+    def to_bytes_unstable(self) -> bytes:
+        """Serialize the document to bytes using msgpack.
+
+        .. warning::
+            The serialization format is an implementation detail and may change
+            between library versions. Do not use for long-term storage or
+            cross-version communication. This is intended for short-lived caches
+            or same-version IPC.
+
+        Note:
+            Documents must be parsed with ``no_location=True`` for serialization.
+            Location objects contain Token linked lists and Source references
+            that cannot be efficiently serialized.
+
+        Returns:
+            Compact msgpack-encoded bytes representation of the document.
+
+        """
+        return msgspec.msgpack.encode(self)
+
+    _decoder: ClassVar[msgspec.msgpack.Decoder[DocumentNode] | None] = None
+
+    @classmethod
+    def from_bytes_unstable(cls, data: bytes) -> DocumentNode:
+        """Deserialize a document from bytes.
+
+        .. warning::
+            The serialization format is an implementation detail and may change
+            between library versions. Only use with data serialized by the same
+            library version using :meth:`to_bytes_unstable`.
+
+        Args:
+            data: Bytes previously returned by :meth:`to_bytes_unstable`.
+
+        Returns:
+            The deserialized DocumentNode.
+
+        Raises:
+            msgspec.ValidationError: If the data is invalid or corrupted.
+
+        """
+        if cls._decoder is None:
+            cls._decoder = msgspec.msgpack.Decoder(cls)
+        return cls._decoder.decode(data)
 
 
 # Operations
