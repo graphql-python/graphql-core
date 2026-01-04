@@ -35,6 +35,14 @@ from graphql.utilities import build_schema, lexicographic_sort_schema, print_sch
 from ..utils import dedent
 
 
+def _stub_schema_def() -> SchemaDefinitionNode:
+    return SchemaDefinitionNode(operation_types=())
+
+
+def _stub_schema_ext() -> SchemaExtensionNode:
+    return SchemaExtensionNode()
+
+
 def describe_type_system_schema():
     def define_sample_schema():
         BlogImage = GraphQLObjectType(
@@ -425,8 +433,8 @@ def describe_type_system_schema():
 
     def describe_ast_nodes():
         def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
-            ast_node = SchemaDefinitionNode()
-            extension_ast_nodes = [SchemaExtensionNode()]
+            ast_node = _stub_schema_def()
+            extension_ast_nodes = [_stub_schema_ext()]
             schema = GraphQLSchema(
                 GraphQLObjectType("Query", {}),
                 ast_node=ast_node,

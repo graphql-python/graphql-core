@@ -4,7 +4,7 @@ from typing import cast
 
 from graphql.error import GraphQLError
 from graphql.language import (
-    Node,
+    NameNode,
     ObjectTypeDefinitionNode,
     OperationDefinitionNode,
     Source,
@@ -352,7 +352,7 @@ def describe_formatted():
         extensions = {"ext": None}
         error = GraphQLError(
             "test message",
-            Node(),
+            NameNode(value="stub"),
             Source(
                 """
                 query {
