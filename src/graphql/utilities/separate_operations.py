@@ -60,7 +60,7 @@ def separate_operations(document_ast: DocumentNode) -> dict[str, DocumentNode]:
         # The list of definition nodes to be included for this operation, sorted
         # to retain the same order as the original document.
         separated_document_asts[operation_name] = DocumentNode(
-            definitions=[
+            definitions=tuple(
                 node
                 for node in document_ast.definitions
                 if node is operation
@@ -68,7 +68,7 @@ def separate_operations(document_ast: DocumentNode) -> dict[str, DocumentNode]:
                     isinstance(node, FragmentDefinitionNode)
                     and node.name.value in dependencies
                 )
-            ]
+            )
         )
 
     return separated_document_asts

@@ -17,6 +17,5 @@ def concat_ast(asts: Collection[DocumentNode]) -> DocumentNode:
     the ASTs together into batched AST, useful for validating many GraphQL source files
     which together represent one conceptual application.
     """
-    return DocumentNode(
-        definitions=list(chain.from_iterable(document.definitions for document in asts))
-    )
+    all_definitions = chain.from_iterable(doc.definitions for doc in asts)
+    return DocumentNode(definitions=tuple(all_definitions))
