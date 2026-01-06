@@ -163,6 +163,14 @@ def describe_node_class():
         assert node.beta == 2
         assert not hasattr(node, "gamma")
 
+    def converts_list_to_tuple_on_init():
+        from graphql.language import FieldNode, SelectionSetNode
+
+        field = FieldNode(name=NameNode(value="foo"))
+        node = SelectionSetNode(selections=[field])  # Pass list, not tuple
+        assert isinstance(node.selections, tuple)
+        assert node.selections == (field,)
+
     def has_representation_with_loc():
         node = SampleTestNode(alpha=1, beta=2)
         assert repr(node) == "SampleTestNode"

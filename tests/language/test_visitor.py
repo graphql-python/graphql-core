@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import copy
 from functools import partial
 from typing import Any, cast
 
@@ -10,9 +9,11 @@ from graphql.language import (
     BREAK,
     REMOVE,
     SKIP,
+    DocumentNode,
     FieldNode,
     NameNode,
     Node,
+    OperationDefinitionNode,
     ParallelVisitor,
     SelectionNode,
     SelectionSetNode,
@@ -311,20 +312,34 @@ def describe_visitor():
 
             def enter_operation_definition(self, *args):
                 check_visitor_fn_args(ast, *args)
-                node = copy(args[0])
+                node = args[0]
                 assert len(node.selection_set.selections) == 3
                 self.selection_set = node.selection_set
-                node.selection_set = SelectionSetNode(selections=[])
+                # Create new node with empty selection set (immutable pattern)
+                new_node = OperationDefinitionNode(
+                    operation=node.operation,
+                    name=node.name,
+                    variable_definitions=node.variable_definitions,
+                    directives=node.directives,
+                    selection_set=SelectionSetNode(selections=()),
+                )
                 visited.append("enter")
-                return node
+                return new_node
 
             def leave_operation_definition(self, *args):
                 check_visitor_fn_args_edited(ast, *args)
-                node = copy(args[0])
+                node = args[0]
                 assert not node.selection_set.selections
-                node.selection_set = self.selection_set
+                # Create new node with original selection set (immutable pattern)
+                new_node = OperationDefinitionNode(
+                    operation=node.operation,
+                    name=node.name,
+                    variable_definitions=node.variable_definitions,
+                    directives=node.directives,
+                    selection_set=self.selection_set,
+                )
                 visited.append("leave")
-                return node
+                return new_node
 
         edited_ast = visit(ast, TestVisitor())
         assert edited_ast == ast
@@ -391,13 +406,19 @@ def describe_visitor():
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 if isinstance(node, FieldNode) and node.name.value == "a":
-                    node = copy(node)
                     assert node.selection_set
-                    node.selection_set.selections = (
-                        added_field,
-                        *node.selection_set.selections,
+                    # Create new selection set with added field (immutable pattern)
+                    new_selection_set = SelectionSetNode(
+                        selections=(added_field, *node.selection_set.selections)
                     )
-                    return node
+                    return FieldNode(
+                        alias=node.alias,
+                        name=node.name,
+                        arguments=node.arguments,
+                        directives=node.directives,
+                        nullability_assertion=node.nullability_assertion,
+                        selection_set=new_selection_set,
+                    )
                 if node == added_field:
                     self.did_visit_added_field = True
                 return None
@@ -571,7 +592,7 @@ def describe_visitor():
         # GraphQL.js removed support for unknown node types,
         # but it is easy for us to add and support custom node types,
         # so we keep allowing this and test this feature here.
-        custom_ast = parse("{ a }")
+        parsed_ast = parse("{ a }")
 
         class CustomFieldNode(SelectionNode):
             __slots__ = "name", "selection_set"
@@ -579,21 +600,33 @@ def describe_visitor():
             name: NameNode
             selection_set: SelectionSetNode | None
 
-        custom_selection_set = cast(
-            "FieldNode", custom_ast.definitions[0]
-        ).selection_set
-        assert custom_selection_set is not None
-        custom_selection_set.selections = (
-            *custom_selection_set.selections,
-            CustomFieldNode(
-                name=NameNode(value="NameNodeToBeSkipped"),
-                selection_set=SelectionSetNode(
-                    selections=CustomFieldNode(
-                        name=NameNode(value="NameNodeToBeSkipped")
-                    )
-                ),
+        # Build custom AST immutably
+        op_def = cast("OperationDefinitionNode", parsed_ast.definitions[0])
+        assert op_def.selection_set is not None
+        original_selection_set = op_def.selection_set
+
+        # Create custom field with nested selection
+        custom_field = CustomFieldNode(
+            name=NameNode(value="NameNodeToBeSkipped"),
+            selection_set=SelectionSetNode(
+                selections=(
+                    CustomFieldNode(name=NameNode(value="NameNodeToBeSkipped")),
+                )
             ),
         )
+
+        # Build new nodes immutably (copy-on-write pattern)
+        new_selection_set = SelectionSetNode(
+            selections=(*original_selection_set.selections, custom_field)
+        )
+        new_op_def = OperationDefinitionNode(
+            operation=op_def.operation,
+            name=op_def.name,
+            variable_definitions=op_def.variable_definitions,
+            directives=op_def.directives,
+            selection_set=new_selection_set,
+        )
+        custom_ast = DocumentNode(definitions=(new_op_def,))
 
         visited = []
 
