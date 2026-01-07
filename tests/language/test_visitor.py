@@ -308,7 +308,7 @@ def describe_visitor():
         visited = []
 
         class TestVisitor(Visitor):
-            selection_set = None
+            selection_set: SelectionSetNode | None = None
 
             def enter_operation_definition(self, *args):
                 check_visitor_fn_args(ast, *args)
@@ -330,6 +330,7 @@ def describe_visitor():
                 check_visitor_fn_args_edited(ast, *args)
                 node = args[0]
                 assert not node.selection_set.selections
+                assert self.selection_set is not None
                 # Create new node with original selection set (immutable pattern)
                 new_node = OperationDefinitionNode(
                     operation=node.operation,

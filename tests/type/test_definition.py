@@ -25,11 +25,15 @@ from graphql.language import (
     InputValueDefinitionNode,
     InterfaceTypeDefinitionNode,
     InterfaceTypeExtensionNode,
+    NamedTypeNode,
+    NameNode,
     ObjectTypeDefinitionNode,
     ObjectTypeExtensionNode,
     OperationDefinitionNode,
+    OperationType,
     ScalarTypeDefinitionNode,
     ScalarTypeExtensionNode,
+    SelectionSetNode,
     StringValueNode,
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
@@ -62,6 +66,16 @@ try:
     from typing import TypeGuard
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeGuard
+
+
+# Helper functions to create stub AST nodes with required fields
+def _stub_name(name: str = "Stub") -> NameNode:
+    return NameNode(value=name)
+
+
+def _stub_type() -> NamedTypeNode:
+    return NamedTypeNode(name=_stub_name("StubType"))
+
 
 ScalarType = GraphQLScalarType("Scalar")
 ObjectType = GraphQLObjectType("Object", {})
@@ -165,8 +179,8 @@ def describe_type_system_scalars():
         )
 
     def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
-        ast_node = ScalarTypeDefinitionNode()
-        extension_ast_nodes = [ScalarTypeExtensionNode()]
+        ast_node = ScalarTypeDefinitionNode(name=_stub_name())
+        extension_ast_nodes = [ScalarTypeExtensionNode(name=_stub_name())]
         scalar = GraphQLScalarType(
             "SomeScalar", ast_node=ast_node, extension_ast_nodes=extension_ast_nodes
         )
@@ -435,8 +449,8 @@ def describe_type_system_objects():
         assert obj_type.fields
 
     def accepts_an_object_type_with_ast_node_and_extension_ast_nodes():
-        ast_node = ObjectTypeDefinitionNode()
-        extension_ast_nodes = [ObjectTypeExtensionNode()]
+        ast_node = ObjectTypeDefinitionNode(name=_stub_name())
+        extension_ast_nodes = [ObjectTypeExtensionNode(name=_stub_name())]
         object_type = GraphQLObjectType(
             "SomeObject",
             {"f": GraphQLField(ScalarType)},
@@ -601,8 +615,8 @@ def describe_type_system_interfaces():
         assert calls == 1
 
     def accepts_an_interface_type_with_ast_node_and_extension_ast_nodes():
-        ast_node = InterfaceTypeDefinitionNode()
-        extension_ast_nodes = [InterfaceTypeExtensionNode()]
+        ast_node = InterfaceTypeDefinitionNode(name=_stub_name())
+        extension_ast_nodes = [InterfaceTypeExtensionNode(name=_stub_name())]
         interface_type = GraphQLInterfaceType(
             "SomeInterface",
             {"f": GraphQLField(ScalarType)},
@@ -667,8 +681,8 @@ def describe_type_system_unions():
         assert union_type.types == ()
 
     def accepts_a_union_type_with_ast_node_and_extension_ast_nodes():
-        ast_node = UnionTypeDefinitionNode()
-        extension_ast_nodes = [UnionTypeExtensionNode()]
+        ast_node = UnionTypeDefinitionNode(name=_stub_name())
+        extension_ast_nodes = [UnionTypeExtensionNode(name=_stub_name())]
         union_type = GraphQLUnionType(
             "SomeUnion",
             [ObjectType],
@@ -894,8 +908,8 @@ def describe_type_system_enums():
         )
 
     def accepts_an_enum_type_with_ast_node_and_extension_ast_nodes():
-        ast_node = EnumTypeDefinitionNode()
-        extension_ast_nodes = [EnumTypeExtensionNode()]
+        ast_node = EnumTypeDefinitionNode(name=_stub_name())
+        extension_ast_nodes = [EnumTypeExtensionNode(name=_stub_name())]
         enum_type = GraphQLEnumType(
             "SomeEnum",
             {},
@@ -1010,8 +1024,8 @@ def describe_type_system_input_objects():
         assert input_obj_type.to_kwargs()["out_type"] is None
 
     def accepts_an_input_object_type_with_ast_node_and_extension_ast_nodes():
-        ast_node = InputObjectTypeDefinitionNode()
-        extension_ast_nodes = [InputObjectTypeExtensionNode()]
+        ast_node = InputObjectTypeDefinitionNode(name=_stub_name())
+        extension_ast_nodes = [InputObjectTypeExtensionNode(name=_stub_name())]
         input_obj_type = GraphQLInputObjectType(
             "SomeInputObject",
             {},
@@ -1126,7 +1140,7 @@ def describe_type_system_arguments():
         assert argument.to_kwargs()["out_name"] is None
 
     def accepts_an_argument_with_an_ast_node():
-        ast_node = InputValueDefinitionNode()
+        ast_node = InputValueDefinitionNode(name=_stub_name(), type=_stub_type())
         argument = GraphQLArgument(GraphQLString, ast_node=ast_node)
         assert argument.ast_node is ast_node
         assert argument.to_kwargs()["ast_node"] is ast_node
@@ -1157,7 +1171,7 @@ def describe_type_system_input_fields():
         assert input_field.to_kwargs()["out_name"] is None
 
     def accepts_an_input_field_with_an_ast_node():
-        ast_node = InputValueDefinitionNode()
+        ast_node = InputValueDefinitionNode(name=_stub_name(), type=_stub_type())
         input_field = GraphQLArgument(GraphQLString, ast_node=ast_node)
         assert input_field.ast_node is ast_node
         assert input_field.to_kwargs()["ast_node"] is ast_node
@@ -1299,7 +1313,9 @@ def describe_resolve_info():
         "schema": GraphQLSchema(),
         "fragments": {},
         "root_value": None,
-        "operation": OperationDefinitionNode(),
+        "operation": OperationDefinitionNode(
+            operation=OperationType.QUERY, selection_set=SelectionSetNode()
+        ),
         "variable_values": {},
         "is_awaitable": is_awaitable,
     }
