@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from copy import copy, deepcopy
+from dataclasses import dataclass, field, fields
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Union
+
+from ..pyutils import camel_to_snake
 
 try:
     from typing import TypeAlias
 except ImportError:  # Python < 3.10
     from typing_extensions import TypeAlias
-
-from ..pyutils import camel_to_snake
 
 if TYPE_CHECKING:
     from .source import Source
@@ -168,7 +168,7 @@ class Token:
 
     def __deepcopy__(self, memo: dict) -> Token:
         """Allow only shallow copies to avoid recursion."""
-        return copy(self)
+        return self.__copy__()
 
     def __getstate__(self) -> dict[str, Any]:
         """Remove the links when pickling.
@@ -341,24 +341,25 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
 # Base AST Node
 
 
+class _KeysProperty:
+    """Descriptor providing .keys at both class and instance level.
+
+    For backwards compatibility only. Prefer using dataclasses.fields() instead.
+    """
+
+    def __get__(self, obj: object, cls: type) -> tuple[str, ...]:
+        if not hasattr(cls, "__dataclass_fields__"):
+            return ()  # During class construction
+        return tuple(f.name for f in fields(cls))
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
 class Node:
     """AST nodes"""
 
-    # allow custom attributes and weak references (not used internally)
-    __slots__ = "__dict__", "__weakref__", "_hash", "loc"
-
-    loc: Location | None
-
-    kind: str = "ast"  # the kind of the node as a snake_case string
-    keys: tuple[str, ...] = ("loc",)  # the names of the attributes of this node
-
-    def __init__(self, **kwargs: Any) -> None:
-        """Initialize the node with the given keyword arguments."""
-        for key in self.keys:
-            value = kwargs.get(key)
-            if isinstance(value, list):
-                value = tuple(value)
-            setattr(self, key, value)
+    kind: ClassVar[str] = "ast"
+    keys: ClassVar[tuple[str, ...]] = _KeysProperty()  # type: ignore[assignment]
+    loc: Location | None = None
 
     def __repr__(self) -> str:
         """Get a simple representation of the node."""
@@ -369,64 +370,17 @@ class Node:
             name = getattr(self, "name", None)
             if name:
                 rep += f"(name={name.value!r})"
-        loc = getattr(self, "loc", None)
-        if loc:
-            rep += f" at {loc}"
+        if self.loc:
+            rep += f" at {self.loc}"
         return rep
-
-    def __eq__(self, other: object) -> bool:
-        """Test whether two nodes are equal (recursively)."""
-        return (
-            isinstance(other, Node)
-            and self.__class__ == other.__class__
-            and all(getattr(self, key) == getattr(other, key) for key in self.keys)
-        )
-
-    def __hash__(self) -> int:
-        """Get a cached hash value for the node."""
-        # Caching the hash values improves the performance of AST validators
-        hashed = getattr(self, "_hash", None)
-        if hashed is None:
-            self._hash = id(self)  # avoid recursion
-            hashed = hash(tuple(getattr(self, key) for key in self.keys))
-            self._hash = hashed
-        return hashed
-
-    def __setattr__(self, key: str, value: Any) -> None:
-        # reset cashed hash value if attributes are changed
-        if hasattr(self, "_hash") and key in self.keys:
-            del self._hash
-        super().__setattr__(key, value)
-
-    def __copy__(self) -> Node:
-        """Create a shallow copy of the node."""
-        return self.__class__(**{key: getattr(self, key) for key in self.keys})
-
-    def __deepcopy__(self, memo: dict) -> Node:
-        """Create a deep copy of the node"""
-        return self.__class__(
-            **{key: deepcopy(getattr(self, key), memo) for key in self.keys}
-        )
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
-        name = cls.__name__
-        try:
-            name = name.removeprefix("Const").removesuffix("Node")
-        except AttributeError:  # pragma: no cover (Python < 3.9)
-            if name.startswith("Const"):
-                name = name[5:]
-            if name.endswith("Node"):
-                name = name[:-4]
+        name = cls.__name__.removeprefix("Const").removesuffix("Node")
         cls.kind = camel_to_snake(name)
-        keys: list[str] = []
-        for base in cls.__bases__:
-            keys.extend(base.keys)  # type: ignore
-        keys.extend(cls.__slots__)
-        cls.keys = tuple(keys)
 
     def to_dict(self, locations: bool = False) -> dict:
-        """Concert node to a dictionary."""
+        """Convert node to a dictionary."""
         from ..utilities import ast_to_dict
 
         return ast_to_dict(self, locations)
@@ -435,201 +389,159 @@ class Node:
 # Name
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class NameNode(Node):
-    __slots__ = ("value",)
-
     value: str
 
 
-# Document
+# Base classes for node categories
 
 
-class DocumentNode(Node):
-    __slots__ = ("definitions",)
-
-    definitions: tuple[DefinitionNode, ...]
-
-
+@dataclass(frozen=True, repr=False, kw_only=True)
 class DefinitionNode(Node):
-    __slots__ = ()
+    """Base class for all definition nodes."""
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ExecutableDefinitionNode(DefinitionNode):
-    __slots__ = "directives", "name", "selection_set", "variable_definitions"
+    """Base class for executable definition nodes."""
 
-    name: NameNode | None
-    directives: tuple[DirectiveNode, ...]
-    variable_definitions: tuple[VariableDefinitionNode, ...]
     selection_set: SelectionSetNode
+    name: NameNode | None = None
+    variable_definitions: tuple[VariableDefinitionNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] = ()
 
 
-class OperationDefinitionNode(ExecutableDefinitionNode):
-    __slots__ = ("operation",)
-
-    operation: OperationType
-
-
-class VariableDefinitionNode(Node):
-    __slots__ = "default_value", "directives", "type", "variable"
-
-    variable: VariableNode
-    type: TypeNode
-    default_value: ConstValueNode | None
-    directives: tuple[ConstDirectiveNode, ...]
-
-
-class SelectionSetNode(Node):
-    __slots__ = ("selections",)
-
-    selections: tuple[SelectionNode, ...]
-
-
+@dataclass(frozen=True, repr=False, kw_only=True)
 class SelectionNode(Node):
-    __slots__ = ("directives",)
+    """Base class for selection nodes."""
 
-    directives: tuple[DirectiveNode, ...]
-
-
-class FieldNode(SelectionNode):
-    __slots__ = "alias", "arguments", "name", "nullability_assertion", "selection_set"
-
-    alias: NameNode | None
-    name: NameNode
-    arguments: tuple[ArgumentNode, ...]
-    # Note: Client Controlled Nullability is experimental
-    # and may be changed or removed in the future.
-    nullability_assertion: NullabilityAssertionNode
-    selection_set: SelectionSetNode | None
+    directives: tuple[DirectiveNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class NullabilityAssertionNode(Node):
-    __slots__ = ("nullability_assertion",)
-    nullability_assertion: NullabilityAssertionNode | None
+    """Base class for nullability assertion nodes."""
 
 
-class ListNullabilityOperatorNode(NullabilityAssertionNode):
-    pass
-
-
-class NonNullAssertionNode(NullabilityAssertionNode):
-    nullability_assertion: ListNullabilityOperatorNode
-
-
-class ErrorBoundaryNode(NullabilityAssertionNode):
-    nullability_assertion: ListNullabilityOperatorNode
-
-
-class ArgumentNode(Node):
-    __slots__ = "name", "value"
-
-    name: NameNode
-    value: ValueNode
-
-
-class ConstArgumentNode(ArgumentNode):
-    value: ConstValueNode
-
-
-# Fragments
-
-
-class FragmentSpreadNode(SelectionNode):
-    __slots__ = ("name",)
-
-    name: NameNode
-
-
-class InlineFragmentNode(SelectionNode):
-    __slots__ = "selection_set", "type_condition"
-
-    type_condition: NamedTypeNode
-    selection_set: SelectionSetNode
-
-
-class FragmentDefinitionNode(ExecutableDefinitionNode):
-    __slots__ = ("type_condition",)
-
-    name: NameNode
-    type_condition: NamedTypeNode
-
-
-# Values
-
-
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ValueNode(Node):
-    __slots__ = ()
+    """Base class for value nodes."""
 
 
-class VariableNode(ValueNode):
-    __slots__ = ("name",)
+@dataclass(frozen=True, repr=False, kw_only=True)
+class TypeNode(Node):
+    """Base class for type nodes."""
 
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class TypeSystemDefinitionNode(DefinitionNode):
+    """Base class for type system definition nodes."""
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class TypeDefinitionNode(TypeSystemDefinitionNode):
+    """Base class for type definition nodes."""
+
+    name: NameNode
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class TypeExtensionNode(TypeSystemDefinitionNode):
+    """Base class for type extension nodes."""
+
+    name: NameNode
+    directives: tuple[ConstDirectiveNode, ...] = ()
+
+
+# Type Reference nodes
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class NamedTypeNode(TypeNode):
     name: NameNode
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ListTypeNode(TypeNode):
+    type: TypeNode
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class NonNullTypeNode(TypeNode):
+    type: NamedTypeNode | ListTypeNode
+
+
+# Value nodes
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class VariableNode(ValueNode):
+    name: NameNode
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
 class IntValueNode(ValueNode):
-    __slots__ = ("value",)
-
     value: str
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class FloatValueNode(ValueNode):
-    __slots__ = ("value",)
-
     value: str
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class StringValueNode(ValueNode):
-    __slots__ = "block", "value"
-
     value: str
-    block: bool | None
+    block: bool | None = None
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class BooleanValueNode(ValueNode):
-    __slots__ = ("value",)
-
     value: bool
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class NullValueNode(ValueNode):
-    __slots__ = ()
+    """A null value node has no fields."""
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class EnumValueNode(ValueNode):
-    __slots__ = ("value",)
-
     value: str
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ListValueNode(ValueNode):
-    __slots__ = ("values",)
-
-    values: tuple[ValueNode, ...]
+    values: tuple[ValueNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ConstListValueNode(ListValueNode):
-    values: tuple[ConstValueNode, ...]
+    values: tuple[ConstValueNode, ...] = ()
 
 
-class ObjectValueNode(ValueNode):
-    __slots__ = ("fields",)
-
-    fields: tuple[ObjectFieldNode, ...]
-
-
-class ConstObjectValueNode(ObjectValueNode):
-    fields: tuple[ConstObjectFieldNode, ...]
-
-
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ObjectFieldNode(Node):
-    __slots__ = "name", "value"
-
     name: NameNode
     value: ValueNode
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ConstObjectFieldNode(ObjectFieldNode):
     value: ConstValueNode
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ObjectValueNode(ValueNode):
+    fields: tuple[ObjectFieldNode, ...] = ()
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ConstObjectValueNode(ObjectValueNode):
+    fields: tuple[ConstObjectFieldNode, ...] = ()
 
 
 ConstValueNode: TypeAlias = Union[
@@ -644,216 +556,249 @@ ConstValueNode: TypeAlias = Union[
 ]
 
 
-# Directives
+# Directive nodes
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class DirectiveNode(Node):
-    __slots__ = "arguments", "name"
-
     name: NameNode
-    arguments: tuple[ArgumentNode, ...]
+    arguments: tuple[ArgumentNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ConstDirectiveNode(DirectiveNode):
-    arguments: tuple[ConstArgumentNode, ...]
+    arguments: tuple[ConstArgumentNode, ...] = ()
 
 
-# Type Reference
+# Nullability Assertion nodes
 
 
-class TypeNode(Node):
-    __slots__ = ()
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ListNullabilityOperatorNode(NullabilityAssertionNode):
+    nullability_assertion: NullabilityAssertionNode | None = None
 
 
-class NamedTypeNode(TypeNode):
-    __slots__ = ("name",)
+@dataclass(frozen=True, repr=False, kw_only=True)
+class NonNullAssertionNode(NullabilityAssertionNode):
+    nullability_assertion: ListNullabilityOperatorNode | None = None
 
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ErrorBoundaryNode(NullabilityAssertionNode):
+    nullability_assertion: ListNullabilityOperatorNode | None = None
+
+
+# Selection nodes
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class FieldNode(SelectionNode):
     name: NameNode
+    alias: NameNode | None = None
+    arguments: tuple[ArgumentNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] = ()
+    nullability_assertion: NullabilityAssertionNode | None = None
+    selection_set: SelectionSetNode | None = None
 
 
-class ListTypeNode(TypeNode):
-    __slots__ = ("type",)
+@dataclass(frozen=True, repr=False, kw_only=True)
+class FragmentSpreadNode(SelectionNode):
+    name: NameNode
+    directives: tuple[DirectiveNode, ...] = ()
 
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class InlineFragmentNode(SelectionNode):
+    selection_set: SelectionSetNode
+    type_condition: NamedTypeNode | None = None
+    directives: tuple[DirectiveNode, ...] = ()
+
+
+# Argument nodes
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ArgumentNode(Node):
+    name: NameNode
+    value: ValueNode
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class ConstArgumentNode(ArgumentNode):
+    value: ConstValueNode
+
+
+# Selection Set
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class SelectionSetNode(Node):
+    selections: tuple[SelectionNode, ...] = ()
+
+
+# Variable Definition
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class VariableDefinitionNode(Node):
+    variable: VariableNode
     type: TypeNode
+    default_value: ConstValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-class NonNullTypeNode(TypeNode):
-    __slots__ = ("type",)
-
-    type: NamedTypeNode | ListTypeNode
+# Executable Definition nodes
 
 
-# Type System Definition
+@dataclass(frozen=True, repr=False, kw_only=True)
+class OperationDefinitionNode(ExecutableDefinitionNode):
+    operation: OperationType
 
 
-class TypeSystemDefinitionNode(DefinitionNode):
-    __slots__ = ()
+@dataclass(frozen=True, repr=False, kw_only=True)
+class FragmentDefinitionNode(ExecutableDefinitionNode):
+    name: NameNode  # Required (overrides optional in parent)
+    type_condition: NamedTypeNode
 
 
+# Document
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
+class DocumentNode(Node):
+    definitions: tuple[DefinitionNode, ...] = ()
+
+
+# Type System Definition nodes
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
 class SchemaDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "description", "directives", "operation_types"
-
-    description: StringValueNode | None
-    directives: tuple[ConstDirectiveNode, ...]
-    operation_types: tuple[OperationTypeDefinitionNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class OperationTypeDefinitionNode(Node):
-    __slots__ = "operation", "type"
-
     operation: OperationType
     type: NamedTypeNode
 
 
-# Type Definition
+# Type Definition nodes
 
 
-class TypeDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "description", "directives", "name"
-
-    description: StringValueNode | None
-    name: NameNode
-    directives: tuple[DirectiveNode, ...]
-
-
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ScalarTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ()
-
-    directives: tuple[ConstDirectiveNode, ...]
+    """Scalar type definition node - inherits name, description, directives."""
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = "fields", "interfaces"
-
-    interfaces: tuple[NamedTypeNode, ...]
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[FieldDefinitionNode, ...]
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class FieldDefinitionNode(DefinitionNode):
-    __slots__ = "arguments", "description", "directives", "name", "type"
-
-    description: StringValueNode | None
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
-    arguments: tuple[InputValueDefinitionNode, ...]
     type: TypeNode
+    description: StringValueNode | None = None
+    arguments: tuple[InputValueDefinitionNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class InputValueDefinitionNode(DefinitionNode):
-    __slots__ = "default_value", "description", "directives", "name", "type"
-
-    description: StringValueNode | None
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
     type: TypeNode
-    default_value: ConstValueNode | None
+    description: StringValueNode | None = None
+    default_value: ConstValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = "fields", "interfaces"
-
-    fields: tuple[FieldDefinitionNode, ...]
-    directives: tuple[ConstDirectiveNode, ...]
-    interfaces: tuple[NamedTypeNode, ...]
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class UnionTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("types",)
-
-    directives: tuple[ConstDirectiveNode, ...]
-    types: tuple[NamedTypeNode, ...]
+    types: tuple[NamedTypeNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class EnumTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("values",)
-
-    directives: tuple[ConstDirectiveNode, ...]
-    values: tuple[EnumValueDefinitionNode, ...]
+    values: tuple[EnumValueDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class EnumValueDefinitionNode(DefinitionNode):
-    __slots__ = "description", "directives", "name"
-
-    description: StringValueNode | None
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
+    description: StringValueNode | None = None
+    directives: tuple[ConstDirectiveNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):
-    __slots__ = ("fields",)
-
-    directives: tuple[ConstDirectiveNode, ...]
-    fields: tuple[InputValueDefinitionNode, ...]
+    fields: tuple[InputValueDefinitionNode, ...] = ()
 
 
-# Directive Definitions
+# Directive Definition
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class DirectiveDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "arguments", "description", "locations", "name", "repeatable"
-
-    description: StringValueNode | None
     name: NameNode
-    arguments: tuple[InputValueDefinitionNode, ...]
-    repeatable: bool
     locations: tuple[NameNode, ...]
+    description: StringValueNode | None = None
+    arguments: tuple[InputValueDefinitionNode, ...] = ()
+    repeatable: bool = False
 
 
-# Type System Extensions
+# Type System Extension nodes
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class SchemaExtensionNode(Node):
-    __slots__ = "directives", "operation_types"
-
-    directives: tuple[ConstDirectiveNode, ...]
-    operation_types: tuple[OperationTypeDefinitionNode, ...]
-
-
-# Type Extensions
-
-
-class TypeExtensionNode(TypeSystemDefinitionNode):
-    __slots__ = "directives", "name"
-
-    name: NameNode
-    directives: tuple[ConstDirectiveNode, ...]
+    directives: tuple[ConstDirectiveNode, ...] = ()
+    operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
 TypeSystemExtensionNode: TypeAlias = Union[SchemaExtensionNode, TypeExtensionNode]
 
 
+# Type Extension nodes
+
+
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ScalarTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ()
+    """Scalar type extension node - inherits name, directives."""
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class ObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = "fields", "interfaces"
-
-    interfaces: tuple[NamedTypeNode, ...]
-    fields: tuple[FieldDefinitionNode, ...]
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class InterfaceTypeExtensionNode(TypeExtensionNode):
-    __slots__ = "fields", "interfaces"
-
-    interfaces: tuple[NamedTypeNode, ...]
-    fields: tuple[FieldDefinitionNode, ...]
+    interfaces: tuple[NamedTypeNode, ...] = ()
+    fields: tuple[FieldDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class UnionTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("types",)
-
-    types: tuple[NamedTypeNode, ...]
+    types: tuple[NamedTypeNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class EnumTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("values",)
-
-    values: tuple[EnumValueDefinitionNode, ...]
+    values: tuple[EnumValueDefinitionNode, ...] = ()
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class InputObjectTypeExtensionNode(TypeExtensionNode):
-    __slots__ = ("fields",)
-
-    fields: tuple[InputValueDefinitionNode, ...]
+    fields: tuple[InputValueDefinitionNode, ...] = ()

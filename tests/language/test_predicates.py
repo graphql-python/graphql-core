@@ -18,13 +18,101 @@ from graphql.language import (
     parse_value,
 )
 
+
+def _make_name() -> ast.NameNode:
+    """Create a dummy NameNode."""
+    return ast.NameNode(value="x")
+
+
+def _make_named_type() -> ast.NamedTypeNode:
+    """Create a dummy NamedTypeNode."""
+    return ast.NamedTypeNode(name=_make_name())
+
+
+def _make_selection_set() -> ast.SelectionSetNode:
+    """Create a dummy SelectionSetNode."""
+    return ast.SelectionSetNode()
+
+
+def _create_node(node_class: type) -> Node:
+    """Create a minimal valid instance of a node class."""
+    name = _make_name()
+    named_type = _make_named_type()
+    selection_set = _make_selection_set()
+
+    # Map node classes to their required constructor arguments
+    constructors: dict[type, dict] = {
+        # Nodes with required fields
+        ast.NameNode: {"value": "x"},
+        ast.FieldNode: {"name": name},
+        ast.FragmentSpreadNode: {"name": name},
+        ast.InlineFragmentNode: {"selection_set": selection_set},
+        ast.ArgumentNode: {"name": name, "value": ast.NullValueNode()},
+        ast.VariableNode: {"name": name},
+        ast.IntValueNode: {"value": "0"},
+        ast.FloatValueNode: {"value": "0.0"},
+        ast.StringValueNode: {"value": ""},
+        ast.BooleanValueNode: {"value": True},
+        ast.EnumValueNode: {"value": "X"},
+        ast.ObjectFieldNode: {"name": name, "value": ast.NullValueNode()},
+        ast.ListTypeNode: {"type": named_type},
+        ast.NonNullTypeNode: {"type": named_type},
+        ast.NamedTypeNode: {"name": name},
+        ast.OperationDefinitionNode: {
+            "operation": ast.OperationType.QUERY,
+            "selection_set": selection_set,
+        },
+        ast.VariableDefinitionNode: {
+            "variable": ast.VariableNode(name=name),
+            "type": named_type,
+        },
+        ast.FragmentDefinitionNode: {
+            "name": name,
+            "type_condition": named_type,
+            "selection_set": selection_set,
+        },
+        ast.DirectiveNode: {"name": name},
+        # Base classes with required fields
+        ast.ExecutableDefinitionNode: {"selection_set": selection_set},
+        ast.TypeDefinitionNode: {"name": name},
+        ast.OperationTypeDefinitionNode: {
+            "operation": ast.OperationType.QUERY,
+            "type": named_type,
+        },
+        ast.ScalarTypeDefinitionNode: {"name": name},
+        ast.ObjectTypeDefinitionNode: {"name": name},
+        ast.FieldDefinitionNode: {"name": name, "type": named_type},
+        ast.InputValueDefinitionNode: {"name": name, "type": named_type},
+        ast.InterfaceTypeDefinitionNode: {"name": name},
+        ast.UnionTypeDefinitionNode: {"name": name},
+        ast.EnumTypeDefinitionNode: {"name": name},
+        ast.EnumValueDefinitionNode: {"name": name},
+        ast.InputObjectTypeDefinitionNode: {"name": name},
+        ast.DirectiveDefinitionNode: {"name": name, "locations": ()},
+        ast.TypeExtensionNode: {"name": name},
+        ast.ScalarTypeExtensionNode: {"name": name},
+        ast.ObjectTypeExtensionNode: {"name": name},
+        ast.InterfaceTypeExtensionNode: {"name": name},
+        ast.UnionTypeExtensionNode: {"name": name},
+        ast.EnumTypeExtensionNode: {"name": name},
+        ast.InputObjectTypeExtensionNode: {"name": name},
+    }
+
+    if node_class in constructors:
+        return node_class(**constructors[node_class])
+    # Node types with no required fields (base classes and simple nodes)
+    return node_class()
+
+
+# Build list of all concrete AST node types (excluding Const* variants)
 all_ast_nodes = sorted(
     [
-        node_type()
-        for node_type in vars(ast).values()
-        if type(node_type) is type
-        and issubclass(node_type, Node)
-        and not node_type.__name__.startswith("Const")
+        _create_node(node_class)
+        for node_class in vars(ast).values()
+        if isinstance(node_class, type)
+        and issubclass(node_class, Node)
+        and node_class is not Node
+        and not node_class.__name__.startswith("Const")
     ],
     key=attrgetter("kind"),
 )
