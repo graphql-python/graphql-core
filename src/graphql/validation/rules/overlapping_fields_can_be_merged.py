@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeAlias, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -31,6 +31,9 @@ from ...type import (
 from ...utilities import type_from_ast
 from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 __all__ = ["OverlappingFieldsCanBeMergedRule"]
 
@@ -85,15 +88,15 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
 
 
-Conflict: TypeAlias = Tuple["ConflictReason", List[FieldNode], List[FieldNode]]
+Conflict: TypeAlias = tuple["ConflictReason", list[FieldNode], list[FieldNode]]
 # Field name and reason.
-ConflictReason: TypeAlias = Tuple[str, "ConflictReasonMessage"]
+ConflictReason: TypeAlias = tuple[str, "ConflictReasonMessage"]
 # Reason is a string, or a nested list of conflicts.
-ConflictReasonMessage: TypeAlias = Union[str, List[ConflictReason]]
+ConflictReasonMessage: TypeAlias = str | list[ConflictReason]
 # Tuple defining a field node in a context.
-NodeAndDef: TypeAlias = Tuple[GraphQLCompositeType, FieldNode, Optional[GraphQLField]]
+NodeAndDef: TypeAlias = tuple[GraphQLCompositeType, FieldNode, GraphQLField | None]
 # Dictionary of lists of those.
-NodeAndDefCollection: TypeAlias = Dict[str, List[NodeAndDef]]
+NodeAndDefCollection: TypeAlias = dict[str, list[NodeAndDef]]
 
 
 # Algorithm:
@@ -532,8 +535,8 @@ def find_conflict(
     )
 
     # The return type for each field.
-    type1 = cast("Optional[GraphQLOutputType]", def1 and def1.type)
-    type2 = cast("Optional[GraphQLOutputType]", def2 and def2.type)
+    type1 = cast("GraphQLOutputType | None", def1 and def1.type)
+    type2 = cast("GraphQLOutputType | None", def2 and def2.type)
 
     if not are_mutually_exclusive:
         # Two aliases must refer to the same field.

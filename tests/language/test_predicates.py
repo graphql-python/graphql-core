@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from operator import attrgetter
-from typing import Callable
 
 from graphql.language import (
     Node,

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from asyncio import Future, Queue, create_task, get_running_loop, sleep
-from typing import Any, AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable
+from typing import Any
 
 from .is_awaitable import is_awaitable
 

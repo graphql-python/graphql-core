@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, TypeAlias
+from collections.abc import Callable
+from typing import Any, TypeAlias
 
 from ..language import (
     ArgumentNode,
@@ -45,7 +46,7 @@ __all__ = ["TypeInfo", "TypeInfoVisitor"]
 
 
 GetFieldDefFn: TypeAlias = Callable[
-    [GraphQLSchema, GraphQLCompositeType, FieldNode], Optional[GraphQLField]
+    [GraphQLSchema, GraphQLCompositeType, FieldNode], GraphQLField | None
 ]
 
 

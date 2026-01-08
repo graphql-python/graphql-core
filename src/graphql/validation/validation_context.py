@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     NamedTuple,
-    Union,
     cast,
 )
 
@@ -25,6 +23,8 @@ from ..language import (
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from ..error import GraphQLError
     from ..type import (
         GraphQLArgument,
@@ -47,7 +47,7 @@ __all__ = [
     "VariableUsageVisitor",
 ]
 
-NodeWithSelectionSet: TypeAlias = Union[OperationDefinitionNode, FragmentDefinitionNode]
+NodeWithSelectionSet: TypeAlias = OperationDefinitionNode | FragmentDefinitionNode
 
 
 class VariableUsage(NamedTuple):

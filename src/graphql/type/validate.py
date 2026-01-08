@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from operator import attrgetter, itemgetter
-from typing import Any, Collection, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ..error import GraphQLError
 from ..language import (
@@ -40,6 +40,9 @@ from .definition import (
 from .directives import GraphQLDeprecatedDirective, is_directive
 from .introspection import is_introspection_type
 from .schema import GraphQLSchema, assert_schema
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = ["assert_valid_schema", "validate_schema"]
 
@@ -100,7 +103,7 @@ class SchemaValidationContext:
     ) -> None:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]
-        nodes = cast("Optional[Collection[Node]]", nodes)
+        nodes = cast("Collection[Node] | None", nodes)
         self.errors.append(GraphQLError(message, nodes))
 
     def validate_root_types(self) -> None:

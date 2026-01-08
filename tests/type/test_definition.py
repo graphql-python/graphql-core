@@ -3,7 +3,7 @@ from __future__ import annotations
 import pickle
 from enum import Enum
 from math import isnan, nan
-from typing import Any, Awaitable, Callable, TypedDict, TypeGuard
+from typing import TYPE_CHECKING, Any, TypedDict, TypeGuard
 
 import pytest
 
@@ -55,6 +55,9 @@ from graphql.type import (
     GraphQLUnionType,
     introspection_types,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 
 # Helper functions to create stub AST nodes with required fields

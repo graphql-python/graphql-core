@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, TypeAlias
+from typing import TypeAlias
 
 import pytest
 
@@ -11,7 +11,7 @@ from graphql.pyutils import inspect
 
 from ..utils import dedent
 
-Location: TypeAlias = Optional[Tuple[int, int]]
+Location: TypeAlias = tuple[int, int] | None
 
 
 def lex_one(s: str) -> Token:

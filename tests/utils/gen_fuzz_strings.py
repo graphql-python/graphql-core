@@ -1,5 +1,5 @@
+from collections.abc import Generator
 from itertools import product
-from typing import Generator
 
 __all__ = ["gen_fuzz_strings"]
 

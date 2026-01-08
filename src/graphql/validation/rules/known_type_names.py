@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Collection, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, TypeGuard, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -17,6 +17,9 @@ from ...language import (
 from ...pyutils import did_you_mean, suggestion_list
 from ...type import introspection_types, specified_scalar_types
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = ["KnownTypeNamesRule"]
 
@@ -35,10 +38,11 @@ class KnownTypeNamesRule(ASTValidationRule):
         schema = context.schema
         self.existing_types_map = schema.type_map if schema else {}
 
-        defined_types = []
-        for def_ in context.document.definitions:
-            if is_type_definition_node(def_):
-                defined_types.append(def_.name.value)
+        defined_types = [
+            def_.name.value
+            for def_ in context.document.definitions
+            if is_type_definition_node(def_)
+        ]
         self.defined_types = set(defined_types)
 
         self.type_names = list(self.existing_types_map) + defined_types

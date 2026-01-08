@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from sys import exc_info
-from typing import TYPE_CHECKING, Any, Collection, Dict, TypeAlias, TypedDict
+from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from ..language.ast import Node
     from ..language.location import (
         FormattedSourceLocation,
@@ -17,7 +19,7 @@ __all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
 
 
 # Custom extensions
-GraphQLErrorExtensions: TypeAlias = Dict[str, Any]
+GraphQLErrorExtensions: TypeAlias = dict[str, Any]
 # Use a unique identifier name for your extension, for example the name of
 # your library or project. Do not use a shortened identifier as this increases
 # the risk of conflicts. We recommend you add at most one extension key,
@@ -176,13 +178,12 @@ class GraphQLError(Exception):
         output = [self.message]
 
         if self.nodes:
-            for node in self.nodes:
-                if node.loc:
-                    output.append(print_location(node.loc))
+            output.extend(print_location(node.loc) for node in self.nodes if node.loc)
         elif self.source and self.locations:
             source = self.source
-            for location in self.locations:
-                output.append(print_source_location(source, location))
+            output.extend(
+                print_source_location(source, location) for location in self.locations
+            )
 
         return "\n\n".join(output)
 

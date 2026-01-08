@@ -81,6 +81,7 @@ select = [
   "A",      # flake8-builtins
   "ANN",    # flake8-annotations
   "ARG",    # flake8-unused-arguments
+  "ASYNC",  # flake8-async
   "B",      # flake8-bugbear
   "BLE",    # flake8-blind-except
   "C4",     # flake8-comprehensions
@@ -101,6 +102,7 @@ select = [
   "INT",    # flake8-gettext
   "ISC",    # flake8-implicit-str-concat
   "N",      # pep8-naming
+  "PERF",   # perflint
   "PGH",    # pygrep-hooks
   "PIE",    # flake8-pie
   "PL",     # Pylint
@@ -110,6 +112,7 @@ select = [
   "Q",      # flake8-quotes
   "RET",    # flake8-return
   "RSE",    # flake8-raise
+  "FURB",   # refurb
   "RUF",    # Ruff-specific rules
   "S",      # flake8-bandit
   "SLF",    # flake8-self
@@ -119,8 +122,7 @@ select = [
   "TCH",    # flake8-type-checking
   "TID",    # flake8-tidy-imports
   "TRY",    # tryceratops
-  # TODO: enable again after upgradesc
-  #"UP",     # pyupgrade
+  "UP",     # pyupgrade
   "W",      # pycodestyle
   "YTT",    # flake8-2020
 ]

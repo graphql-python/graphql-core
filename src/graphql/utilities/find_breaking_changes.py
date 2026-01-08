@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Collection, NamedTuple, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias
 
 from ..language import print_ast
 from ..pyutils import Undefined, inspect
@@ -33,6 +33,9 @@ from ..type import (
 )
 from ..utilities.sort_value_node import sort_value_node
 from .ast_from_value import ast_from_value
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = [
     "BreakingChange",
@@ -90,7 +93,7 @@ class DangerousChange(NamedTuple):
     description: str
 
 
-Change: TypeAlias = Union[BreakingChange, DangerousChange]
+Change: TypeAlias = BreakingChange | DangerousChange
 
 
 def find_breaking_changes(
@@ -134,16 +137,14 @@ def find_schema_changes(
 def find_directive_changes(
     old_schema: GraphQLSchema, new_schema: GraphQLSchema
 ) -> list[Change]:
-    schema_changes: list[Change] = []
-
     directives_diff = list_diff(old_schema.directives, new_schema.directives)
 
-    for directive in directives_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.DIRECTIVE_REMOVED, f"{directive.name} was removed."
-            )
+    schema_changes: list[Change] = [
+        BreakingChange(
+            BreakingChangeType.DIRECTIVE_REMOVED, f"{directive.name} was removed."
         )
+        for directive in directives_diff.removed
+    ]
 
     for old_directive, new_directive in directives_diff.persisted:
         args_diff = dict_diff(old_directive.args, new_directive.args)
@@ -158,13 +159,13 @@ def find_directive_changes(
                     )
                 )
 
-        for arg_name in args_diff.removed:
-            schema_changes.append(
-                BreakingChange(
-                    BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                    f"{arg_name} was removed from {new_directive.name}.",
-                )
+        schema_changes.extend(
+            BreakingChange(
+                BreakingChangeType.DIRECTIVE_ARG_REMOVED,
+                f"{arg_name} was removed from {new_directive.name}.",
             )
+            for arg_name in args_diff.removed
+        )
 
         if old_directive.is_repeatable and not new_directive.is_repeatable:
             schema_changes.append(
@@ -174,14 +175,14 @@ def find_directive_changes(
                 )
             )
 
-        for location in old_directive.locations:
-            if location not in new_directive.locations:
-                schema_changes.append(
-                    BreakingChange(
-                        BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
-                        f"{location.name} was removed from {new_directive.name}.",
-                    )
-                )
+        schema_changes.extend(
+            BreakingChange(
+                BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
+                f"{location.name} was removed from {new_directive.name}.",
+            )
+            for location in old_directive.locations
+            if location not in new_directive.locations
+        )
 
     return schema_changes
 
@@ -254,13 +255,13 @@ def find_input_object_type_changes(
                 )
             )
 
-    for field_name in fields_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.FIELD_REMOVED,
-                f"{old_type.name}.{field_name} was removed.",
-            )
+    schema_changes.extend(
+        BreakingChange(
+            BreakingChangeType.FIELD_REMOVED,
+            f"{old_type.name}.{field_name} was removed.",
         )
+        for field_name in fields_diff.removed
+    )
 
     for field_name, (old_field, new_field) in fields_diff.persisted.items():
         is_safe = is_change_safe_for_input_object_field_or_field_arg(
@@ -284,21 +285,21 @@ def find_union_type_changes(
     schema_changes: list[Change] = []
     possible_types_diff = list_diff(old_type.types, new_type.types)
 
-    for possible_type in possible_types_diff.added:
-        schema_changes.append(
-            DangerousChange(
-                DangerousChangeType.TYPE_ADDED_TO_UNION,
-                f"{possible_type.name} was added to union type {old_type.name}.",
-            )
+    schema_changes.extend(
+        DangerousChange(
+            DangerousChangeType.TYPE_ADDED_TO_UNION,
+            f"{possible_type.name} was added to union type {old_type.name}.",
         )
+        for possible_type in possible_types_diff.added
+    )
 
-    for possible_type in possible_types_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-                f"{possible_type.name} was removed from union type {old_type.name}.",
-            )
+    schema_changes.extend(
+        BreakingChange(
+            BreakingChangeType.TYPE_REMOVED_FROM_UNION,
+            f"{possible_type.name} was removed from union type {old_type.name}.",
         )
+        for possible_type in possible_types_diff.removed
+    )
 
     return schema_changes
 
@@ -309,21 +310,21 @@ def find_enum_type_changes(
     schema_changes: list[Change] = []
     values_diff = dict_diff(old_type.values, new_type.values)
 
-    for value_name in values_diff.added:
-        schema_changes.append(
-            DangerousChange(
-                DangerousChangeType.VALUE_ADDED_TO_ENUM,
-                f"{value_name} was added to enum type {old_type.name}.",
-            )
+    schema_changes.extend(
+        DangerousChange(
+            DangerousChangeType.VALUE_ADDED_TO_ENUM,
+            f"{value_name} was added to enum type {old_type.name}.",
         )
+        for value_name in values_diff.added
+    )
 
-    for value_name in values_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
-                f"{value_name} was removed from enum type {old_type.name}.",
-            )
+    schema_changes.extend(
+        BreakingChange(
+            BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
+            f"{value_name} was removed from enum type {old_type.name}.",
         )
+        for value_name in values_diff.removed
+    )
 
     return schema_changes
 
@@ -335,21 +336,21 @@ def find_implemented_interfaces_changes(
     schema_changes: list[Change] = []
     interfaces_diff = list_diff(old_type.interfaces, new_type.interfaces)
 
-    for interface in interfaces_diff.added:
-        schema_changes.append(
-            DangerousChange(
-                DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
-                f"{interface.name} added to interfaces implemented by {old_type.name}.",
-            )
+    schema_changes.extend(
+        DangerousChange(
+            DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
+            f"{interface.name} added to interfaces implemented by {old_type.name}.",
         )
+        for interface in interfaces_diff.added
+    )
 
-    for interface in interfaces_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
-                f"{old_type.name} no longer implements interface {interface.name}.",
-            )
+    schema_changes.extend(
+        BreakingChange(
+            BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
+            f"{old_type.name} no longer implements interface {interface.name}.",
         )
+        for interface in interfaces_diff.removed
+    )
 
     return schema_changes
 
@@ -361,13 +362,13 @@ def find_field_changes(
     schema_changes: list[Change] = []
     fields_diff = dict_diff(old_type.fields, new_type.fields)
 
-    for field_name in fields_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.FIELD_REMOVED,
-                f"{old_type.name}.{field_name} was removed.",
-            )
+    schema_changes.extend(
+        BreakingChange(
+            BreakingChangeType.FIELD_REMOVED,
+            f"{old_type.name}.{field_name} was removed.",
         )
+        for field_name in fields_diff.removed
+    )
 
     for field_name, (old_field, new_field) in fields_diff.persisted.items():
         schema_changes.extend(
@@ -397,13 +398,13 @@ def find_arg_changes(
     schema_changes: list[Change] = []
     args_diff = dict_diff(old_field.args, new_field.args)
 
-    for arg_name in args_diff.removed:
-        schema_changes.append(
-            BreakingChange(
-                BreakingChangeType.ARG_REMOVED,
-                f"{old_type.name}.{field_name} arg {arg_name} was removed.",
-            )
+    schema_changes.extend(
+        BreakingChange(
+            BreakingChangeType.ARG_REMOVED,
+            f"{old_type.name}.{field_name} arg {arg_name} was removed.",
         )
+        for arg_name in args_diff.removed
+    )
 
     for arg_name, (old_arg, new_arg) in args_diff.persisted.items():
         is_safe = is_change_safe_for_input_object_field_or_field_arg(
@@ -578,7 +579,6 @@ class ListDiff(NamedTuple):
 
 def list_diff(old_list: Collection, new_list: Collection) -> ListDiff:
     """Get differences between two lists of named items."""
-    added = []
     persisted = []
     removed = []
 
@@ -592,9 +592,7 @@ def list_diff(old_list: Collection, new_list: Collection) -> ListDiff:
         else:
             removed.append(old_item)
 
-    for new_item in new_list:
-        if new_item.name not in old_set:
-            added.append(new_item)
+    added = [new_item for new_item in new_list if new_item.name not in old_set]
 
     return ListDiff(added, removed, persisted)
 
@@ -609,7 +607,6 @@ class DictDiff(NamedTuple):
 
 def dict_diff(old_dict: dict, new_dict: dict) -> DictDiff:
     """Get differences between two dicts."""
-    added = {}
     removed = {}
     persisted = {}
 
@@ -620,8 +617,10 @@ def dict_diff(old_dict: dict, new_dict: dict) -> DictDiff:
         else:
             removed[old_name] = old_item
 
-    for new_name, new_item in new_dict.items():
-        if new_name not in old_dict:
-            added[new_name] = new_item
+    added = {
+        new_name: new_item
+        for new_name, new_item in new_dict.items()
+        if new_name not in old_dict
+    }
 
     return DictDiff(added, removed, persisted)

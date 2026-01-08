@@ -4,7 +4,7 @@ import pickle
 import sys
 from collections import namedtuple
 from copy import deepcopy
-from typing import TypeAlias, Union
+from typing import TypeAlias
 
 import pytest
 
@@ -57,9 +57,13 @@ def cycle_sdl(sdl: str) -> str:
     return print_schema(schema)
 
 
-TypeWithAstNode: TypeAlias = Union[
-    GraphQLArgument, GraphQLEnumValue, GraphQLField, GraphQLInputField, GraphQLNamedType
-]
+TypeWithAstNode: TypeAlias = (
+    GraphQLArgument
+    | GraphQLEnumValue
+    | GraphQLField
+    | GraphQLInputField
+    | GraphQLNamedType
+)
 
 TypeWithExtensionAstNodes: TypeAlias = GraphQLNamedType
 

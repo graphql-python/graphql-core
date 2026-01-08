@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from asyncio import Event, Lock, gather, sleep
-from typing import Any, Awaitable, NamedTuple
+from collections.abc import Awaitable
+from typing import Any, NamedTuple
 
 import pytest
 
@@ -95,10 +96,9 @@ async def complete(
         result = await result
 
     if isinstance(result, ExperimentalIncrementalExecutionResults):
-        results: list[Any] = [result.initial_result.formatted]
-        async for patch in result.subsequent_results:
-            results.append(patch.formatted)
-        return results
+        return [result.initial_result.formatted] + [
+            patch.formatted async for patch in result.subsequent_results
+        ]
 
     assert isinstance(result, ExecutionResult)
     return result.formatted

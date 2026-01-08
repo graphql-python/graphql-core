@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Tuple, cast
+from typing import TYPE_CHECKING, cast
 
 from .location import SourceLocation, get_location
 
@@ -73,7 +73,7 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
 def print_prefixed_lines(*lines: tuple[str, str | None]) -> str:
     """Print lines specified like this: ("prefix", "string")"""
     existing_lines = [
-        cast("Tuple[str, str]", line) for line in lines if line[1] is not None
+        cast("tuple[str, str]", line) for line in lines if line[1] is not None
     ]
     pad_len = max(len(line[0]) for line in existing_lines)
     return "\n".join(

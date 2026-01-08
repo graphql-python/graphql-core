@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Collection
+from typing import TYPE_CHECKING
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
@@ -12,6 +12,8 @@ from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
     from .rules import ASTValidationRule
 
 __all__ = [

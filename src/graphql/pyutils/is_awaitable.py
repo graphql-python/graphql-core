@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import inspect
 from types import CoroutineType, GeneratorType
-from typing import Any, Awaitable, TypeGuard
+from typing import TYPE_CHECKING, Any, TypeGuard
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
 
 __all__ = ["is_awaitable"]
 

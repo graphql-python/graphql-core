@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from ..language import StringValueNode, print_ast
 from ..language.block_string import is_printable_as_block_string
@@ -31,6 +31,9 @@ from ..type import (
     is_union_type,
 )
 from .ast_from_value import ast_from_value
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 __all__ = [
     "print_directive",

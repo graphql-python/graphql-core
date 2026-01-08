@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from asyncio import ensure_future
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from .error import GraphQLError
 from .execution import ExecutionContext, ExecutionResult, Middleware, execute
@@ -17,6 +17,7 @@ from .type import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
     from typing import TypeGuard
 
     from .pyutils import AwaitableOrValue

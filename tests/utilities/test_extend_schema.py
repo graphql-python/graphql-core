@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeAlias, Union
+from typing import TypeAlias
 
 import pytest
 
@@ -32,19 +32,16 @@ from graphql.utilities import build_schema, concat_ast, extend_schema, print_sch
 
 from ..utils import dedent
 
-TypeWithAstNode: TypeAlias = Union[
-    GraphQLArgument,
-    GraphQLEnumValue,
-    GraphQLField,
-    GraphQLInputField,
-    GraphQLNamedType,
-    GraphQLSchema,
-]
+TypeWithAstNode: TypeAlias = (
+    GraphQLArgument
+    | GraphQLEnumValue
+    | GraphQLField
+    | GraphQLInputField
+    | GraphQLNamedType
+    | GraphQLSchema
+)
 
-TypeWithExtensionAstNodes: TypeAlias = Union[
-    GraphQLNamedType,
-    GraphQLSchema,
-]
+TypeWithExtensionAstNodes: TypeAlias = GraphQLNamedType | GraphQLSchema
 
 
 def expect_extension_ast_nodes(obj: TypeWithExtensionAstNodes, expected: str) -> None:

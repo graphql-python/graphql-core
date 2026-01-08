@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 from ..pyutils import camel_to_snake
 
@@ -539,16 +539,16 @@ class ConstObjectValueNode(ObjectValueNode):
     fields: tuple[ConstObjectFieldNode, ...] = ()
 
 
-ConstValueNode: TypeAlias = Union[
-    IntValueNode,
-    FloatValueNode,
-    StringValueNode,
-    BooleanValueNode,
-    NullValueNode,
-    EnumValueNode,
-    ConstListValueNode,
-    ConstObjectValueNode,
-]
+ConstValueNode: TypeAlias = (
+    IntValueNode
+    | FloatValueNode
+    | StringValueNode
+    | BooleanValueNode
+    | NullValueNode
+    | EnumValueNode
+    | ConstListValueNode
+    | ConstObjectValueNode
+)
 
 
 # Directive nodes
@@ -761,7 +761,7 @@ class SchemaExtensionNode(Node):
     operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
-TypeSystemExtensionNode: TypeAlias = Union[SchemaExtensionNode, TypeExtensionNode]
+TypeSystemExtensionNode: TypeAlias = SchemaExtensionNode | TypeExtensionNode
 
 
 # Type Extension nodes

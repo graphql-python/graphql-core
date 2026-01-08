@@ -7,10 +7,8 @@ from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
     NamedTuple,
     Protocol,
-    Sequence,
     cast,
 )
 
@@ -29,6 +27,8 @@ from .types import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
+
     from ..error import GraphQLError
     from .types import (
         CancellableStreamRecord,

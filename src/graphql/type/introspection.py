@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Mapping
+from typing import TYPE_CHECKING
 
 from ..language import DirectiveLocation, print_ast
 from ..pyutils import inspect
@@ -28,6 +28,9 @@ from .definition import (
     is_union_type,
 )
 from .scalars import GraphQLBoolean, GraphQLString
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = [
     "SchemaMetaFieldDef",

@@ -116,22 +116,10 @@ graphql_modules = {
     "validation": ["rules", "validation_context"],
 }
 
-# be nitpicky (handle all possible problems in on_missing_reference)
+# be nitpicky
 nitpicky = True
-nitpick_ignore = [
-    # TypeVars and internal types that can't be resolved
-    ("py:obj", "graphql.pyutils.ref_map.K"),
-    ("py:obj", "graphql.pyutils.ref_map.V"),
-    ("py:obj", "graphql.pyutils.awaitable_or_value.T"),
-    ("py:obj", "graphql.pyutils.boxed_awaitable_or_value.T"),
-    ("py:obj", "graphql.pyutils.ref_set.T"),
-    ("py:obj", "graphql.type.definition.T"),
-    ("py:obj", "graphql.type.definition.GT_co"),
-    ("py:obj", "graphql.type.definition.GNT_co"),
-    ("py:obj", "graphql.type.definition.TContext"),
-]
-
-suppress_warnings = ["ref.class", "ref.python"]
+# but not too nitpicky
+suppress_warnings = ["ref.class", "ref.obj", "ref.python"]
 
 
 # The reST default role (used for this markup: `text`) to use for all

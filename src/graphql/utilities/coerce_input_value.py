@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, TypeAlias, Union, cast
+from collections.abc import Callable
+from typing import Any, TypeAlias, cast
 
 from ..error import GraphQLError
 from ..pyutils import (
@@ -26,7 +27,7 @@ from ..type import (
 __all__ = ["coerce_input_value"]
 
 
-OnErrorCB: TypeAlias = Callable[[List[Union[str, int]], Any, GraphQLError], None]
+OnErrorCB: TypeAlias = Callable[[list[str | int], Any, GraphQLError], None]
 
 
 def default_on_error(

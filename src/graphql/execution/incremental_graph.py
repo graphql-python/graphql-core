@@ -11,17 +11,7 @@ from asyncio import (
     isfuture,
     sleep,
 )
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncGenerator,
-    Awaitable,
-    Generator,
-    Iterable,
-    Sequence,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
 from ..pyutils import BoxedAwaitableOrValue, Undefined
 from .types import (
@@ -33,6 +23,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Awaitable, Generator, Iterable, Sequence
     from typing import TypeGuard
 
     from ..error.graphql_error import GraphQLError
@@ -71,7 +62,7 @@ class DeferredFragmentNode:
         self.children = []
 
 
-SubsequentResultNode = Union[DeferredFragmentNode, StreamRecord]
+SubsequentResultNode = DeferredFragmentNode | StreamRecord
 
 
 def is_deferred_fragment_node(

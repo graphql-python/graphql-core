@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from typing import Any, Awaitable
+from collections.abc import Awaitable
 
 import pytest
 
@@ -231,11 +231,10 @@ def describe_execute_handles_mutation_execution_ordering():
             schema, document, root_value
         )
 
-        patches: list[Any] = []
         assert isinstance(mutation_result, ExperimentalIncrementalExecutionResults)
-        patches.append(mutation_result.initial_result.formatted)
-        async for patch in mutation_result.subsequent_results:
-            patches.append(patch.formatted)
+        patches = [mutation_result.initial_result.formatted] + [
+            patch.formatted async for patch in mutation_result.subsequent_results
+        ]
 
         assert patches == [
             {
@@ -297,11 +296,10 @@ def describe_execute_handles_mutation_execution_ordering():
             schema, document, root_value
         )
 
-        patches: list[Any] = []
         assert isinstance(mutation_result, ExperimentalIncrementalExecutionResults)
-        patches.append(mutation_result.initial_result.formatted)
-        async for patch in mutation_result.subsequent_results:
-            patches.append(patch.formatted)
+        patches = [mutation_result.initial_result.formatted] + [
+            patch.formatted async for patch in mutation_result.subsequent_results
+        ]
 
         assert patches == [
             {

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import MutableSet
+from collections.abc import Iterable, Iterator, MutableSet
 from contextlib import suppress
-from typing import Any, Iterable, Iterator, TypeVar
+from typing import Any, TypeVar
 
 from .ref_map import RefMap
 

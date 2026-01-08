@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, TypeAlias
+from typing import Any, TypeAlias
 
 from .utils import dedent
 
-Scope: TypeAlias = Dict[str, Any]
+Scope: TypeAlias = dict[str, Any]
 
 
 def get_snippets(source, indent=4):

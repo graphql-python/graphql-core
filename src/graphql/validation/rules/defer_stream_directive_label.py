@@ -1,6 +1,6 @@
 """Defer stream directive label rule"""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ...error import GraphQLError
 from ...language import DirectiveNode, Node, StringValueNode
@@ -19,7 +19,7 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self.known_labels: Dict[str, Node] = {}
+        self.known_labels: dict[str, Node] = {}
 
     def enter_directive(
         self,
@@ -27,7 +27,7 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
         _key: Any,
         _parent: Any,
         _path: Any,
-        _ancestors: List[Node],
+        _ancestors: list[Node],
     ) -> None:
         if node.name.value not in (
             GraphQLDeferDirective.name,

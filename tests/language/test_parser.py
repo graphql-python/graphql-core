@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, TypeAlias, cast
+from typing import TypeAlias, cast
 
 import pytest
 
@@ -42,7 +42,7 @@ from graphql.pyutils import inspect
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
 
-Location: TypeAlias = Optional[Tuple[int, int]]
+Location: TypeAlias = tuple[int, int] | None
 
 
 def parse_ccn(source: str) -> DocumentNode:

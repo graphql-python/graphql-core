@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Callable
+from typing import TYPE_CHECKING
 
 from graphql.utilities import build_schema
 from graphql.validation import NoDeprecatedCustomRule
 
 from .harness import assert_validation_errors
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def build_assertions(

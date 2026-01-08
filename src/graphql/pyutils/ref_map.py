@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import MutableMapping
-from typing import Any, Iterable, Iterator, TypeVar
+from collections.abc import Iterable, Iterator, MutableMapping
+from typing import Any, TypeVar
 
 __all__ = ["RefMap"]
 

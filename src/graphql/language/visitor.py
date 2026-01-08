@@ -4,19 +4,18 @@ from __future__ import annotations
 
 from enum import Enum
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Callable,
-    Collection,
-    Dict,
     NamedTuple,
-    Optional,
-    Tuple,
     TypeAlias,
 )
 
 from ..pyutils import inspect, snake_to_camel
 from . import ast
 from .ast import QUERY_DOCUMENT_KEYS, Node
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Collection
 
 __all__ = [
     "BREAK",
@@ -42,7 +41,7 @@ class VisitorActionEnum(Enum):
     REMOVE = Ellipsis
 
 
-VisitorAction: TypeAlias = Optional[VisitorActionEnum]
+VisitorAction: TypeAlias = VisitorActionEnum | None
 
 # Note that in GraphQL.js these are defined *differently*:
 # BREAK = {}, SKIP = false, REMOVE = null, IDLE = undefined
@@ -52,7 +51,7 @@ SKIP = VisitorActionEnum.SKIP
 REMOVE = VisitorActionEnum.REMOVE
 IDLE = None
 
-VisitorKeyMap: TypeAlias = Dict[str, Tuple[str, ...]]
+VisitorKeyMap: TypeAlias = dict[str, tuple[str, ...]]
 
 
 class EnterLeaveVisitor(NamedTuple):
@@ -226,9 +225,7 @@ def visit(
                     node = tuple(node)
                 else:
                     # Create new node with edited values (immutable-friendly)
-                    values = {k: getattr(node, k) for k in node.keys}
-                    for edit_key, edit_value in edits:
-                        values[edit_key] = edit_value
+                    values = {k: getattr(node, k) for k in node.keys} | dict(edits)
                     node = node.__class__(**values)
             idx = stack.idx
             keys = stack.keys

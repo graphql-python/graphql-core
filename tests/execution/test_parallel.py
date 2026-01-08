@@ -1,5 +1,5 @@
 import asyncio
-from typing import Awaitable
+from collections.abc import Awaitable
 
 import pytest
 

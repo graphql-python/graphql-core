@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from functools import partial, reduce
 from inspect import isfunction
-from typing import Any, Callable, Iterator, TypeAlias
+from typing import Any, TypeAlias
 
 __all__ = ["MiddlewareManager"]
 

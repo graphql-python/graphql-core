@@ -2,22 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable, Collection, Mapping
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
-    Callable,
-    Collection,
-    Dict,
     Generic,
-    Mapping,
     NamedTuple,
-    Optional,
-    Type,
     TypedDict,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -295,9 +288,9 @@ class GraphQLNamedType(GraphQLType):
 
 T = TypeVar("T")
 
-ThunkCollection: TypeAlias = Union[Callable[[], Collection[T]], Collection[T]]
-ThunkMapping: TypeAlias = Union[Callable[[], Mapping[str, T]], Mapping[str, T]]
-Thunk: TypeAlias = Union[Callable[[], T], T]
+ThunkCollection: TypeAlias = Callable[[], Collection[T]] | Collection[T]
+ThunkMapping: TypeAlias = Callable[[], Mapping[str, T]] | Mapping[str, T]
+Thunk: TypeAlias = Callable[[], T] | T
 
 
 def resolve_thunk(thunk: Thunk[T]) -> T:
@@ -312,7 +305,7 @@ def resolve_thunk(thunk: Thunk[T]) -> T:
 GraphQLScalarSerializer: TypeAlias = Callable[[Any], Any]
 GraphQLScalarValueParser: TypeAlias = Callable[[Any], Any]
 GraphQLScalarLiteralParser: TypeAlias = Callable[
-    [ValueNode, Optional[Dict[str, Any]]], Any
+    [ValueNode, dict[str, Any] | None], Any
 ]
 
 
@@ -458,7 +451,7 @@ def assert_scalar_type(type_: Any) -> GraphQLScalarType:
     return type_
 
 
-GraphQLArgumentMap: TypeAlias = Dict[str, "GraphQLArgument"]
+GraphQLArgumentMap: TypeAlias = dict[str, "GraphQLArgument"]
 
 
 class GraphQLFieldKwargs(TypedDict, total=False):
@@ -615,7 +608,7 @@ GraphQLFieldResolver: TypeAlias = Callable[..., Any]
 # the context is passed as part of the GraphQLResolveInfo:
 GraphQLTypeResolver: TypeAlias = Callable[
     [Any, GraphQLResolveInfo, "GraphQLAbstractType"],
-    AwaitableOrValue[Optional[str]],
+    AwaitableOrValue[str | None],
 ]
 
 # Note: Contrary to the Javascript implementation of GraphQLIsTypeOfFn,
@@ -624,7 +617,7 @@ GraphQLIsTypeOfFn: TypeAlias = Callable[
     [Any, GraphQLResolveInfo], AwaitableOrValue[bool]
 ]
 
-GraphQLFieldMap: TypeAlias = Dict[str, GraphQLField]
+GraphQLFieldMap: TypeAlias = dict[str, GraphQLField]
 
 
 class GraphQLArgumentKwargs(TypedDict, total=False):
@@ -1006,11 +999,11 @@ def assert_union_type(type_: Any) -> GraphQLUnionType:
     return type_
 
 
-GraphQLEnumValueMap: TypeAlias = Dict[str, "GraphQLEnumValue"]
+GraphQLEnumValueMap: TypeAlias = dict[str, "GraphQLEnumValue"]
 
-GraphQLEnumValuesDefinition: TypeAlias = Union[
-    GraphQLEnumValueMap, Mapping[str, Any], Type[Enum]
-]
+GraphQLEnumValuesDefinition: TypeAlias = (
+    GraphQLEnumValueMap | Mapping[str, Any] | type[Enum]
+)
 
 
 class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
@@ -1091,9 +1084,9 @@ class GraphQLEnumType(GraphQLNamedType):
                         " with value names as keys."
                     )
                     raise TypeError(msg) from error
-            values = cast("Dict[str, Any]", values)
+            values = cast("dict[str, Any]", values)
         else:
-            values = cast("Dict[str, Enum]", values)
+            values = cast("dict[str, Enum]", values)
             if names_as_values is False:
                 values = {key: value.value for key, value in values.items()}
             elif names_as_values is True:
@@ -1262,8 +1255,8 @@ class GraphQLEnumValue:  # noqa: PLW1641
         return self.__class__(**self.to_kwargs())
 
 
-GraphQLInputFieldMap: TypeAlias = Dict[str, "GraphQLInputField"]
-GraphQLInputFieldOutType = Callable[[Dict[str, Any]], Any]
+GraphQLInputFieldMap: TypeAlias = dict[str, "GraphQLInputField"]
+GraphQLInputFieldOutType = Callable[[dict[str, Any]], Any]
 
 
 class GraphQLInputObjectTypeKwargs(GraphQLNamedTypeKwargs, total=False):
@@ -1525,45 +1518,40 @@ class GraphQLNonNull(GraphQLWrappingType[GNT_co]):
 
 # These types can all accept null as a value.
 
-GraphQLNullableType: TypeAlias = Union[
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    GraphQLInputObjectType,
-    GraphQLList,
-]
+GraphQLNullableType: TypeAlias = (
+    GraphQLScalarType
+    | GraphQLObjectType
+    | GraphQLInterfaceType
+    | GraphQLUnionType
+    | GraphQLEnumType
+    | GraphQLInputObjectType
+    | GraphQLList
+)
 
 # These types may be used as input types for arguments and directives.
 
-GraphQLNullableInputType: TypeAlias = Union[
-    GraphQLScalarType,
-    GraphQLEnumType,
-    GraphQLInputObjectType,
-    # actually GraphQLList[GraphQLInputType], but we can't recurse
-    GraphQLList,
-]
+GraphQLNullableInputType: TypeAlias = (
+    GraphQLScalarType | GraphQLEnumType | GraphQLInputObjectType | GraphQLList
+)
 
-GraphQLInputType: TypeAlias = Union[
-    GraphQLNullableInputType, GraphQLNonNull[GraphQLNullableInputType]
-]
+GraphQLInputType: TypeAlias = (
+    GraphQLNullableInputType | GraphQLNonNull[GraphQLNullableInputType]
+)
 
 # These types may be used as output types as the result of fields.
 
-GraphQLNullableOutputType: TypeAlias = Union[
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    # actually GraphQLList[GraphQLOutputType], but we can't recurse
-    GraphQLList,
-]
+GraphQLNullableOutputType: TypeAlias = (
+    GraphQLScalarType
+    | GraphQLObjectType
+    | GraphQLInterfaceType
+    | GraphQLUnionType
+    | GraphQLEnumType
+    | GraphQLList
+)
 
-GraphQLOutputType: TypeAlias = Union[
-    GraphQLNullableOutputType, GraphQLNonNull[GraphQLNullableOutputType]
-]
+GraphQLOutputType: TypeAlias = (
+    GraphQLNullableOutputType | GraphQLNonNull[GraphQLNullableOutputType]
+)
 
 
 # Predicates and Assertions
@@ -1661,22 +1649,22 @@ def get_nullable_type(
     """Unwrap possible non-null type"""
     if is_non_null_type(type_):
         type_ = type_.of_type
-    return cast("Optional[GraphQLNullableType]", type_)
+    return cast("GraphQLNullableType | None", type_)
 
 
 # These named types do not include modifiers like List or NonNull.
 
-GraphQLNamedInputType: TypeAlias = Union[
-    GraphQLScalarType, GraphQLEnumType, GraphQLInputObjectType
-]
+GraphQLNamedInputType: TypeAlias = (
+    GraphQLScalarType | GraphQLEnumType | GraphQLInputObjectType
+)
 
-GraphQLNamedOutputType: TypeAlias = Union[
-    GraphQLScalarType,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-]
+GraphQLNamedOutputType: TypeAlias = (
+    GraphQLScalarType
+    | GraphQLObjectType
+    | GraphQLInterfaceType
+    | GraphQLUnionType
+    | GraphQLEnumType
+)
 
 
 def is_named_type(type_: Any) -> TypeGuard[GraphQLNamedType]:
@@ -1712,7 +1700,7 @@ def get_named_type(type_: GraphQLType | None) -> GraphQLNamedType | None:
 
 # These types may describe types which may be leaf values.
 
-GraphQLLeafType: TypeAlias = Union[GraphQLScalarType, GraphQLEnumType]
+GraphQLLeafType: TypeAlias = GraphQLScalarType | GraphQLEnumType
 
 
 def is_leaf_type(type_: Any) -> TypeGuard[GraphQLLeafType]:
@@ -1730,9 +1718,9 @@ def assert_leaf_type(type_: Any) -> GraphQLLeafType:
 
 # These types may describe the parent context of a selection set.
 
-GraphQLCompositeType: TypeAlias = Union[
-    GraphQLObjectType, GraphQLInterfaceType, GraphQLUnionType
-]
+GraphQLCompositeType: TypeAlias = (
+    GraphQLObjectType | GraphQLInterfaceType | GraphQLUnionType
+)
 
 
 def is_composite_type(type_: Any) -> TypeGuard[GraphQLCompositeType]:
@@ -1752,7 +1740,7 @@ def assert_composite_type(type_: Any) -> GraphQLCompositeType:
 
 # These types may describe abstract types.
 
-GraphQLAbstractType: TypeAlias = Union[GraphQLInterfaceType, GraphQLUnionType]
+GraphQLAbstractType: TypeAlias = GraphQLInterfaceType | GraphQLUnionType
 
 
 def is_abstract_type(type_: Any) -> TypeGuard[GraphQLAbstractType]:

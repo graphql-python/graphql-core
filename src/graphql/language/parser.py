@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Callable, Mapping, TypeAlias, TypeVar, Union, cast
+from typing import TYPE_CHECKING, TypeAlias, TypeVar, cast
 
 from ..error import GraphQLError, GraphQLSyntaxError
 from .ast import (
@@ -71,11 +71,14 @@ from .lexer import Lexer, is_punctuator_token_kind
 from .source import Source, is_source
 from .token_kind import TokenKind
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
 __all__ = ["parse", "parse_const_value", "parse_type", "parse_value"]
 
 T = TypeVar("T")
 
-SourceType: TypeAlias = Union[Source, str]
+SourceType: TypeAlias = Source | str
 
 
 def parse(

@@ -7,26 +7,24 @@ from asyncio import (
     ensure_future,
     sleep,
 )
-from contextlib import suppress
-from copy import copy
-from typing import (
-    TYPE_CHECKING,
-    Any,
+from collections.abc import (
     AsyncGenerator,
     AsyncIterable,
     AsyncIterator,
     Awaitable,
     Callable,
-    Generic,
     Iterable,
-    List,
     Mapping,
-    NamedTuple,
-    Optional,
     Sequence,
-    Tuple,
+)
+from contextlib import suppress
+from copy import copy
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generic,
+    NamedTuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -147,7 +145,7 @@ suppress_timeout_error = suppress(TimeoutError)
 # 3) inline fragment "spreads" e.g. "...on Type { a }"
 
 
-Middleware: TypeAlias = Optional[Union[Tuple, List, MiddlewareManager]]
+Middleware: TypeAlias = tuple | list | MiddlewareManager | None
 
 
 class StreamUsage(NamedTuple):
@@ -1339,7 +1337,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 return value  # pragma: no cover
 
             return await_complete_object_value()
-        runtime_type = cast("Optional[str]", runtime_type)
+        runtime_type = cast("str | None", runtime_type)
 
         return self.complete_object_value(
             self.ensure_valid_runtime_type(

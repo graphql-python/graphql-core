@@ -77,10 +77,11 @@ def build_ast_schema(
     # If specified directives were not explicitly declared, add them.
     directives = schema_kwargs["directives"]
     directive_names = {directive.name for directive in directives}
-    missing_directives = []
-    for directive in specified_directives:
-        if directive.name not in directive_names:
-            missing_directives.append(directive)
+    missing_directives = [
+        directive
+        for directive in specified_directives
+        if directive.name not in directive_names
+    ]
     if missing_directives:
         schema_kwargs["directives"] = directives + tuple(missing_directives)
 

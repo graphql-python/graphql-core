@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from sys import maxsize
-from typing import Collection
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 __all__ = [
     "dedent_block_string_lines",

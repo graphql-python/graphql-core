@@ -7,7 +7,10 @@ demo.
 
 from __future__ import annotations
 
-from typing import Awaitable, Collection, Iterator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Collection, Iterator
 
 __all__ = ["get_droid", "get_friends", "get_hero", "get_human", "get_secret_backstory"]
 

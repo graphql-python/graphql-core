@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from math import isfinite
-from typing import Any, Mapping
+from typing import Any
 
 from ..language import (
     BooleanValueNode,
@@ -116,8 +117,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> ConstValueNode | None
             return IntValueNode(value=str(serialized))
         if isinstance(serialized, float) and isfinite(serialized):
             value = str(serialized)
-            if value.endswith(".0"):
-                value = value[:-2]
+            value = value.removesuffix(".0")
             return FloatValueNode(value=value)
 
         if isinstance(serialized, str):

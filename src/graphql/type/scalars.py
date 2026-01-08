@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from math import isfinite
-from typing import Any, Mapping, TypeGuard
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 from ..error import GraphQLError
 from ..language.ast import (
@@ -16,6 +16,9 @@ from ..language.ast import (
 from ..language.printer import print_ast
 from ..pyutils import inspect
 from .definition import GraphQLNamedType, GraphQLScalarType
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 __all__ = [
     "GRAPHQL_MAX_INT",
