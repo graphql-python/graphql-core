@@ -425,7 +425,7 @@ def describe_type_system_schema():
 
     def describe_ast_nodes():
         def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
-            ast_node = SchemaDefinitionNode()
+            ast_node = SchemaDefinitionNode(operation_types=())
             extension_ast_nodes = [SchemaExtensionNode()]
             schema = GraphQLSchema(
                 GraphQLObjectType("Query", {}),

@@ -1,14 +1,18 @@
 import pytest
 
 from graphql.error import GraphQLError
-from graphql.language import DirectiveDefinitionNode, DirectiveLocation
+from graphql.language import DirectiveDefinitionNode, DirectiveLocation, NameNode
 from graphql.type import GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLString
 
 
 def describe_type_system_directive():
     def can_create_instance():
         arg = GraphQLArgument(GraphQLString, description="arg description")
-        node = DirectiveDefinitionNode()
+        node = DirectiveDefinitionNode(
+            name=NameNode(value="test"),
+            repeatable=False,
+            locations=(),
+        )
         locations = [DirectiveLocation.SCHEMA, DirectiveLocation.OBJECT]
         directive = GraphQLDirective(
             name="test",

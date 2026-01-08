@@ -3,7 +3,6 @@ from __future__ import annotations
 import pickle
 from copy import deepcopy
 from textwrap import dedent
-from typing import Optional, Tuple
 
 import pytest
 
@@ -11,6 +10,8 @@ from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     ArgumentNode,
     BooleanValueNode,
+    ConstDirectiveNode,
+    ConstValueNode,
     DirectiveDefinitionNode,
     DirectiveNode,
     DocumentNode,
@@ -22,6 +23,7 @@ from graphql.language import (
     InterfaceTypeDefinitionNode,
     InterfaceTypeExtensionNode,
     ListTypeNode,
+    Location,
     NamedTypeNode,
     NameNode,
     NonNullTypeNode,
@@ -32,25 +34,30 @@ from graphql.language import (
     ScalarTypeDefinitionNode,
     SchemaDefinitionNode,
     SchemaExtensionNode,
+    Source,
     StringValueNode,
+    Token,
+    TokenKind,
     TypeNode,
     UnionTypeDefinitionNode,
-    ValueNode,
     parse,
 )
 
 from ..fixtures import kitchen_sink_sdl  # noqa: F401
 
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+
+def make_loc(position: tuple[int, int]) -> Location:
+    """Create a Location for testing with the given (start, end) offsets."""
+    source = Source(body="")
+    token = Token(
+        kind=TokenKind.NAME, start=position[0], end=position[1], line=1, column=1
+    )
+    return Location(start_token=token, end_token=token, source=source)
 
 
-Location: TypeAlias = Optional[Tuple[int, int]]
-
-
-def assert_syntax_error(text: str, message: str, location: Location) -> None:
+def assert_syntax_error(
+    text: str, message: str, location: tuple[int, int] | None
+) -> None:
     with pytest.raises(GraphQLSyntaxError) as exc_info:
         parse(text)
     error = exc_info.value
@@ -59,85 +66,104 @@ def assert_syntax_error(text: str, message: str, location: Location) -> None:
     assert error.locations == [location]
 
 
-def assert_definitions(body: str, loc: Location, num=1):
+def assert_definitions(body: str, position: tuple[int, int] | None, num: int = 1):
     doc = parse(body)
     assert isinstance(doc, DocumentNode)
-    assert doc.loc == loc
+    assert doc.loc == position
     definitions = doc.definitions
     assert isinstance(definitions, tuple)
     assert len(definitions) == num
     return definitions[0] if num == 1 else definitions
 
 
-def type_node(name: str, loc: Location):
-    return NamedTypeNode(name=name_node(name, loc), loc=loc)
+def type_node(name: str, position: tuple[int, int]):
+    return NamedTypeNode(name=name_node(name, position), loc=make_loc(position))
 
 
-def name_node(name: str, loc: Location):
-    return NameNode(value=name, loc=loc)
+def name_node(name: str, position: tuple[int, int]):
+    return NameNode(value=name, loc=make_loc(position))
 
 
-def field_node(name: NameNode, type_: TypeNode, loc: Location):
-    return field_node_with_args(name, type_, (), loc)
+def field_node(name: NameNode, type_: TypeNode, position: tuple[int, int]):
+    return field_node_with_args(name, type_, (), position)
 
 
-def field_node_with_args(name: NameNode, type_: TypeNode, args: tuple, loc: Location):
+def field_node_with_args(
+    name: NameNode, type_: TypeNode, args: tuple, position: tuple[int, int]
+):
     return FieldDefinitionNode(
-        name=name, arguments=args, type=type_, directives=(), loc=loc, description=None
+        name=name,
+        arguments=args,
+        type=type_,
+        directives=(),
+        loc=make_loc(position),
+        description=None,
     )
 
 
-def non_null_type(type_: TypeNode, loc: Location):
-    return NonNullTypeNode(type=type_, loc=loc)
+def non_null_type(type_: NamedTypeNode | ListTypeNode, position: tuple[int, int]):
+    return NonNullTypeNode(type=type_, loc=make_loc(position))
 
 
-def enum_value_node(name: str, loc: Location):
+def enum_value_node(name: str, position: tuple[int, int]):
     return EnumValueDefinitionNode(
-        name=name_node(name, loc), directives=(), loc=loc, description=None
+        name=name_node(name, position),
+        directives=(),
+        loc=make_loc(position),
+        description=None,
     )
 
 
 def input_value_node(
-    name: NameNode, type_: TypeNode, default_value: ValueNode | None, loc: Location
+    name: NameNode,
+    type_: TypeNode,
+    default_value: ConstValueNode | None,
+    position: tuple[int, int],
 ):
     return InputValueDefinitionNode(
         name=name,
         type=type_,
         default_value=default_value,
         directives=(),
-        loc=loc,
+        loc=make_loc(position),
         description=None,
     )
 
 
-def boolean_value_node(value: bool, loc: Location):
-    return BooleanValueNode(value=value, loc=loc)
+def boolean_value_node(value: bool, position: tuple[int, int]):
+    return BooleanValueNode(value=value, loc=make_loc(position))
 
 
-def string_value_node(value: str, block: bool | None, loc: Location):
-    return StringValueNode(value=value, block=block, loc=loc)
+def string_value_node(value: str, block: bool | None, position: tuple[int, int]):
+    return StringValueNode(value=value, block=block, loc=make_loc(position))
 
 
-def list_type_node(type_: TypeNode, loc: Location):
-    return ListTypeNode(type=type_, loc=loc)
+def list_type_node(type_: TypeNode, position: tuple[int, int]):
+    return ListTypeNode(type=type_, loc=make_loc(position))
 
 
 def schema_extension_node(
-    directives: tuple[DirectiveNode, ...],
+    directives: tuple[ConstDirectiveNode, ...],
     operation_types: tuple[OperationTypeDefinitionNode, ...],
-    loc: Location,
+    position: tuple[int, int],
 ):
     return SchemaExtensionNode(
-        directives=directives, operation_types=operation_types, loc=loc
+        directives=directives, operation_types=operation_types, loc=make_loc(position)
     )
 
 
-def operation_type_definition(operation: OperationType, type_: TypeNode, loc: Location):
-    return OperationTypeDefinitionNode(operation=operation, type=type_, loc=loc)
+def operation_type_definition(
+    operation: OperationType, type_: NamedTypeNode, position: tuple[int, int]
+):
+    return OperationTypeDefinitionNode(
+        operation=operation, type=type_, loc=make_loc(position)
+    )
 
 
-def directive_node(name: NameNode, arguments: tuple[ArgumentNode, ...], loc: Location):
-    return DirectiveNode(name=name, arguments=arguments, loc=loc)
+def directive_node(
+    name: NameNode, arguments: tuple[ArgumentNode, ...], position: tuple[int, int]
+):
+    return DirectiveNode(name=name, arguments=arguments, loc=make_loc(position))
 
 
 def describe_schema_parser():
