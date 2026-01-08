@@ -176,8 +176,7 @@ def graphql_impl(
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
-    schema_validation_errors = validate_schema(schema)
-    if schema_validation_errors:
+    if schema_validation_errors := validate_schema(schema):
         return ExecutionResult(data=None, errors=schema_validation_errors)
 
     # Parse
@@ -189,8 +188,7 @@ def graphql_impl(
     # Validate
     from .validation import validate
 
-    validation_errors = validate(schema, document)
-    if validation_errors:
+    if validation_errors := validate(schema, document):
         return ExecutionResult(data=None, errors=validation_errors)
 
     # Execute

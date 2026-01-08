@@ -166,8 +166,7 @@ class ASTValidationContext:
                     frag_name = spread.name.value
                     if frag_name not in collected_names:
                         add_name(frag_name)
-                        fragment = get_fragment(frag_name)
-                        if fragment:
+                        if fragment := get_fragment(frag_name):
                             append_fragment(fragment)
                             append_node(fragment.selection_set)
             self._recursively_referenced_fragments[operation] = fragments

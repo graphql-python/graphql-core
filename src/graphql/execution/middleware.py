@@ -61,7 +61,6 @@ def get_middleware_resolvers(middlewares: tuple[Any, ...]) -> Iterator[Callable]
     for middleware in middlewares:
         if isfunction(middleware):
             yield middleware
-        else:  # middleware provided as object with 'resolve' method
-            resolver_func = getattr(middleware, "resolve", None)
-            if resolver_func is not None:
-                yield resolver_func
+        elif resolver_func := getattr(middleware, "resolve", None):
+            # middleware provided as object with 'resolve' method
+            yield resolver_func
