@@ -1,9 +1,6 @@
-from graphql.pyutils import merge_kwargs
+from typing import TypedDict
 
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
+from graphql.pyutils import merge_kwargs
 
 
 class FooDict(TypedDict):

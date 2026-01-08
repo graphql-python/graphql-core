@@ -8,14 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, Union
 if TYPE_CHECKING:
     from ..language import DirectiveLocation
 
-try:
-    from typing import Literal, TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import Literal, TypedDict
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+from typing import Literal, TypeAlias, TypedDict
 
 __all__ = [
     "IntrospectionDirective",

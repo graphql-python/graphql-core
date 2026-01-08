@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union
+from typing import TypeAlias, Union
 
 import pytest
 
@@ -31,12 +31,6 @@ from graphql.type import (
 from graphql.utilities import build_schema, concat_ast, extend_schema, print_schema
 
 from ..utils import dedent
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 TypeWithAstNode: TypeAlias = Union[
     GraphQLArgument,

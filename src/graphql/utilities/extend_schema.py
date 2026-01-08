@@ -159,12 +159,7 @@ class TypeExtensionsMap:
 
     def for_node(self, node: TEN) -> defaultdict[str, list[TEN]]:
         """Get type extensions map for the given node kind."""
-        kind = node.kind
-        try:
-            kind = kind.removesuffix("_type_extension")
-        except AttributeError:  # pragma: no cover (Python < 3.9)
-            if kind.endswith("_type_extension"):
-                kind = kind[:-15]
+        kind = node.kind.removesuffix("_type_extension")
         return getattr(self, kind)
 
 
@@ -779,12 +774,7 @@ class ExtendSchemaImpl:
 
     def build_type(self, ast_node: TypeDefinitionNode) -> GraphQLNamedType:
         """Build a named GraphQL type for the given type definition node."""
-        kind = ast_node.kind
-        try:
-            kind = kind.removesuffix("_definition")
-        except AttributeError:  # pragma: no cover (Python < 3.9)
-            if kind.endswith("_definition"):
-                kind = kind[:-11]
+        kind = ast_node.kind.removesuffix("_definition")
         try:
             build = getattr(self, f"build_{kind}")
         except AttributeError as error:  # pragma: no cover

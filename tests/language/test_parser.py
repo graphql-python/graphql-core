@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, cast
+from typing import Optional, Tuple, TypeAlias, cast
 
 import pytest
 
@@ -41,12 +41,6 @@ from graphql.pyutils import inspect
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 Location: TypeAlias = Optional[Tuple[int, int]]
 

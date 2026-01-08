@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from asyncio import (
-    CancelledError,
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
     sleep,
@@ -108,21 +107,9 @@ from .types import (
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 if TYPE_CHECKING:
+    from typing import TypeAlias, TypeGuard
+
     from ..pyutils import UndefinedType
-
-    try:
-        from typing import TypeAlias, TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeAlias, TypeGuard
-
-try:  # pragma: no cover
-    anext  # noqa: B018  # pyright: ignore
-except NameError:  # pragma: no cover (Python < 3.10)
-
-    async def anext(iterator: AsyncIterator) -> Any:
-        """Return the next item from an async iterator."""
-        return await iterator.__anext__()
-
 
 __all__ = [
     "ExecutionContext",
@@ -577,7 +564,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 awaited_results = await gather_with_cancel(
                     *(results[field] for field in awaitable_fields)
                 )
-                results.update(zip(awaitable_fields, awaited_results))
+                results.update(zip(awaitable_fields, awaited_results, strict=True))
 
             return GraphQLWrappedResult(results, graphql_wrapped_result.increments)
 
@@ -654,10 +641,6 @@ class ExecutionContext(IncrementalPublisherContext):
                     try:
                         return await completed
                     except Exception as raw_error:
-                        # Before Python 3.8 CancelledError inherits Exception and
-                        # so gets caught here.
-                        if isinstance(raw_error, CancelledError):
-                            raise  # pragma: no cover
                         self.handle_field_error(
                             raw_error,
                             return_type,
@@ -867,10 +850,6 @@ class ExecutionContext(IncrementalPublisherContext):
             if self.is_awaitable(completed):
                 completed = await completed
         except Exception as raw_error:
-            # Before Python 3.8 CancelledError inherits Exception and
-            # so gets caught here.
-            if isinstance(raw_error, CancelledError):
-                raise  # pragma: no cover
             self.handle_field_error(
                 raw_error, return_type, field_group, path, incremental_context
             )
@@ -1040,7 +1019,9 @@ class ExecutionContext(IncrementalPublisherContext):
             awaited_results = await gather_with_cancel(
                 *(completed_results[index] for index in awaitable_indices)
             )
-            for index, sub_result in zip(awaitable_indices, awaited_results):
+            for index, sub_result in zip(
+                awaitable_indices, awaited_results, strict=True
+            ):
                 completed_results[index] = sub_result
         return GraphQLWrappedResult(
             completed_results, graphql_wrapped_result.increments
@@ -1186,7 +1167,9 @@ class ExecutionContext(IncrementalPublisherContext):
                 awaited_results = await gather_with_cancel(
                     *(completed_results[index] for index in awaitable_indices)
                 )
-                for index, sub_result in zip(awaitable_indices, awaited_results):
+                for index, sub_result in zip(
+                    awaitable_indices, awaited_results, strict=True
+                ):
                     completed_results[index] = sub_result
             return GraphQLWrappedResult(
                 completed_results, graphql_wrapped_result.increments
@@ -2449,7 +2432,9 @@ def default_type_resolver(
 
         async def get_type() -> str | None:
             is_type_of_results = await gather_with_cancel(*awaitable_is_type_of_results)
-            for is_type_of_result, type_ in zip(is_type_of_results, awaitable_types):
+            for is_type_of_result, type_ in zip(
+                is_type_of_results, awaitable_types, strict=True
+            ):
                 if is_type_of_result:
                     return type_.name
             return None

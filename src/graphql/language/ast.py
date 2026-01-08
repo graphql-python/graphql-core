@@ -4,14 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, Union
 
 from ..pyutils import camel_to_snake
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
 
 if TYPE_CHECKING:
     from .source import Source

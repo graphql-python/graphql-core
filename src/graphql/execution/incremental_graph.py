@@ -33,6 +33,8 @@ from .types import (
 )
 
 if TYPE_CHECKING:
+    from typing import TypeGuard
+
     from ..error.graphql_error import GraphQLError
     from .types import (
         DeferredFragmentRecord,
@@ -42,11 +44,6 @@ if TYPE_CHECKING:
         ReconcilableDeferredGroupedFieldSetResult,
         SubsequentResultRecord,
     )
-
-    try:
-        from typing import TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
 
 __all__ = ["IncrementalGraph"]
 

@@ -7,10 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     standard_cached_property = None
 else:
-    try:
-        from functools import cached_property as standard_cached_property
-    except ImportError:  # Python < 3.8
-        standard_cached_property = None
+    from functools import cached_property as standard_cached_property
 
 if standard_cached_property:
     cached_property = standard_cached_property

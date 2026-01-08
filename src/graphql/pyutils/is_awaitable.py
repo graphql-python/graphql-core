@@ -4,13 +4,7 @@ from __future__ import annotations
 
 import inspect
 from types import CoroutineType, GeneratorType
-from typing import Any, Awaitable
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
-
+from typing import Any, Awaitable, TypeGuard
 
 __all__ = ["is_awaitable"]
 

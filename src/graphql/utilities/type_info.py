@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypeAlias
 
 from ..language import (
     ArgumentNode,
@@ -40,12 +40,6 @@ from ..type import (
     is_output_type,
 )
 from .type_from_ast import type_from_ast
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = ["TypeInfo", "TypeInfoVisitor"]
 

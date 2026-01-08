@@ -1,5 +1,4 @@
 import asyncio
-from contextlib import suppress
 from typing import (
     Any,
     AsyncIterable,
@@ -8,6 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    TypedDict,
     TypeVar,
     Union,
 )
@@ -40,20 +40,6 @@ pytestmark = [
     pytest.mark.anyio,
     pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
 ]
-
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-
-try:
-    anext  # noqa: B018
-except NameError:  # pragma: no cover (Python < 3.10)
-
-    async def anext(iterator):
-        """Return the next item from an async iterator."""
-        return await iterator.__anext__()
-
 
 T = TypeVar("T")
 
@@ -217,6 +203,7 @@ def describe_subscription_initialization_phase():
                 yield value  # pragma: no cover
 
         ai = subscribe(email_schema, document, {"importantEmail": empty_async_iterable})
+        assert isinstance(ai, AsyncIterator)
 
         with pytest.raises(StopAsyncIteration):
             await anext(ai)
@@ -493,7 +480,7 @@ def describe_subscription_publish_phase():
         assert isinstance(subscription, AsyncIterator)
 
         second_subscription = create_subscription(pubsub)
-        assert isinstance(subscription, AsyncIterator)
+        assert isinstance(second_subscription, AsyncIterator)
 
         payload1 = anext(subscription)
         payload2 = anext(second_subscription)
@@ -551,8 +538,7 @@ def describe_subscription_publish_phase():
             None,
         )
 
-        with suppress(RuntimeError):  # suppress error for Python < 3.8
-            await subscription.aclose()  # type: ignore
+        await subscription.aclose()  # type: ignore
         with pytest.raises(StopAsyncIteration):
             await anext(subscription)
 
@@ -613,8 +599,7 @@ def describe_subscription_publish_phase():
         )
 
         # The client decides to disconnect.
-        with suppress(RuntimeError):  # suppress error for Python < 3.8
-            await subscription.aclose()  # type: ignore
+        await subscription.aclose()  # type: ignore
 
         # Which may result in disconnecting upstream services as well.
         assert (
@@ -689,8 +674,7 @@ def describe_subscription_publish_phase():
         result = await anext(subscription)
         assert result == error_result
 
-        with suppress(RuntimeError):  # suppress error for Python < 3.8
-            await subscription.aclose()  # type: ignore
+        await subscription.aclose()  # type: ignore
 
         # Awaiting a subscription after closing it results in completed results.
         with pytest.raises(StopAsyncIteration):
@@ -862,8 +846,7 @@ def describe_subscription_publish_phase():
         )
 
         payload = anext(subscription)
-        with suppress(RuntimeError):  # suppress error for Python < 3.8
-            await subscription.aclose()  # type: ignore
+        await subscription.aclose()  # type: ignore
 
         # A new email arrives!
         assert (

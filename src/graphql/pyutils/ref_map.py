@@ -3,11 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import MutableMapping
-
-try:
-    MutableMapping[str, int]
-except TypeError:  # Python < 3.9
-    from typing import MutableMapping
 from typing import Any, Iterable, Iterator, TypeVar
 
 __all__ = ["RefMap"]

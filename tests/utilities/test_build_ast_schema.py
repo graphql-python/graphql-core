@@ -4,7 +4,7 @@ import pickle
 import sys
 from collections import namedtuple
 from copy import deepcopy
-from typing import Union
+from typing import TypeAlias, Union
 
 import pytest
 
@@ -43,11 +43,6 @@ from graphql.utilities import build_ast_schema, build_schema, print_schema, prin
 from ..fixtures import big_schema_sdl  # noqa: F401
 from ..star_wars_schema import star_wars_schema
 from ..utils import dedent, viral_sdl
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
 
 
 def cycle_sdl(sdl: str) -> str:

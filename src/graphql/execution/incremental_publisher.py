@@ -9,6 +9,7 @@ from typing import (
     Any,
     AsyncGenerator,
     NamedTuple,
+    Protocol,
     Sequence,
     cast,
 )
@@ -26,11 +27,6 @@ from .types import (
     is_deferred_grouped_field_set_result,
     is_non_reconcilable_deferred_grouped_field_set_result,
 )
-
-try:
-    from typing import Protocol
-except ImportError:  # Python < 3.8
-    from typing_extensions import Protocol
 
 if TYPE_CHECKING:
     from ..error import GraphQLError

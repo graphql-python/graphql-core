@@ -2,25 +2,11 @@
 
 from __future__ import annotations
 
-from array import array
-from typing import Any, Collection, Iterable, Mapping, ValuesView
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
-
+from typing import Any, Collection, Iterable, Mapping, TypeGuard
 
 __all__ = ["is_collection", "is_iterable"]
 
-collection_types: Any = [Collection]
-if not isinstance({}.values(), Collection):  # Python < 3.7.2
-    collection_types.append(ValuesView)
-if not issubclass(array, Collection):  # PyPy <= 7.3.9
-    collection_types.append(array)
-collection_types = (
-    collection_types[0] if len(collection_types) == 1 else tuple(collection_types)
-)
+collection_types: Any = Collection
 iterable_types: Any = Iterable
 not_iterable_types: Any = (bytearray, bytes, str, memoryview, Mapping)
 

@@ -3,16 +3,7 @@
 from __future__ import annotations
 
 from sys import exc_info
-from typing import TYPE_CHECKING, Any, Collection, Dict
-
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+from typing import TYPE_CHECKING, Any, Collection, Dict, TypeAlias, TypedDict
 
 if TYPE_CHECKING:
     from ..language.ast import Node

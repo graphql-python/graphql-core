@@ -4,13 +4,7 @@ from __future__ import annotations
 
 from functools import partial, reduce
 from inspect import isfunction
-from typing import Any, Callable, Iterator
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
+from typing import Any, Callable, Iterator, TypeAlias
 
 __all__ = ["MiddlewareManager"]
 

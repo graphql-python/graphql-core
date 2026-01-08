@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from ..error import GraphQLError
     from ..language import OperationType, ast
 
+from typing import TypeAlias, TypedDict, TypeGuard
+
 from ..pyutils import inspect
 from .definition import (
     GraphQLAbstractType,
@@ -40,15 +42,6 @@ from .introspection import (
     TypeNameMetaFieldDef,
     introspection_types,
 )
-
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-try:
-    from typing import TypeAlias, TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias, TypeGuard
 
 __all__ = ["GraphQLSchema", "GraphQLSchemaKwargs", "assert_schema", "is_schema"]
 

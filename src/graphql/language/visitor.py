@@ -11,17 +11,12 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
+    TypeAlias,
 )
 
 from ..pyutils import inspect, snake_to_camel
 from . import ast
 from .ast import QUERY_DOCUMENT_KEYS, Node
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = [
     "BREAK",

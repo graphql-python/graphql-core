@@ -233,7 +233,7 @@ def describe_inspect():
         assert inspect({"a": True, "b": None}) == "{'a': True, 'b': None}"
 
     def inspect_overly_large_dict():
-        s = dict(zip((chr(97 + i) for i in range(20)), range(20)))
+        s = dict(zip((chr(97 + i) for i in range(20)), range(20), strict=True))
         assert (
             inspect(s) == "{'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4,"
             " ..., 'q': 16, 'r': 17, 's': 18, 't': 19}"

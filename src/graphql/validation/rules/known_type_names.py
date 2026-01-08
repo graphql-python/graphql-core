@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Collection, cast
+from typing import Any, Collection, TypeGuard, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -17,12 +17,6 @@ from ...language import (
 from ...pyutils import did_you_mean, suggestion_list
 from ...type import introspection_types, specified_scalar_types
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
-
 
 __all__ = ["KnownTypeNamesRule"]
 

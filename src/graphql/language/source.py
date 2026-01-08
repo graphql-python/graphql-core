@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeGuard
 
 from .location import SourceLocation
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
 
 __all__ = ["Source", "is_source"]
 

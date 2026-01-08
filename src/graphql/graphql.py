@@ -17,12 +17,9 @@ from .type import (
 )
 
 if TYPE_CHECKING:
-    from .pyutils import AwaitableOrValue
+    from typing import TypeGuard
 
-    try:
-        from typing import TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
+    from .pyutils import AwaitableOrValue
 
 __all__ = ["graphql", "graphql_sync"]
 

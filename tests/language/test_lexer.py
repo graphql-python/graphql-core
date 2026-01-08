@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TypeAlias
 
 import pytest
 
@@ -10,12 +10,6 @@ from graphql.language.lexer import is_punctuator_token_kind
 from graphql.pyutils import inspect
 
 from ..utils import dedent
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 Location: TypeAlias = Optional[Tuple[int, int]]
 

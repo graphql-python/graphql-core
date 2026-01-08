@@ -15,22 +15,15 @@ from typing import (
     NamedTuple,
     Optional,
     Type,
+    TypedDict,
     TypeVar,
     Union,
     cast,
     overload,
 )
 
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-
 if TYPE_CHECKING:
-    try:
-        from typing import TypeAlias, TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeAlias, TypeGuard
+    from typing import TypeAlias, TypeGuard
 
 from ..error import GraphQLError
 from ..language import (
@@ -584,7 +577,7 @@ try:
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
 except TypeError as error:  # pragma: no cover
     if "Multiple inheritance with NamedTuple is not supported" not in str(error):
-        raise  # only catch expected error for Python 3.9 and 3.10
+        raise  # only catch expected error for Python 3.10
 
     class GraphQLResolveInfo(NamedTuple):  # type: ignore[no-redef]
         """Collection of information passed to the resolvers.

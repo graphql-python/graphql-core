@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import NamedTuple, TypeAlias
 
 from ..pyutils import RefMap, RefSet
 from .collect_fields import DeferUsage, FieldGroup, GroupedFieldSet
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
 
 __all__ = [
     "DeferUsageSet",

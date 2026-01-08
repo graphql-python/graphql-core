@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Collection, Dict, List, Union
+from typing import Any, Callable, Collection, Dict, List, TypeAlias, Union
 
 from ..error import GraphQLError
 from ..language import (
@@ -33,11 +33,6 @@ from ..type import (
 from ..utilities.coerce_input_value import coerce_input_value
 from ..utilities.type_from_ast import type_from_ast
 from ..utilities.value_from_ast import value_from_ast
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
 
 __all__ = ["get_argument_values", "get_directive_values", "get_variable_values"]
 

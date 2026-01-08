@@ -10,29 +10,20 @@ from typing import (
     Callable,
     Iterator,
     NamedTuple,
+    TypeAlias,
+    TypedDict,
     TypeVar,
     Union,
 )
 
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 from ..pyutils import BoxedAwaitableOrValue, Undefined
 
 if TYPE_CHECKING:
+    from typing import TypeGuard
+
     from ..error import GraphQLError, GraphQLFormattedError
     from ..pyutils import Path
 
-    try:
-        from typing import TypeGuard
-    except ImportError:  # Python < 3.10
-        from typing_extensions import TypeGuard
     try:
         from typing import NotRequired
     except ImportError:  # Python < 3.11
@@ -779,10 +770,8 @@ def is_deferred_grouped_field_set_result(
     """Check if the subsequent result is a deferred grouped field set result."""
     return isinstance(
         subsequent_result,
-        (
-            ReconcilableDeferredGroupedFieldSetResult,
-            NonReconcilableDeferredGroupedFieldSetResult,
-        ),  # we could use the union type here in Python >= 3.10
+        ReconcilableDeferredGroupedFieldSetResult
+        | NonReconcilableDeferredGroupedFieldSetResult,
     )
 
 

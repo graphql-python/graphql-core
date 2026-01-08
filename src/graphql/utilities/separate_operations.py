@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TypeAlias
 
 from ..language import (
     DocumentNode,
@@ -13,12 +13,6 @@ from ..language import (
     Visitor,
     visit,
 )
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = ["separate_operations"]
 

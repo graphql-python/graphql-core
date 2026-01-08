@@ -1,15 +1,9 @@
 from __future__ import annotations
 
 import pickle
-import sys
 from enum import Enum
 from math import isnan, nan
-from typing import Any, Awaitable, Callable
-
-try:
-    from typing import TypedDict
-except ImportError:  # Python < 3.8
-    from typing_extensions import TypedDict
+from typing import Any, Awaitable, Callable, TypedDict, TypeGuard
 
 import pytest
 
@@ -61,11 +55,6 @@ from graphql.type import (
     GraphQLUnionType,
     introspection_types,
 )
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
 
 
 # Helper functions to create stub AST nodes with required fields
@@ -1332,9 +1321,6 @@ def describe_resolve_info():
         info = GraphQLResolveInfo(**info_args, context="foo")  # type: ignore
         assert info.context == "foo"
 
-    @pytest.mark.skipif(
-        sys.version_info < (3, 9), reason="this needs at least Python 3.9"
-    )
     def resolve_info_with_specified_context_type_checks_type():
         info_int = GraphQLResolveInfo[int](**info_args, context=42)
         assert isinstance(info_int.context, int)

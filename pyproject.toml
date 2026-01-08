@@ -40,11 +40,12 @@ test = [
 ]
 lint = [
     "ruff>=0.14,<0.15",
-    "mypy>=1.10,<2",
+    "mypy>=1.19,<2",
     "bump2version>=1,<2",
+    "typing-extensions>=4.7; python_version<'3.11'",
 ]
 doc = [
-    "sphinx>=9,<10",
+    "sphinx>=9.1,<10",
     "sphinx_rtd_theme>=3.1.0rc2,<4",
 ]
 
@@ -73,7 +74,7 @@ source-exclude = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py37"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -118,7 +119,8 @@ select = [
   "TCH",    # flake8-type-checking
   "TID",    # flake8-tidy-imports
   "TRY",    # tryceratops
-  "UP",     # pyupgrade
+  # TODO: enable again after upgradesc
+  #"UP",     # pyupgrade
   "W",      # pycodestyle
   "YTT",    # flake8-2020
 ]

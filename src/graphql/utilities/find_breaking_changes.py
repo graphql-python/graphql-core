@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Collection, NamedTuple, Union
+from typing import Any, Collection, NamedTuple, TypeAlias, Union
 
 from ..language import print_ast
 from ..pyutils import Undefined, inspect
@@ -33,12 +33,6 @@ from ..type import (
 )
 from ..utilities.sort_value_node import sort_value_node
 from .ast_from_value import ast_from_value
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = [
     "BreakingChange",

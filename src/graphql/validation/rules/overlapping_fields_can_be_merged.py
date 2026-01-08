@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeAlias, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -31,12 +31,6 @@ from ...type import (
 from ...utilities import type_from_ast
 from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = ["OverlappingFieldsCanBeMergedRule"]
 

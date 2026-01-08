@@ -3,15 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, TypeAlias
 
 from .utils import dedent
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 Scope: TypeAlias = Dict[str, Any]
 

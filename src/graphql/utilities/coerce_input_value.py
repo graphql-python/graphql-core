@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Union, cast
+from typing import Any, Callable, List, TypeAlias, Union, cast
 
 from ..error import GraphQLError
 from ..pyutils import (
@@ -22,12 +22,6 @@ from ..type import (
     is_list_type,
     is_non_null_type,
 )
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
 
 __all__ = ["coerce_input_value"]
 

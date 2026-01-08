@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypeGuard
+
 from .ast import (
     DefinitionNode,
     ExecutableDefinitionNode,
@@ -18,12 +20,6 @@ from .ast import (
     ValueNode,
     VariableNode,
 )
-
-try:
-    from typing import TypeGuard
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeGuard
-
 
 __all__ = [
     "is_const_value_node",

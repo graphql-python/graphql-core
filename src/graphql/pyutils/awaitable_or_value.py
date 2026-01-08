@@ -2,13 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Awaitable, TypeVar, Union
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
-
+from typing import Awaitable, TypeAlias, TypeVar, Union
 
 __all__ = ["AwaitableOrValue"]
 

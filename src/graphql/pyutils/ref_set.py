@@ -3,11 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import MutableSet
-
-try:
-    MutableSet[int]
-except TypeError:  # Python < 3.9
-    from typing import MutableSet
 from contextlib import suppress
 from typing import Any, Iterable, Iterator, TypeVar
 
