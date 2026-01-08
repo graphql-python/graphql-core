@@ -322,4 +322,4 @@ def is_specified_scalar_type(type_: GraphQLNamedType) -> TypeGuard[GraphQLScalar
 
 
 # register the scalar types to avoid redefinition
-GraphQLNamedType.reserved_types.update(specified_scalar_types)  # type: ignore
+GraphQLNamedType.reserved_types |= specified_scalar_types  # type: ignore

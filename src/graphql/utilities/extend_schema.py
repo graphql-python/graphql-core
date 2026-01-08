@@ -245,9 +245,9 @@ class ExtendSchemaImpl:
                 operation_types[operation_type] = self.replace_named_type(original_type)
         # Then, incorporate schema definition and all schema extensions.
         if schema_def:
-            operation_types.update(self.get_operation_types([schema_def]))
+            operation_types |= self.get_operation_types([schema_def])
         if schema_extensions:
-            operation_types.update(self.get_operation_types(schema_extensions))
+            operation_types |= self.get_operation_types(schema_extensions)
 
         # Then produce and return the kwargs for a Schema with these types.
         get_operation = operation_types.get
@@ -372,7 +372,7 @@ class ExtendSchemaImpl:
         return GraphQLEnumType(
             **merge_kwargs(
                 kwargs,
-                values={**kwargs["values"], **self.build_enum_value_map(extensions)},
+                values=kwargs["values"] | self.build_enum_value_map(extensions),
                 extension_ast_nodes=kwargs["extension_ast_nodes"] + extensions,
             )
         )

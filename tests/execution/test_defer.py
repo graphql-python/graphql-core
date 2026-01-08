@@ -195,7 +195,7 @@ async def complete(
 
 
 def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
-    return {**args, **modifications}
+    return args | modifications
 
 
 def describe_execute_defer_directive():

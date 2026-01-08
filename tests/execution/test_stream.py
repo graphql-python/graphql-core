@@ -145,7 +145,7 @@ async def complete_async(
 
 
 def modified_args(args: dict[str, Any], **modifications: Any) -> dict[str, Any]:
-    return {**args, **modifications}
+    return args | modifications
 
 
 def describe_execute_stream_directive():

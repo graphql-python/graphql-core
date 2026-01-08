@@ -702,4 +702,4 @@ def is_introspection_type(type_: GraphQLNamedType) -> bool:
 
 
 # register the introspection types to avoid redefinition
-GraphQLNamedType.reserved_types.update(introspection_types)  # type: ignore
+GraphQLNamedType.reserved_types |= introspection_types  # type: ignore
