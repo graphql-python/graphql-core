@@ -15,18 +15,18 @@ jobs:
     steps:
       - name: Checkout project
         id: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
-      - name: Set up Python 3.13
+      - name: Set up Python 3.14
         id: setup-python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           architecture: x64
 
       - name: Install uv
         id: setup-uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
 
       - name: Install tox
         id: install-tox

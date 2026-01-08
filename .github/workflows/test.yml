@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Checkout project
         id: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
         id: setup-python
@@ -24,7 +24,7 @@ jobs:
 
       - name: Install uv
         id: setup-uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-suffix: ${{ matrix.python-version }}

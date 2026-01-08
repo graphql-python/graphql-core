@@ -52,7 +52,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "GraphQL-core 3"
-copyright = "2025, Christoph Zwerschke"
+copyright = "2026, Christoph Zwerschke"
 author = "Christoph Zwerschke"
 
 # The version info for the project you're documenting, acts as replacement for
@@ -95,13 +95,6 @@ autodoc_default_options = {
 }
 autosummary_generate = True
 
-autodoc_type_aliases = {
-    "AwaitableOrValue": "graphql.pyutils.AwaitableOrValue",
-    "FormattedSourceLocation": "graphql.language.FormattedSourceLocation",
-    "Middleware": "graphql.execution.Middleware",
-    "TypeMap": "graphql.schema.TypeMap",
-}
-
 # GraphQL-core top level modules with submodules that can be omitted.
 # Sometimes autodoc cannot find classes since it is looking for the
 # qualified form, but the documentation has the shorter form.
@@ -123,201 +116,22 @@ graphql_modules = {
     "validation": ["rules", "validation_context"],
 }
 
-# GraphQL-core classes that autodoc sometimes cannot find
-# (e.g. where specified as string in type hints).
-# We need to give autodoc a little help in this cases, too:
-graphql_classes = {
-    "GraphQLAbstractType": "type",
-    "GraphQLFieldResolver": "type",
-    "GraphQLObjectType": "type",
-    "GraphQLOutputType": "type",
-    "GraphQLTypeResolver": "type",
-    "AwaitableOrValue": "execution",
-    "Middleware": "execution",
-    "Node": "language",
-    "Source": "language",
-    "SourceLocation": "language",
-}
-
-# ignore the following undocumented or internal references:
-ignore_references = {
-    "GNT",
-    "GT",
-    "KT",
-    "T",
-    "VT",
-    "TContext",
-    "Enum",
-    "traceback",
-    "TypeMap",
-    "AwaitableOrValue",
-    "CancellableStreamRecord",
-    "DeferredFragmentRecord",
-    "DeferredGroupedFieldSetRecord",
-    "DeferredGroupedFieldSetResult",
-    "DeferUsage",
-    "EnterLeaveVisitor",
-    "ExperimentalIncrementalExecutionResults",
-    "FieldGroup",
-    "FormattedCompletedResult",
-    "FormattedIncrementalResult",
-    "FormattedPendingResult",
-    "FormattedSourceLocation",
-    "GraphQLAbstractType",
-    "GraphQLCompositeType",
-    "GraphQLEnumValueMap",
-    "GraphQLErrorExtensions",
-    "GraphQLFieldResolver",
-    "GraphQLInputType",
-    "GraphQLLeafType",
-    "GraphQLNullableType",
-    "GraphQLOutputType",
-    "GraphQLTypeResolver",
-    "GraphQLWrappedResult",
-    "GroupedFieldSet",
-    "IncrementalContext",
-    "IncrementalDataRecord",
-    "IncrementalResult",
-    "Middleware",
-    "PendingResult",
-    "StreamItemRecord",
-    "StreamItemResult",
-    "StreamItemsResult",
-    "StreamRecord",
-    "SubsequentDataRecord",
-    "SubsequentResultRecord",
-    "UndefinedType",
-    "asyncio.events.AbstractEventLoop",
-    "collections.abc.MutableMapping",
-    "collections.abc.MutableSet",
-    "enum.Enum",
-    "graphql.execution.build_field_plan.FieldGroup",
-    "graphql.execution.build_field_plan.FieldPlan",
-    "graphql.execution.collect_fields.CollectedFields",
-    "graphql.execution.collect_fields.DeferUsage",
-    "graphql.execution.collect_fields.FieldDetails",
-    "graphql.execution.execute.GraphQLWrappedResult",
-    "graphql.execution.execute.IncrementalContext",
-    "graphql.execution.execute.StreamArguments",
-    "graphql.execution.execute.SubFieldPlan",
-    "graphql.execution.execute.StreamUsage",
-    "graphql.execution.incremental_publisher.IncrementalPublisher",
-    "graphql.execution.incremental_publisher.IncrementalPublisherContext",
-    "graphql.execution.map_async_iterable.map_async_iterable",
-    "graphql.execution.Middleware",
-    "graphql.execution.types.BareDeferredGroupedFieldSetResult",
-    "graphql.execution.types.BareStreamItemsResult",
-    "graphql.execution.types.CancellableStreamRecord",
-    "graphql.execution.types.CompletedResult",
-    "graphql.execution.types.DeferredFragmentRecord",
-    "graphql.execution.types.DeferredGroupedFieldSetRecord",
-    "graphql.execution.types.FormattedCompletedResult",
-    "graphql.execution.types.FormattedPendingResult",
-    "graphql.execution.types.NonReconcilableStreamItemsResult",
-    "graphql.execution.types.PendingResult",
-    "graphql.execution.types.ReconcilableStreamItemsResult",
-    "graphql.execution.types.StreamItemResult",
-    "graphql.execution.types.StreamRecord",
-    "graphql.execution.types.SubsequentResultRecord",
-    "graphql.execution.types.TerminatingStreamItemsResult",
-    "graphql.language.lexer.EscapeSequence",
-    "graphql.language.visitor.EnterLeaveVisitor",
-    "graphql.pyutils.ref_map.K",
-    "graphql.pyutils.ref_map.V",
-    "graphql.type.definition.GT_co",
-    "graphql.type.definition.GNT_co",
-    "graphql.type.definition.TContext",
-    "graphql.type.schema.InterfaceImplementations",
-    "graphql.validation.validation_context.VariableUsage",
-    "graphql.validation.rules.known_argument_names.KnownArgumentNamesOnDirectivesRule",
-    "graphql.validation.rules.provided_required_arguments.ProvidedRequiredArgumentsOnDirectivesRule",
-}
-
-ignore_references.update(__builtins__)
-
-
-def on_missing_reference(app, env, node, contnode):
-    """Fix or skip any missing references."""
-    if node.get("refdomain") != "py":
-        return None
-    target = node.get("reftarget")
-    if not target:
-        return None
-    if target in ignore_references or target.endswith("Kwargs"):
-        return contnode
-    typ = node.get("reftype")
-    name = target.rsplit(".", 1)[-1]
-    if name in ("GT", "GNT", "KT", "T", "VT"):
-        return contnode
-    if (
-        typ == "obj"
-        and target.startswith("typing.")
-        and name in ("Any", "Optional", "Union")
-    ):
-        return contnode
-    if typ != "class":
-        return None
-    if "." in target:  # maybe too specific
-        base_module, target = target.split(".", 1)
-        if base_module == "graphql":
-            if "." not in target:
-                return None
-            base_module, target = target.split(".", 1)
-        if "." not in target:
-            return None
-        sub_modules = graphql_modules.get(base_module)
-        if not sub_modules:
-            return None
-        sub_module = target.split(".", 1)[0]
-        if sub_module not in sub_modules:
-            return None
-        target = "graphql." + base_module + "." + target.rsplit(".", 1)[-1]
-    else:  # maybe not specific enough
-        base_module = graphql_classes.get(target)
-        if not base_module:
-            return None
-        target = "graphql." + base_module + "." + target
-    # replace target
-    if contnode.__class__.__name__ == "Text":
-        contnode = contnode.__class__(target)
-    elif contnode.__class__.__name__ == "literal":
-        if len(contnode.children) != 1:
-            return None
-        textnode = contnode.children[0]
-        contnode.children[0] = textnode.__class__(target)
-    else:
-        return None
-    node["reftarget"] = target
-    fromdoc = node.get("refdoc")
-    if not fromdoc:
-        doc_module = node.get("py:module")
-        if doc_module:
-            if doc_module.startswith("graphql."):
-                doc_module = doc_module.split(".", 1)[-1]
-            if doc_module not in graphql_modules and doc_module != "graphql":
-                doc_module = None
-        fromdoc = "modules/" + (doc_module or base_module)
-    # try resolving again with replaced target
-    return env.domains["py"].resolve_xref(
-        env, fromdoc, app.builder, typ, target, node, contnode
-    )
-
-
-def on_skip_member(_app, what, name, _obj, skip, _options):
-    if what == "class" and name == "__init__":
-        # we could set "special-members" to "__init__",
-        # but this gives an error when documenting modules
-        return False
-    return skip
-
-
-def setup(app):
-    app.connect("missing-reference", on_missing_reference)
-    app.connect("autodoc-skip-member", on_skip_member)
-
-
 # be nitpicky (handle all possible problems in on_missing_reference)
 nitpicky = True
+nitpick_ignore = [
+    # TypeVars and internal types that can't be resolved
+    ("py:obj", "graphql.pyutils.ref_map.K"),
+    ("py:obj", "graphql.pyutils.ref_map.V"),
+    ("py:obj", "graphql.pyutils.awaitable_or_value.T"),
+    ("py:obj", "graphql.pyutils.boxed_awaitable_or_value.T"),
+    ("py:obj", "graphql.pyutils.ref_set.T"),
+    ("py:obj", "graphql.type.definition.T"),
+    ("py:obj", "graphql.type.definition.GT_co"),
+    ("py:obj", "graphql.type.definition.GNT_co"),
+    ("py:obj", "graphql.type.definition.TContext"),
+]
+
+suppress_warnings = ["ref.class", "ref.python"]
 
 
 # The reST default role (used for this markup: `text`) to use for all
