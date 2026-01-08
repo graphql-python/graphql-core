@@ -269,7 +269,8 @@ class Parser:
     def parse_name(self) -> NameNode:
         """Convert a name lex token into a name parse node."""
         token = self.expect_token(TokenKind.NAME)
-        return NameNode(value=token.value, loc=self.loc(token))
+        # NAME tokens always have a value
+        return NameNode(value=cast("str", token.value), loc=self.loc(token))
 
     # Implement the parsing rules in the Document section.
 
@@ -382,9 +383,12 @@ class Parser:
     def parse_variable_definition(self) -> VariableDefinitionNode:
         """VariableDefinition: Variable: Type DefaultValue? Directives[Const]?"""
         start = self._lexer.token
+        variable = self.parse_variable()
+        self.expect_token(TokenKind.COLON)
+        type_ = self.parse_type_reference()
         return VariableDefinitionNode(
-            variable=self.parse_variable(),
-            type=self.expect_token(TokenKind.COLON) and self.parse_type_reference(),
+            variable=variable,
+            type=type_,
             default_value=self.parse_const_value_literal()
             if self.expect_optional_token(TokenKind.EQUALS)
             else None,
@@ -448,25 +452,25 @@ class Parser:
             return None
 
         start = self._lexer.token
-        nullability_assertion: NullabilityAssertionNode | None = None
+        list_nullability: ListNullabilityOperatorNode | None = None
 
         if self.expect_optional_token(TokenKind.BRACKET_L):
             inner_modifier = self.parse_nullability_assertion()
             self.expect_token(TokenKind.BRACKET_R)
-            nullability_assertion = ListNullabilityOperatorNode(
+            list_nullability = ListNullabilityOperatorNode(
                 nullability_assertion=inner_modifier, loc=self.loc(start)
             )
 
         if self.expect_optional_token(TokenKind.BANG):
-            nullability_assertion = NonNullAssertionNode(
-                nullability_assertion=nullability_assertion, loc=self.loc(start)
+            return NonNullAssertionNode(
+                nullability_assertion=list_nullability, loc=self.loc(start)
             )
-        elif self.expect_optional_token(TokenKind.QUESTION_MARK):
-            nullability_assertion = ErrorBoundaryNode(
-                nullability_assertion=nullability_assertion, loc=self.loc(start)
+        if self.expect_optional_token(TokenKind.QUESTION_MARK):
+            return ErrorBoundaryNode(
+                nullability_assertion=list_nullability, loc=self.loc(start)
             )
 
-        return nullability_assertion
+        return list_nullability
 
     def parse_arguments(self, is_const: bool) -> tuple[ArgumentNode, ...]:
         """Arguments[Const]: (Argument[?Const]+)"""
@@ -573,8 +577,9 @@ class Parser:
     def parse_string_literal(self, _is_const: bool = False) -> StringValueNode:
         token = self._lexer.token
         self.advance_lexer()
+        # STRING and BLOCK_STRING tokens always have a value
         return StringValueNode(
-            value=token.value,
+            value=token.value or "",
             block=token.kind == TokenKind.BLOCK_STRING,
             loc=self.loc(token),
         )
@@ -609,16 +614,19 @@ class Parser:
     def parse_int(self, _is_const: bool = False) -> IntValueNode:
         token = self._lexer.token
         self.advance_lexer()
-        return IntValueNode(value=token.value, loc=self.loc(token))
+        # INT tokens always have a value
+        return IntValueNode(value=token.value or "", loc=self.loc(token))
 
     def parse_float(self, _is_const: bool = False) -> FloatValueNode:
         token = self._lexer.token
         self.advance_lexer()
-        return FloatValueNode(value=token.value, loc=self.loc(token))
+        # FLOAT tokens always have a value
+        return FloatValueNode(value=token.value or "", loc=self.loc(token))
 
     def parse_named_values(self, _is_const: bool = False) -> ValueNode:
         token = self._lexer.token
-        value = token.value
+        # NAME tokens always have a value
+        value = token.value or ""
         self.advance_lexer()
         if value == "true":
             return BooleanValueNode(value=True, loc=self.loc(token))
