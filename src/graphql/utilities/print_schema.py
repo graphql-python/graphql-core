@@ -21,14 +21,8 @@ from ..type import (
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLUnionType,
-    is_enum_type,
-    is_input_object_type,
-    is_interface_type,
     is_introspection_type,
-    is_object_type,
-    is_scalar_type,
     is_specified_directive,
-    is_union_type,
 )
 from .ast_from_value import ast_from_value
 
@@ -138,22 +132,23 @@ def has_default_root_operation_types(schema: GraphQLSchema) -> bool:
 
 def print_type(type_: GraphQLNamedType) -> str:
     """Print a named GraphQL type."""
-    if is_scalar_type(type_):
-        return print_scalar(type_)
-    if is_object_type(type_):
-        return print_object(type_)
-    if is_interface_type(type_):
-        return print_interface(type_)
-    if is_union_type(type_):
-        return print_union(type_)
-    if is_enum_type(type_):
-        return print_enum(type_)
-    if is_input_object_type(type_):
-        return print_input_object(type_)
-
-    # Not reachable. All possible types have been considered.
-    msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
-    raise TypeError(msg)  # pragma: no cover
+    match type_:
+        case GraphQLScalarType():
+            return print_scalar(type_)
+        case GraphQLObjectType():
+            return print_object(type_)
+        case GraphQLInterfaceType():
+            return print_interface(type_)
+        case GraphQLUnionType():
+            return print_union(type_)
+        case GraphQLEnumType():
+            return print_enum(type_)
+        case GraphQLInputObjectType():
+            return print_input_object(type_)
+        case _:  # pragma: no cover
+            # Not reachable. All possible types have been considered.
+            msg = f"Unexpected type: {inspect(type_)}."
+            raise TypeError(msg)
 
 
 def print_scalar(type_: GraphQLScalarType) -> str:

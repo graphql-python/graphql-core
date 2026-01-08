@@ -15,6 +15,7 @@ from ..type import (
     GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
+    GraphQLScalarType,
     GraphQLSchema,
     GraphQLType,
     GraphQLUnionType,
@@ -27,7 +28,6 @@ from ..type import (
     is_object_type,
     is_required_argument,
     is_required_input_field,
-    is_scalar_type,
     is_specified_scalar_type,
     is_union_type,
 )
@@ -543,22 +543,23 @@ def is_change_safe_for_input_object_field_or_field_arg(
 
 
 def type_kind_name(type_: GraphQLNamedType) -> str:
-    if is_scalar_type(type_):
-        return "a Scalar type"
-    if is_object_type(type_):
-        return "an Object type"
-    if is_interface_type(type_):
-        return "an Interface type"
-    if is_union_type(type_):
-        return "a Union type"
-    if is_enum_type(type_):
-        return "an Enum type"
-    if is_input_object_type(type_):
-        return "an Input type"
-
-    # Not reachable. All possible output types have been considered.
-    msg = f"Unexpected type {inspect(type_)}"  # pragma: no cover
-    raise TypeError(msg)  # pragma: no cover
+    match type_:
+        case GraphQLScalarType():
+            return "a Scalar type"
+        case GraphQLObjectType():
+            return "an Object type"
+        case GraphQLInterfaceType():
+            return "an Interface type"
+        case GraphQLUnionType():
+            return "a Union type"
+        case GraphQLEnumType():
+            return "an Enum type"
+        case GraphQLInputObjectType():
+            return "an Input type"
+        case _:  # pragma: no cover
+            # Not reachable. All possible named types have been considered.
+            msg = f"Unexpected type {inspect(type_)}"
+            raise TypeError(msg)
 
 
 def stringify_value(value: Any, type_: GraphQLInputType) -> str:

@@ -13,19 +13,19 @@ from .definition import (
     GraphQLEnumValue,
     GraphQLField,
     GraphQLFieldMap,
+    GraphQLInputObjectType,
+    GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
     GraphQLObjectType,
+    GraphQLScalarType,
+    GraphQLUnionType,
     is_abstract_type,
     is_enum_type,
     is_input_object_type,
     is_interface_type,
-    is_list_type,
-    is_non_null_type,
     is_object_type,
-    is_scalar_type,
-    is_union_type,
 )
 from .scalars import GraphQLBoolean, GraphQLString
 
@@ -312,26 +312,27 @@ class TypeFields(GraphQLFieldMap):
 
     @staticmethod
     def kind(type_, _info):
-        if is_scalar_type(type_):
-            return TypeKind.SCALAR
-        if is_object_type(type_):
-            return TypeKind.OBJECT
-        if is_interface_type(type_):
-            return TypeKind.INTERFACE
-        if is_union_type(type_):
-            return TypeKind.UNION
-        if is_enum_type(type_):
-            return TypeKind.ENUM
-        if is_input_object_type(type_):
-            return TypeKind.INPUT_OBJECT
-        if is_list_type(type_):
-            return TypeKind.LIST
-        if is_non_null_type(type_):
-            return TypeKind.NON_NULL
-
-        # Not reachable. All possible types have been considered.
-        msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
-        raise TypeError(msg)  # pragma: no cover
+        match type_:
+            case GraphQLScalarType():
+                return TypeKind.SCALAR
+            case GraphQLObjectType():
+                return TypeKind.OBJECT
+            case GraphQLInterfaceType():
+                return TypeKind.INTERFACE
+            case GraphQLUnionType():
+                return TypeKind.UNION
+            case GraphQLEnumType():
+                return TypeKind.ENUM
+            case GraphQLInputObjectType():
+                return TypeKind.INPUT_OBJECT
+            case GraphQLList():
+                return TypeKind.LIST
+            case GraphQLNonNull():
+                return TypeKind.NON_NULL
+            case _:  # pragma: no cover
+                # Not reachable. All possible types have been considered.
+                msg = f"Unexpected type: {inspect(type_)}."
+                raise TypeError(msg)
 
     @staticmethod
     def name(type_, _info):

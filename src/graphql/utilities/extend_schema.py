@@ -75,17 +75,11 @@ from ..type import (
     GraphQLUnionTypeKwargs,
     assert_schema,
     introspection_types,
-    is_enum_type,
-    is_input_object_type,
-    is_interface_type,
     is_introspection_type,
     is_list_type,
     is_non_null_type,
-    is_object_type,
-    is_scalar_type,
     is_specified_directive,
     is_specified_scalar_type,
-    is_union_type,
     specified_scalar_types,
 )
 from .value_from_ast import value_from_ast
@@ -312,22 +306,23 @@ class ExtendSchemaImpl:
         if is_introspection_type(type_) or is_specified_scalar_type(type_):
             # Builtin types are not extended.
             return type_
-        if is_scalar_type(type_):
-            return self.extend_scalar_type(type_)
-        if is_object_type(type_):
-            return self.extend_object_type(type_)
-        if is_interface_type(type_):
-            return self.extend_interface_type(type_)
-        if is_union_type(type_):
-            return self.extend_union_type(type_)
-        if is_enum_type(type_):
-            return self.extend_enum_type(type_)
-        if is_input_object_type(type_):
-            return self.extend_input_object_type(type_)
-
-        # Not reachable. All possible types have been considered.
-        msg = f"Unexpected type: {inspect(type_)}."  # pragma: no cover
-        raise TypeError(msg)  # pragma: no cover
+        match type_:
+            case GraphQLScalarType():
+                return self.extend_scalar_type(type_)
+            case GraphQLObjectType():
+                return self.extend_object_type(type_)
+            case GraphQLInterfaceType():
+                return self.extend_interface_type(type_)
+            case GraphQLUnionType():
+                return self.extend_union_type(type_)
+            case GraphQLEnumType():
+                return self.extend_enum_type(type_)
+            case GraphQLInputObjectType():
+                return self.extend_input_object_type(type_)
+            case _:  # pragma: no cover
+                # Not reachable. All possible types have been considered.
+                msg = f"Unexpected type: {inspect(type_)}."
+                raise TypeError(msg)
 
     def extend_input_object_type_fields(
         self, kwargs: GraphQLInputObjectTypeKwargs, extensions: tuple[Any, ...]
