@@ -346,7 +346,7 @@ def describe_visit_with_type_info():
                         arguments=node.arguments,
                         directives=node.directives,
                         selection_set=SelectionSetNode(
-                            selections=[FieldNode(name=NameNode(value="__typename"))]
+                            selections=(FieldNode(name=NameNode(value="__typename")),)
                         ),
                     )
 
