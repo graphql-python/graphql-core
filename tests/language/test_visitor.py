@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import partial
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 import pytest
 
@@ -595,11 +596,11 @@ def describe_visitor():
         # so we keep allowing this and test this feature here.
         parsed_ast = parse("{ a }")
 
+        @dataclass(frozen=True, repr=False, kw_only=True)
         class CustomFieldNode(SelectionNode):
-            __slots__ = "name", "selection_set"
-
+            kind: ClassVar[str] = "custom_field"
             name: NameNode
-            selection_set: SelectionSetNode | None
+            selection_set: SelectionSetNode | None = None
 
         # Build custom AST immutably
         op_def = cast("OperationDefinitionNode", parsed_ast.definitions[0])

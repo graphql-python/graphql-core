@@ -2,23 +2,25 @@ from __future__ import annotations
 
 import weakref
 from copy import copy, deepcopy
+from dataclasses import dataclass
+from typing import ClassVar
 
 from graphql.language import Location, NameNode, Node, Source, Token, TokenKind
 from graphql.pyutils import inspect
 
 
+@dataclass(frozen=True, repr=False, kw_only=True)
 class SampleTestNode(Node):
-    __slots__ = "alpha", "beta"
+    kind: ClassVar[str] = "sample_test"
+    alpha: int | Node = 0  # Union with Node to support copy tests with nested nodes
+    beta: int | Node | None = None
 
-    alpha: int | Node  # Union with Node to support copy tests with nested nodes
-    beta: int | Node | None
 
-
+@dataclass(frozen=True, repr=False, kw_only=True)
 class SampleNamedNode(Node):
-    __slots__ = "foo", "name"
-
-    foo: str
-    name: NameNode | None
+    kind: ClassVar[str] = "sample_named"
+    foo: str = ""
+    name: NameNode | None = None
 
 
 def make_loc(start: int = 1, end: int = 3) -> Location:
@@ -176,13 +178,17 @@ def describe_node_class():
         assert node.beta == 2
         assert not hasattr(node, "gamma")
 
-    def converts_list_to_tuple_on_init():
+    def does_not_convert_list_to_tuple():
+        """Lists are not auto-converted to tuples - pass tuples directly."""
         from graphql.language import FieldNode, SelectionSetNode
 
         field = FieldNode(name=NameNode(value="foo"))
-        node = SelectionSetNode(selections=[field])  # Pass list, not tuple
+        # Passing a list stores it as-is (no conversion)
+        node = SelectionSetNode(selections=[field])  # type: ignore[arg-type]
+        assert isinstance(node.selections, list)
+        # Users should pass tuples directly for proper typing
+        node = SelectionSetNode(selections=(field,))
         assert isinstance(node.selections, tuple)
-        assert node.selections == (field,)
 
     def has_representation_with_loc():
         node = SampleTestNode(alpha=1, beta=2)
@@ -220,8 +226,6 @@ def describe_node_class():
         assert node2 == node
         node2 = SampleTestNode(alpha=1, beta=1)
         assert node2 != node
-        node3 = Node(alpha=1, beta=2)
-        assert node3 != node
 
     def can_hash():
         node = SampleTestNode(alpha=1, beta=2)
@@ -233,28 +237,17 @@ def describe_node_class():
         assert node3 != node
         assert hash(node3) != hash(node)
 
-    def caches_are_hashed():
-        node = SampleTestNode(alpha=1)
-        assert not hasattr(node, "_hash")
+    def is_hashable():
+        node = SampleTestNode(alpha=1, beta=2)
         hash1 = hash(node)
-        assert hasattr(node, "_hash")
-        assert hash1 == node._hash  # noqa: SLF001
-        node.alpha = 2
-        assert not hasattr(node, "_hash")
+        # Hash should be stable
         hash2 = hash(node)
-        assert hash2 != hash1
-        assert hasattr(node, "_hash")
-        assert hash2 == node._hash  # noqa: SLF001
+        assert hash1 == hash2
 
     def can_create_weak_reference():
         node = SampleTestNode(alpha=1, beta=2)
         ref = weakref.ref(node)
         assert ref() is node
-
-    def can_create_custom_attribute():
-        node = SampleTestNode(alpha=1, beta=2)
-        node.gamma = 3
-        assert node.gamma == 3  # type: ignore
 
     def can_create_shallow_copy():
         node = SampleTestNode(alpha=1, beta=2)
