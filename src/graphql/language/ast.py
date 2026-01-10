@@ -4,14 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields
 from enum import Enum
-from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, TypeVar
 
 from ..pyutils import camel_to_snake
+
+try:
+    from typing import dataclass_transform
+except ImportError:  # Python < 3.11
+    from typing_extensions import dataclass_transform
 
 if TYPE_CHECKING:
     from .source import Source
     from .token_kind import TokenKind
-
 
 __all__ = [
     "QUERY_DOCUMENT_KEYS",
@@ -348,7 +352,19 @@ class _KeysProperty:
         return tuple(f.name for f in fields(cls))
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+T_Instance = TypeVar("T_Instance")
+
+
+@dataclass_transform(frozen_default=True, kw_only_default=True)
+def node_class(cls: type[T_Instance]) -> type[T_Instance]:
+    """Decorator to define a GraphQL AST Node class.
+
+    We use default dict-based dataclass instances for faster pickling/unpickling.
+    """
+    return dataclass(frozen=True, kw_only=True, repr=False)(cls)
+
+
+@node_class
 class Node:
     """AST nodes"""
 
@@ -384,7 +400,7 @@ class Node:
 # Name
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class NameNode(Node):
     value: str
 
@@ -392,12 +408,12 @@ class NameNode(Node):
 # Base classes for node categories
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class DefinitionNode(Node):
     """Base class for all definition nodes."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ExecutableDefinitionNode(DefinitionNode):
     """Base class for executable definition nodes."""
 
@@ -407,34 +423,34 @@ class ExecutableDefinitionNode(DefinitionNode):
     directives: tuple[DirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class SelectionNode(Node):
     """Base class for selection nodes."""
 
     directives: tuple[DirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class NullabilityAssertionNode(Node):
     """Base class for nullability assertion nodes."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ValueNode(Node):
     """Base class for value nodes."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class TypeNode(Node):
     """Base class for type nodes."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class TypeSystemDefinitionNode(DefinitionNode):
     """Base class for type system definition nodes."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class TypeDefinitionNode(TypeSystemDefinitionNode):
     """Base class for type definition nodes."""
 
@@ -443,7 +459,7 @@ class TypeDefinitionNode(TypeSystemDefinitionNode):
     directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class TypeExtensionNode(TypeSystemDefinitionNode):
     """Base class for type extension nodes."""
 
@@ -454,17 +470,17 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
 # Type Reference nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class NamedTypeNode(TypeNode):
     name: NameNode
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ListTypeNode(TypeNode):
     type: TypeNode
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class NonNullTypeNode(TypeNode):
     type: NamedTypeNode | ListTypeNode
 
@@ -472,69 +488,69 @@ class NonNullTypeNode(TypeNode):
 # Value nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class VariableNode(ValueNode):
     name: NameNode
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class IntValueNode(ValueNode):
     value: str
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class FloatValueNode(ValueNode):
     value: str
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class StringValueNode(ValueNode):
     value: str
     block: bool | None = None
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class BooleanValueNode(ValueNode):
     value: bool
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class NullValueNode(ValueNode):
     """A null value node has no fields."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class EnumValueNode(ValueNode):
     value: str
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ListValueNode(ValueNode):
     values: tuple[ValueNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ConstListValueNode(ListValueNode):
     values: tuple[ConstValueNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ObjectFieldNode(Node):
     name: NameNode
     value: ValueNode
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ConstObjectFieldNode(ObjectFieldNode):
     value: ConstValueNode
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ObjectValueNode(ValueNode):
     fields: tuple[ObjectFieldNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ConstObjectValueNode(ObjectValueNode):
     fields: tuple[ConstObjectFieldNode, ...] = ()
 
@@ -554,13 +570,13 @@ ConstValueNode: TypeAlias = (
 # Directive nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class DirectiveNode(Node):
     name: NameNode
     arguments: tuple[ArgumentNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ConstDirectiveNode(DirectiveNode):
     arguments: tuple[ConstArgumentNode, ...] = ()
 
@@ -568,17 +584,17 @@ class ConstDirectiveNode(DirectiveNode):
 # Nullability Assertion nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ListNullabilityOperatorNode(NullabilityAssertionNode):
     nullability_assertion: NullabilityAssertionNode | None = None
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class NonNullAssertionNode(NullabilityAssertionNode):
     nullability_assertion: ListNullabilityOperatorNode | None = None
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ErrorBoundaryNode(NullabilityAssertionNode):
     nullability_assertion: ListNullabilityOperatorNode | None = None
 
@@ -586,7 +602,7 @@ class ErrorBoundaryNode(NullabilityAssertionNode):
 # Selection nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class FieldNode(SelectionNode):
     name: NameNode
     alias: NameNode | None = None
@@ -596,13 +612,13 @@ class FieldNode(SelectionNode):
     selection_set: SelectionSetNode | None = None
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class FragmentSpreadNode(SelectionNode):
     name: NameNode
     directives: tuple[DirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class InlineFragmentNode(SelectionNode):
     selection_set: SelectionSetNode
     type_condition: NamedTypeNode | None = None
@@ -612,13 +628,13 @@ class InlineFragmentNode(SelectionNode):
 # Argument nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ArgumentNode(Node):
     name: NameNode
     value: ValueNode
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ConstArgumentNode(ArgumentNode):
     value: ConstValueNode
 
@@ -626,7 +642,7 @@ class ConstArgumentNode(ArgumentNode):
 # Selection Set
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class SelectionSetNode(Node):
     selections: tuple[SelectionNode, ...] = ()
 
@@ -634,7 +650,7 @@ class SelectionSetNode(Node):
 # Variable Definition
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class VariableDefinitionNode(Node):
     variable: VariableNode
     type: TypeNode
@@ -645,12 +661,12 @@ class VariableDefinitionNode(Node):
 # Executable Definition nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class OperationDefinitionNode(ExecutableDefinitionNode):
     operation: OperationType
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class FragmentDefinitionNode(ExecutableDefinitionNode):
     name: NameNode  # Required (overrides optional in parent)
     type_condition: NamedTypeNode
@@ -659,7 +675,7 @@ class FragmentDefinitionNode(ExecutableDefinitionNode):
 # Document
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class DocumentNode(Node):
     definitions: tuple[DefinitionNode, ...] = ()
 
@@ -667,14 +683,14 @@ class DocumentNode(Node):
 # Type System Definition nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class SchemaDefinitionNode(TypeSystemDefinitionNode):
     description: StringValueNode | None = None
     directives: tuple[ConstDirectiveNode, ...] = ()
     operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class OperationTypeDefinitionNode(Node):
     operation: OperationType
     type: NamedTypeNode
@@ -683,18 +699,18 @@ class OperationTypeDefinitionNode(Node):
 # Type Definition nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ScalarTypeDefinitionNode(TypeDefinitionNode):
     """Scalar type definition node - inherits name, description, directives."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
     interfaces: tuple[NamedTypeNode, ...] = ()
     fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class FieldDefinitionNode(DefinitionNode):
     name: NameNode
     type: TypeNode
@@ -703,7 +719,7 @@ class FieldDefinitionNode(DefinitionNode):
     directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class InputValueDefinitionNode(DefinitionNode):
     name: NameNode
     type: TypeNode
@@ -712,30 +728,30 @@ class InputValueDefinitionNode(DefinitionNode):
     directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
     interfaces: tuple[NamedTypeNode, ...] = ()
     fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class UnionTypeDefinitionNode(TypeDefinitionNode):
     types: tuple[NamedTypeNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class EnumTypeDefinitionNode(TypeDefinitionNode):
     values: tuple[EnumValueDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class EnumValueDefinitionNode(DefinitionNode):
     name: NameNode
     description: StringValueNode | None = None
     directives: tuple[ConstDirectiveNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):
     fields: tuple[InputValueDefinitionNode, ...] = ()
 
@@ -743,7 +759,7 @@ class InputObjectTypeDefinitionNode(TypeDefinitionNode):
 # Directive Definition
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class DirectiveDefinitionNode(TypeSystemDefinitionNode):
     name: NameNode
     locations: tuple[NameNode, ...]
@@ -755,7 +771,7 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 # Type System Extension nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class SchemaExtensionNode(Node):
     directives: tuple[ConstDirectiveNode, ...] = ()
     operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
@@ -767,33 +783,33 @@ TypeSystemExtensionNode: TypeAlias = SchemaExtensionNode | TypeExtensionNode
 # Type Extension nodes
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ScalarTypeExtensionNode(TypeExtensionNode):
     """Scalar type extension node - inherits name, directives."""
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class ObjectTypeExtensionNode(TypeExtensionNode):
     interfaces: tuple[NamedTypeNode, ...] = ()
     fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class InterfaceTypeExtensionNode(TypeExtensionNode):
     interfaces: tuple[NamedTypeNode, ...] = ()
     fields: tuple[FieldDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class UnionTypeExtensionNode(TypeExtensionNode):
     types: tuple[NamedTypeNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class EnumTypeExtensionNode(TypeExtensionNode):
     values: tuple[EnumValueDefinitionNode, ...] = ()
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class InputObjectTypeExtensionNode(TypeExtensionNode):
     fields: tuple[InputValueDefinitionNode, ...] = ()

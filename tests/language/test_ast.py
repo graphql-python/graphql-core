@@ -2,21 +2,28 @@ from __future__ import annotations
 
 import weakref
 from copy import copy, deepcopy
-from dataclasses import dataclass
 from typing import ClassVar
 
-from graphql.language import Location, NameNode, Node, Source, Token, TokenKind
+from graphql.language import (
+    Location,
+    NameNode,
+    Node,
+    Source,
+    Token,
+    TokenKind,
+)
+from graphql.language.ast import node_class
 from graphql.pyutils import inspect
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class SampleTestNode(Node):
     kind: ClassVar[str] = "sample_test"
     alpha: int | Node = 0  # Union with Node to support copy tests with nested nodes
     beta: int | Node | None = None
 
 
-@dataclass(frozen=True, repr=False, kw_only=True)
+@node_class
 class SampleNamedNode(Node):
     kind: ClassVar[str] = "sample_named"
     foo: str = ""
