@@ -90,11 +90,11 @@ class IncrementalPublisher:
         incremental_data_records: Sequence[IncrementalDataRecord],
     ) -> ExperimentalIncrementalExecutionResults:
         """Build response."""
-        incremental_graph = self._incremental_graph
-        incremental_graph.add_incremental_data_records(incremental_data_records)
-        new_pending = incremental_graph.get_new_pending()
+        new_root_nodes = self._incremental_graph.get_new_root_nodes(
+            incremental_data_records
+        )
 
-        pending = self._pending_sources_to_results(new_pending)
+        pending = self._to_pending_results(new_root_nodes)
 
         initial_result = InitialIncrementalExecutionResult(
             data,
@@ -107,18 +107,17 @@ class IncrementalPublisher:
             initial_result, self._subscribe()
         )
 
-    def _pending_sources_to_results(
-        self, new_pending: list[SubsequentResultRecord]
+    def _to_pending_results(
+        self, new_root_nodes: list[SubsequentResultRecord]
     ) -> list[PendingResult]:
         """Convert pending sources to pending results."""
         pending_results: list[PendingResult] = []
-        for pending_source in new_pending:
+        for node in new_root_nodes:
             id_ = self._get_next_id()
-            pending_source.id = id_
-            path = pending_source.path
-            label = pending_source.label
+            node.id = id_
+            path = node.path
             pending_results.append(
-                PendingResult(id_, path.as_list() if path else [], label)
+                PendingResult(id_, path.as_list() if path else [], node.label)
             )
         return pending_results
 
@@ -199,8 +198,6 @@ class IncrementalPublisher:
             await self._handle_completed_stream_items(
                 completed_incremental_data, context
             )
-        new_pending = self._incremental_graph.get_new_pending()
-        context.pending.extend(self._pending_sources_to_results(new_pending))
 
     def _handle_completed_deferred_grouped_field_set(
         self,
@@ -235,23 +232,19 @@ class IncrementalPublisher:
         self._incremental_graph.add_completed_reconcilable_deferred_grouped_field_set(
             deferred_grouped_field_set_result
         )
-        incremental_data_records = (
-            deferred_grouped_field_set_result.incremental_data_records
-        )
-        if incremental_data_records:
-            self._incremental_graph.add_incremental_data_records(
-                incremental_data_records
-            )
 
         complete_deferred = self._incremental_graph.complete_deferred_fragment
+        pending = context.pending
         for deferred_fragment_record in record.deferred_fragment_records:
-            reconcilable_results = complete_deferred(deferred_fragment_record)
-            if reconcilable_results is None:
+            completion = complete_deferred(deferred_fragment_record)
+            if completion is None:
                 continue
             id_ = deferred_fragment_record.id
             if id_ is None:  # pragma: no cover
                 msg = "Missing deferred fragment record identifier."
                 raise RuntimeError(msg)
+            new_root_nodes, reconcilable_results = completion
+            pending.extend(self._to_pending_results(new_root_nodes))
             for reconcilable_result in reconcilable_results:
                 best_id, sub_path = self._get_best_id_and_sub_path(
                     id_, deferred_fragment_record, reconcilable_result
@@ -302,7 +295,10 @@ class IncrementalPublisher:
             context.incremental.append(incremental_entry)
             incremental_data_records = stream_items_result.incremental_data_records
             if incremental_data_records is not None:  # pragma: no branch
-                incremental_graph.add_incremental_data_records(incremental_data_records)
+                new_root_nodes = incremental_graph.get_new_root_nodes(
+                    incremental_data_records
+                )
+                context.pending.extend(self._to_pending_results(new_root_nodes))
                 await sleep(0)  # allow other tasks to run
 
     def _get_best_id_and_sub_path(
@@ -327,8 +323,8 @@ class IncrementalPublisher:
             if length > max_length:
                 max_length = length
                 best_id = id_
-        sub_path = deferred_grouped_field_set_result.path[max_length:]
-        return (best_id, sub_path or None)
+        sub_path = deferred_grouped_field_set_result.path[max_length:] or None
+        return best_id, sub_path
 
 
 def build_incremental_response(
