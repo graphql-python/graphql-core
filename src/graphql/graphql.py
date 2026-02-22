@@ -17,7 +17,7 @@ from .type import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
+    from collections.abc import AsyncIterable, Awaitable, Callable
     from typing import TypeGuard
 
     from .pyutils import AwaitableOrValue
@@ -37,6 +37,7 @@ async def graphql(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
+    is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -84,6 +85,8 @@ async def graphql(
       The execution context class to use to build the context
     :arg is_awaitable:
       The predicate to be used for checking whether values are awaitable
+    :arg is_async_iterable:
+      The predicate to be used for checking whether values are async iterables
     """
     # Always return asynchronously for a consistent API.
     result = graphql_impl(
@@ -98,6 +101,7 @@ async def graphql(
         middleware,
         execution_context_class,
         is_awaitable,
+        is_async_iterable,
     )
 
     if default_is_awaitable(result):
@@ -108,6 +112,11 @@ async def graphql(
 
 def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
     """Replacement for is_awaitable if everything is assumed to be synchronous."""
+    return False
+
+
+def assume_not_async_iterable(_value: Any) -> TypeGuard[AsyncIterable]:
+    """Replacement for is_async_iterable if everything is assumed to be synchronous."""
     return False
 
 
@@ -138,6 +147,7 @@ def graphql_sync(
         if callable(check_sync)
         else (None if check_sync else assume_not_awaitable)
     )
+    is_async_iterable = assume_not_async_iterable if not check_sync else None
     result = graphql_impl(
         schema,
         source,
@@ -150,6 +160,7 @@ def graphql_sync(
         middleware,
         execution_context_class,
         is_awaitable,
+        is_async_iterable,
     )
 
     # Assert that the execution was synchronous.
@@ -173,6 +184,7 @@ def graphql_impl(
     middleware: Middleware | None,
     execution_context_class: type[ExecutionContext] | None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None,
+    is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
@@ -206,4 +218,5 @@ def graphql_impl(
         middleware,
         execution_context_class,
         is_awaitable,
+        is_async_iterable,
     )

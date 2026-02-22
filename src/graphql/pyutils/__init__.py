@@ -24,7 +24,7 @@ from .format_list import or_list, and_list
 from .group_by import group_by
 from .identity_func import identity_func
 from .inspect import inspect
-from .is_awaitable import is_awaitable
+from .is_awaitable import is_awaitable, is_async_iterable
 from .is_iterable import is_collection, is_iterable
 from .natural_compare import natural_comparison_key
 from .awaitable_or_value import AwaitableOrValue
@@ -59,6 +59,7 @@ __all__ = [
     "group_by",
     "identity_func",
     "inspect",
+    "is_async_iterable",
     "is_awaitable",
     "is_collection",
     "is_description",

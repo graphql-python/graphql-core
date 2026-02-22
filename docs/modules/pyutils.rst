@@ -16,6 +16,7 @@ PyUtils
 .. autofunction:: identity_func
 .. autofunction:: inspect
 .. autofunction:: is_awaitable
+.. autofunction:: is_async_iterable
 .. autofunction:: is_collection
 .. autofunction:: is_iterable
 .. autofunction:: natural_comparison_key

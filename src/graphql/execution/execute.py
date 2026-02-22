@@ -47,7 +47,12 @@ from ..pyutils import (
     inspect,
     is_iterable,
 )
-from ..pyutils.is_awaitable import is_awaitable as default_is_awaitable
+from ..pyutils.is_awaitable import (
+    is_async_iterable as default_is_async_iterable,
+)
+from ..pyutils.is_awaitable import (
+    is_awaitable as default_is_awaitable,
+)
 from ..type import (
     GraphQLAbstractType,
     GraphQLField,
@@ -201,6 +206,9 @@ class ExecutionContext(IncrementalPublisherContext):
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
         default_is_awaitable  # type: ignore
     )
+    is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] = staticmethod(
+        default_is_async_iterable  # type: ignore
+    )
 
     def __init__(
         self,
@@ -216,6 +224,7 @@ class ExecutionContext(IncrementalPublisherContext):
         enable_early_execution: bool = False,
         middleware_manager: MiddlewareManager | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
+        is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     ) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -229,6 +238,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.enable_early_execution = enable_early_execution
         self.middleware_manager = middleware_manager
         self.is_awaitable = is_awaitable or default_is_awaitable
+        self.is_async_iterable = is_async_iterable or default_is_async_iterable
         self.errors = None
         self.cancellable_streams = None
         self._canceled_iterators: set[AsyncIterator] = set()
@@ -251,6 +261,7 @@ class ExecutionContext(IncrementalPublisherContext):
         enable_early_execution: bool = False,
         middleware: Middleware | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
+        is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
         **custom_args: Any,
     ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
@@ -325,6 +336,7 @@ class ExecutionContext(IncrementalPublisherContext):
             enable_early_execution,
             middleware_manager,
             is_awaitable,
+            is_async_iterable,
             **custom_args,
         )
 
@@ -1041,7 +1053,7 @@ class ExecutionContext(IncrementalPublisherContext):
         """
         item_type = return_type.of_type
 
-        if isinstance(result, AsyncIterable):
+        if self.is_async_iterable(result):
             async_iterator = result.__aiter__()
 
             return self.complete_async_iterator_value(
@@ -1582,8 +1594,8 @@ class ExecutionContext(IncrementalPublisherContext):
         as it is nearly identical to the "ExecuteQuery" algorithm,
         for which :func:`~graphql.execution.execute` is also used.
         """
-        if not isinstance(result_or_stream, AsyncIterable):
-            return result_or_stream  # pragma: no cover
+        if not self.is_async_iterable(result_or_stream):
+            return cast("ExecutionResult", result_or_stream)  # pragma: no cover
 
         build_context = self.build_per_event_execution_context
 
@@ -2103,6 +2115,7 @@ def execute(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
+    is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -2137,6 +2150,7 @@ def execute(
         middleware,
         execution_context_class,
         is_awaitable,
+        is_async_iterable,
         **custom_context_args,
     )
     if isinstance(result, ExecutionResult):
@@ -2167,6 +2181,7 @@ def experimental_execute_incrementally(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
+    is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
@@ -2197,6 +2212,7 @@ def experimental_execute_incrementally(
         enable_early_execution,
         middleware,
         is_awaitable,
+        is_async_iterable,
         **custom_context_args,
     )
 
@@ -2692,7 +2708,7 @@ def assert_event_stream(result: Any) -> AsyncIterable:
         raise result
 
     # Assert field returned an event stream, otherwise yield an error.
-    if not isinstance(result, AsyncIterable):
+    if not default_is_async_iterable(result):
         msg = (
             "Subscription field must return AsyncIterable."
             f" Received: {inspect(result)}."

@@ -1,5 +1,5 @@
-from collections.abc import AsyncGenerator
-from typing import Any
+from collections.abc import AsyncGenerator, AsyncIterable, Callable
+from typing import Any, TypeGuard
 
 import pytest
 
@@ -203,6 +203,62 @@ def describe_execute_accepts_async_iterables_as_list_value():
             {"listField": ["hello", "world"]},
             None,
         )
+
+    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+    async def can_customize_detection_of_async_iterables():
+        class CustomIterable:
+            """An object that is both an iterable and an async iterable."""
+
+            stop = False
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                if self.stop:
+                    raise StopIteration
+                self.stop = True
+                return "hello"
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.stop:
+                    raise StopAsyncIteration
+                self.stop = True
+                return "world"
+
+        assert await _complete(CustomIterable()) == (
+            {"listField": ["world"]},
+            None,
+        )
+
+        async def _complete_custom(
+            is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+        ):
+            return execute(
+                build_schema("type Query { listField: [String] }"),
+                parse("{ listField }"),
+                Data(CustomIterable()),
+                is_async_iterable=is_async_iterable,
+            )
+
+        def use_async(result: Any) -> TypeGuard[AsyncIterable]:
+            return isinstance(result, AsyncIterable)
+
+        result = await _complete_custom(use_async)
+
+        assert is_awaitable(result)
+        assert await result == ({"listField": ["world"]}, None)
+
+        def use_sync(result: Any) -> TypeGuard[AsyncIterable]:
+            return isinstance(result, AsyncIterable) and not hasattr(result, "__iter__")
+
+        result = await _complete_custom(use_sync)
+
+        assert not is_awaitable(result)
+        assert result == ({"listField": ["hello"]}, None)
 
     async def handles_an_async_generator_that_throws():
         async def list_field():
