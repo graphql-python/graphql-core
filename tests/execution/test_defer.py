@@ -528,9 +528,9 @@ def describe_execute_defer_directive():
         """Can print a DeferredFragmentRecord"""
         record = DeferredFragmentRecord()
         assert str(record) == "DeferredFragmentRecord()"
-        record = DeferredFragmentRecord(record, Path(None, "bar", "Bar"), "foo")
+        record = DeferredFragmentRecord(Path(None, "bar", "Bar"), "foo", record)
         assert (
-            str(record) == "DeferredFragmentRecord(parent, path=['bar'], label='foo')"
+            str(record) == "DeferredFragmentRecord(path=['bar'], label='foo', parent)"
         )
 
     @pytest.mark.parametrize("early_execution", [False, True])

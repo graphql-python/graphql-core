@@ -2336,7 +2336,7 @@ def add_new_deferred_fragments(
 
         # Instantiate the new record.
         deferred_fragment_record = DeferredFragmentRecord(
-            parent, path, new_defer_usage.label
+            path, new_defer_usage.label, parent
         )
 
         # Update the map.

@@ -51,6 +51,7 @@ __all__ = [
     "SubsequentIncrementalExecutionResult",
     "SubsequentResultRecord",
     "is_cancellable_stream_record",
+    "is_deferred_fragment_record",
     "is_deferred_grouped_field_set_record",
     "is_deferred_grouped_field_set_result",
     "is_non_reconcilable_deferred_grouped_field_set_result",
@@ -796,34 +797,55 @@ class DeferredGroupedFieldSetRecord:
 class DeferredFragmentRecord:
     """Deferred fragment record"""
 
-    parent: DeferredFragmentRecord | None
     path: Path | None
     label: str | None
     id: str | None
+    parent: DeferredFragmentRecord | None
+    deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
+    reconcilable_results: dict[ReconcilableDeferredGroupedFieldSetResult, None]
+    children: dict[SubsequentResultRecord, None]
 
-    __slots__ = "id", "label", "parent", "path"
+    __slots__ = (
+        "children",
+        "deferred_grouped_field_set_records",
+        "id",
+        "label",
+        "parent",
+        "path",
+        "reconcilable_results",
+    )
 
     def __init__(
         self,
-        parent: DeferredFragmentRecord | None = None,
         path: Path | None = None,
         label: str | None = None,
+        parent: DeferredFragmentRecord | None = None,
     ) -> None:
-        self.parent = parent
         self.path = path
         self.label = label
+        self.parent = parent
         self.id = None
+        self.deferred_grouped_field_set_records = {}
+        self.reconcilable_results = {}
+        self.children = {}
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
         args: list[str] = []
-        if self.parent:
-            args.append("parent")
         if self.path:
             args.append(f"path={self.path.as_list()!r}")
         if self.label:
             args.append(f"label={self.label!r}")
+        if self.parent:
+            args.append("parent")
         return f"{name}({', '.join(args)})"
+
+
+def is_deferred_fragment_record(
+    subsequent_result_record: SubsequentResultRecord,
+) -> TypeGuard[DeferredFragmentRecord]:
+    """Check if the subsequent result record is a deferred fragment record."""
+    return isinstance(subsequent_result_record, DeferredFragmentRecord)
 
 
 class StreamItemResult(NamedTuple):
