@@ -2395,19 +2395,15 @@ def describe_execute_stream_directive():
         async def iterable(_info):
             nonlocal finished
             try:
-                for i in range(3):  # pragma: no cover exit
-                    yield friends[i]
+                yield None
             finally:
                 finished = True
 
         document = parse(
             """
             query {
-              friendList @stream(initialCount: 1) {
+              friendList @stream(initialCount: 0) {
                 id
-                ... @defer {
-                  name
-                }
               }
             }
             """
@@ -2421,20 +2417,21 @@ def describe_execute_stream_directive():
 
         result1 = execute_result.initial_result
         assert result1 == {
-            "data": {"friendList": [{"id": "1"}]},
+            "data": {"friendList": []},
             "pending": [
-                {"id": "0", "path": ["friendList", 0]},
-                {"id": "1", "path": ["friendList"]},
+                {"id": "0", "path": ["friendList"]},
             ],
             "hasNext": True,
         }
 
+        assert not finished
+
         # we need to run the iterator once before we can close it
         result2 = await anext(iterator)
         assert result2 == {
-            "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+            "incremental": [{"items": [None], "id": "0"}],
             "completed": [{"id": "0"}],
-            "hasNext": True,
+            "hasNext": False,
         }
 
         await iterator.aclose()
