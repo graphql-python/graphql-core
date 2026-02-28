@@ -164,8 +164,6 @@ class IncrementalGraph:
     ) -> None:
         """Remove root node."""
         del self._root_nodes[subsequent_result_record]
-        if not self._root_nodes:
-            self.stop_incremental_data()
 
     def _add_incremental_data_records(
         self,
@@ -337,6 +335,8 @@ class IncrementalGraph:
         queue = self._completed_queue
         while queue:
             yield queue.pop(0)
+        if not self._root_nodes:
+            self.stop_incremental_data()
 
     def _enqueue(self, completed: IncrementalDataRecordResult) -> None:
         """Enqueue completed incremental data record result."""
