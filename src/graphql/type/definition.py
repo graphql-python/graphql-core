@@ -14,6 +14,7 @@ from typing import (
     cast,
     overload,
 )
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from typing import TypeAlias, TypeGuard
@@ -232,7 +233,7 @@ class GraphQLNamedType(GraphQLType):
 
     reserved_types: Mapping[str, GraphQLNamedType] = {}
 
-    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> GraphQLNamedType:
+    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> Self:
         """Create a GraphQL named type."""
         if name in cls.reserved_types:
             msg = f"Redefinition of reserved type {name!r}"

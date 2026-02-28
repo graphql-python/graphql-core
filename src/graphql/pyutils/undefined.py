@@ -1,6 +1,7 @@
 """The Undefined value"""
 
 from __future__ import annotations
+from typing_extensions import Self
 
 import warnings
 
@@ -12,7 +13,7 @@ class UndefinedType:
 
     _instance: UndefinedType | None = None
 
-    def __new__(cls) -> UndefinedType:
+    def __new__(cls) -> Self:
         """Create the Undefined singleton."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
