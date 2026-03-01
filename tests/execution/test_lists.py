@@ -356,6 +356,37 @@ def describe_execute_accepts_async_iterables_as_list_value():
         assert await _complete(list_field(), "[Int!]") == ({"listField": None}, errors)
         assert await _complete(list_field(), "[Int!]!") == (None, errors)
 
+    async def calls_aclose_when_non_null_list_item_errors():
+        values = (1, None, 2)
+
+        class ListField:
+            def __init__(self) -> None:
+                self.index = 0
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                value = values[self.index]
+                self.index += 1
+                return value
+
+            async def aclose(self) -> None:
+                self.closed = True
+
+        list_field = ListField()
+        errors = [
+            {
+                "message": "Cannot return null for non-nullable field Query.listField.",
+                "locations": [(1, 3)],
+                "path": ["listField", 1],
+            }
+        ]
+
+        assert await _complete(list_field, "[Int!]") == ({"listField": None}, errors)
+        assert list_field.closed
+
 
 def describe_execute_handles_list_nullability():
     async def _complete(list_field: Any, as_type: str) -> ExecutionResult:

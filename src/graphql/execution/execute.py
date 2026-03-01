@@ -941,82 +941,88 @@ class ExecutionContext(IncrementalPublisherContext):
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
         stream_usage = self.get_stream_usage(field_group, path)
+        try:
+            early_return = async_iterator.aclose  # type: ignore[attr-defined]
+        except AttributeError:
+            early_return = None
         index = 0
-        while True:
-            if stream_usage and index >= stream_usage.initial_count:
-                stream_item_queue = self.build_async_stream_item_queue(
-                    index,
-                    path,
-                    async_iterator,
-                    stream_usage.field_group,
-                    info,
-                    item_type,
-                )
-
-                try:
-                    early_return = async_iterator.aclose()  # type: ignore
-                except AttributeError:
-                    early_return = None
-                stream_record: StreamRecord
-
-                if early_return is None:
-                    stream_record = StreamRecord(
-                        stream_item_queue, path, stream_usage.label
-                    )
-                else:
-                    stream_record = CancellableStreamRecord(
-                        early_return,
-                        stream_item_queue,
+        try:
+            while True:
+                if stream_usage and index >= stream_usage.initial_count:
+                    stream_item_queue = self.build_async_stream_item_queue(
+                        index,
                         path,
-                        stream_usage.label,
-                    )
-                    if self.cancellable_streams is None:  # pragma: no branch
-                        self.cancellable_streams = set()
-                    self.cancellable_streams.add(stream_record)
-                    self._canceled_iterators.add(async_iterator)
-
-                add_increment(stream_record)
-                break
-
-            item_path = path.add_key(index, None)
-            try:
-                item = await anext(async_iterator)
-            except StopAsyncIteration:
-                break
-            except Exception as raw_error:
-                raise located_error(
-                    raw_error, to_nodes(field_group), path.as_list()
-                ) from raw_error
-
-            if is_awaitable(item):
-                append_completed(
-                    complete_awaitable_list_item_value(
-                        item,
-                        graphql_wrapped_result,
-                        item_type,
-                        field_group,
+                        async_iterator,
+                        stream_usage.field_group,
                         info,
-                        item_path,
-                        incremental_context,
-                        defer_map,
+                        item_type,
                     )
-                )
-                append_awaitable(index)
 
-            elif complete_list_item_value(
-                item,
-                completed_results,
-                graphql_wrapped_result,
-                item_type,
-                field_group,
-                info,
-                item_path,
-                incremental_context,
-                defer_map,
-            ):
-                append_awaitable(index)
+                    stream_record: StreamRecord
 
-            index += 1
+                    if early_return is None:
+                        stream_record = StreamRecord(
+                            stream_item_queue, path, stream_usage.label
+                        )
+                    else:
+                        stream_record = CancellableStreamRecord(
+                            early_return(),
+                            stream_item_queue,
+                            path,
+                            stream_usage.label,
+                        )
+                        if self.cancellable_streams is None:  # pragma: no branch
+                            self.cancellable_streams = set()
+                        self.cancellable_streams.add(stream_record)
+                        self._canceled_iterators.add(async_iterator)
+
+                    add_increment(stream_record)
+                    break
+
+                item_path = path.add_key(index, None)
+                try:
+                    item = await anext(async_iterator)
+                except StopAsyncIteration:
+                    break
+                except Exception as raw_error:
+                    raise located_error(
+                        raw_error, to_nodes(field_group), path.as_list()
+                    ) from raw_error
+
+                if is_awaitable(item):
+                    append_completed(
+                        complete_awaitable_list_item_value(
+                            item,
+                            graphql_wrapped_result,
+                            item_type,
+                            field_group,
+                            info,
+                            item_path,
+                            incremental_context,
+                            defer_map,
+                        )
+                    )
+                    append_awaitable(index)
+
+                elif complete_list_item_value(
+                    item,
+                    completed_results,
+                    graphql_wrapped_result,
+                    item_type,
+                    field_group,
+                    info,
+                    item_path,
+                    incremental_context,
+                    defer_map,
+                ):
+                    append_awaitable(index)
+
+                index += 1
+        except Exception:
+            if early_return is not None:  # pragma: no branch
+                with suppress_exceptions:
+                    await early_return()
+            raise
 
         if not awaitable_indices:
             return graphql_wrapped_result
