@@ -59,6 +59,11 @@ from .assert_name import assert_enum_value_name, assert_name
 if TYPE_CHECKING:
     from .schema import GraphQLSchema
 
+    try:
+        from typing import Self
+    except ImportError:  # Python < 3.11
+        from typing_extensions import Self
+
 
 __all__ = [
     "GraphQLAbstractType",
@@ -232,7 +237,7 @@ class GraphQLNamedType(GraphQLType):
 
     reserved_types: Mapping[str, GraphQLNamedType] = {}
 
-    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> GraphQLNamedType:
+    def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> Self:
         """Create a GraphQL named type."""
         if name in cls.reserved_types:
             msg = f"Redefinition of reserved type {name!r}"
