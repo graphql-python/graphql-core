@@ -14,7 +14,6 @@ from typing import (
     cast,
     overload,
 )
-from typing_extensions import Self
 
 if TYPE_CHECKING:
     from typing import TypeAlias, TypeGuard
@@ -59,6 +58,11 @@ from .assert_name import assert_enum_value_name, assert_name
 
 if TYPE_CHECKING:
     from .schema import GraphQLSchema
+
+    try:
+        from typing import Self
+    except ImportError:  # Python < 3.11
+        from typing_extensions import Self
 
 
 __all__ = [

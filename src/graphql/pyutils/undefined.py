@@ -1,9 +1,15 @@
 """The Undefined value"""
 
 from __future__ import annotations
-from typing_extensions import Self
 
 import warnings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    try:
+        from typing import Self
+    except ImportError:  # Python < 3.11
+        from typing_extensions import Self
 
 __all__ = ["Undefined", "UndefinedType"]
 
@@ -11,7 +17,7 @@ __all__ = ["Undefined", "UndefinedType"]
 class UndefinedType:
     """Auxiliary class for creating the Undefined singleton."""
 
-    _instance: UndefinedType | None = None
+    _instance: Self | None = None
 
     def __new__(cls) -> Self:
         """Create the Undefined singleton."""
