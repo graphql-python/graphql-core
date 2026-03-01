@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from asyncio import (
-    CancelledError,
     Future,
     Task,
     ensure_future,
@@ -25,7 +24,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Awaitable, Generator, Iterable, Sequence
+    from collections.abc import Awaitable, Generator, Iterable, Sequence
 
     from ..error.graphql_error import GraphQLError
     from .types import (
@@ -48,7 +47,7 @@ class IncrementalGraph:
 
     _root_nodes: dict[SubsequentResultRecord, None]
     _completed_queue: list[IncrementalDataRecordResult]
-    _next_queue: list[Future[Iterable[IncrementalDataRecordResult]]]
+    _next_queue: list[Future[Iterable[IncrementalDataRecordResult] | None]]
 
     _tasks: set[Task[Any]]
 
@@ -87,24 +86,31 @@ class IncrementalGraph:
                 incremental_data_records, deferred_records
             )
 
-    async def completed_incremental_data(
+    def current_completed_batch(
         self,
-    ) -> AsyncGenerator[Iterable[IncrementalDataRecordResult], None]:
-        """Asynchronously yield completed incremental data record results."""
+    ) -> Generator[IncrementalDataRecordResult, None, None]:
+        """Yield the current completed batch of incremental data record results."""
+        queue = self._completed_queue
+        while queue:
+            yield queue.pop(0)
+        if not self._root_nodes:
+            self.abort()
+
+    def next_completed_batch(
+        self,
+    ) -> Future[Iterable[IncrementalDataRecordResult] | None]:
+        """Return a future that resolves to the next completed batch."""
         loop = get_running_loop()
-        while True:
-            if self._completed_queue:
-                first_result = self._completed_queue.pop(0)
-                yield self._yield_current_completed_incremental_data(first_result)
-            else:
-                future: Future[Iterable[IncrementalDataRecordResult]] = (
-                    loop.create_future()
-                )
-                self._next_queue.append(future)
-                try:
-                    yield await future
-                except CancelledError:
-                    break  # pragma: no cover
+        future: Future[Iterable[IncrementalDataRecordResult] | None] = (
+            loop.create_future()
+        )
+        self._next_queue.append(future)
+        return future
+
+    def abort(self) -> None:
+        """Abort the incremental graph execution."""
+        for resolve in self._next_queue:
+            resolve.set_result(None)  # pragma: no cover
 
     def has_next(self) -> bool:
         """Check if there are more results to process."""
@@ -332,11 +338,7 @@ class IncrementalGraph:
     ) -> Generator[IncrementalDataRecordResult, None, None]:
         """Yield the current completed incremental data."""
         yield first_result
-        queue = self._completed_queue
-        while queue:
-            yield queue.pop(0)
-        if not self._root_nodes:
-            self.stop_incremental_data()
+        yield from self.current_completed_batch()
 
     def _enqueue(self, completed: IncrementalDataRecordResult) -> None:
         """Enqueue completed incremental data record result."""

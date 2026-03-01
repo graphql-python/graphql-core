@@ -27,7 +27,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Sequence
+    from collections.abc import AsyncGenerator, Iterable, Sequence
 
     from ..error import GraphQLError
     from .types import (
@@ -134,38 +134,33 @@ class IncrementalPublisher:
         incremental_graph = self._incremental_graph
         check_has_next = incremental_graph.has_next
         handle_completed_incremental_data = self._handle_completed_incremental_data
-        completed_incremental_data = incremental_graph.completed_incremental_data()
-        # use the raw iterator rather than 'async for' so as not to end the iterator
-        # when exiting the loop with the next value
-        get_next_results = completed_incremental_data.__aiter__().__anext__
-        is_done = False
+
         try:
-            while not is_done:
-                try:
-                    completed_results = await get_next_results()
-                except StopAsyncIteration:  # pragma: no cover
-                    break
+            while True:
+                batch: Iterable[IncrementalDataRecordResult] | None = (
+                    incremental_graph.current_completed_batch()
+                )
 
-                context = SubsequentIncrementalExecutionResultContext([], [], [])
-                for completed_result in completed_results:
-                    await handle_completed_incremental_data(completed_result, context)
+                while batch is not None:  # pragma: no branch
+                    context = SubsequentIncrementalExecutionResultContext([], [], [])
+                    for completed_result in batch:
+                        await handle_completed_incremental_data(
+                            completed_result, context
+                        )
 
-                if context.incremental or context.completed:  # pragma: no branch
-                    has_next = check_has_next()
+                    if context.incremental or context.completed:  # pragma: no branch
+                        has_next = check_has_next()
 
-                    if not has_next:
-                        is_done = True
-
-                    subsequent_incremental_execution_result = (
-                        SubsequentIncrementalExecutionResult(
+                        yield SubsequentIncrementalExecutionResult(
                             has_next=has_next,
                             pending=context.pending or None,
                             incremental=context.incremental or None,
                             completed=context.completed or None,
                         )
-                    )
 
-                    yield subsequent_incremental_execution_result
+                        if not has_next:
+                            return
+                    batch = await incremental_graph.next_completed_batch()
         finally:
             await self._stop_async_iterators()
 
