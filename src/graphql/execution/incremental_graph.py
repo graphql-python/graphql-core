@@ -127,9 +127,10 @@ class IncrementalGraph:
         | None
     ):
         """Complete a deferred fragment."""
-        if deferred_fragment_record not in self._root_nodes:
-            return None  # pragma: no cover
-        if deferred_fragment_record.deferred_grouped_field_set_records:
+        if (
+            deferred_fragment_record not in self._root_nodes
+            or deferred_fragment_record.deferred_grouped_field_set_records
+        ):
             return None
         reconcilable_results = list(deferred_fragment_record.reconcilable_results)
         self._remove_root_node(deferred_fragment_record)
@@ -268,19 +269,17 @@ class IncrementalGraph:
     ) -> None:
         """Handle deferred grouped field set record."""
         deferred_grouped_field_set_result = deferred_grouped_field_set_record.result
-        result = (
-            deferred_grouped_field_set_result.value
-            if isinstance(deferred_grouped_field_set_result, BoxedAwaitableOrValue)
-            else deferred_grouped_field_set_result().value
-        )
-        if is_awaitable(result):
+        if not isinstance(deferred_grouped_field_set_result, BoxedAwaitableOrValue):
+            deferred_grouped_field_set_result = deferred_grouped_field_set_result()
+        value = deferred_grouped_field_set_result.value
+        if is_awaitable(value):
 
             async def await_and_enqueue() -> None:
-                self._enqueue(await result)
+                self._enqueue(await value)
 
             self._add_task(await_and_enqueue())
         else:
-            self._enqueue(result)
+            self._enqueue(value)
 
     async def _on_stream_items(self, stream_record: StreamRecord) -> None:
         """Handle stream items."""

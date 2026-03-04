@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from asyncio import sleep
+from asyncio import Event, sleep
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import pytest
@@ -1205,6 +1205,220 @@ def describe_execute_defer_directive():
                 "hasNext": False,
             },
         ]
+
+    async def initiates_deferred_grouped_field_sets_only_if_released_as_pending():
+        """Initiates deferred grouped field sets only if released as pending
+
+        Initiates deferred grouped field sets only if they have been released
+        as pending.
+        """
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  ... @defer {
+                    b {
+                      c { d }
+                    }
+                  }
+                }
+              }
+              ... @defer {
+                a {
+                  someField
+                  ... @defer {
+                    b {
+                      e { f }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        slow_field_event = Event()
+        c_resolver_called = False
+        e_resolver_called = False
+
+        async def resolve_slow_field(_info):
+            await slow_field_event.wait()
+            return "someField"
+
+        def resolve_c(_info):
+            nonlocal c_resolver_called
+            c_resolver_called = True
+            return {"d": "d"}
+
+        def resolve_e(_info):
+            nonlocal e_resolver_called
+            e_resolver_called = True
+            return {"f": "f"}
+
+        execute_result = experimental_execute_incrementally(
+            schema,
+            document,
+            root_value={
+                "a": {
+                    "someField": resolve_slow_field,
+                    "b": {
+                        "c": resolve_c,
+                        "e": resolve_e,
+                    },
+                }
+            },
+            enable_early_execution=False,
+        )
+
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+
+        result1 = execute_result.initial_result
+        assert result1.formatted == {
+            "data": {},
+            "pending": [{"id": "0", "path": []}, {"id": "1", "path": []}],
+            "hasNext": True,
+        }
+
+        iterator = execute_result.subsequent_results
+
+        assert c_resolver_called is False
+        assert e_resolver_called is False
+
+        result2 = await anext(iterator)
+        assert result2.formatted == {
+            "pending": [{"id": "2", "path": ["a"]}],
+            "incremental": [
+                {"data": {"a": {}}, "id": "0"},
+                {"data": {"b": {}}, "id": "2"},
+                {"data": {"c": {"d": "d"}}, "id": "2", "subPath": ["b"]},
+            ],
+            "completed": [{"id": "0"}, {"id": "2"}],
+            "hasNext": True,
+        }
+
+        assert c_resolver_called is True
+        assert e_resolver_called is False
+
+        slow_field_event.set()
+
+        result3 = await anext(iterator)
+        assert result3.formatted == {
+            "pending": [{"id": "3", "path": ["a"]}],
+            "incremental": [
+                {"data": {"someField": "someField"}, "id": "1", "subPath": ["a"]},
+                {"data": {"e": {"f": "f"}}, "id": "3", "subPath": ["b"]},
+            ],
+            "completed": [{"id": "1"}, {"id": "3"}],
+            "hasNext": False,
+        }
+
+        assert e_resolver_called is True
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def initiates_unique_deferred_grouped_field_sets_after_sibling_defers():
+        """Initiates unique deferred grouped field sets after sibling defers.
+
+        Initiates unique deferred grouped field sets after those that are common
+        to sibling defers.
+        """
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  ... @defer {
+                    b {
+                      c { d }
+                    }
+                  }
+                }
+              }
+              ... @defer {
+                a {
+                  ... @defer {
+                    b {
+                      c { d }
+                      e { f }
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        c_event = Event()
+        c_resolver_called = False
+        e_resolver_called = False
+
+        async def resolve_c(_info):
+            nonlocal c_resolver_called
+            c_resolver_called = True
+            await c_event.wait()
+            return {"d": "d"}
+
+        def resolve_e(_info):
+            nonlocal e_resolver_called
+            e_resolver_called = True
+            return {"f": "f"}
+
+        execute_result = experimental_execute_incrementally(
+            schema,
+            document,
+            root_value={
+                "a": {
+                    "b": {
+                        "c": resolve_c,
+                        "e": resolve_e,
+                    }
+                }
+            },
+            enable_early_execution=False,
+        )
+
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+
+        result1 = execute_result.initial_result
+        assert result1.formatted == {
+            "data": {},
+            "pending": [{"id": "0", "path": []}, {"id": "1", "path": []}],
+            "hasNext": True,
+        }
+
+        iterator = execute_result.subsequent_results
+
+        assert c_resolver_called is False
+        assert e_resolver_called is False
+
+        result2 = await anext(iterator)
+        assert result2.formatted == {
+            "pending": [{"id": "2", "path": ["a"]}, {"id": "3", "path": ["a"]}],
+            "incremental": [{"data": {"a": {}}, "id": "0"}],
+            "completed": [{"id": "0"}, {"id": "1"}],
+            "hasNext": True,
+        }
+
+        await sleep(0)  # let resolve_c start and suspend at c_event.wait()
+        c_event.set()
+
+        assert c_resolver_called is True
+        assert e_resolver_called is False
+
+        result3 = await anext(iterator)
+        assert result3.formatted == {
+            "incremental": [
+                {"data": {"b": {"c": {"d": "d"}}}, "id": "2"},
+                {"data": {"e": {"f": "f"}}, "id": "3", "subPath": ["b"]},
+            ],
+            "completed": [{"id": "2"}, {"id": "3"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
 
     async def can_deduplicate_multiple_defers_on_the_same_object():
         """Can deduplicate multiple defers on the same object"""

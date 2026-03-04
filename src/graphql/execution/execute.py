@@ -1655,12 +1655,8 @@ class ExecutionContext(IncrementalPublisherContext):
                     defer_map,
                 )
 
-            should_defer_this_defer_usage_set = should_defer(
-                parent_defer_usages, defer_usage_set
-            )
-
-            if should_defer_this_defer_usage_set:
-                if self.enable_early_execution:
+            if self.enable_early_execution:
+                if should_defer(parent_defer_usages, defer_usage_set):
 
                     async def execute_async(
                         executor: Callable[
@@ -1674,18 +1670,17 @@ class ExecutionContext(IncrementalPublisherContext):
 
                     deferred_record.result = BoxedAwaitableOrValue(execute_async())
                 else:
-
-                    def execute_sync(
-                        executor: Callable[
-                            [], AwaitableOrValue[DeferredGroupedFieldSetResult]
-                        ] = executor,
-                    ) -> BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]:
-                        return BoxedAwaitableOrValue(executor())
-
-                    deferred_record.result = execute_sync
-
+                    deferred_record.result = BoxedAwaitableOrValue(executor())
             else:
-                deferred_record.result = BoxedAwaitableOrValue(executor())
+
+                def execute_sync(
+                    executor: Callable[
+                        [], AwaitableOrValue[DeferredGroupedFieldSetResult]
+                    ] = executor,
+                ) -> BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]:
+                    return BoxedAwaitableOrValue(executor())
+
+                deferred_record.result = execute_sync
 
             append_record(deferred_record)
 
