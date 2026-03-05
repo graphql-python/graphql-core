@@ -73,12 +73,12 @@ from ..type import (
     is_object_type,
 )
 from .async_iterables import map_async_iterable
-from .build_field_plan import (
+from .build_execution_plan import (
     DeferUsageSet,
+    ExecutionPlan,
     FieldGroup,
-    FieldPlan,
     GroupedFieldSet,
-    build_field_plan,
+    build_execution_plan,
 )
 from .collect_fields import (
     CollectedFields,
@@ -93,19 +93,19 @@ from .incremental_publisher import (
 )
 from .middleware import MiddlewareManager
 from .types import (
-    BareDeferredGroupedFieldSetResult,
     CancellableStreamRecord,
+    CompletedExecutionGroup,
     DeferredFragmentRecord,
-    DeferredGroupedFieldSetRecord,
-    DeferredGroupedFieldSetResult,
+    ExecutionGroupResult,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
+    FailedExecutionGroup,
     IncrementalDataRecord,
-    NonReconcilableDeferredGroupedFieldSetResult,
-    ReconcilableDeferredGroupedFieldSetResult,
+    PendingExecutionGroup,
     StreamItemRecord,
     StreamItemResult,
     StreamRecord,
+    SuccessfulExecutionGroup,
 )
 from .values import get_argument_values, get_directive_values, get_variable_values
 
@@ -159,14 +159,6 @@ class StreamUsage(NamedTuple):
     label: str | None
     initial_count: int
     field_group: FieldGroup
-
-
-class SubFieldPlan(NamedTuple):
-    """A plan for executing fields with defer usages."""
-
-    grouped_field_set: GroupedFieldSet
-    new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet]
-    new_defer_usages: list[DeferUsage]
 
 
 class IncrementalContext:
@@ -244,7 +236,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self._canceled_iterators: set[AsyncIterator] = set()
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
-        self._field_plans: RefMap[GroupedFieldSet, FieldPlan] = RefMap()
+        self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
 
     @classmethod
     def build(
@@ -384,9 +376,9 @@ class ExecutionContext(IncrementalPublisherContext):
             grouped_field_set, new_defer_usages = collected_fields
 
             if new_defer_usages:
-                field_plan = build_field_plan(grouped_field_set)
-                grouped_field_set = field_plan.grouped_field_set
-                new_grouped_field_sets = field_plan.new_grouped_field_sets
+                execution_plan = build_execution_plan(grouped_field_set)
+                grouped_field_set = execution_plan.grouped_field_set
+                new_grouped_field_sets = execution_plan.new_grouped_field_sets
                 new_defer_map = add_new_deferred_fragments(new_defer_usages, RefMap())
                 graphql_wrapped_result = self.execute_root_grouped_field_set(
                     operation.operation,
@@ -396,18 +388,16 @@ class ExecutionContext(IncrementalPublisherContext):
                     new_defer_map,
                 )
                 if new_grouped_field_sets:
-                    new_deferred_grouped_field_set_records = (
-                        self.execute_deferred_grouped_field_sets(
-                            root_type,
-                            root_value,
-                            None,
-                            None,
-                            new_grouped_field_sets,
-                            new_defer_map,
-                        )
+                    new_pending_execution_groups = self.collect_execution_groups(
+                        root_type,
+                        root_value,
+                        None,
+                        None,
+                        new_grouped_field_sets,
+                        new_defer_map,
                     )
-                    graphql_wrapped_result = self.with_new_deferred_grouped_field_sets(
-                        graphql_wrapped_result, new_deferred_grouped_field_set_records
+                    graphql_wrapped_result = self.with_new_execution_groups(
+                        graphql_wrapped_result, new_pending_execution_groups
                     )
 
             else:
@@ -1495,12 +1485,12 @@ class ExecutionContext(IncrementalPublisherContext):
             return self.execute_fields(
                 return_type, result, path, grouped_field_set, incremental_context, None
             )
-        sub_field_plan = self.build_sub_field_plan(
+        sub_execution_plan = self.build_sub_execution_plan(
             grouped_field_set,
             incremental_context.defer_usage_set if incremental_context else None,
         )
 
-        grouped_field_set, new_grouped_field_sets = sub_field_plan
+        grouped_field_set, new_grouped_field_sets = sub_execution_plan
 
         new_defer_map = add_new_deferred_fragments(
             new_defer_usages,
@@ -1518,19 +1508,15 @@ class ExecutionContext(IncrementalPublisherContext):
         )
 
         if new_grouped_field_sets:
-            new_deferred_grouped_field_set_records = (
-                self.execute_deferred_grouped_field_sets(
-                    return_type,
-                    result,
-                    path,
-                    incremental_context.defer_usage_set
-                    if incremental_context
-                    else None,
-                    new_grouped_field_sets,
-                    new_defer_map,
-                )
+            new_deferred_grouped_field_set_records = self.collect_execution_groups(
+                return_type,
+                result,
+                path,
+                incremental_context.defer_usage_set if incremental_context else None,
+                new_grouped_field_sets,
+                new_defer_map,
             )
-            return self.with_new_deferred_grouped_field_sets(
+            return self.with_new_execution_groups(
                 sub_fields, new_deferred_grouped_field_set_records
             )
 
@@ -1571,19 +1557,21 @@ class ExecutionContext(IncrementalPublisherContext):
             relevant_sub_fields[key] = collected_fields
         return collected_fields
 
-    def build_sub_field_plan(
+    def build_sub_execution_plan(
         self,
         original_grouped_field_set: GroupedFieldSet,
         defer_usage_set: DeferUsageSet | None,
-    ) -> FieldPlan:
-        """Build a cached sub-field plan."""
-        field_plans = self._field_plans
-        field_plan = field_plans.get(original_grouped_field_set)
-        if field_plan is not None:
-            return field_plan
-        field_plan = build_field_plan(original_grouped_field_set, defer_usage_set)
-        field_plans[original_grouped_field_set] = field_plan
-        return field_plan
+    ) -> ExecutionPlan:
+        """Build a cached sub-execution plan."""
+        execution_plans = self._execution_plans
+        exeecution_plan = execution_plans.get(original_grouped_field_set)
+        if exeecution_plan is not None:
+            return exeecution_plan
+        exeecution_plan = build_execution_plan(
+            original_grouped_field_set, defer_usage_set
+        )
+        execution_plans[original_grouped_field_set] = exeecution_plan
+        return exeecution_plan
 
     def map_source_to_response(
         self, result_or_stream: ExecutionResult | AsyncIterable[Any]
@@ -1617,7 +1605,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
         return map_async_iterable(result_or_stream, callback)
 
-    def execute_deferred_grouped_field_sets(
+    def collect_execution_groups(
         self,
         parent_type: GraphQLObjectType,
         source_value: Any,
@@ -1625,28 +1613,28 @@ class ExecutionContext(IncrementalPublisherContext):
         parent_defer_usages: DeferUsageSet | None,
         new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet],
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
-    ) -> list[DeferredGroupedFieldSetRecord]:
+    ) -> list[PendingExecutionGroup]:
         """Execute deferred grouped field sets."""
         is_awaitable = self.is_awaitable
-        new_deferred_grouped_field_set_records: list[DeferredGroupedFieldSetRecord] = []
-        append_record = new_deferred_grouped_field_set_records.append
+        new_pending_execution_groups: list[PendingExecutionGroup] = []
+        append_record = new_pending_execution_groups.append
         for defer_usage_set, grouped_field_set in new_grouped_field_sets.items():
             deferred_fragment_records = get_deferred_fragment_records(
                 defer_usage_set, defer_map
             )
 
-            deferred_record = DeferredGroupedFieldSetRecord(
+            pending_group = PendingExecutionGroup(
                 deferred_fragment_records,
-                cast("BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]", None),
+                cast("BoxedAwaitableOrValue[CompletedExecutionGroup]", None),
             )
 
             def executor(
-                deferred_record: DeferredGroupedFieldSetRecord = deferred_record,
+                pending_group: PendingExecutionGroup = pending_group,
                 grouped_field_set: GroupedFieldSet = grouped_field_set,
                 defer_usage_set: DeferUsageSet = defer_usage_set,
-            ) -> AwaitableOrValue[DeferredGroupedFieldSetResult]:
-                return self.execute_deferred_grouped_field_set(
-                    deferred_record,
+            ) -> AwaitableOrValue[CompletedExecutionGroup]:
+                return self.execute_execution_group(
+                    pending_group,
                     parent_type,
                     source_value,
                     path,
@@ -1660,42 +1648,42 @@ class ExecutionContext(IncrementalPublisherContext):
 
                     async def execute_async(
                         executor: Callable[
-                            [], AwaitableOrValue[DeferredGroupedFieldSetResult]
+                            [], AwaitableOrValue[CompletedExecutionGroup]
                         ] = executor,
-                    ) -> DeferredGroupedFieldSetResult:
+                    ) -> CompletedExecutionGroup:
                         result = executor()
                         if is_awaitable(result):
                             return await result
                         return result  # type: ignore
 
-                    deferred_record.result = BoxedAwaitableOrValue(execute_async())
+                    pending_group.result = BoxedAwaitableOrValue(execute_async())
                 else:
-                    deferred_record.result = BoxedAwaitableOrValue(executor())
+                    pending_group.result = BoxedAwaitableOrValue(executor())
             else:
 
                 def execute_sync(
                     executor: Callable[
-                        [], AwaitableOrValue[DeferredGroupedFieldSetResult]
+                        [], AwaitableOrValue[CompletedExecutionGroup]
                     ] = executor,
-                ) -> BoxedAwaitableOrValue[DeferredGroupedFieldSetResult]:
+                ) -> BoxedAwaitableOrValue[CompletedExecutionGroup]:
                     return BoxedAwaitableOrValue(executor())
 
-                deferred_record.result = execute_sync
+                pending_group.result = execute_sync
 
-            append_record(deferred_record)
+            append_record(pending_group)
 
-        return new_deferred_grouped_field_set_records
+        return new_pending_execution_groups
 
-    def execute_deferred_grouped_field_set(
+    def execute_execution_group(
         self,
-        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
+        pending_execution_group: PendingExecutionGroup,
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
         grouped_field_set: GroupedFieldSet,
         incremental_context: IncrementalContext,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
-    ) -> AwaitableOrValue[DeferredGroupedFieldSetResult]:
+    ) -> AwaitableOrValue[CompletedExecutionGroup]:
         """Execute deferred grouped field set."""
         try:
             result = self.execute_fields(
@@ -1707,35 +1695,35 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_map,
             )
         except GraphQLError as error:
-            return NonReconcilableDeferredGroupedFieldSetResult(
-                deferred_grouped_field_set_record,
+            return FailedExecutionGroup(
+                pending_execution_group,
                 path.as_list() if path else [],
                 with_error(incremental_context.errors, error),
             )
 
         if self.is_awaitable(result):
 
-            async def await_result() -> DeferredGroupedFieldSetResult:
+            async def await_result() -> CompletedExecutionGroup:
                 try:
                     awaited_result = await result
                 except GraphQLError as error:
-                    return NonReconcilableDeferredGroupedFieldSetResult(
-                        deferred_grouped_field_set_record,
+                    return FailedExecutionGroup(
+                        pending_execution_group,
                         path.as_list() if path else [],
                         with_error(incremental_context.errors, error),
                     )
-                return build_deferred_grouped_field_set_result(
+                return build_completed_execution_group(
                     incremental_context.errors,
-                    deferred_grouped_field_set_record,
+                    pending_execution_group,
                     path,
                     awaited_result,
                 )
 
             return await_result()
 
-        return build_deferred_grouped_field_set_result(
+        return build_completed_execution_group(
             incremental_context.errors,
-            deferred_grouped_field_set_record,
+            pending_execution_group,
             path,
             result,  # type: ignore
         )
@@ -2000,23 +1988,23 @@ class ExecutionContext(IncrementalPublisherContext):
             incremental_context.errors,
         )
 
-    def with_new_deferred_grouped_field_sets(
+    def with_new_execution_groups(
         self,
         result: AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]],
-        new_deferred_grouped_field_set_records: list[DeferredGroupedFieldSetRecord],
+        new_pending_execution_groups: list[PendingExecutionGroup],
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
-        """Add new deferred grouped field sets to result."""
+        """Add new pending execution groups to result."""
         if self.is_awaitable(result):
 
             async def await_result() -> GraphQLWrappedResult[dict[str, Any]]:
                 resolved = await result
-                resolved.add_increments(new_deferred_grouped_field_set_records)
+                resolved.add_increments(new_pending_execution_groups)
                 return resolved
 
             return await_result()
 
         resolved = cast("GraphQLWrappedResult[dict[str, Any]]", result)
-        resolved.add_increments(new_deferred_grouped_field_set_records)
+        resolved.add_increments(new_pending_execution_groups)
         return resolved
 
     def build_data_response(
@@ -2361,17 +2349,17 @@ def should_defer(
     )
 
 
-def build_deferred_grouped_field_set_result(
+def build_completed_execution_group(
     errors: list[GraphQLError] | None,
-    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
+    pending_execution_group: PendingExecutionGroup,
     path: Path | None,
     result: GraphQLWrappedResult[dict[str, Any]],
-) -> DeferredGroupedFieldSetResult:
-    """Build a deferred grouped fieldset result."""
-    return ReconcilableDeferredGroupedFieldSetResult(
-        deferred_grouped_field_set_record=deferred_grouped_field_set_record,
+) -> CompletedExecutionGroup:
+    """Build a completed execution group."""
+    return SuccessfulExecutionGroup(
+        pending_execution_group=pending_execution_group,
         path=path.as_list() if path else [],
-        result=BareDeferredGroupedFieldSetResult(result.result, errors or None),
+        result=ExecutionGroupResult(result.result, errors or None),
         incremental_data_records=result.increments,
     )
 

@@ -9,26 +9,26 @@ from .collect_fields import DeferUsage, FieldGroup, GroupedFieldSet
 
 __all__ = [
     "DeferUsageSet",
-    "FieldPlan",
+    "ExecutionPlan",
     "GroupedFieldSet",
-    "build_field_plan",
+    "build_execution_plan",
 ]
 
 
 DeferUsageSet: TypeAlias = RefSet[DeferUsage]
 
 
-class FieldPlan(NamedTuple):
+class ExecutionPlan(NamedTuple):
     """A plan for executing fields."""
 
     grouped_field_set: GroupedFieldSet
     new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet]
 
 
-def build_field_plan(
+def build_execution_plan(
     original_grouped_field_set: GroupedFieldSet,
     parent_defer_usages: DeferUsageSet | None = None,
-) -> FieldPlan:
+) -> ExecutionPlan:
     """Build a plan for executing fields."""
     if parent_defer_usages is None:
         parent_defer_usages = RefSet()
@@ -53,7 +53,7 @@ def build_field_plan(
 
         new_grouped_field_set[response_key] = field_group
 
-    return FieldPlan(grouped_field_set, new_grouped_field_sets)
+    return ExecutionPlan(grouped_field_set, new_grouped_field_sets)
 
 
 def get_filtered_defer_usage_set(field_group: FieldGroup) -> RefSet[DeferUsage]:

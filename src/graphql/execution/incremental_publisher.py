@@ -22,8 +22,8 @@ from .types import (
     PendingResult,
     SubsequentIncrementalExecutionResult,
     is_cancellable_stream_record,
-    is_deferred_grouped_field_set_result,
-    is_non_reconcilable_deferred_grouped_field_set_result,
+    is_completed_execution_group,
+    is_failed_execution_group,
 )
 
 if TYPE_CHECKING:
@@ -32,14 +32,14 @@ if TYPE_CHECKING:
     from ..error import GraphQLError
     from .types import (
         CancellableStreamRecord,
+        CompletedExecutionGroup,
         DeferredFragmentRecord,
-        DeferredGroupedFieldSetResult,
+        DeliveryGroup,
         IncrementalDataRecord,
         IncrementalDataRecordResult,
         IncrementalResult,
-        ReconcilableDeferredGroupedFieldSetResult,
         StreamItemsResult,
-        SubsequentResultRecord,
+        SuccessfulExecutionGroup,
     )
 
 __all__ = [
@@ -108,7 +108,7 @@ class IncrementalPublisher:
         )
 
     def _to_pending_results(
-        self, new_root_nodes: list[SubsequentResultRecord]
+        self, new_root_nodes: list[DeliveryGroup]
     ) -> list[PendingResult]:
         """Convert pending sources to pending results."""
         pending_results: list[PendingResult] = []
@@ -182,10 +182,8 @@ class IncrementalPublisher:
         context: SubsequentIncrementalExecutionResultContext,
     ) -> None:
         """Handle completed incremental data."""
-        if is_deferred_grouped_field_set_result(completed_incremental_data):
-            self._handle_completed_deferred_grouped_field_set(
-                completed_incremental_data, context
-            )
+        if is_completed_execution_group(completed_incremental_data):
+            self._handle_completed_execution_group(completed_incremental_data, context)
         else:
             completed_incremental_data = cast(
                 "StreamItemsResult", completed_incremental_data
@@ -194,20 +192,18 @@ class IncrementalPublisher:
                 completed_incremental_data, context
             )
 
-    def _handle_completed_deferred_grouped_field_set(
+    def _handle_completed_execution_group(
         self,
-        deferred_grouped_field_set_result: DeferredGroupedFieldSetResult,
+        completed_execution_group: CompletedExecutionGroup,
         context: SubsequentIncrementalExecutionResultContext,
     ) -> None:
         """Handle completed deferred grouped field set result."""
         append_completed = context.completed.append
         append_incremental = context.incremental.append
-        record = deferred_grouped_field_set_result.deferred_grouped_field_set_record
-        if is_non_reconcilable_deferred_grouped_field_set_result(
-            deferred_grouped_field_set_result
-        ):
+        pending_group = completed_execution_group.pending_execution_group
+        if is_failed_execution_group(completed_execution_group):
             remove_deferred = self._incremental_graph.remove_deferred_fragment
-            for deferred_fragment_record in record.deferred_fragment_records:
+            for deferred_fragment_record in pending_group.deferred_fragment_records:
                 if not remove_deferred(deferred_fragment_record):
                     # multiple deferred grouped field sets could error for a fragment
                     continue
@@ -215,22 +211,19 @@ class IncrementalPublisher:
                 if id_ is None:  # pragma: no cover
                     msg = "Missing deferred fragment record identifier."
                     raise RuntimeError(msg)
-                append_completed(
-                    CompletedResult(id_, deferred_grouped_field_set_result.errors)
-                )
+                append_completed(CompletedResult(id_, completed_execution_group.errors))
             return
 
-        deferred_grouped_field_set_result = cast(
-            "ReconcilableDeferredGroupedFieldSetResult",
-            deferred_grouped_field_set_result,
+        completed_execution_group = cast(
+            "SuccessfulExecutionGroup", completed_execution_group
         )
-        self._incremental_graph.add_completed_reconcilable_deferred_grouped_field_set(
-            deferred_grouped_field_set_result
+        self._incremental_graph.add_completed_successful_execution_group(
+            completed_execution_group
         )
 
         complete_deferred = self._incremental_graph.complete_deferred_fragment
         pending = context.pending
-        for deferred_fragment_record in record.deferred_fragment_records:
+        for deferred_fragment_record in pending_group.deferred_fragment_records:
             completion = complete_deferred(deferred_fragment_record)
             if completion is None:
                 continue
@@ -238,13 +231,13 @@ class IncrementalPublisher:
             if id_ is None:  # pragma: no cover
                 msg = "Missing deferred fragment record identifier."
                 raise RuntimeError(msg)
-            new_root_nodes, reconcilable_results = completion
+            new_root_nodes, successful_execution_groups = completion
             pending.extend(self._to_pending_results(new_root_nodes))
-            for reconcilable_result in reconcilable_results:
+            for successful_execution_group in successful_execution_groups:
                 best_id, sub_path = self._get_best_id_and_sub_path(
-                    id_, deferred_fragment_record, reconcilable_result
+                    id_, deferred_fragment_record, successful_execution_group
                 )
-                result = reconcilable_result.result
+                result = successful_execution_group.result
                 incremental_entry = IncrementalDeferResult(
                     data=result.data,
                     id=best_id,
@@ -300,14 +293,14 @@ class IncrementalPublisher:
         self,
         initial_id: str,
         initial_deferred_fragment_record: DeferredFragmentRecord,
-        deferred_grouped_field_set_result: DeferredGroupedFieldSetResult,
+        completed_execution_group: CompletedExecutionGroup,
     ) -> tuple[str, list[str | int] | None]:
         """Get the best ID and sub path for the deferred grouped field set result."""
         path = initial_deferred_fragment_record.path
         max_length = len(path.as_list()) if path else 0
         best_id = initial_id
-        record = deferred_grouped_field_set_result.deferred_grouped_field_set_record
-        for deferred_fragment_record in record.deferred_fragment_records:
+        pending_group = completed_execution_group.pending_execution_group
+        for deferred_fragment_record in pending_group.deferred_fragment_records:
             if deferred_fragment_record is initial_deferred_fragment_record:
                 continue
             id_ = deferred_fragment_record.id
@@ -318,7 +311,7 @@ class IncrementalPublisher:
             if length > max_length:
                 max_length = length
                 best_id = id_
-        sub_path = deferred_grouped_field_set_result.path[max_length:] or None
+        sub_path = completed_execution_group.path[max_length:] or None
         return best_id, sub_path
 
 

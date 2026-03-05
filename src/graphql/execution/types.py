@@ -26,9 +26,9 @@ if TYPE_CHECKING:
         from typing_extensions import NotRequired
 
 __all__ = [
-    "BareDeferredGroupedFieldSetResult",
-    "BareStreamItemsResult",
     "DeferredFragmentRecord",
+    "DeliveryGroup",
+    "ExecutionGroupResult",
     "ExecutionResult",
     "ExperimentalIncrementalExecutionResults",
     "FormattedExecutionResult",
@@ -44,17 +44,17 @@ __all__ = [
     "IncrementalStreamResult",
     "InitialIncrementalExecutionResult",
     "PendingResult",
-    "ReconcilableDeferredGroupedFieldSetResult",
     "StreamItemRecord",
     "StreamItemResult",
+    "StreamItemsRecordResult",
     "StreamItemsResult",
     "SubsequentIncrementalExecutionResult",
-    "SubsequentResultRecord",
+    "SuccessfulExecutionGroup",
     "is_cancellable_stream_record",
+    "is_completed_execution_group",
     "is_deferred_fragment_record",
-    "is_deferred_grouped_field_set_record",
-    "is_deferred_grouped_field_set_result",
-    "is_non_reconcilable_deferred_grouped_field_set_result",
+    "is_failed_execution_group",
+    "is_pending_execution_group",
 ]
 
 
@@ -341,8 +341,8 @@ class FormattedSubsequentIncrementalExecutionResult(TypedDict):
     extensions: NotRequired[dict[str, Any]]
 
 
-class BareDeferredGroupedFieldSetResult:
-    """Bare deferred grouped field set result."""
+class ExecutionGroupResult:
+    """Execution group result."""
 
     errors: list[GraphQLError] | None
     data: dict[str, Any]
@@ -356,7 +356,7 @@ class BareDeferredGroupedFieldSetResult:
         self.errors = errors
 
 
-class IncrementalDeferResult(BareDeferredGroupedFieldSetResult):  # noqa: PLW1641
+class IncrementalDeferResult(ExecutionGroupResult):  # noqa: PLW1641
     """Incremental deferred execution result"""
 
     id: str
@@ -447,8 +447,8 @@ class FormattedInitialIncrementalExecutionResult(TypedDict):
     extensions: NotRequired[dict[str, Any]]
 
 
-class BareStreamItemsResult:
-    """Bare stream items result."""
+class StreamItemsRecordResult:
+    """Stream items record result."""
 
     errors: list[GraphQLError] | None
     items: list[Any]
@@ -464,7 +464,7 @@ class BareStreamItemsResult:
         self.errors = errors
 
 
-class IncrementalStreamResult(BareStreamItemsResult):
+class IncrementalStreamResult(StreamItemsRecordResult):
     """Incremental streamed execution result"""
 
     id: str
@@ -689,86 +689,80 @@ class FormattedCompletedResult(TypedDict):
     errors: NotRequired[list[GraphQLFormattedError]]
 
 
-def is_deferred_grouped_field_set_record(
+def is_pending_execution_group(
     incremental_data_record: IncrementalDataRecord,
-) -> TypeGuard[DeferredGroupedFieldSetRecord]:
-    """Check if the incremental data record is a deferred grouped field set record."""
-    return isinstance(incremental_data_record, DeferredGroupedFieldSetRecord)
+) -> TypeGuard[PendingExecutionGroup]:
+    """Check if the incremental data record is a pending execution group."""
+    return isinstance(incremental_data_record, PendingExecutionGroup)
 
 
-class ReconcilableDeferredGroupedFieldSetResult:
-    """Reconcilable deferred grouped field set result"""
+class SuccessfulExecutionGroup:
+    """Successful execution group"""
 
-    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
+    pending_execution_group: PendingExecutionGroup
     path: list[str | int]
-    result: BareDeferredGroupedFieldSetResult
+    result: ExecutionGroupResult
     incremental_data_records: list[IncrementalDataRecord] | None
     errors: None = None
 
     __slots__ = (
-        "deferred_grouped_field_set_record",
         "incremental_data_records",
         "path",
+        "pending_execution_group",
         "result",
     )
 
     def __init__(
         self,
-        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
+        pending_execution_group: PendingExecutionGroup,
         path: list[str | int],
-        result: BareDeferredGroupedFieldSetResult,
+        result: ExecutionGroupResult,
         incremental_data_records: list[IncrementalDataRecord] | None = None,
     ) -> None:
-        self.deferred_grouped_field_set_record = deferred_grouped_field_set_record
+        self.pending_execution_group = pending_execution_group
         self.path = path
         self.result = result
         self.incremental_data_records = incremental_data_records
 
 
-class NonReconcilableDeferredGroupedFieldSetResult:
-    """Non-reconcilable deferred grouped field set result"""
+class FailedExecutionGroup:
+    """Failed execution group"""
 
-    deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord
+    pending_execution_group: PendingExecutionGroup
     path: list[str | int]
     errors: list[GraphQLError]
     result: None = None
 
-    __slots__ = "deferred_grouped_field_set_record", "errors", "path"
+    __slots__ = "errors", "path", "pending_execution_group"
 
     def __init__(
         self,
-        deferred_grouped_field_set_record: DeferredGroupedFieldSetRecord,
+        pending_execution_group: PendingExecutionGroup,
         path: list[str | int],
         errors: list[GraphQLError],
     ) -> None:
-        self.deferred_grouped_field_set_record = deferred_grouped_field_set_record
+        self.pending_execution_group = pending_execution_group
         self.path = path
         self.errors = errors
 
 
-def is_non_reconcilable_deferred_grouped_field_set_result(
-    deferred_grouped_field_set_result: DeferredGroupedFieldSetResult,
-) -> TypeGuard[NonReconcilableDeferredGroupedFieldSetResult]:
-    """Check if the deferred grouped field set result is non-reconcilable."""
-    return isinstance(
-        deferred_grouped_field_set_result, NonReconcilableDeferredGroupedFieldSetResult
-    )
+def is_failed_execution_group(
+    completed_execution_group: CompletedExecutionGroup,
+) -> TypeGuard[FailedExecutionGroup]:
+    """Check if the completed execution group is a failed execution group."""
+    return isinstance(completed_execution_group, FailedExecutionGroup)
 
 
-DeferredGroupedFieldSetResult: TypeAlias = (
-    ReconcilableDeferredGroupedFieldSetResult
-    | NonReconcilableDeferredGroupedFieldSetResult
-)
+CompletedExecutionGroup: TypeAlias = SuccessfulExecutionGroup | FailedExecutionGroup
 
 
-def is_deferred_grouped_field_set_result(
-    subsequent_result: DeferredGroupedFieldSetResult | StreamItemsResult,
-) -> TypeGuard[DeferredGroupedFieldSetResult]:
+def is_completed_execution_group(
+    subsequent_result: CompletedExecutionGroup | StreamItemsResult,
+) -> TypeGuard[CompletedExecutionGroup]:
     """Check if the subsequent result is a deferred grouped field set result."""
     return isinstance(
         subsequent_result,
-        ReconcilableDeferredGroupedFieldSetResult
-        | NonReconcilableDeferredGroupedFieldSetResult,
+        SuccessfulExecutionGroup | FailedExecutionGroup,
     )
 
 
@@ -777,18 +771,18 @@ ThunkIncrementalResult: TypeAlias = (
 )
 
 
-class DeferredGroupedFieldSetRecord:
-    """Deferred grouped field set record"""
+class PendingExecutionGroup:
+    """Pending execution group"""
 
     deferred_fragment_records: list[DeferredFragmentRecord]
-    result: ThunkIncrementalResult[DeferredGroupedFieldSetResult]
+    result: ThunkIncrementalResult[CompletedExecutionGroup]
 
     __slots__ = "deferred_fragment_records", "result"
 
     def __init__(
         self,
         deferred_fragment_records: list[DeferredFragmentRecord],
-        result: ThunkIncrementalResult[DeferredGroupedFieldSetResult],
+        result: ThunkIncrementalResult[CompletedExecutionGroup],
     ) -> None:
         self.result = result
         self.deferred_fragment_records = deferred_fragment_records
@@ -801,18 +795,18 @@ class DeferredFragmentRecord:
     label: str | None
     id: str | None
     parent: DeferredFragmentRecord | None
-    deferred_grouped_field_set_records: dict[DeferredGroupedFieldSetRecord, None]
-    reconcilable_results: dict[ReconcilableDeferredGroupedFieldSetResult, None]
-    children: dict[SubsequentResultRecord, None]
+    pending_execution_groups: dict[PendingExecutionGroup, None]
+    successful_execution_groups: dict[SuccessfulExecutionGroup, None]
+    children: dict[DeliveryGroup, None]
 
     __slots__ = (
         "children",
-        "deferred_grouped_field_set_records",
         "id",
         "label",
         "parent",
         "path",
-        "reconcilable_results",
+        "pending_execution_groups",
+        "successful_execution_groups",
     )
 
     def __init__(
@@ -825,8 +819,8 @@ class DeferredFragmentRecord:
         self.label = label
         self.parent = parent
         self.id = None
-        self.deferred_grouped_field_set_records = {}
-        self.reconcilable_results = {}
+        self.pending_execution_groups = {}
+        self.successful_execution_groups = {}
         self.children = {}
 
     def __repr__(self) -> str:
@@ -842,10 +836,10 @@ class DeferredFragmentRecord:
 
 
 def is_deferred_fragment_record(
-    subsequent_result_record: SubsequentResultRecord,
+    delivery_group: DeliveryGroup,
 ) -> TypeGuard[DeferredFragmentRecord]:
-    """Check if the subsequent result record is a deferred fragment record."""
-    return isinstance(subsequent_result_record, DeferredFragmentRecord)
+    """Check if the delivery group is a deferred fragment record."""
+    return isinstance(delivery_group, DeferredFragmentRecord)
 
 
 class StreamItemResult(NamedTuple):
@@ -891,7 +885,7 @@ class StreamRecord:
         return f"{name}({', '.join(args)})"
 
 
-SubsequentResultRecord: TypeAlias = DeferredFragmentRecord | StreamRecord
+DeliveryGroup: TypeAlias = DeferredFragmentRecord | StreamRecord
 
 
 class CancellableStreamRecord(StreamRecord):
@@ -913,23 +907,21 @@ class CancellableStreamRecord(StreamRecord):
 
 
 def is_cancellable_stream_record(
-    subsequent_result_record: SubsequentResultRecord,
+    delivery_group: DeliveryGroup,
 ) -> TypeGuard[CancellableStreamRecord]:
-    """Check if the subsequent result record is a cancellable stream record."""
-    return isinstance(subsequent_result_record, CancellableStreamRecord)
+    """Check if the delivery group is a cancellable stream record."""
+    return isinstance(delivery_group, CancellableStreamRecord)
 
 
 class StreamItemsResult(NamedTuple):
     """Stream items result"""
 
     stream_record: StreamRecord
-    result: BareStreamItemsResult | None
-    incremental_data_records: list[IncrementalDataRecord] | None
+    incremental_data_records: list[IncrementalDataRecord] | None = None
+    result: StreamItemsRecordResult | None = None
     errors: list[GraphQLError] | None = None
 
 
-IncrementalDataRecord: TypeAlias = DeferredGroupedFieldSetRecord | StreamRecord
+IncrementalDataRecord: TypeAlias = PendingExecutionGroup | StreamRecord
 
-IncrementalDataRecordResult: TypeAlias = (
-    DeferredGroupedFieldSetResult | StreamItemsResult
-)
+IncrementalDataRecordResult: TypeAlias = CompletedExecutionGroup | StreamItemsResult
