@@ -43,16 +43,6 @@ class DeferUsage(NamedTuple):
     label: str | None
     parent_defer_usage: DeferUsage | None
 
-    @property
-    def ancestors(self) -> list[DeferUsage]:
-        """Get the ancestors of this defer usage."""
-        ancestors: list[DeferUsage] = []
-        parent_defer_usage = self.parent_defer_usage
-        while parent_defer_usage is not None:
-            ancestors.append(parent_defer_usage)
-            parent_defer_usage = parent_defer_usage.parent_defer_usage
-        return ancestors[::-1]
-
 
 class FieldDetails(NamedTuple):
     """A field node and its defer usage."""
