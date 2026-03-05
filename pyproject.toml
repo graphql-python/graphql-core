@@ -312,5 +312,5 @@ filterwarnings = "ignore::pytest.PytestConfigWarning"
 testpaths = ["tests"]
 
 [build-system]
-requires = ["uv_build>=0.9,<0.10"]
+requires = ["uv_build>=0.10,<0.11"]
 build-backend = "uv_build"
