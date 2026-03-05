@@ -280,7 +280,6 @@ class IncrementalGraph:
         """Handle stream items."""
         enqueue = self._enqueue
         items: list[Any] = []
-        append_item = items.append
         errors: list[GraphQLError] = []
         incremental_data_records: list[IncrementalDataRecord] = []
         stream_item_queue = stream_record.stream_item_queue
@@ -319,7 +318,7 @@ class IncrementalGraph:
                     )
                 enqueue(StreamItemsResult(stream_record, errors=result.errors or None))
                 return
-            append_item(result.item)
+            items.append(result.item)
             if result.errors:
                 errors.extend(result.errors)
             if result.incremental_data_records:

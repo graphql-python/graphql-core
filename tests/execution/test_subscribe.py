@@ -32,7 +32,7 @@ from ..utils.assert_equal_awaitables_or_values import assert_equal_awaitables_or
 
 pytestmark = [
     pytest.mark.anyio,
-    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning"),
 ]
 
 T = TypeVar("T")

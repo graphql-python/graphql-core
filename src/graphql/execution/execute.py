@@ -1881,7 +1881,7 @@ class ExecutionContext(IncrementalPublisherContext):
             return self.get_next_async_stream_item_result(
                 stream_item_queue,
                 stream_path,
-                index,
+                index + 1,
                 async_iterator,
                 field_group,
                 info,

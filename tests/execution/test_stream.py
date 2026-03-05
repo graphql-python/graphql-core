@@ -29,7 +29,7 @@ from graphql.type import (
 
 pytestmark = [
     pytest.mark.anyio,
-    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning"),
     pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning"),
 ]
 
@@ -499,18 +499,10 @@ def describe_execute_stream_directive():
             },
             {
                 "incremental": [
-                    {
-                        "items": [
-                            {"name": "Luke", "id": "1"},
-                            {"name": "Han", "id": "2"},
-                            {"name": "Leia", "id": "3"},
-                        ],
-                        "id": "0",
-                    }
+                    {"items": [{"name": "Luke", "id": "1"}], "id": "0"},
+                    {"items": [{"name": "Han", "id": "2"}], "id": "0"},
+                    {"items": [{"name": "Leia", "id": "3"}], "id": "0"},
                 ],
-                "hasNext": True,
-            },
-            {
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -554,13 +546,13 @@ def describe_execute_stream_directive():
                 "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
+            {"incremental": [{"items": [{"id": "1"}], "id": "0"}], "hasNext": True},
+            {"incremental": [{"items": [{"id": "2"}], "id": "0"}], "hasNext": True},
             {
-                "hasNext": True,
-                "incremental": [
-                    {"items": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "id": "0"}
-                ],
+                "incremental": [{"items": [{"id": "3"}], "id": "0"}],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
             },
-            {"hasNext": False, "completed": [{"id": "0"}]},
         ]
         assert order == [0, 1, 2]
 
@@ -747,7 +739,7 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None, {"name": "Leia", "id": "3"}],
+                        "items": [None],
                         "id": "0",
                         "errors": [
                             {
@@ -757,6 +749,7 @@ def describe_execute_stream_directive():
                             }
                         ],
                     },
+                    {"items": [{"name": "Leia", "id": "3"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -789,18 +782,10 @@ def describe_execute_stream_directive():
             },
             {
                 "incremental": [
-                    {
-                        "items": [
-                            {"name": "Luke", "id": "1"},
-                            {"name": "Han", "id": "2"},
-                            {"name": "Leia", "id": "3"},
-                        ],
-                        "id": "0",
-                    },
+                    {"items": [{"name": "Luke", "id": "1"}], "id": "0"},
+                    {"items": [{"name": "Han", "id": "2"}], "id": "0"},
+                    {"items": [{"name": "Leia", "id": "3"}], "id": "0"},
                 ],
-                "hasNext": True,
-            },
-            {
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -913,13 +898,10 @@ def describe_execute_stream_directive():
                 "pending": [{"id": "0", "path": ["friendList"]}],
                 "hasNext": True,
             },
+            {"incremental": [{"items": [{"id": "1"}], "id": "0"}], "hasNext": True},
+            {"incremental": [{"items": [{"id": "2"}], "id": "0"}], "hasNext": True},
             {
-                "hasNext": True,
-                "incremental": [
-                    {"items": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "id": "0"}
-                ],
-            },
-            {
+                "incremental": [{"items": [{"id": "3"}], "id": "0"}],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -1250,21 +1232,22 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
+                "hasNext": False,
                 "incremental": [
                     {
-                        "items": [None, {"nonNullName": "Han"}],
+                        "items": [None],
                         "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
                                 "locations": [{"line": 4, "column": 17}],
                                 "path": ["friendList", 1, "nonNullName"],
-                            },
+                            }
                         ],
                     },
+                    {"items": [{"nonNullName": "Han"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
-                "hasNext": False,
             },
         ]
 
@@ -1307,16 +1290,17 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None, {"nonNullName": "Han"}],
+                        "items": [None],
                         "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
                                 "locations": [{"line": 4, "column": 17}],
                                 "path": ["friendList", 1, "nonNullName"],
-                            },
+                            }
                         ],
                     },
+                    {"items": [{"nonNullName": "Han"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -1473,20 +1457,18 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None, {"nonNullName": "Han"}],
+                        "items": [None],
                         "id": "0",
                         "errors": [
                             {
                                 "message": "Oops",
                                 "locations": [{"line": 4, "column": 17}],
                                 "path": ["friendList", 1, "nonNullName"],
-                            },
+                            }
                         ],
                     },
+                    {"items": [{"nonNullName": "Han"}], "id": "0"},
                 ],
-                "hasNext": True,
-            },
-            {
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -1961,16 +1943,6 @@ def describe_execute_stream_directive():
         early_execution,
     ):
         """Returns iterator and ignores errors when stream payloads are filtered"""
-        iterated = False
-
-        async def resolve_null(_info):
-            return None
-
-        async def iterable(_info):  # pragma: no cover
-            nonlocal iterated
-            iterated = True
-            yield {"name": friends[0].name, "nonNullName": None}
-
         document = parse(
             """
             query {
@@ -1987,6 +1959,16 @@ def describe_execute_stream_directive():
             }
             """
         )
+
+        iterated = False
+
+        async def resolve_null(_info):
+            return None
+
+        async def iterable(_info):  # pragma: no cover
+            nonlocal iterated
+            iterated = True
+            yield {"name": friends[0].name, "nonNullName": None}
 
         execute_result = experimental_execute_incrementally(
             schema,
@@ -2079,18 +2061,11 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [
-                            {"id": "2", "name": "Han"},
-                            {"id": "3", "name": "Leia"},
-                        ],
-                        "id": "0",
-                    }
-                ],
+                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "0"}],
                 "hasNext": True,
             },
             {
+                "incremental": [{"items": [{"id": "3", "name": "Leia"}], "id": "0"}],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -2120,6 +2095,7 @@ def describe_execute_stream_directive():
 
         async def get_nested_friend_list(_info):
             for i in range(2):
+                await sleep(0)
                 yield friends[i]
 
         result = await complete(
@@ -2134,27 +2110,18 @@ def describe_execute_stream_directive():
         assert result == [
             {
                 "data": {"nestedObject": {"nestedFriendList": []}},
-                "pending": [
-                    {"id": "0", "path": ["nestedObject", "nestedFriendList"]},
-                ],
+                "pending": [{"id": "0", "path": ["nestedObject", "nestedFriendList"]}],
                 "hasNext": True,
             },
             {
-                "incremental": [
-                    {
-                        "items": [
-                            {"id": "1", "name": "Luke"},
-                            {"id": "2", "name": "Han"},
-                        ],
-                        "id": "0",
-                    },
-                ],
+                "incremental": [{"items": [{"id": "1", "name": "Luke"}], "id": "0"}],
                 "hasNext": True,
             },
             {
+                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "0"}],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
-            },  # GraphQL-js combines this with the previous payload
+            },
         ]
 
     async def returns_payloads_properly_when_parent_deferred_slower_than_stream():
@@ -2163,12 +2130,6 @@ def describe_execute_stream_directive():
         Returns payloads in correct order when parent deferred fragment resolves
         slower than stream.
         """
-        resolve_slow_field = Event()
-
-        async def slow_field(_info):
-            await resolve_slow_field.wait()
-            return "slow"
-
         document = parse(
             """
               query {
@@ -2185,8 +2146,15 @@ def describe_execute_stream_directive():
             """
         )
 
+        resolve_slow_field = Event()
+
+        async def slow_field(_info):
+            await resolve_slow_field.wait()
+            return "slow"
+
         async def get_friends(_info):
             for i in range(2):
+                await sleep(0)
                 yield friends[i]
 
         execute_result = experimental_execute_incrementally(
@@ -2223,12 +2191,16 @@ def describe_execute_stream_directive():
 
         result3 = await anext(iterator)
         assert result3 == {
-            "incremental": [{"items": [{"name": "Luke"}, {"name": "Han"}], "id": "1"}],
+            "incremental": [{"items": [{"name": "Luke"}], "id": "1"}],
             "hasNext": True,
         }
 
         result4 = await anext(iterator)
-        assert result4 == {"completed": [{"id": "1"}], "hasNext": False}
+        assert result4 == {
+            "incremental": [{"items": [{"name": "Han"}], "id": "1"}],
+            "completed": [{"id": "1"}],
+            "hasNext": False,
+        }
 
         with pytest.raises(StopAsyncIteration):
             await anext(iterator)
@@ -2236,17 +2208,10 @@ def describe_execute_stream_directive():
     @pytest.mark.timeout(1)
     async def can_defer_fields_that_are_resolved_after_async_iterable_is_complete():
         """Can @defer fields that are resolved after async iterable is complete"""
-        resolve_slow_field = Event()
-        resolve_iterable = Event()
-
-        async def slow_field(_info):
-            await resolve_slow_field.wait()
-            return "Han"
-
         document = parse(
             """
             query {
-              friendList @stream(initialCount: 1, label:"stream-label") {
+              friendList @stream(label:"stream-label") {
                 ...NameFragment @defer(label: "DeferName") @defer(label: "DeferName")
                 id
               }
@@ -2257,8 +2222,17 @@ def describe_execute_stream_directive():
             """
         )
 
+        resolve_slow_field = Event()
+        resolve_iterable = Event()
+
+        async def slow_field(_info):
+            await resolve_slow_field.wait()
+            return "Han"
+
         async def get_friends(_info):
+            await sleep(0)
             yield friends[0]
+            await sleep(0)
             yield {"id": friends[1].id, "name": slow_field}
             await resolve_iterable.wait()
 
@@ -2275,31 +2249,36 @@ def describe_execute_stream_directive():
 
         result1 = execute_result.initial_result
         assert result1 == {
-            "data": {"friendList": [{"id": "1"}]},
+            "data": {"friendList": []},
             "pending": [
-                {"id": "0", "path": ["friendList", 0], "label": "DeferName"},
-                {"id": "1", "path": ["friendList"], "label": "stream-label"},
+                {"id": "0", "path": ["friendList"], "label": "stream-label"},
             ],
             "hasNext": True,
         }
 
         result2 = await anext(iterator)
-        assert result2 == {
-            "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
-            "completed": [{"id": "0"}],
-            "hasNext": True,
-        }
-
         resolve_iterable.set()
-        result3 = await anext(iterator)
-        assert result3 == {
-            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
-            "incremental": [{"items": [{"id": "2"}], "id": "1"}],
+        assert result2 == {
+            "pending": [
+                {"id": "1", "path": ["friendList", 0], "label": "DeferName"},
+            ],
+            "incremental": [
+                {"items": [{"id": "1"}], "id": "0"},
+                {"data": {"name": "Luke"}, "id": "1"},
+            ],
             "completed": [{"id": "1"}],
             "hasNext": True,
         }
 
+        result3 = await anext(iterator)
         resolve_slow_field.set()
+        assert result3 == {
+            "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
+            "incremental": [{"items": [{"id": "2"}], "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": True,
+        }
+
         result4 = await anext(iterator)
         assert result4 == {
             "incremental": [{"data": {"name": "Han"}, "id": "2"}],
@@ -2312,13 +2291,6 @@ def describe_execute_stream_directive():
 
     async def can_defer_fields_that_are_resolved_before_async_iterable_is_complete():
         """Can @defer fields that are resolved before async iterable is complete"""
-        resolve_slow_field = Event()
-        resolve_iterable = Event()
-
-        async def slow_field(_info):
-            await resolve_slow_field.wait()
-            return "Han"
-
         document = parse(
             """
             query {
@@ -2332,6 +2304,13 @@ def describe_execute_stream_directive():
             }
             """
         )
+
+        resolve_slow_field = Event()
+        resolve_iterable = Event()
+
+        async def slow_field(_info):
+            await resolve_slow_field.wait()
+            return "Han"
 
         async def get_friends(_info):
             yield friends[0]
@@ -2390,15 +2369,6 @@ def describe_execute_stream_directive():
 
     async def finishes_async_iterable_when_finished_generator_is_closed():
         """Finishes underlying async iterables when returned generator is closed"""
-        finished = False
-
-        async def iterable(_info):
-            nonlocal finished
-            try:
-                yield None
-            finally:
-                finished = True
-
         document = parse(
             """
             query {
@@ -2408,6 +2378,15 @@ def describe_execute_stream_directive():
             }
             """
         )
+
+        finished = False
+
+        async def iterable(_info):
+            nonlocal finished
+            try:
+                yield None
+            finally:
+                finished = True
 
         execute_result = await experimental_execute_incrementally(  # type: ignore
             schema, document, {"friendList": iterable}
@@ -2442,6 +2421,16 @@ def describe_execute_stream_directive():
 
     async def finishes_async_iterable_when_underlying_iterator_has_no_aclose_method():
         """Finishes async iterable when underlying iterable has not aclose method"""
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 1) {
+                name
+                id
+              }
+            }
+            """
+        )
 
         class Iterable:
             def __init__(self):
@@ -2459,17 +2448,6 @@ def describe_execute_stream_directive():
                     raise StopAsyncIteration
 
         iterable = Iterable()
-
-        document = parse(
-            """
-            query {
-              friendList @stream(initialCount: 1) {
-                name
-                id
-              }
-            }
-            """
-        )
 
         execute_result = await experimental_execute_incrementally(  # type: ignore
             schema, document, {"friendList": iterable}
@@ -2493,16 +2471,6 @@ def describe_execute_stream_directive():
 
     async def finishes_async_iterable_when_error_is_raised_in_finished_generator():
         """Finishes underlying async iterables when an error is raised in generator"""
-        finished = False
-
-        async def iterable(_info):
-            nonlocal finished
-            try:
-                for i in range(3):  # pragma: no cover exit
-                    yield friends[i]
-            finally:
-                finished = True
-
         document = parse(
             """
             query {
@@ -2515,6 +2483,16 @@ def describe_execute_stream_directive():
             }
             """
         )
+
+        finished = False
+
+        async def iterable(_info):
+            nonlocal finished
+            try:
+                for i in range(3):  # pragma: no cover exit
+                    yield friends[i]
+            finally:
+                finished = True
 
         execute_result = await experimental_execute_incrementally(  # type: ignore
             schema, document, {"friendList": iterable}

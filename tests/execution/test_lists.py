@@ -204,7 +204,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             None,
         )
 
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+    @pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning")
     async def can_customize_detection_of_async_iterables():
         class CustomIterable:
             """An object that is both an iterable and an async iterable."""
@@ -288,7 +288,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             ],
         )
 
-    @pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning")
+    @pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning")
     async def handles_errors_from_complete_value_in_async_iterables():
         async def list_field():
             yield "two"

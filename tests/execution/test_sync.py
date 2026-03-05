@@ -11,7 +11,7 @@ from ..fixtures import cleanup
 
 pytestmark = [
     pytest.mark.anyio,
-    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning"),
 ]
 
 
