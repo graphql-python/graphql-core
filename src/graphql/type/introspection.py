@@ -390,6 +390,9 @@ class TypeFields(GraphQLFieldMap):
         return type_.is_one_of if is_input_object_type(type_) else None
 
 
+TypeResolvers = TypeFields  # for backward compatibility
+
+
 _Type: GraphQLObjectType = GraphQLObjectType(
     name="__Type",
     description="The fundamental unit of any GraphQL Schema is the type."
