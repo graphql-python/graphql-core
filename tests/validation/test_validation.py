@@ -46,8 +46,7 @@ def describe_validate_supports_full_validation():
         )
 
     def validates_queries():
-        doc = parse(
-            """
+        doc = parse("""
             query {
               human {
                 pets {
@@ -60,20 +59,17 @@ def describe_validate_supports_full_validation():
                 }
               }
             }
-            """
-        )
+            """)
 
         errors = validate(test_schema, doc)
         assert errors == []
 
     def detects_unknown_fields():
-        doc = parse(
-            """
+        doc = parse("""
             {
               unknown
             }
-            """
-        )
+            """)
 
         errors = validate(test_schema, doc)
         assert errors == [
@@ -84,8 +80,7 @@ def describe_validate_supports_full_validation():
         # This TypeInfo will never return a valid field.
         type_info = TypeInfo(test_schema, None, lambda *args: None)
 
-        doc = parse(
-            """
+        doc = parse("""
             query {
               human {
                 pets {
@@ -98,8 +93,7 @@ def describe_validate_supports_full_validation():
                 }
               }
             }
-            """
-        )
+            """)
 
         errors = validate(test_schema, doc, None, None, type_info)
 
@@ -112,23 +106,19 @@ def describe_validate_supports_full_validation():
         ]
 
     def validates_using_a_custom_rule():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             directive @custom(arg: String) on FIELD
 
             type Query {
               foo: String
             }
-            """
-        )
+            """)
 
-        doc = parse(
-            """
+        doc = parse("""
             query {
               name @custom
             }
-            """
-        )
+            """)
 
         class CustomRule(ValidationRule):
             def enter_directive(self, node, *_args):

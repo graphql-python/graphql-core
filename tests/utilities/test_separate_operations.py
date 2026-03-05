@@ -10,8 +10,7 @@ def separated_asts(ast):
 
 def describe_separate_operations():
     def separates_one_ast_into_multiple_maintaining_document_order():
-        ast = parse(
-            """
+        ast = parse("""
             {
               ...Y
               ...X
@@ -47,12 +46,10 @@ def describe_separate_operations():
               something
             }
 
-            """
-        )
+            """)
 
         assert separated_asts(ast) == {
-            "": dedent(
-                """
+            "": dedent("""
                 {
                   ...Y
                   ...X
@@ -65,10 +62,8 @@ def describe_separate_operations():
                 fragment Y on T {
                   fieldY
                 }
-                """
-            ),
-            "One": dedent(
-                """
+                """),
+            "One": dedent("""
                 query One {
                   foo
                   bar
@@ -88,10 +83,8 @@ def describe_separate_operations():
                 fragment B on T {
                   something
                 }
-                """
-            ),
-            "Two": dedent(
-                """
+                """),
+            "Two": dedent("""
                 fragment A on T {
                   field
                   ...B
@@ -110,13 +103,11 @@ def describe_separate_operations():
                 fragment B on T {
                   something
                 }
-                """
-            ),
+                """),
         }
 
     def survives_circular_dependencies():
-        ast = parse(
-            """
+        ast = parse("""
             query One {
               ...A
             }
@@ -132,12 +123,10 @@ def describe_separate_operations():
             query Two {
               ...B
             }
-            """
-        )
+            """)
 
         assert separated_asts(ast) == {
-            "One": dedent(
-                """
+            "One": dedent("""
                 query One {
                   ...A
                 }
@@ -149,10 +138,8 @@ def describe_separate_operations():
                 fragment B on T {
                   ...A
                 }
-                """
-            ),
-            "Two": dedent(
-                """
+                """),
+            "Two": dedent("""
                 fragment A on T {
                   ...B
                 }
@@ -164,13 +151,11 @@ def describe_separate_operations():
                 query Two {
                   ...B
                 }
-                """
-            ),
+                """),
         }
 
     def distinguishes_query_and_fragment_names():
-        ast = parse(
-            """
+        ast = parse("""
             {
               ...NameClash
             }
@@ -186,12 +171,10 @@ def describe_separate_operations():
             fragment ShouldBeSkippedInFirstQuery on T {
               twoField
             }
-            """
-        )
+            """)
 
         assert separated_asts(ast) == {
-            "": dedent(
-                """
+            "": dedent("""
                 {
                   ...NameClash
                 }
@@ -199,10 +182,8 @@ def describe_separate_operations():
                 fragment NameClash on T {
                   oneField
                 }
-                """
-            ),
-            "NameClash": dedent(
-                """
+                """),
+            "NameClash": dedent("""
                 query NameClash {
                   ...ShouldBeSkippedInFirstQuery
                 }
@@ -210,13 +191,11 @@ def describe_separate_operations():
                 fragment ShouldBeSkippedInFirstQuery on T {
                   twoField
                 }
-                """
-            ),
+                """),
         }
 
     def handles_unknown_fragments():
-        ast = parse(
-            """
+        ast = parse("""
             {
               ...Unknown
               ...Known
@@ -225,12 +204,9 @@ def describe_separate_operations():
             fragment Known on T {
               someField
             }
-            """
-        )
+            """)
 
-        assert separated_asts(ast) == {
-            "": dedent(
-                """
+        assert separated_asts(ast) == {"": dedent("""
                 {
                   ...Unknown
                   ...Known
@@ -239,6 +215,4 @@ def describe_separate_operations():
                 fragment Known on T {
                   someField
                 }
-                """
-            )
-        }
+                """)}

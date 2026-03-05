@@ -298,26 +298,22 @@ def describe_type_system_enum_values():
         )
 
     def enum_value_may_have_an_internal_value_of_0():
-        result = execute_query(
-            """
+        result = execute_query("""
             {
               colorEnum(fromEnum: RED)
               colorInt(fromEnum: RED)
             }
-            """
-        )
+            """)
 
         assert result == ({"colorEnum": "RED", "colorInt": 0}, None)
 
     def enum_inputs_may_be_nullable():
-        result = execute_query(
-            """
+        result = execute_query("""
             {
               colorEnum
               colorInt
             }
-            """
-        )
+            """)
 
         assert result == ({"colorEnum": None, "colorInt": None}, None)
 
@@ -331,16 +327,14 @@ def describe_type_system_enum_values():
         }
 
     def may_be_internally_represented_with_complex_values():
-        result = execute_query(
-            """
+        result = execute_query("""
             {
               first: complexEnum
               second: complexEnum(fromEnum: TWO)
               good: complexEnum(provideGoodValue: true)
               bad: complexEnum(provideBadValue: true)
             }
-            """
-        )
+            """)
 
         assert result == (
             {"first": "ONE", "second": "TWO", "good": "TWO", "bad": None},

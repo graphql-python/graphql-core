@@ -29,63 +29,50 @@ assert_sdl_errors = partial(
 
 def describe_validate_directives_are_unique_per_location():
     def no_directives():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field
             }
-            """
-        )
+            """)
 
     def unique_directives_in_different_locations():
-        assert_valid(
-            """
+        assert_valid("""
             fragment Test on Type @directiveA {
               field @directiveB
             }
-            """
-        )
+            """)
 
     def unique_directives_in_same_locations():
-        assert_valid(
-            """
+        assert_valid("""
             fragment Test on Type @directiveA @directiveB {
               field @directiveA @directiveB
             }
-            """
-        )
+            """)
 
     def same_directives_in_different_locations():
-        assert_valid(
-            """
+        assert_valid("""
             fragment Test on Type @directiveA {
               field @directiveA
             }
-            """
-        )
+            """)
 
     def same_directives_in_similar_locations():
-        assert_valid(
-            """
+        assert_valid("""
             fragment Test on Type {
               field @directive
               field @directive
             }
-            """
-        )
+            """)
 
     def repeatable_directives_in_same_location():
-        assert_valid(
-            """
+        assert_valid("""
             fragment Test on Type @repeatable @repeatable {
               field @repeatable @repeatable
             }
-            """
-        )
+            """)
 
     def unknown_directives_must_be_ignored():
-        assert_valid(
-            """
+        assert_valid("""
             type Test @unknown @unknown {
               field: String! @unknown @unknown
             }
@@ -93,8 +80,7 @@ def describe_validate_directives_are_unique_per_location():
             extend type Test @unknown {
               anotherField: String!
             }
-            """
-        )
+            """)
 
     def duplicate_directives_in_one_location():
         assert_errors(

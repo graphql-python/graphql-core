@@ -257,13 +257,11 @@ def describe_description():
 
         assert not description.evaluated
         assert not deprecation_reason.evaluated
-        assert print_schema(schema) == dedent(
-            '''
+        assert print_schema(schema) == dedent('''
             type Query {
               """a lazy description"""
               lazyField: String @deprecated(reason: "a lazy reason")
             }
-            '''
-        )
+            ''')
         assert description.evaluated
         assert deprecation_reason.evaluated

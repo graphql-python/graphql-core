@@ -260,13 +260,11 @@ def describe_execute_resolve_function():
         resolver_kwargs = None
         result = execute_sync(
             schema,
-            parse(
-                """
+            parse("""
                     query ($searchFilters: SearchFilters) {
                       search(searchFilters: $searchFilters) { id }
                 }
-                """
-            ),
+                """),
         )
         assert result == ({"search": [{"id": "42"}]}, None)
         assert resolver_kwargs == {"search_filters": {"page_size": 10}}
@@ -274,13 +272,11 @@ def describe_execute_resolve_function():
         resolver_kwargs = None
         result = execute_sync(
             schema,
-            parse(
-                """
+            parse("""
                     query ($searchFilters: SearchFilters) {
                       search(searchFilters: $searchFilters) { id }
                 }
-                """
-            ),
+                """),
             variable_values={"searchFilters": {"pageSize": 25}},
         )
         assert result == ({"search": [{"id": "42"}]}, None)
@@ -289,13 +285,11 @@ def describe_execute_resolve_function():
         resolver_kwargs = None
         result = execute_sync(
             schema,
-            parse(
-                """
+            parse("""
                     query ($searchFilters: SearchFilters = {pageSize: 25}) {
                       search(searchFilters: $searchFilters) { id }
                 }
-                """
-            ),
+                """),
         )
         assert result == ({"search": [{"id": "42"}]}, None)
         assert resolver_kwargs == {"search_filters": {"page_size": 25}}

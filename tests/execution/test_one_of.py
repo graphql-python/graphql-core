@@ -5,9 +5,7 @@ from graphql.language import parse
 from graphql.pyutils import AwaitableOrValue
 from graphql.utilities import build_schema
 
-
-schema = build_schema(
-    """
+schema = build_schema("""
     type Query {
       test(input: TestInputObject!): TestObject
     }
@@ -21,8 +19,7 @@ schema = build_schema(
       a: String
       b: Int
     }
-    """
-)
+    """)
 
 
 def execute_query(

@@ -163,14 +163,12 @@ def describe_execute_handles_inputs():
     def describe_handles_objects_and_nullability():
         def describe_using_inline_struct():
             def executes_with_complex_input():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(
                         input: {a: "foo", b: ["bar"], c: "baz"})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"},
@@ -179,14 +177,12 @@ def describe_execute_handles_inputs():
 
             def executes_with_custom_input():
                 # This is an extension of GraphQL.js.
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithCustomObjectInput(
                         input: {x: -3.0, y: 4.5})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithCustomObjectInput": "'(x|y) = (-3.0|4.5)'"},
@@ -194,13 +190,11 @@ def describe_execute_handles_inputs():
                 )
 
             def properly_parses_single_value_to_list():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(input: {a: "foo", b: "bar", c: "baz"})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"},
@@ -208,14 +202,12 @@ def describe_execute_handles_inputs():
                 )
 
             def properly_parses_null_value_to_null():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(
                         input: {a: null, b: null, c: "C", d: null})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {
@@ -226,13 +218,11 @@ def describe_execute_handles_inputs():
                 )
 
             def properly_parses_null_value_in_list():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(input: {b: ["A",null,"C"], c: "C"})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": "{'b': ['A', None, 'C'], 'c': 'C'}"},
@@ -240,13 +230,11 @@ def describe_execute_handles_inputs():
                 )
 
             def does_not_use_incorrect_value():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(input: ["foo", "bar", "baz"])
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": None},
@@ -261,13 +249,11 @@ def describe_execute_handles_inputs():
                 )
 
             def properly_runs_parse_literal_on_complex_scalar_types():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(input: {c: "foo", d: "SerializedValue"})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": "{'c': 'foo', 'd': 'DeserializedValue'}"},
@@ -275,13 +261,11 @@ def describe_execute_handles_inputs():
                 )
 
             def errors_on_faulty_scalar_type_input():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     {
                       fieldWithObjectInput(input: {c: "foo", e: "bar"})
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": None},
@@ -336,14 +320,12 @@ def describe_execute_handles_inputs():
                 assert result == ({"fieldWithNullableStringInput": "None"}, None)
 
             def uses_default_value_when_not_provided():
-                result = execute_query(
-                    """
+                result = execute_query("""
                     query ($input: TestInputObject = {
                       a: "foo", b: ["bar"], c: "baz"}) {
                         fieldWithObjectInput(input: $input)
                     }
-                    """
-                )
+                    """)
 
                 assert result == (
                     {"fieldWithObjectInput": "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"},
@@ -513,8 +495,7 @@ def describe_execute_handles_inputs():
 
     def describe_handles_custom_enum_values():
         def allows_custom_enum_values_as_inputs():
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                   null: fieldWithEnumInput(input: NULL)
                   NaN: fieldWithEnumInput(input: NAN)
@@ -522,8 +503,7 @@ def describe_execute_handles_inputs():
                   customValue: fieldWithEnumInput(input: CUSTOM)
                   defaultValue: fieldWithEnumInput(input: DEFAULT_VALUE)
                 }
-                """
-            )
+                """)
 
             assert result == (
                 {
@@ -538,47 +518,39 @@ def describe_execute_handles_inputs():
             )
 
         def allows_non_nullable_inputs_to_have_null_as_enum_custom_value():
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                    fieldWithNonNullableEnumInput(input: NULL)
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNonNullableEnumInput": "None"}, None)
 
     def describe_handles_nullable_scalars():
         def allows_nullable_inputs_to_be_omitted():
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                   fieldWithNullableStringInput
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNullableStringInput": None}, None)
 
         def allows_nullable_inputs_to_be_omitted_in_a_variable():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query ($value: String) {
                   fieldWithNullableStringInput(input: $value)
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNullableStringInput": None}, None)
 
         def allows_nullable_inputs_to_be_omitted_in_an_unlisted_variable():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query SetsNullable {
                   fieldWithNullableStringInput(input: $value)
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNullableStringInput": None}, None)
 
@@ -603,47 +575,39 @@ def describe_execute_handles_inputs():
             assert result == ({"fieldWithNullableStringInput": "'a'"}, None)
 
         def allows_nullable_inputs_to_be_set_to_a_value_directly():
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                   fieldWithNullableStringInput(input: "a")
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNullableStringInput": "'a'"}, None)
 
     def describe_handles_non_nullable_scalars():
         def allows_non_nullable_variable_to_be_omitted_given_a_default():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query ($value: String! = "default") {
                   fieldWithNullableStringInput(input: $value)
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNullableStringInput": "'default'"}, None)
 
         def allows_non_nullable_inputs_to_be_omitted_given_a_default():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query ($value: String = "default") {
                   fieldWithNonNullableStringInput(input: $value)
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNonNullableStringInput": "'default'"}, None)
 
         def does_not_allow_non_nullable_inputs_to_be_omitted_in_a_variable():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query ($value: String!) {
                   fieldWithNonNullableStringInput(input: $value)
                 }
-                """
-            )
+                """)
 
             assert result == (
                 None,
@@ -688,13 +652,11 @@ def describe_execute_handles_inputs():
             assert result == ({"fieldWithNonNullableStringInput": "'a'"}, None)
 
         def allows_non_nullable_inputs_to_be_set_to_a_value_directly():
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                   fieldWithNonNullableStringInput(input: "a")
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithNonNullableStringInput": "'a'"}, None)
 
@@ -744,13 +706,11 @@ def describe_execute_handles_inputs():
             # have introduced a breaking change to make a formerly non-required
             # argument required, this asserts failure before allowing the
             # underlying code to receive a non-null value.
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                   fieldWithNonNullableStringInput(input: $foo)
                 }
-                """
-            )
+                """)
 
             assert result == (
                 {"fieldWithNonNullableStringInput": None},
@@ -979,24 +939,20 @@ def describe_execute_handles_inputs():
             assert result == ({"fieldWithDefaultArgumentValue": "'Hello World'"}, None)
 
         def when_omitted_variable_provided():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query ($optional: String) {
                   fieldWithDefaultArgumentValue(input: $optional)
                 }
-                """
-            )
+                """)
 
             assert result == ({"fieldWithDefaultArgumentValue": "'Hello World'"}, None)
 
         def not_when_argument_cannot_be_coerced():
-            result = execute_query(
-                """
+            result = execute_query("""
                 {
                   fieldWithDefaultArgumentValue(input: WRONG_TYPE)
                 }
-                """
-            )
+                """)
 
             assert result == (
                 {"fieldWithDefaultArgumentValue": None},
@@ -1010,13 +966,11 @@ def describe_execute_handles_inputs():
             )
 
         def when_no_runtime_value_is_provided_to_a_non_null_argument():
-            result = execute_query(
-                """
+            result = execute_query("""
                 query optionalVariable($optional: String) {
                   fieldWithNonNullableStringInputAndDefaultArgValue(input: $optional)
                 }
-                """
-            )
+                """)
 
             assert result == (
                 {"fieldWithNonNullableStringInputAndDefaultArgValue": "'Hello World'"},
@@ -1024,13 +978,11 @@ def describe_execute_handles_inputs():
             )
 
     def describe_get_variable_values_limit_maximum_number_of_coercion_errors():
-        doc = parse(
-            """
+        doc = parse("""
             query ($input: [String!]) {
               listNN(input: $input)
             }
-            """
-        )
+            """)
 
         operation = doc.definitions[0]
         assert isinstance(operation, OperationDefinitionNode)

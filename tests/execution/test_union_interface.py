@@ -148,8 +148,7 @@ john = Person("John", [garfield, odie], [liz, odie])
 
 def describe_execute_union_and_intersection_types():
     def can_introspect_on_union_and_intersection_types():
-        document = parse(
-            """
+        document = parse("""
             {
               Named: __type(name: "Named") {
                 kind
@@ -179,8 +178,7 @@ def describe_execute_union_and_intersection_types():
                 inputFields { name }
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document) == (
             {
@@ -229,8 +227,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_using_union_types():
         # NOTE: This is an *invalid* query, but it should be *executable*.
-        document = parse(
-            """
+        document = parse("""
             {
               __typename
               name
@@ -241,8 +238,7 @@ def describe_execute_union_and_intersection_types():
                 meows
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
@@ -258,8 +254,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_union_types_with_inline_fragment():
         # This is the valid version of the query in the above test.
-        document = parse(
-            """
+        document = parse("""
             {
               __typename
               name
@@ -275,8 +270,7 @@ def describe_execute_union_and_intersection_types():
                 }
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
@@ -292,8 +286,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_using_interface_types():
         # NOTE: This is an *invalid* query, but it should be a *executable*.
-        document = parse(
-            """
+        document = parse("""
             {
               __typename
               name
@@ -304,8 +297,7 @@ def describe_execute_union_and_intersection_types():
                 meows
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
@@ -321,8 +313,7 @@ def describe_execute_union_and_intersection_types():
 
     def executes_interface_types_with_inline_fragment():
         # This is the valid version of the query in the above test.
-        document = parse(
-            """
+        document = parse("""
             {
               __typename
               name
@@ -351,8 +342,7 @@ def describe_execute_union_and_intersection_types():
                 }
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
@@ -376,8 +366,7 @@ def describe_execute_union_and_intersection_types():
         )
 
     def executes_interface_types_with_named_fragments():
-        document = parse(
-            """
+        document = parse("""
             {
               __typename
               name
@@ -396,8 +385,7 @@ def describe_execute_union_and_intersection_types():
             fragment  CatMeows on Cat {
               meows
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document, root_value=john) == (
             {
@@ -412,8 +400,7 @@ def describe_execute_union_and_intersection_types():
         )
 
     def allows_fragment_conditions_to_be_abstract_types():
-        document = parse(
-            """
+        document = parse("""
             {
               __typename
               name
@@ -456,8 +443,7 @@ def describe_execute_union_and_intersection_types():
                 __typename
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema=schema, document=document, root_value=john) == (
             {

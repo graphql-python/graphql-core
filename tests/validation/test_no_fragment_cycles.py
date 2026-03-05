@@ -11,33 +11,26 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_no_circular_fragment_spreads():
     def single_reference_is_valid():
-        assert_valid(
-            """
+        assert_valid("""
             fragment fragA on Dog { ...fragB }
             fragment fragB on Dog { name }
-            """
-        )
+            """)
 
     def spreading_twice_is_not_circular():
-        assert_valid(
-            """
+        assert_valid("""
             fragment fragA on Dog { ...fragB, ...fragB }
             fragment fragB on Dog { name }
-            """
-        )
+            """)
 
     def spreading_twice_indirectly_is_not_circular():
-        assert_valid(
-            """
+        assert_valid("""
             fragment fragA on Dog { ...fragB, ...fragC }
             fragment fragB on Dog { ...fragC }
             fragment fragC on Dog { name }
-            """
-        )
+            """)
 
     def double_spread_within_abstract_types():
-        assert_valid(
-            """
+        assert_valid("""
             fragment nameFragment on Pet {
               ... on Dog { name }
               ... on Cat { name }
@@ -46,17 +39,14 @@ def describe_validate_no_circular_fragment_spreads():
               ... on Dog { ...nameFragment }
               ... on Cat { ...nameFragment }
             }
-            """
-        )
+            """)
 
     def does_not_raise_false_positive_on_unknown_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             fragment nameFragment on Pet {
               ...UnknownFragment
             }
-            """
-        )
+            """)
 
     def spreading_recursively_within_field_fails():
         assert_errors(

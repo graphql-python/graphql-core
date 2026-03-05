@@ -51,8 +51,7 @@ def get_introspection_query(
     def input_deprecation(string: str) -> Optional[str]:
         return string if input_value_deprecation else ""
 
-    return dedent(
-        f"""
+    return dedent(f"""
         query IntrospectionQuery {{
           __schema {{
             {maybe_schema_description}
@@ -158,8 +157,7 @@ def get_introspection_query(
             }}
           }}
         }}
-        """
-    )
+        """)
 
 
 # Unfortunately, the following type definitions are a bit simplistic

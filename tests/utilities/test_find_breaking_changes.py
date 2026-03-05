@@ -17,18 +17,14 @@ from graphql.utilities import (
 
 def describe_find_breaking_changes():
     def should_detect_if_a_type_was_removed_or_not():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1
             type Type2
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type2
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.TYPE_REMOVED, "Type1 was removed.")
@@ -36,21 +32,17 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, old_schema) == []
 
     def should_detect_if_a_standard_scalar_was_removed():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Query {
               foo: Float
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Query {
               foo: String
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -65,21 +57,17 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_type_changed_its_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             scalar TypeWasScalarBecomesEnum
             interface TypeWasInterfaceBecomesUnion
             type TypeWasObjectBecomesInputObject
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             enum TypeWasScalarBecomesEnum
             union TypeWasInterfaceBecomesUnion
            input TypeWasObjectBecomesInputObject
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -99,8 +87,7 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_field_on_type_was_deleted_or_changed_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type TypeA
             type TypeB
 
@@ -123,11 +110,9 @@ def describe_find_breaking_changes():
               field17: [Int]
               field18: [[Int!]!]
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type TypeA
             type TypeB
 
@@ -150,8 +135,7 @@ def describe_find_breaking_changes():
               field17: [Int]!
               field18: [[Int!]]
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.FIELD_REMOVED, "Type1.field2 was removed."),
@@ -206,8 +190,7 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_fields_on_input_types_changed_kind_or_were_removed():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             input InputType1 {
               field1: String
               field2: Boolean
@@ -225,11 +208,9 @@ def describe_find_breaking_changes():
               field14: [[Int]!]
               field15: [[Int]!]
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             input InputType1 {
               field1: Int
               field3: String
@@ -246,8 +227,7 @@ def describe_find_breaking_changes():
               field14: [[Int]]
               field15: [[Int!]!]
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.FIELD_REMOVED, "InputType1.field2 was removed."),
@@ -294,24 +274,20 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_required_field_is_added_to_an_input_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             input InputType1 {
               field1: String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             input InputType1 {
                 field1: String
                 requiredField: Int!
                 optionalField1: Boolean
                 optionalField2: Boolean! = false
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -321,25 +297,21 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_type_was_removed_from_a_union_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1
             type Type2
             type Type3
 
             union UnionType1 = Type1 | Type2
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type1
             type Type2
             type Type3
 
             union UnionType1 = Type1 | Type3
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -349,25 +321,21 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_value_was_removed_from_an_enum_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             enum EnumType1 {
               VALUE0
               VALUE1
               VALUE2
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             enum EnumType1 {
               VALUE0
               VALUE2
               VALUE3
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -377,8 +345,7 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_field_argument_was_removed():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             interface Interface1 {
               field1(arg1: Boolean, objectArg: String): String
             }
@@ -386,11 +353,9 @@ def describe_find_breaking_changes():
             type Type1 {
               field1(name: String): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             interface Interface1 {
               field1: String
             }
@@ -398,8 +363,7 @@ def describe_find_breaking_changes():
             type Type1 {
               field1: String
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (BreakingChangeType.ARG_REMOVED, "Interface1.field1 arg arg1 was removed."),
@@ -411,8 +375,7 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_field_argument_has_changed_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1 {
               field1(
                 arg1: String
@@ -432,11 +395,9 @@ def describe_find_breaking_changes():
                 arg15: [[Int]!]
               ): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type1 {
               field1(
                 arg1: Int
@@ -456,8 +417,7 @@ def describe_find_breaking_changes():
                 arg15: [[Int!]!]
                ): String
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -511,16 +471,13 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_required_field_argument_was_added():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1 {
               field1(arg1: String): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type1 {
               field1(
                 arg1: String,
@@ -529,8 +486,7 @@ def describe_find_breaking_changes():
                 newOptionalArg2: Int! = 0
               ): String
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -540,8 +496,7 @@ def describe_find_breaking_changes():
         ]
 
     def should_not_flag_args_with_the_same_type_signature_as_breaking():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             input InputType1 {
               field1: String
             }
@@ -549,11 +504,9 @@ def describe_find_breaking_changes():
             type Type1 {
               field1(arg1: Int!, arg2: InputType1): Int
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             input InputType1 {
               field1: String
             }
@@ -561,46 +514,37 @@ def describe_find_breaking_changes():
             type Type1 {
               field1(arg1: Int!, arg2: InputType1): Int
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == []
 
     def should_consider_args_that_move_away_from_non_null_as_non_breaking():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1 {
               field1(name: String!): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type1 {
               field1(name: String): String
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == []
 
     def should_detect_interfaces_removed_from_types():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             interface Interface1
 
             type Type1 implements Interface1
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             interface Interface1
 
             type Type1
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -610,21 +554,17 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_intrefaces_removed_from_interfaces():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             interface Interface1
 
             interface Interface2 implements Interface1
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             interface Interface1
 
             interface Interface2
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -634,29 +574,24 @@ def describe_find_breaking_changes():
         ]
 
     def should_ignore_changes_in_order_of_interfaces():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             interface FirstInterface
             interface SecondInterface
 
             type Type1 implements FirstInterface & SecondInterface
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             interface FirstInterface
             interface SecondInterface
 
             type Type1 implements SecondInterface & FirstInterface
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == []
 
     def should_detect_all_breaking_changes():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             directive @DirectiveThatIsRemoved on FIELD_DEFINITION
 
             directive @DirectiveThatRemovesArg(arg1: String) on FIELD_DEFINITION
@@ -692,11 +627,9 @@ def describe_find_breaking_changes():
                 field1: String
                 field2: String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             directive @DirectiveThatRemovesArg on FIELD_DEFINITION
 
             directive @NonNullDirectiveAdded(arg1: Boolean!) on FIELD_DEFINITION
@@ -727,8 +660,7 @@ def describe_find_breaking_changes():
             interface TypeThatHasBreakingFieldChanges {
               field2: Boolean
             }
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -790,18 +722,14 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_directive_was_explicitly_removed():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             directive @DirectiveThatIsRemoved on FIELD_DEFINITION
             directive @DirectiveThatStays on FIELD_DEFINITION
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             directive @DirectiveThatStays on FIELD_DEFINITION
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -830,17 +758,13 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_a_directive_argument_was_removed():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             directive @DirectiveWithArg(arg1: String) on FIELD_DEFINITION
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             directive @DirectiveWithArg on FIELD_DEFINITION
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -850,21 +774,17 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_if_an_optional_directive_argument_was_added():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             directive @DirectiveName on FIELD_DEFINITION
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             directive @DirectiveName(
               newRequiredArg: String!
               newOptionalArg1: Int
               newOptionalArg2: Int! = 0
             ) on FIELD_DEFINITION
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -874,17 +794,13 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_removal_of_repeatable_flag():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             directive @DirectiveName repeatable on OBJECT
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             directive @DirectiveName on OBJECT
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -894,17 +810,13 @@ def describe_find_breaking_changes():
         ]
 
     def should_detect_locations_removed_from_a_directive():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             directive @DirectiveName on FIELD_DEFINITION | QUERY
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             directive @DirectiveName on FIELD_DEFINITION
-            """
-        )
+            """)
 
         assert find_breaking_changes(old_schema, new_schema) == [
             (
@@ -942,8 +854,7 @@ def describe_find_dangerous_changes():
         copy_of_old_schema = build_schema(old_sdl)
         assert find_dangerous_changes(old_schema, copy_of_old_schema) == []
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             input Input1 {
               innerInputArray: [Input2]
             }
@@ -963,8 +874,7 @@ def describe_find_dangerous_changes():
                 }
               ): String
             }
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -994,8 +904,7 @@ def describe_find_dangerous_changes():
         ]
 
     def should_ignore_changes_in_field_order_of_default_value():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             input Input1 {
               a: String
               b: String
@@ -1007,11 +916,9 @@ def describe_find_dangerous_changes():
                 arg1: Input1 = { a: "a", b: "b", c: "c" }
               ): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
            input Input1 {
              a: String
              b: String
@@ -1023,14 +930,12 @@ def describe_find_dangerous_changes():
                arg1: Input1 = { c: "c", b: "b", a: "a" }
              ): String
            }
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == []
 
     def should_ignore_changes_in_field_definitions_order():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             input Input1 {
               a: String
               b: String
@@ -1042,11 +947,9 @@ def describe_find_dangerous_changes():
                 arg1: Input1 = { a: "a", b: "b", c: "c" }
               ): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             input Input1 {
               c: String
               b: String
@@ -1058,30 +961,25 @@ def describe_find_dangerous_changes():
                 arg1: Input1 = { a: "a", b: "b", c: "c" }
               ): String
             }
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == []
 
     def should_detect_if_a_value_was_added_to_an_enum_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             enum EnumType1 {
               VALUE0
               VALUE1
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             enum EnumType1 {
               VALUE0
               VALUE1
               VALUE2
             }
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -1091,23 +989,19 @@ def describe_find_dangerous_changes():
         ]
 
     def should_detect_interfaces_added_to_types():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             interface OldInterface
             interface NewInterface
 
             type Type1 implements OldInterface
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             interface OldInterface
             interface NewInterface
 
             type Type1 implements OldInterface & NewInterface
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -1117,23 +1011,19 @@ def describe_find_dangerous_changes():
         ]
 
     def should_detect_interfaces_added_to_interfaces():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             interface OldInterface
             interface NewInterface
 
             interface Interface1 implements OldInterface
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             interface OldInterface
             interface NewInterface
 
             interface Interface1 implements OldInterface & NewInterface
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -1143,23 +1033,19 @@ def describe_find_dangerous_changes():
         ]
 
     def should_detect_if_a_type_was_added_to_a_union_type():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1
             type Type2
 
             union UnionType1 = Type1
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type1
             type Type2
 
             union UnionType1 = Type1 | Type2
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -1169,22 +1055,18 @@ def describe_find_dangerous_changes():
         ]
 
     def should_detect_if_an_optional_field_was_added_to_an_input():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             input InputType1 {
                 field1: String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             input InputType1 {
               field1: String
               field2: Int
             }
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -1194,8 +1076,7 @@ def describe_find_dangerous_changes():
         ]
 
     def should_find_all_dangerous_changes():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             enum EnumType1 {
               VALUE0
               VALUE1
@@ -1210,11 +1091,9 @@ def describe_find_dangerous_changes():
 
             type TypeInUnion1
             union UnionTypeThatGainsAType = TypeInUnion1
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             enum EnumType1 {
               VALUE0
               VALUE1
@@ -1231,8 +1110,7 @@ def describe_find_dangerous_changes():
             type TypeInUnion1
             type TypeInUnion2
             union UnionTypeThatGainsAType = TypeInUnion1 | TypeInUnion2
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
@@ -1256,21 +1134,17 @@ def describe_find_dangerous_changes():
         ]
 
     def should_detect_if_an_optional_field_argument_was_added():
-        old_schema = build_schema(
-            """
+        old_schema = build_schema("""
             type Type1 {
               field1(arg1: String): String
             }
-            """
-        )
+            """)
 
-        new_schema = build_schema(
-            """
+        new_schema = build_schema("""
             type Type1 {
               field1(arg1: String, arg2: String): String
             }
-            """
-        )
+            """)
 
         assert find_dangerous_changes(old_schema, new_schema) == [
             (

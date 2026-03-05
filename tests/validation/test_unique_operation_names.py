@@ -11,35 +11,28 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_operation_names():
     def no_operations():
-        assert_valid(
-            """
+        assert_valid("""
             fragment fragA on Type {
               field
             }
-            """
-        )
+            """)
 
     def one_anon_operation():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field
             }
-            """
-        )
+            """)
 
     def one_named_operation():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               field
             }
-            """
-        )
+            """)
 
     def multiple_operations():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               field
             }
@@ -47,12 +40,10 @@ def describe_validate_unique_operation_names():
             query Bar {
               field
             }
-            """
-        )
+            """)
 
     def multiple_operations_of_different_types():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               field
             }
@@ -64,20 +55,17 @@ def describe_validate_unique_operation_names():
             subscription Baz {
               field
             }
-            """
-        )
+            """)
 
     def fragment_and_operation_named_the_same():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               ...Foo
             }
             fragment Foo on Type {
               field
             }
-            """
-        )
+            """)
 
     def multiple_operations_of_same_name():
         assert_errors(

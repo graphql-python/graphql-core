@@ -45,69 +45,57 @@ def build_single_field_schema(field: GraphQLField):
 def describe_type_system_printer():
     def prints_string_field():
         schema = build_single_field_schema(GraphQLField(GraphQLString))
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField: String
             }
-            """
-        )
+            """)
 
     def prints_list_of_string_field():
         schema = build_single_field_schema(GraphQLField(GraphQLList(GraphQLString)))
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField: [String]
             }
-            """
-        )
+            """)
 
     def prints_non_null_string_field():
         schema = build_single_field_schema(GraphQLField(GraphQLNonNull(GraphQLString)))
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField: String!
             }
-            """
-        )
+            """)
 
     def prints_non_null_list_of_string_field():
         schema = build_single_field_schema(
             GraphQLField(GraphQLNonNull(GraphQLList(GraphQLString)))
         )
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField: [String]!
             }
-            """
-        )
+            """)
 
     def prints_list_of_non_null_string_field():
         schema = build_single_field_schema(
             GraphQLField((GraphQLList(GraphQLNonNull(GraphQLString))))
         )
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField: [String!]
             }
-            """
-        )
+            """)
 
     def prints_non_null_list_of_non_null_string_field():
         schema = build_single_field_schema(
             GraphQLField(GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))))
         )
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField: [String!]!
             }
-            """
-        )
+            """)
 
     def prints_object_field():
         foo_type = GraphQLObjectType(
@@ -115,13 +103,11 @@ def describe_type_system_printer():
         )
         schema = GraphQLSchema(types=[foo_type])
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Foo {
               str: String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_int_arg():
         schema = build_single_field_schema(
@@ -130,13 +116,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_int_arg_with_default():
         schema = build_single_field_schema(
@@ -146,13 +130,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int = 2): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_string_arg_with_default():
         schema = build_single_field_schema(
@@ -166,13 +148,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            r"""
+        assert expect_printed_schema(schema) == dedent(r"""
             type Query {
               singleField(argOne: String = "tes\t de\fault"): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_int_arg_with_default_null():
         schema = build_single_field_schema(
@@ -182,13 +162,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int = null): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_non_null_int_arg():
         schema = build_single_field_schema(
@@ -198,13 +176,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int!): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_multiple_args():
         schema = build_single_field_schema(
@@ -217,13 +193,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int, argTwo: String): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_multiple_args_first_is_default():
         schema = build_single_field_schema(
@@ -237,13 +211,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int = 1, argTwo: String, argThree: Boolean): String
             }
-            """
-        )
+            """)
 
     def prints_string_field_with_multiple_args_second_is_default():
         schema = build_single_field_schema(
@@ -257,13 +229,11 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int, argTwo: String = "foo", argThree: Boolean): String
             }
-            """  # noqa: E501
-        )
+            """)  # noqa: E501
 
     def prints_string_field_with_multiple_args_last_is_default():
         schema = build_single_field_schema(
@@ -277,29 +247,25 @@ def describe_type_system_printer():
             )
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               singleField(argOne: Int, argTwo: String, argThree: Boolean = false): String
             }
-            """  # noqa: E501
-        )
+            """)  # noqa: E501
 
     def prints_schema_with_description():
         schema = GraphQLSchema(
             description="Schema description.", query=GraphQLObjectType("Query", {})
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            '''
+        assert expect_printed_schema(schema) == dedent('''
             """Schema description."""
             schema {
               query: Query
             }
 
             type Query
-            '''
-        )
+            ''')
 
     def omits_schema_of_common_names():
         schema = GraphQLSchema(
@@ -308,54 +274,46 @@ def describe_type_system_printer():
             subscription=GraphQLObjectType("Subscription", {}),
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query
 
             type Mutation
 
             type Subscription
-            """
-        )
+            """)
 
     def prints_custom_query_root_types():
         schema = GraphQLSchema(query=GraphQLObjectType("CustomType", {}))
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             schema {
               query: CustomType
             }
 
             type CustomType
-            """
-        )
+            """)
 
     def prints_custom_mutation_root_types():
         schema = GraphQLSchema(mutation=GraphQLObjectType("CustomType", {}))
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             schema {
               mutation: CustomType
             }
 
             type CustomType
-            """
-        )
+            """)
 
     def prints_custom_subscription_root_types():
         schema = GraphQLSchema(subscription=GraphQLObjectType("CustomType", {}))
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             schema {
               subscription: CustomType
             }
 
             type CustomType
-            """
-        )
+            """)
 
     def prints_interface():
         foo_type = GraphQLInterfaceType(
@@ -369,8 +327,7 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[bar_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Bar implements Foo {
               str: String
             }
@@ -378,8 +335,7 @@ def describe_type_system_printer():
             interface Foo {
               str: String
             }
-            """
-        )
+            """)
 
     def prints_multiple_interfaces():
         foo_type = GraphQLInterfaceType(
@@ -400,8 +356,7 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[bar_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Bar implements Foo & Baz {
               str: String
               int: Int
@@ -414,8 +369,7 @@ def describe_type_system_printer():
             interface Baz {
               int: Int
             }
-            """
-        )
+            """)
 
     def prints_hierarchical_interface():
         foo_type = GraphQLInterfaceType(
@@ -443,8 +397,7 @@ def describe_type_system_printer():
         query = GraphQLObjectType(name="Query", fields={"bar": GraphQLField(bar_type)})
 
         schema = GraphQLSchema(query, types=[bar_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Bar implements Foo & Baz {
               str: String
               int: Int
@@ -462,8 +415,7 @@ def describe_type_system_printer():
             type Query {
               bar: Bar
             }
-            """
-        )
+            """)
 
     def prints_unions():
         foo_type = GraphQLObjectType(
@@ -481,8 +433,7 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[single_union, multiple_union])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             union SingleUnion = Foo
 
             type Foo {
@@ -494,8 +445,7 @@ def describe_type_system_printer():
             type Bar {
               str: String
             }
-            """
-        )
+            """)
 
     def prints_input_type():
         input_type = GraphQLInputObjectType(
@@ -503,13 +453,11 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[input_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             input InputType {
               int: Int
             }
-            """
-        )
+            """)
 
     def prints_input_type_with_one_of_directive():
         input_type = GraphQLInputObjectType(
@@ -519,23 +467,19 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[input_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             input InputType @oneOf {
               int: Int
             }
-            """
-        )
+            """)
 
     def prints_custom_scalar():
         odd_type = GraphQLScalarType(name="Odd")
 
         schema = GraphQLSchema(types=[odd_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             scalar Odd
-            """
-        )
+            """)
 
     def prints_custom_scalar_with_specified_by_url():
         foo_type = GraphQLScalarType(
@@ -543,11 +487,9 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[foo_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
-            """
-        )
+            """)
 
     def prints_enum():
         rgb_type = GraphQLEnumType(
@@ -555,15 +497,13 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(types=[rgb_type])
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             enum RGB {
               RED
               GREEN
               BLUE
             }
-            """
-        )
+            """)
 
     def prints_empty_types():
         schema = GraphQLSchema(
@@ -576,8 +516,7 @@ def describe_type_system_printer():
             ]
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             enum SomeEnum
 
             input SomeInputObject
@@ -587,8 +526,7 @@ def describe_type_system_printer():
             type SomeObject
 
             union SomeUnion
-            """
-        )
+            """)
 
     def prints_custom_directives():
         simple_directive = GraphQLDirective(
@@ -606,59 +544,50 @@ def describe_type_system_printer():
         )
 
         schema = GraphQLSchema(directives=[simple_directive, complex_directive])
-        assert expect_printed_schema(schema) == dedent(
-            '''
+        assert expect_printed_schema(schema) == dedent('''
             directive @simpleDirective on FIELD
 
             """Complex Directive"""
             directive @complexDirective(stringArg: String, intArg: Int = -1) repeatable on FIELD | QUERY
-            '''  # noqa: E501
-        )
+            ''')  # noqa: E501
 
     def prints_an_empty_description():
         schema = build_single_field_schema(GraphQLField(GraphQLString, description=""))
 
-        assert expect_printed_schema(schema) == dedent(
-            '''
+        assert expect_printed_schema(schema) == dedent('''
             type Query {
               """"""
               singleField: String
             }
-            '''
-        )
+            ''')
 
     def prints_a_description_with_only_whitespace():
         schema = build_single_field_schema(GraphQLField(GraphQLString, description=" "))
 
-        assert expect_printed_schema(schema) == dedent(
-            """
+        assert expect_printed_schema(schema) == dedent("""
             type Query {
               " "
               singleField: String
             }
-            """
-        )
+            """)
 
     def one_line_prints_a_short_description():
         schema = build_single_field_schema(
             GraphQLField(GraphQLString, description="This field is awesome")
         )
 
-        assert expect_printed_schema(schema) == dedent(
-            '''
+        assert expect_printed_schema(schema) == dedent('''
             type Query {
               """This field is awesome"""
               singleField: String
             }
-            '''
-        )
+            ''')
 
     def prints_introspection_schema():
         schema = GraphQLSchema()
         output = print_introspection_schema(schema)
 
-        assert output == dedent(
-            '''
+        assert output == dedent('''
             """
             Directs the executor to include this field or fragment only when the `if` argument is true.
             """
@@ -882,8 +811,7 @@ def describe_type_system_printer():
               """Location adjacent to an input object field definition."""
               INPUT_FIELD_DEFINITION
             }
-            '''  # noqa: E501
-        )
+            ''')  # noqa: E501
 
 
 def describe_print_value():

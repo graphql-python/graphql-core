@@ -51,8 +51,7 @@ def describe_ast_to_disc():
         }
 
     def converts_simple_schema_to_dict():
-        ast = parse(
-            """
+        ast = parse("""
             type Query {
               me: User
             }
@@ -61,8 +60,7 @@ def describe_ast_to_disc():
               id: ID
               name: String
             }
-            """
-        )
+            """)
         res = ast_to_dict(ast)
         assert ast.to_dict() == res
         assert res == {
@@ -124,8 +122,7 @@ def describe_ast_to_disc():
         assert list(res)[0] == "kind"
 
     def converts_simple_schema_to_dict_with_locations():
-        ast = parse(
-            """
+        ast = parse("""
             type Query {
               me: User
             }
@@ -134,8 +131,7 @@ def describe_ast_to_disc():
               id: ID
               name: String
             }
-            """
-        )
+            """)
         res = ast_to_dict(ast, locations=True)
         assert ast.to_dict(locations=True) == res
         assert res == {
@@ -241,8 +237,7 @@ def describe_ast_to_disc():
         assert list(res["loc"]) == ["start", "end"]
 
     def converts_simple_query_to_dict():
-        ast = parse(
-            """
+        ast = parse("""
             query HeroForEpisode($ep: Episode!) {
               hero(episode: $ep) {
                 name
@@ -254,8 +249,7 @@ def describe_ast_to_disc():
                 }
               }
             }
-            """
-        )
+            """)
         res = ast_to_dict(ast)
         assert ast.to_dict() == res
         assert res == {
@@ -378,8 +372,7 @@ def describe_ast_to_disc():
         assert list(res)[0] == "kind"
 
     def converts_simple_query_to_dict_with_locations():
-        ast = parse(
-            """
+        ast = parse("""
             query HeroForEpisode($ep: Episode!) {
               hero(episode: $ep) {
                 name
@@ -391,8 +384,7 @@ def describe_ast_to_disc():
                 }
               }
             }
-            """
-        )
+            """)
         res = ast_to_dict(ast, locations=True)
         assert ast.to_dict(locations=True) == res
         assert res == {

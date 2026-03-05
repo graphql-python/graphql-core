@@ -20,43 +20,35 @@ def describe_get_operation_ast():
         assert get_operation_ast(doc) is None
 
     def does_not_get_ambiguous_unnamed_operation():
-        doc = parse(
-            """
+        doc = parse("""
             { field }
             mutation Test { field }
             subscription TestSub { field }
-            """
-        )
+            """)
         assert get_operation_ast(doc) is None
 
     def does_not_get_ambiguous_named_operation():
-        doc = parse(
-            """
+        doc = parse("""
             query TestQ { field }
             mutation TestM { field }
             subscription TestS { field }
-            """
-        )
+            """)
         assert get_operation_ast(doc) is None
 
     def does_not_get_misnamed_operation():
-        doc = parse(
-            """
+        doc = parse("""
             query TestQ { field }
             mutation TestM { field }
             subscription TestS { field }
-            """
-        )
+            """)
         assert get_operation_ast(doc, "Unknown") is None
 
     def gets_named_operation():
-        doc = parse(
-            """
+        doc = parse("""
             query TestQ { field }
             mutation TestM { field }
             subscription TestS { field }
-            """
-        )
+            """)
         assert get_operation_ast(doc, "TestQ") == doc.definitions[0]
         assert get_operation_ast(doc, "TestM") == doc.definitions[1]
         assert get_operation_ast(doc, "TestS") == doc.definitions[2]

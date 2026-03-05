@@ -52,23 +52,19 @@ class ExpectStripped:
         doc_string = self.doc_string
         stripped = strip_ignored_characters(doc_string)
 
-        assert stripped == expected, dedent(
-            f"""
+        assert stripped == expected, dedent(f"""
             Expected strip_ignored_characters({doc_string!r})
               to equal {expected!r}
               but got {stripped!r}
-            """
-        )
+            """)
 
         stripped_twice = strip_ignored_characters(stripped)
 
-        assert stripped == stripped_twice, dedent(
-            f""""
+        assert stripped == stripped_twice, dedent(f""""
             Expected strip_ignored_characters({stripped!r})"
               to equal {stripped!r}
               but got {stripped_twice!r}
-            """
-        )
+            """)
 
     def to_stay_the_same(self):
         self.to_equal(self.doc_string)
@@ -76,8 +72,7 @@ class ExpectStripped:
 
 def describe_strip_ignored_characters():
     def strips_ignored_characters_from_graphql_query_document():
-        query = dedent(
-            """
+        query = dedent("""
             query SomeQuery($foo: String!, $bar: String) {
               someField(foo: $foo, bar: $bar) {
                 a
@@ -87,8 +82,7 @@ def describe_strip_ignored_characters():
                 }
               }
             }
-            """
-        )
+            """)
 
         assert strip_ignored_characters(query) == (
             "query SomeQuery($foo:String!$bar:String)"
@@ -96,8 +90,7 @@ def describe_strip_ignored_characters():
         )
 
     def strips_ignored_characters_from_graphql_sdl_document():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             """
             Type description
             """
@@ -107,8 +100,7 @@ def describe_strip_ignored_characters():
               """
               bar: String
             }
-          '''
-        )
+          ''')
 
         assert strip_ignored_characters(sdl) == (
             '"""Type description""" type Foo{"""Field description""" bar:String}'
@@ -118,16 +110,14 @@ def describe_strip_ignored_characters():
         with raises(GraphQLSyntaxError) as exc_info:
             strip_ignored_characters('{ foo(arg: "\n"')
 
-        assert str(exc_info.value) == dedent(
-            """
+        assert str(exc_info.value) == dedent("""
             Syntax Error: Unterminated string.
 
             GraphQL request:1:13
             1 | { foo(arg: "
               |             ^
             2 | "
-            """
-        )
+            """)
 
     def strips_non_parsable_document():
         ExpectStripped('{ foo(arg: "str"').to_equal('{foo(arg:"str"')
@@ -327,13 +317,11 @@ def describe_strip_ignored_characters():
             original_value = lex_value(block_str)
             stripped_value = lex_value(strip_ignored_characters(block_str))
 
-            assert original_value == stripped_value, dedent(
-                f"""
+            assert original_value == stripped_value, dedent(f"""
                 Expected lexValue(stripIgnoredCharacters({block_str!r})
                   to equal {original_value!r}
                   but got {stripped_value!r}
-                """
-            )
+                """)
             return ExpectStripped(block_str)
 
         expect_stripped_string('""""""').to_stay_the_same()

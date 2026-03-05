@@ -11,17 +11,14 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_no_unused_variables():
     def uses_all_variables():
-        assert_valid(
-            """
+        assert_valid("""
             query ($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c)
             }
-            """
-        )
+            """)
 
     def uses_all_variables_deeply():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a) {
                 field(b: $b) {
@@ -29,12 +26,10 @@ def describe_validate_no_unused_variables():
                 }
               }
             }
-            """
-        )
+            """)
 
     def uses_all_variables_deeply_in_inline_fragments():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               ... on Type {
                 field(a: $a) {
@@ -46,12 +41,10 @@ def describe_validate_no_unused_variables():
                 }
               }
             }
-            """
-        )
+            """)
 
     def uses_all_variables_in_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
             }
@@ -68,12 +61,10 @@ def describe_validate_no_unused_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """
-        )
+            """)
 
     def variable_used_by_fragment_in_multiple_operations():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String) {
               ...FragA
             }
@@ -86,12 +77,10 @@ def describe_validate_no_unused_variables():
             fragment FragB on Type {
               field(b: $b)
             }
-            """
-        )
+            """)
 
     def variable_used_by_recursive_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String) {
               ...FragA
             }
@@ -100,8 +89,7 @@ def describe_validate_no_unused_variables():
                 ...FragA
               }
             }
-            """
-        )
+            """)
 
     def variable_not_used():
         assert_errors(

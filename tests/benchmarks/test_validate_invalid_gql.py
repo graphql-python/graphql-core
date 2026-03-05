@@ -5,8 +5,7 @@ from ..fixtures import big_schema_sdl  # noqa: F401
 
 def test_validate_invalid_query(benchmark, big_schema_sdl):  # noqa: F811
     schema = build_schema(big_schema_sdl, assume_valid=True)
-    query_ast = parse(
-        """
+    query_ast = parse("""
         {
           unknownField
           ... on unknownType {
@@ -18,8 +17,7 @@ def test_validate_invalid_query(benchmark, big_schema_sdl):  # noqa: F811
         fragment TestFragment on anotherUnknownType {
           yetAnotherUnknownField
         }
-        """
-    )
+        """)
     result = benchmark(lambda: validate(schema, query_ast))
     assert result == [
         {

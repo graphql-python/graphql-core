@@ -12,38 +12,30 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_type_names():
     def no_types():
-        assert_valid(
-            """
+        assert_valid("""
             directive @test on SCHEMA
-            """
-        )
+            """)
 
     def one_type():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
-            """
-        )
+            """)
 
     def many_types():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
             type Bar
             type Baz
-            """
-        )
+            """)
 
     def type_and_non_type_definitions_named_the_same():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo { __typename }
             fragment Foo on Query { __typename }
             directive @Foo on SCHEMA
 
             type Foo
-            """
-        )
+            """)
 
     def types_named_the_same():
         assert_errors(

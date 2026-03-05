@@ -11,13 +11,11 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_scalar_leafs():
     def valid_scalar_selection():
-        assert_valid(
-            """
+        assert_valid("""
             fragment scalarSelection on Dog {
               barks
             }
-            """
-        )
+            """)
 
     def object_type_missing_selection():
         assert_errors(
@@ -54,13 +52,11 @@ def describe_validate_scalar_leafs():
         )
 
     def valid_scalar_selection_with_args():
-        assert_valid(
-            """
+        assert_valid("""
             fragment scalarSelectionWithArgs on Dog {
               doesKnowCommand(dogCommand: SIT)
             }
-            """
-        )
+            """)
 
     def scalar_selection_not_allowed_on_boolean():
         assert_errors(

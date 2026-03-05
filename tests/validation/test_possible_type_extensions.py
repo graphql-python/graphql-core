@@ -12,20 +12,17 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_possible_type_extensions():
     def no_extensions():
-        assert_valid(
-            """
+        assert_valid("""
             scalar FooScalar
             type FooObject
             interface FooInterface
             union FooUnion
             enum FooEnum
             input FooInputObject
-            """
-        )
+            """)
 
     def one_extension_per_type():
-        assert_valid(
-            """
+        assert_valid("""
             scalar FooScalar
             type FooObject
             interface FooInterface
@@ -39,12 +36,10 @@ def describe_validate_possible_type_extensions():
             extend union FooUnion @dummy
             extend enum FooEnum @dummy
             extend input FooInputObject @dummy
-            """
-        )
+            """)
 
     def many_extensions_per_type():
-        assert_valid(
-            """
+        assert_valid("""
             scalar FooScalar
             type FooObject
             interface FooInterface
@@ -65,8 +60,7 @@ def describe_validate_possible_type_extensions():
             extend union FooUnion @dummy
             extend enum FooEnum @dummy
             extend input FooInputObject @dummy
-            """
-        )
+            """)
 
     def extending_unknown_type():
         message = (
@@ -167,16 +161,14 @@ def describe_validate_possible_type_extensions():
         )
 
     def extending_types_within_existing_schema():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             scalar FooScalar
             type FooObject
             interface FooInterface
             union FooUnion
             enum FooEnum
             input FooInputObject
-            """
-        )
+            """)
         sdl = """
             extend scalar FooScalar @dummy
             extend type FooObject @dummy
@@ -217,16 +209,14 @@ def describe_validate_possible_type_extensions():
         )
 
     def extending_types_with_different_kinds_within_existing_schema():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             scalar FooScalar
             type FooObject
             interface FooInterface
             union FooUnion
             enum FooEnum
             input FooInputObject
-            """
-        )
+            """)
         sdl = """
             extend type FooScalar @dummy
             extend interface FooObject @dummy

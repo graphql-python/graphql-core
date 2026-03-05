@@ -14,8 +14,7 @@ def query_star_wars(source: str) -> Any:
 def describe_star_wars_introspection_tests():
     def describe_basic_introspection():
         def allows_querying_the_schema_for_types():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __schema {
                     types {
@@ -23,8 +22,7 @@ def describe_star_wars_introspection_tests():
                     }
                   }
                 }
-                """
-            )
+                """)
             # Include all types used by StarWars schema, introspection types and
             # standard directives. For example, `Boolean` is used in `@skip`,
             # `@include` and also inside introspection types.
@@ -51,8 +49,7 @@ def describe_star_wars_introspection_tests():
             }
 
         def allows_querying_the_schema_for_query_type():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __schema {
                     queryType {
@@ -60,52 +57,44 @@ def describe_star_wars_introspection_tests():
                     }
                   }
                 }
-                """
-            )
+                """)
 
             assert data == {"__schema": {"queryType": {"name": "Query"}}}
 
         def allows_querying_the_schema_for_a_specific_type():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __type(name: "Droid") {
                     name
                   }
                 }
-                """
-            )
+                """)
             assert data == {"__type": {"name": "Droid"}}
 
         def allows_querying_the_schema_for_an_object_kind():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __type(name: "Droid") {
                     name
                     kind
                   }
                 }
-                """
-            )
+                """)
             assert data == {"__type": {"name": "Droid", "kind": "OBJECT"}}
 
         def allows_querying_the_schema_for_an_interface_kind():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __type(name: "Character") {
                     name
                     kind
                   }
                 }
-                """
-            )
+                """)
             assert data == {"__type": {"name": "Character", "kind": "INTERFACE"}}
 
         def allows_querying_the_schema_for_object_fields():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __type(name: "Droid") {
                     name
@@ -118,8 +107,7 @@ def describe_star_wars_introspection_tests():
                     }
                   }
                 }
-                """
-            )
+                """)
             assert data == {
                 "__type": {
                     "name": "Droid",
@@ -141,8 +129,7 @@ def describe_star_wars_introspection_tests():
             }
 
         def allows_querying_the_schema_for_nested_object_fields():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __type(name: "Droid") {
                     name
@@ -159,8 +146,7 @@ def describe_star_wars_introspection_tests():
                     }
                   }
                 }
-                """
-            )
+                """)
             assert data == {
                 "__type": {
                     "name": "Droid",
@@ -218,8 +204,7 @@ def describe_star_wars_introspection_tests():
             }
 
         def allows_querying_the_schema_for_field_args():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __schema {
                     queryType {
@@ -242,8 +227,7 @@ def describe_star_wars_introspection_tests():
                     }
                   }
                 }
-                """
-            )
+                """)
 
             assert data == {
                 "__schema": {
@@ -308,16 +292,14 @@ def describe_star_wars_introspection_tests():
             }
 
         def allows_querying_the_schema_for_documentation():
-            data = query_star_wars(
-                """
+            data = query_star_wars("""
                 {
                   __type(name: "Droid") {
                     name
                     description
                   }
                 }
-                """
-            )
+                """)
 
             assert data == {
                 "__type": {

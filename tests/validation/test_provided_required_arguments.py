@@ -21,133 +21,109 @@ assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 def describe_validate_provided_required_arguments():
     def ignores_unknown_arguments():
-        assert_valid(
-            """
+        assert_valid("""
             {
               dog {
                 isHouseTrained(unknownArgument: true)
               }
-            }"""
-        )
+            }""")
 
     def describe_valid_non_nullable_value():
         def arg_on_optional_arg():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   dog {
                     isHouseTrained(atOtherHomes: true)
                   }
-                }"""
-            )
+                }""")
 
         def no_arg_on_optional_arg():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   dog {
                     isHouseTrained
                   }
-                }"""
-            )
+                }""")
 
         def no_arg_on_non_null_field_with_default():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     nonNullFieldWithDefault
                   }
-                }"""
-            )
+                }""")
 
         def multiple_args():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleReqs(req1: 1, req2: 2)
                   }
                 }
-                """
-            )
+                """)
 
         def multiple_args_reverse_order():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleReqs(req2: 2, req1: 1)
                   }
                 }
-                """
-            )
+                """)
 
         def no_args_on_multiple_optional():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleOpts
                   }
                 }
-                """
-            )
+                """)
 
         def one_arg_on_multiple_optional():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleOpts(opt1: 1)
                   }
                 }
-                """
-            )
+                """)
 
         def second_arg_on_multiple_optional():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                     complicatedArgs {
                         multipleOpts(opt2: 1)
                     }
                 }
-                """
-            )
+                """)
 
         def multiple_required_args_on_mixed_list():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleOptAndReq(req1: 3, req2: 4)
                   }
                 }
-                """
-            )
+                """)
 
         def multiple_required_and_one_optional_arg_on_mixed_list():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleOptAndReq(req1: 3, req2: 4, opt1: 5)
                   }
                 }
-                """
-            )
+                """)
 
         def all_required_and_optional_args_on_mixed_list():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   complicatedArgs {
                     multipleOptAndReq(req1: 3, req2: 4, opt1: 5, opt2: 6)
                   }
                 }
-                """
-            )
+                """)
 
     def describe_invalid_non_nullable_value():
         def missing_one_non_nullable_argument():
@@ -211,17 +187,14 @@ def describe_validate_provided_required_arguments():
 
     def describe_directive_arguments():
         def ignores_unknown_directives():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   dog @unknown
                 }
-                """
-            )
+                """)
 
         def with_directives_of_valid_type():
-            assert_valid(
-                """
+            assert_valid("""
                 {
                   dog @include(if: true) {
                     name
@@ -230,8 +203,7 @@ def describe_validate_provided_required_arguments():
                     name
                   }
                 }
-                """
-            )
+                """)
 
         def with_directive_with_missing_types():
             assert_errors(
@@ -258,15 +230,13 @@ def describe_validate_provided_required_arguments():
 
     def describe_within_sdl():
         def missing_optional_args_on_directive_defined_inside_sdl():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 type Query {
                 foo: String @test
                 }
 
                 directive @test(arg1: String, arg2: String! = "") on FIELD_DEFINITION
-                """
-            )
+                """)
 
         def missing_arg_on_directive_defined_inside_sdl():
             assert_sdl_errors(
@@ -320,13 +290,11 @@ def describe_validate_provided_required_arguments():
             )
 
         def missing_arg_on_directive_defined_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_errors(
                 """
                 directive @test(arg: String!) on OBJECT
@@ -344,15 +312,13 @@ def describe_validate_provided_required_arguments():
             )
 
         def missing_arg_on_directive_used_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 directive @test(arg: String!) on OBJECT
 
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_errors(
                 """
                 extend type Query  @test

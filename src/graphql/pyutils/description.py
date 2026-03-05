@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Union
+from typing import Any, Tuple, Type, Union
 
 __all__ = [
     "Description",
@@ -17,14 +17,14 @@ class Description:
     If you register(object), any object will be allowed as description.
     """
 
-    bases: Union[type, Tuple[type, ...]] = str
+    bases: Union[Type[Any], Tuple[Type[Any], ...]] = str
 
     @classmethod
     def isinstance(cls, obj: Any) -> bool:
         return isinstance(obj, cls.bases)
 
     @classmethod
-    def register(cls, base: type) -> None:
+    def register(cls, base: Type[Any]) -> None:
         """Register a class that shall be accepted as a description."""
         if not isinstance(base, type):
             raise TypeError("Only types can be registered.")
@@ -39,7 +39,7 @@ class Description:
             cls.bases += (base,)
 
     @classmethod
-    def unregister(cls, base: type) -> None:
+    def unregister(cls, base: Type[Any]) -> None:
         """Unregister a class that shall no more be accepted as a description."""
         if not isinstance(base, type):
             raise TypeError("Only types can be unregistered.")

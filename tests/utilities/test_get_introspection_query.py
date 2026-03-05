@@ -6,13 +6,11 @@ from graphql.language import parse
 from graphql.utilities import build_schema, get_introspection_query
 from graphql.validation import validate
 
-dummy_schema = build_schema(
-    """
+dummy_schema = build_schema("""
   type Query {
     dummy: String
   }
-  """
-)
+  """)
 
 
 class ExcpectIntrospectionQuery:

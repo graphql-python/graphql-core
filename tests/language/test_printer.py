@@ -36,52 +36,44 @@ def describe_printer_query_document():
         query_ast_with_artifacts = parse(
             "query ($foo: TestType) @testDirective { id, name }"
         )
-        assert print_ast(query_ast_with_artifacts) == dedent(
-            """
+        assert print_ast(query_ast_with_artifacts) == dedent("""
             query ($foo: TestType) @testDirective {
               id
               name
             }
-            """
-        )
+            """)
 
     def correctly_prints_mutation_operation_with_artifacts():
         mutation_ast_with_artifacts = parse(
             "mutation ($foo: TestType) @testDirective { id, name }"
         )
-        assert print_ast(mutation_ast_with_artifacts) == dedent(
-            """
+        assert print_ast(mutation_ast_with_artifacts) == dedent("""
             mutation ($foo: TestType) @testDirective {
               id
               name
             }
-            """
-        )
+            """)
 
     def prints_query_with_variable_directives():
         query_ast_with_variable_directive = parse(
             "query ($foo: TestType = {a: 123}" " @testDirective(if: true) @test) { id }"
         )
-        assert print_ast(query_ast_with_variable_directive) == dedent(
-            """
+        assert print_ast(query_ast_with_variable_directive) == dedent("""
             query ($foo: TestType = {a: 123} @testDirective(if: true) @test) {
               id
             }
-            """
-        )
+            """)
 
     def keeps_arguments_on_one_line_if_line_has_80_chars_or_less():
         printed = print_ast(parse("{trip(wheelchair:false arriveBy:false){dateTime}}"))
 
-        assert printed == dedent(
-            """
+        assert printed == dedent("""
             {
               trip(wheelchair: false, arriveBy: false) {
                 dateTime
               }
             }
-            """
-        )
+            """)
 
     def puts_arguments_on_multiple_lines_if_line_has_more_than_80_chars():
         printed = print_ast(
@@ -91,8 +83,7 @@ def describe_printer_query_document():
             )
         )
 
-        assert printed == dedent(
-            """
+        assert printed == dedent("""
             {
               trip(
                 wheelchair: false
@@ -103,21 +94,18 @@ def describe_printer_query_document():
                 dateTime
               }
             }
-            """
-        )
+            """)
 
     def legacy_prints_fragment_with_variable_directives():
         query_ast_with_variable_directive = parse(
             "fragment Foo($foo: TestType @test) on TestType @testDirective { id }",
             allow_legacy_fragment_variables=True,
         )
-        assert print_ast(query_ast_with_variable_directive) == dedent(
-            """
+        assert print_ast(query_ast_with_variable_directive) == dedent("""
             fragment Foo($foo: TestType @test) on TestType @testDirective {
               id
             }
-            """
-        )
+            """)
 
     def legacy_correctly_prints_fragment_defined_variables():
         source = """
@@ -137,8 +125,7 @@ def describe_printer_query_document():
         assert printed_ast == ast
         assert deepcopy(ast) == ast_before_print_call
 
-        assert printed == dedent(
-            r'''
+        assert printed == dedent(r'''
             query queryName($foo: ComplexType, $site: Site = MOBILE) @onQuery {
               whoever123is: node(id: [123, 456]) {
                 id
@@ -199,5 +186,4 @@ def describe_printer_query_document():
             {
               __typename
             }
-            '''  # noqa: E501
-        )
+            ''')  # noqa: E501

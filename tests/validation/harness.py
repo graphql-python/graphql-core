@@ -13,8 +13,7 @@ __all__ = [
     "assert_sdl_validation_errors",
 ]
 
-test_schema = build_schema(
-    """
+test_schema = build_schema("""
     interface Mammal {
       mother: Mammal
       father: Mammal
@@ -122,8 +121,7 @@ test_schema = build_schema(
     }
 
     directive @onField on FIELD
-    """
-)
+    """)
 
 
 def assert_validation_errors(

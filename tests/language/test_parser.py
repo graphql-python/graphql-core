@@ -56,15 +56,13 @@ def describe_parser():
         assert error.message == "Syntax Error: Expected Name, found <EOF>."
         assert error.positions == [1]
         assert error.locations == [(1, 2)]
-        assert str(error) == dedent(
-            """
+        assert str(error) == dedent("""
             Syntax Error: Expected Name, found <EOF>.
 
             GraphQL request:1:2
             1 | {
               |  ^
-            """
-        )
+            """)
         assert_syntax_error(
             "\n      { ...MissingOn }\n      fragment MissingOn Type",
             "Expected 'on', found Name 'Type'.",
@@ -81,15 +79,13 @@ def describe_parser():
         with raises(GraphQLSyntaxError) as exc_info:
             parse(Source("query", "MyQuery.graphql"))
         error = exc_info.value
-        assert str(error) == dedent(
-            """
+        assert str(error) == dedent("""
             Syntax Error: Expected '{', found <EOF>.
 
             MyQuery.graphql:1:6
             1 | query
               |      ^
-            """
-        )
+            """)
 
     def limits_maximum_number_of_tokens():
         assert parse("{ foo }", max_tokens=3)
@@ -148,12 +144,10 @@ def describe_parser():
 
     def parses_multi_byte_characters():
         # Note: \u0A0A could be naively interpreted as two line-feed chars.
-        doc = parse(
-            """
+        doc = parse("""
             # This comment has a \u0a0a multi-byte character.
             { field(arg: "Has a \u0a0a multi-byte character.") }
-            """
-        )
+            """)
         definitions = doc.definitions
         assert isinstance(definitions, tuple)
         assert len(definitions) == 1
@@ -198,54 +192,42 @@ def describe_parser():
             parse(document)
 
     def parses_anonymous_mutation_operations():
-        parse(
-            """
+        parse("""
             mutation {
               mutationField
             }
-            """
-        )
+            """)
 
     def parses_anonymous_subscription_operations():
-        parse(
-            """
+        parse("""
             subscription {
               subscriptionField
             }
-            """
-        )
+            """)
 
     def parses_named_mutation_operations():
-        parse(
-            """
+        parse("""
             mutation Foo {
               mutationField
             }
-            """
-        )
+            """)
 
     def parses_named_subscription_operations():
-        parse(
-            """
+        parse("""
             subscription Foo {
               subscriptionField
             }
-            """
-        )
+            """)
 
     def creates_ast():
-        doc = parse(
-            dedent(
-                """
+        doc = parse(dedent("""
                 {
                   node(id: 4) {
                     id,
                     name
                   }
                 }
-                """
-            )
-        )
+                """))
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 40)
         definitions = doc.definitions
@@ -328,17 +310,13 @@ def describe_parser():
         assert field.selection_set is None
 
     def creates_ast_from_nameless_query_without_variables():
-        doc = parse(
-            dedent(
-                """
+        doc = parse(dedent("""
                 query {
                   node {
                     id
                   }
                 }
-                """
-            )
-        )
+                """))
         assert isinstance(doc, DocumentNode)
         assert doc.loc == (0, 29)
         definitions = doc.definitions
@@ -417,13 +395,11 @@ def describe_parser():
 
     def allows_comments_everywhere_in_the_source():
         # make sure first and last line can be comment
-        result = parse(
-            """# top comment
+        result = parse("""# top comment
             {
               field # field comment
             }
-            # bottom comment"""
-        )
+            # bottom comment""")
         top_comment = result.loc and result.loc.start_token.next
         assert top_comment and top_comment.kind is TokenKind.COMMENT
         assert top_comment.value == " top comment"

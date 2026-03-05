@@ -75,8 +75,7 @@ def describe_lexer():
         with raises(GraphQLSyntaxError) as exc_info:
             lex_one("\n\n ~\n")
 
-        assert str(exc_info.value) == dedent(
-            """
+        assert str(exc_info.value) == dedent("""
             Syntax Error: Unexpected character: '~'.
 
             GraphQL request:3:2
@@ -84,16 +83,14 @@ def describe_lexer():
             3 |  ~
               |  ^
             4 |
-            """
-        )
+            """)
 
     def updates_line_numbers_in_error_for_file_context():
         s = "\n\n     ~\n\n"
         source = Source(s, "foo.js", SourceLocation(11, 12))
         with raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
-        assert str(exc_info.value) == dedent(
-            """
+        assert str(exc_info.value) == dedent("""
             Syntax Error: Unexpected character: '~'.
 
             foo.js:13:6
@@ -101,22 +98,19 @@ def describe_lexer():
             13 |      ~
                |      ^
             14 |
-            """
-        )
+            """)
 
     def updates_column_numbers_in_error_for_file_context():
         source = Source("~", "foo.js", SourceLocation(1, 5))
         with raises(GraphQLSyntaxError) as exc_info:
             Lexer(source).advance()
-        assert str(exc_info.value) == dedent(
-            """
+        assert str(exc_info.value) == dedent("""
             Syntax Error: Unexpected character: '~'.
 
             foo.js:1:5
             1 |     ~
               |     ^
-            """
-        )
+            """)
 
     # noinspection PyArgumentEqualDefault
     def lexes_empty_string():
@@ -391,18 +385,13 @@ def describe_lexer():
         ) == Token(TokenKind.BLOCK_STRING, 0, 68, 1, 1, "spans\n  multiple\n    lines")
 
     def advance_line_after_lexing_multiline_block_string():
-        assert (
-            lex_second(
-                '''"""
+        assert lex_second('''"""
 
         spans
           multiple
             lines
 
-        \n """ second_token'''
-            )
-            == Token(TokenKind.NAME, 71, 83, 8, 6, "second_token")
-        )
+        \n """ second_token''') == Token(TokenKind.NAME, 71, 83, 8, 6, "second_token")
 
     def lex_reports_useful_block_string_errors():
         assert_syntax_error('"""', "Unterminated string.", (1, 4))
@@ -556,14 +545,12 @@ def describe_lexer():
         assert error.locations == [(1, 3)]
 
     def produces_double_linked_list_of_tokens_including_comments():
-        source = Source(
-            """
+        source = Source("""
             {
               #comment
               field
             }
-            """
-        )
+            """)
         lexer = Lexer(source)
         start_token = lexer.token
         while True:

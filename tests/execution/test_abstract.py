@@ -482,8 +482,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
 
         def describe_union_type():
 
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   pets: [Pet]
                 }
@@ -499,8 +498,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                   name: String
                   woofs: Boolean
                 }
-                """
-            )
+                """)
 
             query = """
                 {
@@ -523,8 +521,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 assert await execute_query(sync, schema, query, root_value) == expected
 
         def describe_interface_type():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   pets: [Pet]
                 }
@@ -542,8 +539,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                   name: String
                   woofs: Boolean
                 }
-                """
-            )
+                """)
 
             query = """
                 {
@@ -566,8 +562,7 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
                 assert await execute_query(sync, schema, query, root_value) == expected
 
     def resolve_type_on_interface_yields_useful_error():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               pet: Pet
             }
@@ -583,18 +578,15 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             type Dog implements Pet {
               name: String
             }
-            """
-        )
+            """)
 
-        document = parse(
-            """
+        document = parse("""
             {
               pet {
                 name
               }
             }
-            """
-        )
+            """)
 
         def expect_error(for_type_name: Any, message: str) -> None:
             root_value = {"pet": {"__typename": for_type_name}}

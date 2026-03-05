@@ -5,8 +5,7 @@ from graphql.validation import PossibleFragmentSpreadsRule
 
 from .harness import assert_validation_errors
 
-test_schema = build_schema(
-    """
+test_schema = build_schema("""
     interface Being {
       name: String
     }
@@ -51,8 +50,7 @@ test_schema = build_schema(
       dogOrHuman: DogOrHuman
       humanOrAlien: HumanOrAlien
     }
-    """
-)
+    """)
 
 
 assert_errors = partial(
@@ -64,105 +62,79 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_possible_fragment_spreads():
     def of_the_same_object():
-        assert_valid(
-            """
+        assert_valid("""
             fragment objectWithinObject on Dog { ...dogFragment }
             fragment dogFragment on Dog { barkVolume }
-            """
-        )
+            """)
 
     def of_the_same_object_inline_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             fragment objectWithinObjectAnon on Dog { ... on Dog { barkVolume } }
-            """
-        )
+            """)
 
     def object_into_implemented_interface():
-        assert_valid(
-            """
+        assert_valid("""
             fragment objectWithinInterface on Pet { ...dogFragment }
             fragment dogFragment on Dog { barkVolume }
-            """
-        )
+            """)
 
     def object_into_containing_union():
-        assert_valid(
-            """
+        assert_valid("""
             fragment objectWithinUnion on CatOrDog { ...dogFragment }
             fragment dogFragment on Dog { barkVolume }
-            """
-        )
+            """)
 
     def union_into_contained_object():
-        assert_valid(
-            """
+        assert_valid("""
             fragment unionWithinObject on Dog { ...catOrDogFragment }
             fragment catOrDogFragment on CatOrDog { __typename }
-            """
-        )
+            """)
 
     def union_into_overlapping_interface():
-        assert_valid(
-            """
+        assert_valid("""
             fragment unionWithinInterface on Pet { ...catOrDogFragment }
             fragment catOrDogFragment on CatOrDog { __typename }
-            """
-        )
+            """)
 
     def union_into_overlapping_union():
-        assert_valid(
-            """
+        assert_valid("""
             fragment unionWithinUnion on DogOrHuman { ...catOrDogFragment }
             fragment catOrDogFragment on CatOrDog { __typename }
-            """
-        )
+            """)
 
     def interface_into_implemented_object():
-        assert_valid(
-            """
+        assert_valid("""
             fragment interfaceWithinObject on Dog { ...petFragment }
             fragment petFragment on Pet { name }
-            """
-        )
+            """)
 
     def interface_into_overlapping_interface():
-        assert_valid(
-            """
+        assert_valid("""
             fragment interfaceWithinInterface on Pet { ...beingFragment }
             fragment beingFragment on Being { name }
-            """
-        )
+            """)
 
     def interface_into_overlapping_interface_in_inline_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             fragment interfaceWithinInterface on Pet { ... on Being { name } }
-            """
-        )
+            """)
 
     def interface_into_overlapping_union():
-        assert_valid(
-            """
+        assert_valid("""
             fragment interfaceWithinUnion on CatOrDog { ...petFragment }
             fragment petFragment on Pet { name }
-            """
-        )
+            """)
 
     def ignores_incorrect_type_caught_by_fragments_on_composite_types():
-        assert_valid(
-            """
+        assert_valid("""
             fragment petFragment on Pet { ...badInADifferentWay }
             fragment badInADifferentWay on String { name }
-            """
-        )
+            """)
 
     def ignores_unknown_fragments_caught_by_known_fragment_names():
-        assert_valid(
-            """
+        assert_valid("""
             fragment petFragment on Pet { ...UnknownFragment }
-            """
-        )
+            """)
 
     def different_object_into_object():
         assert_errors(

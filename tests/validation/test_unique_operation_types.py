@@ -12,15 +12,12 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_operation_types():
     def no_schema_definition():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
-            """
-        )
+            """)
 
     def schema_definition_with_all_types():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
 
             schema {
@@ -28,12 +25,10 @@ def describe_validate_unique_operation_types():
               mutation: Foo
               subscription: Foo
             }
-            """
-        )
+            """)
 
     def schema_definition_with_single_extension():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
 
             schema { query: Foo }
@@ -42,31 +37,26 @@ def describe_validate_unique_operation_types():
               mutation: Foo
               subscription: Foo
             }
-            """
-        )
+            """)
 
     def schema_definition_with_separate_extensions():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
 
             schema { query: Foo }
             extend schema { mutation: Foo }
             extend schema { subscription: Foo }
-            """
-        )
+            """)
 
     def extend_schema_before_definition():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
 
             extend schema { mutation: Foo }
             extend schema { subscription: Foo }
 
             schema { query: Foo }
-            """
-        )
+            """)
 
     def duplicate_operation_types_inside_single_schema_definition():
         assert_errors(
@@ -251,15 +241,13 @@ def describe_validate_unique_operation_types():
         assert_valid(sdl, schema=schema)
 
     def adding_conflicting_operation_types_to_existing_schema():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query
             type Mutation
             type Subscription
 
             type Foo
-            """
-        )
+            """)
 
         sdl = """
             extend schema {
@@ -292,13 +280,11 @@ def describe_validate_unique_operation_types():
         )
 
     def adding_conflicting_operation_types_to_existing_schema_twice():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query
             type Mutation
             type Subscription
-            """
-        )
+            """)
 
         sdl = """
             extend schema {

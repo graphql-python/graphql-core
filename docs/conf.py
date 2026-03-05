@@ -139,6 +139,8 @@ graphql_classes = {
 ignore_references = set(
     """
 GNT GT KT T VT
+_asyncio.Future
+asyncio.queues.Queue
 enum.Enum
 traceback
 types.TracebackType

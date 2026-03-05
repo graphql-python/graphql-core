@@ -56,13 +56,11 @@ def describe_execute_handles_basic_execution_tasks():
                 },
             )
         )
-        document = parse(
-            """
+        document = parse("""
             query ($a: Int) {
               fieldA(argA: $a)
             }
-            """
-        )
+            """)
         variable_values = "{'a': 1}"
 
         with raises(TypeError) as exc_info:
@@ -170,8 +168,7 @@ def describe_execute_handles_basic_execution_tasks():
             },
         )
 
-        document = parse(
-            """
+        document = parse("""
             query ($size: Int) {
               a,
               b,
@@ -199,8 +196,7 @@ def describe_execute_handles_basic_execution_tasks():
               d
               e
             }
-            """
-        )
+            """)
 
         awaitable_result = execute(
             GraphQLSchema(DataType), document, Data(), variable_values={"size": 100}
@@ -244,8 +240,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
         schema = GraphQLSchema(Type)
 
-        ast = parse(
-            """
+        ast = parse("""
             { a, ...FragOne, ...FragTwo }
 
             fragment FragOne on Type {
@@ -257,8 +252,7 @@ def describe_execute_handles_basic_execution_tasks():
               c
               deep { c, deeper: deep { c } }
             }
-            """
-        )
+            """)
 
         result = execute_sync(schema, ast)
         assert result == (
@@ -338,8 +332,7 @@ def describe_execute_handles_basic_execution_tasks():
         )
         schema = GraphQLSchema(test_type)
         root_value: Any = {"test": [{}]}
-        document = parse(
-            """
+        document = parse("""
             query {
               l1: test {
                 ... on SomeObject {
@@ -347,8 +340,7 @@ def describe_execute_handles_basic_execution_tasks():
                 }
               }
             }
-            """
-        )
+            """)
 
         execute_sync(schema, document, root_value)
 
@@ -408,13 +400,11 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Example {
               b(numArg: 123, stringArg: "foo")
             }
-            """
-        )
+            """)
 
         execute_sync(schema, document)
 
@@ -423,8 +413,7 @@ def describe_execute_handles_basic_execution_tasks():
 
     @mark.asyncio
     async def nulls_out_error_subtrees():
-        document = parse(
-            """
+        document = parse("""
             {
               syncOk
               syncError
@@ -437,8 +426,7 @@ def describe_execute_handles_basic_execution_tasks():
               asyncReturnError
               asyncReturnErrorWithExtensions
             }
-            """
-        )
+            """)
 
         schema = GraphQLSchema(
             GraphQLObjectType(
@@ -588,14 +576,12 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        document = parse(
-            """
+        document = parse("""
             {
               asyncNullError
               syncNullError
             }
-            """
-        )
+            """)
 
         result = execute(schema, document)
 
@@ -636,8 +622,7 @@ def describe_execute_handles_basic_execution_tasks():
             )
         )
 
-        document = parse(
-            """
+        document = parse("""
             query {
               nullableA {
                 aliasedA: nullableA {
@@ -649,8 +634,7 @@ def describe_execute_handles_basic_execution_tasks():
                 }
               }
             }
-            """
-        )
+            """)
 
         assert execute_sync(schema, document) == (
             {"nullableA": {"aliasedA": None}},
@@ -697,12 +681,10 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Example { first: a }
             query OtherExample { second: a }
-            """
-        )
+            """)
 
         class Data:
             a = "b"
@@ -728,12 +710,10 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Example { a }
             query OtherExample { a }
-            """
-        )
+            """)
 
         result = execute_sync(schema, document)
         assert result == (
@@ -751,12 +731,10 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Example { a }
             query OtherExample { a }
-            """
-        )
+            """)
 
         result = execute_sync(schema, document, operation_name="UnknownExample")
         assert result == (
@@ -784,13 +762,11 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("S", {"a": GraphQLField(GraphQLString)}),
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Q { a }
             mutation M { c }
             subscription S { a }
-            """
-        )
+            """)
 
         class Data:
             a = "b"
@@ -806,12 +782,10 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("M", {"c": GraphQLField(GraphQLString)}),
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Q { a }
             mutation M { c }
-            """
-        )
+            """)
 
         class Data:
             a = "b"
@@ -826,12 +800,10 @@ def describe_execute_handles_basic_execution_tasks():
             subscription=GraphQLObjectType("S", {"a": GraphQLField(GraphQLString)}),
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Q { a }
             subscription S { a }
-            """
-        )
+            """)
 
         class Data:
             a = "b"
@@ -843,13 +815,11 @@ def describe_execute_handles_basic_execution_tasks():
     def resolves_to_an_error_if_schema_does_not_support_operation():
         schema = GraphQLSchema(assume_valid=True)
 
-        document = parse(
-            """
+        document = parse("""
             query Q { __typename }
             mutation M { __typename }
             subscription S { __typename }
-            """
-        )
+            """)
 
         assert execute_sync(schema, document, operation_name="Q") == (
             None,
@@ -929,8 +899,7 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("Type", {"a": GraphQLField(GraphQLString)})
         )
 
-        document = parse(
-            """
+        document = parse("""
             query Q {
               a
               ...Frag
@@ -941,8 +910,7 @@ def describe_execute_handles_basic_execution_tasks():
               a,
               ...Frag
             }
-            """
-        )
+            """)
 
         class Data:
             a = "b"
@@ -1091,13 +1059,11 @@ def describe_execute_handles_basic_execution_tasks():
             GraphQLObjectType("Query", {"foo": GraphQLField(GraphQLString)})
         )
 
-        document = parse(
-            """
+        document = parse("""
             { foo }
 
             type Query { bar: String }
-            """
-        )
+            """)
 
         result = execute_sync(schema, document)
         assert result == ({"foo": None}, None)

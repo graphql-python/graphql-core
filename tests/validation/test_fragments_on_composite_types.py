@@ -11,64 +11,52 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_fragments_on_composite_types():
     def object_is_valid_fragment_type():
-        assert_valid(
-            """
+        assert_valid("""
             fragment validFragment on Dog {
               barks
             }
-            """
-        )
+            """)
 
     def interface_is_valid_fragment_type():
-        assert_valid(
-            """
+        assert_valid("""
             fragment validFragment on Pet {
               name
             }
-            """
-        )
+            """)
 
     def object_is_valid_inline_fragment_type():
-        assert_valid(
-            """
+        assert_valid("""
             fragment validFragment on Pet {
               ... on Dog {
                 barks
               }
             }
-            """
-        )
+            """)
 
     def interface_is_valid_inline_fragment_type():
-        assert_valid(
-            """
+        assert_valid("""
             fragment validFragment on Mammal {
               ... on Canine {
                 name
               }
             }
-            """
-        )
+            """)
 
     def inline_fragment_without_type_is_valid():
-        assert_valid(
-            """
+        assert_valid("""
             fragment validFragment on Pet {
               ... {
                 name
               }
             }
-            """
-        )
+            """)
 
     def union_is_valid_fragment_type():
-        assert_valid(
-            """
+        assert_valid("""
             fragment validFragment on CatOrDog {
               __typename
             }
-            """
-        )
+            """)
 
     def scalar_is_invalid_fragment_type():
         assert_errors(

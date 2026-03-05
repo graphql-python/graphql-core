@@ -12,77 +12,63 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_overlapping_fields_can_be_merged():
     def unique_fields():
-        assert_valid(
-            """
+        assert_valid("""
             fragment uniqueFields on Dog {
               name
               nickname
             }
-            """
-        )
+            """)
 
     def identical_fields():
-        assert_valid(
-            """
+        assert_valid("""
             fragment mergeIdenticalFields on Dog {
               name
               name
             }
-            """
-        )
+            """)
 
     def identical_fields_with_identical_args():
-        assert_valid(
-            """
+        assert_valid("""
             fragment mergeIdenticalFieldsWithIdenticalArgs on Dog {
               doesKnowCommand(dogCommand: SIT)
               doesKnowCommand(dogCommand: SIT)
             }
-            """
-        )
+            """)
 
     def identical_fields_with_identical_directives():
-        assert_valid(
-            """
+        assert_valid("""
             fragment mergeSameFieldsWithSameDirectives on Dog {
               name @include(if: true)
               name @include(if: true)
             }
-            """
-        )
+            """)
 
     def different_args_with_different_aliases():
-        assert_valid(
-            """
+        assert_valid("""
             fragment differentArgsWithDifferentAliases on Dog {
               knowsSit: doesKnowCommand(dogCommand: SIT)
               knowsDown: doesKnowCommand(dogCommand: DOWN)
             }
-            """
-        )
+            """)
 
     def different_directives_with_different_aliases():
-        assert_valid(
-            """
+        assert_valid("""
             fragment differentDirectivesWithDifferentAliases on Dog {
               nameIfTrue: name @include(if: true)
               nameIfFalse: name @include(if: false)
             }
-            """
-        )
+            """)
 
     def different_skip_or_include_directives_accepted():
         # Note: Differing skip/include directives don't create an ambiguous
         # return value and are acceptable in conditions where differing runtime
         # values may have the same desired effect of including/skipping a field
-        assert_valid(
-            """
+        assert_valid("""
             fragment differentDirectivesWithDifferentAliases on Dog {
               name @include(if: true)
               name @include(if: false)
             }
-            """
-        )
+            """)
 
     def same_aliases_with_different_field_targets():
         assert_errors(
@@ -105,8 +91,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def same_aliases_allowed_on_non_overlapping_fields():
-        assert_valid(
-            """
+        assert_valid("""
             fragment sameAliasesWithDifferentFieldTargets on Pet {
               ... on Dog {
                 name
@@ -115,8 +100,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                 name: nickname
               }
             }
-            """
-        )
+            """)
 
     def alias_masking_direct_field_access():
         assert_errors(
@@ -216,8 +200,7 @@ def describe_validate_overlapping_fields_can_be_merged():
     def allows_different_args_where_no_conflict_is_possible():
         # This is valid since no object can be both a "Dog" and a "Cat", thus
         # these fields can never overlap.
-        assert_valid(
-            """
+        assert_valid("""
             fragment conflictingArgs on Pet {
               ... on Dog {
                 name(surname: true)
@@ -226,17 +209,14 @@ def describe_validate_overlapping_fields_can_be_merged():
                 name
               }
             }
-            """
-        )
+            """)
 
     def allows_different_order_of_args():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               someField(a: String, b: String): String
             }
-            """
-        )
+            """)
         # This is valid since arguments are unordered, see:
         # https://spec.graphql.org/draft/#
         # sec-Language.Arguments.Arguments-are-unordered
@@ -251,8 +231,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def allows_different_order_of_input_object_fields_in_arg_values():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             input SomeInput {
               a: String
               b: String
@@ -261,8 +240,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             type Query {
               someField(arg: SomeInput): String
             }
-            """
-        )
+            """)
         # This is valid since input object fields are unordered, see:
         # https://spec.graphql.org/draft/#
         # sec-Input-Object-Values.Input-object-fields-are-unordered
@@ -560,8 +538,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def ignores_unknown_fragments():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field
               ...Unknown
@@ -572,13 +549,11 @@ def describe_validate_overlapping_fields_can_be_merged():
               field
               ...OtherUnknown
             }
-            """
-        )
+            """)
 
     def describe_return_types_must_be_unambiguous():
 
-        schema = build_schema(
-            """
+        schema = build_schema("""
             interface SomeBox {
               deepBox: SomeBox
               unrelatedField: String
@@ -639,8 +614,7 @@ def describe_validate_overlapping_fields_can_be_merged():
               someBox: SomeBox
               connection: Connection
             }
-            """
-        )
+            """)
 
         def conflicting_return_types_which_potentially_overlap():
             # This is invalid since an object could potentially be both the
@@ -1039,8 +1013,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             )
 
         def works_for_field_names_that_are_js_keywords():
-            schema_with_keywords = build_schema(
-                """
+            schema_with_keywords = build_schema("""
                 type Foo {
                   constructor: String
                 }
@@ -1048,8 +1021,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                 type Query {
                   foo: Foo
                 }
-                """
-            )
+                """)
 
             assert_valid(
                 """
@@ -1063,8 +1035,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             )
 
         def works_for_field_names_that_are_python_keywords():
-            schema_with_keywords = build_schema(
-                """
+            schema_with_keywords = build_schema("""
                 type Foo {
                   class: String
                 }
@@ -1072,8 +1043,7 @@ def describe_validate_overlapping_fields_can_be_merged():
                 type Query {
                   foo: Foo
                 }
-                """
-            )
+                """)
 
             assert_valid(
                 """
@@ -1087,38 +1057,32 @@ def describe_validate_overlapping_fields_can_be_merged():
             )
 
     def does_not_infinite_loop_on_recursive_fragments():
-        assert_valid(
-            """
+        assert_valid("""
             {
               ...fragA
             }
 
             fragment fragA on Human { name, relatives { name, ...fragA } }
-            """
-        )
+            """)
 
     def does_not_infinite_loop_on_immediately_recursive_fragments():
-        assert_valid(
-            """
+        assert_valid("""
             {
               ...fragA
             }
 
             fragment fragA on Human { name, ...fragA }
-            """
-        )
+            """)
 
     def does_not_infinite_loop_on_recursive_fragment_with_field_named_after_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             {
               ...fragA
               fragA
             }
 
             fragment fragA on Query { ...fragA }
-            """
-        )
+            """)
 
     def finds_invalid_cases_even_with_field_named_after_fragment():
         assert_errors(
@@ -1144,8 +1108,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         )
 
     def does_not_infinite_loop_on_transitively_recursive_fragments():
-        assert_valid(
-            """
+        assert_valid("""
             {
               ...fragA
               fragB
@@ -1154,8 +1117,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             fragment fragA on Human { name, ...fragB }
             fragment fragB on Human { name, ...fragC }
             fragment fragC on Human { name, ...fragA }
-            """
-        )
+            """)
 
     def finds_invalid_case_even_with_immediately_recursive_fragment():
         assert_errors(

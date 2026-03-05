@@ -32,8 +32,7 @@ def describe_printer_sdl_document():
         assert printed_ast == ast
         assert deepcopy(ast) == ast_before_print_call
 
-        assert printed == dedent(
-            '''
+        assert printed == dedent('''
             """This is a description of the schema as a whole."""
             schema {
               query: QueryType
@@ -175,5 +174,4 @@ def describe_printer_sdl_document():
             extend schema @onSchema {
               subscription: SubscriptionType
             }
-            '''  # noqa: E501
-        )
+            ''')  # noqa: E501

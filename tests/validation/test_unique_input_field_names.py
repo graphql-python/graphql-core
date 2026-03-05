@@ -11,35 +11,28 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_input_field_names():
     def input_object_with_fields():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field(arg: { f: true })
             }
-            """
-        )
+            """)
 
     def same_input_object_within_two_args():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field(arg1: { f: true }, arg2: { f: true })
             }
-            """
-        )
+            """)
 
     def multiple_input_object_fields():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field(arg: { f1: "value", f2: "value", f3: "value" })
             }
-            """
-        )
+            """)
 
     def allows_for_nested_input_objects_with_similar_fields():
-        assert_valid(
-            """
+        assert_valid("""
             {
               field(arg: {
                 deep: {
@@ -51,8 +44,7 @@ def describe_validate_unique_input_field_names():
                 id: 1
               })
             }
-            """
-        )
+            """)
 
     def duplicate_input_object_fields():
         assert_errors(

@@ -12,38 +12,30 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_directive_names():
     def no_directive():
-        assert_valid(
-            """
+        assert_valid("""
             type Foo
-            """
-        )
+            """)
 
     def one_directive():
-        assert_valid(
-            """
+        assert_valid("""
             directive @foo on SCHEMA
-            """
-        )
+            """)
 
     def many_directives():
-        assert_valid(
-            """
+        assert_valid("""
             directive @foo on SCHEMA
             directive @bar on SCHEMA
             directive @baz on SCHEMA
-            """
-        )
+            """)
 
     def directive_and_non_directive_definitions_named_the_same():
-        assert_valid(
-            """
+        assert_valid("""
             query foo { __typename }
             fragment foo on foo { __typename }
             type foo
 
             directive @foo on SCHEMA
-            """
-        )
+            """)
 
     def directives_named_the_same():
         assert_errors(

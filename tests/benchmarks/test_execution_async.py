@@ -7,7 +7,6 @@ from graphql import (
     graphql,
 )
 
-
 user = GraphQLObjectType(
     name="User",
     fields={

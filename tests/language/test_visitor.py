@@ -643,13 +643,11 @@ def describe_visitor():
             def leave(node, *_args):
                 visited.append(["leave", node.kind, get_value(node)])
 
-        example_document_ast = parse(
-            """
+        example_document_ast = parse("""
             query ExampleOperation {
               someField
             }
-            """
-        )
+            """)
 
         visit(example_document_ast, TestVisitor(), visitor_key_map)
         assert visited == [

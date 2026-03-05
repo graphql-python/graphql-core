@@ -11,19 +11,16 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_executable_definitions():
     def with_only_operation():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               dog {
                 name
               }
             }
-            """
-        )
+            """)
 
     def with_operation_and_fragment():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               dog {
                 name
@@ -34,8 +31,7 @@ def describe_validate_executable_definitions():
             fragment Frag on Dog {
               name
             }
-            """
-        )
+            """)
 
     def with_type_definition():
         assert_errors(

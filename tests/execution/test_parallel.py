@@ -132,8 +132,7 @@ def describe_parallel_execution():
             types=[BarType, BazType],
         )
 
-        ast = parse(
-            """
+        ast = parse("""
             {
               foo {
                 foo
@@ -141,8 +140,7 @@ def describe_parallel_execution():
                 ... on Baz { foobaz }
               }
             }
-            """
-        )
+            """)
 
         # raises TimeoutError if not parallel
         awaitable_result = execute(schema, ast)

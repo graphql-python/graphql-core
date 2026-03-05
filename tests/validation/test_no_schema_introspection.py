@@ -5,8 +5,7 @@ from graphql.validation import NoSchemaIntrospectionCustomRule
 
 from .harness import assert_validation_errors
 
-schema = build_schema(
-    """
+schema = build_schema("""
     type Query {
       someQuery: SomeType
     }
@@ -15,8 +14,7 @@ schema = build_schema(
       someField: String
       introspectionField: __EnumValue
     }
-    """
-)
+    """)
 
 assert_errors = partial(
     assert_validation_errors, NoSchemaIntrospectionCustomRule, schema=schema
@@ -27,25 +25,21 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_prohibit_introspection_queries():
     def ignores_valid_fields_including_typename():
-        assert_valid(
-            """
+        assert_valid("""
             {
               someQuery {
                 __typename
                 someField
               }
             }
-            """
-        )
+            """)
 
     def ignores_fields_not_in_the_schema():
-        assert_valid(
-            """
+        assert_valid("""
             {
               __introspect
             }
-            """
-        )
+            """)
 
     def reports_error_when_a_field_with_an_introspection_type_is_requested():
         assert_errors(

@@ -16,8 +16,7 @@ assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 def describe_validate_known_type_names():
     def known_type_names_are_valid():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo(
               $var: String
               $required: [Int!]!
@@ -31,8 +30,7 @@ def describe_validate_known_type_names():
             fragment PetFields on Pet {
               name
             }
-            """
-        )
+            """)
 
     def unknown_type_names_are_invalid():
         assert_errors(
@@ -79,8 +77,7 @@ def describe_validate_known_type_names():
 
     def describe_within_sdl():
         def use_standard_types():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 type Query {
                   string: String
                   int: Int
@@ -89,12 +86,10 @@ def describe_validate_known_type_names():
                   id: ID
                   introspectionType: __EnumValue
                 }
-                """
-            )
+                """)
 
         def reference_types_defined_inside_the_same_document():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 union SomeUnion = SomeObject | AnotherObject
 
                 type SomeObject implements SomeInterface {
@@ -125,8 +120,7 @@ def describe_validate_known_type_names():
                 schema {
                 query: RootQuery
                 }
-                """
-            )
+                """)
 
         def unknown_type_references():
             assert_sdl_errors(

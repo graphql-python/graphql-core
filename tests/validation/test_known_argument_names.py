@@ -21,53 +21,42 @@ assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 def describe_validate_known_argument_names():
     def single_arg_is_known():
-        assert_valid(
-            """
+        assert_valid("""
             fragment argOnRequiredArg on Dog {
               doesKnowCommand(dogCommand: SIT)
             }
-            """
-        )
+            """)
 
     def multiple_args_are_known():
-        assert_valid(
-            """
+        assert_valid("""
             fragment multipleArgs on ComplicatedArgs {
               multipleReqs(req1: 1, req2: 2)
             }
-            """
-        )
+            """)
 
     def ignore_args_of_unknown_fields():
-        assert_valid(
-            """
+        assert_valid("""
             fragment argOnUnknownField on Dog {
               unknownField(unknownArg: SIT)
             }
-            """
-        )
+            """)
 
     def multiple_args_in_reverse_order_are_known():
-        assert_valid(
-            """
+        assert_valid("""
             fragment multipleArgsReverseOrder on ComplicatedArgs {
               multipleReqs(req2: 2, req1: 1)
             }
-            """
-        )
+            """)
 
     def no_args_on_optional_arg():
-        assert_valid(
-            """
+        assert_valid("""
             fragment noArgOnOptionalArg on Dog {
               isHouseTrained
             }
-            """
-        )
+            """)
 
     def args_are_known_deeply():
-        assert_valid(
-            """
+        assert_valid("""
             {
               dog {
                 doesKnowCommand(dogCommand: SIT)
@@ -80,17 +69,14 @@ def describe_validate_known_argument_names():
                 }
               }
             }
-            """
-        )
+            """)
 
     def directive_args_are_known():
-        assert_valid(
-            """
+        assert_valid("""
             {
               dog @skip(if: true)
             }
-            """
-        )
+            """)
 
     def field_args_are_invalid():
         assert_errors(
@@ -108,13 +94,11 @@ def describe_validate_known_argument_names():
         )
 
     def directive_without_args_is_valid():
-        assert_valid(
-            """
+        assert_valid("""
             {
                 dog @onField
             }
-            """
-        )
+            """)
 
     def arg_passed_to_directive_without_args_is_reported():
         assert_errors(
@@ -233,15 +217,13 @@ def describe_validate_known_argument_names():
 
     def describe_within_sdl():
         def known_arg_on_directive_inside_sdl():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 type Query {
                   foo: String @test(arg: "")
                 }
 
                 directive @test(arg: String) on FIELD_DEFINITION
-                """
-            )
+                """)
 
         def unknown_arg_on_directive_defined_inside_sdl():
             assert_sdl_errors(
@@ -312,13 +294,11 @@ def describe_validate_known_argument_names():
             )
 
         def unknown_arg_on_directive_defined_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_errors(
                 """
                 directive @test(arg: String) on OBJECT
@@ -335,15 +315,13 @@ def describe_validate_known_argument_names():
             )
 
         def unknown_arg_on_directive_used_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 directive @test(arg: String) on OBJECT
 
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_errors(
                 """
                 extend type Query @test(unknown: "")

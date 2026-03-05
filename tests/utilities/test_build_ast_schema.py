@@ -74,15 +74,11 @@ def expect_extension_ast_nodes(obj: TypeWithExtensionAstNodes, expected: str) ->
 
 def describe_schema_builder():
     def can_use_built_schema_for_limited_execution():
-        schema = build_ast_schema(
-            parse(
-                """
+        schema = build_ast_schema(parse("""
                 type Query {
                   str: String
                 }
-                """
-            )
-        )
+                """))
 
         root_value = namedtuple("Data", "str")(123)  # type: ignore
 
@@ -90,13 +86,11 @@ def describe_schema_builder():
         assert result == ({"str": "123"}, None)
 
     def can_build_a_schema_directly_from_the_source():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               add(x: Int, y: Int): Int
             }
-            """
-        )
+            """)
         source = "{ add(x: 34, y: 55) }"
 
         # noinspection PyMethodMayBeStatic
@@ -129,16 +123,13 @@ def describe_schema_builder():
         assert sdl_schema.type_map == schema.type_map
 
     def empty_type():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type EmptyType
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_type():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               str: String
               int: Int
@@ -146,8 +137,7 @@ def describe_schema_builder():
               id: ID
               bool: Boolean
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
         schema = build_schema(sdl)
@@ -169,18 +159,15 @@ def describe_schema_builder():
         assert schema.get_type("ID") is None
 
     def with_directives():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             directive @foo(arg: Int) on FIELD
 
             directive @repeatableFoo(arg: Int) repeatable on FIELD
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def supports_descriptions():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             """Do you agree that this is the most creative schema ever?"""
             schema {
               query: Query
@@ -224,8 +211,7 @@ def describe_schema_builder():
               """And a field to boot"""
               str: String
             }
-            '''
-        )
+            ''')
         assert cycle_sdl(sdl) == sdl
 
     def maintains_include_skip_and_specified_by_url_directives():
@@ -239,15 +225,13 @@ def describe_schema_builder():
         assert schema.get_directive("oneOf") is GraphQLOneOfDirective
 
     def overriding_directives_excludes_specified():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             directive @skip on FIELD
             directive @include on FIELD
             directive @deprecated on FIELD_DEFINITION
             directive @specifiedBy on FIELD_DEFINITION
             directive @oneOf on OBJECT
-            """
-        )
+            """)
 
         assert len(schema.directives) == 5
         get_directive = schema.get_directive
@@ -263,11 +247,9 @@ def describe_schema_builder():
         assert get_directive("oneOf") is not None
 
     def adding_directives_maintains_include_skip_and_three_other_directives():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             directive @foo(arg: Int) on FIELD
-            """
-        )
+            """)
 
         assert len(schema.directives) == 6
         assert schema.get_directive("skip") is GraphQLSkipDirective
@@ -278,8 +260,7 @@ def describe_schema_builder():
         assert schema.get_directive("foo") is not None
 
     def type_modifiers():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               nonNullStr: String!
               listOfStrings: [String]
@@ -287,24 +268,20 @@ def describe_schema_builder():
               nonNullListOfStrings: [String]!
               nonNullListOfNonNullStrings: [String!]!
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def recursive_type():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               str: String
               recurse: Query
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def two_types_circular():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type TypeOne {
               str: String
               typeTwo: TypeTwo
@@ -314,13 +291,11 @@ def describe_schema_builder():
               str: String
               typeOne: TypeOne
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def single_argument_field():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               str(int: Int): String
               floatToStr(float: Float): String
@@ -328,26 +303,21 @@ def describe_schema_builder():
               booleanToStr(bool: Boolean): String
               strToStr(bool: String): String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_multiple_arguments():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               str(int: Int, bool: Boolean): String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def empty_interface():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             interface EmptyInterface
-            """
-        )
+            """)
 
         definition = parse(sdl).definitions[0]
         assert isinstance(definition, InterfaceTypeDefinitionNode)
@@ -356,8 +326,7 @@ def describe_schema_builder():
         assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_interface():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query implements WorldInterface {
               str: String
             }
@@ -365,13 +334,11 @@ def describe_schema_builder():
             interface WorldInterface {
               str: String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_interface_hierarchy():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             schema {
               query: Child
             }
@@ -387,21 +354,17 @@ def describe_schema_builder():
             interface Parent {
               str: String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def empty_enum():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             enum EmptyEnum
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_output_enum():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             enum Hello {
               WORLD
             }
@@ -409,13 +372,11 @@ def describe_schema_builder():
             type Query {
               hello: Hello
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_input_enum():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             enum Hello {
               WORLD
             }
@@ -423,13 +384,11 @@ def describe_schema_builder():
             type Query {
               str(hello: Hello): String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def multiple_value_enum():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             enum Hello {
               WO
               RLD
@@ -438,8 +397,7 @@ def describe_schema_builder():
             type Query {
               hello: Hello
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
         # check that the internal values are the same as the names
@@ -449,16 +407,13 @@ def describe_schema_builder():
         assert [value.value for value in enum_type.values.values()] == ["WO", "RLD"]
 
     def empty_union():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             union EmptyUnion
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_union():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             union Hello = World
 
             type Query {
@@ -468,13 +423,11 @@ def describe_schema_builder():
             type World {
               str: String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def multiple_union():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             union Hello = WorldOne | WorldTwo
 
             type Query {
@@ -488,50 +441,42 @@ def describe_schema_builder():
             type WorldTwo {
               str: String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def can_build_recursive_union():
         # invalid schema cannot be built with Python
         with raises(TypeError) as exc_info:
-            build_schema(
-                """
+            build_schema("""
                 union Hello = Hello
 
                 type Query {
                   hello: Hello
                 }
-                """
-            )
+                """)
         assert (
             str(exc_info.value) == "Hello types must be specified"
             " as a collection of GraphQLObjectType instances."
         )
 
     def custom_scalar():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             scalar CustomScalar
 
             type Query {
               customScalar: CustomScalar
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def empty_input_object():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             input EmptyInputObject
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_input_object():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             input Input {
               int: Int
             }
@@ -539,35 +484,29 @@ def describe_schema_builder():
             type Query {
               field(in: Input): String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_argument_field_with_default():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               str(int: Int = 2): String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def custom_scalar_argument_field_with_default():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             scalar CustomScalar
 
             type Query {
               str(int: CustomScalar = 2): String
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_mutation():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             schema {
               query: HelloScalars
               mutation: Mutation
@@ -582,13 +521,11 @@ def describe_schema_builder():
             type Mutation {
               addHelloScalars(str: String, int: Int, bool: Boolean): HelloScalars
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def simple_type_with_subscription():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             schema {
               query: HelloScalars
               subscription: Subscription
@@ -603,13 +540,11 @@ def describe_schema_builder():
             type Subscription {
               subscribeHelloScalars(str: String, int: Int, bool: Boolean): HelloScalars
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def unreferenced_type_implementing_referenced_interface():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Concrete implements Interface {
               key: String
             }
@@ -621,13 +556,11 @@ def describe_schema_builder():
             type Query {
               interface: Interface
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def unreferenced_interface_implementing_referenced_interface():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             interface Child implements Parent {
               key: String
             }
@@ -639,13 +572,11 @@ def describe_schema_builder():
             type Query {
               interfaceField: Parent
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def unreferenced_type_implementing_referenced_union():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Concrete {
               key: String
             }
@@ -655,13 +586,11 @@ def describe_schema_builder():
             }
 
             union Union = Concrete
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
     def supports_deprecated_directive():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             enum MyEnum {
               VALUE
               OLD_VALUE @deprecated
@@ -682,8 +611,7 @@ def describe_schema_builder():
               field4(oldArg: String @deprecated(reason: "Why not?"), arg: String): String
               field5(arg: MyInput): String
             }
-            """  # noqa: E501
-        )
+            """)  # noqa: E501
         assert cycle_sdl(sdl) == sdl
 
         schema = build_schema(sdl)
@@ -723,15 +651,13 @@ def describe_schema_builder():
         assert field4_old_arg.deprecation_reason == "Why not?"
 
     def supports_specified_by_directives():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
 
             type Query {
               foo: Foo @deprecated
             }
-            """
-        )
+            """)
         assert cycle_sdl(sdl) == sdl
 
         schema = build_schema(sdl)
@@ -740,39 +666,32 @@ def describe_schema_builder():
         assert foo_scalar.specified_by_url == "https://example.com/foo_spec"
 
     def correctly_extend_scalar_type():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             scalar SomeScalar
             extend scalar SomeScalar @foo
             extend scalar SomeScalar @bar
 
             directive @foo on SCALAR
             directive @bar on SCALAR
-            """
-        )
+            """)
 
         some_scalar = assert_scalar_type(schema.get_type("SomeScalar"))
-        assert print_type(some_scalar) == dedent(
-            """
+        assert print_type(some_scalar) == dedent("""
             scalar SomeScalar
-            """
-        )
+            """)
 
         expect_ast_node(some_scalar, "scalar SomeScalar")
         expect_extension_ast_nodes(
             some_scalar,
-            dedent(
-                """
+            dedent("""
             extend scalar SomeScalar @foo
 
             extend scalar SomeScalar @bar
-            """
-            ),
+            """),
         )
 
     def correctly_extend_object_type():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type SomeObject implements Foo {
               first: String
             }
@@ -788,34 +707,28 @@ def describe_schema_builder():
             interface Foo
             interface Bar
             interface Baz
-            """
-        )
+            """)
 
         some_object = assert_object_type(schema.get_type("SomeObject"))
-        assert print_type(some_object) == dedent(
-            """
+        assert print_type(some_object) == dedent("""
             type SomeObject implements Foo & Bar & Baz {
               first: String
               second: Int
               third: Float
             }
-            """
-        )
+            """)
 
         expect_ast_node(
             some_object,
-            dedent(
-                """
+            dedent("""
             type SomeObject implements Foo {
               first: String
             }
-            """
-            ),
+            """),
         )
         expect_extension_ast_nodes(
             some_object,
-            dedent(
-                """
+            dedent("""
             extend type SomeObject implements Bar {
               second: Int
             }
@@ -823,13 +736,11 @@ def describe_schema_builder():
             extend type SomeObject implements Baz {
               third: Float
             }
-            """
-            ),
+            """),
         )
 
     def correctly_extend_interface_type():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             interface SomeInterface {
               first: String
             }
@@ -841,34 +752,28 @@ def describe_schema_builder():
             extend interface SomeInterface {
               third: Float
             }
-            """
-        )
+            """)
 
         some_interface = assert_interface_type(schema.get_type("SomeInterface"))
-        assert print_type(some_interface) == dedent(
-            """
+        assert print_type(some_interface) == dedent("""
             interface SomeInterface {
               first: String
               second: Int
               third: Float
             }
-            """
-        )
+            """)
 
         expect_ast_node(
             some_interface,
-            dedent(
-                """
+            dedent("""
             interface SomeInterface {
               first: String
             }
-            """
-            ),
+            """),
         )
         expect_extension_ast_nodes(
             some_interface,
-            dedent(
-                """
+            dedent("""
             extend interface SomeInterface {
               second: Int
             }
@@ -876,13 +781,11 @@ def describe_schema_builder():
             extend interface SomeInterface {
               third: Float
             }
-            """
-            ),
+            """),
         )
 
     def correctly_extend_union_type():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             union SomeUnion = FirstType
             extend union SomeUnion = SecondType
             extend union SomeUnion = ThirdType
@@ -890,31 +793,25 @@ def describe_schema_builder():
             type FirstType
             type SecondType
             type ThirdType
-            """
-        )
+            """)
 
         some_union = assert_union_type(schema.get_type("SomeUnion"))
-        assert print_type(some_union) == dedent(
-            """
+        assert print_type(some_union) == dedent("""
             union SomeUnion = FirstType | SecondType | ThirdType
-            """
-        )
+            """)
 
         expect_ast_node(some_union, "union SomeUnion = FirstType")
         expect_extension_ast_nodes(
             some_union,
-            dedent(
-                """
+            dedent("""
             extend union SomeUnion = SecondType
 
             extend union SomeUnion = ThirdType
-            """
-            ),
+            """),
         )
 
     def correctly_extend_enum_type():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             enum SomeEnum {
               FIRST
             }
@@ -926,34 +823,28 @@ def describe_schema_builder():
             extend enum SomeEnum {
               THIRD
             }
-            """
-        )
+            """)
 
         some_enum = assert_enum_type(schema.get_type("SomeEnum"))
-        assert print_type(some_enum) == dedent(
-            """
+        assert print_type(some_enum) == dedent("""
             enum SomeEnum {
               FIRST
               SECOND
               THIRD
             }
-            """
-        )
+            """)
 
         expect_ast_node(
             some_enum,
-            dedent(
-                """
+            dedent("""
                 enum SomeEnum {
                   FIRST
                 }
-                """
-            ),
+                """),
         )
         expect_extension_ast_nodes(
             some_enum,
-            dedent(
-                """
+            dedent("""
                 extend enum SomeEnum {
                   SECOND
                 }
@@ -961,13 +852,11 @@ def describe_schema_builder():
                 extend enum SomeEnum {
                   THIRD
                 }
-                """
-            ),
+                """),
         )
 
     def correctly_extend_input_object_type():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             input SomeInput {
               first: String
             }
@@ -979,34 +868,28 @@ def describe_schema_builder():
             extend input SomeInput {
               third: Float
             }
-            """
-        )
+            """)
 
         some_input = assert_input_object_type(schema.get_type("SomeInput"))
-        assert print_type(some_input) == dedent(
-            """
+        assert print_type(some_input) == dedent("""
             input SomeInput {
               first: String
               second: Int
               third: Float
             }
-            """
-        )
+            """)
 
         expect_ast_node(
             some_input,
-            dedent(
-                """
+            dedent("""
                 input SomeInput {
                   first: String
                 }
-                """
-            ),
+                """),
         )
         expect_extension_ast_nodes(
             some_input,
-            dedent(
-                """
+            dedent("""
                 extend input SomeInput {
                   second: Int
                 }
@@ -1014,13 +897,11 @@ def describe_schema_builder():
                 extend input SomeInput {
                   third: Float
                 }
-                """
-            ),
+                """),
         )
 
     def correctly_assign_ast_nodes():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             schema {
               query: Query
             }
@@ -1050,8 +931,7 @@ def describe_schema_builder():
             scalar TestScalar
 
             directive @test(arg: TestScalar) on FIELD
-            """
-        )
+            """)
         ast = parse(sdl, no_location=True)
 
         schema = build_ast_schema(ast)
@@ -1088,8 +968,7 @@ def describe_schema_builder():
         expect_ast_node(test_directive.args["arg"], "arg: TestScalar")
 
     def root_operation_types_with_custom_names():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             schema {
               query: SomeQuery
               mutation: SomeMutation
@@ -1098,8 +977,7 @@ def describe_schema_builder():
             type SomeQuery
             type SomeMutation
             type SomeSubscription
-            """
-        )
+            """)
 
         assert schema.query_type
         assert schema.query_type.name == "SomeQuery"
@@ -1109,13 +987,11 @@ def describe_schema_builder():
         assert schema.subscription_type.name == "SomeSubscription"
 
     def default_root_operation_type_names():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query
             type Mutation
             type Subscription
-            """
-        )
+            """)
 
         assert schema.query_type
         assert schema.query_type.name == "Query"
@@ -1134,25 +1010,21 @@ def describe_schema_builder():
         # Note: not sure it's desired behavior to just silently ignore override
         # attempts so just documenting it here.
 
-        schema = build_schema(
-            """
+        schema = build_schema("""
             scalar ID
 
             scalar __Schema
-            """
-        )
+            """)
 
         assert schema.get_type("ID") is GraphQLID
         assert schema.get_type("__Schema") is introspection_types["__Schema"]
 
     def allows_to_reference_introspection_types():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               introspectionField: __EnumValue
             }
-            """
-        )
+            """)
 
         query_type = assert_object_type(schema.get_type("Query"))
         __EnumValue = introspection_types["__EnumValue"]

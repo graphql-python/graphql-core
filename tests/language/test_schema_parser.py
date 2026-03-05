@@ -134,13 +134,11 @@ def directive_node(name: NameNode, arguments: List[ArgumentNode], loc: Location)
 
 def describe_schema_parser():
     def simple_type():
-        body = dedent(
-            """
+        body = dedent("""
             type Hello {
               world: String
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 32))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
@@ -155,14 +153,12 @@ def describe_schema_parser():
         assert definition.loc == (1, 31)
 
     def parses_type_with_description_string():
-        body = dedent(
-            """
+        body = dedent("""
             "Description"
             type Hello {
               world: String
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 46))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (20, 25))
@@ -170,16 +166,14 @@ def describe_schema_parser():
         assert description == string_value_node("Description", False, (1, 14))
 
     def parses_type_with_description_multi_line_string():
-        body = dedent(
-            '''
+        body = dedent('''
             """
             Description
             """
             # Even with comments between them
             type Hello {
               world: String
-            }'''
-        )
+            }''')
         definition = assert_definitions(body, (0, 85))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (60, 65))
@@ -187,14 +181,12 @@ def describe_schema_parser():
         assert description == string_value_node("Description", True, (1, 20))
 
     def parses_schema_with_description_string():
-        body = dedent(
-            """
+        body = dedent("""
             "Description"
             schema {
               query: Foo
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 39))
         assert isinstance(definition, SchemaDefinitionNode)
         description = definition.description
@@ -204,13 +196,11 @@ def describe_schema_parser():
         assert_syntax_error('"Description" 1', "Unexpected Int '1'.", (1, 15))
 
     def simple_extension():
-        body = dedent(
-            """
+        body = dedent("""
             extend type Hello {
               world: String
             }
-            """
-        )
+            """)
         extension = assert_definitions(body, (0, 39))
         assert isinstance(extension, ObjectTypeExtensionNode)
         assert extension.name == name_node("Hello", (13, 18))
@@ -377,13 +367,11 @@ def describe_schema_parser():
         )
 
     def simple_non_null_type():
-        body = dedent(
-            """
+        body = dedent("""
             type Hello {
               world: String!
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 33))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
@@ -525,13 +513,11 @@ def describe_schema_parser():
         assert definition.loc == (0, 22)
 
     def simple_interface():
-        body = dedent(
-            """
+        body = dedent("""
             interface Hello {
               world: String
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 37))
         assert isinstance(definition, InterfaceTypeDefinitionNode)
         assert definition.name == name_node("Hello", (11, 16))
@@ -546,13 +532,11 @@ def describe_schema_parser():
         assert definition.loc == (1, 36)
 
     def simple_field_with_arg():
-        body = dedent(
-            """
+        body = dedent("""
             type Hello {
               world(flag: Boolean): String
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 47))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
@@ -577,13 +561,11 @@ def describe_schema_parser():
         assert definition.loc == (1, 46)
 
     def simple_field_with_arg_with_default_value():
-        body = dedent(
-            """
+        body = dedent("""
             type Hello {
               world(flag: Boolean = true): String
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 54))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
@@ -608,13 +590,11 @@ def describe_schema_parser():
         assert definition.loc == (1, 53)
 
     def simple_field_with_list_arg():
-        body = dedent(
-            """
+        body = dedent("""
             type Hello {
               world(things: [String]): String
             }
-            """
-        )
+            """)
         definition = assert_definitions(body, (0, 50))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))
@@ -639,13 +619,11 @@ def describe_schema_parser():
         assert definition.loc == (1, 49)
 
     def simple_field_with_two_args():
-        body = dedent(
-            """
+        body = dedent("""
           type Hello {
             world(argOne: Boolean, argTwo: Int): String
           }
-          """
-        )
+          """)
         definition = assert_definitions(body, (0, 62))
         assert isinstance(definition, ObjectTypeDefinitionNode)
         assert definition.name == name_node("Hello", (6, 11))

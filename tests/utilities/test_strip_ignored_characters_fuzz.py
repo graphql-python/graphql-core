@@ -32,10 +32,8 @@ def describe_strip_ignored_characters():
 
             stripped_value = lex_value(strip_ignored_characters(test_str))
 
-            assert test_value == stripped_value, dedent(
-                f"""
+            assert test_value == stripped_value, dedent(f"""
                 Expected lexValue(stripIgnoredCharacters({test_str!r})
                   to equal {test_value!r}
                   but got {stripped_value!r}
-                """
-            )
+                """)

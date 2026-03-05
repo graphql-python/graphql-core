@@ -20,24 +20,20 @@ def lex_value(s: str) -> str:
 def assert_printable_block_string(test_value: str, minimize: bool = False) -> None:
     block_string = print_block_string(test_value, minimize=minimize)
     printed_value = lex_value(block_string)
-    assert test_value == printed_value, dedent(
-        f"""
+    assert test_value == printed_value, dedent(f"""
         Expected lexValue({block_string!r})
           to equal {test_value!r}
           but got  {printed_value!r}
-        """
-    )
+        """)
 
 
 def assert_non_printable_block_string(test_value: str) -> None:
     block_string = print_block_string(test_value)
     printed_value = lex_value(block_string)
-    assert test_value != printed_value, dedent(
-        f"""
+    assert test_value != printed_value, dedent(f"""
         Expected lexValue({block_string!r})
           to not equal {test_value!r}
-        """
-    )
+        """)
 
 
 def describe_print_block_string():

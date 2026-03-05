@@ -56,8 +56,7 @@ def cycle_introspection(sdl_string: str):
 
 def describe_type_system_build_schema_from_introspection():
     def builds_a_simple_schema():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             """Simple schema"""
             schema {
               query: Simple
@@ -68,19 +67,16 @@ def describe_type_system_build_schema_from_introspection():
               """This is a string field"""
               string: String
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_without_the_query_type():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               foo: String
             }
-            """
-        )
+            """)
 
         schema = build_schema(sdl)
         introspection = introspection_from_schema(schema)
@@ -91,8 +87,7 @@ def describe_type_system_build_schema_from_introspection():
         assert print_schema(client_schema) == sdl
 
     def builds_a_simple_schema_with_all_operation_types():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             schema {
               query: QueryType
               mutation: MutationType
@@ -116,14 +111,12 @@ def describe_type_system_build_schema_from_introspection():
               """This is a string field"""
               string: String
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def uses_built_in_scalars_when_possible():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             scalar CustomScalar
 
             type Query {
@@ -134,8 +127,7 @@ def describe_type_system_build_schema_from_introspection():
               id: ID
               custom: CustomScalar
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
@@ -155,13 +147,11 @@ def describe_type_system_build_schema_from_introspection():
         assert client_schema.get_type("CustomScalar") is not custom_scalar
 
     def includes_standard_types_only_if_they_are_used():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               foo: String
             }
-            """
-        )
+            """)
         introspection = introspection_from_schema(schema)
         client_schema = build_client_schema(introspection)
 
@@ -170,8 +160,7 @@ def describe_type_system_build_schema_from_introspection():
         assert client_schema.get_type("ID") is None
 
     def builds_a_schema_with_a_recursive_type_reference():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             schema {
               query: Recur
             }
@@ -179,14 +168,12 @@ def describe_type_system_build_schema_from_introspection():
             type Recur {
               recur: Recur
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_a_circular_type_reference():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Dog {
               bestFriend: Human
             }
@@ -199,14 +186,12 @@ def describe_type_system_build_schema_from_introspection():
               dog: Dog
               human: Human
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_an_interface():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             type Dog implements Friendly {
               bestFriend: Friendly
             }
@@ -223,14 +208,12 @@ def describe_type_system_build_schema_from_introspection():
             type Query {
               friendly: Friendly
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_an_interface_hierarchy():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             type Dog implements Friendly & Named {
               bestFriend: Friendly
               name: String
@@ -254,14 +237,12 @@ def describe_type_system_build_schema_from_introspection():
             type Query {
               friendly: Friendly
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_an_implicit_interface():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             type Dog implements Friendly {
               bestFriend: Friendly
             }
@@ -274,14 +255,12 @@ def describe_type_system_build_schema_from_introspection():
             type Query {
               dog: Dog
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_a_union():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Dog {
               bestFriend: Friendly
             }
@@ -295,14 +274,12 @@ def describe_type_system_build_schema_from_introspection():
             type Query {
               friendly: Friendly
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_complex_field_values():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               string: String
               listOfString: [String]
@@ -310,14 +287,12 @@ def describe_type_system_build_schema_from_introspection():
               nonNullListOfString: [String]!
               nonNullListOfNonNullString: [String!]!
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_field_arguments():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             type Query {
               """A field with a single arg"""
               one(
@@ -334,21 +309,18 @@ def describe_type_system_build_schema_from_introspection():
                 requiredArg: Boolean!
               ): String
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_default_value_on_custom_scalar_field():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             scalar CustomScalar
 
             type Query {
               testField(testArg: CustomScalar = "default"): String
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
@@ -421,8 +393,7 @@ def describe_type_system_build_schema_from_introspection():
         }
 
     def builds_a_schema_with_an_input_object():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             """An input address"""
             input Address {
               """What street is this address?"""
@@ -442,14 +413,12 @@ def describe_type_system_build_schema_from_introspection():
                 address: Address
               ): String
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_field_arguments_with_default_values():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             input Geo {
               lat: Float
               lon: Float
@@ -462,33 +431,28 @@ def describe_type_system_build_schema_from_introspection():
               defaultNull(intArg: Int = null): String
               noDefault(intArg: Int): String
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_custom_directives():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             """This is a custom directive"""
             directive @customDirective repeatable on FIELD
 
             type Query {
               string: String
             }
-            '''
-        )
+            ''')
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_without_directives():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               foo: String
             }
-            """
-        )
+            """)
 
         schema = build_schema(sdl)
         introspection = introspection_from_schema(schema)
@@ -501,8 +465,7 @@ def describe_type_system_build_schema_from_introspection():
         assert print_schema(client_schema) == sdl
 
     def builds_a_schema_aware_of_deprecation():
-        sdl = dedent(
-            '''
+        sdl = dedent('''
             directive @someDirective(
               """This is a shiny new argument"""
               shinyArg: SomeInputObject
@@ -552,14 +515,12 @@ def describe_type_system_build_schema_from_introspection():
                 oldArg: String @deprecated(reason: "Use shinyArg")
               ): String
             }
-            '''  # noqa: E501
-        )
+            ''')  # noqa: E501
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_empty_deprecation_reasons():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             directive @someDirective(someArg: SomeInputObject @deprecated(reason: "")) on QUERY
 
             type Query {
@@ -573,27 +534,23 @@ def describe_type_system_build_schema_from_introspection():
             enum SomeEnum {
               SOME_VALUE @deprecated(reason: "")
             }
-            """  # noqa: E501
-        )
+            """)  # noqa: E501
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_specified_by_url():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
 
             type Query {
               foo: Foo
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def builds_a_schema_with_one_of_directive():
-        sdl = dedent(
-            """
+        sdl = dedent("""
             type Query {
               someField(someArg: SomeInputObject): String
             }
@@ -602,21 +559,18 @@ def describe_type_system_build_schema_from_introspection():
               someInputField1: String
               someInputField2: String
             }
-            """
-        )
+            """)
 
         assert cycle_introspection(sdl) == sdl
 
     def can_use_client_schema_for_limited_execution():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             scalar CustomScalar
 
             type Query {
               foo(custom1: CustomScalar, custom2: CustomScalar): String
             }
-            """
-        )
+            """)
 
         introspection = introspection_from_schema(schema)
         client_schema = build_client_schema(introspection)
@@ -643,8 +597,7 @@ def describe_type_system_build_schema_from_introspection():
         assert client_schema.to_kwargs()["assume_valid"] is True
 
     def describe_throws_when_given_invalid_introspection():
-        dummy_schema = build_schema(
-            """
+        dummy_schema = build_schema("""
             type Query {
               foo(bar: String): String
             }
@@ -662,8 +615,7 @@ def describe_type_system_build_schema_from_introspection():
             }
 
             directive @SomeDirective on QUERY
-            """
-        )
+            """)
 
         def throws_when_introspection_is_missing_schema_property():
             with raises(TypeError) as exc_info:
@@ -705,13 +657,11 @@ def describe_type_system_build_schema_from_introspection():
             )
 
         def throws_when_missing_definition_for_one_of_the_standard_scalars():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: Float
                 }
-                """
-            )
+                """)
             introspection = introspection_from_schema(schema)
             introspection["__schema"]["types"] = [
                 type_
@@ -1007,13 +957,11 @@ def describe_type_system_build_schema_from_introspection():
 
     def describe_very_deep_decorators_are_not_supported():
         def fails_on_very_deep_lists_more_than_8_levels():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: [[[[[[[[[[String]]]]]]]]]]
                 }
-                """
-            )
+                """)
 
             introspection = introspection_from_schema(schema)
 
@@ -1026,13 +974,11 @@ def describe_type_system_build_schema_from_introspection():
             )
 
         def fails_on_a_very_deep_non_null_more_than_8_levels():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: [[[[[String!]!]!]!]!]
                 }
-                """
-            )
+                """)
 
             introspection = introspection_from_schema(schema)
 
@@ -1046,13 +992,11 @@ def describe_type_system_build_schema_from_introspection():
 
         def succeeds_on_deep_types_less_or_equal_8_levels():
             # e.g., fully non-null 4D matrix
-            sdl = dedent(
-                """
+            sdl = dedent("""
                 type Query {
                   foo: [[[[String!]!]!]!]!
                 }
-                """
-            )
+                """)
 
             assert cycle_introspection(sdl) == sdl
 

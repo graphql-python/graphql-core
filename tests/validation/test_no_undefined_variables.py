@@ -11,17 +11,14 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_no_undefined_variables():
     def all_variables_defined():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a, b: $b, c: $c)
             }
-            """
-        )
+            """)
 
     def all_variables_deeply_defined():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               field(a: $a) {
                 field(b: $b) {
@@ -29,12 +26,10 @@ def describe_validate_no_undefined_variables():
                 }
               }
             }
-            """
-        )
+            """)
 
     def all_variables_deeply_in_inline_fragments_defined():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               ... on Type {
                 field(a: $a) {
@@ -46,12 +41,10 @@ def describe_validate_no_undefined_variables():
                 }
               }
             }
-            """
-        )
+            """)
 
     def all_variables_in_fragments_deeply_defined():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String, $b: String, $c: String) {
               ...FragA
             }
@@ -68,12 +61,10 @@ def describe_validate_no_undefined_variables():
             fragment FragC on Type {
               field(c: $c)
             }
-            """
-        )
+            """)
 
     def variable_within_single_fragment_defined_in_multiple_operations():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String) {
               ...FragA
             }
@@ -83,12 +74,10 @@ def describe_validate_no_undefined_variables():
             fragment FragA on Type {
               field(a: $a)
             }
-            """
-        )
+            """)
 
     def variable_within_fragments_defined_in_operations():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String) {
               ...FragA
             }
@@ -101,12 +90,10 @@ def describe_validate_no_undefined_variables():
             fragment FragB on Type {
               field(b: $b)
             }
-            """
-        )
+            """)
 
     def variable_within_recursive_fragment_defined():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo($a: String) {
               ...FragA
             }
@@ -115,8 +102,7 @@ def describe_validate_no_undefined_variables():
                 ...FragA
               }
             }
-            """
-        )
+            """)
 
     def variable_not_defined():
         assert_errors(

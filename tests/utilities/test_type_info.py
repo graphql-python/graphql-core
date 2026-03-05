@@ -15,9 +15,7 @@ from graphql.utilities import TypeInfo, TypeInfoVisitor, build_schema
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 
-
-test_schema = build_schema(
-    """
+test_schema = build_schema("""
     interface Pet {
       name: String
     }
@@ -47,8 +45,7 @@ test_schema = build_schema(
     schema {
       query: QueryRoot
     }
-    """
-)
+    """)
 
 
 def describe_type_info():
@@ -70,8 +67,7 @@ def describe_type_info():
 
 def describe_visit_with_type_info():
     def supports_different_operation_types():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             schema {
               query: QueryRoot
               mutation: MutationRoot
@@ -89,15 +85,12 @@ def describe_visit_with_type_info():
             type SubscriptionRoot {
               baz: String
             }
-            """
-        )
-        ast = parse(
-            """
+            """)
+        ast = parse("""
             query { foo }
             mutation { bar }
             subscription { baz }
-            """
-        )
+            """)
 
         class TestVisitor(Visitor):
             def __init__(self):
@@ -343,13 +336,11 @@ def describe_visit_with_type_info():
     def supports_traversal_of_input_values():
         visited = []
 
-        schema = build_schema(
-            """
+        schema = build_schema("""
             input ComplexInput {
               stringListField: [String]
             }
-            """
-        )
+            """)
         complex_input_type = schema.get_type("ComplexInput")
         assert complex_input_type is not None
         type_info = TypeInfo(schema, complex_input_type)

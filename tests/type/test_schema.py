@@ -118,8 +118,7 @@ def describe_type_system_schema():
             "assume_valid": False,
         }
 
-        assert print_schema(schema) == dedent(
-            '''
+        assert print_schema(schema) == dedent('''
             """Sample schema"""
             schema {
               query: Query
@@ -160,8 +159,7 @@ def describe_type_system_schema():
             type Subscription {
               articleSubscribe(id: String): Article
             }
-            '''
-        )
+            ''')
 
     def freezes_the_specified_directives():
         directives_list = [GraphQLDirective("SomeDirective", [])]

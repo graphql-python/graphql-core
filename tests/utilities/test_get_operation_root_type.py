@@ -11,7 +11,6 @@ from graphql.language import (
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 from graphql.utilities import get_operation_root_type
 
-
 query_type = GraphQLObjectType("FooQuery", {"field": GraphQLField(GraphQLString)})
 
 mutation_type = GraphQLObjectType("FooMutation", {"field": GraphQLField(GraphQLString)})
@@ -42,15 +41,13 @@ def describe_deprecated_get_operation_root_type():
 
     def gets_a_type_for_operation_definition_nodes():
         test_schema = GraphQLSchema(query_type, mutation_type, subscription_type)
-        doc = parse(
-            """
+        doc = parse("""
             schema {
               query: FooQuery
               mutation: FooMutation
               subscription: FooSubscription
             }
-            """
-        )
+            """)
 
         schema_node = doc.definitions[0]
         assert isinstance(schema_node, SchemaDefinitionNode)

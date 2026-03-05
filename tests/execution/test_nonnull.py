@@ -76,8 +76,7 @@ class NullingData:
         return NullingData()
 
 
-schema = build_schema(
-    """
+schema = build_schema("""
     type DataType {
       sync: String
       syncNonNull: String!
@@ -92,8 +91,7 @@ schema = build_schema(
     schema {
       query: DataType
     }
-    """
-)
+    """)
 
 
 def execute_query(query: str, root_value: Any) -> AwaitableOrValue[ExecutionResult]:
@@ -531,13 +529,11 @@ def describe_execute_handles_non_nullable_types():
         def succeeds_when_passed_non_null_literal_value():
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query {
                       withNonNullArg (cannotBeNull: "literal value")
                     }
-                    """
-                ),
+                    """),
             )
 
             assert result == ({"withNonNullArg": "Passed: literal value"}, None)
@@ -545,13 +541,11 @@ def describe_execute_handles_non_nullable_types():
         def succeeds_when_passed_non_null_variable_value():
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query ($testVar: String!) {
                       withNonNullArg (cannotBeNull: $testVar)
                     }
-                    """
-                ),
+                    """),
                 variable_values={
                     "testVar": "variable value",
                 },
@@ -562,13 +556,11 @@ def describe_execute_handles_non_nullable_types():
         def succeeds_when_missing_variable_has_default_value():
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query ($testVar: String = "default value") {
                       withNonNullArg (cannotBeNull: $testVar)
                     }
-                    """
-                ),
+                    """),
                 variable_values={},  # intentionally missing variable
             )
 
@@ -580,13 +572,11 @@ def describe_execute_handles_non_nullable_types():
             # protect against this.
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query {
                       withNonNullArg
                     }
-                    """
-                ),
+                    """),
             )
 
             assert result == (
@@ -607,13 +597,11 @@ def describe_execute_handles_non_nullable_types():
             # should still protect against this.
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query {
                       withNonNullArg(cannotBeNull: null)
                     }
-                    """
-                ),
+                    """),
             )
 
             assert result == (
@@ -634,13 +622,11 @@ def describe_execute_handles_non_nullable_types():
             # should still protect against this.
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query ($testVar: String) {
                       withNonNullArg(cannotBeNull: $testVar)
                     }
-                    """
-                ),
+                    """),
                 variable_values={},
             )  # intentionally missing variable
 
@@ -661,13 +647,11 @@ def describe_execute_handles_non_nullable_types():
         def field_error_when_non_null_arg_provided_explicit_null_variable():
             result = execute_sync(
                 schema_with_non_null_arg,
-                parse(
-                    """
+                parse("""
                     query ($testVar: String = "default value") {
                       withNonNullArg (cannotBeNull: $testVar)
                     }
-                    """
-                ),
+                    """),
                 variable_values={"testVar": None},
             )
 

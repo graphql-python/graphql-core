@@ -107,8 +107,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
                 self.width = f"{width}"
                 self.height = f"{height}"
 
-        document = parse(
-            """
+        document = parse("""
             {
               feed {
                 id,
@@ -140,8 +139,7 @@ def describe_execute_handles_execution_with_a_complex_schema():
               hidden,
               notDefined
             }
-            """
-        )
+            """)
 
         # Note: this is intentionally not validating to ensure appropriate
         # behavior occurs when executing an invalid query.

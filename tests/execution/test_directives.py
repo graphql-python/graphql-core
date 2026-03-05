@@ -48,8 +48,7 @@ def describe_execute_handles_directives():
 
     def describe_works_on_fragment_spreads():
         def if_false_omits_fragment_spread():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ...Frag @include(if: false)
@@ -57,13 +56,11 @@ def describe_execute_handles_directives():
                 fragment Frag on TestType {
                   b
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
         def if_true_includes_fragment_spread():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ...Frag @include(if: true)
@@ -71,13 +68,11 @@ def describe_execute_handles_directives():
                 fragment Frag on TestType {
                   b
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def unless_false_includes_fragment_spread():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ...Frag @skip(if: false)
@@ -85,13 +80,11 @@ def describe_execute_handles_directives():
                 fragment Frag on TestType {
                   b
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def unless_true_omits_fragment_spread():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ...Frag @skip(if: true)
@@ -99,146 +92,123 @@ def describe_execute_handles_directives():
                 fragment Frag on TestType {
                   b
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
     def describe_works_on_inline_fragment():
         def if_false_omits_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ... on TestType @include(if: false) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
         def if_true_includes_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ... on TestType @include(if: true) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def unless_false_includes_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ... on TestType @skip(if: false) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def unless_true_omits_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query Q {
                   a
                   ... on TestType @skip(if: true) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
     def describe_works_on_anonymous_inline_fragment():
         def if_false_omits_anonymous_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query {
                   a
                   ... @include(if: false) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
         def if_true_includes_anonymous_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query {
                   a
                   ... @include(if: true) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def unless_false_includes_anonymous_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query {
                   a
                   ... @skip(if: false) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def unless_true_omits_anonymous_inline_fragment():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 query {
                   a
                   ... @skip(if: true) {
                     b
                   }
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
     def describe_works_with_skip_and_include_directives():
         def include_and_no_skip():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 {
                   a
                   b @include(if: true) @skip(if: false)
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a", "b": "b"}, None)
 
         def include_and_skip():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 {
                   a
                   b @include(if: true) @skip(if: true)
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)
 
         def no_include_or_skip():
-            result = execute_test_query(
-                """
+            result = execute_test_query("""
                 {
                   a
                   b @include(if: false) @skip(if: false)
                 }
-                """
-            )
+                """)
             assert result == ({"a": "a"}, None)

@@ -14,17 +14,14 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_field_definition_names():
     def no_fields():
-        assert_valid(
-            """
+        assert_valid("""
             type SomeObject
             interface SomeInterface
             input SomeInputObject
-            """
-        )
+            """)
 
     def one_field():
-        assert_valid(
-            """
+        assert_valid("""
             type SomeObject {
               foo: String
             }
@@ -36,12 +33,10 @@ def describe_validate_unique_field_definition_names():
             input SomeInputObject {
               foo: String
             }
-            """
-        )
+            """)
 
     def multiple_fields():
-        assert_valid(
-            """
+        assert_valid("""
             type SomeObject {
               foo: String
               bar: String
@@ -56,8 +51,7 @@ def describe_validate_unique_field_definition_names():
               foo: String
               bar: String
             }
-            """
-        )
+            """)
 
     def duplicate_fields_inside_the_same_type_definition():
         assert_errors(
@@ -97,8 +91,7 @@ def describe_validate_unique_field_definition_names():
         )
 
     def extend_type_with_new_field():
-        assert_valid(
-            """
+        assert_valid("""
             type SomeObject {
               foo: String
             }
@@ -128,8 +121,7 @@ def describe_validate_unique_field_definition_names():
             extend input SomeInputObject {
               baz: String
             }
-            """
-        )
+            """)
 
     def extend_type_with_duplicate_field():
         assert_errors(
@@ -255,13 +247,11 @@ def describe_validate_unique_field_definition_names():
         )
 
     def adding_new_field_to_the_type_inside_existing_schema():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type SomeObject
             interface SomeInterface
             input SomeInputObject
-            """
-        )
+            """)
         sdl = """
             extend type SomeObject {
               foo: String
@@ -279,8 +269,7 @@ def describe_validate_unique_field_definition_names():
         assert_valid(sdl, schema=schema)
 
     def adding_conflicting_fields_to_existing_schema_twice():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type SomeObject {
               foo: String
             }
@@ -292,8 +281,7 @@ def describe_validate_unique_field_definition_names():
             input SomeInputObject {
               foo: String
             }
-            """
-        )
+            """)
         sdl = """
             extend type SomeObject {
               foo: String
@@ -357,13 +345,11 @@ def describe_validate_unique_field_definition_names():
         )
 
     def adding_fields_to_existing_schema_twice():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type SomeObject
             interface SomeInterface
             input SomeInputObject
-            """
-        )
+            """)
         sdl = """
             extend type SomeObject {
               foo: String

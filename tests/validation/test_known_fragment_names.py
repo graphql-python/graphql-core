@@ -11,8 +11,7 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_known_fragment_names():
     def known_fragment_names_are_valid():
-        assert_valid(
-            """
+        assert_valid("""
             {
               human(id: 4) {
                 ...HumanFields1
@@ -34,8 +33,7 @@ def describe_validate_known_fragment_names():
             fragment HumanFields3 on Human {
               name
             }
-            """
-        )
+            """)
 
     def unknown_fragment_names_are_invalid():
         assert_errors(

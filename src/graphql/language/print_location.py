@@ -5,7 +5,6 @@ from .ast import Location
 from .location import SourceLocation, get_location
 from .source import Source
 
-
 __all__ = ["print_location", "print_source_location"]
 
 

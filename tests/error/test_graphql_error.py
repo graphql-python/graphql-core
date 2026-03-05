@@ -13,16 +13,11 @@ from graphql.language import (
 
 from ..utils import dedent
 
-
-source = Source(
-    dedent(
-        """
+source = Source(dedent("""
         {
           field
         }
-        """
-    )
-)
+        """))
 
 ast = parse(source)
 operation_node = ast.definitions[0]
@@ -298,13 +293,11 @@ def describe_to_string():
     def prints_an_error_with_nodes_from_different_sources():
         doc_a = parse(
             Source(
-                dedent(
-                    """
+                dedent("""
                     type Foo {
                       field: String
                     }
-                    """
-                ),
+                    """),
                 "SourceA",
             )
         )
@@ -314,13 +307,11 @@ def describe_to_string():
         field_a = op_a.fields[0]
         doc_b = parse(
             Source(
-                dedent(
-                    """
+                dedent("""
                     type Foo {
                       field: Int
                     }
-                    """
-                ),
+                    """),
                 "SourceB",
             )
         )
@@ -333,8 +324,7 @@ def describe_to_string():
             "Example error with two nodes", [field_a.type, field_b.type]
         )
 
-        assert str(error) == dedent(
-            """
+        assert str(error) == dedent("""
             Example error with two nodes
 
             SourceA:2:10
@@ -348,8 +338,7 @@ def describe_to_string():
             2 |   field: Int
               |          ^
             3 | }
-            """
-        )
+            """)
 
 
 def describe_formatted():
@@ -372,13 +361,11 @@ def describe_formatted():
         error = GraphQLError(
             "test message",
             Node(),
-            Source(
-                """
+            Source("""
                 query {
                   something
                 }
-                """
-            ),
+                """),
             [16, 41],
             ["one", 2],
             ValueError("original"),

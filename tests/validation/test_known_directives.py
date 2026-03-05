@@ -5,8 +5,7 @@ from graphql.validation import KnownDirectivesRule
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors
 
-schema_with_directives = build_schema(
-    """
+schema_with_directives = build_schema("""
     type Query {
       dummy: String
     }
@@ -19,11 +18,9 @@ schema_with_directives = build_schema(
     directive @onFragmentSpread on FRAGMENT_SPREAD
     directive @onInlineFragment on INLINE_FRAGMENT
     directive @onVariableDefinition on VARIABLE_DEFINITION
-    """
-)
+    """)
 
-schema_with_sdl_directives = build_schema(
-    """
+schema_with_sdl_directives = build_schema("""
     directive @onSchema on SCHEMA
     directive @onScalar on SCALAR
     directive @onObject on OBJECT
@@ -35,8 +32,7 @@ schema_with_sdl_directives = build_schema(
     directive @onEnumValue on ENUM_VALUE
     directive @onInputObject on INPUT_OBJECT
     directive @onInputFieldDefinition on INPUT_FIELD_DEFINITION
-    """
-)
+    """)
 
 assert_errors = partial(
     assert_validation_errors, KnownDirectivesRule, schema=schema_with_directives
@@ -51,8 +47,7 @@ assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 def describe_known_directives():
     def with_no_directives():
-        assert_valid(
-            """
+        assert_valid("""
             query Foo {
               name
               ...Frag
@@ -61,12 +56,10 @@ def describe_known_directives():
             fragment Frag on Dog {
               name
             }
-            """
-        )
+            """)
 
     def with_standard_directives():
-        assert_valid(
-            """
+        assert_valid("""
             {
               human @skip(if: false) {
                 name
@@ -77,8 +70,7 @@ def describe_known_directives():
                 }
               }
             }
-            """
-        )
+            """)
 
     def with_unknown_directive():
         assert_errors(
@@ -113,8 +105,7 @@ def describe_known_directives():
         )
 
     def with_well_placed_directives():
-        assert_valid(
-            """
+        assert_valid("""
             query ($var: Boolean @onVariableDefinition) @onQuery {
               human @onField {
                 ...Frag @onFragmentSpread
@@ -135,8 +126,7 @@ def describe_known_directives():
             fragment Frag on Human @onFragmentDefinition {
               name @onField
             }
-            """
-        )
+            """)
 
     def with_misplaced_directives():
         assert_errors(
@@ -236,43 +226,35 @@ def describe_known_directives():
 
     def describe_within_sdl():
         def with_directive_defined_inside_sdl():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 type Query {
                   foo: String @test
                 }
 
                 directive @test on FIELD_DEFINITION
-                """
-            )
+                """)
 
         def with_standard_directive():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 type Query {
                   foo: String @deprecated
                 }
-                """
-            )
+                """)
 
         def with_overridden_standard_directive():
-            assert_sdl_valid(
-                """
+            assert_sdl_valid("""
                 schema @deprecated {
                   query: Query
                 }
                 directive @deprecated on SCHEMA
-                """
-            )
+                """)
 
         def with_directive_defined_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_valid(
                 """
                 directive @test on OBJECT
@@ -283,15 +265,13 @@ def describe_known_directives():
             )
 
         def with_directive_used_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 directive @test on OBJECT
 
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_valid(
                 """
                 extend type Query @test
@@ -300,13 +280,11 @@ def describe_known_directives():
             )
 
         def with_unknown_directive_in_schema_extension():
-            schema = build_schema(
-                """
+            schema = build_schema("""
                 type Query {
                   foo: String
                 }
-                """
-            )
+                """)
             assert_sdl_errors(
                 """
                 extend type Query @unknown

@@ -12,30 +12,24 @@ assert_valid = partial(assert_errors, errors=[])
 
 def describe_validate_unique_field_definition_names():
     def no_values():
-        assert_valid(
-            """
+        assert_valid("""
             enum SomeEnum
-            """
-        )
+            """)
 
     def one_value():
-        assert_valid(
-            """
+        assert_valid("""
             enum SomeEnum {
               FOO
             }
-            """
-        )
+            """)
 
     def multiple_values():
-        assert_valid(
-            """
+        assert_valid("""
             enum SomeEnum {
               FOO
               BAR
             }
-            """
-        )
+            """)
 
     def duplicate_values_inside_the_same_enum_definition():
         assert_errors(
@@ -55,8 +49,7 @@ def describe_validate_unique_field_definition_names():
         )
 
     def extend_enum_with_new_value():
-        assert_valid(
-            """
+        assert_valid("""
             enum SomeEnum {
               FOO
             }
@@ -66,8 +59,7 @@ def describe_validate_unique_field_definition_names():
             extend enum SomeEnum {
               BAZ
             }
-            """
-        )
+            """)
 
     def extend_enum_with_duplicate_value():
         assert_errors(
@@ -135,13 +127,11 @@ def describe_validate_unique_field_definition_names():
         assert_valid(sdl, schema=schema)
 
     def adding_conflicting_value_to_existing_schema_twice():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             enum SomeEnum {
               FOO
             }
-            """
-        )
+            """)
         sdl = """
             extend enum SomeEnum {
               FOO

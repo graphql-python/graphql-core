@@ -80,8 +80,7 @@ email_schema = GraphQLSchema(
 
 
 def create_subscription(pubsub: SimplePubSub):
-    document = parse(
-        """
+    document = parse("""
         subscription ($priority: Int = 0) {
           importantEmail(priority: $priority) {
             email {
@@ -94,8 +93,7 @@ def create_subscription(pubsub: SimplePubSub):
             }
           }
         }
-        """
-    )
+        """)
 
     emails: List[Email] = [
         {
@@ -126,13 +124,11 @@ DummyQueryType = GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString
 def describe_subscription_initialization_phase():
     @mark.asyncio
     async def accepts_positional_arguments():
-        document = parse(
-            """
+        document = parse("""
             subscription {
               importantEmail
             }
-            """
-        )
+            """)
 
         async def empty_async_iterator(_info):
             for value in ():  # type: ignore
@@ -439,13 +435,11 @@ def describe_subscription_initialization_phase():
         )
 
         variable_values = {"arg": "meow"}
-        document = parse(
-            """
+        document = parse("""
             subscription ($arg: Int) {
               foo(arg: $arg)
             }
-            """
-        )
+            """)
 
         # If we receive variables that cannot be coerced correctly, subscribe() will
         # resolve to an ExecutionResult that contains an informative error description.

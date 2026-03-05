@@ -33,13 +33,11 @@ def describe_source():
         assert source.location_offset == (1, 1)
 
     def can_get_location():
-        body = dedent(
-            """
+        body = dedent("""
             line 1
             line 2
             line 3
-            """
-        )
+            """)
         source = Source(body)
         assert source.body == body
         location = source.get_location(body.find("2"))

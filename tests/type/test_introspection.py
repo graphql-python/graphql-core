@@ -4,8 +4,7 @@ from graphql.utilities import get_introspection_query, build_schema
 
 def describe_introspection():
     def executes_an_introspection_query():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type SomeObject {
               someField: String
             }
@@ -13,8 +12,7 @@ def describe_introspection():
             schema {
               query: SomeObject
             }
-            """
-        )
+            """)
 
         source = get_introspection_query(
             descriptions=False, specified_by_url=True, directive_is_repeatable=True
@@ -1003,8 +1001,7 @@ def describe_introspection():
         }
 
     def introspects_on_input_object():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             input SomeInputObject {
               a: String = "tes\\t de\\fault"
               b: [String]
@@ -1014,8 +1011,7 @@ def describe_introspection():
             type Query {
               someField(someArg: SomeInputObject): String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1092,8 +1088,7 @@ def describe_introspection():
         )
 
     def introspects_any_default_value():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             input InputObjectWithDefaultValues {
               a: String = "Emoji: \\u{1F600}"
               b: Complex = {x: ["abc"], y: 123}
@@ -1107,8 +1102,7 @@ def describe_introspection():
             type Query {
               someField(someArg: InputObjectWithDefaultValues): String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1134,13 +1128,11 @@ def describe_introspection():
         )
 
     def supports_the_type_root_field():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               someField: String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1156,15 +1148,13 @@ def describe_introspection():
         )
 
     def identifies_deprecated_fields():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               nonDeprecated: String
               deprecated: String @deprecated(reason: "Removed in 1.0")
               deprecatedWithEmptyReason: String @deprecated(reason: "")
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1204,14 +1194,12 @@ def describe_introspection():
         )
 
     def respects_the_include_deprecated_parameter_for_fields():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               nonDeprecated: String
               deprecated: String @deprecated(reason: "Removed in 1.0")
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1241,8 +1229,7 @@ def describe_introspection():
         )
 
     def identifies_deprecated_args():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               someField(
                 nonDeprecated: String
@@ -1250,8 +1237,7 @@ def describe_introspection():
                 deprecatedWithEmptyReason: String @deprecated(reason: "")
               ): String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1297,16 +1283,14 @@ def describe_introspection():
         )
 
     def respects_the_include_deprecated_parameter_for_args():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               someField(
                 nonDeprecated: String
                 deprecated: String @deprecated(reason: "Removed in 1.0")
               ): String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1345,8 +1329,7 @@ def describe_introspection():
         )
 
     def identifies_deprecated_enum_values():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             enum SomeEnum {
               NON_DEPRECATED
               DEPRECATED @deprecated(reason: "Removed in 1.0")
@@ -1356,8 +1339,7 @@ def describe_introspection():
             type Query {
               someField(someArg: SomeEnum): String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1397,8 +1379,7 @@ def describe_introspection():
         )
 
     def respects_the_include_deprecated_parameter_for_enum_values():
-        schema = build_schema(
-            """
+        schema = build_schema("""
           enum SomeEnum {
             NON_DEPRECATED
             DEPRECATED @deprecated(reason: "Removed in 1.0")
@@ -1409,8 +1390,7 @@ def describe_introspection():
           type Query {
             someField(someArg: SomeEnum): String
           }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1451,8 +1431,7 @@ def describe_introspection():
         )
 
     def identifies_one_of_for_input_objects():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             input SomeInputObject @oneOf {
                 a: String
             }
@@ -1466,8 +1445,7 @@ def describe_introspection():
                 someField(someArg: SomeInputObject): String
                 anotherField(anotherArg: AnotherInputObject): String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1493,8 +1471,7 @@ def describe_introspection():
         )
 
     def returns_null_for_one_of_for_other_types():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type SomeObject implements SomeInterface {
               fieldA: String
             }
@@ -1509,8 +1486,7 @@ def describe_introspection():
               someField(enum: SomeEnum): SomeUnion
               anotherField(enum: SomeEnum): SomeInterface
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1554,13 +1530,11 @@ def describe_introspection():
         )
 
     def fails_as_expected_on_the_type_root_field_without_an_arg():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               someField: String
             }
-            """
-        )
+            """)
 
         source = """
             {
@@ -1581,8 +1555,7 @@ def describe_introspection():
         )
 
     def exposes_descriptions():
-        schema = build_schema(
-            '''
+        schema = build_schema('''
             """Enum description"""
             enum SomeEnum {
               """Value description"""
@@ -1599,8 +1572,7 @@ def describe_introspection():
             schema {
               query: SomeObject
             }
-            '''
-        )
+            ''')
 
         source = """
             {
@@ -1650,13 +1622,11 @@ def describe_introspection():
         )
 
     def executes_introspection_query_without_calling_global_resolvers():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               someField: String
             }
-            """
-        )
+            """)
 
         source = get_introspection_query(
             specified_by_url=True, directive_is_repeatable=True, schema_description=True

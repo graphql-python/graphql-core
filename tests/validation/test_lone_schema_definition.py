@@ -12,17 +12,14 @@ assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 def describe_validate_schema_definition_should_be_alone():
     def no_schema():
-        assert_sdl_valid(
-            """
+        assert_sdl_valid("""
             type Query {
               foo: String
             }
-            """
-        )
+            """)
 
     def one_schema_definition():
-        assert_sdl_valid(
-            """
+        assert_sdl_valid("""
             schema {
               query: Foo
             }
@@ -30,8 +27,7 @@ def describe_validate_schema_definition_should_be_alone():
             type Foo {
               foo: String
             }
-            """
-        )
+            """)
 
     def multiple_schema_definitions():
         assert_sdl_errors(
@@ -65,13 +61,11 @@ def describe_validate_schema_definition_should_be_alone():
         )
 
     def define_schema_in_schema_extension():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Foo {
               foo: String
             }
-            """
-        )
+            """)
 
         assert_sdl_valid(
             """
@@ -83,8 +77,7 @@ def describe_validate_schema_definition_should_be_alone():
         )
 
     def redefine_schema_in_schema_extension():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             schema {
               query: Foo
             }
@@ -92,8 +85,7 @@ def describe_validate_schema_definition_should_be_alone():
             type Foo {
               foo: String
             }
-            """
-        )
+            """)
 
         assert_sdl_errors(
             """
@@ -111,8 +103,7 @@ def describe_validate_schema_definition_should_be_alone():
         )
 
     def redefine_implicit_schema_in_schema_extension():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               fooField: Foo
             }
@@ -120,8 +111,7 @@ def describe_validate_schema_definition_should_be_alone():
             type Foo {
               foo: String
             }
-            """
-        )
+            """)
 
         assert_sdl_errors(
             """
@@ -139,8 +129,7 @@ def describe_validate_schema_definition_should_be_alone():
         )
 
     def extend_schema_in_schema_extension():
-        schema = build_schema(
-            """
+        schema = build_schema("""
             type Query {
               fooField: Foo
             }
@@ -148,8 +137,7 @@ def describe_validate_schema_definition_should_be_alone():
             type Foo {
               foo: String
             }
-            """
-        )
+            """)
 
         assert_sdl_valid(
             """
