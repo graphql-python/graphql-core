@@ -154,6 +154,12 @@ class SchemaValidationContext:
             # Ensure they are named correctly.
             self.validate_name(directive)
 
+            if not directive.locations:
+                self.report_error(
+                    f"Directive @{directive.name} must include 1 or more locations.",
+                    directive.ast_node,
+                )
+
             # Ensure the arguments are valid.
             for arg_name, arg in directive.args.items():
                 # Ensure they are named correctly.

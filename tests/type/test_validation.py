@@ -446,6 +446,21 @@ def describe_type_system_a_schema_must_have_object_root_types():
             {"message": "Expected directive but got: SomeScalar."},
         ]
 
+    def rejects_a_schema_whose_directives_have_empty_locations():
+        bad_directive = GraphQLDirective(
+            name="BadDirective1",
+            locations=[],
+        )
+        schema = GraphQLSchema(
+            SomeObjectType,
+            directives=[bad_directive],
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Directive @BadDirective1 must include 1 or more locations.",
+            },
+        ]
+
 
 def describe_type_system_objects_must_have_fields():
     def accepts_an_object_type_with_fields_object():
