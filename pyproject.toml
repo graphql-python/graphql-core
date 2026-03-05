@@ -1,6 +1,6 @@
 [project]
 name = "graphql-core"
-version = "3.3.0a11"
+version = "3.3.0a12"
 description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 readme = "README.md"
 requires-python = ">=3.10"
