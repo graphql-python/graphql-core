@@ -1790,8 +1790,9 @@ class ExecutionContext(IncrementalPublisherContext):
                 current_stream_item = (
                     BoxedAwaitableOrValue(current_executor())
                     if enable_early_execution
-                    else lambda executor=current_executor:  # type: ignore
-                    BoxedAwaitableOrValue(executor())
+                    else lambda executor=current_executor: (  # type: ignore
+                        BoxedAwaitableOrValue(executor())
+                    )
                 )
 
                 append_stream_item(current_stream_item)

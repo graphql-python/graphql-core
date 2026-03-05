@@ -31,7 +31,7 @@ from graphql.type import (
 
 pytestmark = [
     pytest.mark.anyio,
-    pytest.mark.filterwarnings("ignore:.* was never awaited:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning"),
     pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning"),
 ]
 

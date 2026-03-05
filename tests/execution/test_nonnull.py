@@ -514,8 +514,9 @@ def describe_execute_handles_non_nullable_types():
                                 GraphQLNonNull(GraphQLString)
                             )
                         },
-                        resolve=lambda _obj, _info, cannotBeNull: "Passed: "
-                        + str(cannotBeNull),
+                        resolve=lambda _obj, _info, cannotBeNull: (
+                            "Passed: " + str(cannotBeNull)
+                        ),
                     )
                 },
             )

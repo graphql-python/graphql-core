@@ -47,7 +47,7 @@ class CustomAwaitable:
 awaitable_factories: dict[str, Callable] = {
     "coroutine": coroutine,
     "task": lambda value: create_task(coroutine(value)),
-    "custom": lambda value: CustomAwaitable(value),
+    "custom": CustomAwaitable,
 }
 
 with_all_types_of_awaitables = pytest.mark.parametrize(
