@@ -19,10 +19,22 @@ def describe_camel_to_snake():
 
     def works_with_numbers():
         assert camel_to_snake("Python3Script") == "python3_script"
+        assert camel_to_snake("sha256Hash") == "sha256_hash"
         assert camel_to_snake("camel2snake") == "camel2snake"
 
     def keeps_already_snake():
         assert camel_to_snake("snake_case") == "snake_case"
+
+    def handles_empty_string():
+        assert camel_to_snake("") == ""
+
+    def handles_single_character():
+        assert camel_to_snake("A") == "a"
+        assert camel_to_snake("a") == "a"
+
+    def preserves_leading_and_trailing_underscores():
+        assert camel_to_snake("_Private") == "_private"
+        assert camel_to_snake("CamelCase_") == "camel_case_"
 
 
 def describe_snake_to_camel():
@@ -43,6 +55,7 @@ def describe_snake_to_camel():
 
     def works_with_numbers():
         assert snake_to_camel("python3_script") == "Python3Script"
+        assert snake_to_camel("sha256_hash") == "Sha256Hash"
         assert snake_to_camel("snake2camel") == "Snake2camel"
 
     def keeps_already_camel():
@@ -54,3 +67,12 @@ def describe_snake_to_camel():
             snake_to_camel("input_object_type_extension_node", False)
             == "inputObjectTypeExtensionNode"
         )
+
+    def handles_empty_string():
+        assert snake_to_camel("") == ""
+
+    def handles_single_character():
+        assert snake_to_camel("a") == "A"
+
+    def preserves_trailing_underscore():
+        assert snake_to_camel("snake_case_") == "SnakeCase_"
