@@ -589,7 +589,8 @@ class InputObjectCircularRefsValidator:
 
 
 def get_all_implements_interface_nodes(
-    type_: Union[GraphQLObjectType, GraphQLInterfaceType], iface: GraphQLInterfaceType
+    type_: Union[GraphQLObjectType, GraphQLInterfaceType],
+    iface: Union[GraphQLObjectType, GraphQLInterfaceType],
 ) -> List[NamedTypeNode]:
     ast_node = type_.ast_node
     nodes = type_.extension_ast_nodes
