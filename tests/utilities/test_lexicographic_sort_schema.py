@@ -1,3 +1,14 @@
+from typing import cast
+
+from graphql.type import (
+    GraphQLArgument,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+)
 from graphql.utilities import build_schema, lexicographic_sort_schema, print_schema
 
 from ..utils import dedent
@@ -382,3 +393,102 @@ def describe_lexicographic_sort_schema():
             }
             """
         )
+
+    def describe_input_field_properties():
+        def preserves_input_field_deprecation_reason():
+            input_type = GraphQLInputObjectType(
+                "TestInput",
+                {
+                    "zField": GraphQLInputField(GraphQLString),
+                    "aField": GraphQLInputField(
+                        GraphQLString, deprecation_reason="Use bField instead"
+                    ),
+                    "mField": GraphQLInputField(
+                        GraphQLString, deprecation_reason="Deprecated field"
+                    ),
+                },
+            )
+            query_type = GraphQLObjectType(
+                "Query",
+                {
+                    "dummy": GraphQLField(
+                        GraphQLString, args={"input": GraphQLArgument(input_type)}
+                    )
+                },
+            )
+            schema = GraphQLSchema(query=query_type, types=[input_type])
+            sorted_schema = lexicographic_sort_schema(schema)
+
+            sorted_input_type = cast(
+                "GraphQLInputObjectType", sorted_schema.type_map["TestInput"]
+            )
+            field_names = list(sorted_input_type.fields)
+            assert field_names == ["aField", "mField", "zField"]
+
+            assert (
+                sorted_input_type.fields["aField"].deprecation_reason
+                == "Use bField instead"
+            )
+            assert (
+                sorted_input_type.fields["mField"].deprecation_reason
+                == "Deprecated field"
+            )
+            assert sorted_input_type.fields["zField"].deprecation_reason is None
+
+        def preserves_input_field_extensions():
+            input_type = GraphQLInputObjectType(
+                "TestInput",
+                {
+                    "zField": GraphQLInputField(GraphQLString, extensions={"x": 1}),
+                    "aField": GraphQLInputField(
+                        GraphQLString, extensions={"custom": "value"}
+                    ),
+                },
+            )
+            query_type = GraphQLObjectType(
+                "Query",
+                {
+                    "dummy": GraphQLField(
+                        GraphQLString, args={"input": GraphQLArgument(input_type)}
+                    )
+                },
+            )
+            schema = GraphQLSchema(query=query_type, types=[input_type])
+            sorted_schema = lexicographic_sort_schema(schema)
+            sorted_input_type = cast(
+                "GraphQLInputObjectType", sorted_schema.type_map["TestInput"]
+            )
+
+            field_names = list(sorted_input_type.fields)
+            assert field_names == ["aField", "zField"]
+
+            assert sorted_input_type.fields["aField"].extensions == {"custom": "value"}
+            assert sorted_input_type.fields["zField"].extensions == {"x": 1}
+
+        def preserves_input_field_out_name():
+            input_type = GraphQLInputObjectType(
+                "TestInput",
+                {
+                    "zField": GraphQLInputField(GraphQLString, out_name="z_field"),
+                    "aField": GraphQLInputField(GraphQLString, out_name="a_field"),
+                },
+            )
+            query_type = GraphQLObjectType(
+                "Query",
+                {
+                    "dummy": GraphQLField(
+                        GraphQLString, args={"input": GraphQLArgument(input_type)}
+                    )
+                },
+            )
+            schema = GraphQLSchema(query=query_type, types=[input_type])
+            sorted_schema = lexicographic_sort_schema(schema)
+            sorted_input_type = cast(
+                "GraphQLInputObjectType", sorted_schema.type_map["TestInput"]
+            )
+
+            field_names = list(sorted_input_type.fields)
+            assert field_names == ["aField", "zField"]
+
+            assert sorted_input_type.fields["aField"].out_name == "a_field"
+            assert sorted_input_type.fields["zField"].out_name == "z_field"

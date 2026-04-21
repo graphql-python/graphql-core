@@ -100,14 +100,13 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
     ) -> dict[str, GraphQLInputField]:
         return {
             name: GraphQLInputField(
-                cast(
-                    "GraphQLInputType",
-                    replace_type(cast("GraphQLNamedType", field.type)),
-                ),
-                description=field.description,
-                default_value=field.default_value,
-                extensions=field.extensions,
-                ast_node=field.ast_node,
+                **merge_kwargs(
+                    field.to_kwargs(),
+                    type_=cast(
+                        "GraphQLInputType",
+                        replace_type(cast("GraphQLNamedType", field.type)),
+                    ),
+                )
             )
             for name, field in sorted(fields_map.items())
         }
