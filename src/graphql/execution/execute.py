@@ -233,7 +233,6 @@ class ExecutionContext(IncrementalPublisherContext):
         self.is_async_iterable = is_async_iterable or default_is_async_iterable
         self.errors = None
         self.cancellable_streams = None
-        self._canceled_iterators: set[AsyncIterator] = set()
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
@@ -964,7 +963,6 @@ class ExecutionContext(IncrementalPublisherContext):
                         if self.cancellable_streams is None:  # pragma: no branch
                             self.cancellable_streams = set()
                         self.cancellable_streams.add(stream_record)
-                        self._canceled_iterators.add(async_iterator)
 
                     add_increment(stream_record)
                     break
