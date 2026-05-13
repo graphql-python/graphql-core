@@ -110,9 +110,14 @@ from .types import (
 from .values import get_argument_values, get_directive_values, get_variable_values
 
 if TYPE_CHECKING:
-    from typing import TypeAlias, TypeGuard
+    from typing import Any, Protocol, Self, TypeAlias, TypeGuard
 
     from ..pyutils import UndefinedType
+
+    class _HashableAsyncIterator(Protocol):
+        def __aiter__(self) -> Self: ...
+        def __anext__(self) -> Any: ...
+        def __hash__(self) -> int: ...
 
 __all__ = [
     "ExecutionContext",
@@ -233,7 +238,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.is_async_iterable = is_async_iterable or default_is_async_iterable
         self.errors = None
         self.cancellable_streams = None
-        self._canceled_iterators: set[AsyncIterator] = set()
+        self._canceled_iterators: set[_HashableAsyncIterator] = set()
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
@@ -912,7 +917,7 @@ class ExecutionContext(IncrementalPublisherContext):
         field_group: FieldGroup,
         info: GraphQLResolveInfo,
         path: Path,
-        async_iterator: AsyncIterator[Any],
+        async_iterator: _HashableAsyncIterator,
         incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> GraphQLWrappedResult[list[Any]]:
