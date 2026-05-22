@@ -757,11 +757,11 @@ CompletedExecutionGroup: TypeAlias = SuccessfulExecutionGroup | FailedExecutionG
 
 
 def is_completed_execution_group(
-    subsequent_result: CompletedExecutionGroup | StreamItemsResult,
+    incremental_data_record_result: IncrementalDataRecordResult,
 ) -> TypeGuard[CompletedExecutionGroup]:
     """Check if the subsequent result is a deferred grouped field set result."""
     return isinstance(
-        subsequent_result,
+        incremental_data_record_result,
         SuccessfulExecutionGroup | FailedExecutionGroup,
     )
 
