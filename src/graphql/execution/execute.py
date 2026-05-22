@@ -372,37 +372,21 @@ class ExecutionContext(IncrementalPublisherContext):
             collected_fields = collect_fields(
                 schema, self.fragments, self.variable_values, root_type, operation
             )
+
             grouped_field_set, new_defer_usages = collected_fields
 
-            if new_defer_usages:
-                execution_plan = build_execution_plan(grouped_field_set)
-                grouped_field_set = execution_plan.grouped_field_set
-                new_grouped_field_sets = execution_plan.new_grouped_field_sets
-                new_defer_map = add_new_deferred_fragments(new_defer_usages, RefMap())
-                graphql_wrapped_result = self.execute_root_grouped_field_set(
-                    operation.operation,
+            graphql_wrapped_result = (
+                self.execute_execution_plan(
                     root_type,
                     root_value,
-                    grouped_field_set,
-                    new_defer_map,
+                    new_defer_usages,
+                    build_execution_plan(grouped_field_set),
                 )
-                if new_grouped_field_sets:
-                    new_pending_execution_groups = self.collect_execution_groups(
-                        root_type,
-                        root_value,
-                        None,
-                        None,
-                        new_grouped_field_sets,
-                        new_defer_map,
-                    )
-                    graphql_wrapped_result = self.with_new_execution_groups(
-                        graphql_wrapped_result, new_pending_execution_groups
-                    )
-
-            else:
-                graphql_wrapped_result = self.execute_root_grouped_field_set(
+                if new_defer_usages
+                else self.execute_root_grouped_field_set(
                     operation.operation, root_type, root_value, grouped_field_set, None
                 )
+            )
 
             if self.is_awaitable(graphql_wrapped_result):
 
@@ -425,6 +409,45 @@ class ExecutionContext(IncrementalPublisherContext):
             return ExecutionResult(None, with_error(self.errors, error))
 
         return self.build_data_response(resolved.result, resolved.increments)
+
+    def execute_execution_plan(
+        self,
+        return_type: GraphQLObjectType,
+        source_value: Any,
+        new_defer_usages: list[DeferUsage],
+        execution_plan: ExecutionPlan,
+        path: Path | None = None,
+        incremental_context: IncrementalContext | None = None,
+        defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None = None,
+    ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
+        """Execute an execution plan."""
+        new_defer_map = get_new_defer_map(new_defer_usages, defer_map, path)
+
+        grouped_field_set, new_grouped_field_sets = execution_plan
+
+        graphql_wrapped_result = self.execute_fields(
+            return_type,
+            source_value,
+            path,
+            grouped_field_set,
+            incremental_context,
+            new_defer_map,
+        )
+
+        if new_grouped_field_sets:
+            new_pending_execution_groups = self.collect_execution_groups(
+                return_type,
+                source_value,
+                path,
+                incremental_context.defer_usage_set if incremental_context else None,
+                new_grouped_field_sets,
+                new_defer_map,
+            )
+            return self.with_new_execution_groups(
+                graphql_wrapped_result, new_pending_execution_groups
+            )
+
+        return graphql_wrapped_result
 
     def execute_root_grouped_field_set(
         self,
@@ -1479,46 +1502,27 @@ class ExecutionContext(IncrementalPublisherContext):
         """Collect sub-fields to execute to complete this value."""
         collected_subfields = self.collect_subfields(return_type, field_group)
         grouped_field_set, new_defer_usages = collected_subfields
-        if defer_map is None and not new_defer_usages:
-            return self.execute_fields(
+
+        return (
+            self.execute_fields(
                 return_type, result, path, grouped_field_set, incremental_context, None
             )
-        sub_execution_plan = self.build_sub_execution_plan(
-            grouped_field_set,
-            incremental_context.defer_usage_set if incremental_context else None,
-        )
-
-        grouped_field_set, new_grouped_field_sets = sub_execution_plan
-
-        new_defer_map = add_new_deferred_fragments(
-            new_defer_usages,
-            RefMap(defer_map.items()) if defer_map else RefMap(),
-            path,
-        )
-
-        sub_fields = self.execute_fields(
-            return_type,
-            result,
-            path,
-            grouped_field_set,
-            incremental_context,
-            new_defer_map,
-        )
-
-        if new_grouped_field_sets:
-            new_deferred_grouped_field_set_records = self.collect_execution_groups(
+            if defer_map is None and not new_defer_usages
+            else self.execute_execution_plan(
                 return_type,
                 result,
+                new_defer_usages,
+                self.build_sub_execution_plan(
+                    grouped_field_set,
+                    incremental_context.defer_usage_set
+                    if incremental_context
+                    else None,
+                ),
                 path,
-                incremental_context.defer_usage_set if incremental_context else None,
-                new_grouped_field_sets,
-                new_defer_map,
+                incremental_context,
+                defer_map,
             )
-            return self.with_new_execution_groups(
-                sub_fields, new_deferred_grouped_field_set_records
-            )
-
-        return sub_fields
+        )
 
     def collect_subfields(
         self, return_type: GraphQLObjectType, field_group: FieldGroup
@@ -2289,12 +2293,12 @@ def deferred_fragment_record_from_defer_usage(
     return defer_map[defer_usage]
 
 
-def add_new_deferred_fragments(
+def get_new_defer_map(
     new_defer_usages: Sequence[DeferUsage],
-    new_defer_map: RefMap[DeferUsage, DeferredFragmentRecord],
+    defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     path: Path | None = None,
 ) -> RefMap[DeferUsage, DeferredFragmentRecord]:
-    """Add new deferred fragments to the defer map.
+    """Get the new defer map.
 
     Instantiates new DeferredFragmentRecords for the given path within an
     incremental data record, returning an updated map of DeferUsage
@@ -2302,14 +2306,9 @@ def add_new_deferred_fragments(
 
     Note: As defer directives may be used with operations returning lists,
           a DeferUsage object may correspond to many DeferredFragmentRecords.
-
-    DeferredFragmentRecord creation includes the following steps:
-    1. The new DeferredFragmentRecord is instantiated at the given path.
-    2. The parent result record is calculated from the given incremental data record.
-    3. The IncrementalPublisher is notified that a new DeferredFragmentRecord
-       with the calculated parent has been added; the record will be released only
-       after the parent has completed.
     """
+    new_defer_map = RefMap(None if defer_map is None else defer_map.items())
+
     # For each new DeferUsage object:
     for new_defer_usage in new_defer_usages:
         parent_defer_usage = new_defer_usage.parent_defer_usage
