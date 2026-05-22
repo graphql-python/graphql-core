@@ -318,21 +318,15 @@ class IncrementalGraph:
             if result.incremental_data_records:
                 incremental_data_records.extend(result.incremental_data_records)
 
-    def _yield_current_completed_incremental_data(
-        self, first_result: IncrementalDataRecordResult
-    ) -> Generator[IncrementalDataRecordResult, None, None]:
-        """Yield the current completed incremental data."""
-        yield first_result
-        yield from self.current_completed_batch()
-
     def _enqueue(self, completed: IncrementalDataRecordResult) -> None:
         """Enqueue completed incremental data record result."""
+        self._completed_queue.append(completed)
         try:
             future = self._next_queue.pop(0)
         except IndexError:
-            self._completed_queue.append(completed)
+            pass
         else:
-            future.set_result(self._yield_current_completed_incremental_data(completed))
+            future.set_result(self.current_completed_batch())
 
     def _add_task(self, awaitable: Awaitable[Any]) -> None:
         """Add the given task to the tasks set for later execution."""
