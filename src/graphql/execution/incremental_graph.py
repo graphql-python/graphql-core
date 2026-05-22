@@ -73,18 +73,16 @@ class IncrementalGraph:
     ) -> None:
         """Add a completed successful execution group."""
         pending_group = successful_execution_group.pending_execution_group
+        incremental_records = successful_execution_group.incremental_data_records
         deferred_records = pending_group.deferred_fragment_records
-        for defererred_record in deferred_records:
-            del defererred_record.pending_execution_groups[pending_group]
-            defererred_record.successful_execution_groups[
-                successful_execution_group
-            ] = None
+        for deferred_record in deferred_records:
+            pending_groups = deferred_record.pending_execution_groups
+            successful_groups = deferred_record.successful_execution_groups
+            del pending_groups[pending_group]
+            successful_groups[successful_execution_group] = None
 
-        incremental_data_records = successful_execution_group.incremental_data_records
-        if incremental_data_records is not None:
-            self._add_incremental_data_records(
-                incremental_data_records, deferred_records
-            )
+        if incremental_records is not None:
+            self._add_incremental_data_records(incremental_records, deferred_records)
 
     def current_completed_batch(
         self,
