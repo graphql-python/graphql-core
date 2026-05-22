@@ -135,7 +135,7 @@ class IncrementalGraph:
         successful_execution_groups = list(
             deferred_fragment_record.successful_execution_groups
         )
-        self._remove_root_node(deferred_fragment_record)
+        del self._root_nodes[deferred_fragment_record]
         for successful_execution_group in successful_execution_groups:
             pending_execution_group = successful_execution_group.pending_execution_group
             deferred_records = pending_execution_group.deferred_fragment_records
@@ -156,21 +156,17 @@ class IncrementalGraph:
         """Check if deferred fragment exists and remove it in that case."""
         if deferred_fragment_record not in self._root_nodes:
             return False
-        self._remove_root_node(deferred_fragment_record)
+        del self._root_nodes[deferred_fragment_record]
         return True
 
     def remove_stream(self, stream_record: StreamRecord) -> None:
         """Remove a stream record as no longer pending."""
-        self._remove_root_node(stream_record)
+        del self._root_nodes[stream_record]
 
     def stop_incremental_data(self) -> None:
         """Stop the delivery of incremental data."""
         for future in self._next_queue:
             future.cancel()  # pragma: no cover
-
-    def _remove_root_node(self, delivery_group: DeliveryGroup) -> None:
-        """Remove root node."""
-        del self._root_nodes[delivery_group]
 
     def _add_incremental_data_records(
         self,
