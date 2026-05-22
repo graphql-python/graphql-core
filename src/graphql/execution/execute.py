@@ -2428,6 +2428,16 @@ def default_type_resolver(
                 append_awaitable_result(cast("Awaitable[bool]", is_type_of_result))
                 append_awaitable_type(type_)
             elif is_type_of_result:
+                if awaitable_is_type_of_results:
+
+                    async def await_is_type_of_and_return_type(
+                        resolved_type_name: str = type_.name,
+                    ) -> str:
+                        with suppress(Exception):
+                            await gather_with_cancel(*awaitable_is_type_of_results)
+                        return resolved_type_name
+
+                    return await_is_type_of_and_return_type()
                 return type_.name
 
     if awaitable_is_type_of_results:
