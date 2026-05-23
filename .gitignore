@@ -1,10 +1,12 @@
 
+.benchmarks/
 .cache/
 .coverage
 .env*/
 .idea/
 .mypy_cache/
 .pytest_cache/
+.ruff_cache/
 .tox/
 .venv*/
 .vs/
@@ -27,3 +29,9 @@ __pycache__/
 *.lock
 *.log
 *.py[cod]
+
+.claude/
+.cursor/
+**/copilot-instructions.md
+**/AGENTS.md
+**/GEMINI.md
