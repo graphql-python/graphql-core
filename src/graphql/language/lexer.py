@@ -144,8 +144,29 @@ class Lexer:
             if is_name_start(char):
                 return self.read_name(position)
 
-            if char == "." and body[position + 1 : position + 3] == "..":
-                return self.create_token(TokenKind.SPREAD, position, position + 3)
+            if char == ".":
+                next_char = body[position + 1 : position + 2]
+                if next_char == ".":
+                    if body[position + 2 : position + 3] == ".":
+                        return self.create_token(
+                            TokenKind.SPREAD, position, position + 3
+                        )
+                    raise GraphQLSyntaxError(
+                        self.source,
+                        position,
+                        "Unexpected '..', did you mean '...'?",
+                    )
+                if is_digit(next_char):
+                    end = position + 1
+                    while end < body_length and is_digit(body[end]):
+                        end += 1
+                    digits = body[position + 1 : end]
+                    raise GraphQLSyntaxError(
+                        self.source,
+                        position,
+                        f"Invalid number, expected digit before '.'"
+                        f", did you mean '0.{digits}'?",
+                    )
 
             message = (
                 "Unexpected single quote character ('),"

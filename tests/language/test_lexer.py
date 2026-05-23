@@ -73,6 +73,9 @@ def describe_lexer():
         token = lex_one(",,,foo,,,")
         assert token == Token(TokenKind.NAME, 3, 6, 1, 4, "foo")
 
+    def reports_unexpected_characters():
+        assert_syntax_error(".", "Unexpected character: '.'.", (1, 1))
+
     def errors_respect_whitespace():
         with pytest.raises(GraphQLSyntaxError) as exc_info:
             lex_one("\n\n ~\n")
@@ -454,7 +457,11 @@ def describe_lexer():
         assert_syntax_error(
             "1.e1", "Invalid number, expected digit but got: 'e'.", (1, 3)
         )
-        assert_syntax_error(".123", "Unexpected character: '.'.", (1, 1))
+        assert_syntax_error(
+            ".123",
+            "Invalid number, expected digit before '.', did you mean '0.123'?",
+            (1, 1),
+        )
         assert_syntax_error(
             "1.A", "Invalid number, expected digit but got: 'A'.", (1, 3)
         )
@@ -520,7 +527,7 @@ def describe_lexer():
         assert lex_one("|") == Token(TokenKind.PIPE, 0, 1, 1, 1, None)
 
     def lex_reports_useful_unknown_character_error():
-        assert_syntax_error("..", "Unexpected character: '.'.", (1, 1))
+        assert_syntax_error("..", "Unexpected '..', did you mean '...'?", (1, 1))
         assert_syntax_error("~", "Unexpected character: '~'.", (1, 1))
         assert_syntax_error("\x00", "Unexpected character: U+0000.", (1, 1))
         assert_syntax_error("\b", "Unexpected character: U+0008.", (1, 1))
