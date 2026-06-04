@@ -23,7 +23,7 @@ jobs:
 
     - name: Install uv
       id: setup-uv
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@v8.2.0
 
     - name: Build wheel and source tarball with uv
       id: build

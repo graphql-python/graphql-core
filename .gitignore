@@ -20,6 +20,7 @@ pip-wheel-metadata/
 wheels/
 
 play/
+notes/
 
 __pycache__/
 
@@ -35,3 +36,4 @@ __pycache__/
 **/copilot-instructions.md
 **/AGENTS.md
 **/GEMINI.md
+**/PORTING.md

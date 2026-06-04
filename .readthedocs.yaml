@@ -5,9 +5,15 @@
 version: 2
 
 build:
-  os: ubuntu-24.04
+  os: ubuntu-lts-latest
   tools:
     python: "3.14"
+  jobs:
+    # The build virtualenv's bundled pip is too old for "pip install --group",
+    # so use uv to install the project plus its "doc" dependency group into it.
+    install:
+      - python -m pip install uv
+      - uv pip install --python "$READTHEDOCS_VIRTUALENV_PATH/bin/python" --group doc .
 
 sphinx:
    configuration: docs/conf.py
@@ -15,9 +21,3 @@ sphinx:
 formats:
   - epub
   - pdf
-
-python:
-  install:
-  - requirements: docs/requirements.txt
-  - method: pip
-    path: .
