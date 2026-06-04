@@ -492,3 +492,24 @@ def describe_lexicographic_sort_schema():
 
             assert sorted_input_type.fields["aField"].out_name == "a_field"
             assert sorted_input_type.fields["zField"].out_name == "z_field"
+
+    def describe_schema_properties():
+        def preserves_schema_description():
+            query_type = GraphQLObjectType(
+                "Query", {"dummy": GraphQLField(GraphQLString)}
+            )
+            schema = GraphQLSchema(
+                query=query_type, description="This is the schema description."
+            )
+            sorted_schema = lexicographic_sort_schema(schema)
+
+            assert sorted_schema.description == "This is the schema description."
+
+        def preserves_schema_extensions():
+            query_type = GraphQLObjectType(
+                "Query", {"dummy": GraphQLField(GraphQLString)}
+            )
+            schema = GraphQLSchema(query=query_type, extensions={"custom": "value"})
+            sorted_schema = lexicographic_sort_schema(schema)
+
+            assert sorted_schema.extensions == {"custom": "value"}
