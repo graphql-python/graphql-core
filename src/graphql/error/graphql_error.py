@@ -14,11 +14,24 @@ if TYPE_CHECKING:
     )  # noqa: F401
     from ..language.source import Source  # noqa: F401
 
-__all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
+__all__ = [
+    "GraphQLError",
+    "GraphQLErrorExtensions",
+    "GraphQLFormattedError",
+    "GraphQLFormattedErrorExtensions",
+]
 
 
 # Custom extensions
 GraphQLErrorExtensions = Dict[str, Any]
+# Use a unique identifier name for your extension, for example the name of
+# your library or project. Do not use a shortened identifier as this increases
+# the risk of conflicts. We recommend you add at most one extension key,
+# a dictionary which can contain all the values you need.
+
+
+# Custom formatted extensions
+GraphQLFormattedErrorExtensions = Dict[str, Any]
 # Use a unique identifier name for your extension, for example the name of
 # your library or project. Do not use a shortened identifier as this increases
 # the risk of conflicts. We recommend you add at most one extension key,
@@ -41,7 +54,7 @@ class GraphQLFormattedError(TypedDict, total=False):
     path: List[Union[str, int]]
     # Reserved for implementors to extend the protocol however they see fit,
     # and hence there are no additional restrictions on its contents.
-    extensions: GraphQLErrorExtensions
+    extensions: GraphQLFormattedErrorExtensions
 
 
 class GraphQLError(Exception):

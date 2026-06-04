@@ -148,6 +148,7 @@ EnterLeaveVisitor
 FormattedSourceLocation
 GraphQLAbstractType
 GraphQLErrorExtensions
+GraphQLFormattedErrorExtensions
 GraphQLOutputType
 asyncio.events.AbstractEventLoop
 graphql.execution.map_async_iterator.MapAsyncIterator
