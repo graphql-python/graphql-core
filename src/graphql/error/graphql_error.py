@@ -15,11 +15,24 @@ if TYPE_CHECKING:
     )
     from ..language.source import Source
 
-__all__ = ["GraphQLError", "GraphQLErrorExtensions", "GraphQLFormattedError"]
+__all__ = [
+    "GraphQLError",
+    "GraphQLErrorExtensions",
+    "GraphQLFormattedError",
+    "GraphQLFormattedErrorExtensions",
+]
 
 
 # Custom extensions
 GraphQLErrorExtensions: TypeAlias = dict[str, Any]
+# Use a unique identifier name for your extension, for example the name of
+# your library or project. Do not use a shortened identifier as this increases
+# the risk of conflicts. We recommend you add at most one extension key,
+# a dictionary which can contain all the values you need.
+
+
+# Custom formatted extensions
+GraphQLFormattedErrorExtensions: TypeAlias = dict[str, Any]
 # Use a unique identifier name for your extension, for example the name of
 # your library or project. Do not use a shortened identifier as this increases
 # the risk of conflicts. We recommend you add at most one extension key,
@@ -42,7 +55,7 @@ class GraphQLFormattedError(TypedDict, total=False):
     path: list[str | int]
     # Reserved for implementors to extend the protocol however they see fit,
     # and hence there are no additional restrictions on its contents.
-    extensions: GraphQLErrorExtensions
+    extensions: GraphQLFormattedErrorExtensions
 
 
 class GraphQLError(Exception):

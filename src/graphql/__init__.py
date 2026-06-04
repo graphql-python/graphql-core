@@ -48,6 +48,7 @@ from .error import (
     GraphQLError,
     GraphQLErrorExtensions,
     GraphQLFormattedError,
+    GraphQLFormattedErrorExtensions,
     GraphQLSyntaxError,
     located_error,
 )
@@ -549,6 +550,7 @@ __all__ = [
     "GraphQLFieldResolver",
     "GraphQLFloat",
     "GraphQLFormattedError",
+    "GraphQLFormattedErrorExtensions",
     "GraphQLID",
     "GraphQLIncludeDirective",
     "GraphQLInputField",
