@@ -537,6 +537,35 @@ def describe_validate_overlapping_fields_can_be_merged():
             ],
         )
 
+    def reports_deep_conflict_after_nested_fragments():
+        assert_errors(
+            """
+            fragment F on T {
+              ...G
+            }
+            fragment G on T {
+              ...H
+            }
+            fragment H on T {
+              x: a
+            }
+            {
+              x: b
+              ...F
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'x' conflict"
+                    " because 'b' and 'a' are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(12, 15), (9, 15)],
+                    "path": None,
+                }
+            ],
+        )
+
     def ignores_unknown_fragments():
         assert_valid("""
             {
@@ -1138,3 +1167,29 @@ def describe_validate_overlapping_fields_can_be_merged():
                 }
             ],
         )
+
+    def does_not_infinite_loop_on_recursive_fragments_separated_by_fields():
+        assert_valid("""
+            {
+              ...fragA
+              ...fragB
+            }
+
+            fragment fragA on T {
+              x {
+                ...fragA
+                x {
+                  ...fragA
+                }
+              }
+            }
+
+            fragment fragB on T {
+              x {
+                ...fragB
+                x {
+                  ...fragB
+                }
+              }
+            }
+            """)
