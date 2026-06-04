@@ -55,9 +55,9 @@ def get_introspection_query(
         query IntrospectionQuery {{
           __schema {{
             {maybe_schema_description}
-            queryType {{ name }}
-            mutationType {{ name }}
-            subscriptionType {{ name }}
+            queryType {{ name kind }}
+            mutationType {{ name kind }}
+            subscriptionType {{ name kind }}
             types {{
               ...FullType
             }}

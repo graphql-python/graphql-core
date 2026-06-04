@@ -28,7 +28,7 @@ The ``data`` attribute of the introspection query result now gives us a dictiona
 which constitutes a third way of describing a GraphQL schema::
 
     {'__schema': {
-        'queryType': {'name': 'Query'},
+        'queryType': {'name': 'Query', 'kind': 'OBJECT'},
         'mutationType': None, 'subscriptionType': None,
         'types': [
             {'kind': 'OBJECT', 'name': 'Query', 'description': None,

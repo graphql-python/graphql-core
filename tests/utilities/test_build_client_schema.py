@@ -687,7 +687,7 @@ def describe_type_system_build_schema_from_introspection():
             with raises(TypeError) as exc_info:
                 build_client_schema(introspection)
 
-            assert str(exc_info.value) == "Unknown type reference: {}."
+            assert str(exc_info.value) == "Unknown type reference: {'kind': 'OBJECT'}."
 
         def throws_when_missing_kind():
             introspection = introspection_from_schema(dummy_schema)
