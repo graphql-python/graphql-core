@@ -411,6 +411,11 @@ class DocumentNode(Node):
     __slots__ = ("definitions",)
 
     definitions: Tuple["DefinitionNode", ...]
+    # The number of tokens in the parsed document. Set by the parser per instance
+    # and deliberately kept out of ``__slots__`` (and therefore out of ``keys``) so
+    # that it is not treated as a traversable attribute, the equivalent of the
+    # non-enumerable ``tokenCount`` property in graphql-js.
+    token_count: int = 0
 
 
 class DefinitionNode(Node):

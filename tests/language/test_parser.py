@@ -87,6 +87,10 @@ def describe_parser():
               |      ^
             """)
 
+    def exposes_the_token_count():
+        assert parse("{ foo }").token_count == 3
+        assert parse('{ foo(bar: "baz") }').token_count == 8
+
     def limits_maximum_number_of_tokens():
         assert parse("{ foo }", max_tokens=3)
         with raises(
