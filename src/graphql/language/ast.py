@@ -679,6 +679,11 @@ class FragmentDefinitionNode(ExecutableDefinitionNode):
 class DocumentNode(Node):
     definitions: tuple[DefinitionNode, ...] = ()
 
+    # The number of tokens in the parsed document. Set by the parser per instance
+    # (declared as a ClassVar so it is not treated as a traversable child key, the
+    # equivalent of the non-enumerable ``tokenCount`` property in graphql-js).
+    token_count: ClassVar[int] = 0
+
 
 # Type System Definition nodes
 

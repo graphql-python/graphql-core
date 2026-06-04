@@ -271,13 +271,21 @@ class Parser:
 
     # Implement the parsing rules in the Document section.
 
+    @property
+    def token_count(self) -> int:
+        """Get the number of tokens that have been parsed so far."""
+        return self._token_counter
+
     def parse_document(self) -> DocumentNode:
         """Document: Definition+"""
         start = self._lexer.token
-        return DocumentNode(
+        document = DocumentNode(
             definitions=self.many(TokenKind.SOF, self.parse_definition, TokenKind.EOF),
             loc=self.loc(start),
         )
+        # Expose the token count as a (non-traversable) attribute on the document.
+        object.__setattr__(document, "token_count", self.token_count)
+        return document
 
     _parse_type_system_definition_method_names: Mapping[str, str] = {
         "schema": "schema_definition",
@@ -1256,10 +1264,10 @@ class Parser:
     def advance_lexer(self) -> None:
         """Advance the lexer."""
         token = self._lexer.advance()
-        max_tokens = self._max_tokens
-        if max_tokens is not None and token.kind is not TokenKind.EOF:
+        if token.kind is not TokenKind.EOF:
             self._token_counter += 1
-            if self._token_counter > max_tokens:
+            max_tokens = self._max_tokens
+            if max_tokens is not None and self._token_counter > max_tokens:
                 raise GraphQLSyntaxError(
                     self._lexer.source,
                     token.start,
