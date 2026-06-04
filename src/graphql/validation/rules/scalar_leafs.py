@@ -39,3 +39,12 @@ class ScalarLeafsRule(ValidationRule):
                         node,
                     )
                 )
+            elif not selection_set.selections:
+                field_name = node.name.value
+                self.report_error(
+                    GraphQLError(
+                        f"Field '{field_name}' of type '{type_}'"
+                        " must have at least one field selected.",
+                        node,
+                    )
+                )
