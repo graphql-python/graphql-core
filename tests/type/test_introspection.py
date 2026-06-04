@@ -24,7 +24,7 @@ def describe_introspection():
         assert result.errors is None
         assert result.data == {
             "__schema": {
-                "queryType": {"name": "SomeObject"},
+                "queryType": {"name": "SomeObject", "kind": "OBJECT"},
                 "mutationType": None,
                 "subscriptionType": None,
                 "types": [
