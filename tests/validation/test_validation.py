@@ -192,3 +192,22 @@ def describe_validate_limit_maximum_number_of_validation_errors():
 
         with raises(RuntimeError, match="^Error from custom rule!$"):
             validate(test_schema, doc, [CustomRule], max_errors=1)
+
+
+def describe_operation_and_variable_definition_descriptions():
+    def validates_operation_with_description_and_variable_descriptions():
+        schema = build_schema("type Query { field(a: Int, b: String): String }")
+        query = '''
+            "Operation description"
+            query myQuery(
+              "Variable a description"
+              $a: Int,
+              """Variable b\nmultiline description"""
+              $b: String
+            ) {
+              field(a: $a, b: $b)
+            }
+            '''
+        ast = parse(query)
+        errors = validate(schema, ast)
+        assert errors == []

@@ -1,7 +1,8 @@
-from typing import Collection, List, Optional, Type
+from typing import Collection, Dict, List, Optional, Tuple, Type
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
+from ..language.ast import QUERY_DOCUMENT_KEYS
 from ..pyutils import inspect, is_collection
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
@@ -14,6 +15,14 @@ __all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "valida
 
 class ValidationAbortedError(RuntimeError):
     """Error when a validation has been aborted (error limit reached)."""
+
+
+# Per the specification, descriptions must not affect validation.
+# See https://spec.graphql.org/draft/#sec-Descriptions
+query_document_keys_to_validate: Dict[str, Tuple[str, ...]] = {
+    kind: tuple(key for key in keys if key != "description")
+    for kind, keys in QUERY_DOCUMENT_KEYS.items()
+}
 
 
 def validate(
@@ -83,7 +92,11 @@ def validate(
 
     # Visit the whole document with each instance of all provided rules.
     try:
-        visit(document_ast, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
+        visit(
+            document_ast,
+            TypeInfoVisitor(type_info, ParallelVisitor(visitors)),
+            query_document_keys_to_validate,
+        )
     except ValidationAbortedError:
         pass
     return errors
