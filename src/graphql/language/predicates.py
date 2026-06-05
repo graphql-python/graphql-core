@@ -1,4 +1,8 @@
 from .ast import (
+    ArgumentCoordinateNode,
+    DirectiveArgumentCoordinateNode,
+    DirectiveCoordinateNode,
+    MemberCoordinateNode,
     Node,
     DefinitionNode,
     ExecutableDefinitionNode,
@@ -6,6 +10,7 @@ from .ast import (
     ObjectValueNode,
     SchemaExtensionNode,
     SelectionNode,
+    TypeCoordinateNode,
     TypeDefinitionNode,
     TypeExtensionNode,
     TypeNode,
@@ -25,6 +30,7 @@ __all__ = [
     "is_type_definition_node",
     "is_type_system_extension_node",
     "is_type_extension_node",
+    "is_schema_coordinate_node",
 ]
 
 
@@ -84,3 +90,17 @@ def is_type_system_extension_node(node: Node) -> bool:
 def is_type_extension_node(node: Node) -> bool:
     """Check whether the given node represents a type extension."""
     return isinstance(node, TypeExtensionNode)
+
+
+def is_schema_coordinate_node(node: Node) -> bool:
+    """Check whether the given node represents a schema coordinate."""
+    return isinstance(
+        node,
+        (
+            TypeCoordinateNode,
+            MemberCoordinateNode,
+            ArgumentCoordinateNode,
+            DirectiveCoordinateNode,
+            DirectiveArgumentCoordinateNode,
+        ),
+    )

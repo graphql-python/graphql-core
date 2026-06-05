@@ -4,14 +4,18 @@ from pytest import raises
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
+    ArgumentCoordinateNode,
     ArgumentNode,
     DefinitionNode,
+    DirectiveArgumentCoordinateNode,
+    DirectiveCoordinateNode,
     DocumentNode,
     FieldNode,
     FragmentDefinitionNode,
     IntValueNode,
     ListTypeNode,
     ListValueNode,
+    MemberCoordinateNode,
     NameNode,
     NamedTypeNode,
     NonNullTypeNode,
@@ -22,12 +26,14 @@ from graphql.language import (
     OperationType,
     SelectionSetNode,
     StringValueNode,
+    TypeCoordinateNode,
     ValueNode,
     VariableDefinitionNode,
     VariableNode,
     Token,
     TokenKind,
     parse,
+    parse_schema_coordinate,
     parse_type,
     parse_value,
     parse_const_value,
@@ -815,3 +821,134 @@ def describe_parse_type():
         assert isinstance(name, NameNode)
         assert name.loc == (1, 7)
         assert name.value == "MyType"
+
+
+def describe_parse_schema_coordinate():
+    def parses_name():
+        result = parse_schema_coordinate("MyType")
+        assert isinstance(result, TypeCoordinateNode)
+        assert result.loc == (0, 6)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (0, 6)
+        assert name.value == "MyType"
+
+    def parses_name_dot_name():
+        result = parse_schema_coordinate("MyType.field")
+        assert isinstance(result, MemberCoordinateNode)
+        assert result.loc == (0, 12)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (0, 6)
+        assert name.value == "MyType"
+        member_name = result.member_name
+        assert isinstance(member_name, NameNode)
+        assert member_name.loc == (7, 12)
+        assert member_name.value == "field"
+
+    def rejects_name_dot_name_dot_name():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_schema_coordinate("MyType.field.deep")
+        assert exc_info.value == {
+            "message": "Syntax Error: Expected <EOF>, found '.'.",
+            "locations": [(1, 13)],
+        }
+
+    def parses_name_dot_name_argument():
+        result = parse_schema_coordinate("MyType.field(arg:)")
+        assert isinstance(result, ArgumentCoordinateNode)
+        assert result.loc == (0, 18)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (0, 6)
+        assert name.value == "MyType"
+        field_name = result.field_name
+        assert isinstance(field_name, NameNode)
+        assert field_name.loc == (7, 12)
+        assert field_name.value == "field"
+        argument_name = result.argument_name
+        assert isinstance(argument_name, NameNode)
+        assert argument_name.loc == (13, 16)
+        assert argument_name.value == "arg"
+
+    def rejects_name_dot_name_argument_with_value():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_schema_coordinate("MyType.field(arg: value)")
+        assert exc_info.value == {
+            "message": "Syntax Error: Invalid character: ' '.",
+            "locations": [(1, 18)],
+        }
+
+    def parses_directive():
+        result = parse_schema_coordinate("@myDirective")
+        assert isinstance(result, DirectiveCoordinateNode)
+        assert result.loc == (0, 12)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (1, 12)
+        assert name.value == "myDirective"
+
+    def parses_directive_argument():
+        result = parse_schema_coordinate("@myDirective(arg:)")
+        assert isinstance(result, DirectiveArgumentCoordinateNode)
+        assert result.loc == (0, 18)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (1, 12)
+        assert name.value == "myDirective"
+        argument_name = result.argument_name
+        assert isinstance(argument_name, NameNode)
+        assert argument_name.loc == (13, 16)
+        assert argument_name.value == "arg"
+
+    def parses_meta_type():
+        result = parse_schema_coordinate("__Type")
+        assert isinstance(result, TypeCoordinateNode)
+        assert result.loc == (0, 6)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (0, 6)
+        assert name.value == "__Type"
+
+    def parses_meta_field():
+        result = parse_schema_coordinate("Type.__metafield")
+        assert isinstance(result, MemberCoordinateNode)
+        assert result.loc == (0, 16)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (0, 4)
+        assert name.value == "Type"
+        member_name = result.member_name
+        assert isinstance(member_name, NameNode)
+        assert member_name.loc == (5, 16)
+        assert member_name.value == "__metafield"
+
+    def parses_meta_field_argument():
+        result = parse_schema_coordinate("Type.__metafield(arg:)")
+        assert isinstance(result, ArgumentCoordinateNode)
+        assert result.loc == (0, 22)
+        name = result.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (0, 4)
+        assert name.value == "Type"
+        field_name = result.field_name
+        assert isinstance(field_name, NameNode)
+        assert field_name.loc == (5, 16)
+        assert field_name.value == "__metafield"
+        argument_name = result.argument_name
+        assert isinstance(argument_name, NameNode)
+        assert argument_name.loc == (17, 20)
+        assert argument_name.value == "arg"
+
+    def rejects_directive_dot_name():
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse_schema_coordinate("@myDirective.field")
+        assert exc_info.value == {
+            "message": "Syntax Error: Expected <EOF>, found '.'.",
+            "locations": [(1, 13)],
+        }
+
+    def accepts_a_source_object():
+        assert parse_schema_coordinate("MyType") == parse_schema_coordinate(
+            Source("MyType")
+        )

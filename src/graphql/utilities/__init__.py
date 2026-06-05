@@ -84,12 +84,36 @@ from .find_breaking_changes import (
     find_dangerous_changes,
 )
 
+# Resolve a schema coordinate to a schema element.
+from .resolve_schema_coordinate import (
+    resolve_schema_coordinate,
+    resolve_ast_schema_coordinate,
+    ResolvedNamedType,
+    ResolvedField,
+    ResolvedInputField,
+    ResolvedEnumValue,
+    ResolvedFieldArgument,
+    ResolvedDirective,
+    ResolvedDirectiveArgument,
+    ResolvedSchemaElement,
+)
+
 __all__ = [
     "BreakingChange",
     "BreakingChangeType",
     "DangerousChange",
     "DangerousChangeType",
     "IntrospectionQuery",
+    "ResolvedNamedType",
+    "ResolvedField",
+    "ResolvedInputField",
+    "ResolvedEnumValue",
+    "ResolvedFieldArgument",
+    "ResolvedDirective",
+    "ResolvedDirectiveArgument",
+    "ResolvedSchemaElement",
+    "resolve_schema_coordinate",
+    "resolve_ast_schema_coordinate",
     "TypeInfo",
     "TypeInfoVisitor",
     "assert_valid_name",

@@ -13,6 +13,7 @@ class TokenKind(Enum):
     AMP = "&"
     PAREN_L = "("
     PAREN_R = ")"
+    DOT = "."
     SPREAD = "..."
     COLON = ":"
     EQUALS = "="

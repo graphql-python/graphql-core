@@ -68,6 +68,7 @@ from .language import (
     parse_value,
     parse_const_value,
     parse_type,
+    parse_schema_coordinate,
     # Print
     print_ast,
     # Visit
@@ -92,6 +93,7 @@ from .language import (
     is_type_definition_node,
     is_type_system_extension_node,
     is_type_extension_node,
+    is_schema_coordinate_node,
     # Types
     SourceLocation,
     Location,
@@ -158,6 +160,13 @@ from .language import (
     UnionTypeExtensionNode,
     EnumTypeExtensionNode,
     InputObjectTypeExtensionNode,
+    # Schema Coordinates
+    SchemaCoordinateNode,
+    TypeCoordinateNode,
+    MemberCoordinateNode,
+    ArgumentCoordinateNode,
+    DirectiveCoordinateNode,
+    DirectiveArgumentCoordinateNode,
 )
 
 # Utilities for operating on GraphQL type schema and parsed sources.
@@ -226,6 +235,17 @@ from .utilities import (
     DangerousChangeType,
     find_breaking_changes,
     find_dangerous_changes,
+    # Resolve a schema coordinate to a schema element.
+    resolve_schema_coordinate,
+    resolve_ast_schema_coordinate,
+    ResolvedNamedType,
+    ResolvedField,
+    ResolvedInputField,
+    ResolvedEnumValue,
+    ResolvedFieldArgument,
+    ResolvedDirective,
+    ResolvedDirectiveArgument,
+    ResolvedSchemaElement,
 )
 
 # Create and operate on GraphQL type definitions and schema.
@@ -602,6 +622,7 @@ __all__ = [
     "parse_value",
     "parse_const_value",
     "parse_type",
+    "parse_schema_coordinate",
     "print_ast",
     "visit",
     "ParallelVisitor",
@@ -624,6 +645,7 @@ __all__ = [
     "is_type_definition_node",
     "is_type_system_extension_node",
     "is_type_extension_node",
+    "is_schema_coordinate_node",
     "SourceLocation",
     "Location",
     "Token",
@@ -687,6 +709,12 @@ __all__ = [
     "UnionTypeExtensionNode",
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
+    "SchemaCoordinateNode",
+    "TypeCoordinateNode",
+    "MemberCoordinateNode",
+    "ArgumentCoordinateNode",
+    "DirectiveCoordinateNode",
+    "DirectiveArgumentCoordinateNode",
     "execute",
     "execute_sync",
     "default_field_resolver",
@@ -786,6 +814,16 @@ __all__ = [
     "BreakingChangeType",
     "DangerousChange",
     "DangerousChangeType",
+    "resolve_schema_coordinate",
+    "resolve_ast_schema_coordinate",
+    "ResolvedNamedType",
+    "ResolvedField",
+    "ResolvedInputField",
+    "ResolvedEnumValue",
+    "ResolvedFieldArgument",
+    "ResolvedDirective",
+    "ResolvedDirectiveArgument",
+    "ResolvedSchemaElement",
     "Undefined",
     "UndefinedType",
 ]

@@ -461,6 +461,7 @@ _punctuator_token_kinds = frozenset(
         TokenKind.AMP,
         TokenKind.PAREN_L,
         TokenKind.PAREN_R,
+        TokenKind.DOT,
         TokenKind.SPREAD,
         TokenKind.COLON,
         TokenKind.EQUALS,

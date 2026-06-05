@@ -2,7 +2,14 @@ from copy import deepcopy
 
 from pytest import raises
 
-from graphql.language import FieldNode, NameNode, parse, print_ast
+from graphql.error import GraphQLSyntaxError
+from graphql.language import (
+    FieldNode,
+    NameNode,
+    parse,
+    parse_schema_coordinate,
+    print_ast,
+)
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
@@ -124,6 +131,34 @@ def describe_printer_query_document():
               baz
             }
             """)
+
+    def prints_schema_coordinates():
+        assert print_ast(parse_schema_coordinate("Name")) == "Name"
+        assert print_ast(parse_schema_coordinate("Name.field")) == "Name.field"
+        assert (
+            print_ast(parse_schema_coordinate("Name.field(arg:)")) == "Name.field(arg:)"
+        )
+        assert print_ast(parse_schema_coordinate("@name")) == "@name"
+        assert print_ast(parse_schema_coordinate("@name(arg:)")) == "@name(arg:)"
+        assert print_ast(parse_schema_coordinate("__Type")) == "__Type"
+        assert (
+            print_ast(parse_schema_coordinate("Type.__metafield")) == "Type.__metafield"
+        )
+        assert (
+            print_ast(parse_schema_coordinate("Type.__metafield(arg:)"))
+            == "Type.__metafield(arg:)"
+        )
+
+    def throws_syntax_error_for_ignored_tokens_in_schema_coordinates():
+        with raises(GraphQLSyntaxError) as exc_info:
+            print_ast(parse_schema_coordinate("# foo\nName"))
+        assert "Syntax Error: Invalid character: '#'" in str(exc_info.value)
+        with raises(GraphQLSyntaxError) as exc_info:
+            print_ast(parse_schema_coordinate("\nName"))
+        assert "Syntax Error: Invalid character: U+000A." in str(exc_info.value)
+        with raises(GraphQLSyntaxError) as exc_info:
+            print_ast(parse_schema_coordinate("Name .field"))
+        assert "Syntax Error: Invalid character: ' '" in str(exc_info.value)
 
     def prints_kitchen_sink_without_altering_ast(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query, no_location=True)

@@ -75,6 +75,15 @@ Each kind of AST node has its own class:
 .. autoclass:: VariableDefinitionNode
 .. autoclass:: VariableNode
 
+Schema coordinates are represented using the following node classes:
+
+.. autoclass:: SchemaCoordinateNode
+.. autoclass:: TypeCoordinateNode
+.. autoclass:: MemberCoordinateNode
+.. autoclass:: ArgumentCoordinateNode
+.. autoclass:: DirectiveCoordinateNode
+.. autoclass:: DirectiveArgumentCoordinateNode
+
 Directive locations are specified using the following enumeration:
 
 .. autoclass:: DirectiveLocation
@@ -91,6 +100,7 @@ You can also check the type of nodes with the following predicates:
 .. autofunction:: is_type_definition_node
 .. autofunction:: is_type_system_extension_node
 .. autofunction:: is_type_extension_node
+.. autofunction:: is_schema_coordinate_node
 
 Lexer
 -----
@@ -116,6 +126,7 @@ Parser
 .. autofunction:: parse_type
 .. autofunction:: parse_value
 .. autofunction:: parse_const_value
+.. autofunction:: parse_schema_coordinate
 
 Printer
 -------

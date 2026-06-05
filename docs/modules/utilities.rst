@@ -112,3 +112,17 @@ Compare two GraphQLSchemas and detect breaking changes:
 .. autoclass:: BreakingChangeType
 .. autoclass:: DangerousChange
 .. autoclass:: DangerousChangeType
+
+Resolve a schema coordinate to the schema element it refers to:
+
+.. autofunction:: resolve_schema_coordinate
+.. autofunction:: resolve_ast_schema_coordinate
+
+.. autoclass:: ResolvedNamedType
+.. autoclass:: ResolvedField
+.. autoclass:: ResolvedInputField
+.. autoclass:: ResolvedEnumValue
+.. autoclass:: ResolvedFieldArgument
+.. autoclass:: ResolvedDirective
+.. autoclass:: ResolvedDirectiveArgument
+.. autoclass:: ResolvedSchemaElement

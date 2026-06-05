@@ -15,6 +15,7 @@ from graphql.language import (
     is_type_definition_node,
     is_type_system_extension_node,
     is_type_extension_node,
+    is_schema_coordinate_node,
 )
 
 all_ast_nodes = sorted(
@@ -162,4 +163,13 @@ def describe_ast_node_predicates():
             "scalar_type_extension",
             "type_extension",
             "union_type_extension",
+        ]
+
+    def check_schema_coordinate_node():
+        assert filter_nodes(is_schema_coordinate_node) == [
+            "argument_coordinate",
+            "directive_argument_coordinate",
+            "directive_coordinate",
+            "member_coordinate",
+            "type_coordinate",
         ]

@@ -14,7 +14,13 @@ from .token_kind import TokenKind
 
 from .lexer import Lexer
 
-from .parser import parse, parse_type, parse_value, parse_const_value
+from .parser import (
+    parse,
+    parse_type,
+    parse_value,
+    parse_const_value,
+    parse_schema_coordinate,
+)
 
 from .printer import print_ast
 
@@ -94,6 +100,12 @@ from .ast import (
     UnionTypeExtensionNode,
     EnumTypeExtensionNode,
     InputObjectTypeExtensionNode,
+    SchemaCoordinateNode,
+    TypeCoordinateNode,
+    MemberCoordinateNode,
+    ArgumentCoordinateNode,
+    DirectiveCoordinateNode,
+    DirectiveArgumentCoordinateNode,
 )
 from .predicates import (
     is_definition_node,
@@ -106,6 +118,7 @@ from .predicates import (
     is_type_definition_node,
     is_type_system_extension_node,
     is_type_extension_node,
+    is_schema_coordinate_node,
 )
 from .directive_locations import DirectiveLocation
 
@@ -121,6 +134,7 @@ __all__ = [
     "parse_value",
     "parse_const_value",
     "parse_type",
+    "parse_schema_coordinate",
     "print_ast",
     "Source",
     "visit",
@@ -195,6 +209,12 @@ __all__ = [
     "UnionTypeExtensionNode",
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
+    "SchemaCoordinateNode",
+    "TypeCoordinateNode",
+    "MemberCoordinateNode",
+    "ArgumentCoordinateNode",
+    "DirectiveCoordinateNode",
+    "DirectiveArgumentCoordinateNode",
     "is_definition_node",
     "is_executable_definition_node",
     "is_selection_node",
@@ -205,4 +225,5 @@ __all__ = [
     "is_type_definition_node",
     "is_type_system_extension_node",
     "is_type_extension_node",
+    "is_schema_coordinate_node",
 ]

@@ -69,6 +69,12 @@ __all__ = [
     "UnionTypeExtensionNode",
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
+    "SchemaCoordinateNode",
+    "TypeCoordinateNode",
+    "MemberCoordinateNode",
+    "ArgumentCoordinateNode",
+    "DirectiveCoordinateNode",
+    "DirectiveArgumentCoordinateNode",
     "QUERY_DOCUMENT_KEYS",
 ]
 
@@ -314,6 +320,11 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
     "union_type_extension": ("name", "directives", "types"),
     "enum_type_extension": ("name", "directives", "values"),
     "input_object_type_extension": ("name", "directives", "fields"),
+    "type_coordinate": ("name",),
+    "member_coordinate": ("name", "member_name"),
+    "argument_coordinate": ("name", "field_name", "argument_name"),
+    "directive_coordinate": ("name",),
+    "directive_argument_coordinate": ("name", "argument_name"),
 }
 
 
@@ -826,3 +837,49 @@ class InputObjectTypeExtensionNode(TypeExtensionNode):
     __slots__ = ("fields",)
 
     fields: Tuple[InputValueDefinitionNode, ...]
+
+
+# Schema Coordinates
+
+
+class TypeCoordinateNode(Node):
+    __slots__ = ("name",)
+
+    name: NameNode
+
+
+class MemberCoordinateNode(Node):
+    __slots__ = "name", "member_name"
+
+    name: NameNode
+    member_name: NameNode
+
+
+class ArgumentCoordinateNode(Node):
+    __slots__ = "name", "field_name", "argument_name"
+
+    name: NameNode
+    field_name: NameNode
+    argument_name: NameNode
+
+
+class DirectiveCoordinateNode(Node):
+    __slots__ = ("name",)
+
+    name: NameNode
+
+
+class DirectiveArgumentCoordinateNode(Node):
+    __slots__ = "name", "argument_name"
+
+    name: NameNode
+    argument_name: NameNode
+
+
+SchemaCoordinateNode = Union[
+    TypeCoordinateNode,
+    MemberCoordinateNode,
+    ArgumentCoordinateNode,
+    DirectiveCoordinateNode,
+    DirectiveArgumentCoordinateNode,
+]
