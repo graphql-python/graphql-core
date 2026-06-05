@@ -39,6 +39,7 @@ class VariableUsage(NamedTuple):
     node: VariableNode
     type: Optional[GraphQLInputType]
     default_value: Any
+    parent_type: Optional[GraphQLInputType]
 
 
 class VariableUsageVisitor(Visitor):
@@ -58,7 +59,10 @@ class VariableUsageVisitor(Visitor):
     def enter_variable(self, node: VariableNode, *_args: Any) -> VisitorAction:
         type_info = self._type_info
         usage = VariableUsage(
-            node, type_info.get_input_type(), type_info.get_default_value()
+            node,
+            type_info.get_input_type(),
+            type_info.get_default_value(),
+            type_info.get_parent_input_type(),
         )
         self._append_usage(usage)
         return None

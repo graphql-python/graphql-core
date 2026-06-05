@@ -8,7 +8,15 @@ from ...language import (
     VariableDefinitionNode,
 )
 from ...pyutils import Undefined
-from ...type import GraphQLNonNull, GraphQLSchema, GraphQLType, is_non_null_type
+from ...type import (
+    GraphQLInputObjectType,
+    GraphQLNonNull,
+    GraphQLSchema,
+    GraphQLType,
+    is_input_object_type,
+    is_non_null_type,
+    is_nullable_type,
+)
 from ...utilities import type_from_ast, is_type_sub_type_of
 from . import ValidationContext, ValidationRule
 
@@ -39,6 +47,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
         for usage in usages:
             node, type_ = usage.node, usage.type
             default_value = usage.default_value
+            parent_type = usage.parent_type
             var_name = node.name.value
             var_def = var_def_map.get(var_name)
             if var_def and type_:
@@ -56,6 +65,20 @@ class VariablesInAllowedPositionRule(ValidationRule):
                         GraphQLError(
                             f"Variable '${var_name}' of type '{var_type}' used"
                             f" in position expecting type '{type_}'.",
+                            [var_def, node],
+                        )
+                    )
+
+                if (
+                    is_input_object_type(parent_type)
+                    and cast(GraphQLInputObjectType, parent_type).is_one_of
+                    and is_nullable_type(var_type)
+                ):
+                    self.report_error(
+                        GraphQLError(
+                            f"Variable '${var_name}' is of type '{var_type}'"
+                            " but must be non-nullable to be used for OneOf"
+                            f" Input Object '{parent_type}'.",
                             [var_def, node],
                         )
                     )
