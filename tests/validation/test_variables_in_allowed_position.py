@@ -344,6 +344,18 @@ def describe_validate_variables_are_in_allowed_positions():
                 }
                 """)
 
+        def undefined_variable_in_one_of_input_object():
+            assert_errors(
+                """
+                {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: $undefinedVariable })
+                  }
+                }
+                """,
+                [],
+            )
+
         def forbids_one_nullable_variable():
             assert_errors(
                 """

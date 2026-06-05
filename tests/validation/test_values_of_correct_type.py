@@ -1085,24 +1085,6 @@ def describe_validate_values_of_correct_type():
                 ],
             )
 
-        def exactly_one_nullable_variable():
-            assert_errors(
-                """
-                query ($string: String) {
-                complicatedArgs {
-                    oneOfArgField(oneOfArg: { stringField: $string })
-                }
-                }
-                """,
-                [
-                    {
-                        "message": "Variable 'string' must be non-nullable to be used"
-                        " for OneOf Input Object 'OneOfInput'.",
-                        "locations": [(4, 45)],
-                    },
-                ],
-            )
-
         def more_than_one_field():
             assert_errors(
                 """

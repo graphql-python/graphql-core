@@ -1,4 +1,4 @@
-from typing import cast, Any, Dict, Mapping
+from typing import cast, Any, Mapping
 
 from ...error import GraphQLError
 from ...language import (
@@ -6,7 +6,6 @@ from ...language import (
     EnumValueNode,
     FloatValueNode,
     IntValueNode,
-    NonNullTypeNode,
     NullValueNode,
     ListValueNode,
     ObjectFieldNode,
@@ -14,7 +13,6 @@ from ...language import (
     StringValueNode,
     ValueNode,
     VariableDefinitionNode,
-    VariableNode,
     VisitorAction,
     SKIP,
     print_ast,
@@ -86,9 +84,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                     )
                 )
         if type_.is_one_of:
-            validate_one_of_input_object(
-                self.context, node, type_, field_node_map, self.variable_definitions
-            )
+            validate_one_of_input_object(self.context, node, type_, field_node_map)
         return None
 
     def enter_object_field(self, node: ObjectFieldNode, *_args: Any) -> None:
@@ -187,7 +183,6 @@ def validate_one_of_input_object(
     node: ObjectValueNode,
     type_: GraphQLInputObjectType,
     field_node_map: Mapping[str, ObjectFieldNode],
-    variable_definitions: Dict[str, VariableDefinitionNode],
 ) -> None:
     keys = list(field_node_map)
     is_not_exactly_one_filed = len(keys) != 1
@@ -212,19 +207,3 @@ def validate_one_of_input_object(
                 node,
             )
         )
-        return
-
-    is_variable = value and isinstance(value, VariableNode)
-    if is_variable:
-        variable_name = cast(VariableNode, value).name.value
-        definition = variable_definitions[variable_name]
-        is_nullable_variable = not isinstance(definition.type, NonNullTypeNode)
-
-        if is_nullable_variable:
-            context.report_error(
-                GraphQLError(
-                    f"Variable '{variable_name}' must be non-nullable"
-                    f" to be used for OneOf Input Object '{type_.name}'.",
-                    node,
-                )
-            )
