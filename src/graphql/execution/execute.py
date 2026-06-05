@@ -1424,19 +1424,13 @@ class ExecutionContext(IncrementalPublisherContext):
             )
             raise GraphQLError(msg, to_nodes(field_group))
 
-        if is_object_type(runtime_type_name):  # pragma: no cover
-            msg = (
-                "Support for returning GraphQLObjectType from resolve_type was"
-                " removed in GraphQL-core 3.2, please return type name instead."
-            )
-            raise GraphQLError(msg)
-
         if not isinstance(runtime_type_name, str):
             msg = (
                 f"Abstract type '{return_type}' must resolve"
                 " to an Object type at runtime"
                 f" for field '{info.parent_type}.{info.field_name}' with value"
-                f" {inspect(result)}, received '{inspect(runtime_type_name)}'."
+                f" {inspect(result)}, received '{inspect(runtime_type_name)}',"
+                " which is not a valid Object type name."
             )
             raise GraphQLError(msg, to_nodes(field_group))
 

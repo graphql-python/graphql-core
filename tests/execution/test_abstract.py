@@ -632,5 +632,6 @@ def describe_execute_handles_synchronous_execution_of_abstract_types():
             None,
             "Abstract type 'Pet' must resolve"
             " to an Object type at runtime for field 'Query.pet'"
-            " with value {'__typename': None}, received '[]'.",
+            " with value {'__typename': None}, received '[]',"
+            " which is not a valid Object type name.",
         )
