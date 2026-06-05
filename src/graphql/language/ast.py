@@ -256,12 +256,19 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
     "name": (),
     "document": ("definitions",),
     "operation_definition": (
+        "description",
         "name",
         "variable_definitions",
         "directives",
         "selection_set",
     ),
-    "variable_definition": ("variable", "type", "default_value", "directives"),
+    "variable_definition": (
+        "description",
+        "variable",
+        "type",
+        "default_value",
+        "directives",
+    ),
     "variable": ("name",),
     "selection_set": ("selections",),
     "field": (
@@ -283,6 +290,7 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
     "fragment_spread": ("name", "directives"),
     "inline_fragment": ("type_condition", "directives", "selection_set"),
     "fragment_definition": (
+        "description",
         # Note: fragment variable definitions are deprecated and will be removed in v3.3
         "name",
         "variable_definitions",
@@ -418,6 +426,7 @@ class ExecutableDefinitionNode(DefinitionNode):
     """Base class for executable definition nodes."""
 
     selection_set: SelectionSetNode
+    description: StringValueNode | None = None
     name: NameNode | None = None
     variable_definitions: tuple[VariableDefinitionNode, ...] = ()
     directives: tuple[DirectiveNode, ...] = ()
@@ -652,6 +661,7 @@ class SelectionSetNode(Node):
 
 @node_class
 class VariableDefinitionNode(Node):
+    description: StringValueNode | None = None
     variable: VariableNode
     type: TypeNode
     default_value: ConstValueNode | None = None

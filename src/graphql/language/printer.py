@@ -76,8 +76,12 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_operation_definition(node: PrintedNode, *_args: Any) -> str:
-        var_defs = wrap("(", join(node.variable_definitions, ", "), ")")
-        prefix = join(
+        var_defs = (
+            wrap("(\n", join(node.variable_definitions, "\n"), "\n)")
+            if has_multiline_items(node.variable_definitions)
+            else wrap("(", join(node.variable_definitions, ", "), ")")
+        )
+        prefix = wrap("", node.description, "\n") + join(
             (
                 node.operation.value,
                 join((node.name, var_defs)),
@@ -92,7 +96,7 @@ class PrintAstVisitor(Visitor):
     @staticmethod
     def leave_variable_definition(node: PrintedNode, *_args: Any) -> str:
         return (
-            f"{node.variable}: {node.type}"
+            wrap("", node.description, "\n") + f"{node.variable}: {node.type}"
             f"{wrap(' = ', node.default_value)}"
             f"{wrap(' ', join(node.directives, ' '))}"
         )
@@ -160,7 +164,7 @@ class PrintAstVisitor(Visitor):
     def leave_fragment_definition(node: PrintedNode, *_args: Any) -> str:
         # Note: fragment variable definitions are deprecated and will be removed in v3.3
         return (
-            f"fragment {node.name}"
+            wrap("", node.description, "\n") + f"fragment {node.name}"
             f"{wrap('(', join(node.variable_definitions, ', '), ')')}"
             f" on {node.type_condition}"
             f" {wrap('', join(node.directives, ' '), ' ')}"

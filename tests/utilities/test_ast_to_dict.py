@@ -253,6 +253,7 @@ def describe_ast_to_disc():
         assert res == {
             "definitions": [
                 {
+                    "description": None,
                     "directives": [],
                     "kind": "operation_definition",
                     "name": {"kind": "name", "value": "HeroForEpisode"},
@@ -352,6 +353,7 @@ def describe_ast_to_disc():
                     "variable_definitions": [
                         {
                             "default_value": None,
+                            "description": None,
                             "directives": [],
                             "kind": "variable_definition",
                             "type": {
@@ -394,6 +396,7 @@ def describe_ast_to_disc():
         assert res == {
             "definitions": [
                 {
+                    "description": None,
                     "directives": [],
                     "kind": "operation_definition",
                     "loc": {"end": 293, "start": 13},
@@ -544,6 +547,7 @@ def describe_ast_to_disc():
                     "variable_definitions": [
                         {
                             "default_value": None,
+                            "description": None,
                             "directives": [],
                             "kind": "variable_definition",
                             "loc": {"end": 47, "start": 34},

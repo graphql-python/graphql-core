@@ -298,9 +298,12 @@ class Parser:
         "directive": "directive_definition",
     }
 
-    _parse_other_definition_method_names: Mapping[str, str] = {
+    _parse_executable_definition_method_names: Mapping[str, str] = {
         **dict.fromkeys(("query", "mutation", "subscription"), "operation_definition"),
         "fragment": "fragment_definition",
+    }
+
+    _parse_other_definition_method_names: Mapping[str, str] = {
         "extend": "type_system_extension",
     }
 
@@ -324,6 +327,14 @@ class Parser:
             self._lexer.lookahead() if has_description else self._lexer.token
         )
 
+        if has_description and keyword_token.kind is TokenKind.BRACE_L:
+            raise GraphQLSyntaxError(
+                self._lexer.source,
+                self._lexer.token.start,
+                "Unexpected description,"
+                " descriptions are not supported on shorthand queries.",
+            )
+
         if keyword_token.kind is TokenKind.NAME:
             token_name = cast("str", keyword_token.value)
             method_name = self._parse_type_system_definition_method_names.get(
@@ -332,12 +343,16 @@ class Parser:
             if method_name:
                 return getattr(self, f"parse_{method_name}")()
 
+            method_name = self._parse_executable_definition_method_names.get(token_name)
+            if method_name:
+                return getattr(self, f"parse_{method_name}")()
+
             if has_description:
                 raise GraphQLSyntaxError(
                     self._lexer.source,
                     self._lexer.token.start,
                     "Unexpected description,"
-                    " descriptions are supported only on type definitions.",
+                    " only GraphQL definitions support descriptions.",
                 )
 
             method_name = self._parse_other_definition_method_names.get(token_name)
@@ -354,16 +369,19 @@ class Parser:
         if self.peek(TokenKind.BRACE_L):
             return OperationDefinitionNode(
                 operation=OperationType.QUERY,
+                description=None,
                 name=None,
                 variable_definitions=(),
                 directives=(),
                 selection_set=self.parse_selection_set(),
                 loc=self.loc(start),
             )
+        description = self.parse_description()
         operation = self.parse_operation_type()
         name = self.parse_name() if self.peek(TokenKind.NAME) else None
         return OperationDefinitionNode(
             operation=operation,
+            description=description,
             name=name,
             variable_definitions=self.parse_variable_definitions(),
             directives=self.parse_directives(False),
@@ -388,10 +406,12 @@ class Parser:
     def parse_variable_definition(self) -> VariableDefinitionNode:
         """VariableDefinition: Variable: Type DefaultValue? Directives[Const]?"""
         start = self._lexer.token
+        description = self.parse_description()
         variable = self.parse_variable()
         self.expect_token(TokenKind.COLON)
         type_ = self.parse_type_reference()
         return VariableDefinitionNode(
+            description=description,
             variable=variable,
             type=type_,
             default_value=self.parse_const_value_literal()
@@ -528,11 +548,13 @@ class Parser:
     def parse_fragment_definition(self) -> FragmentDefinitionNode:
         """FragmentDefinition"""
         start = self._lexer.token
+        description = self.parse_description()
         self.expect_keyword("fragment")
         # Legacy support for defining variables within fragments changes
         # the grammar of FragmentDefinition
         if self._allow_legacy_fragment_variables:
             return FragmentDefinitionNode(
+                description=description,
                 name=self.parse_fragment_name(),
                 variable_definitions=self.parse_variable_definitions(),
                 type_condition=self.parse_type_condition(),
@@ -541,6 +563,7 @@ class Parser:
                 loc=self.loc(start),
             )
         return FragmentDefinitionNode(
+            description=description,
             name=self.parse_fragment_name(),
             variable_definitions=(),
             type_condition=self.parse_type_condition(),
