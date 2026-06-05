@@ -166,6 +166,7 @@ def collect_subfields(
                 sub_grouped_field_set,
                 new_defer_usages,
                 field_detail.defer_usage,
+                field_detail.fragment_variables,
             )
 
     return CollectedFields(sub_grouped_field_set, new_defer_usages)

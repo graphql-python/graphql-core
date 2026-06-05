@@ -1324,6 +1324,19 @@ def describe_execute_handles_inputs():
             )
             assert result == ({}, None)
 
+        def when_argument_passed_to_a_directive_on_a_nested_field():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: true)
+                }
+                fragment a($value: Boolean!) on TestType {
+                  nested { echo(input: "echo") @skip(if: $value) }
+                }
+                """
+            )
+            assert result == ({"nested": {}}, None)
+
     def describe_execute_uses_argument_default_values():
         def when_no_argument_provided():
             result = execute_query("{ fieldWithDefaultArgumentValue }")
