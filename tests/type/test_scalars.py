@@ -57,7 +57,10 @@ def describe_type_system_specified_scalar_types():
 
         def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLInt.parse_const_literal(parse_const_value_to_ast(s))
+                # to be removed in v18 when all custom scalars have a default method
+                return GraphQLInt.parse_const_literal(  # type: ignore
+                    parse_const_value_to_ast(s)
+                )
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -216,7 +219,10 @@ def describe_type_system_specified_scalar_types():
 
         def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLFloat.parse_const_literal(parse_const_value_to_ast(s))
+                # to be removed in v18 when all custom scalars have a default method
+                return GraphQLFloat.parse_const_literal(  # type: ignore
+                    parse_const_value_to_ast(s)
+                )
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -339,7 +345,10 @@ def describe_type_system_specified_scalar_types():
 
         def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLString.parse_const_literal(parse_const_value_to_ast(s))
+                # to be removed in v18 when all custom scalars have a default method
+                return GraphQLString.parse_const_literal(  # type: ignore
+                    parse_const_value_to_ast(s)
+                )
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -459,7 +468,10 @@ def describe_type_system_specified_scalar_types():
 
         def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLBoolean.parse_const_literal(parse_const_value_to_ast(s))
+                # to be removed in v18 when all custom scalars have a default method
+                return GraphQLBoolean.parse_const_literal(  # type: ignore
+                    parse_const_value_to_ast(s)
+                )
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -601,7 +613,10 @@ def describe_type_system_specified_scalar_types():
 
         def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLID.parse_const_literal(parse_const_value_to_ast(s))
+                # to be removed in v18 when all custom scalars have a default method
+                return GraphQLID.parse_const_literal(  # type: ignore
+                    parse_const_value_to_ast(s)
+                )
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:

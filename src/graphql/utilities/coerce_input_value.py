@@ -310,11 +310,14 @@ def coerce_input_literal(
         return type_.out_type(coerced_dict)
 
     leaf_type = assert_leaf_type(type_)
-    const_value_node = replace_variables(
-        value_node, variable_values, fragment_variable_values
-    )
     try:
-        return leaf_type.parse_const_literal(const_value_node)
+        if leaf_type.parse_const_literal is not None:
+            return leaf_type.parse_const_literal(
+                replace_variables(value_node, variable_values, fragment_variable_values)
+            )
+        return leaf_type.parse_literal(
+            value_node, variable_values.coerced if variable_values else None
+        )
     except Exception:  # noqa: BLE001
         # Invalid: ignore error and intentionally return no value.
         return Undefined

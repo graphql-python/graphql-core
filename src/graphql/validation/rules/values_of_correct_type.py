@@ -164,14 +164,16 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
             return
 
-        const_value_node = replace_variables(node)
-
         # Scalars and Enums determine if a literal value is valid via
         # `parse_const_literal()`, which may raise or return ``Undefined`` to
         # indicate an invalid value.
         type_ = cast("GraphQLScalarType", type_)
         try:
-            parse_result = type_.parse_const_literal(const_value_node)
+            parse_result = (
+                type_.parse_const_literal(replace_variables(node))
+                if type_.parse_const_literal is not None
+                else type_.parse_literal(node)
+            )
             if parse_result is Undefined:
                 self.report_error(
                     GraphQLError(

@@ -365,6 +365,7 @@ class GraphQLScalarType(GraphQLNamedType):
     ast_node: ScalarTypeDefinitionNode | None
     extension_ast_nodes: tuple[ScalarTypeExtensionNode, ...]
 
+    parse_const_literal: GraphQLScalarConstLiteralParser | None
     value_to_literal: GraphQLScalarValueToLiteral | None
 
     def __init__(
@@ -395,8 +396,7 @@ class GraphQLScalarType(GraphQLNamedType):
             self.parse_value = parse_value  # type: ignore
         if parse_literal is not None:
             self.parse_literal = parse_literal  # type: ignore
-        if parse_const_literal is not None:
-            self.parse_const_literal = parse_const_literal  # type: ignore
+        self.parse_const_literal = parse_const_literal
         self.value_to_literal = value_to_literal
         if parse_literal is not None and parse_value is None:
             msg = (
@@ -449,14 +449,6 @@ class GraphQLScalarType(GraphQLNamedType):
         """
         return self.parse_value(value_from_ast_untyped(node, variables))
 
-    def parse_const_literal(self, node: ConstValueNode) -> Any:
-        """Parses an externally provided const literal value to use as an input.
-
-        This default method uses the parse_value method and should be replaced
-        with a more specific version when creating a scalar type.
-        """
-        return self.parse_value(value_from_ast_untyped(node))
-
     def to_kwargs(self) -> GraphQLScalarTypeKwargs:
         """Get corresponding arguments."""
         return GraphQLScalarTypeKwargs(
@@ -471,10 +463,7 @@ class GraphQLScalarType(GraphQLNamedType):
             if getattr(self.parse_literal, "__func__", None)
             is GraphQLScalarType.parse_literal
             else self.parse_literal,
-            parse_const_literal=None
-            if getattr(self.parse_const_literal, "__func__", None)
-            is GraphQLScalarType.parse_const_literal
-            else self.parse_const_literal,
+            parse_const_literal=self.parse_const_literal,
             value_to_literal=self.value_to_literal,
             specified_by_url=self.specified_by_url,
         )

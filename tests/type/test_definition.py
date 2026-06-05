@@ -34,7 +34,6 @@ from graphql.language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
     ValueNode,
-    parse_const_value,
     parse_value,
 )
 from graphql.pyutils import Path, Undefined, is_awaitable
@@ -174,10 +173,8 @@ def describe_type_system_scalars():
             scalar.parse_literal.__func__  # type: ignore
             is GraphQLScalarType.parse_literal
         )
-        assert (
-            scalar.parse_const_literal.__func__  # type: ignore
-            is GraphQLScalarType.parse_const_literal
-        )
+        # A default will be provided in v18 when parse_literal is removed.
+        assert scalar.parse_const_literal is None
         assert scalar.value_to_literal is None
 
         # The default serialize and parse_value methods just pass values through.
@@ -205,19 +202,6 @@ def describe_type_system_scalars():
         assert (
             scalar.parse_literal(parse_value("{foo: { bar: $var } }"), {"var": "baz"})
             == "parse_value: {'foo': {'bar': 'baz'}}"
-        )
-
-    def use_parse_value_for_parsing_literals_if_parse_const_literal_omitted():
-        scalar = GraphQLScalarType(
-            "Foo", parse_value=lambda value: f"parse_value: {value!r}"
-        )
-
-        assert (
-            scalar.parse_const_literal(parse_const_value("null")) == "parse_value: None"
-        )
-        assert (
-            scalar.parse_const_literal(parse_const_value('{foo: "bar"}'))
-            == "parse_value: {'foo': 'bar'}"
         )
 
     def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():
