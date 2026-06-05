@@ -22,7 +22,7 @@ from graphql.type import (
 from pytest import mark, raises
 
 try:
-    anext  # type: ignore
+    anext
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
     async def anext(iterator):

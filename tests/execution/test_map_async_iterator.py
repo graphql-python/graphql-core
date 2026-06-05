@@ -8,7 +8,7 @@ from pytest import mark, raises
 is_pypy = platform.python_implementation() == "PyPy"
 
 try:  # pragma: no cover
-    anext  # type: ignore
+    anext
 except NameError:  # pragma: no cover (Python < 3.10)
     # noinspection PyShadowingBuiltins
     async def anext(iterator):
