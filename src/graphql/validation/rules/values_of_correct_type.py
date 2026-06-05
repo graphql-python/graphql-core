@@ -26,9 +26,9 @@ from ...language import (
 from ...pyutils import Undefined, did_you_mean, suggestion_list
 from ...type import (
     GraphQLInputObjectType,
-    GraphQLScalarType,
     get_named_type,
     get_nullable_type,
+    is_enum_type,
     is_input_object_type,
     is_leaf_type,
     is_list_type,
@@ -102,7 +102,11 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         parent_type = get_named_type(self.context.get_parent_input_type())
         field_type = self.context.get_input_type()
         if not field_type and is_input_object_type(parent_type):
-            suggestions = suggestion_list(node.name.value, list(parent_type.fields))
+            suggestions = (
+                []
+                if self.context.hide_suggestions
+                else suggestion_list(node.name.value, list(parent_type.fields))
+            )
             self.report_error(
                 GraphQLError(
                     f"Field '{node.name.value}'"
@@ -167,13 +171,18 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         # Scalars and Enums determine if a literal value is valid via
         # `parse_const_literal()`, which may raise or return ``Undefined`` to
         # indicate an invalid value.
-        type_ = cast("GraphQLScalarType", type_)
+        # Note: only enum types accept `hide_suggestions`, since scalar
+        # `parse_const_literal`/`parse_literal` functions are user-provided
+        # with a fixed signature.
         try:
-            parse_result = (
-                type_.parse_const_literal(replace_variables(node))
-                if type_.parse_const_literal is not None
-                else type_.parse_literal(node)
-            )
+            if is_enum_type(type_):
+                parse_result = type_.parse_const_literal(
+                    replace_variables(node), self.context.hide_suggestions
+                )
+            elif type_.parse_const_literal is not None:
+                parse_result = type_.parse_const_literal(replace_variables(node))
+            else:
+                parse_result = type_.parse_literal(node)
             if parse_result is Undefined:
                 self.report_error(
                     GraphQLError(

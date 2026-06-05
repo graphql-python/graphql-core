@@ -143,6 +143,22 @@ def describe_validate_fields_on_correct_type():
             ],
         )
 
+    def field_not_defined_on_fragment_no_suggestions():
+        assert_errors(
+            """
+            fragment fieldNotDefined on Dog {
+              meowVolume
+            }
+            """,
+            [
+                {
+                    "message": "Cannot query field 'meowVolume' on type 'Dog'.",
+                    "locations": [(3, 15)],
+                },
+            ],
+            hide_suggestions=True,
+        )
+
     def ignores_deeply_unknown_field():
         assert_errors(
             """

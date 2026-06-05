@@ -1231,27 +1231,30 @@ class GraphQLEnumType(GraphQLNamedType):
         msg = f"Enum '{self.name}' cannot represent value: {inspect(output_value)}"
         raise GraphQLError(msg)
 
-    def parse_value(self, input_value: str) -> Any:
+    def parse_value(self, input_value: str, hide_suggestions: bool = False) -> Any:
         """Parse an enum value."""
         if isinstance(input_value, str):
             try:
                 enum_value = self.values[input_value]
             except KeyError as error:
-                msg = (
-                    f"Value '{input_value}' does not exist in '{self.name}' enum."
-                    + did_you_mean_enum_value(self, input_value)
+                msg = f"Value '{input_value}' does not exist in '{self.name}' enum." + (
+                    ""
+                    if hide_suggestions
+                    else did_you_mean_enum_value(self, input_value)
                 )
                 raise GraphQLError(msg) from error
             return enum_value.value
         value_str = inspect(input_value)
-        msg = (
-            f"Enum '{self.name}' cannot represent non-string value: {value_str}."
-            + did_you_mean_enum_value(self, value_str)
+        msg = f"Enum '{self.name}' cannot represent non-string value: {value_str}." + (
+            "" if hide_suggestions else did_you_mean_enum_value(self, value_str)
         )
         raise GraphQLError(msg)
 
     def parse_literal(
-        self, value_node: ValueNode, _variables: dict[str, Any] | None = None
+        self,
+        value_node: ValueNode,
+        _variables: dict[str, Any] | None = None,
+        hide_suggestions: bool = False,
     ) -> Any:
         """Parse literal value.
 
@@ -1260,25 +1263,27 @@ class GraphQLEnumType(GraphQLNamedType):
             removed in a future version.
         """
         # Note: variables will be resolved before calling this method.
-        return self.parse_const_literal(cast("ConstValueNode", value_node))
+        return self.parse_const_literal(
+            cast("ConstValueNode", value_node), hide_suggestions
+        )
 
-    def parse_const_literal(self, value_node: ConstValueNode) -> Any:
+    def parse_const_literal(
+        self, value_node: ConstValueNode, hide_suggestions: bool = False
+    ) -> Any:
         """Parse const literal value."""
         if isinstance(value_node, EnumValueNode):
             try:
                 enum_value = self.values[value_node.value]
             except KeyError as error:
                 value_str = print_ast(value_node)
-                msg = (
-                    f"Value '{value_str}' does not exist in '{self.name}' enum."
-                    + did_you_mean_enum_value(self, value_str)
+                msg = f"Value '{value_str}' does not exist in '{self.name}' enum." + (
+                    "" if hide_suggestions else did_you_mean_enum_value(self, value_str)
                 )
                 raise GraphQLError(msg, value_node) from error
             return enum_value.value
         value_str = print_ast(value_node)
-        msg = (
-            f"Enum '{self.name}' cannot represent non-enum value: {value_str}."
-            + did_you_mean_enum_value(self, value_str)
+        msg = f"Enum '{self.name}' cannot represent non-enum value: {value_str}." + (
+            "" if hide_suggestions else did_you_mean_enum_value(self, value_str)
         )
         raise GraphQLError(msg, value_node)
 

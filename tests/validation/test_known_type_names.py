@@ -60,6 +60,33 @@ def describe_validate_known_type_names():
             ],
         )
 
+    def unknown_type_names_are_invalid_no_suggestions():
+        assert_errors(
+            """
+            query Foo($var: [JumbledUpLetters!]!) {
+              user(id: 4) {
+                name
+                pets { ... on Badger { name }, ...PetFields, ... { name } }
+              }
+            }
+            fragment PetFields on Peat {
+              name
+            }
+            """,
+            [
+                {
+                    "message": "Unknown type 'JumbledUpLetters'.",
+                    "locations": [(2, 30)],
+                },
+                {"message": "Unknown type 'Badger'.", "locations": [(5, 31)]},
+                {
+                    "message": "Unknown type 'Peat'.",
+                    "locations": [(8, 35)],
+                },
+            ],
+            hide_suggestions=True,
+        )
+
     def references_to_standard_scalars_that_are_missing_in_schema():
         schema = build_schema("type Query { foo: String }")
         query = """

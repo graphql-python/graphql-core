@@ -47,13 +47,19 @@ class FieldsOnCorrectTypeRule(ValidationRule):
 
         # First determine if there are any suggested types to condition on.
         suggestion = did_you_mean(
-            get_suggested_type_names(schema, type_, field_name),
+            []
+            if self.context.hide_suggestions
+            else get_suggested_type_names(schema, type_, field_name),
             "to use an inline fragment on",
         )
 
         # If there are no suggested types, then perhaps this was a typo?
         if not suggestion:
-            suggestion = did_you_mean(get_suggested_field_names(type_, field_name))
+            suggestion = did_you_mean(
+                []
+                if self.context.hide_suggestions
+                else get_suggested_field_names(type_, field_name)
+            )
 
         # Report an error, including helpful suggestions.
         self.report_error(

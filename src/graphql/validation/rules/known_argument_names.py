@@ -62,7 +62,11 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
                         GraphQLError(
                             f"Unknown argument '{arg_name}'"
                             f" on directive '@{directive_name}'."
-                            + did_you_mean(suggestions),
+                            + (
+                                ""
+                                if self.context.hide_suggestions
+                                else did_you_mean(suggestions)
+                            ),
                             arg_node,
                         )
                     )
@@ -92,14 +96,18 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
             var_def = fragment_signature.variable_definitions.get(arg_node.name.value)
             if not var_def:
                 arg_name = arg_node.name.value
-                suggestions = suggestion_list(
-                    arg_name,
-                    [
-                        var_signature.variable.name.value
-                        for var_signature in (
-                            fragment_signature.variable_definitions.values()
-                        )
-                    ],
+                suggestions = (
+                    []
+                    if context.hide_suggestions
+                    else suggestion_list(
+                        arg_name,
+                        [
+                            var_signature.variable.name.value
+                            for var_signature in (
+                                fragment_signature.variable_definitions.values()
+                            )
+                        ],
+                    )
                 )
                 context.report_error(
                     GraphQLError(
@@ -119,7 +127,11 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
             arg_name = arg_node.name.value
             field_name = args[3][-1].name.value
             known_args_names = list(field_def.args)
-            suggestions = suggestion_list(arg_name, known_args_names)
+            suggestions = (
+                []
+                if context.hide_suggestions
+                else suggestion_list(arg_name, known_args_names)
+            )
             context.report_error(
                 GraphQLError(
                     f"Unknown argument '{arg_name}'"

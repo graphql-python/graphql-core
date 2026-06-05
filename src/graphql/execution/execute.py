@@ -207,6 +207,7 @@ class ExecutionContext(IncrementalPublisherContext):
     subscribe_field_resolver: GraphQLFieldResolver
     per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
     enable_early_execution: bool
+    hide_suggestions: bool
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     middleware_manager: MiddlewareManager | None
@@ -218,7 +219,7 @@ class ExecutionContext(IncrementalPublisherContext):
         default_is_async_iterable  # type: ignore
     )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         schema: GraphQLSchema,
         fragment_definitions: dict[str, FragmentDefinitionNode],
@@ -238,6 +239,7 @@ class ExecutionContext(IncrementalPublisherContext):
             [ExecutionContext], AwaitableOrValue[ExecutionResult]
         ]
         | None = None,
+        hide_suggestions: bool = False,
     ) -> None:
         self.schema = schema
         self.fragment_definitions = fragment_definitions
@@ -251,6 +253,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.subscribe_field_resolver = subscribe_field_resolver
         self.per_event_executor = per_event_executor or execute_subscription_event
         self.enable_early_execution = enable_early_execution
+        self.hide_suggestions = hide_suggestions
         self.middleware_manager = middleware_manager
         self.is_awaitable = is_awaitable or default_is_awaitable
         self.is_async_iterable = is_async_iterable or default_is_async_iterable
@@ -261,7 +264,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
 
     @classmethod
-    def build(
+    def build(  # noqa: PLR0913
         cls,
         schema: GraphQLSchema,
         document: DocumentNode,
@@ -281,6 +284,7 @@ class ExecutionContext(IncrementalPublisherContext):
             [ExecutionContext], AwaitableOrValue[ExecutionResult]
         ]
         | None = None,
+        hide_suggestions: bool = False,
         **custom_args: Any,
     ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
@@ -349,6 +353,7 @@ class ExecutionContext(IncrementalPublisherContext):
             operation.variable_definitions or (),
             raw_variable_values or {},
             max_errors=max_coercion_errors,
+            hide_suggestions=hide_suggestions,
         )
 
         if isinstance(variable_values, list):
@@ -370,6 +375,7 @@ class ExecutionContext(IncrementalPublisherContext):
             is_awaitable,
             is_async_iterable,
             per_event_executor=per_event_executor,
+            hide_suggestions=hide_suggestions,
             **custom_args,
         )
 
@@ -412,7 +418,12 @@ class ExecutionContext(IncrementalPublisherContext):
             root_value = self.root_value
 
             collected_fields = collect_fields(
-                schema, self.fragments, self.variable_values, root_type, operation
+                schema,
+                self.fragments,
+                self.variable_values,
+                root_type,
+                operation,
+                self.hide_suggestions,
             )
 
             grouped_field_set, new_defer_usages = collected_fields
@@ -678,6 +689,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 field_def.args,
                 self.variable_values,
                 first_field_details.fragment_variable_values,
+                self.hide_suggestions,
             )
 
             # Note that contrary to the JavaScript implementation, we pass the context
@@ -1602,6 +1614,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 self.operation,
                 return_type,
                 field_details_list,
+                self.hide_suggestions,
             )
             relevant_sub_fields[key] = collected_fields
         return collected_fields
@@ -2143,7 +2156,7 @@ UNEXPECTED_MULTIPLE_PAYLOADS = (
 )
 
 
-def execute(
+def execute(  # noqa: PLR0913
     schema: GraphQLSchema,
     document: DocumentNode,
     root_value: Any = None,
@@ -2159,6 +2172,7 @@ def execute(
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+    hide_suggestions: bool = False,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -2195,6 +2209,7 @@ def execute(
         execution_context_class,
         is_awaitable,
         is_async_iterable,
+        hide_suggestions=hide_suggestions,
         **custom_context_args,
     )
     if isinstance(result, ExecutionResult):
@@ -2211,7 +2226,7 @@ def execute(
     return await_result()
 
 
-def experimental_execute_incrementally(
+def experimental_execute_incrementally(  # noqa: PLR0913
     schema: GraphQLSchema,
     document: DocumentNode,
     root_value: Any = None,
@@ -2227,6 +2242,7 @@ def experimental_execute_incrementally(
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+    hide_suggestions: bool = False,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
@@ -2259,6 +2275,7 @@ def experimental_execute_incrementally(
         middleware,
         is_awaitable,
         is_async_iterable,
+        hide_suggestions=hide_suggestions,
         **custom_context_args,
     )
 
@@ -2287,6 +2304,7 @@ def execute_sync(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     check_sync: bool = False,
+    hide_suggestions: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -2318,6 +2336,7 @@ def execute_sync(
         middleware,
         execution_context_class,
         is_awaitable,
+        hide_suggestions=hide_suggestions,
     )
 
     # Assert that the execution was synchronous.
@@ -2550,6 +2569,7 @@ def subscribe(
     middleware: MiddlewareManager | None = None,
     per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
     | None = None,
+    hide_suggestions: bool = False,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     """Create a GraphQL subscription.
@@ -2599,6 +2619,7 @@ def subscribe(
         enable_early_execution,
         middleware=middleware,
         per_event_executor=per_event_executor,
+        hide_suggestions=hide_suggestions,
         **custom_context_args,
     )
 
@@ -2665,6 +2686,7 @@ def create_source_event_stream(
     max_coercion_errors: int = 50,
     enable_early_execution: bool = False,
     execution_context_class: type[ExecutionContext] | None = None,
+    hide_suggestions: bool = False,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
     """Create source event stream
@@ -2704,6 +2726,7 @@ def create_source_event_stream(
         subscribe_field_resolver,
         max_coercion_errors,
         enable_early_execution,
+        hide_suggestions=hide_suggestions,
         **custom_context_args,
     )
 
@@ -2752,6 +2775,7 @@ def execute_subscription(
         context.variable_values,
         root_type,
         context.operation,
+        context.hide_suggestions,
     ).grouped_field_set
 
     first_root_field = next(iter(grouped_field_set.items()))
@@ -2773,7 +2797,9 @@ def execute_subscription(
     try:
         # Build a dictionary of arguments from the field.arguments AST, using the
         # variables scope to fulfill any variable references.
-        args = get_argument_values(field_def, field_nodes[0], context.variable_values)
+        args = get_argument_values(
+            field_def, field_nodes[0], context.variable_values, context.hide_suggestions
+        )
 
         # Call the `subscribe()` resolver or the default resolver to produce an
         # AsyncIterable yielding raw payloads.

@@ -220,6 +220,10 @@ class SDLValidationContext(ASTValidationContext):
         super().__init__(ast, on_error)
         self.schema = schema
 
+    @property
+    def hide_suggestions(self) -> bool:
+        return False
+
 
 class ValidationContext(ASTValidationContext):
     """Utility class providing a context for validation using a GraphQL schema.
@@ -234,6 +238,7 @@ class ValidationContext(ASTValidationContext):
     _type_info: TypeInfo
     _variable_usages: dict[NodeWithSelectionSet, list[VariableUsage]]
     _recursive_variable_usages: dict[OperationDefinitionNode, list[VariableUsage]]
+    _hide_suggestions: bool
 
     def __init__(
         self,
@@ -241,12 +246,18 @@ class ValidationContext(ASTValidationContext):
         ast: DocumentNode,
         type_info: TypeInfo,
         on_error: Callable[[GraphQLError], None],
+        hide_suggestions: bool = False,
     ) -> None:
         super().__init__(ast, on_error)
         self.schema = schema
         self._type_info = type_info
         self._variable_usages = {}
         self._recursive_variable_usages = {}
+        self._hide_suggestions = hide_suggestions
+
+    @property
+    def hide_suggestions(self) -> bool:
+        return self._hide_suggestions
 
     def get_variable_usages(self, node: NodeWithSelectionSet) -> list[VariableUsage]:
         usages = self._variable_usages.get(node)

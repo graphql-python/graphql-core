@@ -75,6 +75,7 @@ def get_variable_values(
     var_def_nodes: Collection[VariableDefinitionNode],
     inputs: dict[str, Any],
     max_errors: int | None = None,
+    hide_suggestions: bool = False,
 ) -> VariableValuesOrErrors:
     """Get coerced variable values based on provided definitions.
 
@@ -95,7 +96,7 @@ def get_variable_values(
 
     try:
         variable_values = coerce_variable_values(
-            schema, var_def_nodes, inputs, on_error
+            schema, var_def_nodes, inputs, on_error, hide_suggestions
         )
         if not errors:
             return variable_values
@@ -110,6 +111,7 @@ def coerce_variable_values(
     var_def_nodes: Collection[VariableDefinitionNode],
     inputs: dict[str, Any],
     on_error: Callable[[GraphQLError], None],
+    hide_suggestions: bool = False,
 ) -> VariableValues:
     sources: dict[str, VariableValueSource] = {}
     coerced: dict[str, Any] = {}
@@ -125,7 +127,9 @@ def coerce_variable_values(
             default_value = var_signature.default_value
             if default_value:
                 sources[var_name] = VariableValueSource(var_signature)
-                coerced[var_name] = coerce_default_value(default_value, var_type)
+                coerced[var_name] = coerce_default_value(
+                    default_value, var_type, hide_suggestions
+                )
             elif is_non_null_type(var_type):
                 var_type_str = inspect(var_type)
                 on_error(
@@ -171,7 +175,9 @@ def coerce_variable_values(
             )
 
         sources[var_name] = VariableValueSource(var_signature, value)
-        coerced[var_name] = coerce_input_value(value, var_type, on_input_value_error)
+        coerced[var_name] = coerce_input_value(
+            value, var_type, on_input_value_error, hide_suggestions=hide_suggestions
+        )
 
     return VariableValues(sources, coerced)
 
@@ -181,6 +187,7 @@ def get_fragment_variable_values(
     fragment_signatures: Mapping[str, GraphQLVariableSignature],
     variable_values: VariableValues,
     fragment_variable_values: VariableValues | None = None,
+    hide_suggestions: bool = False,
 ) -> VariableValues:
     """Get coerced variable values for a fragment spread.
 
@@ -204,6 +211,7 @@ def get_fragment_variable_values(
         fragment_signatures,
         variable_values,
         fragment_variable_values,
+        hide_suggestions,
     )
 
     return VariableValues(sources, coerced)
@@ -213,13 +221,16 @@ def get_argument_values(
     type_def: GraphQLField | GraphQLDirective,
     node: FieldNode | DirectiveNode,
     variable_values: VariableValues | None = None,
+    hide_suggestions: bool = False,
 ) -> dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
 
     Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
     """
-    return experimental_get_argument_values(node, type_def.args, variable_values)
+    return experimental_get_argument_values(
+        node, type_def.args, variable_values, hide_suggestions=hide_suggestions
+    )
 
 
 def experimental_get_argument_values(
@@ -227,6 +238,7 @@ def experimental_get_argument_values(
     arg_defs: Mapping[str, GraphQLArgument | GraphQLVariableSignature],
     variable_values: VariableValues | None = None,
     fragment_variable_values: VariableValues | None = None,
+    hide_suggestions: bool = False,
 ) -> dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
 
@@ -245,10 +257,14 @@ def experimental_get_argument_values(
         if argument_node is None:
             default_value = arg_def.default_value
             if default_value:
-                value = coerce_default_value(default_value, arg_def.type)
+                value = coerce_default_value(
+                    default_value, arg_def.type, hide_suggestions
+                )
                 if default_value.literal is None and is_input_object_type(arg_def.type):
                     # coerce input value so that out_names are used
-                    value = coerce_input_value(value, arg_def.type)
+                    value = coerce_input_value(
+                        value, arg_def.type, hide_suggestions=hide_suggestions
+                    )
                 coerced_values[out_name] = value
             elif is_non_null_type(arg_type):  # pragma: no branch
                 msg = (
@@ -274,12 +290,16 @@ def experimental_get_argument_values(
             ):
                 default_value = arg_def.default_value
                 if default_value:
-                    value = coerce_default_value(default_value, arg_def.type)
+                    value = coerce_default_value(
+                        default_value, arg_def.type, hide_suggestions
+                    )
                     if default_value.literal is None and is_input_object_type(
                         arg_def.type
                     ):
                         # coerce input value so that out_names are used
-                        value = coerce_input_value(value, arg_def.type)
+                        value = coerce_input_value(
+                            value, arg_def.type, hide_suggestions=hide_suggestions
+                        )
                     coerced_values[out_name] = value
                 elif is_non_null_type(arg_type):  # pragma: no branch
                     msg = (
@@ -301,6 +321,7 @@ def experimental_get_argument_values(
             arg_type,
             variable_values,
             fragment_variable_values,
+            hide_suggestions,
         )
         if coerced_value is Undefined:
             # Note: `values_of_correct_type` validation should catch this before
@@ -333,6 +354,7 @@ def get_directive_values(
     node: NodeWithDirective,
     variable_values: VariableValues | None = None,
     fragment_variable_values: VariableValues | None = None,
+    hide_suggestions: bool = False,
 ) -> dict[str, Any] | None:
     """Get coerced argument values based on provided nodes.
 
@@ -351,5 +373,6 @@ def get_directive_values(
                     directive_def.args,
                     variable_values,
                     fragment_variable_values,
+                    hide_suggestions,
                 )
     return None

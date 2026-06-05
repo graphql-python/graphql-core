@@ -38,6 +38,7 @@ async def graphql(
     execution_context_class: type[ExecutionContext] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+    hide_suggestions: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -102,6 +103,7 @@ async def graphql(
         execution_context_class,
         is_awaitable,
         is_async_iterable,
+        hide_suggestions,
     )
 
     if default_is_awaitable(result):
@@ -132,6 +134,7 @@ def graphql_sync(
     middleware: Middleware | None = None,
     execution_context_class: type[ExecutionContext] | None = None,
     check_sync: bool = False,
+    hide_suggestions: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -161,6 +164,7 @@ def graphql_sync(
         execution_context_class,
         is_awaitable,
         is_async_iterable,
+        hide_suggestions,
     )
 
     # Assert that the execution was synchronous.
@@ -185,6 +189,7 @@ def graphql_impl(
     execution_context_class: type[ExecutionContext] | None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+    hide_suggestions: bool = False,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
@@ -200,7 +205,9 @@ def graphql_impl(
     # Validate
     from .validation import validate
 
-    if validation_errors := validate(schema, document):
+    if validation_errors := validate(
+        schema, document, hide_suggestions=hide_suggestions
+    ):
         return ExecutionResult(data=None, errors=validation_errors)
 
     # Execute
@@ -220,4 +227,5 @@ def graphql_impl(
         execution_context_class,
         is_awaitable,
         is_async_iterable,
+        hide_suggestions=hide_suggestions,
     )

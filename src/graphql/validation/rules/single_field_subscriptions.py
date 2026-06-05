@@ -57,6 +57,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 variable_values,
                 subscription_type,
                 node,
+                self.context.hide_suggestions,
             ).grouped_field_set
             if len(grouped_field_set) > 1:
                 field_details_lists = list(grouped_field_set.values())

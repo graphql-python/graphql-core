@@ -86,6 +86,27 @@ def describe_validate_known_argument_names():
             ],
         )
 
+    def misspelled_fragment_args_are_reported_no_suggestions():
+        assert_errors(
+            """
+            {
+              dog {
+                ...withArg(command: SIT)
+              }
+            }
+            fragment withArg($dogCommand: DogCommand) on Dog {
+              doesKnowCommand(dogCommand: $dogCommand)
+            }
+            """,
+            [
+                {
+                    "message": "Unknown argument 'command' on fragment 'withArg'.",
+                    "locations": [(4, 28)],
+                },
+            ],
+            hide_suggestions=True,
+        )
+
     def single_arg_is_known():
         assert_valid(
             """
@@ -213,6 +234,22 @@ def describe_validate_known_argument_names():
             ],
         )
 
+    def misspelled_directive_args_are_reported_no_suggestions():
+        assert_errors(
+            """
+            {
+              dog @skip(iff: true)
+            }
+            """,
+            [
+                {
+                    "message": "Unknown argument 'iff' on directive '@skip'.",
+                    "locations": [(3, 25)],
+                }
+            ],
+            hide_suggestions=True,
+        )
+
     def invalid_arg_name():
         assert_errors(
             """
@@ -244,6 +281,23 @@ def describe_validate_known_argument_names():
                     "locations": [(3, 31)],
                 }
             ],
+        )
+
+    def misspelled_arg_name_is_reported_no_suggestions():
+        assert_errors(
+            """
+            fragment invalidArgName on Dog {
+              doesKnowCommand(DogCommand: true)
+            }
+            """,
+            [
+                {
+                    "message": "Unknown argument 'DogCommand'"
+                    " on field 'Dog.doesKnowCommand'.",
+                    "locations": [(3, 31)],
+                }
+            ],
+            hide_suggestions=True,
         )
 
     def unknown_args_amongst_known_args():

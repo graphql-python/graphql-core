@@ -33,6 +33,8 @@ class KnownTypeNamesRule(ASTValidationRule):
     See https://spec.graphql.org/draft/#sec-Fragment-Spread-Type-Existence
     """
 
+    context: ValidationContext | SDLValidationContext
+
     def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
         schema = context.schema
@@ -68,11 +70,15 @@ class KnownTypeNamesRule(ASTValidationRule):
             if is_sdl and type_name in standard_type_names:
                 return
 
-            suggested_types = suggestion_list(
-                type_name,
-                list(standard_type_names) + self.type_names
-                if is_sdl
-                else self.type_names,
+            suggested_types = (
+                []
+                if self.context.hide_suggestions
+                else suggestion_list(
+                    type_name,
+                    list(standard_type_names) + self.type_names
+                    if is_sdl
+                    else self.type_names,
+                )
             )
             self.report_error(
                 GraphQLError(

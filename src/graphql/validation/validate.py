@@ -48,6 +48,7 @@ def validate(
     document_ast: DocumentNode,
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
+    hide_suggestions: bool = False,
 ) -> list[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -80,7 +81,9 @@ def validate(
             raise validation_aborted_error
         errors.append(error)
 
-    context = ValidationContext(schema, document_ast, type_info, on_error)
+    context = ValidationContext(
+        schema, document_ast, type_info, on_error, hide_suggestions
+    )
 
     # This uses a specialized visitor which runs multiple visitors in parallel,
     # while maintaining the visitor skip and break API.

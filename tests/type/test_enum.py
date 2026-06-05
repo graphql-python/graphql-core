@@ -124,8 +124,17 @@ schema = GraphQLSchema(
 )
 
 
-def execute_query(source: str, variable_values: dict[str, Any] | None = None):
-    return graphql_sync(schema, source, variable_values=variable_values)
+def execute_query(
+    source: str,
+    variable_values: dict[str, Any] | None = None,
+    hide_suggestions: bool = False,
+):
+    return graphql_sync(
+        schema,
+        source,
+        variable_values=variable_values,
+        hide_suggestions=hide_suggestions,
+    )
 
 
 def describe_type_system_enum_values():
@@ -177,6 +186,21 @@ def describe_type_system_enum_values():
                 {
                     "message": "Value 'GREENISH' does not exist in 'Color' enum."
                     " Did you mean the enum value 'GREEN'?",
+                    "locations": [(1, 23)],
+                }
+            ],
+        )
+
+    def does_not_accept_values_not_in_the_enum_no_suggestions():
+        result = execute_query(
+            "{ colorEnum(fromEnum: GREENISH) }", None, hide_suggestions=True
+        )
+
+        assert result == (
+            None,
+            [
+                {
+                    "message": "Value 'GREENISH' does not exist in 'Color' enum.",
                     "locations": [(1, 23)],
                 }
             ],

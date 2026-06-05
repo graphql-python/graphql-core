@@ -80,6 +80,7 @@ class CollectFieldsContext(NamedTuple):
     operation: OperationDefinitionNode
     runtime_type: GraphQLObjectType
     visited_fragment_names: set[str]
+    hide_suggestions: bool
 
 
 class CollectedFields(NamedTuple):
@@ -95,6 +96,7 @@ def collect_fields(
     variable_values: VariableValues,
     runtime_type: GraphQLObjectType,
     operation: OperationDefinitionNode,
+    hide_suggestions: bool = False,
 ) -> CollectedFields:
     """Collect fields.
 
@@ -115,6 +117,7 @@ def collect_fields(
         operation,
         runtime_type,
         set(),
+        hide_suggestions,
     )
 
     collect_fields_impl(
@@ -130,6 +133,7 @@ def collect_subfields(
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
     field_details_list: FieldDetailsList,
+    hide_suggestions: bool = False,
 ) -> CollectedFields:
     """Collect subfields.
 
@@ -149,6 +153,7 @@ def collect_subfields(
         operation,
         return_type,
         set(),
+        hide_suggestions,
     )
     sub_grouped_field_set: dict[str, list[FieldDetails]] = defaultdict(list)
     new_defer_usages: list[DeferUsage] = []
@@ -184,6 +189,7 @@ def collect_fields_impl(
         operation,
         runtime_type,
         visited_fragment_names,
+        hide_suggestions,
     ) = context
 
     for selection in selection_set.selections:
@@ -262,6 +268,7 @@ def collect_fields_impl(
                     fragment_variable_signatures,
                     variable_values,
                     fragment_variable_values,
+                    hide_suggestions,
                 )
 
             if new_defer_usage is None:
