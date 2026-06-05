@@ -164,9 +164,6 @@ def parse_value(
 
     This is useful within tools that operate upon GraphQL Values directly and in
     isolation of complete GraphQL documents.
-
-    Consider providing the results to the utility function:
-    :func:`~graphql.utilities.value_from_ast`.
     """
     parser = Parser(
         source,

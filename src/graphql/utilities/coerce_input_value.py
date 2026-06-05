@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from ..error import GraphQLError
+from ..language import (
+    ListValueNode,
+    NullValueNode,
+    ObjectValueNode,
+    ValueNode,
+    VariableNode,
+)
 from ..pyutils import (
     Path,
     Undefined,
@@ -18,13 +25,18 @@ from ..pyutils import (
 from ..type import (
     GraphQLInputType,
     GraphQLScalarType,
+    assert_leaf_type,
     is_input_object_type,
     is_leaf_type,
     is_list_type,
     is_non_null_type,
+    is_required_input_field,
 )
 
-__all__ = ["coerce_input_value"]
+if TYPE_CHECKING:
+    from ..execution.collect_fields import FragmentVariables
+
+__all__ = ["coerce_input_literal", "coerce_input_value"]
 
 
 OnErrorCB: TypeAlias = Callable[[list[str | int], Any, GraphQLError], None]
@@ -178,3 +190,150 @@ def coerce_input_value(
     # Not reachable. All possible input types have been considered.
     msg = f"Unexpected input type: {inspect(type_)}."  # pragma: no cover
     raise TypeError(msg)  # pragma: no cover
+
+
+def coerce_input_literal(
+    value_node: ValueNode,
+    type_: GraphQLInputType,
+    variable_values: dict[str, Any] | None = None,
+    fragment_variable_values: FragmentVariables | None = None,
+) -> Any:
+    """Produce a coerced Python value given a GraphQL Value AST.
+
+    Returns ``Undefined`` when the value could not be validly coerced according
+    to the provided type.
+
+    Unlike :func:`~graphql.utilities.value_from_ast`, this properly supports
+    fragment variables in addition to operation variables.
+    """
+    if isinstance(value_node, VariableNode):
+        variable_value = get_variable_value(
+            value_node, variable_values, fragment_variable_values
+        )
+        if (variable_value is None or variable_value is Undefined) and is_non_null_type(
+            type_
+        ):
+            return Undefined  # Invalid: intentionally return no value.
+        # Note: This does no further checking that this variable is correct.
+        # This assumes validation has checked this variable is of the correct type.
+        return variable_value
+
+    if is_non_null_type(type_):
+        if isinstance(value_node, NullValueNode):
+            return Undefined  # Invalid: intentionally return no value.
+        return coerce_input_literal(
+            value_node, type_.of_type, variable_values, fragment_variable_values
+        )
+
+    if isinstance(value_node, NullValueNode):
+        return None  # Explicitly return the value null.
+
+    if is_list_type(type_):
+        item_type = type_.of_type
+        if not isinstance(value_node, ListValueNode):
+            # Lists accept a non-list value as a list of one.
+            item_value = coerce_input_literal(
+                value_node, item_type, variable_values, fragment_variable_values
+            )
+            if item_value is Undefined:
+                return Undefined  # Invalid: intentionally return no value.
+            return [item_value]
+        coerced_list: list[Any] = []
+        for item_node in value_node.values:
+            item_value = coerce_input_literal(
+                item_node, item_type, variable_values, fragment_variable_values
+            )
+            if item_value is Undefined:
+                if (
+                    isinstance(item_node, VariableNode)
+                    and not is_non_null_type(item_type)
+                    and _variable_value_is_null(
+                        item_node, variable_values, fragment_variable_values
+                    )
+                ):
+                    # A missing variable within a list is coerced to null.
+                    coerced_list.append(None)
+                    continue
+                return Undefined  # Invalid: intentionally return no value.
+            coerced_list.append(item_value)
+        return coerced_list
+
+    if is_input_object_type(type_):
+        if not isinstance(value_node, ObjectValueNode):
+            return Undefined  # Invalid: intentionally return no value.
+
+        coerced_dict: dict[str, Any] = {}
+        field_defs = type_.fields
+        field_nodes = {field.name.value: field for field in value_node.fields}
+        # Ensure every provided field is defined.
+        if any(field_name not in field_defs for field_name in field_nodes):
+            return Undefined  # Invalid: intentionally return no value.
+        for field_name, field in field_defs.items():
+            field_node = field_nodes.get(field_name)
+            if field_node is None or (
+                isinstance(field_node.value, VariableNode)
+                and _variable_value_is_null(
+                    field_node.value, variable_values, fragment_variable_values
+                )
+            ):
+                if is_required_input_field(field):
+                    return Undefined  # Invalid: intentionally return no value.
+                if field.default_value is not Undefined:
+                    # Use out name as name if it exists (extension of GraphQL.js).
+                    coerced_dict[field.out_name or field_name] = field.default_value
+            else:
+                field_value = coerce_input_literal(
+                    field_node.value,
+                    field.type,
+                    variable_values,
+                    fragment_variable_values,
+                )
+                if field_value is Undefined:
+                    return Undefined  # Invalid: intentionally return no value.
+                coerced_dict[field.out_name or field_name] = field_value
+
+        if type_.is_one_of:
+            keys = list(coerced_dict)
+            if len(keys) != 1:
+                # Invalid: not exactly one key, intentionally return no value.
+                return Undefined
+            if coerced_dict[keys[0]] is None:
+                # Invalid: value not non-null, intentionally return no value.
+                return Undefined
+
+        return type_.out_type(coerced_dict)
+
+    leaf_type = assert_leaf_type(type_)
+    try:
+        if variable_values:
+            return leaf_type.parse_literal(value_node, variable_values)
+        return leaf_type.parse_literal(value_node)
+    except Exception:  # noqa: BLE001
+        # Invalid: ignore error and intentionally return no value.
+        return Undefined
+
+
+def get_variable_value(
+    variable_node: VariableNode,
+    variable_values: dict[str, Any] | None,
+    fragment_variable_values: FragmentVariables | None,
+) -> Any:
+    """Retrieve the variable value for the given variable node."""
+    var_name = variable_node.name.value
+    if fragment_variable_values and fragment_variable_values.signatures.get(var_name):
+        return fragment_variable_values.values.get(var_name, Undefined)
+    if variable_values:
+        return variable_values.get(var_name, Undefined)
+    return Undefined
+
+
+def _variable_value_is_null(
+    variable_node: VariableNode,
+    variable_values: dict[str, Any] | None,
+    fragment_variable_values: FragmentVariables | None,
+) -> bool:
+    """Check whether the given variable node resolves to null or undefined."""
+    variable_value = get_variable_value(
+        variable_node, variable_values, fragment_variable_values
+    )
+    return variable_value is None or variable_value is Undefined

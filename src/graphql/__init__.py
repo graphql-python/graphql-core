@@ -210,6 +210,8 @@ from .utilities import (
     TypeInfoVisitor,
     # Coerce a Python value to a GraphQL type, or produce errors.
     coerce_input_value,
+    # Coerce a GraphQL literal (AST) to a GraphQL type, or return Undefined.
+    coerce_input_literal,
     # Concatenates multiple ASTs together.
     concat_ast,
     # Separate an AST into an AST per Operation.
@@ -733,6 +735,7 @@ __all__ = [
     "build_ast_schema",
     "build_client_schema",
     "build_schema",
+    "coerce_input_literal",
     "coerce_input_value",
     "concat_ast",
     "create_source_event_stream",

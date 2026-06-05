@@ -66,6 +66,8 @@ def describe_value_from_ast():
         )
 
         assert _value_from('"value"', pass_through_scalar) == "value"
+        # also exercise the path where operation variables are provided
+        assert _value_from('"value"', pass_through_scalar, {"unused": True}) == "value"
 
         def throw_parse_literal(_node: ValueNode, _vars=None):
             raise RuntimeError("Test")

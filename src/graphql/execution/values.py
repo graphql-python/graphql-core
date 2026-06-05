@@ -30,8 +30,7 @@ from ..type import (
     is_input_object_type,
     is_non_null_type,
 )
-from ..utilities.coerce_input_value import coerce_input_value
-from ..utilities.value_from_ast import value_from_ast
+from ..utilities.coerce_input_value import coerce_input_literal, coerce_input_value
 from .get_variable_signature import GraphQLVariableSignature, get_variable_signature
 
 if TYPE_CHECKING:
@@ -232,11 +231,11 @@ def experimental_get_argument_values(
             msg = f"Argument '{name}' of non-null type '{arg_type}' must not be null."
             raise GraphQLError(msg, value_node)
 
-        coerced_value = value_from_ast(
+        coerced_value = coerce_input_literal(
             value_node,
             arg_type,
             variable_values,
-            fragment_variables.values if fragment_variables else None,
+            fragment_variables,
         )
         if coerced_value is Undefined:
             # Note: `values_of_correct_type` validation should catch this before

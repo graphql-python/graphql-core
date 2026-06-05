@@ -6,9 +6,10 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 from ..error import GraphQLError
 from ..language import print_ast
+from ..pyutils import Undefined
 from ..type import is_input_type
+from ..utilities.coerce_input_value import coerce_input_literal
 from ..utilities.type_from_ast import type_from_ast
-from ..utilities.value_from_ast import value_from_ast
 
 if TYPE_CHECKING:
     from ..language import VariableDefinitionNode
@@ -46,8 +47,11 @@ def get_variable_signature(
             var_def_node.type,
         )
 
+    default_value = var_def_node.default_value
     return GraphQLVariableSignature(
         name=var_name,
         type=var_type,
-        default_value=value_from_ast(var_def_node.default_value, var_type),
+        default_value=coerce_input_literal(default_value, var_type)
+        if default_value
+        else Undefined,
     )

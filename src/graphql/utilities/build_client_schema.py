@@ -5,7 +5,7 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING, cast
 
-from ..language import DirectiveLocation, parse_value
+from ..language import DirectiveLocation, parse_const_value
 from ..pyutils import Undefined, inspect
 from ..type import (
     GraphQLArgument,
@@ -33,7 +33,7 @@ from ..type import (
     is_output_type,
     specified_scalar_types,
 )
-from .value_from_ast import value_from_ast
+from .coerce_input_value import coerce_input_literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection
@@ -331,7 +331,9 @@ def build_client_schema(
         default_value = (
             Undefined
             if default_value_introspection is None
-            else value_from_ast(parse_value(default_value_introspection), type_)
+            else coerce_input_literal(
+                parse_const_value(default_value_introspection), type_
+            )
         )
         return GraphQLArgument(
             type_,
@@ -368,7 +370,9 @@ def build_client_schema(
         default_value = (
             Undefined
             if default_value_introspection is None
-            else value_from_ast(parse_value(default_value_introspection), type_)
+            else coerce_input_literal(
+                parse_const_value(default_value_introspection), type_
+            )
         )
         return GraphQLInputField(
             type_,

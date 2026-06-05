@@ -54,7 +54,7 @@ from .ast_from_value import ast_from_value
 from .type_info import TypeInfo, TypeInfoVisitor
 
 # Coerce a Python value to a GraphQL type, or produce errors.
-from .coerce_input_value import coerce_input_value
+from .coerce_input_value import coerce_input_literal, coerce_input_value
 
 # Concatenate multiple ASTs together.
 from .concat_ast import concat_ast
@@ -92,6 +92,7 @@ __all__ = [
     "build_ast_schema",
     "build_client_schema",
     "build_schema",
+    "coerce_input_literal",
     "coerce_input_value",
     "concat_ast",
     "do_types_overlap",

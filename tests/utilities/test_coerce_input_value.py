@@ -6,10 +6,13 @@ from typing import Any, NamedTuple
 import pytest
 
 from graphql.error import GraphQLError
+from graphql.language import parse_value, print_ast
 from graphql.pyutils import Undefined
 from graphql.type import (
+    GraphQLBoolean,
     GraphQLEnumType,
     GraphQLFloat,
+    GraphQLID,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInputType,
@@ -17,8 +20,9 @@ from graphql.type import (
     GraphQLList,
     GraphQLNonNull,
     GraphQLScalarType,
+    GraphQLString,
 )
-from graphql.utilities import coerce_input_value
+from graphql.utilities import coerce_input_literal, coerce_input_value
 
 
 class CoercedValueError(NamedTuple):
@@ -501,3 +505,288 @@ def describe_coerce_input_value():
                 "Invalid value None at 'value[0]':"
                 " Expected non-nullable type 'Int!' not to be None."
             )
+
+
+def describe_coerce_input_literal():
+    def _test(
+        value_text: str,
+        type_: GraphQLInputType,
+        expected: Any,
+        variables: dict[str, Any] | None = None,
+    ):
+        ast = parse_value(value_text)
+        value = coerce_input_literal(ast, type_, variables)
+        if expected is Undefined:
+            assert value is Undefined
+        elif isinstance(expected, float) and isnan(expected):
+            assert isnan(value)
+        else:
+            assert value == expected
+
+    def _test_with_variables(
+        variables: dict[str, Any],
+        value_text: str,
+        type_: GraphQLInputType,
+        expected: Any,
+    ):
+        _test(value_text, type_, expected, variables)
+
+    def converts_according_to_input_coercion_rules():
+        _test("true", GraphQLBoolean, True)
+        _test("false", GraphQLBoolean, False)
+        _test("123", GraphQLInt, 123)
+        _test("123", GraphQLFloat, 123)
+        _test("123.456", GraphQLFloat, 123.456)
+        _test('"abc123"', GraphQLString, "abc123")
+        _test("123456", GraphQLID, "123456")
+        _test('"123456"', GraphQLID, "123456")
+
+    def does_not_convert_when_input_coercion_rules_reject_a_value():
+        _test("123", GraphQLBoolean, Undefined)
+        _test("123.456", GraphQLInt, Undefined)
+        _test("true", GraphQLInt, Undefined)
+        _test('"123"', GraphQLInt, Undefined)
+        _test('"123"', GraphQLFloat, Undefined)
+        _test("123", GraphQLString, Undefined)
+        _test("true", GraphQLString, Undefined)
+        _test("123.456", GraphQLString, Undefined)
+        _test("123.456", GraphQLID, Undefined)
+
+    def convert_using_parse_literal_from_a_custom_scalar_type():
+        def pass_through_parse_literal(node, _vars=None):
+            assert node.kind == "string_value"
+            return node.value
+
+        pass_through_scalar = GraphQLScalarType(
+            "PassThroughScalar",
+            parse_literal=pass_through_parse_literal,
+            parse_value=lambda value: value,  # pragma: no cover
+        )
+
+        _test('"value"', pass_through_scalar, "value")
+
+        def print_parse_literal(node, _vars=None):
+            return f"~~~{print_ast(node)}~~~"
+
+        print_scalar = GraphQLScalarType(
+            "PrintScalar",
+            parse_literal=print_parse_literal,
+            parse_value=lambda value: value,  # pragma: no cover
+        )
+
+        _test('"value"', print_scalar, '~~~"value"~~~')
+
+        def throw_parse_literal(_node, _vars=None):
+            raise RuntimeError("Test")
+
+        throw_scalar = GraphQLScalarType(
+            "ThrowScalar",
+            parse_literal=throw_parse_literal,
+            parse_value=lambda value: value,  # pragma: no cover
+        )
+
+        _test("value", throw_scalar, Undefined)
+
+        def undefined_parse_literal(_node, _vars=None):
+            return Undefined
+
+        return_undefined_scalar = GraphQLScalarType(
+            "ReturnUndefinedScalar",
+            parse_literal=undefined_parse_literal,
+            parse_value=lambda value: value,  # pragma: no cover
+        )
+
+        _test("value", return_undefined_scalar, Undefined)
+
+    def converts_enum_values_according_to_input_coercion_rules():
+        test_enum = GraphQLEnumType(
+            "TestColor",
+            {
+                "RED": 1,
+                "GREEN": 2,
+                "BLUE": 3,
+                "NULL": None,
+                "NAN": nan,
+                "NO_CUSTOM_VALUE": Undefined,
+            },
+        )
+
+        _test("RED", test_enum, 1)
+        _test("BLUE", test_enum, 3)
+        _test("3", test_enum, Undefined)
+        _test('"BLUE"', test_enum, Undefined)
+        _test("null", test_enum, None)
+        _test("NULL", test_enum, None)
+        _test("NULL", GraphQLNonNull(test_enum), None)
+        _test("NAN", test_enum, nan)
+        # Note: differs from GraphQL.js, which returns the value name here.
+        _test("NO_CUSTOM_VALUE", test_enum, Undefined)
+
+    # make a Boolean!
+    non_null_bool = GraphQLNonNull(GraphQLBoolean)
+    # make a [Boolean]
+    list_of_bool = GraphQLList(GraphQLBoolean)
+    # make a [Boolean!]
+    list_of_non_null_bool = GraphQLList(non_null_bool)
+    # make a [Boolean]!
+    non_null_list_of_bool = GraphQLNonNull(list_of_bool)
+    # make a [Boolean!]!
+    non_null_list_of_non_null_bool = GraphQLNonNull(list_of_non_null_bool)
+
+    def coerces_to_null_unless_non_null():
+        _test("null", GraphQLBoolean, None)
+        _test("null", non_null_bool, Undefined)
+
+    def coerces_lists_of_values():
+        _test("true", list_of_bool, [True])
+        _test("123", list_of_bool, Undefined)
+        _test("null", list_of_bool, None)
+        _test("[true, false]", list_of_bool, [True, False])
+        _test("[true, 123]", list_of_bool, Undefined)
+        _test("[true, null]", list_of_bool, [True, None])
+        _test("{ true: true }", list_of_bool, Undefined)
+
+    def coerces_non_null_lists_of_values():
+        _test("true", non_null_list_of_bool, [True])
+        _test("123", non_null_list_of_bool, Undefined)
+        _test("null", non_null_list_of_bool, Undefined)
+        _test("[true, false]", non_null_list_of_bool, [True, False])
+        _test("[true, 123]", non_null_list_of_bool, Undefined)
+        _test("[true, null]", non_null_list_of_bool, [True, None])
+
+    def coerces_lists_of_non_null_values():
+        _test("true", list_of_non_null_bool, [True])
+        _test("123", list_of_non_null_bool, Undefined)
+        _test("null", list_of_non_null_bool, None)
+        _test("[true, false]", list_of_non_null_bool, [True, False])
+        _test("[true, 123]", list_of_non_null_bool, Undefined)
+        _test("[true, null]", list_of_non_null_bool, Undefined)
+
+    def coerces_non_null_lists_of_non_null_values():
+        _test("true", non_null_list_of_non_null_bool, [True])
+        _test("123", non_null_list_of_non_null_bool, Undefined)
+        _test("null", non_null_list_of_non_null_bool, Undefined)
+        _test("[true, false]", non_null_list_of_non_null_bool, [True, False])
+        _test("[true, 123]", non_null_list_of_non_null_bool, Undefined)
+        _test("[true, null]", non_null_list_of_non_null_bool, Undefined)
+
+    def uses_default_values_for_unprovided_fields():
+        type_ = GraphQLInputObjectType(
+            "TestInput",
+            {"int": GraphQLInputField(GraphQLInt, default_value=42)},
+        )
+
+        _test("{}", type_, {"int": 42})
+
+    test_input_obj = GraphQLInputObjectType(
+        "TestInput",
+        {
+            "int": GraphQLInputField(GraphQLInt, default_value=42),
+            "bool": GraphQLInputField(GraphQLBoolean),
+            "requiredBool": GraphQLInputField(non_null_bool),
+        },
+    )
+
+    test_one_of_input_obj = GraphQLInputObjectType(
+        "TestOneOfInput",
+        {
+            "a": GraphQLInputField(GraphQLString),
+            "b": GraphQLInputField(GraphQLString),
+        },
+        is_one_of=True,
+    )
+
+    def coerces_input_objects_according_to_input_coercion_rules():
+        _test("null", test_input_obj, None)
+        _test("123", test_input_obj, Undefined)
+        _test("[]", test_input_obj, Undefined)
+        _test(
+            "{ requiredBool: true }",
+            test_input_obj,
+            {"int": 42, "requiredBool": True},
+        )
+        _test(
+            "{ int: null, requiredBool: true }",
+            test_input_obj,
+            {"int": None, "requiredBool": True},
+        )
+        _test(
+            "{ int: 123, requiredBool: false }",
+            test_input_obj,
+            {"int": 123, "requiredBool": False},
+        )
+        _test(
+            "{ bool: true, requiredBool: false }",
+            test_input_obj,
+            {"int": 42, "bool": True, "requiredBool": False},
+        )
+        _test("{ int: true, requiredBool: true }", test_input_obj, Undefined)
+        _test("{ requiredBool: null }", test_input_obj, Undefined)
+        _test("{ bool: true }", test_input_obj, Undefined)
+        _test("{ requiredBool: true, unknown: 123 }", test_input_obj, Undefined)
+        _test('{ a: "abc" }', test_one_of_input_obj, {"a": "abc"})
+        _test('{ b: "def" }', test_one_of_input_obj, {"b": "def"})
+        _test('{ a: "abc", b: null }', test_one_of_input_obj, Undefined)
+        _test("{ a: null }", test_one_of_input_obj, Undefined)
+        _test("{ a: 1 }", test_one_of_input_obj, Undefined)
+        _test('{ a: "abc", b: "def" }', test_one_of_input_obj, Undefined)
+        _test("{}", test_one_of_input_obj, Undefined)
+        _test('{ c: "abc" }', test_one_of_input_obj, Undefined)
+
+    def accepts_variable_values_assuming_already_coerced():
+        _test("$var", GraphQLBoolean, Undefined)
+        _test_with_variables({"var": True}, "$var", GraphQLBoolean, True)
+        _test_with_variables({"var": None}, "$var", GraphQLBoolean, None)
+        _test_with_variables({"var": None}, "$var", non_null_bool, Undefined)
+
+    def asserts_variables_are_provided_as_items_in_lists():
+        _test("[ $foo ]", list_of_bool, [None])
+        _test("[ $foo ]", list_of_non_null_bool, Undefined)
+        _test_with_variables({"foo": True}, "[ $foo ]", list_of_non_null_bool, [True])
+        # Note: variables are expected to have already been coerced, so we
+        # do not expect the singleton wrapping behavior for variables.
+        _test_with_variables({"foo": True}, "$foo", list_of_non_null_bool, True)
+        _test_with_variables({"foo": [True]}, "$foo", list_of_non_null_bool, [True])
+
+    def omits_input_object_fields_for_unprovided_variables():
+        _test(
+            "{ int: $foo, bool: $foo, requiredBool: true }",
+            test_input_obj,
+            {"int": 42, "requiredBool": True},
+        )
+        _test("{ requiredBool: $foo }", test_input_obj, Undefined)
+        _test_with_variables(
+            {"foo": True},
+            "{ requiredBool: $foo }",
+            test_input_obj,
+            {"int": 42, "requiredBool": True},
+        )
+
+    def transforms_names_using_out_name():
+        # This is an extension of GraphQL.js.
+        complex_input_obj = GraphQLInputObjectType(
+            "Complex",
+            {
+                "realPart": GraphQLInputField(GraphQLFloat, out_name="real_part"),
+                "imagPart": GraphQLInputField(
+                    GraphQLFloat, default_value=0, out_name="imag_part"
+                ),
+            },
+        )
+        _test(
+            "{ realPart: 1 }",
+            complex_input_obj,
+            {"real_part": 1, "imag_part": 0},
+        )
+
+    def transforms_values_with_out_type():
+        # This is an extension of GraphQL.js.
+        complex_input_obj = GraphQLInputObjectType(
+            "Complex",
+            {
+                "real": GraphQLInputField(GraphQLFloat),
+                "imag": GraphQLInputField(GraphQLFloat),
+            },
+            out_type=lambda value: complex(value["real"], value["imag"]),
+        )
+        _test("{ real: 1, imag: 2 }", complex_input_obj, 1 + 2j)

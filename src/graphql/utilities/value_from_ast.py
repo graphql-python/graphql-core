@@ -28,7 +28,6 @@ def value_from_ast(
     value_node: ValueNode | None,
     type_: GraphQLInputType,
     variables: dict[str, Any] | None = None,
-    fragment_variables: dict[str, Any] | None = None,
 ) -> Any:
     """Produce a Python value given a GraphQL Value AST.
 
@@ -37,6 +36,10 @@ def value_from_ast(
 
     Returns ``Undefined`` when the value could not be validly coerced according
     to the provided type.
+
+    .. deprecated:: 3.3
+        Use :func:`~graphql.utilities.coerce_input_literal` instead.
+        Will be removed in a future version.
 
     =================== ============== ================
        GraphQL Value      JSON Value     Python Value
@@ -58,17 +61,9 @@ def value_from_ast(
 
     if isinstance(value_node, VariableNode):
         variable_name = value_node.name.value
-        # Prefer fragment variables over operation variables (matching the JS
-        # ``fragmentVariables?.[name] ?? variables?.[name]`` nullish coalescing).
         variable_value = (
-            fragment_variables.get(variable_name, Undefined)
-            if fragment_variables
-            else Undefined
+            variables.get(variable_name, Undefined) if variables else Undefined
         )
-        if variable_value is None or variable_value is Undefined:
-            variable_value = (
-                variables.get(variable_name, Undefined) if variables else Undefined
-            )
         if variable_value is Undefined:
             return Undefined
         if variable_value is None and is_non_null_type(type_):
@@ -81,7 +76,7 @@ def value_from_ast(
     if is_non_null_type(type_):
         if isinstance(value_node, NullValueNode):
             return Undefined
-        return value_from_ast(value_node, type_.of_type, variables, fragment_variables)
+        return value_from_ast(value_node, type_.of_type, variables)
 
     if isinstance(value_node, NullValueNode):
         return None  # This is explicitly returning the value None.
@@ -92,23 +87,19 @@ def value_from_ast(
             coerced_values: list[Any] = []
             append_value = coerced_values.append
             for item_node in value_node.values:
-                if is_missing_variable(item_node, variables, fragment_variables):
+                if is_missing_variable(item_node, variables):
                     # If an array contains a missing variable, it is either coerced to
                     # None or if the item type is non-null, it is considered invalid.
                     if is_non_null_type(item_type):
                         return Undefined
                     append_value(None)
                 else:
-                    item_value = value_from_ast(
-                        item_node, item_type, variables, fragment_variables
-                    )
+                    item_value = value_from_ast(item_node, item_type, variables)
                     if item_value is Undefined:
                         return Undefined
                     append_value(item_value)
             return coerced_values
-        coerced_value = value_from_ast(
-            value_node, item_type, variables, fragment_variables
-        )
+        coerced_value = value_from_ast(value_node, item_type, variables)
         if coerced_value is Undefined:
             return Undefined
         return [coerced_value]
@@ -121,18 +112,14 @@ def value_from_ast(
         field_nodes = {field.name.value: field for field in value_node.fields}
         for field_name, field in fields.items():
             field_node = field_nodes.get(field_name)
-            if not field_node or is_missing_variable(
-                field_node.value, variables, fragment_variables
-            ):
+            if not field_node or is_missing_variable(field_node.value, variables):
                 if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_obj[field.out_name or field_name] = field.default_value
                 elif is_non_null_type(field.type):  # pragma: no branch
                     return Undefined
                 continue
-            field_value = value_from_ast(
-                field_node.value, field.type, variables, fragment_variables
-            )
+            field_value = value_from_ast(field_node.value, field.type, variables)
             if field_value is Undefined:
                 return Undefined
             coerced_obj[field.out_name or field_name] = field_value
@@ -168,17 +155,8 @@ def value_from_ast(
 def is_missing_variable(
     value_node: ValueNode,
     variables: dict[str, Any] | None = None,
-    fragment_variables: dict[str, Any] | None = None,
 ) -> bool:
-    """Check if ``value_node`` is a variable not defined in the variable dicts."""
-    return (
-        isinstance(value_node, VariableNode)
-        and (
-            not fragment_variables
-            or fragment_variables.get(value_node.name.value, Undefined) is Undefined
-        )
-        and (
-            not variables
-            or variables.get(value_node.name.value, Undefined) is Undefined
-        )
+    """Check if ``value_node`` is a variable not defined in the variables dict."""
+    return isinstance(value_node, VariableNode) and (
+        not variables or variables.get(value_node.name.value, Undefined) is Undefined
     )

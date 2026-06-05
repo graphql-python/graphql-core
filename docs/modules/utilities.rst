@@ -76,6 +76,10 @@ Coerce a Python value to a GraphQL type, or produce errors:
 
 .. autofunction:: coerce_input_value
 
+Coerce a GraphQL literal (AST) to a GraphQL type, or return ``Undefined``:
+
+.. autofunction:: coerce_input_literal
+
 Concatenate multiple ASTs together:
 
 .. autofunction:: concat_ast
