@@ -1,4 +1,5 @@
 import re
+from asyncio import sleep
 from typing import Any, Awaitable, cast
 
 from pytest import mark
@@ -504,6 +505,142 @@ def describe_execute_handles_non_nullable_types():
                     }
                 ],
             )
+
+    def describe_handles_multiple_errors_for_a_single_response_position():
+        @mark.asyncio
+        async def nullable_and_non_nullable_root_fields_throw_nested_errors():
+            query = """
+                {
+                  promiseNonNullNest {
+                    syncNonNull
+                  }
+                  promiseNest {
+                    syncNonNull
+                  }
+                }
+                """
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+            )
+            assert result == (
+                None,
+                [
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["promiseNonNullNest", "syncNonNull"],
+                        "locations": [(4, 21)],
+                    },
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["promiseNest", "syncNonNull"],
+                        "locations": [(7, 21)],
+                    },
+                ],
+            )
+
+        @mark.asyncio
+        async def slower_nullable_after_non_nullable_root_field():
+            query = """
+                {
+                  promiseNonNullNest {
+                    syncNonNull
+                  }
+                  promiseNest {
+                    promiseNonNull
+                  }
+                }
+                """
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+            )
+            assert result == (
+                None,
+                [
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["promiseNonNullNest", "syncNonNull"],
+                        "locations": [(4, 21)],
+                    },
+                ],
+            )
+
+            # allow time for slower error to reject
+            assert result.errors is not None
+            initial_errors = list(result.errors)
+            for _ in range(5):
+                await sleep(0)
+            assert result.errors == initial_errors
+
+        @mark.asyncio
+        async def nullable_and_non_nullable_nested_fields_throw_nested_errors():
+            query = """
+                {
+                  syncNest {
+                    promiseNonNullNest {
+                      syncNonNull
+                    }
+                    promiseNest {
+                      syncNonNull
+                    }
+                  }
+                }
+                """
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+            )
+            assert result == (
+                {"syncNest": None},
+                [
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["syncNest", "promiseNonNullNest", "syncNonNull"],
+                        "locations": [(5, 23)],
+                    },
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["syncNest", "promiseNest", "syncNonNull"],
+                        "locations": [(8, 23)],
+                    },
+                ],
+            )
+
+        @mark.asyncio
+        async def slower_nullable_after_non_nullable_nested_field():
+            query = """
+                {
+                  syncNest {
+                    promiseNonNullNest {
+                      syncNonNull
+                    }
+                    promiseNest {
+                      promiseNest {
+                        promiseNest {
+                          promiseNonNull
+                        }
+                      }
+                    }
+                  }
+                }
+                """
+            result = await cast(
+                Awaitable[ExecutionResult], execute_query(query, ThrowingData())
+            )
+            assert result == (
+                {"syncNest": None},
+                [
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["syncNest", "promiseNonNullNest", "syncNonNull"],
+                        "locations": [(5, 23)],
+                    },
+                ],
+            )
+
+            assert result.errors is not None
+            initial_errors = list(result.errors)
+            for _ in range(20):
+                await sleep(0)
+            assert result.errors == initial_errors
 
     def describe_handles_non_null_argument():
 

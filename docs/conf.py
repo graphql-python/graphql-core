@@ -151,6 +151,7 @@ GraphQLErrorExtensions
 GraphQLFormattedErrorExtensions
 GraphQLOutputType
 asyncio.events.AbstractEventLoop
+graphql.execution.execute.CollectedErrors
 graphql.execution.map_async_iterator.MapAsyncIterator
 graphql.language.lexer.EscapeSequence
 graphql.language.visitor.EnterLeaveVisitor

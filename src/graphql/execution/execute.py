@@ -11,6 +11,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     Union,
@@ -174,6 +175,42 @@ class ExecutionResult:
 Middleware = Optional[Union[Tuple, List, MiddlewareManager]]
 
 
+class CollectedErrors:
+    """A list of errors collected during execution, ignoring nulled positions.
+
+    For internal use only.
+    """
+
+    _error_positions: Set[Optional[Path]]
+    _errors: List[GraphQLError]
+
+    def __init__(self) -> None:
+        self._error_positions = set()
+        self._errors = []
+
+    @property
+    def errors(self) -> List[GraphQLError]:
+        return self._errors
+
+    def add(self, error: GraphQLError, path: Optional[Path]) -> None:
+        # Do not modify errors list if the execution position for this error or
+        # any of its ancestors has already been nulled via error propagation.
+        # This check should be unnecessary for implementations able to implement
+        # actual cancellation.
+        if self._has_nulled_position(path):
+            return
+        self._error_positions.add(path)
+        self._errors.append(error)
+
+    def _has_nulled_position(self, start_path: Optional[Path]) -> bool:
+        path = start_path
+        while path is not None:
+            if path in self._error_positions:
+                return True
+            path = path.prev
+        return None in self._error_positions
+
+
 class ExecutionContext:
     """Data that must be available at all points during query execution.
 
@@ -190,7 +227,7 @@ class ExecutionContext:
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
-    errors: List[GraphQLError]
+    collected_errors: CollectedErrors
     middleware_manager: Optional[MiddlewareManager]
 
     is_awaitable = staticmethod(default_is_awaitable)
@@ -206,7 +243,7 @@ class ExecutionContext:
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
         subscribe_field_resolver: GraphQLFieldResolver,
-        errors: List[GraphQLError],
+        collected_errors: CollectedErrors,
         middleware_manager: Optional[MiddlewareManager],
         is_awaitable: Optional[Callable[[Any], bool]],
     ) -> None:
@@ -219,7 +256,7 @@ class ExecutionContext:
         self.field_resolver = field_resolver
         self.type_resolver = type_resolver
         self.subscribe_field_resolver = subscribe_field_resolver
-        self.errors = errors
+        self.collected_errors = collected_errors
         self.middleware_manager = middleware_manager
         if is_awaitable:
             self.is_awaitable = is_awaitable  # type: ignore
@@ -306,7 +343,7 @@ class ExecutionContext:
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
             subscribe_field_resolver or default_field_resolver,
-            [],
+            CollectedErrors(),
             middleware_manager,
             is_awaitable,
         )
@@ -536,7 +573,7 @@ class ExecutionContext:
                         return completed
                     except Exception as raw_error:
                         error = located_error(raw_error, field_nodes, path.as_list())
-                        self.handle_field_error(error, return_type)
+                        self.handle_field_error(error, return_type, path)
                         return None
 
                 return await_result()
@@ -551,7 +588,7 @@ class ExecutionContext:
                         return await completed
                     except Exception as raw_error:
                         error = located_error(raw_error, field_nodes, path.as_list())
-                        self.handle_field_error(error, return_type)
+                        self.handle_field_error(error, return_type, path)
                         return None
 
                 return await_completed()
@@ -559,13 +596,14 @@ class ExecutionContext:
             return completed
         except Exception as raw_error:
             error = located_error(raw_error, field_nodes, path.as_list())
-            self.handle_field_error(error, return_type)
+            self.handle_field_error(error, return_type, path)
             return None
 
     def handle_field_error(
         self,
         error: GraphQLError,
         return_type: GraphQLOutputType,
+        path: Path,
     ) -> None:
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
@@ -573,7 +611,7 @@ class ExecutionContext:
             raise error
         # Otherwise, error protection is applied, logging the error and resolving a
         # null value for this field if one is encountered.
-        self.errors.append(error)
+        self.collected_errors.add(error, path)
         return None
 
     def complete_value(
@@ -721,7 +759,7 @@ class ExecutionContext:
                         error = located_error(
                             raw_error, field_nodes, item_path.as_list()
                         )
-                        self.handle_field_error(error, item_type)
+                        self.handle_field_error(error, item_type, item_path)
                         return None
 
                 completed_item = await_completed(item, item_path)
@@ -739,13 +777,13 @@ class ExecutionContext:
                                 error = located_error(
                                     raw_error, field_nodes, item_path.as_list()
                                 )
-                                self.handle_field_error(error, item_type)
+                                self.handle_field_error(error, item_type, item_path)
                                 return None
 
                         completed_item = await_completed(completed_item, item_path)
                 except Exception as raw_error:
                     error = located_error(raw_error, field_nodes, item_path.as_list())
-                    self.handle_field_error(error, item_type)
+                    self.handle_field_error(error, item_type, item_path)
                     completed_item = None
 
             if is_awaitable(completed_item):
@@ -1029,7 +1067,7 @@ def execute(
     # Errors from sub-fields of a NonNull type may propagate to the top level,
     # at which point we still log the error and null the parent field, which
     # in this case is the entire response.
-    errors = exe_context.errors
+    collected_errors = exe_context.collected_errors
     build_response = exe_context.build_response
     try:
         operation = exe_context.operation
@@ -1039,17 +1077,18 @@ def execute(
             # noinspection PyShadowingNames
             async def await_result() -> Any:
                 try:
-                    return build_response(await result, errors)  # type: ignore
+                    data = await result  # type: ignore
+                    return build_response(data, collected_errors.errors)
                 except GraphQLError as error:
-                    errors.append(error)
-                    return build_response(None, errors)
+                    collected_errors.add(error, None)
+                    return build_response(None, collected_errors.errors)
 
             return await_result()
     except GraphQLError as error:
-        errors.append(error)
-        return build_response(None, errors)
+        collected_errors.add(error, None)
+        return build_response(None, collected_errors.errors)
     else:
-        return build_response(result, errors)  # type: ignore
+        return build_response(result, collected_errors.errors)  # type: ignore
 
 
 def assume_not_awaitable(_value: Any) -> bool:
