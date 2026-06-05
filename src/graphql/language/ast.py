@@ -289,11 +289,19 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
     "list_nullability_operator": ("nullability_assertion",),
     "non_null_assertion": ("nullability_assertion",),
     "error_boundary": ("nullability_assertion",),
-    "fragment_spread": ("name", "arguments", "directives"),
+    "fragment_spread": (
+        "name",
+        # note: Fragment arguments are experimental and may be changed
+        # or removed in the future.
+        "arguments",
+        "directives",
+    ),
     "inline_fragment": ("type_condition", "directives", "selection_set"),
     "fragment_definition": (
         "description",
         "name",
+        # note: Fragment variables are experimental and may be changed
+        # or removed in the future.
         "variable_definitions",
         "type_condition",
         "directives",
