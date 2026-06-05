@@ -48,7 +48,8 @@ def validate(
     Attackers can send pathologically invalid queries to induce a DoS attack,
     so by default ``max_errors`` set to 100 errors.
 
-    Providing a custom TypeInfo instance is deprecated and will be removed in v3.3.
+    Providing a custom TypeInfo instance is deprecated; omit the ``type_info``
+    argument so that validate creates the TypeInfo instance. It will be removed in v3.3.
     """
     if not document_ast or not isinstance(document_ast, DocumentNode):
         raise TypeError("Must provide document.")

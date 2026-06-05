@@ -149,6 +149,10 @@ class Visitor:
     ) -> Optional[Callable[..., Optional[VisitorAction]]]:
         """Get the visit function for the given node kind and direction.
 
+        This deprecated compatibility helper delegates to
+        ``get_enter_leave_for_kind``; call ``get_enter_leave_for_kind`` directly
+        because ``get_visit_fn`` will be removed in v3.3.
+
         .. deprecated:: 3.2
            Please use ``get_enter_leave_for_kind`` instead. Will be removed in v3.3.
         """

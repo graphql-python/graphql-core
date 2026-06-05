@@ -9,6 +9,9 @@ __all__ = ["assert_valid_name", "is_valid_name_error"]
 def assert_valid_name(name: str) -> str:
     """Uphold the spec rules about naming.
 
+    This deprecated helper is retained for backwards compatibility; call ``assert_name``
+    instead because ``assert_valid_name`` will be removed in v3.3.
+
     .. deprecated:: 3.2
        Please use ``assert_name`` instead. Will be removed in v3.3.
     """
@@ -20,6 +23,10 @@ def assert_valid_name(name: str) -> str:
 
 def is_valid_name_error(name: str) -> Optional[GraphQLError]:
     """Return an Error if a name is invalid.
+
+    This deprecated helper is retained for backwards compatibility; call ``assert_name``
+    and catch the raised GraphQLError instead because ``is_valid_name_error`` will be
+    removed in v3.3.
 
     .. deprecated:: 3.2
        Please use ``assert_name`` instead. Will be removed in v3.3.

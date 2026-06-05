@@ -38,9 +38,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
     """Produce a GraphQL Value AST given a Python object.
 
     This function will match Python/JSON values to GraphQL AST schema format by using
-    the suggested GraphQLInputType. For example::
-
-        ast_from_value('value', GraphQLString)
+    the suggested GraphQLInputType.
 
     A GraphQL type must be provided, which will be used to interpret different Python
     values.

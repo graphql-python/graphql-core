@@ -254,6 +254,8 @@ def print_error(error: GraphQLError) -> str:
     """Print a GraphQLError to a string.
 
     Represents useful location information about the error's position in the source.
+    This deprecated helper is retained for backwards compatibility; call ``str(error)``
+    instead because ``print_error`` will be removed in v3.3.
 
     .. deprecated:: 3.2
        Please use ``str(error)`` instead. Will be removed in v3.3.
@@ -267,7 +269,9 @@ def format_error(error: GraphQLError) -> GraphQLFormattedError:
     """Format a GraphQL error.
 
     Given a GraphQLError, format it according to the rules described by the "Response
-    Format, Errors" section of the GraphQL Specification.
+    Format, Errors" section of the GraphQL Specification. This deprecated helper is
+    retained for backwards compatibility; use ``error.formatted`` instead because
+    ``format_error`` will be removed in v3.3.
 
     .. deprecated:: 3.2
        Please use ``error.formatted`` instead. Will be removed in v3.3.

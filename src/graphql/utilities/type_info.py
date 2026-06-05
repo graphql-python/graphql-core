@@ -74,7 +74,8 @@ class TypeInfo:
         Initial type may be provided in rare cases to facilitate traversals beginning
         somewhere other than documents.
 
-        The optional last parameter is deprecated and will be removed in v3.3.
+        The optional ``get_field_def_fn`` parameter is deprecated; omit it so that
+        TypeInfo uses its built-in field definition lookup. It will be removed in v3.3.
         """
         self._schema = schema
         self._type_stack: List[Optional[GraphQLOutputType]] = []

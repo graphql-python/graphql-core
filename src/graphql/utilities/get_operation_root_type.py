@@ -17,8 +17,12 @@ def get_operation_root_type(
 ) -> GraphQLObjectType:
     """Extract the root type of the operation from the schema.
 
+    This deprecated helper is retained for backwards compatibility; call
+    :meth:`GraphQLSchema.get_root_type <graphql.type.GraphQLSchema.get_root_type>`
+    instead because ``get_operation_root_type`` will be removed in v3.3.
+
     .. deprecated:: 3.2
-       Please use `GraphQLSchema.getRootType` instead. Will be removed in v3.3.
+       Please use ``GraphQLSchema.get_root_type`` instead. Will be removed in v3.3.
     """
     operation_type = operation.operation
     if operation_type == OperationType.QUERY:

@@ -113,6 +113,11 @@ def parse(
     :attr:`~graphql.language.FragmentDefinitionNode.variable_definitions` field
     of the :class:`~graphql.language.FragmentDefinitionNode`.
 
+    This legacy fragment variable syntax is deprecated. Move variable definitions to
+    operations for spec-compliant documents; if you need variables or arguments scoped
+    to fragments, the more complete experimental fragment-arguments feature in
+    graphql-core 3.3 should be used instead.
+
     The syntax is identical to normal, query-defined variables. For example::
 
         fragment A($var: Boolean = false) on T  {
