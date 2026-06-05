@@ -8,6 +8,7 @@ from graphql.language import (
     DefinitionNode,
     DocumentNode,
     FieldNode,
+    FragmentDefinitionNode,
     IntValueNode,
     ListTypeNode,
     ListValueNode,
@@ -22,6 +23,7 @@ from graphql.language import (
     SelectionSetNode,
     StringValueNode,
     ValueNode,
+    VariableDefinitionNode,
     VariableNode,
     Token,
     TokenKind,
@@ -241,6 +243,7 @@ def describe_parser():
         assert isinstance(definition, DefinitionNode)
         assert definition.loc == (0, 40)
         assert definition.operation == OperationType.QUERY
+        assert definition.description is None
         assert definition.name is None
         assert definition.variable_definitions == ()
         assert definition.directives == ()
@@ -330,6 +333,7 @@ def describe_parser():
         assert isinstance(definition, OperationDefinitionNode)
         assert definition.loc == (0, 29)
         assert definition.operation == OperationType.QUERY
+        assert definition.description is None
         assert definition.name is None
         assert definition.variable_definitions == ()
         assert definition.directives == ()
@@ -362,6 +366,66 @@ def describe_parser():
         name = field.name
         assert isinstance(name, NameNode)
         assert name.loc == (21, 23)
+        assert name.value == "id"
+        assert field.arguments == ()
+        assert field.directives == ()
+        assert field.selection_set is None
+
+    def creates_ast_from_nameless_query_with_description():
+        doc = parse(dedent("""
+                "Description"
+                query {
+                  node {
+                    id
+                  }
+                }
+                """))
+        assert isinstance(doc, DocumentNode)
+        assert doc.loc == (0, 43)
+        definitions = doc.definitions
+        assert isinstance(definitions, tuple)
+        assert len(definitions) == 1
+        definition = definitions[0]
+        assert isinstance(definition, OperationDefinitionNode)
+        assert definition.loc == (0, 43)
+        description = definition.description
+        assert isinstance(description, StringValueNode)
+        assert description.loc == (0, 13)
+        assert description.value == "Description"
+        assert description.block is False
+        assert definition.operation == OperationType.QUERY
+        assert definition.name is None
+        assert definition.variable_definitions == ()
+        assert definition.directives == ()
+        selection_set: Optional[SelectionSetNode] = definition.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        assert selection_set.loc == (20, 43)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        assert field.loc == (24, 41)
+        assert field.alias is None
+        name = field.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (24, 28)
+        assert name.value == "node"
+        assert field.arguments == ()
+        assert field.directives == ()
+        selection_set = field.selection_set
+        assert isinstance(selection_set, SelectionSetNode)
+        assert selection_set.loc == (29, 41)
+        selections = selection_set.selections
+        assert isinstance(selections, tuple)
+        assert len(selections) == 1
+        field = selections[0]
+        assert isinstance(field, FieldNode)
+        assert field.loc == (35, 37)
+        assert field.alias is None
+        name = field.name
+        assert isinstance(name, NameNode)
+        assert name.loc == (35, 37)
         assert name.value == "id"
         assert field.arguments == ()
         assert field.directives == ()
@@ -413,6 +477,167 @@ def describe_parser():
         bottom_comment = field_comment.next.next  # type: ignore
         assert bottom_comment and bottom_comment.kind is TokenKind.COMMENT
         assert bottom_comment.value == " bottom comment"
+
+    def describe_operation_and_variable_definition_descriptions():
+        def parses_operation_with_description_and_variable_descriptions():
+            source = (
+                '"Operation description"\n'
+                "query myQuery(\n"
+                '  "Variable a description"\n'
+                "  $a: Int,\n"
+                '  """Variable b\nmultiline description"""\n'
+                "  $b: String\n"
+                ") {\n"
+                "  field(a: $a, b: $b)\n"
+                "}"
+            )
+            doc = parse(source)
+            op_def = doc.definitions[0]
+            assert isinstance(op_def, OperationDefinitionNode)
+            assert op_def.operation == OperationType.QUERY
+            assert op_def.loc == (0, 158)
+            description = op_def.description
+            assert isinstance(description, StringValueNode)
+            assert description.value == "Operation description"
+            assert description.block is False
+            assert description.loc == (0, 23)
+            name = op_def.name
+            assert isinstance(name, NameNode)
+            assert name.value == "myQuery"
+            assert name.loc == (30, 37)
+            var_defs = op_def.variable_definitions
+            assert isinstance(var_defs, tuple)
+            assert len(var_defs) == 2
+            var_def = var_defs[0]
+            assert isinstance(var_def, VariableDefinitionNode)
+            assert var_def.loc == (41, 75)
+            description = var_def.description
+            assert isinstance(description, StringValueNode)
+            assert description.value == "Variable a description"
+            assert description.block is False
+            assert description.loc == (41, 65)
+            variable = var_def.variable
+            assert isinstance(variable, VariableNode)
+            assert variable.loc == (68, 70)
+            assert variable.name.value == "a"
+            assert variable.name.loc == (69, 70)
+            type_ = var_def.type
+            assert isinstance(type_, NamedTypeNode)
+            assert type_.name.value == "Int"
+            assert type_.loc == (72, 75)
+            assert var_def.default_value is None
+            assert var_def.directives == ()
+            var_def = var_defs[1]
+            assert isinstance(var_def, VariableDefinitionNode)
+            assert var_def.loc == (79, 130)
+            description = var_def.description
+            assert isinstance(description, StringValueNode)
+            assert description.value == "Variable b\nmultiline description"
+            assert description.block is True
+            assert description.loc == (79, 117)
+            variable = var_def.variable
+            assert isinstance(variable, VariableNode)
+            assert variable.loc == (120, 122)
+            assert variable.name.value == "b"
+            assert variable.name.loc == (121, 122)
+            type_ = var_def.type
+            assert isinstance(type_, NamedTypeNode)
+            assert type_.name.value == "String"
+            assert type_.loc == (124, 130)
+            assert var_def.default_value is None
+            assert var_def.directives == ()
+            assert op_def.directives == ()
+            selection_set = op_def.selection_set
+            assert isinstance(selection_set, SelectionSetNode)
+            assert selection_set.loc == (133, 158)
+            field = selection_set.selections[0]
+            assert isinstance(field, FieldNode)
+            assert field.name.value == "field"
+            assert field.name.loc == (137, 142)
+            assert field.loc == (137, 156)
+            args = field.arguments
+            assert isinstance(args, tuple)
+            assert len(args) == 2
+            assert args[0].name.value == "a"
+            assert args[0].loc == (143, 148)
+            assert args[1].name.value == "b"
+            assert args[1].loc == (150, 155)
+
+        def descriptions_on_a_short_hand_query_produce_a_sensible_error():
+            with raises(GraphQLSyntaxError) as exc_info:
+                parse('"""Invalid"""\n        { __typename }')
+            assert exc_info.value.message == (
+                "Syntax Error: Unexpected description,"
+                " descriptions are not supported on shorthand queries."
+            )
+
+        def parses_variable_definition_with_description_default_and_directives():
+            doc = parse(dedent("""
+                query (
+                  "desc"
+                  $foo: Int = 42 @dir
+                ) {
+                  field(foo: $foo)
+                }
+                """))
+            op_def = doc.definitions[0]
+            assert isinstance(op_def, OperationDefinitionNode)
+            var_def = op_def.variable_definitions[0]
+            assert isinstance(var_def, VariableDefinitionNode)
+            assert var_def.loc == (10, 38)
+            default_value = var_def.default_value
+            assert isinstance(default_value, IntValueNode)
+            assert default_value.value == "42"
+            assert default_value.loc == (31, 33)
+            directives = var_def.directives
+            assert isinstance(directives, tuple)
+            assert len(directives) == 1
+            directive = directives[0]
+            assert directive.name.value == "dir"
+            assert directive.name.loc == (35, 38)
+            assert directive.arguments == ()
+            assert directive.loc == (34, 38)
+            description = var_def.description
+            assert isinstance(description, StringValueNode)
+            assert description.value == "desc"
+            assert description.block is False
+            assert description.loc == (10, 16)
+            variable = var_def.variable
+            assert isinstance(variable, VariableNode)
+            assert variable.name.value == "foo"
+            assert variable.name.loc == (20, 23)
+            assert variable.loc == (19, 23)
+            type_ = var_def.type
+            assert isinstance(type_, NamedTypeNode)
+            assert type_.name.value == "Int"
+            assert type_.loc == (25, 28)
+
+        def parses_fragment_with_variable_description_legacy():
+            doc = parse(
+                'fragment Foo("desc" $foo: Int) on Bar { baz }',
+                allow_legacy_fragment_variables=True,
+            )
+            frag_def = doc.definitions[0]
+            assert isinstance(frag_def, FragmentDefinitionNode)
+            var_def = frag_def.variable_definitions[0]
+            assert isinstance(var_def, VariableDefinitionNode)
+            assert var_def.loc == (13, 29)
+            description = var_def.description
+            assert isinstance(description, StringValueNode)
+            assert description.value == "desc"
+            assert description.block is False
+            assert description.loc == (13, 19)
+            variable = var_def.variable
+            assert isinstance(variable, VariableNode)
+            assert variable.name.value == "foo"
+            assert variable.name.loc == (21, 24)
+            assert variable.loc == (20, 24)
+            type_ = var_def.type
+            assert isinstance(type_, NamedTypeNode)
+            assert type_.name.value == "Int"
+            assert type_.loc == (26, 29)
+            assert var_def.default_value is None
+            assert var_def.directives == ()
 
 
 def describe_parse_value():

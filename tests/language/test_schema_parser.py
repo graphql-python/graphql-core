@@ -290,8 +290,7 @@ def describe_schema_parser():
             extend type Hello {
               world: String
             }""",
-            "Unexpected description,"
-            " descriptions are supported only on type definitions.",
+            "Unexpected description," " only GraphQL definitions support descriptions.",
             (2, 13),
         )
         assert_syntax_error(
@@ -310,8 +309,7 @@ def describe_schema_parser():
             extend interface Hello {
               world: String
             }""",
-            "Unexpected description,"
-            " descriptions are supported only on type definitions.",
+            "Unexpected description," " only GraphQL definitions support descriptions.",
             (2, 13),
         )
         assert_syntax_error(

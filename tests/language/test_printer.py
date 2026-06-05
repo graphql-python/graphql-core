@@ -116,6 +116,15 @@ def describe_printer_query_document():
         fragment_with_variable = parse(source, allow_legacy_fragment_variables=True)
         assert print_ast(fragment_with_variable) == dedent(source)
 
+    def prints_fragment():
+        printed = print_ast(parse('"Fragment description" fragment Foo on Bar { baz }'))
+        assert printed == dedent("""
+            "Fragment description"
+            fragment Foo on Bar {
+              baz
+            }
+            """)
+
     def prints_kitchen_sink_without_altering_ast(kitchen_sink_query):  # noqa: F811
         ast = parse(kitchen_sink_query, no_location=True)
 
@@ -126,7 +135,12 @@ def describe_printer_query_document():
         assert deepcopy(ast) == ast_before_print_call
 
         assert printed == dedent(r'''
-            query queryName($foo: ComplexType, $site: Site = MOBILE) @onQuery {
+            "Query description"
+            query queryName(
+            "Very complex variable"
+            $foo: ComplexType
+            $site: Site = MOBILE
+            ) @onQuery {
               whoever123is: node(id: [123, 456]) {
                 id
                 ... on User @onInlineFragment {
@@ -168,6 +182,7 @@ def describe_printer_query_document():
               }
             }
 
+            """Fragment description"""
             fragment frag on Friend @onFragmentDefinition {
               foo(
                 size: $size
