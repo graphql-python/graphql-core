@@ -12,7 +12,6 @@ from ...language import (
     ObjectValueNode,
     StringValueNode,
     ValueNode,
-    VariableDefinitionNode,
     VisitorAction,
     SKIP,
     print_ast,
@@ -42,18 +41,6 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
     See https://spec.graphql.org/draft/#sec-Values-of-Correct-Type
     """
-
-    def __init__(self, context: ValidationContext) -> None:
-        super().__init__(context)
-        self.variable_definitions: dict[str, VariableDefinitionNode] = {}
-
-    def enter_operation_definition(self, *_args: Any) -> None:
-        self.variable_definitions.clear()
-
-    def enter_variable_definition(
-        self, definition: VariableDefinitionNode, *_args: Any
-    ) -> None:
-        self.variable_definitions[definition.variable.name.value] = definition
 
     def enter_list_value(self, node: ListValueNode, *_args: Any) -> VisitorAction:
         # Note: TypeInfo will traverse into a list's item type, so look to the parent
