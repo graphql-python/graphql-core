@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
+from ..language.ast import QUERY_DOCUMENT_KEYS
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
 from .specified_rules import specified_rules, specified_sdl_rules
@@ -32,6 +33,14 @@ class ValidationAbortedError(GraphQLError):
 validation_aborted_error = ValidationAbortedError(
     "Too many validation errors, error limit reached. Validation aborted."
 )
+
+
+# Per the specification, descriptions must not affect validation.
+# See https://spec.graphql.org/draft/#sec-Descriptions
+query_document_keys_to_validate: dict[str, tuple[str, ...]] = {
+    kind: tuple(key for key in keys if key != "description")
+    for kind, keys in QUERY_DOCUMENT_KEYS.items()
+}
 
 
 def validate(
@@ -83,7 +92,11 @@ def validate(
 
     # Visit the whole document with each instance of all provided rules.
     try:
-        visit(document_ast, TypeInfoVisitor(type_info, ParallelVisitor(visitors)))
+        visit(
+            document_ast,
+            TypeInfoVisitor(type_info, ParallelVisitor(visitors)),
+            query_document_keys_to_validate,
+        )
     except ValidationAbortedError:
         errors.append(validation_aborted_error)
     return errors

@@ -129,6 +129,11 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     def enter_float_value(self, node: FloatValueNode, *_args: Any) -> None:
         self.is_valid_value_node(node)
 
+    # Descriptions are string values that would not validate according
+    # to the below logic, but since (per the specification) descriptions must
+    # not affect validation, they are ignored entirely when visiting the AST
+    # and do not require special handling.
+    # See https://spec.graphql.org/draft/#sec-Descriptions
     def enter_string_value(self, node: StringValueNode, *_args: Any) -> None:
         self.is_valid_value_node(node)
 
