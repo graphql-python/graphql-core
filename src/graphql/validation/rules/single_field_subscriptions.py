@@ -6,6 +6,7 @@ from typing import Any
 
 from ...error import GraphQLError
 from ...execution.collect_fields import FieldGroup, FragmentDetails, collect_fields
+from ...execution.values import VariableValues
 from ...language import (
     FieldNode,
     FragmentDefinitionNode,
@@ -39,7 +40,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
         subscription_type = schema.subscription_type
         if subscription_type:
             operation_name = node.name.value if node.name else None
-            variable_values: dict[str, Any] = {}
+            variable_values: VariableValues = VariableValues({}, {})
             document = self.context.document
             fragments: dict[str, FragmentDetails] = {
                 definition.name.value: FragmentDetails(definition)

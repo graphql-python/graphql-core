@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, TypedDict, TypeGuard
 import pytest
 
 from graphql.error import GraphQLError
+from graphql.execution.values import VariableValues
 from graphql.language import (
     EnumTypeDefinitionNode,
     EnumTypeExtensionNode,
@@ -1345,7 +1346,7 @@ def describe_resolve_info():
         fragments: dict[str, FragmentDefinitionNode]
         root_value: Any
         operation: OperationDefinitionNode
-        variable_values: dict[str, Any]
+        variable_values: VariableValues
         is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
 
     info_args: InfoArgs = {
@@ -1360,7 +1361,7 @@ def describe_resolve_info():
         "operation": OperationDefinitionNode(
             operation=OperationType.QUERY, selection_set=SelectionSetNode()
         ),
-        "variable_values": {},
+        "variable_values": VariableValues({}, {}),
         "is_awaitable": is_awaitable,
     }
 

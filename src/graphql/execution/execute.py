@@ -110,6 +110,7 @@ from .types import (
     SuccessfulExecutionGroup,
 )
 from .values import (
+    VariableValues,
     experimental_get_argument_values,
     get_argument_values,
     get_directive_values,
@@ -194,7 +195,7 @@ class ExecutionContext(IncrementalPublisherContext):
     root_value: Any
     context_value: Any
     operation: OperationDefinitionNode
-    variable_values: dict[str, Any]
+    variable_values: VariableValues
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
@@ -217,7 +218,7 @@ class ExecutionContext(IncrementalPublisherContext):
         root_value: Any,
         context_value: Any,
         operation: OperationDefinitionNode,
-        variable_values: dict[str, Any],
+        variable_values: VariableValues,
         field_resolver: GraphQLFieldResolver,
         type_resolver: GraphQLTypeResolver,
         subscribe_field_resolver: GraphQLFieldResolver,
@@ -323,15 +324,15 @@ class ExecutionContext(IncrementalPublisherContext):
                 return [GraphQLError(f"Unknown operation named '{operation_name}'.")]
             return [GraphQLError("Must provide an operation.")]
 
-        coerced_variable_values = get_variable_values(
+        variable_values = get_variable_values(
             schema,
             operation.variable_definitions or (),
             raw_variable_values or {},
             max_errors=max_coercion_errors,
         )
 
-        if isinstance(coerced_variable_values, list):
-            return coerced_variable_values  # errors
+        if isinstance(variable_values, list):
+            return variable_values  # errors
 
         return cls(
             schema,
@@ -339,7 +340,7 @@ class ExecutionContext(IncrementalPublisherContext):
             root_value,
             context_value,
             operation,
-            coerced_variable_values,  # coerced values
+            variable_values,
             field_resolver or default_field_resolver,
             type_resolver or default_type_resolver,
             subscribe_field_resolver or default_field_resolver,
@@ -654,7 +655,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 first_field_node,
                 field_def.args,
                 self.variable_values,
-                first_field_details.fragment_variables,
+                first_field_details.fragment_variable_values,
             )
 
             # Note that contrary to the JavaScript implementation, we pass the context

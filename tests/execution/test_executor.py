@@ -8,6 +8,8 @@ import pytest
 
 from graphql.error import GraphQLError
 from graphql.execution import execute, execute_sync
+from graphql.execution.get_variable_signature import GraphQLVariableSignature
+from graphql.execution.values import VariableValues, VariableValueSource
 from graphql.language import FieldNode, OperationDefinitionNode, parse
 from graphql.pyutils import Undefined, inspect
 from graphql.type import (
@@ -266,7 +268,19 @@ def describe_execute_handles_basic_execution_tasks():
             fragments={},
             root_value=root_value,
             operation=operation,
-            variable_values=variable_values,
+            variable_values=VariableValues(
+                sources={
+                    "var": VariableValueSource(
+                        signature=GraphQLVariableSignature(
+                            name="var",
+                            type=GraphQLString,
+                            default_value=Undefined,
+                        ),
+                        value="abc",
+                    )
+                },
+                coerced={"var": "abc"},
+            ),
             context=None,
             is_awaitable=resolved_infos[0].is_awaitable,
         )

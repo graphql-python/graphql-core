@@ -35,7 +35,7 @@ from ..type import (
 )
 
 if TYPE_CHECKING:
-    from ..execution.collect_fields import FragmentVariables
+    from ..execution.values import VariableValues
 
 __all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
 
@@ -198,8 +198,8 @@ def coerce_input_value(
 def coerce_input_literal(
     value_node: ValueNode,
     type_: GraphQLInputType,
-    variable_values: dict[str, Any] | None = None,
-    fragment_variable_values: FragmentVariables | None = None,
+    variable_values: VariableValues | None = None,
+    fragment_variable_values: VariableValues | None = None,
 ) -> Any:
     """Produce a coerced Python value given a GraphQL Value AST.
 
@@ -210,7 +210,7 @@ def coerce_input_literal(
     fragment variables in addition to operation variables.
     """
     if isinstance(value_node, VariableNode):
-        variable_value = get_variable_value(
+        variable_value = get_coerced_variable_value(
             value_node, variable_values, fragment_variable_values
         )
         if (variable_value is None or variable_value is Undefined) and is_non_null_type(
@@ -311,7 +311,7 @@ def coerce_input_literal(
     leaf_type = assert_leaf_type(type_)
     try:
         if variable_values:
-            return leaf_type.parse_literal(value_node, variable_values)
+            return leaf_type.parse_literal(value_node, variable_values.coerced)
         return leaf_type.parse_literal(value_node)
     except Exception:  # noqa: BLE001
         # Invalid: ignore error and intentionally return no value.
@@ -337,27 +337,27 @@ def coerce_default_value(
     return coerced_value
 
 
-def get_variable_value(
+def get_coerced_variable_value(
     variable_node: VariableNode,
-    variable_values: dict[str, Any] | None,
-    fragment_variable_values: FragmentVariables | None,
+    variable_values: VariableValues | None,
+    fragment_variable_values: VariableValues | None,
 ) -> Any:
-    """Retrieve the variable value for the given variable node."""
+    """Retrieve the coerced variable value for the given variable node."""
     var_name = variable_node.name.value
-    if fragment_variable_values and fragment_variable_values.signatures.get(var_name):
-        return fragment_variable_values.values.get(var_name, Undefined)
+    if fragment_variable_values and var_name in fragment_variable_values.sources:
+        return fragment_variable_values.coerced.get(var_name, Undefined)
     if variable_values:
-        return variable_values.get(var_name, Undefined)
+        return variable_values.coerced.get(var_name, Undefined)
     return Undefined
 
 
 def _variable_value_is_null(
     variable_node: VariableNode,
-    variable_values: dict[str, Any] | None,
-    fragment_variable_values: FragmentVariables | None,
+    variable_values: VariableValues | None,
+    fragment_variable_values: VariableValues | None,
 ) -> bool:
     """Check whether the given variable node resolves to null or undefined."""
-    variable_value = get_variable_value(
+    variable_value = get_coerced_variable_value(
         variable_node, variable_values, fragment_variable_values
     )
     return variable_value is None or variable_value is Undefined

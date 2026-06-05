@@ -59,6 +59,7 @@ from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 from .assert_name import assert_enum_value_name, assert_name
 
 if TYPE_CHECKING:
+    from ..execution.values import VariableValues
     from .schema import GraphQLSchema
 
     try:
@@ -573,7 +574,7 @@ try:
         fragments: dict[str, FragmentDefinitionNode]
         root_value: Any
         operation: OperationDefinitionNode
-        variable_values: dict[str, Any]
+        variable_values: VariableValues
         context: TContext
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
 except TypeError as error:  # pragma: no cover
@@ -599,7 +600,7 @@ except TypeError as error:  # pragma: no cover
         fragments: dict[str, FragmentDefinitionNode]
         root_value: Any
         operation: OperationDefinitionNode
-        variable_values: dict[str, Any]
+        variable_values: VariableValues
         context: Any
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
 

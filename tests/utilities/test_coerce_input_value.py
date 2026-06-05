@@ -6,12 +6,18 @@ from typing import Any, NamedTuple
 import pytest
 
 from graphql.error import GraphQLError
+from graphql.execution.values import (
+    VariableValues,
+    get_variable_values,
+)
 from graphql.language import (
     FloatValueNode,
     StringValueNode,
+    TokenKind,
     parse_value,
     print_ast,
 )
+from graphql.language.parser import Parser
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
@@ -26,6 +32,7 @@ from graphql.type import (
     GraphQLList,
     GraphQLNonNull,
     GraphQLScalarType,
+    GraphQLSchema,
     GraphQLString,
 )
 from graphql.utilities import coerce_input_literal, coerce_input_value
@@ -519,10 +526,10 @@ def describe_coerce_input_literal():
         value_text: str,
         type_: GraphQLInputType,
         expected: Any,
-        variables: dict[str, Any] | None = None,
+        variable_values: VariableValues | None = None,
     ):
         ast = parse_value(value_text)
-        value = coerce_input_literal(ast, type_, variables)
+        value = coerce_input_literal(ast, type_, variable_values)
         if expected is Undefined:
             assert value is Undefined
         elif isinstance(expected, float) and isnan(expected):
@@ -531,12 +538,19 @@ def describe_coerce_input_literal():
             assert value == expected
 
     def _test_with_variables(
-        variables: dict[str, Any],
+        variable_defs: str,
+        inputs: dict[str, Any],
         value_text: str,
         type_: GraphQLInputType,
         expected: Any,
     ):
-        _test(value_text, type_, expected, variables)
+        parser = Parser(variable_defs)
+        parser.expect_token(TokenKind.SOF)
+        variable_values = get_variable_values(
+            GraphQLSchema(), parser.parse_variable_definitions(), inputs
+        )
+        assert not isinstance(variable_values, list)
+        _test(value_text, type_, expected, variable_values)
 
     def converts_according_to_input_coercion_rules():
         _test("true", GraphQLBoolean, True)
@@ -747,18 +761,30 @@ def describe_coerce_input_literal():
 
     def accepts_variable_values_assuming_already_coerced():
         _test("$var", GraphQLBoolean, Undefined)
-        _test_with_variables({"var": True}, "$var", GraphQLBoolean, True)
-        _test_with_variables({"var": None}, "$var", GraphQLBoolean, None)
-        _test_with_variables({"var": None}, "$var", non_null_bool, Undefined)
+        _test_with_variables(
+            "($var: Boolean)", {"var": True}, "$var", GraphQLBoolean, True
+        )
+        _test_with_variables(
+            "($var: Boolean)", {"var": None}, "$var", GraphQLBoolean, None
+        )
+        _test_with_variables(
+            "($var: Boolean)", {"var": None}, "$var", non_null_bool, Undefined
+        )
 
     def asserts_variables_are_provided_as_items_in_lists():
         _test("[ $foo ]", list_of_bool, [None])
         _test("[ $foo ]", list_of_non_null_bool, Undefined)
-        _test_with_variables({"foo": True}, "[ $foo ]", list_of_non_null_bool, [True])
+        _test_with_variables(
+            "($foo: Boolean)", {"foo": True}, "[ $foo ]", list_of_non_null_bool, [True]
+        )
         # Note: variables are expected to have already been coerced, so we
         # do not expect the singleton wrapping behavior for variables.
-        _test_with_variables({"foo": True}, "$foo", list_of_non_null_bool, True)
-        _test_with_variables({"foo": [True]}, "$foo", list_of_non_null_bool, [True])
+        _test_with_variables(
+            "($foo: Boolean)", {"foo": True}, "$foo", list_of_non_null_bool, True
+        )
+        _test_with_variables(
+            "($foo: [Boolean])", {"foo": [True]}, "$foo", list_of_non_null_bool, [True]
+        )
 
     def omits_input_object_fields_for_unprovided_variables():
         _test(
@@ -768,6 +794,7 @@ def describe_coerce_input_literal():
         )
         _test("{ requiredBool: $foo }", test_input_obj, Undefined)
         _test_with_variables(
+            "($foo: Boolean)",
             {"foo": True},
             "{ requiredBool: $foo }",
             test_input_obj,
