@@ -48,7 +48,6 @@ def validate(
     document_ast: DocumentNode,
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
-    type_info: TypeInfo | None = None,
 ) -> list[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -65,19 +64,16 @@ def validate(
     Validate will stop validation after a ``max_errors`` limit has been reached.
     Attackers can send pathologically invalid queries to induce a DoS attack,
     so by default ``max_errors`` set to 100 errors.
-
-    Providing a custom TypeInfo instance is deprecated and will be removed in v3.3.
     """
     # If the schema used for validation is invalid, throw an error.
     assert_valid_schema(schema)
     if max_errors is None:
         max_errors = 100
-    if type_info is None:
-        type_info = TypeInfo(schema)
     if rules is None:
         rules = specified_rules
 
     errors: list[GraphQLError] = []
+    type_info = TypeInfo(schema)
 
     def on_error(error: GraphQLError) -> None:
         if len(errors) >= max_errors:
