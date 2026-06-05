@@ -11,6 +11,7 @@ import pytest
 from graphql.execution import (
     ExecutionResult,
     create_source_event_stream,
+    execute_subscription_event,
     subscribe,
 )
 from graphql.language import DocumentNode, parse
@@ -272,6 +273,39 @@ def describe_subscription_initialization_phase():
         assert await anext(subscription) == ({"foo": "FooValue"}, None)
 
         await subscription.aclose()  # type: ignore
+
+    async def uses_a_custom_default_per_event_executor():
+        schema = GraphQLSchema(
+            query=DummyQueryType,
+            subscription=GraphQLObjectType(
+                "Subscription", {"foo": GraphQLField(GraphQLString)}
+            ),
+        )
+
+        async def foo_generator(_info):
+            yield {"foo": "FooValue"}
+
+        count = 0
+
+        def per_event_executor(context):
+            nonlocal count
+            count += 1
+            return execute_subscription_event(context)
+
+        subscription = subscribe(
+            schema,
+            parse("subscription { foo }"),
+            {"foo": foo_generator},
+            per_event_executor=per_event_executor,
+        )
+        assert isinstance(subscription, AsyncIterator)
+
+        assert await anext(subscription) == ({"foo": "FooValue"}, None)
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(subscription)
+
+        assert count == 1
 
     async def should_only_resolve_the_first_field_of_invalid_multi_field():
         did_resolve = {"foo": False, "bar": False}

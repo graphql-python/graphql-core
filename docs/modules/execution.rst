@@ -53,6 +53,8 @@ Execution
 
 .. autofunction:: subscribe
 
+.. autofunction:: execute_subscription_event
+
 .. autofunction:: create_source_event_stream
 
 .. autoclass:: Middleware

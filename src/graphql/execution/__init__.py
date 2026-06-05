@@ -33,6 +33,7 @@ from .values import get_argument_values, get_directive_values, get_variable_valu
 from .execute import (
     create_source_event_stream,
     execute,
+    execute_subscription_event,
     experimental_execute_incrementally,
     execute_sync,
     default_field_resolver,
@@ -73,6 +74,7 @@ __all__ = [
     "default_field_resolver",
     "default_type_resolver",
     "execute",
+    "execute_subscription_event",
     "execute_sync",
     "experimental_execute_incrementally",
     "get_argument_values",

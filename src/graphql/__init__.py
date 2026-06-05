@@ -438,6 +438,7 @@ from .validation import (
 # Execute GraphQL documents.
 from .execution import (
     execute,
+    execute_subscription_event,
     execute_sync,
     default_field_resolver,
     default_type_resolver,
@@ -744,6 +745,7 @@ __all__ = [
     "default_type_resolver",
     "do_types_overlap",
     "execute",
+    "execute_subscription_event",
     "execute_sync",
     "extend_schema",
     "find_breaking_changes",

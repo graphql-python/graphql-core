@@ -131,6 +131,7 @@ __all__ = [
     "default_field_resolver",
     "default_type_resolver",
     "execute",
+    "execute_subscription_event",
     "execute_sync",
     "experimental_execute_incrementally",
     "subscribe",
@@ -199,6 +200,7 @@ class ExecutionContext(IncrementalPublisherContext):
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
+    per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
     enable_early_execution: bool
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
@@ -226,6 +228,10 @@ class ExecutionContext(IncrementalPublisherContext):
         middleware_manager: MiddlewareManager | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+        per_event_executor: Callable[
+            [ExecutionContext], AwaitableOrValue[ExecutionResult]
+        ]
+        | None = None,
     ) -> None:
         self.schema = schema
         self.fragments = fragments
@@ -236,6 +242,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.field_resolver = field_resolver
         self.type_resolver = type_resolver
         self.subscribe_field_resolver = subscribe_field_resolver
+        self.per_event_executor = per_event_executor or execute_subscription_event
         self.enable_early_execution = enable_early_execution
         self.middleware_manager = middleware_manager
         self.is_awaitable = is_awaitable or default_is_awaitable
@@ -263,6 +270,10 @@ class ExecutionContext(IncrementalPublisherContext):
         middleware: Middleware | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
+        per_event_executor: Callable[
+            [ExecutionContext], AwaitableOrValue[ExecutionResult]
+        ]
+        | None = None,
         **custom_args: Any,
     ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
@@ -348,6 +359,7 @@ class ExecutionContext(IncrementalPublisherContext):
             middleware_manager,
             is_awaitable,
             is_async_iterable,
+            per_event_executor=per_event_executor,
             **custom_args,
         )
 
@@ -1604,18 +1616,19 @@ class ExecutionContext(IncrementalPublisherContext):
         with ``payload`` as the ``root_value``.
         This implements the "MapSourceToResponseEvent" algorithm
         described in the GraphQL specification.
-        The :func:`~graphql.execution.execute` function provides
-        the "ExecuteSubscriptionEvent" algorithm,
-        as it is nearly identical to the "ExecuteQuery" algorithm,
-        for which :func:`~graphql.execution.execute` is also used.
+        Each event is executed with the context's ``per_event_executor``, which
+        defaults to :func:`~graphql.execution.execute_subscription_event` (providing
+        the "ExecuteSubscriptionEvent" algorithm) but can be overridden to set up and
+        tear down a custom context around the execution of each event.
         """
         if not self.is_async_iterable(result_or_stream):
             return cast("ExecutionResult", result_or_stream)  # pragma: no cover
 
         build_context = self.build_per_event_execution_context
+        per_event_executor = self.per_event_executor
 
         async def callback(payload: Any) -> ExecutionResult:
-            result = build_context(payload).execute_operation()
+            result = per_event_executor(build_context(payload))
             # typecast to ExecutionResult, not possible to return
             # ExperimentalIncrementalExecutionResults when operation is 'subscription'.
             return (
@@ -2517,6 +2530,8 @@ def subscribe(
     enable_early_execution: bool = False,
     execution_context_class: type[ExecutionContext] | None = None,
     middleware: MiddlewareManager | None = None,
+    per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
+    | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     """Create a GraphQL subscription.
@@ -2541,6 +2556,11 @@ def subscribe(
     This function does not support incremental delivery (`@defer` and `@stream`).
     If an operation that defers or streams data is executed with this function,
     a field error will be raised at the location of the `@defer` or `@stream` directive.
+
+    A custom ``per_event_executor`` may be provided to execute each subscription event
+    with a custom context. It receives the per-event execution context and should
+    return an ExecutionResult, usually by calling
+    :func:`~graphql.execution.execute_subscription_event` (the default executor).
     """
     if execution_context_class is None:
         execution_context_class = ExecutionContext
@@ -2560,6 +2580,7 @@ def subscribe(
         max_coercion_errors,
         enable_early_execution,
         middleware=middleware,
+        per_event_executor=per_event_executor,
         **custom_context_args,
     )
 
@@ -2583,6 +2604,22 @@ def subscribe(
         return result_or_stream
 
     return context.map_source_to_response(result_or_stream)  # type: ignore
+
+
+def execute_subscription_event(
+    context: ExecutionContext,
+) -> AwaitableOrValue[ExecutionResult]:
+    """Execute a single subscription event.
+
+    This is the default ``per_event_executor`` used by :func:`subscribe`. It provides
+    the "ExecuteSubscriptionEvent" algorithm described in the GraphQL specification,
+    which is nearly identical to the "ExecuteQuery" algorithm. A custom executor may
+    wrap this function to set up and tear down a per-event context.
+
+    The passed context should be a per-event execution context as created by
+    :meth:`ExecutionContext.build_per_event_execution_context`.
+    """
+    return cast("AwaitableOrValue[ExecutionResult]", context.execute_operation())
 
 
 def create_source_event_stream(
