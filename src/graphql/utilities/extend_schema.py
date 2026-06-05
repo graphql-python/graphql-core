@@ -40,7 +40,7 @@ from ..language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
 )
-from ..pyutils import Undefined, inspect, merge_kwargs
+from ..pyutils import inspect, merge_kwargs
 from ..type import (
     GraphQLArgument,
     GraphQLArgumentMap,
@@ -82,7 +82,6 @@ from ..type import (
     is_specified_scalar_type,
     specified_scalar_types,
 )
-from .coerce_input_value import coerce_input_literal
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Mapping
@@ -591,9 +590,7 @@ class ExtendSchemaImpl:
             arg_map[arg.name.value] = GraphQLArgument(
                 type_=type_,
                 description=arg.description.value if arg.description else None,
-                default_value=coerce_input_literal(arg.default_value, type_)
-                if arg.default_value
-                else Undefined,
+                default_value_literal=arg.default_value,
                 deprecation_reason=get_deprecation_reason(arg),
                 ast_node=arg,
             )
@@ -614,9 +611,7 @@ class ExtendSchemaImpl:
                 input_field_map[field.name.value] = GraphQLInputField(
                     type_=type_,
                     description=field.description.value if field.description else None,
-                    default_value=coerce_input_literal(field.default_value, type_)
-                    if field.default_value
-                    else Undefined,
+                    default_value_literal=field.default_value,
                     deprecation_reason=get_deprecation_reason(field),
                     ast_node=field,
                 )

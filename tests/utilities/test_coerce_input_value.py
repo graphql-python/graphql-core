@@ -6,10 +6,16 @@ from typing import Any, NamedTuple
 import pytest
 
 from graphql.error import GraphQLError
-from graphql.language import parse_value, print_ast
+from graphql.language import (
+    FloatValueNode,
+    StringValueNode,
+    parse_value,
+    print_ast,
+)
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
+    GraphQLDefaultValueUsage,
     GraphQLEnumType,
     GraphQLFloat,
     GraphQLID,
@@ -23,6 +29,7 @@ from graphql.type import (
     GraphQLString,
 )
 from graphql.utilities import coerce_input_literal, coerce_input_value
+from graphql.utilities.coerce_input_value import coerce_default_value
 
 
 class CoercedValueError(NamedTuple):
@@ -673,10 +680,15 @@ def describe_coerce_input_literal():
     def uses_default_values_for_unprovided_fields():
         type_ = GraphQLInputObjectType(
             "TestInput",
-            {"int": GraphQLInputField(GraphQLInt, default_value=42)},
+            {
+                "int": GraphQLInputField(GraphQLInt, default_value=42),
+                "float": GraphQLInputField(
+                    GraphQLFloat, default_value_literal=FloatValueNode(value="3.14")
+                ),
+            },
         )
 
-        _test("{}", type_, {"int": 42})
+        _test("{}", type_, {"int": 42, "float": 3.14})
 
     test_input_obj = GraphQLInputObjectType(
         "TestInput",
@@ -790,3 +802,23 @@ def describe_coerce_input_literal():
             out_type=lambda value: complex(value["real"], value["imag"]),
         )
         _test("{ real: 1, imag: 2 }", complex_input_obj, 1 + 2j)
+
+
+def describe_coerce_default_value():
+    def memoizes_coercion():
+        parse_value_calls: list[Any] = []
+
+        def parse_value(value):
+            parse_value_calls.append(value)
+            return value
+
+        spy_scalar = GraphQLScalarType("SpyScalar", parse_value=parse_value)
+
+        default_value_usage = GraphQLDefaultValueUsage(
+            literal=StringValueNode(value="hello")
+        )
+        assert coerce_default_value(default_value_usage, spy_scalar) == "hello"
+
+        # Call a second time
+        assert coerce_default_value(default_value_usage, spy_scalar) == "hello"
+        assert parse_value_calls == ["hello"]

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 from ..error import GraphQLError
 from ..language import (
+    ConstValueNode,
     EnumTypeDefinitionNode,
     EnumTypeExtensionNode,
     EnumValueDefinitionNode,
@@ -48,6 +49,7 @@ from ..pyutils import (
     AwaitableOrValue,
     Path,
     Undefined,
+    UndefinedType,
     cached_property,
     did_you_mean,
     inspect,
@@ -71,6 +73,7 @@ __all__ = [
     "GraphQLArgumentKwargs",
     "GraphQLArgumentMap",
     "GraphQLCompositeType",
+    "GraphQLDefaultValueUsage",
     "GraphQLEnumType",
     "GraphQLEnumTypeKwargs",
     "GraphQLEnumValue",
@@ -625,11 +628,68 @@ GraphQLIsTypeOfFn: TypeAlias = Callable[
 GraphQLFieldMap: TypeAlias = dict[str, GraphQLField]
 
 
+class GraphQLDefaultValueUsage:  # noqa: PLW1641
+    """A default value, preserved either as a coerced value or as a literal.
+
+    Default values can be provided either as already coerced Python values or as
+    GraphQL literals (AST nodes). Preserving the original literal allows it to be
+    printed back without a lossy round-trip through coercion (see :issue:`3051`).
+    Exactly one of ``value`` or ``literal`` is set; the other is left undefined.
+    """
+
+    value: Any
+    literal: ConstValueNode | None
+
+    __slots__ = "_memoized_coerced_value", "literal", "value"
+
+    def __init__(
+        self, value: Any = Undefined, literal: ConstValueNode | None = None
+    ) -> None:
+        self.value = value
+        self.literal = literal
+        # Used to memoize the result of coercing the default value (see
+        # coerce_default_value() in the utilities).
+        self._memoized_coerced_value: Any = Undefined
+
+    def __eq__(self, other: object) -> bool:
+        return self is other or (
+            isinstance(other, GraphQLDefaultValueUsage)
+            and self.value == other.value
+            and self.literal == other.literal
+        )
+
+
+def define_default_value(
+    default_value: Any = Undefined,
+    default_value_literal: ConstValueNode | None = None,
+) -> GraphQLDefaultValueUsage | UndefinedType:
+    """Combine a default value and/or literal into a single usage.
+
+    Returns ``Undefined`` when neither is provided. Contrary to GraphQL.js, the
+    argument or field name is not part of the error message since arguments and
+    input fields are constructed independently from their name in graphql-core.
+    """
+    if default_value is Undefined and not default_value_literal:
+        return Undefined
+    if default_value is not Undefined and default_value_literal:
+        msg = (
+            "A default value and a default value literal cannot both be provided,"
+            " but only one of them must be specified."
+        )
+        raise TypeError(msg)
+    return (
+        GraphQLDefaultValueUsage(literal=default_value_literal)
+        if default_value_literal
+        else GraphQLDefaultValueUsage(value=default_value)
+    )
+
+
 class GraphQLArgumentKwargs(TypedDict, total=False):
     """Python arguments for GraphQL arguments"""
 
     type_: GraphQLInputType
     default_value: Any
+    default_value_literal: ConstValueNode | None
     description: str | None
     deprecation_reason: str | None
     out_name: str | None
@@ -641,7 +701,7 @@ class GraphQLArgument:  # noqa: PLW1641
     """Definition of a GraphQL argument"""
 
     type: GraphQLInputType
-    default_value: Any
+    default_value: Any  # a GraphQLDefaultValueUsage or Undefined when not provided
     description: str | None
     deprecation_reason: str | None
     out_name: str | None  # for transforming names (extension of GraphQL.js)
@@ -657,9 +717,10 @@ class GraphQLArgument:  # noqa: PLW1641
         out_name: str | None = None,
         extensions: dict[str, Any] | None = None,
         ast_node: InputValueDefinitionNode | None = None,
+        default_value_literal: ConstValueNode | None = None,
     ) -> None:
         self.type = type_
-        self.default_value = default_value
+        self.default_value = define_default_value(default_value, default_value_literal)
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.out_name = out_name
@@ -679,9 +740,11 @@ class GraphQLArgument:  # noqa: PLW1641
 
     def to_kwargs(self) -> GraphQLArgumentKwargs:
         """Get corresponding arguments."""
+        default_value = self.default_value
         return GraphQLArgumentKwargs(
             type_=self.type,
-            default_value=self.default_value,
+            default_value=default_value.value if default_value else Undefined,
+            default_value_literal=default_value.literal if default_value else None,
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             out_name=self.out_name,
@@ -1381,6 +1444,7 @@ class GraphQLInputFieldKwargs(TypedDict, total=False):
 
     type_: GraphQLInputType
     default_value: Any
+    default_value_literal: ConstValueNode | None
     description: str | None
     deprecation_reason: str | None
     out_name: str | None
@@ -1392,7 +1456,7 @@ class GraphQLInputField:  # noqa: PLW1641
     """Definition of a GraphQL input field"""
 
     type: GraphQLInputType
-    default_value: Any
+    default_value: Any  # a GraphQLDefaultValueUsage or Undefined when not provided
     description: str | None
     deprecation_reason: str | None
     out_name: str | None  # for transforming names (extension of GraphQL.js)
@@ -1408,9 +1472,10 @@ class GraphQLInputField:  # noqa: PLW1641
         out_name: str | None = None,
         extensions: dict[str, Any] | None = None,
         ast_node: InputValueDefinitionNode | None = None,
+        default_value_literal: ConstValueNode | None = None,
     ) -> None:
         self.type = type_
-        self.default_value = default_value
+        self.default_value = define_default_value(default_value, default_value_literal)
         self.description = description
         self.deprecation_reason = deprecation_reason
         self.out_name = out_name
@@ -1430,9 +1495,11 @@ class GraphQLInputField:  # noqa: PLW1641
 
     def to_kwargs(self) -> GraphQLInputFieldKwargs:
         """Get corresponding arguments."""
+        default_value = self.default_value
         return GraphQLInputFieldKwargs(
             type_=self.type,
-            default_value=self.default_value,
+            default_value=default_value.value if default_value else Undefined,
+            default_value_literal=default_value.literal if default_value else None,
             description=self.description,
             deprecation_reason=self.deprecation_reason,
             out_name=self.out_name,

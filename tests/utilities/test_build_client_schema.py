@@ -459,6 +459,7 @@ def describe_type_system_build_schema_from_introspection():
             }
 
             type Query {
+              defaultID(intArg: ID = "123"): String
               defaultInt(intArg: Int = 30): String
               defaultList(listArg: [Int] = [1, 2, 3]): String
               defaultObject(objArg: Geo = { lat: 37.485, lon: -122.148 }): String
@@ -636,6 +637,29 @@ def describe_type_system_build_schema_from_introspection():
         )
 
         assert result.data == {"foo": "bar"}
+
+    def can_use_client_schema_for_execution_if_resolvers_are_added():
+        schema = build_schema(
+            """
+            type Query {
+              foo(bar: String = "abc"): String
+            }
+            """
+        )
+
+        introspection = introspection_from_schema(schema)
+        client_schema = build_client_schema(introspection)
+
+        query_type = client_schema.query_type
+        assert query_type is not None
+        query_type.fields["foo"].resolve = lambda _value, _info, bar=None: bar
+
+        result = graphql_sync(client_schema, "{ foo }")
+        assert result.data == {"foo": "abc"}
+
+        # Call a second time (the coerced default value is memoized)
+        result = graphql_sync(client_schema, "{ foo }")
+        assert result.data == {"foo": "abc"}
 
     def can_build_invalid_schema():
         schema = build_schema("type Query", assume_valid=True)

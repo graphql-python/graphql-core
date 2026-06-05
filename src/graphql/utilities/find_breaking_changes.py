@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias
+from typing import TYPE_CHECKING, NamedTuple, TypeAlias
 
 from ..language import print_ast
 from ..pyutils import Undefined, inspect
 from ..type import (
+    GraphQLDefaultValueUsage,
     GraphQLEnumType,
     GraphQLField,
     GraphQLInputObjectType,
@@ -561,10 +562,16 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
             raise TypeError(msg)
 
 
-def stringify_value(value: Any, type_: GraphQLInputType) -> str:
-    ast = ast_from_value(value, type_)
+def stringify_value(
+    default_value: GraphQLDefaultValueUsage, type_: GraphQLInputType
+) -> str:
+    ast = (
+        default_value.literal
+        if default_value.literal is not None
+        else ast_from_value(default_value.value, type_)
+    )
     if ast is None:  # pragma: no cover
-        msg = f"Invalid value: {inspect(value)}"
+        msg = f"Invalid value: {inspect(default_value)}"
         raise TypeError(msg)
     return print_ast(sort_value_node(ast))
 

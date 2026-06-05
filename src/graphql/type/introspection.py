@@ -525,8 +525,19 @@ class InputValueFields(GraphQLFieldMap):
         # Since ast_from_value needs graphql.type, it can only be imported later
         from ..utilities import ast_from_value
 
-        value_ast = ast_from_value(item[1].default_value, item[1].type)
-        return print_ast(value_ast) if value_ast else None
+        input_value = item[1]
+        default_value = input_value.default_value
+        if not default_value:
+            return None
+        literal = (
+            default_value.literal
+            if default_value.literal is not None
+            else ast_from_value(default_value.value, input_value.type)
+        )
+        if literal is None:  # pragma: no cover
+            msg = "Invalid default value"
+            raise TypeError(msg)
+        return print_ast(literal)
 
     @staticmethod
     def is_deprecated(item, _info):

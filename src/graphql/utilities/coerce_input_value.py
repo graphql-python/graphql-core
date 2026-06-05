@@ -23,6 +23,7 @@ from ..pyutils import (
     suggestion_list,
 )
 from ..type import (
+    GraphQLDefaultValueUsage,
     GraphQLInputType,
     GraphQLScalarType,
     assert_leaf_type,
@@ -36,7 +37,7 @@ from ..type import (
 if TYPE_CHECKING:
     from ..execution.collect_fields import FragmentVariables
 
-__all__ = ["coerce_input_literal", "coerce_input_value"]
+__all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
 
 
 OnErrorCB: TypeAlias = Callable[[list[str | int], Any, GraphQLError], None]
@@ -106,9 +107,11 @@ def coerce_input_value(
             field_value = input_value.get(field_name, Undefined)
 
             if field_value is Undefined:
-                if field.default_value is not Undefined:
+                if field.default_value:
                     # Use out name as name if it exists (extension of GraphQL.js).
-                    coerced_dict[field.out_name or field_name] = field.default_value
+                    coerced_dict[field.out_name or field_name] = coerce_default_value(
+                        field.default_value, field.type
+                    )
                 elif is_non_null_type(field.type):  # pragma: no branch
                     type_str = inspect(field.type)
                     on_error(
@@ -278,9 +281,11 @@ def coerce_input_literal(
             ):
                 if is_required_input_field(field):
                     return Undefined  # Invalid: intentionally return no value.
-                if field.default_value is not Undefined:
+                if field.default_value:
                     # Use out name as name if it exists (extension of GraphQL.js).
-                    coerced_dict[field.out_name or field_name] = field.default_value
+                    coerced_dict[field.out_name or field_name] = coerce_default_value(
+                        field.default_value, field.type
+                    )
             else:
                 field_value = coerce_input_literal(
                     field_node.value,
@@ -311,6 +316,25 @@ def coerce_input_literal(
     except Exception:  # noqa: BLE001
         # Invalid: ignore error and intentionally return no value.
         return Undefined
+
+
+def coerce_default_value(
+    default_value: GraphQLDefaultValueUsage, type_: GraphQLInputType
+) -> Any:
+    """Coerce a default value usage to a Python value.
+
+    .. internal::
+    """
+    # Memoize the result of coercing the default value in a hidden field.
+    coerced_value = default_value._memoized_coerced_value  # noqa: SLF001
+    if coerced_value is Undefined:
+        coerced_value = (
+            coerce_input_literal(default_value.literal, type_)
+            if default_value.literal is not None
+            else default_value.value
+        )
+        default_value._memoized_coerced_value = coerced_value  # noqa: SLF001
+    return coerced_value
 
 
 def get_variable_value(

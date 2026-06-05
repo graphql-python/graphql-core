@@ -115,7 +115,9 @@ def value_from_ast(
             if not field_node or is_missing_variable(field_node.value, variables):
                 if field.default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
-                    coerced_obj[field.out_name or field_name] = field.default_value
+                    coerced_obj[field.out_name or field_name] = (
+                        field.default_value.value
+                    )
                 elif is_non_null_type(field.type):  # pragma: no branch
                     return Undefined
                 continue

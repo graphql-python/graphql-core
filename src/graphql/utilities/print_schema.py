@@ -257,10 +257,18 @@ def print_args(args: dict[str, GraphQLArgument], indentation: str = "") -> str:
 
 def print_input_value(name: str, arg: GraphQLArgument) -> str:
     """Print an input value."""
-    default_ast = ast_from_value(arg.default_value, arg.type)
     arg_decl = f"{name}: {arg.type}"
-    if default_ast:
-        arg_decl += f" = {print_ast(default_ast)}"
+    default_value = arg.default_value
+    if default_value:
+        literal = (
+            default_value.literal
+            if default_value.literal is not None
+            else ast_from_value(default_value.value, arg.type)
+        )
+        if literal is None:  # pragma: no cover
+            msg = "Invalid default value"
+            raise TypeError(msg)
+        arg_decl += f" = {print_ast(literal)}"
     return arg_decl + print_deprecated(arg.deprecation_reason)
 
 

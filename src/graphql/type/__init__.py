@@ -103,6 +103,7 @@ from .definition import (
     GraphQLScalarSerializer,
     GraphQLScalarValueParser,
     GraphQLScalarLiteralParser,
+    GraphQLDefaultValueUsage,
     # Keyword Args
     GraphQLArgumentKwargs,
     GraphQLEnumTypeKwargs,
@@ -188,6 +189,7 @@ __all__ = [
     "GraphQLArgumentMap",
     "GraphQLBoolean",
     "GraphQLCompositeType",
+    "GraphQLDefaultValueUsage",
     "GraphQLDeferDirective",
     "GraphQLDeprecatedDirective",
     "GraphQLDirective",

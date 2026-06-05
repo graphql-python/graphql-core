@@ -30,7 +30,11 @@ from ..type import (
     is_input_object_type,
     is_non_null_type,
 )
-from ..utilities.coerce_input_value import coerce_input_literal, coerce_input_value
+from ..utilities.coerce_input_value import (
+    coerce_default_value,
+    coerce_input_literal,
+    coerce_input_value,
+)
 from .get_variable_signature import GraphQLVariableSignature, get_variable_signature
 
 if TYPE_CHECKING:
@@ -98,8 +102,10 @@ def coerce_variable_values(
         var_name = var_signature.name
         var_type = var_signature.type
         if var_name not in inputs:
-            if var_def_node.default_value:
-                coerced_values[var_name] = var_signature.default_value
+            if var_signature.default_value:
+                coerced_values[var_name] = coerce_default_value(
+                    var_signature.default_value, var_type
+                )
             elif is_non_null_type(var_type):  # pragma: no branch
                 var_type_str = inspect(var_type)
                 on_error(
@@ -183,9 +189,10 @@ def experimental_get_argument_values(
         argument_node = arg_node_map.get(name)
 
         if argument_node is None:
-            value = arg_def.default_value
-            if value is not Undefined:
-                if is_input_object_type(arg_def.type):
+            default_value = arg_def.default_value
+            if default_value:
+                value = coerce_default_value(default_value, arg_def.type)
+                if default_value.literal is None and is_input_object_type(arg_def.type):
                     # coerce input value so that out_names are used
                     value = coerce_input_value(value, arg_def.type)
                 coerced_values[out_name] = value
@@ -210,9 +217,12 @@ def experimental_get_argument_values(
                 scoped_variable_values is None
                 or variable_name not in scoped_variable_values
             ):
-                value = arg_def.default_value
-                if value is not Undefined:
-                    if is_input_object_type(arg_def.type):
+                default_value = arg_def.default_value
+                if default_value:
+                    value = coerce_default_value(default_value, arg_def.type)
+                    if default_value.literal is None and is_input_object_type(
+                        arg_def.type
+                    ):
                         # coerce input value so that out_names are used
                         value = coerce_input_value(value, arg_def.type)
                     coerced_values[out_name] = value
