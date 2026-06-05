@@ -13,6 +13,7 @@ from .ast import (
     DirectiveArgumentCoordinateNode,
     DirectiveCoordinateNode,
     DirectiveDefinitionNode,
+    DirectiveExtensionNode,
     DirectiveNode,
     DocumentNode,
     EnumTypeDefinitionNode,
@@ -88,6 +89,7 @@ def parse(
     no_location: bool = False,
     max_tokens: Optional[int] = None,
     allow_legacy_fragment_variables: bool = False,
+    experimental_directives_on_directive_definitions: bool = False,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -116,12 +118,23 @@ def parse(
         fragment A($var: Boolean = false) on T  {
           ...
         }
+
+    Experimental feature:
+
+    If ``experimental_directives_on_directive_definitions`` is set to ``True``, the
+    parser will understand and parse directives on directive definitions. This syntax
+    is not part of the GraphQL specification and may change. For example::
+
+        directive @foo @bar on FIELD
     """
     parser = Parser(
         source,
         no_location=no_location,
         max_tokens=max_tokens,
         allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_directives_on_directive_definitions=(
+            experimental_directives_on_directive_definitions
+        ),
     )
     return parser.parse_document()
 
@@ -131,6 +144,7 @@ def parse_value(
     no_location: bool = False,
     max_tokens: Optional[int] = None,
     allow_legacy_fragment_variables: bool = False,
+    experimental_directives_on_directive_definitions: bool = False,
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
 
@@ -147,6 +161,9 @@ def parse_value(
         no_location=no_location,
         max_tokens=max_tokens,
         allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_directives_on_directive_definitions=(
+            experimental_directives_on_directive_definitions
+        ),
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_value_literal(False)
@@ -159,6 +176,7 @@ def parse_const_value(
     no_location: bool = False,
     max_tokens: Optional[int] = None,
     allow_legacy_fragment_variables: bool = False,
+    experimental_directives_on_directive_definitions: bool = False,
 ) -> ConstValueNode:
     """Parse the AST for a given string containing a GraphQL constant value.
 
@@ -170,6 +188,9 @@ def parse_const_value(
         no_location=no_location,
         max_tokens=max_tokens,
         allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_directives_on_directive_definitions=(
+            experimental_directives_on_directive_definitions
+        ),
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_const_value_literal()
@@ -182,6 +203,7 @@ def parse_type(
     no_location: bool = False,
     max_tokens: Optional[int] = None,
     allow_legacy_fragment_variables: bool = False,
+    experimental_directives_on_directive_definitions: bool = False,
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
 
@@ -198,6 +220,9 @@ def parse_type(
         no_location=no_location,
         max_tokens=max_tokens,
         allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_directives_on_directive_definitions=(
+            experimental_directives_on_directive_definitions
+        ),
     )
     parser.expect_token(TokenKind.SOF)
     type_ = parser.parse_type_reference()
@@ -247,6 +272,7 @@ class Parser:
     _no_location: bool
     _max_tokens: Optional[int]
     _allow_legacy_fragment_variables: bool
+    _experimental_directives_on_directive_definitions: bool
     _token_counter: int
 
     def __init__(
@@ -255,6 +281,7 @@ class Parser:
         no_location: bool = False,
         max_tokens: Optional[int] = None,
         allow_legacy_fragment_variables: bool = False,
+        experimental_directives_on_directive_definitions: bool = False,
         lexer: Optional[Lexer] = None,
     ):
         source = (
@@ -267,6 +294,9 @@ class Parser:
         self._no_location = no_location
         self._max_tokens = max_tokens
         self._allow_legacy_fragment_variables = allow_legacy_fragment_variables
+        self._experimental_directives_on_directive_definitions = (
+            experimental_directives_on_directive_definitions
+        )
         self._token_counter = 0
 
     def parse_name(self) -> NameNode:
@@ -710,6 +740,11 @@ class Parser:
             )
             if method_name:  # pragma: no cover
                 return getattr(self, f"parse_{method_name}")()
+            if (
+                keyword_token.value == "directive"
+                and self._experimental_directives_on_directive_definitions
+            ):
+                return self.parse_directive_definition_extension()
         raise self.unexpected(keyword_token)
 
     def peek_description(self) -> bool:
@@ -1057,6 +1092,22 @@ class Parser:
             name=name, directives=directives, fields=fields, loc=self.loc(start)
         )
 
+    def parse_directive_definition_extension(self) -> DirectiveExtensionNode:
+        """DirectiveDefinitionExtension"""
+        start = self._lexer.token
+        self.expect_keyword("extend")
+        self.expect_keyword("directive")
+        self.expect_token(TokenKind.AT)
+        name = self.parse_name()
+        directives = self.parse_const_directives()
+        if not directives:
+            raise self.unexpected()
+        return DirectiveExtensionNode(
+            name=name,
+            directives=directives,
+            loc=self.loc(start),
+        )
+
     def parse_directive_definition(self) -> DirectiveDefinitionNode:
         """DirectiveDefinition"""
         start = self._lexer.token
@@ -1065,6 +1116,11 @@ class Parser:
         self.expect_token(TokenKind.AT)
         name = self.parse_name()
         args = self.parse_argument_defs()
+        directives = (
+            self.parse_const_directives()
+            if self._experimental_directives_on_directive_definitions
+            else []
+        )
         repeatable = self.expect_optional_keyword("repeatable")
         self.expect_keyword("on")
         locations = self.parse_directive_locations()
@@ -1072,6 +1128,7 @@ class Parser:
             description=description,
             name=name,
             arguments=args,
+            directives=directives,
             repeatable=repeatable,
             locations=locations,
             loc=self.loc(start),

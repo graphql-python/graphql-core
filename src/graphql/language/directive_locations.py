@@ -28,3 +28,4 @@ class DirectiveLocation(Enum):
     ENUM_VALUE = "enum value"
     INPUT_OBJECT = "input object"
     INPUT_FIELD_DEFINITION = "input field definition"
+    DIRECTIVE_DEFINITION = "directive definition"

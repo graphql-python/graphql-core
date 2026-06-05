@@ -25,6 +25,7 @@ Each kind of AST node has its own class:
 .. autoclass:: ConstValueNode
 .. autoclass:: DefinitionNode
 .. autoclass:: DirectiveDefinitionNode
+.. autoclass:: DirectiveExtensionNode
 .. autoclass:: DirectiveNode
 .. autoclass:: DocumentNode
 .. autoclass:: EnumTypeDefinitionNode

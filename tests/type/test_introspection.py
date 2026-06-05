@@ -146,7 +146,21 @@ def describe_introspection():
                             },
                             {
                                 "name": "directives",
-                                "args": [],
+                                "args": [
+                                    {
+                                        "name": "includeDeprecated",
+                                        "type": {
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "Boolean",
+                                                "ofType": None,
+                                            },
+                                        },
+                                        "defaultValue": "false",
+                                    }
+                                ],
                                 "type": {
                                     "kind": "NON_NULL",
                                     "name": None,
@@ -795,6 +809,32 @@ def describe_introspection():
                                 "isDeprecated": False,
                                 "deprecationReason": None,
                             },
+                            {
+                                "name": "isDeprecated",
+                                "args": [],
+                                "type": {
+                                    "kind": "NON_NULL",
+                                    "name": None,
+                                    "ofType": {
+                                        "kind": "SCALAR",
+                                        "name": "Boolean",
+                                        "ofType": None,
+                                    },
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
+                            {
+                                "name": "deprecationReason",
+                                "args": [],
+                                "type": {
+                                    "kind": "SCALAR",
+                                    "name": "String",
+                                    "ofType": None,
+                                },
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
                         ],
                         "inputFields": None,
                         "interfaces": [],
@@ -904,6 +944,11 @@ def describe_introspection():
                                 "isDeprecated": False,
                                 "deprecationReason": None,
                             },
+                            {
+                                "name": "DIRECTIVE_DEFINITION",
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
                         ],
                         "possibleTypes": None,
                     },
@@ -957,6 +1002,7 @@ def describe_introspection():
                             "ARGUMENT_DEFINITION",
                             "INPUT_FIELD_DEFINITION",
                             "ENUM_VALUE",
+                            "DIRECTIVE_DEFINITION",
                         ],
                         "args": [
                             {
@@ -1646,3 +1692,139 @@ def describe_introspection():
         )
 
         assert result.errors is None
+
+    def identifies_deprecated_directives():
+        schema = build_schema(
+            """
+type Query {
+  someField: String
+}
+directive @isNotDeprecated on FIELD_DEFINITION
+directive @isDeprecated @deprecated(reason: "No longer supported") on FIELD_DEFINITION
+directive @isDeprecatedWithEmptyReason @deprecated(reason: "") on FIELD_DEFINITION
+""",
+            experimental_directives_on_directive_definitions=True,
+        )
+
+        source = """
+            {
+              __schema {
+                directives(includeDeprecated: true) {
+                  name
+                  isDeprecated
+                  deprecationReason
+                }
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "__schema": {
+                    "directives": [
+                        {
+                            "name": "isNotDeprecated",
+                            "isDeprecated": False,
+                            "deprecationReason": None,
+                        },
+                        {
+                            "name": "isDeprecated",
+                            "isDeprecated": True,
+                            "deprecationReason": "No longer supported",
+                        },
+                        {
+                            "name": "isDeprecatedWithEmptyReason",
+                            "isDeprecated": True,
+                            "deprecationReason": "",
+                        },
+                        {
+                            "name": "include",
+                            "isDeprecated": False,
+                            "deprecationReason": None,
+                        },
+                        {
+                            "name": "skip",
+                            "isDeprecated": False,
+                            "deprecationReason": None,
+                        },
+                        {
+                            "name": "deprecated",
+                            "isDeprecated": False,
+                            "deprecationReason": None,
+                        },
+                        {
+                            "name": "specifiedBy",
+                            "isDeprecated": False,
+                            "deprecationReason": None,
+                        },
+                        {
+                            "name": "oneOf",
+                            "isDeprecated": False,
+                            "deprecationReason": None,
+                        },
+                    ],
+                },
+            },
+            None,
+        )
+
+    def respects_the_include_deprecated_parameter_for_directives():
+        schema = build_schema(
+            """
+type Query {
+  someField: String
+}
+directive @isNotDeprecated on FIELD_DEFINITION
+directive @isDeprecated @deprecated(reason: "No longer supported") on FIELD_DEFINITION
+""",
+            experimental_directives_on_directive_definitions=True,
+        )
+
+        source = """
+            {
+              __schema {
+                trueDirectives: directives(includeDeprecated: true) {
+                  name
+                }
+                falseDirectives: directives(includeDeprecated: false) {
+                  name
+                }
+                omittedDirectives: directives {
+                  name
+                }
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "__schema": {
+                    "trueDirectives": [
+                        {"name": "isNotDeprecated"},
+                        {"name": "isDeprecated"},
+                        {"name": "include"},
+                        {"name": "skip"},
+                        {"name": "deprecated"},
+                        {"name": "specifiedBy"},
+                        {"name": "oneOf"},
+                    ],
+                    "falseDirectives": [
+                        {"name": "isNotDeprecated"},
+                        {"name": "include"},
+                        {"name": "skip"},
+                        {"name": "deprecated"},
+                        {"name": "specifiedBy"},
+                        {"name": "oneOf"},
+                    ],
+                    "omittedDirectives": [
+                        {"name": "isNotDeprecated"},
+                        {"name": "include"},
+                        {"name": "skip"},
+                        {"name": "deprecated"},
+                        {"name": "specifiedBy"},
+                        {"name": "oneOf"},
+                    ],
+                },
+            },
+            None,
+        )

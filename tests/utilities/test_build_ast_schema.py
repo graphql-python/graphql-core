@@ -1050,6 +1050,21 @@ def describe_schema_builder():
         build_schema(sdl, assume_valid=True)
         build_schema(sdl, assume_valid_sdl=True)
 
+    def forwards_parser_options_to_build_schema():
+        schema = build_schema(
+            """
+type Query {
+  foo: String
+}
+
+directive @bar @deprecated(reason: "Use another directive") on FIELD_DEFINITION
+""",
+            experimental_directives_on_directive_definitions=True,
+        )
+
+        bar_directive = assert_directive(schema.get_directive("bar"))
+        assert bar_directive.deprecation_reason == "Use another directive"
+
     def throws_on_unknown_types():
         sdl = """
             type Query {

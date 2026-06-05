@@ -69,6 +69,7 @@ __all__ = [
     "UnionTypeExtensionNode",
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
+    "DirectiveExtensionNode",
     "SchemaCoordinateNode",
     "TypeCoordinateNode",
     "MemberCoordinateNode",
@@ -312,8 +313,15 @@ QUERY_DOCUMENT_KEYS: Dict[str, Tuple[str, ...]] = {
     "enum_type_definition": ("description", "name", "directives", "values"),
     "enum_value_definition": ("description", "name", "directives"),
     "input_object_type_definition": ("description", "name", "directives", "fields"),
-    "directive_definition": ("description", "name", "arguments", "locations"),
+    "directive_definition": (
+        "description",
+        "name",
+        "arguments",
+        "directives",
+        "locations",
+    ),
     "schema_extension": ("directives", "operation_types"),
+    "directive_extension": ("name", "directives"),
     "scalar_type_extension": ("name", "directives"),
     "object_type_extension": ("name", "interfaces", "directives", "fields"),
     "interface_type_extension": ("name", "interfaces", "directives", "fields"),
@@ -771,11 +779,19 @@ class InputObjectTypeDefinitionNode(TypeDefinitionNode):
 
 
 class DirectiveDefinitionNode(TypeSystemDefinitionNode):
-    __slots__ = "description", "name", "arguments", "repeatable", "locations"
+    __slots__ = (
+        "description",
+        "name",
+        "arguments",
+        "directives",
+        "repeatable",
+        "locations",
+    )
 
     description: Optional[StringValueNode]
     name: NameNode
     arguments: Tuple[InputValueDefinitionNode, ...]
+    directives: Tuple[ConstDirectiveNode, ...]
     repeatable: bool
     locations: Tuple[NameNode, ...]
 
@@ -790,6 +806,13 @@ class SchemaExtensionNode(Node):
     operation_types: Tuple[OperationTypeDefinitionNode, ...]
 
 
+class DirectiveExtensionNode(Node):
+    __slots__ = "name", "directives"
+
+    name: NameNode
+    directives: Tuple[ConstDirectiveNode, ...]
+
+
 # Type Extensions
 
 
@@ -800,7 +823,9 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
     directives: Tuple[ConstDirectiveNode, ...]
 
 
-TypeSystemExtensionNode = Union[SchemaExtensionNode, TypeExtensionNode]
+TypeSystemExtensionNode = Union[
+    SchemaExtensionNode, TypeExtensionNode, DirectiveExtensionNode
+]
 
 
 class ScalarTypeExtensionNode(TypeExtensionNode):

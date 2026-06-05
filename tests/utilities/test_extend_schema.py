@@ -3,10 +3,12 @@ from typing import Union
 from pytest import raises
 
 from graphql import graphql_sync
+from graphql.error import GraphQLSyntaxError
 from graphql.language import parse, print_ast
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDirective,
     GraphQLEnumValue,
     GraphQLField,
     GraphQLFloat,
@@ -26,6 +28,7 @@ from graphql.type import (
     validate_schema,
 )
 from graphql.utilities import (
+    build_ast_schema,
     build_schema,
     concat_ast,
     extend_schema,
@@ -44,6 +47,7 @@ TypeWithAstNode = Union[
 ]
 
 TypeWithExtensionAstNodes = Union[
+    GraphQLDirective,
     GraphQLNamedType,
     GraphQLSchema,
 ]
@@ -1339,3 +1343,94 @@ def describe_extend_schema():
                     extend schema @foo
                     """),
             )
+
+        def extend_directive_to_make_it_deprecated():
+            schema = build_schema("directive @isDeprecated on FIELD_DEFINITION")
+            extend_ast = parse(
+                """
+extend directive @isDeprecated @deprecated(reason: "use another directive")
+""",
+                experimental_directives_on_directive_definitions=True,
+            )
+            extended_schema = extend_schema(schema, extend_ast)
+
+            is_deprecated_directive = assert_directive(
+                extended_schema.get_directive("isDeprecated")
+            )
+            assert is_deprecated_directive.deprecation_reason == "use another directive"
+
+        def preserves_deprecated_directives_when_extending_other_types():
+            schema = build_ast_schema(
+                parse(
+                    """
+type Query {
+  foo: String
+}
+
+directive @isDeprecated @deprecated(reason: "use another directive") on FIELD_DEFINITION
+""",
+                    experimental_directives_on_directive_definitions=True,
+                )
+            )
+            extend_ast = parse(dedent("""
+                extend type Query {
+                  bar: Int
+                }
+                """))
+            extended_schema = extend_schema(schema, extend_ast)
+
+            is_deprecated_directive = assert_directive(
+                extended_schema.get_directive("isDeprecated")
+            )
+            assert is_deprecated_directive.deprecation_reason == "use another directive"
+
+        def applies_directive_extensions_defined_in_the_same_document():
+            schema = build_ast_schema(
+                parse(
+                    dedent("""
+                    directive @onDirective on DIRECTIVE_DEFINITION
+                    directive @someDirective on FIELD_DEFINITION
+
+                    extend directive @someDirective @onDirective
+                    """),
+                    experimental_directives_on_directive_definitions=True,
+                )
+            )
+
+            some_directive = assert_directive(schema.get_directive("someDirective"))
+            expect_extension_ast_nodes(
+                some_directive, "extend directive @someDirective @onDirective"
+            )
+
+        def applies_multiple_directive_extensions_defined_in_the_same_document():
+            schema = build_ast_schema(
+                parse(
+                    dedent("""
+                    directive @onDirective on DIRECTIVE_DEFINITION
+                    directive @otherDirective on DIRECTIVE_DEFINITION
+                    directive @someDirective on FIELD_DEFINITION
+
+                    extend directive @someDirective @onDirective
+                    extend directive @someDirective @otherDirective
+                    """),
+                    experimental_directives_on_directive_definitions=True,
+                )
+            )
+
+            some_directive = assert_directive(schema.get_directive("someDirective"))
+            expect_extension_ast_nodes(
+                some_directive,
+                dedent("""
+                    extend directive @someDirective @onDirective
+
+                    extend directive @someDirective @otherDirective
+                    """),
+            )
+
+        def extend_directive_without_adding_new_directives_is_an_error():
+            with raises(GraphQLSyntaxError) as exc_info:
+                parse(
+                    "extend directive @isDeprecated",
+                    experimental_directives_on_directive_definitions=True,
+                )
+            assert str(exc_info.value).startswith("Syntax Error: Unexpected <EOF>.")

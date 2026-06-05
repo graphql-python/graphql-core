@@ -551,6 +551,21 @@ def describe_type_system_printer():
             directive @complexDirective(stringArg: String, intArg: Int = -1) repeatable on FIELD | QUERY
             ''')  # noqa: E501
 
+    def prints_deprecated_directives():
+        schema = GraphQLSchema(
+            directives=[
+                GraphQLDirective(
+                    name="deprecatedDirective",
+                    locations=[DirectiveLocation.FIELD],
+                    deprecation_reason="Use another directive",
+                ),
+            ],
+        )
+
+        assert print_schema(schema) == dedent("""
+            directive @deprecatedDirective @deprecated(reason: "Use another directive") on FIELD
+            """)  # noqa: E501
+
     def prints_an_empty_description():
         schema = build_single_field_schema(GraphQLField(GraphQLString, description=""))
 
@@ -610,7 +625,7 @@ def describe_type_system_printer():
               Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/).
               """
               reason: String = "No longer supported"
-            ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE
+            ) on FIELD_DEFINITION | ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | ENUM_VALUE | DIRECTIVE_DEFINITION
 
             """Exposes a URL that specifies the behavior of this scalar."""
             directive @specifiedBy(
@@ -644,7 +659,7 @@ def describe_type_system_printer():
               subscriptionType: __Type
 
               """A list of all directives supported by this server."""
-              directives: [__Directive!]!
+              directives(includeDeprecated: Boolean! = false): [__Directive!]!
             }
 
             """
@@ -748,6 +763,8 @@ def describe_type_system_printer():
               isRepeatable: Boolean!
               locations: [__DirectiveLocation!]!
               args(includeDeprecated: Boolean = false): [__InputValue!]!
+              isDeprecated: Boolean!
+              deprecationReason: String
             }
 
             """
@@ -810,6 +827,9 @@ def describe_type_system_printer():
 
               """Location adjacent to an input object field definition."""
               INPUT_FIELD_DEFINITION
+
+              """Location adjacent to a directive definition."""
+              DIRECTIVE_DEFINITION
             }
             ''')  # noqa: E501
 

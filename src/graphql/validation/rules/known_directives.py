@@ -95,6 +95,8 @@ _directive_location = {
     "enum_value_definition": DirectiveLocation.ENUM_VALUE,
     "input_object_type_definition": DirectiveLocation.INPUT_OBJECT,
     "input_object_type_extension": DirectiveLocation.INPUT_OBJECT,
+    "directive_definition": DirectiveLocation.DIRECTIVE_DEFINITION,
+    "directive_extension": DirectiveLocation.DIRECTIVE_DEFINITION,
 }
 
 

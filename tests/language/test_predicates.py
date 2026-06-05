@@ -144,6 +144,7 @@ def describe_ast_node_predicates():
 
     def check_type_system_extension_node():
         assert filter_nodes(is_type_system_extension_node) == [
+            "directive_extension",
             "enum_type_extension",
             "input_object_type_extension",
             "interface_type_extension",

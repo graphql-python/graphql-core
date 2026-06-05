@@ -160,6 +160,7 @@ from .language import (
     UnionTypeExtensionNode,
     EnumTypeExtensionNode,
     InputObjectTypeExtensionNode,
+    DirectiveExtensionNode,
     # Schema Coordinates
     SchemaCoordinateNode,
     TypeCoordinateNode,
@@ -709,6 +710,7 @@ __all__ = [
     "UnionTypeExtensionNode",
     "EnumTypeExtensionNode",
     "InputObjectTypeExtensionNode",
+    "DirectiveExtensionNode",
     "SchemaCoordinateNode",
     "TypeCoordinateNode",
     "MemberCoordinateNode",

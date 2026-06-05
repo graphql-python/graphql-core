@@ -34,6 +34,7 @@ def get_introspection_query(
     directive_is_repeatable: bool = False,
     schema_description: bool = False,
     input_value_deprecation: bool = False,
+    experimental_directive_deprecation: bool = False,
     input_object_one_of: bool = False,
 ) -> str:
     """Get a query for introspection.
@@ -51,6 +52,9 @@ def get_introspection_query(
     def input_deprecation(string: str) -> Optional[str]:
         return string if input_value_deprecation else ""
 
+    def directive_deprecation(string: str) -> Optional[str]:
+        return string if experimental_directive_deprecation else ""
+
     return dedent(f"""
         query IntrospectionQuery {{
           __schema {{
@@ -61,10 +65,12 @@ def get_introspection_query(
             types {{
               ...FullType
             }}
-            directives {{
+            directives{directive_deprecation("(includeDeprecated: true)")} {{
               name
               {maybe_description}
               {maybe_directive_is_repeatable}
+              {directive_deprecation("isDeprecated")}
+              {directive_deprecation("deprecationReason")}
               locations
               args{input_deprecation("(includeDeprecated: true)")} {{
                 ...InputValue
@@ -209,7 +215,7 @@ class MaybeWithIsRepeatable(TypedDict, total=False):
     isRepeatable: bool
 
 
-class IntrospectionDirective(WithName, MaybeWithIsRepeatable):
+class IntrospectionDirective(WithName, MaybeWithIsRepeatable, MaybeWithDeprecated):
     locations: List[DirectiveLocation]
     args: List[IntrospectionInputValue]
 

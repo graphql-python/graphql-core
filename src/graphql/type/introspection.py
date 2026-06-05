@@ -63,6 +63,11 @@ class SchemaFields(GraphQLFieldMap):
             ),
             "directives": GraphQLField(
                 GraphQLNonNull(GraphQLList(GraphQLNonNull(_Directive))),
+                args={
+                    "includeDeprecated": GraphQLArgument(
+                        GraphQLNonNull(GraphQLBoolean), default_value=False
+                    )
+                },
                 resolve=cls.directives,
                 description="A list of all directives supported by this server.",
             ),
@@ -88,9 +93,19 @@ class SchemaFields(GraphQLFieldMap):
     def subscription_type(schema, _info):
         return schema.subscription_type
 
+    # noinspection PyPep8Naming
     @staticmethod
-    def directives(schema, _info):
-        return schema.directives
+    def directives(schema, _info, includeDeprecated=False):
+        directives = schema.directives
+        return (
+            directives
+            if includeDeprecated
+            else [
+                directive
+                for directive in directives
+                if directive.deprecation_reason is None
+            ]
+        )
 
 
 _Schema: GraphQLObjectType = GraphQLObjectType(
@@ -132,6 +147,14 @@ class DirectiveFields(GraphQLFieldMap):
                 },
                 resolve=cls.args,
             ),
+            "isDeprecated": GraphQLField(
+                GraphQLNonNull(GraphQLBoolean),
+                resolve=cls.is_deprecated,
+            ),
+            "deprecationReason": GraphQLField(
+                GraphQLString,
+                resolve=cls.deprecation_reason,
+            ),
         }
 
     @staticmethod
@@ -159,6 +182,14 @@ class DirectiveFields(GraphQLFieldMap):
             if includeDeprecated
             else [item for item in items if item[1].deprecation_reason is None]
         )
+
+    @staticmethod
+    def is_deprecated(directive, _info):
+        return directive.deprecation_reason is not None
+
+    @staticmethod
+    def deprecation_reason(directive, _info):
+        return directive.deprecation_reason
 
 
 _Directive: GraphQLObjectType = GraphQLObjectType(
@@ -254,6 +285,10 @@ _DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
         "INPUT_FIELD_DEFINITION": GraphQLEnumValue(
             DirectiveLocation.INPUT_FIELD_DEFINITION,
             description="Location adjacent to an input object field definition.",
+        ),
+        "DIRECTIVE_DEFINITION": GraphQLEnumValue(
+            DirectiveLocation.DIRECTIVE_DEFINITION,
+            description="Location adjacent to a directive definition.",
         ),
     },
 )

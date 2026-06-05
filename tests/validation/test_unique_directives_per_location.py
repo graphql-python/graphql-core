@@ -1,8 +1,12 @@
 from functools import partial
+from typing import Any, Dict, List, Optional, Union
 
+from graphql.error import GraphQLError
 from graphql.language import parse
+from graphql.type import GraphQLSchema
 from graphql.utilities import extend_schema
 from graphql.validation import UniqueDirectivesPerLocationRule
+from graphql.validation.validate import validate_sdl
 
 from .harness import assert_validation_errors, assert_sdl_validation_errors, test_schema
 
@@ -25,6 +29,17 @@ assert_valid = partial(assert_errors, errors=[])
 assert_sdl_errors = partial(
     assert_sdl_validation_errors, UniqueDirectivesPerLocationRule
 )
+
+
+def assert_experimental_sdl_errors(
+    sdl_str: str,
+    errors: List[Union[GraphQLError, Dict[str, Any]]],
+    schema: Optional[GraphQLSchema] = None,
+) -> List[GraphQLError]:
+    doc = parse(sdl_str, experimental_directives_on_directive_definitions=True)
+    returned_errors = validate_sdl(doc, schema, [UniqueDirectivesPerLocationRule])
+    assert returned_errors == errors
+    return returned_errors
 
 
 def describe_validate_directives_are_unique_per_location():
@@ -314,6 +329,72 @@ def describe_validate_directives_are_unique_per_location():
                     "message": "The directive '@nonRepeatable'"
                     " can only be used once at this location.",
                     "locations": [(4, 36), (6, 36)],
+                },
+            ],
+        )
+
+    def duplicate_directives_on_directive_definitions():
+        assert_experimental_sdl_errors(
+            """
+            directive @nonRepeatable on DIRECTIVE_DEFINITION
+
+            directive @testDirective @nonRepeatable @nonRepeatable on FIELD_DEFINITION
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 38), (4, 53)],
+                },
+            ],
+        )
+
+    def duplicate_directives_on_directive_extensions():
+        assert_experimental_sdl_errors(
+            """
+            directive @nonRepeatable on DIRECTIVE_DEFINITION
+
+            extend directive @testDirective @nonRepeatable @nonRepeatable
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 45), (4, 60)],
+                },
+            ],
+        )
+
+    def duplicate_directives_between_directive_definitions_and_extensions():
+        assert_experimental_sdl_errors(
+            """
+            directive @nonRepeatable on DIRECTIVE_DEFINITION
+
+            directive @testDirective @nonRepeatable on FIELD_DEFINITION
+            extend directive @testDirective @nonRepeatable
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 38), (5, 45)],
+                },
+            ],
+        )
+
+    def duplicate_directives_between_directive_extensions():
+        assert_experimental_sdl_errors(
+            """
+            directive @nonRepeatable on DIRECTIVE_DEFINITION
+
+            extend directive @testDirective @nonRepeatable
+            extend directive @testDirective @nonRepeatable
+            """,
+            [
+                {
+                    "message": "The directive '@nonRepeatable'"
+                    " can only be used once at this location.",
+                    "locations": [(4, 45), (5, 45)],
                 },
             ],
         )

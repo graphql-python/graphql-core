@@ -1,7 +1,12 @@
 from pytest import raises
 
 from graphql.error import GraphQLError
-from graphql.language import DirectiveLocation, DirectiveDefinitionNode, Node
+from graphql.language import (
+    DirectiveDefinitionNode,
+    DirectiveExtensionNode,
+    DirectiveLocation,
+    Node,
+)
 from graphql.type import GraphQLArgument, GraphQLDirective, GraphQLInt, GraphQLString
 
 
@@ -57,6 +62,18 @@ def describe_type_system_directive():
         assert directive.args == {}
         assert directive.is_repeatable is True
         assert directive.locations == tuple(locations)
+
+    def defines_a_deprecated_directive():
+        locations = [DirectiveLocation.QUERY]
+        directive = GraphQLDirective(
+            "Foo", locations=locations, deprecation_reason="Some reason"
+        )
+
+        assert directive.name == "Foo"
+        assert directive.args == {}
+        assert directive.is_repeatable is False
+        assert directive.locations == tuple(locations)
+        assert directive.deprecation_reason == "Some reason"
 
     def directive_accepts_input_types_as_arguments():
         # noinspection PyTypeChecker
@@ -210,10 +227,36 @@ def describe_type_system_directive():
             )
         assert str(exc_info.value) == "Foo description must be a string."
 
+    def rejects_a_directive_with_incorrectly_typed_deprecation_reason():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLDirective(
+                "Foo", locations=[], deprecation_reason={"bad": True}  # type: ignore
+            )
+        assert str(exc_info.value) == "Foo deprecation reason must be a string."
+
     def rejects_a_directive_with_incorrectly_typed_ast_node():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
             GraphQLDirective("Foo", locations=[], ast_node=Node())  # type: ignore
         assert str(exc_info.value) == (
             "Foo AST node must be a DirectiveDefinitionNode."
+        )
+
+    def accepts_a_directive_with_extension_ast_nodes():
+        extension_node = DirectiveExtensionNode()
+        directive = GraphQLDirective(
+            "Foo", locations=[], extension_ast_nodes=[extension_node]
+        )
+        assert directive.extension_ast_nodes == (extension_node,)
+
+    def rejects_a_directive_with_incorrectly_typed_extension_ast_nodes():
+        with raises(TypeError) as exc_info:
+            # noinspection PyTypeChecker
+            GraphQLDirective(
+                "Foo", locations=[], extension_ast_nodes=[Node()]  # type: ignore
+            )
+        assert str(exc_info.value) == (
+            "Foo extension AST nodes must be specified"
+            " as a collection of DirectiveExtensionNode instances."
         )
