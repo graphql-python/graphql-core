@@ -1,5 +1,6 @@
 from asyncio import ensure_future, gather
 from collections.abc import Mapping
+from contextlib import suppress
 from inspect import isawaitable
 from typing import (
     Any,
@@ -1219,6 +1220,16 @@ def default_type_resolver(
                 append_awaitable_results(cast(Awaitable, is_type_of_result))
                 append_awaitable_types(type_)
             elif is_type_of_result:
+                if awaitable_is_type_of_results:
+                    # noinspection PyShadowingNames
+                    async def await_is_type_of_and_return_type(
+                        resolved_type_name: str = type_.name,
+                    ) -> str:
+                        with suppress(Exception):
+                            await gather(*awaitable_is_type_of_results)
+                        return resolved_type_name
+
+                    return await_is_type_of_and_return_type()
                 return type_.name
 
     if awaitable_is_type_of_results:

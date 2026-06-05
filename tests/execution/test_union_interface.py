@@ -1,6 +1,8 @@
 from typing import Optional, Union, List
 
-from graphql.execution import execute_sync
+from pytest import mark
+
+from graphql.execution import execute, execute_sync, ExecutionResult
 from graphql.language import parse
 from graphql.type import (
     GraphQLBoolean,
@@ -46,21 +48,32 @@ class Cat:
         self.progeny = []
 
 
+class Plant:
+
+    name: str
+
+    def __init__(self, name: str):
+        self.name = name
+
+
 class Person:
 
     name: str
     pets: Optional[List[Union[Dog, Cat]]]
     friends: Optional[List[Union[Dog, Cat, "Person"]]]
+    responsibilities: Optional[List[Union[Dog, Cat, Plant]]]
 
     def __init__(
         self,
         name: str,
         pets: Optional[List[Union[Dog, Cat]]] = None,
         friends: Optional[List[Union[Dog, Cat, "Person"]]] = None,
+        responsibilities: Optional[List[Union[Dog, Cat, Plant]]] = None,
     ):
         self.name = name
         self.pets = pets
         self.friends = friends
+        self.responsibilities = responsibilities
 
 
 NamedType = GraphQLInterfaceType("Named", {"name": GraphQLField(GraphQLString)})
@@ -106,6 +119,18 @@ CatType = GraphQLObjectType(
 )
 
 
+async def resolve_plant_type(_value, _info):
+    raise RuntimeError("Not sure if this is a plant")
+
+
+PlantType = GraphQLObjectType(
+    "Plant",
+    lambda: {"name": GraphQLField(GraphQLString)},
+    interfaces=[NamedType],
+    is_type_of=resolve_plant_type,
+)
+
+
 def resolve_pet_type(value, _info, _type):
     if isinstance(value, Dog):
         return DogType.name
@@ -118,12 +143,15 @@ def resolve_pet_type(value, _info, _type):
 
 PetType = GraphQLUnionType("Pet", [DogType, CatType], resolve_type=resolve_pet_type)
 
+PetOrPlantType = GraphQLUnionType("PetOrPlantType", [PlantType, DogType, CatType])
+
 PersonType = GraphQLObjectType(
     "Person",
     lambda: {
         "name": GraphQLField(GraphQLString),
         "pets": GraphQLField(GraphQLList(PetType)),
         "friends": GraphQLField(GraphQLList(NamedType)),
+        "responsibilities": GraphQLField(GraphQLList(PetOrPlantType)),
         "progeny": GraphQLField(GraphQLList(PersonType)),  # type: ignore
         "mother": GraphQLField(PersonType),  # type: ignore
         "father": GraphQLField(PersonType),  # type: ignore
@@ -142,8 +170,9 @@ odie = Dog("Odie", True)
 odie.mother = Dog("Odie's Mom", True)
 odie.mother.progeny = [odie]
 
+fern = Plant("Fern")
 liz = Person("Liz", [], [])
-john = Person("John", [garfield, odie], [liz, odie])
+john = Person("John", [garfield, odie], [liz, odie], [garfield, fern])
 
 
 def describe_execute_union_and_intersection_types():
@@ -191,6 +220,7 @@ def describe_execute_union_and_intersection_types():
                         {"name": "Dog"},
                         {"name": "Cat"},
                         {"name": "Person"},
+                        {"name": "Plant"},
                     ],
                     "enumValues": None,
                     "inputFields": None,
@@ -514,3 +544,39 @@ def describe_execute_union_and_intersection_types():
             "root_value": root_value,
             "context": context_value,
         }
+
+    @mark.asyncio
+    @mark.filterwarnings("error:.*was never awaited:RuntimeWarning")
+    async def handles_rejections_from_is_type_of_after_an_is_type_of_returns_true():
+        document = parse("""
+            {
+              responsibilities {
+                __typename
+                ... on Dog {
+                  name
+                  barks
+                }
+                ... on Cat {
+                  name
+                  meows
+                }
+              }
+            }
+            """)
+
+        root_value = Person("John", [], [liz], [garfield])
+        context_value = {"authToken": "123abc"}
+
+        result = execute(schema, document, root_value, context_value)
+        assert not isinstance(result, ExecutionResult)
+        result = await result
+        assert isinstance(result, ExecutionResult)
+
+        assert result == (
+            {
+                "responsibilities": [
+                    {"__typename": "Cat", "name": "Garfield", "meows": False},
+                ],
+            },
+            None,
+        )
