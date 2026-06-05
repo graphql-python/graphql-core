@@ -322,7 +322,8 @@ def describe_execute_stream_directive():
             "data": {"scalarList": None},
             "errors": [
                 {
-                    "message": "Argument 'initialCount' has invalid value 1.5.",
+                    "message": "Argument 'initialCount' of type 'Int'"
+                    " has invalid value 1.5.",
                     "locations": [{"line": 1, "column": 36}],
                     "path": ["scalarList"],
                 }
@@ -363,7 +364,8 @@ def describe_execute_stream_directive():
             "errors": [
                 {
                     "locations": [{"line": 1, "column": 46}],
-                    "message": "Argument 'label' has invalid value 42.",
+                    "message": "Argument 'label' of type 'String'"
+                    " has invalid value 42.",
                     "path": ["scalarList"],
                 }
             ],

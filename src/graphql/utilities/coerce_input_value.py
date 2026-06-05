@@ -83,7 +83,7 @@ def coerce_input_value(
             on_error(
                 path.as_list() if path else [],
                 input_value,
-                GraphQLError(f"Expected type '{type_.name}' to be a mapping."),
+                GraphQLError(f"Expected type '{type_}' to be a mapping."),
             )
             return Undefined
 
@@ -103,8 +103,8 @@ def coerce_input_value(
                         path.as_list() if path else [],
                         input_value,
                         GraphQLError(
-                            f"Field '{field_name}' of required type '{type_str}'"
-                            " was not provided."
+                            f"Field '{type_}.{field_name}' of required type"
+                            f" '{type_str}' was not provided."
                         ),
                     )
                 continue
@@ -121,7 +121,7 @@ def coerce_input_value(
                     path.as_list() if path else [],
                     input_value,
                     GraphQLError(
-                        f"Field '{field_name}' is not defined by type '{type_.name}'."
+                        f"Field '{field_name}' is not defined by type '{type_}'."
                         + did_you_mean(suggestions)
                     ),
                 )
@@ -133,8 +133,7 @@ def coerce_input_value(
                     path.as_list() if path else [],
                     input_value,
                     GraphQLError(
-                        "Exactly one key must be specified"
-                        f" for OneOf type '{type_.name}'.",
+                        f"Exactly one key must be specified for OneOf type '{type_}'.",
                     ),
                 )
             else:
@@ -165,16 +164,14 @@ def coerce_input_value(
             on_error(
                 path.as_list() if path else [],
                 input_value,
-                GraphQLError(
-                    f"Expected type '{type_.name}'. {error}", original_error=error
-                ),
+                GraphQLError(f"Expected type '{type_}'. {error}", original_error=error),
             )
             return Undefined
         if parse_result is Undefined:
             on_error(
                 path.as_list() if path else [],
                 input_value,
-                GraphQLError(f"Expected type '{type_.name}'."),
+                GraphQLError(f"Expected type '{type_}'."),
             )
         return parse_result
 

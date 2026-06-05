@@ -141,7 +141,8 @@ def find_directive_changes(
 
     schema_changes: list[Change] = [
         BreakingChange(
-            BreakingChangeType.DIRECTIVE_REMOVED, f"{directive.name} was removed."
+            BreakingChangeType.DIRECTIVE_REMOVED,
+            f"Directive @{directive.name} was removed.",
         )
         for directive in directives_diff.removed
     ]
@@ -154,15 +155,15 @@ def find_directive_changes(
                 schema_changes.append(
                     BreakingChange(
                         BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                        f"A required arg {arg_name} on directive"
-                        f" {old_directive.name} was added.",
+                        f"A required argument @{old_directive.name}"
+                        f"({arg_name}:) was added.",
                     )
                 )
 
         schema_changes.extend(
             BreakingChange(
                 BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                f"{arg_name} was removed from {new_directive.name}.",
+                f"Argument @{old_directive.name}({arg_name}:) was removed.",
             )
             for arg_name in args_diff.removed
         )
@@ -171,14 +172,14 @@ def find_directive_changes(
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.DIRECTIVE_REPEATABLE_REMOVED,
-                    f"Repeatable flag was removed from {old_directive.name}.",
+                    f"Repeatable flag was removed from @{old_directive.name}.",
                 )
             )
 
         schema_changes.extend(
             BreakingChange(
                 BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
-                f"{location.name} was removed from {new_directive.name}.",
+                f"{location.name} was removed from @{new_directive.name}.",
             )
             for location in old_directive.locations
             if location not in new_directive.locations
@@ -242,23 +243,21 @@ def find_input_object_type_changes(
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
-                    f"A required field {field_name} on"
-                    f" input type {old_type.name} was added.",
+                    f"A required field {old_type}.{field_name} was added.",
                 )
             )
         else:
             schema_changes.append(
                 DangerousChange(
                     DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
-                    f"An optional field {field_name} on"
-                    f" input type {old_type.name} was added.",
+                    f"An optional field {old_type}.{field_name} was added.",
                 )
             )
 
     schema_changes.extend(
         BreakingChange(
             BreakingChangeType.FIELD_REMOVED,
-            f"{old_type.name}.{field_name} was removed.",
+            f"Field {old_type}.{field_name} was removed.",
         )
         for field_name in fields_diff.removed
     )
@@ -271,7 +270,7 @@ def find_input_object_type_changes(
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.FIELD_CHANGED_KIND,
-                    f"{old_type.name}.{field_name} changed type"
+                    f"Field {old_type}.{field_name} changed type"
                     f" from {old_field.type} to {new_field.type}.",
                 )
             )
@@ -288,7 +287,7 @@ def find_union_type_changes(
     schema_changes.extend(
         DangerousChange(
             DangerousChangeType.TYPE_ADDED_TO_UNION,
-            f"{possible_type.name} was added to union type {old_type.name}.",
+            f"{possible_type} was added to union type {old_type}.",
         )
         for possible_type in possible_types_diff.added
     )
@@ -296,7 +295,7 @@ def find_union_type_changes(
     schema_changes.extend(
         BreakingChange(
             BreakingChangeType.TYPE_REMOVED_FROM_UNION,
-            f"{possible_type.name} was removed from union type {old_type.name}.",
+            f"{possible_type} was removed from union type {old_type}.",
         )
         for possible_type in possible_types_diff.removed
     )
@@ -313,7 +312,7 @@ def find_enum_type_changes(
     schema_changes.extend(
         DangerousChange(
             DangerousChangeType.VALUE_ADDED_TO_ENUM,
-            f"{value_name} was added to enum type {old_type.name}.",
+            f"Enum value {old_type}.{value_name} was added.",
         )
         for value_name in values_diff.added
     )
@@ -321,7 +320,7 @@ def find_enum_type_changes(
     schema_changes.extend(
         BreakingChange(
             BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
-            f"{value_name} was removed from enum type {old_type.name}.",
+            f"Enum value {old_type}.{value_name} was removed.",
         )
         for value_name in values_diff.removed
     )
@@ -339,7 +338,7 @@ def find_implemented_interfaces_changes(
     schema_changes.extend(
         DangerousChange(
             DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
-            f"{interface.name} added to interfaces implemented by {old_type.name}.",
+            f"{interface.name} added to interfaces implemented by {old_type}.",
         )
         for interface in interfaces_diff.added
     )
@@ -347,7 +346,7 @@ def find_implemented_interfaces_changes(
     schema_changes.extend(
         BreakingChange(
             BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
-            f"{old_type.name} no longer implements interface {interface.name}.",
+            f"{old_type} no longer implements interface {interface.name}.",
         )
         for interface in interfaces_diff.removed
     )
@@ -365,7 +364,7 @@ def find_field_changes(
     schema_changes.extend(
         BreakingChange(
             BreakingChangeType.FIELD_REMOVED,
-            f"{old_type.name}.{field_name} was removed.",
+            f"Field {old_type}.{field_name} was removed.",
         )
         for field_name in fields_diff.removed
     )
@@ -381,7 +380,7 @@ def find_field_changes(
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.FIELD_CHANGED_KIND,
-                    f"{old_type.name}.{field_name} changed type"
+                    f"Field {old_type}.{field_name} changed type"
                     f" from {old_field.type} to {new_field.type}.",
                 )
             )
@@ -401,7 +400,7 @@ def find_arg_changes(
     schema_changes.extend(
         BreakingChange(
             BreakingChangeType.ARG_REMOVED,
-            f"{old_type.name}.{field_name} arg {arg_name} was removed.",
+            f"Argument {old_type}.{field_name}({arg_name}:) was removed.",
         )
         for arg_name in args_diff.removed
     )
@@ -414,8 +413,8 @@ def find_arg_changes(
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.ARG_CHANGED_KIND,
-                    f"{old_type.name}.{field_name} arg"
-                    f" {arg_name} has changed type from"
+                    f"Argument {old_type}.{field_name}({arg_name}:)"
+                    f" has changed type from"
                     f" {old_arg.type} to {new_arg.type}.",
                 )
             )
@@ -424,8 +423,8 @@ def find_arg_changes(
                 schema_changes.append(
                     DangerousChange(
                         DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                        f"{old_type.name}.{field_name} arg"
-                        f" {arg_name} defaultValue was removed.",
+                        f"{old_type}.{field_name}({arg_name}:)"
+                        f" defaultValue was removed.",
                     )
                 )
             else:
@@ -439,8 +438,8 @@ def find_arg_changes(
                     schema_changes.append(
                         DangerousChange(
                             DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                            f"{old_type.name}.{field_name} arg"
-                            f" {arg_name} has changed defaultValue"
+                            f"{old_type}.{field_name}({arg_name}:)"
+                            f" has changed defaultValue"
                             f" from {old_value_str} to {new_value_str}.",
                         )
                     )
@@ -450,16 +449,16 @@ def find_arg_changes(
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.REQUIRED_ARG_ADDED,
-                    f"A required arg {arg_name} on"
-                    f" {old_type.name}.{field_name} was added.",
+                    f"A required argument {old_type}.{field_name}"
+                    f"({arg_name}:) was added.",
                 )
             )
         else:
             schema_changes.append(
                 DangerousChange(
                     DangerousChangeType.OPTIONAL_ARG_ADDED,
-                    f"An optional arg {arg_name} on"
-                    f" {old_type.name}.{field_name} was added.",
+                    f"An optional argument {old_type}.{field_name}"
+                    f"({arg_name}:) was added.",
                 )
             )
 

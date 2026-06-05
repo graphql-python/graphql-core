@@ -1923,9 +1923,9 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Object field AnotherObject.field includes required"
-                " argument requiredArg that is missing from the"
-                " Interface field AnotherInterface.field.",
+                "message": "Argument 'AnotherObject.field(requiredArg:)'"
+                " must not be required type 'String!' if not provided by the"
+                " Interface field 'AnotherInterface.field'.",
                 "locations": [(13, 17), (7, 15)],
             }
         ]
@@ -2363,9 +2363,9 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Object field ChildInterface.field includes"
-                " required argument requiredArg that is missing"
-                " from the Interface field ParentInterface.field.",
+                "message": "Argument 'ChildInterface.field(requiredArg:)'"
+                " must not be required type 'String!' if not provided by the"
+                " Interface field 'ParentInterface.field'.",
                 "locations": [(13, 17), (7, 15)],
             }
         ]

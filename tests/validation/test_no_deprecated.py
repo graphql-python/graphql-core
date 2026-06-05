@@ -125,7 +125,7 @@ def describe_validate_no_deprecated():
                 """,
                 [
                     {
-                        "message": "Field 'Query.someField' argument 'deprecatedArg'"
+                        "message": "The argument 'Query.someField(deprecatedArg:)'"
                         " is deprecated. Some arg reason.",
                         "locations": [(3, 31)],
                     }
@@ -174,7 +174,7 @@ def describe_validate_no_deprecated():
                 """,
                 [
                     {
-                        "message": "Directive '@someDirective' argument 'deprecatedArg'"
+                        "message": "The argument '@someDirective(deprecatedArg:)'"
                         " is deprecated. Some arg reason.",
                         "locations": [(3, 44)],
                     }

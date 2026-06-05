@@ -161,7 +161,8 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Field 'multipleReqs' argument 'req1'"
+                        "message": "Argument"
+                        " 'ComplicatedArgs.multipleReqs(req1:)'"
                         " of type 'Int!' is required, but it was not provided.",
                         "locations": [(4, 21)],
                     },
@@ -179,12 +180,14 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Field 'multipleReqs' argument 'req1'"
+                        "message": "Argument"
+                        " 'ComplicatedArgs.multipleReqs(req1:)'"
                         " of type 'Int!' is required, but it was not provided.",
                         "locations": [(4, 21)],
                     },
                     {
-                        "message": "Field 'multipleReqs' argument 'req2'"
+                        "message": "Argument"
+                        " 'ComplicatedArgs.multipleReqs(req2:)'"
                         " of type 'Int!' is required, but it was not provided.",
                         "locations": [(4, 21)],
                     },
@@ -202,7 +205,8 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Field 'multipleReqs' argument 'req2'"
+                        "message": "Argument"
+                        " 'ComplicatedArgs.multipleReqs(req2:)'"
                         " of type 'Int!' is required, but it was not provided.",
                         "locations": [(4, 21)],
                     },
@@ -244,12 +248,12 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Directive '@include' argument 'if' of type"
+                        "message": "Argument '@include(if:)' of type"
                         " 'Boolean!' is required, but it was not provided.",
                         "locations": [(3, 23)],
                     },
                     {
-                        "message": "Directive '@skip' argument 'if' of type"
+                        "message": "Argument '@skip(if:)' of type"
                         " 'Boolean!' is required, but it was not provided.",
                         "locations": [(4, 26)],
                     },
@@ -279,7 +283,7 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Directive '@test' argument 'arg' of type"
+                        "message": "Argument '@test(arg:)' of type"
                         " 'String!' is required, but it was not provided.",
                         "locations": [(3, 31)],
                     },
@@ -295,7 +299,7 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Directive '@include' argument 'if' of type"
+                        "message": "Argument '@include(if:)' of type"
                         " 'Boolean!' is required, but it was not provided.",
                         "locations": [(3, 31)],
                     },
@@ -312,7 +316,7 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Directive '@deprecated' argument 'reason' of type"
+                        "message": "Argument '@deprecated(reason:)' of type"
                         " 'String!' is required, but it was not provided.",
                         "locations": [(3, 31)],
                     },
@@ -335,7 +339,7 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Directive '@test' argument 'arg' of type"
+                        "message": "Argument '@test(arg:)' of type"
                         " 'String!' is required, but it was not provided.",
                         "locations": [(4, 36)],
                     },
@@ -359,7 +363,7 @@ def describe_validate_provided_required_arguments():
                 """,
                 [
                     {
-                        "message": "Directive '@test' argument 'arg' of type"
+                        "message": "Argument '@test(arg:)' of type"
                         " 'String!' is required, but it was not provided.",
                         "locations": [(2, 36)],
                     },

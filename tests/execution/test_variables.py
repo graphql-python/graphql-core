@@ -254,7 +254,8 @@ def describe_execute_handles_inputs():
                     {"fieldWithObjectInput": None},
                     [
                         {
-                            "message": "Argument 'input' has invalid value"
+                            "message": "Argument 'input' of type"
+                            " 'TestInputObject' has invalid value"
                             ' ["foo", "bar", "baz"].',
                             "path": ["fieldWithObjectInput"],
                             "locations": [(3, 51)],
@@ -289,7 +290,8 @@ def describe_execute_handles_inputs():
                     {"fieldWithObjectInput": None},
                     [
                         {
-                            "message": "Argument 'input' has invalid value"
+                            "message": "Argument 'input' of type"
+                            " 'TestInputObject' has invalid value"
                             ' { c: "foo", e: "bar" }.',
                             "path": ["fieldWithObjectInput"],
                             "locations": [(3, 51)],
@@ -465,7 +467,8 @@ def describe_execute_handles_inputs():
                         {
                             "message": "Variable '$input' got invalid value"
                             " {'a': 'foo', 'b': 'bar'};"
-                            " Field 'c' of required type 'String!' was not provided.",
+                            " Field 'TestInputObject.c' of required type 'String!'"
+                            " was not provided.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -485,13 +488,15 @@ def describe_execute_handles_inputs():
                         {
                             "message": "Variable '$input' got invalid value"
                             " {'a': 'foo'} at 'input.na';"
-                            " Field 'c' of required type 'String!' was not provided.",
+                            " Field 'TestInputObject.c' of required type 'String!'"
+                            " was not provided.",
                             "locations": [(2, 28)],
                         },
                         {
                             "message": "Variable '$input' got invalid value"
                             " {'na': {'a': 'foo'}};"
-                            " Field 'nb' of required type 'String!' was not provided.",
+                            " Field 'TestNestedInputObject.nb' of required type"
+                            " 'String!' was not provided.",
                             "locations": [(2, 28)],
                         },
                     ],
@@ -1004,7 +1009,8 @@ def describe_execute_handles_inputs():
                 {"fieldWithDefaultArgumentValue": None},
                 [
                     {
-                        "message": "Argument 'input' has invalid value WRONG_TYPE.",
+                        "message": "Argument 'input' of type 'String'"
+                        " has invalid value WRONG_TYPE.",
                         "locations": [(3, 56)],
                         "path": ["fieldWithDefaultArgumentValue"],
                     }

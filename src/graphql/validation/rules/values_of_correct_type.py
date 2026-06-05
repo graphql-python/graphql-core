@@ -86,7 +86,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                 field_type = field_def.type
                 self.report_error(
                     GraphQLError(
-                        f"Field '{type_.name}.{field_name}' of required type"
+                        f"Field '{type_}.{field_name}' of required type"
                         f" '{field_type}' was not provided.",
                         node,
                     )
@@ -105,7 +105,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             self.report_error(
                 GraphQLError(
                     f"Field '{node.name.value}'"
-                    f" is not defined by type '{parent_type.name}'."
+                    f" is not defined by type '{parent_type}'."
                     + did_you_mean(suggestions),
                     node,
                 )
@@ -205,7 +205,7 @@ def validate_one_of_input_object(
     if is_not_exactly_one_filed:
         context.report_error(
             GraphQLError(
-                f"OneOf Input Object '{type_.name}' must specify exactly one key.",
+                f"OneOf Input Object '{type_}' must specify exactly one key.",
                 node,
             )
         )

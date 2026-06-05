@@ -136,7 +136,7 @@ class SchemaValidationContext:
                 )
                 self.report_error(
                     "All root types must be different,"
-                    f" '{root_type.name}' type is used as {operation_list} root types.",
+                    f" '{root_type}' type is used as {operation_list} root types.",
                     [
                         get_operation_type_node(schema, operation_type)
                         for operation_type in operation_types
@@ -159,7 +159,7 @@ class SchemaValidationContext:
 
             if not directive.locations:
                 self.report_error(
-                    f"Directive @{directive.name} must include 1 or more locations.",
+                    f"Directive {directive} must include 1 or more locations.",
                     directive.ast_node,
                 )
 
@@ -171,14 +171,14 @@ class SchemaValidationContext:
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
                     self.report_error(
-                        f"The type of @{directive.name}({arg_name}:)"
+                        f"The type of {directive}({arg_name}:)"
                         f" must be Input Type but got: {inspect(arg.type)}.",
                         arg.ast_node,
                     )
 
                 if is_required_argument(arg) and arg.deprecation_reason is not None:
                     self.report_error(
-                        f"Required argument @{directive.name}({arg_name}:)"
+                        f"Required argument {directive}({arg_name}:)"
                         " cannot be deprecated.",
                         [
                             get_deprecated_directive_node(arg.ast_node),
@@ -249,7 +249,7 @@ class SchemaValidationContext:
         # Objects and Interfaces both must define one or more fields.
         if not fields:
             self.report_error(
-                f"Type {type_.name} must define one or more fields.",
+                f"Type {type_} must define one or more fields.",
                 [type_.ast_node, *type_.extension_ast_nodes],
             )
 
@@ -260,7 +260,7 @@ class SchemaValidationContext:
             # Ensure the type is an output type
             if not is_output_type(field.type):
                 self.report_error(
-                    f"The type of {type_.name}.{field_name}"
+                    f"The type of {type_}.{field_name}"
                     f" must be Output Type but got: {inspect(field.type)}.",
                     field.ast_node and field.ast_node.type,
                 )
@@ -273,14 +273,14 @@ class SchemaValidationContext:
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
                     self.report_error(
-                        f"The type of {type_.name}.{field_name}({arg_name}:)"
+                        f"The type of {type_}.{field_name}({arg_name}:)"
                         f" must be Input Type but got: {inspect(arg.type)}.",
                         arg.ast_node and arg.ast_node.type,
                     )
 
                 if is_required_argument(arg) and arg.deprecation_reason is not None:
                     self.report_error(
-                        f"Required argument {type_.name}.{field_name}({arg_name}:)"
+                        f"Required argument {type_}.{field_name}({arg_name}:)"
                         " cannot be deprecated.",
                         [
                             get_deprecated_directive_node(arg.ast_node),
@@ -303,14 +303,14 @@ class SchemaValidationContext:
 
             if type_ is iface:
                 self.report_error(
-                    f"Type {type_.name} cannot implement itself"
+                    f"Type {type_} cannot implement itself"
                     " because it would create a circular reference.",
                     get_all_implements_interface_nodes(type_, iface),
                 )
 
             if iface.name in iface_type_names:
                 self.report_error(
-                    f"Type {type_.name} can only implement {iface.name} once.",
+                    f"Type {type_} can only implement {iface.name} once.",
                     get_all_implements_interface_nodes(type_, iface),
                 )
                 continue
@@ -335,7 +335,7 @@ class SchemaValidationContext:
             if not type_field:
                 self.report_error(
                     f"Interface field {iface.name}.{field_name}"
-                    f" expected but {type_.name} does not provide it.",
+                    f" expected but {type_} does not provide it.",
                     [
                         iface_field.ast_node,
                         type_.ast_node,
@@ -350,7 +350,7 @@ class SchemaValidationContext:
                 self.report_error(
                     f"Interface field {iface.name}.{field_name}"
                     f" expects type {iface_field.type}"
-                    f" but {type_.name}.{field_name}"
+                    f" but {type_}.{field_name}"
                     f" is type {type_field.type}.",
                     [
                         iface_field.ast_node and iface_field.ast_node.type,
@@ -367,7 +367,7 @@ class SchemaValidationContext:
                     self.report_error(
                         "Interface field argument"
                         f" {iface.name}.{field_name}({arg_name}:)"
-                        f" expected but {type_.name}.{field_name}"
+                        f" expected but {type_}.{field_name}"
                         " does not provide it.",
                         [iface_arg.ast_node, type_field.ast_node],
                     )
@@ -380,7 +380,7 @@ class SchemaValidationContext:
                         "Interface field argument"
                         f" {iface.name}.{field_name}({arg_name}:)"
                         f" expects type {iface_arg.type}"
-                        f" but {type_.name}.{field_name}({arg_name}:)"
+                        f" but {type_}.{field_name}({arg_name}:)"
                         f" is type {type_arg.type}.",
                         [
                             iface_arg.ast_node and iface_arg.ast_node.type,
@@ -393,9 +393,9 @@ class SchemaValidationContext:
                 iface_arg = iface_field.args.get(arg_name)
                 if not iface_arg and is_required_argument(type_arg):
                     self.report_error(
-                        f"Object field {type_.name}.{field_name} includes"
-                        f" required argument {arg_name} that is missing from"
-                        f" the Interface field {iface.name}.{field_name}.",
+                        f"Argument '{type_}.{field_name}({arg_name}:)' must not be"
+                        f" required type '{inspect(type_arg.type)}' if not provided"
+                        f" by the Interface field '{iface.name}.{field_name}'.",
                         [type_arg.ast_node, iface_field.ast_node],
                     )
 
@@ -408,10 +408,10 @@ class SchemaValidationContext:
         for transitive in iface_interfaces:
             if transitive not in type_interfaces:
                 self.report_error(
-                    f"Type {type_.name} cannot implement {iface.name}"
+                    f"Type {type_} cannot implement {iface.name}"
                     " because it would create a circular reference."
                     if transitive is type_
-                    else f"Type {type_.name} must implement {transitive.name}"
+                    else f"Type {type_} must implement {transitive.name}"
                     f" because it is implemented by {iface.name}.",
                     get_all_implements_interface_nodes(iface, transitive)
                     + get_all_implements_interface_nodes(type_, iface),
@@ -432,7 +432,7 @@ class SchemaValidationContext:
                 if member_type.name in included_type_names:
                     self.report_error(
                         f"Union type {union.name} can only include type"
-                        f" {member_type.name} once.",
+                        f" {member_type} once.",
                         get_union_member_type_nodes(union, member_type.name),
                     )
                 else:
@@ -449,7 +449,7 @@ class SchemaValidationContext:
 
         if not enum_values:
             self.report_error(
-                f"Enum type {enum_type.name} must define one or more values.",
+                f"Enum type {enum_type} must define one or more values.",
                 [enum_type.ast_node, *enum_type.extension_ast_nodes],
             )
 
@@ -500,14 +500,13 @@ class SchemaValidationContext:
     ) -> None:
         if is_non_null_type(field.type):
             self.report_error(
-                f"OneOf input field {type_.name}.{field_name} must be nullable.",
+                f"OneOf input field {type_}.{field_name} must be nullable.",
                 field.ast_node and field.ast_node.type,
             )
 
         if field.default_value is not Undefined:
             self.report_error(
-                f"OneOf input field {type_.name}.{field_name}"
-                " cannot have a default value.",
+                f"OneOf input field {type_}.{field_name} cannot have a default value.",
                 field.ast_node,
             )
 
@@ -565,7 +564,7 @@ class InputObjectCircularRefsValidator:
                     cycle_path = self.field_path[cycle_index:]
                     field_names = map(itemgetter(0), cycle_path)
                     self.context.report_error(
-                        f"Cannot reference Input Object '{field_type.name}'"
+                        f"Cannot reference Input Object '{field_type}'"
                         " within itself through a series of non-null fields:"
                         f" '{'.'.join(field_names)}'.",
                         cast(

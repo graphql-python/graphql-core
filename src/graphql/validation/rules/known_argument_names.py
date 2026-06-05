@@ -95,7 +95,7 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
             context.report_error(
                 GraphQLError(
                     f"Unknown argument '{arg_name}'"
-                    f" on field '{parent_type.name}.{field_name}'."
+                    f" on field '{parent_type}.{field_name}'."
                     + did_you_mean(suggestions),
                     arg_node,
                 )

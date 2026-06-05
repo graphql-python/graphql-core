@@ -1573,7 +1573,7 @@ def describe_introspection():
             None,
             [
                 {
-                    "message": "Field '__type' argument 'name'"
+                    "message": "Argument '<meta>.__type(name:)'"
                     " of type 'String!' is required, but it was not provided.",
                     "locations": [(3, 15)],
                 }
@@ -1663,10 +1663,10 @@ def describe_introspection():
         )
 
         def field_resolver(_obj, info):
-            assert False, f"Called on {info.parent_type.name}.{info.field_name}"
+            assert False, f"Called on {info.parent_type}.{info.field_name}"
 
         def type_resolver(_obj, info, _abstract_type):
-            assert False, f"Called on {info.parent_type.name}.{info.field_name}"
+            assert False, f"Called on {info.parent_type}.{info.field_name}"
 
         result = graphql_sync(
             schema=schema,

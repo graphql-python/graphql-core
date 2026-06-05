@@ -32,10 +32,9 @@ class NoDeprecatedCustomRule(ValidationRule):
             deprecation_reason = field_def.deprecation_reason
             if deprecation_reason is not None:
                 parent_type = context.get_parent_type()
-                parent_name = parent_type.name  # type: ignore
                 self.report_error(
                     GraphQLError(
-                        f"The field {parent_name}.{node.name.value}"
+                        f"The field {parent_type}.{node.name.value}"
                         f" is deprecated. {deprecation_reason}",
                         node,
                     )
@@ -51,21 +50,20 @@ class NoDeprecatedCustomRule(ValidationRule):
                 arg_name = node.name.value
                 if directive_def is None:
                     parent_type = context.get_parent_type()
-                    parent_name = parent_type.name  # type: ignore
                     field_def = context.get_field_def()
                     field_name = field_def.ast_node.name.value  # type: ignore
                     self.report_error(
                         GraphQLError(
-                            f"Field '{parent_name}.{field_name}' argument"
-                            f" '{arg_name}' is deprecated. {deprecation_reason}",
+                            f"The argument '{parent_type}.{field_name}({arg_name}:)'"
+                            f" is deprecated. {deprecation_reason}",
                             node,
                         )
                     )
                 else:
                     self.report_error(
                         GraphQLError(
-                            f"Directive '@{directive_def.name}' argument"
-                            f" '{arg_name}' is deprecated. {deprecation_reason}",
+                            f"The argument '@{directive_def.name}({arg_name}:)'"
+                            f" is deprecated. {deprecation_reason}",
                             node,
                         )
                     )

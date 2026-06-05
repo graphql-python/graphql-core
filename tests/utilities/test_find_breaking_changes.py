@@ -60,7 +60,7 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Query.foo changed type from Float to String.",
+                "Field Query.foo changed type from Float to String.",
             ),
         ]
 
@@ -154,54 +154,54 @@ def describe_find_breaking_changes():
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [
-            (BreakingChangeType.FIELD_REMOVED, "Type1.field2 was removed."),
+            (BreakingChangeType.FIELD_REMOVED, "Field Type1.field2 was removed."),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field3 changed type from String to Boolean.",
+                "Field Type1.field3 changed type from String to Boolean.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field4 changed type from TypeA to TypeB.",
+                "Field Type1.field4 changed type from TypeA to TypeB.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field6 changed type from String to [String].",
+                "Field Type1.field6 changed type from String to [String].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field7 changed type from [String] to String.",
+                "Field Type1.field7 changed type from [String] to String.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field9 changed type from Int! to Int.",
+                "Field Type1.field9 changed type from Int! to Int.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field10 changed type from [Int]! to [Int].",
+                "Field Type1.field10 changed type from [Int]! to [Int].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field11 changed type from Int to [Int]!.",
+                "Field Type1.field11 changed type from Int to [Int]!.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field13 changed type from [Int!] to [Int].",
+                "Field Type1.field13 changed type from [Int!] to [Int].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field14 changed type from [Int] to [[Int]].",
+                "Field Type1.field14 changed type from [Int] to [[Int]].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field15 changed type from [[Int]] to [Int].",
+                "Field Type1.field15 changed type from [[Int]] to [Int].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field16 changed type from Int! to [Int]!.",
+                "Field Type1.field16 changed type from Int! to [Int]!.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Type1.field18 changed type from [[Int!]!] to [[Int!]].",
+                "Field Type1.field18 changed type from [[Int!]!] to [[Int!]].",
             ),
         ]
 
@@ -250,46 +250,46 @@ def describe_find_breaking_changes():
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [
-            (BreakingChangeType.FIELD_REMOVED, "InputType1.field2 was removed."),
+            (BreakingChangeType.FIELD_REMOVED, "Field InputType1.field2 was removed."),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field1 changed type from String to Int.",
+                "Field InputType1.field1 changed type from String to Int.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field3 changed type from [String] to String.",
+                "Field InputType1.field3 changed type from [String] to String.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field5 changed type from String to String!.",
+                "Field InputType1.field5 changed type from String to String!.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field6 changed type from [Int] to [Int]!.",
+                "Field InputType1.field6 changed type from [Int] to [Int]!.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field8 changed type from Int to [Int]!.",
+                "Field InputType1.field8 changed type from Int to [Int]!.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field9 changed type from [Int] to [Int!].",
+                "Field InputType1.field9 changed type from [Int] to [Int!].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field11 changed type from [Int] to [[Int]].",
+                "Field InputType1.field11 changed type from [Int] to [[Int]].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field12 changed type from [[Int]] to [Int].",
+                "Field InputType1.field12 changed type from [[Int]] to [Int].",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field13 changed type from Int! to [Int]!.",
+                "Field InputType1.field13 changed type from Int! to [Int]!.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "InputType1.field15 changed type from [[Int]!] to [[Int!]!].",
+                "Field InputType1.field15 changed type from [[Int]!] to [[Int!]!].",
             ),
         ]
 
@@ -316,7 +316,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_INPUT_FIELD_ADDED,
-                "A required field requiredField on input type InputType1 was added.",
+                "A required field InputType1.requiredField was added.",
             )
         ]
 
@@ -372,7 +372,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
-                "VALUE1 was removed from enum type EnumType1.",
+                "Enum value EnumType1.VALUE1 was removed.",
             )
         ]
 
@@ -402,12 +402,18 @@ def describe_find_breaking_changes():
         )
 
         assert find_breaking_changes(old_schema, new_schema) == [
-            (BreakingChangeType.ARG_REMOVED, "Interface1.field1 arg arg1 was removed."),
             (
                 BreakingChangeType.ARG_REMOVED,
-                "Interface1.field1 arg objectArg was removed.",
+                "Argument Interface1.field1(arg1:) was removed.",
             ),
-            (BreakingChangeType.ARG_REMOVED, "Type1.field1 arg name was removed."),
+            (
+                BreakingChangeType.ARG_REMOVED,
+                "Argument Interface1.field1(objectArg:) was removed.",
+            ),
+            (
+                BreakingChangeType.ARG_REMOVED,
+                "Argument Type1.field1(name:) was removed.",
+            ),
         ]
 
     def should_detect_if_a_field_argument_has_changed_type():
@@ -462,51 +468,54 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg1 has changed type from String to Int.",
+                "Argument Type1.field1(arg1:) has changed type from String to Int.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg2 has changed type from String to [String].",
+                "Argument Type1.field1(arg2:) has changed type"
+                " from String to [String].",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg3 has changed type from [String] to String.",
+                "Argument Type1.field1(arg3:) has changed type"
+                " from [String] to String.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg4 has changed type from String to String!.",
+                "Argument Type1.field1(arg4:) has changed type from String to String!.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg5 has changed type from String! to Int.",
+                "Argument Type1.field1(arg5:) has changed type from String! to Int.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg6 has changed type from String! to Int!.",
+                "Argument Type1.field1(arg6:) has changed type from String! to Int!.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg8 has changed type from Int to [Int]!.",
+                "Argument Type1.field1(arg8:) has changed type from Int to [Int]!.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg9 has changed type from [Int] to [Int!].",
+                "Argument Type1.field1(arg9:) has changed type from [Int] to [Int!].",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg11 has changed type from [Int] to [[Int]].",
+                "Argument Type1.field1(arg11:) has changed type from [Int] to [[Int]].",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg12 has changed type from [[Int]] to [Int].",
+                "Argument Type1.field1(arg12:) has changed type from [[Int]] to [Int].",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg13 has changed type from Int! to [Int]!.",
+                "Argument Type1.field1(arg13:) has changed type from Int! to [Int]!.",
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Type1.field1 arg arg15 has changed type from [[Int]!] to [[Int!]!].",
+                "Argument Type1.field1(arg15:) has changed type"
+                " from [[Int]!] to [[Int!]!].",
             ),
         ]
 
@@ -535,7 +544,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_ARG_ADDED,
-                "A required arg newRequiredArg on Type1.field1 was added.",
+                "A required argument Type1.field1(newRequiredArg:) was added.",
             )
         ]
 
@@ -739,11 +748,12 @@ def describe_find_breaking_changes():
             (BreakingChangeType.TYPE_REMOVED, "TypeThatGetsRemoved was removed."),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "ArgThatChanges.field1 arg id has changed type from Float to String.",
+                "Argument ArgThatChanges.field1(id:) has changed type"
+                " from Float to String.",
             ),
             (
                 BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
-                "VALUE0 was removed from enum type EnumTypeThatLosesAValue.",
+                "Enum value EnumTypeThatLosesAValue.VALUE0 was removed.",
             ),
             (
                 BreakingChangeType.IMPLEMENTED_INTERFACE_REMOVED,
@@ -759,32 +769,32 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.FIELD_REMOVED,
-                "TypeThatHasBreakingFieldChanges.field1 was removed.",
+                "Field TypeThatHasBreakingFieldChanges.field1 was removed.",
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "TypeThatHasBreakingFieldChanges.field2 changed type"
+                "Field TypeThatHasBreakingFieldChanges.field2 changed type"
                 " from String to Boolean.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
-                "DirectiveThatIsRemoved was removed.",
+                "Directive @DirectiveThatIsRemoved was removed.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                "arg1 was removed from DirectiveThatRemovesArg.",
+                "Argument @DirectiveThatRemovesArg(arg1:) was removed.",
             ),
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                "A required arg arg1 on directive NonNullDirectiveAdded was added.",
+                "A required argument @NonNullDirectiveAdded(arg1:) was added.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_REPEATABLE_REMOVED,
-                "Repeatable flag was removed from DirectiveThatWasRepeatable.",
+                "Repeatable flag was removed from @DirectiveThatWasRepeatable.",
             ),
             (
                 BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
-                "QUERY was removed from DirectiveName.",
+                "QUERY was removed from @DirectiveName.",
             ),
         ]
 
@@ -805,7 +815,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
-                "DirectiveThatIsRemoved was removed.",
+                "Directive @DirectiveThatIsRemoved was removed.",
             )
         ]
 
@@ -824,7 +834,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
-                f"{GraphQLDeprecatedDirective.name} was removed.",
+                f"Directive {GraphQLDeprecatedDirective} was removed.",
             )
         ]
 
@@ -844,7 +854,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_ARG_REMOVED,
-                "arg1 was removed from DirectiveWithArg.",
+                "Argument @DirectiveWithArg(arg1:) was removed.",
             )
         ]
 
@@ -868,7 +878,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.REQUIRED_DIRECTIVE_ARG_ADDED,
-                "A required arg newRequiredArg on directive DirectiveName was added.",
+                "A required argument @DirectiveName(newRequiredArg:) was added.",
             )
         ]
 
@@ -888,7 +898,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_REPEATABLE_REMOVED,
-                "Repeatable flag was removed from DirectiveName.",
+                "Repeatable flag was removed from @DirectiveName.",
             )
         ]
 
@@ -908,7 +918,7 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.DIRECTIVE_LOCATION_REMOVED,
-                "QUERY was removed from DirectiveName.",
+                "QUERY was removed from @DirectiveName.",
             )
         ]
 
@@ -968,25 +978,25 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg withDefaultValue defaultValue was removed.",
+                "Type1.field1(withDefaultValue:) defaultValue was removed.",
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg stringArg has changed defaultValue"
+                "Type1.field1(stringArg:) has changed defaultValue"
                 ' from "test" to "Test".',
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg emptyArray has changed defaultValue from [] to [7].",
+                "Type1.field1(emptyArray:) has changed defaultValue from [] to [7].",
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg valueArray has changed defaultValue"
+                "Type1.field1(valueArray:) has changed defaultValue"
                 ' from [["a", "b"], ["c"]] to [["b", "a"], ["d"]].',
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg complexObject has changed defaultValue"
+                "Type1.field1(complexObject:) has changed defaultValue"
                 " from { innerInputArray: [{ arrayField: [1, 2, 3] }] }"
                 " to { innerInputArray: [{ arrayField: [3, 2, 1] }] }.",
             ),
@@ -1085,7 +1095,7 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.VALUE_ADDED_TO_ENUM,
-                "VALUE2 was added to enum type EnumType1.",
+                "Enum value EnumType1.VALUE2 was added.",
             )
         ]
 
@@ -1188,7 +1198,7 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.OPTIONAL_INPUT_FIELD_ADDED,
-                "An optional field field2 on input type InputType1 was added.",
+                "An optional field InputType1.field2 was added.",
             )
         ]
 
@@ -1236,11 +1246,11 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.VALUE_ADDED_TO_ENUM,
-                "VALUE2 was added to enum type EnumType1.",
+                "Enum value EnumType1.VALUE2 was added.",
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1 arg argThatChangesDefaultValue has changed defaultValue"
+                "Type1.field1(argThatChangesDefaultValue:) has changed defaultValue"
                 ' from "test" to "Test".',
             ),
             (
@@ -1274,6 +1284,6 @@ def describe_find_dangerous_changes():
         assert find_dangerous_changes(old_schema, new_schema) == [
             (
                 DangerousChangeType.OPTIONAL_ARG_ADDED,
-                "An optional arg arg2 on Type1.field1 was added.",
+                "An optional argument Type1.field1(arg2:) was added.",
             )
         ]

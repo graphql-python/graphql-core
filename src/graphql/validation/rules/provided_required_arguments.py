@@ -16,7 +16,14 @@ from ...language import (
     VisitorAction,
     print_ast,
 )
-from ...type import GraphQLArgument, is_required_argument, is_type, specified_directives
+from ...type import (
+    GraphQLArgument,
+    get_named_type,
+    is_introspection_type,
+    is_required_argument,
+    is_type,
+    specified_directives,
+)
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
 __all__ = ["ProvidedRequiredArgumentsOnDirectivesRule", "ProvidedRequiredArgumentsRule"]
@@ -75,7 +82,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
                     )
                     self.report_error(
                         GraphQLError(
-                            f"Directive '@{directive_name}' argument '{arg_name}'"
+                            f"Argument '@{directive_name}({arg_name}:)'"
                             f" of type '{arg_type_str}' is required,"
                             " but it was not provided.",
                             directive_node,
@@ -106,10 +113,16 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
         for arg_name, arg_def in field_def.args.items():
             arg_node = arg_node_map.get(arg_name)
             if not arg_node and is_required_argument(arg_def):
+                field_type = get_named_type(self.context.get_type())
+                if field_type and is_introspection_type(field_type):
+                    parent_type_str = "<meta>."
+                else:
+                    parent_type = self.context.get_parent_type()
+                    parent_type_str = f"{parent_type}." if parent_type else ""
                 self.report_error(
                     GraphQLError(
-                        f"Field '{field_node.name.value}' argument '{arg_name}'"
-                        f" of type '{arg_def.type}' is required,"
+                        f"Argument '{parent_type_str}{field_node.name.value}"
+                        f"({arg_name}:)' of type '{arg_def.type}' is required,"
                         " but it was not provided.",
                         field_node,
                     )

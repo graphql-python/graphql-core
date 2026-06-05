@@ -790,7 +790,7 @@ class ExecutionContext(IncrementalPublisherContext):
             if isinstance(completed, GraphQLWrappedResult) and completed.result is None:
                 msg = (
                     "Cannot return null for non-nullable field"
-                    f" {info.parent_type.name}.{info.field_name}."
+                    f" {info.parent_type}.{info.field_name}."
                 )
                 raise TypeError(msg)
             return completed
@@ -1087,7 +1087,7 @@ class ExecutionContext(IncrementalPublisherContext):
         if not is_iterable(result):
             msg = (
                 "Expected Iterable, but did not find one for field"
-                f" '{info.parent_type.name}.{info.field_name}'."
+                f" '{info.parent_type}.{info.field_name}'."
             )
             raise GraphQLError(msg)
 
@@ -1392,10 +1392,10 @@ class ExecutionContext(IncrementalPublisherContext):
         """Ensure that the given type is valid at runtime."""
         if runtime_type_name is None:
             msg = (
-                f"Abstract type '{return_type.name}' must resolve"
+                f"Abstract type '{return_type}' must resolve"
                 " to an Object type at runtime"
-                f" for field '{info.parent_type.name}.{info.field_name}'."
-                f" Either the '{return_type.name}' type should provide"
+                f" for field '{info.parent_type}.{info.field_name}'."
+                f" Either the '{return_type}' type should provide"
                 " a 'resolve_type' function or each possible type should provide"
                 " an 'is_type_of' function."
             )
@@ -1410,9 +1410,9 @@ class ExecutionContext(IncrementalPublisherContext):
 
         if not isinstance(runtime_type_name, str):
             msg = (
-                f"Abstract type '{return_type.name}' must resolve"
+                f"Abstract type '{return_type}' must resolve"
                 " to an Object type at runtime"
-                f" for field '{info.parent_type.name}.{info.field_name}' with value"
+                f" for field '{info.parent_type}.{info.field_name}' with value"
                 f" {inspect(result)}, received '{inspect(runtime_type_name)}'."
             )
             raise GraphQLError(msg, to_nodes(field_group))
@@ -1421,22 +1421,22 @@ class ExecutionContext(IncrementalPublisherContext):
 
         if runtime_type is None:
             msg = (
-                f"Abstract type '{return_type.name}' was resolved to a type"
+                f"Abstract type '{return_type}' was resolved to a type"
                 f" '{runtime_type_name}' that does not exist inside the schema."
             )
             raise GraphQLError(msg, to_nodes(field_group))
 
         if not is_object_type(runtime_type):
             msg = (
-                f"Abstract type '{return_type.name}' was resolved"
+                f"Abstract type '{return_type}' was resolved"
                 f" to a non-object type '{runtime_type_name}'."
             )
             raise GraphQLError(msg, to_nodes(field_group))
 
         if not self.schema.is_sub_type(return_type, runtime_type):
             msg = (
-                f"Runtime Object type '{runtime_type.name}' is not a possible"
-                f" type for '{return_type.name}'."
+                f"Runtime Object type '{runtime_type}' is not a possible"
+                f" type for '{return_type}'."
             )
             raise GraphQLError(msg, to_nodes(field_group))
 
@@ -2288,7 +2288,7 @@ def invalid_return_type_error(
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
-        f"Expected value of type '{return_type.name}' but got: {inspect(result)}.",
+        f"Expected value of type '{return_type}' but got: {inspect(result)}.",
         to_nodes(field_group),
     )
 

@@ -90,13 +90,9 @@ def print_schema_definition(schema: GraphQLSchema) -> str | None:
         return (
             print_description(schema)
             + "schema {\n"
-            + (f"  query: {query_type.name}\n" if query_type else "")
-            + (f"  mutation: {mutation_type.name}\n" if mutation_type else "")
-            + (
-                f"  subscription: {subscription_type.name}\n"
-                if subscription_type
-                else ""
-            )
+            + (f"  query: {query_type}\n" if query_type else "")
+            + (f"  mutation: {mutation_type}\n" if mutation_type else "")
+            + (f"  subscription: {subscription_type}\n" if subscription_type else "")
             + "}"
         )
 
@@ -153,11 +149,7 @@ def print_type(type_: GraphQLNamedType) -> str:
 
 def print_scalar(type_: GraphQLScalarType) -> str:
     """Print a GraphQL scalar type."""
-    return (
-        print_description(type_)
-        + f"scalar {type_.name}"
-        + print_specified_by_url(type_)
-    )
+    return print_description(type_) + f"scalar {type_}" + print_specified_by_url(type_)
 
 
 def print_implemented_interfaces(
@@ -172,7 +164,7 @@ def print_object(type_: GraphQLObjectType) -> str:
     """Print a GraphQL object type."""
     return (
         print_description(type_)
-        + f"type {type_.name}"
+        + f"type {type_}"
         + print_implemented_interfaces(type_)
         + print_fields(type_)
     )
@@ -182,7 +174,7 @@ def print_interface(type_: GraphQLInterfaceType) -> str:
     """Print a GraphQL interface type."""
     return (
         print_description(type_)
-        + f"interface {type_.name}"
+        + f"interface {type_}"
         + print_implemented_interfaces(type_)
         + print_fields(type_)
     )
@@ -203,7 +195,7 @@ def print_enum(type_: GraphQLEnumType) -> str:
         + print_deprecated(value.deprecation_reason)
         for i, (name, value) in enumerate(type_.values.items())
     ]
-    return print_description(type_) + f"enum {type_.name}" + print_block(values)
+    return print_description(type_) + f"enum {type_}" + print_block(values)
 
 
 def print_input_object(type_: GraphQLInputObjectType) -> str:
@@ -214,7 +206,7 @@ def print_input_object(type_: GraphQLInputObjectType) -> str:
     ]
     return (
         print_description(type_)
-        + f"input {type_.name}"
+        + f"input {type_}"
         + (" @oneOf" if type_.is_one_of else "")
         + print_block(fields)
     )
@@ -276,7 +268,7 @@ def print_directive(directive: GraphQLDirective) -> str:
     """Print a GraphQL directive."""
     return (
         print_description(directive)
-        + f"directive @{directive.name}"
+        + f"directive {directive}"
         + print_args(directive.args)
         + (" repeatable" if directive.is_repeatable else "")
         + " on "

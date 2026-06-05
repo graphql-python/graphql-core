@@ -205,7 +205,8 @@ def describe_coerce_input_value():
             result = _coerce_value({"bar": 123}, TestInputObject)
             assert expect_errors(result) == [
                 (
-                    "Field 'foo' of required type 'Int!' was not provided.",
+                    "Field 'TestInputObject.foo' of required type 'Int!'"
+                    " was not provided.",
                     [],
                     {"bar": 123},
                 )

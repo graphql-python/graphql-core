@@ -199,7 +199,7 @@ def describe_custom_scalar():
             {"toEuros": None},
             [
                 {
-                    "message": "Argument 'money' has invalid value"
+                    "message": "Argument 'money' of type 'Money' has invalid value"
                     " { amount: $amount, currency: $currency }.",
                     "locations": [(3, 30)],
                 },

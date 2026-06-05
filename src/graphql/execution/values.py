@@ -215,7 +215,10 @@ def get_argument_values(
             # Note: `values_of_correct_type` validation should catch this before
             # execution. This is a runtime check to ensure execution does not
             # continue with an invalid argument value.
-            msg = f"Argument '{name}' has invalid value {print_ast(value_node)}."
+            msg = (
+                f"Argument '{name}' of type '{inspect(arg_type)}'"
+                f" has invalid value {print_ast(value_node)}."
+            )
             raise GraphQLError(msg, value_node)
         coerced_values[arg_def.out_name or name] = coerced_value
 
