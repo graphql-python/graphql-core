@@ -12,7 +12,9 @@ from graphql.execution.values import VariableValues
 from graphql.language import (
     EnumTypeDefinitionNode,
     EnumTypeExtensionNode,
+    EnumValueDefinitionNode,
     EnumValueNode,
+    FieldDefinitionNode,
     FieldNode,
     FragmentDefinitionNode,
     InputObjectTypeDefinitionNode,
@@ -89,6 +91,10 @@ ListOfNonNullScalarsType = GraphQLList(NonNullScalarType)
 NonNullListOfScalars = GraphQLNonNull(ListOfScalarsType)
 
 
+def pass_through(arg: Any) -> Any:
+    return arg  # pragma: no cover
+
+
 def describe_type_system_scalars():
     def defines_a_scalar_type():
         scalar = GraphQLScalarType("SomeScalar")
@@ -107,6 +113,25 @@ def describe_type_system_scalars():
             "ast_node": None,
             "extension_ast_nodes": (),
         }
+
+    def can_be_converted_to_a_configuration_object():
+        ast_node = ScalarTypeDefinitionNode(name=_stub_name())
+        extension_ast_node = ScalarTypeExtensionNode(name=_stub_name())
+        some_scalar_kwargs = {
+            "name": "SomeScalar",
+            "description": "SomeScalar description.",
+            "specified_by_url": "https://example.com/foo_spec",
+            "serialize": pass_through,
+            "parse_value": pass_through,
+            "parse_literal": pass_through,
+            "parse_const_literal": pass_through,
+            "value_to_literal": pass_through,
+            "extensions": {"some_extension": "extension"},
+            "ast_node": ast_node,
+            "extension_ast_nodes": (extension_ast_node,),
+        }
+        some_scalar = GraphQLScalarType(**some_scalar_kwargs)  # type: ignore
+        assert some_scalar.to_kwargs() == some_scalar_kwargs
 
     def accepts_a_scalar_type_defining_serialize():
         def serialize(_value):
@@ -333,6 +358,44 @@ def describe_type_system_objects():
             "ast_node": None,
             "extension_ast_nodes": (),
         }
+
+    def can_be_converted_to_a_configuration_object():
+        ast_node = ObjectTypeDefinitionNode(name=_stub_name())
+        extension_ast_node = ObjectTypeExtensionNode(name=_stub_name())
+        arg_ast_node = InputValueDefinitionNode(name=_stub_name(), type=_stub_type())
+        field_ast_node = FieldDefinitionNode(name=_stub_name(), type=_stub_type())
+        some_object_kwargs = {
+            "name": "SomeObject",
+            "description": "SomeObject description.",
+            "interfaces": (InterfaceType,),
+            "fields": {
+                "f": GraphQLField(
+                    ScalarType,
+                    args={
+                        "input": GraphQLArgument(
+                            ScalarType,
+                            default_value="DefaultValue",
+                            description="Argument description.",
+                            deprecation_reason="Argument deprecation reason.",
+                            extensions={"some_extension": "extension"},
+                            ast_node=arg_ast_node,
+                        )
+                    },
+                    resolve=pass_through,
+                    subscribe=pass_through,
+                    description="Field description.",
+                    deprecation_reason="Field deprecation reason.",
+                    extensions={"some_extension": "extension"},
+                    ast_node=field_ast_node,
+                )
+            },
+            "is_type_of": pass_through,
+            "extensions": {"some_extension": "extension"},
+            "ast_node": ast_node,
+            "extension_ast_nodes": (extension_ast_node,),
+        }
+        some_object = GraphQLObjectType(**some_object_kwargs)  # type: ignore
+        assert some_object.to_kwargs() == some_object_kwargs
 
     def does_not_mutate_passed_field_definitions():
         output_fields = {
@@ -583,6 +646,43 @@ def describe_type_system_interfaces():
             "extension_ast_nodes": (),
         }
 
+    def can_be_converted_to_a_configuration_object():
+        ast_node = InterfaceTypeDefinitionNode(name=_stub_name())
+        arg_ast_node = InputValueDefinitionNode(name=_stub_name(), type=_stub_type())
+        field_ast_node = FieldDefinitionNode(name=_stub_name(), type=_stub_type())
+        some_interface_kwargs = {
+            "name": "SomeInterface",
+            "description": "SomeInterface description.",
+            "interfaces": (InterfaceType,),
+            "fields": {
+                "f": GraphQLField(
+                    ScalarType,
+                    args={
+                        "input": GraphQLArgument(
+                            ScalarType,
+                            default_value_literal=IntValueNode(value="10"),
+                            description="Argument description.",
+                            deprecation_reason="Argument deprecation reason.",
+                            extensions={"some_extension": "extension"},
+                            ast_node=arg_ast_node,
+                        )
+                    },
+                    resolve=pass_through,
+                    subscribe=pass_through,
+                    description="Field description.",
+                    deprecation_reason="Field deprecation reason.",
+                    extensions={"some_extension": "extension"},
+                    ast_node=field_ast_node,
+                )
+            },
+            "resolve_type": pass_through,
+            "extensions": {},
+            "ast_node": ast_node,
+            "extension_ast_nodes": (),
+        }
+        some_interface = GraphQLInterfaceType(**some_interface_kwargs)  # type: ignore
+        assert some_interface.to_kwargs() == some_interface_kwargs
+
     def accepts_an_interface_type_defining_resolve_type():
         def resolve_type(_obj, _info, _type):
             pass
@@ -696,6 +796,32 @@ def describe_type_system_interfaces():
 
 
 def describe_type_system_unions():
+    def can_be_converted_from_a_minimal_configuration_object():
+        some_union = GraphQLUnionType("SomeUnion", [])
+        assert some_union.to_kwargs() == {
+            "name": "SomeUnion",
+            "description": None,
+            "types": (),
+            "resolve_type": None,
+            "extensions": {},
+            "ast_node": None,
+            "extension_ast_nodes": (),
+        }
+
+    def can_be_converted_to_a_configuration_object():
+        ast_node = UnionTypeDefinitionNode(name=_stub_name())
+        some_union_kwargs = {
+            "name": "SomeUnion",
+            "description": "SomeUnion description.",
+            "types": (ObjectType,),
+            "resolve_type": pass_through,
+            "extensions": {},
+            "ast_node": ast_node,
+            "extension_ast_nodes": (),
+        }
+        some_union = GraphQLUnionType(**some_union_kwargs)  # type: ignore
+        assert some_union.to_kwargs() == some_union_kwargs
+
     def accepts_a_union_type_defining_resolve_type():
         assert GraphQLUnionType("SomeUnion", [ObjectType])
 
@@ -750,6 +876,40 @@ def describe_type_system_unions():
 
 
 def describe_type_system_enums():
+    def can_be_converted_from_a_minimal_configuration_object():
+        some_enum = GraphQLEnumType("SomeEnum", {})
+        assert some_enum.to_kwargs() == {
+            "name": "SomeEnum",
+            "description": None,
+            "values": {},
+            "extensions": {},
+            "ast_node": None,
+            "extension_ast_nodes": (),
+        }
+
+    def can_be_converted_to_a_configuration_object():
+        ast_node = EnumTypeDefinitionNode(name=_stub_name())
+        extension_ast_node = EnumTypeExtensionNode(name=_stub_name())
+        value_ast_node = EnumValueDefinitionNode(name=_stub_name())
+        some_enum_kwargs = {
+            "name": "SomeEnum",
+            "description": "SomeEnum description.",
+            "values": {
+                "FOO": GraphQLEnumValue(
+                    "foo",
+                    description="FOO description.",
+                    deprecation_reason="Value deprecation reason.",
+                    extensions={"some_extension": "extension"},
+                    ast_node=value_ast_node,
+                )
+            },
+            "extensions": {"some_extension": "extension"},
+            "ast_node": ast_node,
+            "extension_ast_nodes": (extension_ast_node,),
+        }
+        some_enum = GraphQLEnumType(**some_enum_kwargs)  # type: ignore
+        assert some_enum.to_kwargs() == some_enum_kwargs
+
     def defines_an_enum_using_a_dict():
         enum_type = GraphQLEnumType("SomeEnum", {"RED": 1, "BLUE": 2})
         assert enum_type.values == {
@@ -1040,6 +1200,45 @@ def describe_type_system_enums():
 
 
 def describe_type_system_input_objects():
+    def can_be_converted_from_a_minimal_configuration_object():
+        some_input_object = GraphQLInputObjectType("SomeInputObject", {})
+        assert some_input_object.to_kwargs() == {
+            "name": "SomeInputObject",
+            "description": None,
+            "fields": {},
+            "out_type": None,  # the out_type is an extension of GraphQL.js
+            "is_one_of": False,
+            "extensions": {},
+            "ast_node": None,
+            "extension_ast_nodes": (),
+        }
+
+    def can_be_converted_to_a_configuration_object():
+        ast_node = InputObjectTypeDefinitionNode(name=_stub_name())
+        extension_ast_node = InputObjectTypeExtensionNode(name=_stub_name())
+        field_ast_node = InputValueDefinitionNode(name=_stub_name(), type=_stub_type())
+        some_input_object_kwargs = {
+            "name": "SomeInputObject",
+            "description": "SomeInputObject description.",
+            "fields": {
+                "input": GraphQLInputField(
+                    ScalarType,
+                    default_value="DefaultValue",
+                    description="Input field description.",
+                    deprecation_reason="Input field deprecation reason.",
+                    extensions={"some_extension": "extension"},
+                    ast_node=field_ast_node,
+                )
+            },
+            "out_type": None,  # the out_type is an extension of GraphQL.js
+            "is_one_of": True,
+            "extensions": {"some_extension": "extension"},
+            "ast_node": ast_node,
+            "extension_ast_nodes": (extension_ast_node,),
+        }
+        some_input_object = GraphQLInputObjectType(**some_input_object_kwargs)  # type: ignore
+        assert some_input_object.to_kwargs() == some_input_object_kwargs
+
     def accepts_an_input_object_type_with_a_description():
         description = "nice input object"
         input_obj_type = GraphQLInputObjectType(
