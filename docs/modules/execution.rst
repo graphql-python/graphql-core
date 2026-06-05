@@ -9,6 +9,8 @@ Execution
 
 .. autofunction:: execute
 
+.. autofunction:: execute_query_or_mutation_or_subscription_event
+
 .. autofunction:: experimental_execute_incrementally
 
 .. autofunction:: execute_sync
