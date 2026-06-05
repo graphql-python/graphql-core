@@ -148,11 +148,19 @@ def describe_coerce_input_value():
             ]
 
     def describe_for_graphql_input_object():
+        DeepObject = GraphQLInputObjectType(
+            "DeepObject",
+            {
+                "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+                "bar": GraphQLInputField(GraphQLInt),
+            },
+        )
         TestInputObject = GraphQLInputObjectType(
             "TestInputObject",
             {
                 "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt)),
                 "bar": GraphQLInputField(GraphQLInt),
+                "deepObject": GraphQLInputField(DeepObject),
             },
         )
 
@@ -219,6 +227,26 @@ def describe_coerce_input_value():
                     " Did you mean 'bar'?",
                     [],
                     {"foo": 123, "bart": 123},
+                )
+            ]
+
+        def returns_an_error_for_an_array_type():
+            result = _coerce_value([{"foo": 1}, {"bar": 1}], TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Expected type 'TestInputObject' to be a mapping.",
+                    [],
+                    [{"foo": 1}, {"bar": 1}],
+                )
+            ]
+
+        def returns_an_error_for_an_array_type_on_a_nested_field():
+            result = _coerce_value({"foo": 1, "deepObject": [1, 2, 3]}, TestInputObject)
+            assert expect_errors(result) == [
+                (
+                    "Expected type 'DeepObject' to be a mapping.",
+                    ["deepObject"],
+                    [1, 2, 3],
                 )
             ]
 
