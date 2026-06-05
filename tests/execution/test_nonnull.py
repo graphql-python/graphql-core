@@ -502,6 +502,161 @@ def describe_execute_handles_non_nullable_types():
                 ],
             )
 
+    def describe_handles_multiple_errors_for_a_single_response_position():
+        # Note: contrary to graphql.js, graphql-core executes sibling fields
+        # concurrently with cancellation (see gather_with_cancel). A slower sibling
+        # error is therefore added before the faster non-null error has propagated
+        # and nulled the shared response position, so it is kept instead of being
+        # discarded. The expected results below reflect this behavior.
+
+        async def nullable_and_non_nullable_root_fields_throw_nested_errors():
+            query = """
+                {
+                  promiseNonNullNest {
+                    syncNonNull
+                  }
+                  promiseNest {
+                    syncNonNull
+                  }
+                }
+                """
+            result = await cast(
+                "Awaitable[ExecutionResult]", execute_query(query, ThrowingData())
+            )
+            assert result == (
+                None,
+                [
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["promiseNest", "syncNonNull"],
+                        "locations": [(7, 21)],
+                    },
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["promiseNonNullNest", "syncNonNull"],
+                        "locations": [(4, 21)],
+                    },
+                ],
+            )
+
+        async def slower_nullable_after_non_nullable_root_field():
+            query = """
+                {
+                  promiseNonNullNest {
+                    syncNonNull
+                  }
+                  promiseNest {
+                    promiseNonNull
+                  }
+                }
+                """
+            result = await cast(
+                "Awaitable[ExecutionResult]", execute_query(query, ThrowingData())
+            )
+            assert result == (
+                None,
+                [
+                    {
+                        "message": str(promise_non_null_error),
+                        "path": ["promiseNest", "promiseNonNull"],
+                        "locations": [(7, 21)],
+                    },
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["promiseNonNullNest", "syncNonNull"],
+                        "locations": [(4, 21)],
+                    },
+                ],
+            )
+
+            # the error list does not change any more after the response is built
+            assert result.errors is not None
+            initial_errors = list(result.errors)
+            for _ in range(5):
+                await asyncio.sleep(0)
+            assert result.errors == initial_errors
+
+        async def nullable_and_non_nullable_nested_fields_throw_nested_errors():
+            query = """
+                {
+                  syncNest {
+                    promiseNonNullNest {
+                      syncNonNull
+                    }
+                    promiseNest {
+                      syncNonNull
+                    }
+                  }
+                }
+                """
+            result = await cast(
+                "Awaitable[ExecutionResult]", execute_query(query, ThrowingData())
+            )
+            assert result == (
+                {"syncNest": None},
+                [
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["syncNest", "promiseNest", "syncNonNull"],
+                        "locations": [(8, 23)],
+                    },
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["syncNest", "promiseNonNullNest", "syncNonNull"],
+                        "locations": [(5, 23)],
+                    },
+                ],
+            )
+
+        async def slower_nullable_after_non_nullable_nested_field():
+            query = """
+                {
+                  syncNest {
+                    promiseNonNullNest {
+                      syncNonNull
+                    }
+                    promiseNest {
+                      promiseNest {
+                        promiseNest {
+                          promiseNonNull
+                        }
+                      }
+                    }
+                  }
+                }
+                """
+            result = await cast(
+                "Awaitable[ExecutionResult]", execute_query(query, ThrowingData())
+            )
+            assert result == (
+                {"syncNest": None},
+                [
+                    {
+                        "message": str(promise_non_null_error),
+                        "path": [
+                            "syncNest",
+                            "promiseNest",
+                            "promiseNest",
+                            "promiseNest",
+                            "promiseNonNull",
+                        ],
+                        "locations": [(10, 27)],
+                    },
+                    {
+                        "message": str(sync_non_null_error),
+                        "path": ["syncNest", "promiseNonNullNest", "syncNonNull"],
+                        "locations": [(5, 23)],
+                    },
+                ],
+            )
+
+            # the error list does not change any more after the response is built
+            assert result.errors is not None
+            initial_errors = list(result.errors)
+            for _ in range(20):
+                await asyncio.sleep(0)
+            assert result.errors == initial_errors
+
     def describe_handles_non_null_argument():
         schema_with_non_null_arg = GraphQLSchema(
             GraphQLObjectType(
