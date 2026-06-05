@@ -199,6 +199,10 @@ from .utilities import (
     value_from_ast_untyped,
     # Create a GraphQL language AST from a Python value.
     ast_from_value,
+    # Create a GraphQL literal (AST) from a Python value.
+    value_to_literal,
+    # Replace any variables in an AST value with their literal values.
+    replace_variables,
     # A helper to use within recursive-descent visitors which need to be aware of the
     # GraphQL type system.
     TypeInfo,
@@ -356,6 +360,8 @@ from .type import (
     GraphQLScalarSerializer,
     GraphQLScalarValueParser,
     GraphQLScalarLiteralParser,
+    GraphQLScalarConstLiteralParser,
+    GraphQLScalarValueToLiteral,
     GraphQLDefaultValueUsage,
     GraphQLIsTypeOfFn,
     GraphQLResolveInfo,
@@ -579,11 +585,13 @@ __all__ = [
     "GraphQLOneOfDirective",
     "GraphQLOutputType",
     "GraphQLResolveInfo",
+    "GraphQLScalarConstLiteralParser",
     "GraphQLScalarLiteralParser",
     "GraphQLScalarSerializer",
     "GraphQLScalarType",
     "GraphQLScalarTypeKwargs",
     "GraphQLScalarValueParser",
+    "GraphQLScalarValueToLiteral",
     "GraphQLSchema",
     "GraphQLSchemaKwargs",
     "GraphQLSkipDirective",
@@ -803,6 +811,7 @@ __all__ = [
     "print_source_location",
     "print_type",
     "recommended_rules",
+    "replace_variables",
     "resolve_thunk",
     "separate_operations",
     "specified_directives",
@@ -815,6 +824,7 @@ __all__ = [
     "validate_schema",
     "value_from_ast",
     "value_from_ast_untyped",
+    "value_to_literal",
     "version",
     "version_info",
     "version_info_js",

@@ -35,6 +35,7 @@ from ...type import (
     is_non_null_type,
     is_required_input_field,
 )
+from ...utilities.replace_variables import replace_variables
 from . import ValidationContext, ValidationRule
 
 if TYPE_CHECKING:
@@ -163,11 +164,14 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
             return
 
-        # Scalars determine if a literal value is valid via `parse_literal()` which may
-        # throw or return an invalid value to indicate failure.
+        const_value_node = replace_variables(node)
+
+        # Scalars and Enums determine if a literal value is valid via
+        # `parse_const_literal()`, which may raise or return ``Undefined`` to
+        # indicate an invalid value.
         type_ = cast("GraphQLScalarType", type_)
         try:
-            parse_result = type_.parse_literal(node)
+            parse_result = type_.parse_const_literal(const_value_node)
             if parse_result is Undefined:
                 self.report_error(
                     GraphQLError(

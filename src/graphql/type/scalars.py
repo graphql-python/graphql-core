@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from math import isfinite
 from typing import TYPE_CHECKING, Any, TypeGuard
 
 from ..error import GraphQLError
 from ..language.ast import (
     BooleanValueNode,
+    ConstValueNode,
     FloatValueNode,
     IntValueNode,
     StringValueNode,
@@ -15,10 +17,13 @@ from ..language.ast import (
 )
 from ..language.printer import print_ast
 from ..pyutils import inspect
+from ..utilities.value_to_literal import default_scalar_value_to_literal
 from .definition import GraphQLNamedType, GraphQLScalarType
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+_re_integer_string = re.compile("^-?(?:0|[1-9][0-9]*)$")
 
 __all__ = [
     "GRAPHQL_MAX_INT",
@@ -104,6 +109,19 @@ def parse_int_literal(value_node: ValueNode, _variables: Any = None) -> int:
     return num
 
 
+def int_value_to_literal(value: Any) -> ConstValueNode | None:
+    """Convert an integer value to an Int literal in the AST."""
+    if (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and isfinite(value)
+        and value == int(value)
+        and GRAPHQL_MIN_INT <= value <= GRAPHQL_MAX_INT
+    ):
+        return IntValueNode(value=str(int(value)))
+    return None
+
+
 GraphQLInt = GraphQLScalarType(
     name="Int",
     description="The `Int` scalar type represents"
@@ -111,7 +129,8 @@ GraphQLInt = GraphQLScalarType(
     " Int can represent values between -(2^31) and 2^31 - 1.",
     serialize=serialize_int,
     parse_value=coerce_int,
-    parse_literal=parse_int_literal,
+    parse_const_literal=parse_int_literal,
+    value_to_literal=int_value_to_literal,
 )
 
 
@@ -151,6 +170,14 @@ def parse_float_literal(value_node: ValueNode, _variables: Any = None) -> float:
     return float(value_node.value)
 
 
+def float_value_to_literal(value: Any) -> ConstValueNode | None:
+    """Convert a float value to a Float literal in the AST."""
+    literal = default_scalar_value_to_literal(value)
+    if isinstance(literal, (FloatValueNode, IntValueNode)):
+        return literal
+    return None
+
+
 GraphQLFloat = GraphQLScalarType(
     name="Float",
     description="The `Float` scalar type represents"
@@ -159,7 +186,8 @@ GraphQLFloat = GraphQLScalarType(
     "(https://en.wikipedia.org/wiki/IEEE_floating_point).",
     serialize=serialize_float,
     parse_value=coerce_float,
-    parse_literal=parse_float_literal,
+    parse_const_literal=parse_float_literal,
+    value_to_literal=float_value_to_literal,
 )
 
 
@@ -197,6 +225,14 @@ def parse_string_literal(value_node: ValueNode, _variables: Any = None) -> str:
     return value_node.value
 
 
+def string_value_to_literal(value: Any) -> ConstValueNode | None:
+    """Convert a string value to a String literal in the AST."""
+    literal = default_scalar_value_to_literal(value)
+    if isinstance(literal, StringValueNode):
+        return literal
+    return None
+
+
 GraphQLString = GraphQLScalarType(
     name="String",
     description="The `String` scalar type represents textual data,"
@@ -205,7 +241,8 @@ GraphQLString = GraphQLScalarType(
     " to represent free-form human-readable text.",
     serialize=serialize_string,
     parse_value=coerce_string,
-    parse_literal=parse_string_literal,
+    parse_const_literal=parse_string_literal,
+    value_to_literal=string_value_to_literal,
 )
 
 
@@ -239,12 +276,21 @@ def parse_boolean_literal(value_node: ValueNode, _variables: Any = None) -> bool
     return value_node.value
 
 
+def boolean_value_to_literal(value: Any) -> ConstValueNode | None:
+    """Convert a boolean value to a Boolean literal in the AST."""
+    literal = default_scalar_value_to_literal(value)
+    if isinstance(literal, BooleanValueNode):
+        return literal
+    return None
+
+
 GraphQLBoolean = GraphQLScalarType(
     name="Boolean",
     description="The `Boolean` scalar type represents `true` or `false`.",
     serialize=serialize_boolean,
     parse_value=coerce_boolean,
-    parse_literal=parse_boolean_literal,
+    parse_const_literal=parse_boolean_literal,
+    value_to_literal=boolean_value_to_literal,
 )
 
 
@@ -291,6 +337,27 @@ def parse_id_literal(value_node: ValueNode, _variables: Any = None) -> str:
     return value_node.value
 
 
+def id_value_to_literal(value: Any) -> ConstValueNode | None:
+    """Convert an ID value to an Int or String literal in the AST."""
+    # ID types can use number values and Int literals.
+    string_value: Any = (
+        str(int(value))
+        if isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and isfinite(value)
+        and value == int(value)
+        else value
+    )
+    if isinstance(string_value, str):
+        # Will parse as an IntValue if it consists only of integer digits.
+        return (
+            IntValueNode(value=string_value)
+            if _re_integer_string.match(string_value)
+            else StringValueNode(value=string_value, block=False)
+        )
+    return None
+
+
 GraphQLID = GraphQLScalarType(
     name="ID",
     description="The `ID` scalar type represents a unique identifier,"
@@ -301,7 +368,8 @@ GraphQLID = GraphQLScalarType(
     " `4`) input value will be accepted as an ID.",
     serialize=serialize_id,
     parse_value=coerce_id,
-    parse_literal=parse_id_literal,
+    parse_const_literal=parse_id_literal,
+    value_to_literal=id_value_to_literal,
 )
 
 specified_scalar_types: Mapping[str, GraphQLScalarType] = {

@@ -66,6 +66,14 @@ Create a GraphQL language AST from a Python value:
 
 .. autofunction:: ast_from_value
 
+Create a GraphQL literal (AST) from a Python value:
+
+.. autofunction:: value_to_literal
+
+Replace any variables in an AST value with their literal values:
+
+.. autofunction:: replace_variables
+
 A helper to use within recursive-descent visitors which need to be aware of the GraphQL
 type system:
 

@@ -109,11 +109,13 @@ __all__ = [
     "GraphQLObjectTypeKwargs",
     "GraphQLOutputType",
     "GraphQLResolveInfo",
+    "GraphQLScalarConstLiteralParser",
     "GraphQLScalarLiteralParser",
     "GraphQLScalarSerializer",
     "GraphQLScalarType",
     "GraphQLScalarTypeKwargs",
     "GraphQLScalarValueParser",
+    "GraphQLScalarValueToLiteral",
     "GraphQLType",
     "GraphQLTypeResolver",
     "GraphQLUnionType",
@@ -316,6 +318,8 @@ GraphQLScalarValueParser: TypeAlias = Callable[[Any], Any]
 GraphQLScalarLiteralParser: TypeAlias = Callable[
     [ValueNode, dict[str, Any] | None], Any
 ]
+GraphQLScalarConstLiteralParser: TypeAlias = Callable[[ConstValueNode], Any]
+GraphQLScalarValueToLiteral: TypeAlias = Callable[[Any], "ConstValueNode | None"]
 
 
 class GraphQLScalarTypeKwargs(GraphQLNamedTypeKwargs, total=False):
@@ -324,6 +328,8 @@ class GraphQLScalarTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     serialize: GraphQLScalarSerializer | None
     parse_value: GraphQLScalarValueParser | None
     parse_literal: GraphQLScalarLiteralParser | None
+    parse_const_literal: GraphQLScalarConstLiteralParser | None
+    value_to_literal: GraphQLScalarValueToLiteral | None
     specified_by_url: str | None
 
 
@@ -359,12 +365,16 @@ class GraphQLScalarType(GraphQLNamedType):
     ast_node: ScalarTypeDefinitionNode | None
     extension_ast_nodes: tuple[ScalarTypeExtensionNode, ...]
 
+    value_to_literal: GraphQLScalarValueToLiteral | None
+
     def __init__(
         self,
         name: str,
         serialize: GraphQLScalarSerializer | None = None,
         parse_value: GraphQLScalarValueParser | None = None,
         parse_literal: GraphQLScalarLiteralParser | None = None,
+        parse_const_literal: GraphQLScalarConstLiteralParser | None = None,
+        value_to_literal: GraphQLScalarValueToLiteral | None = None,
         description: str | None = None,
         specified_by_url: str | None = None,
         extensions: dict[str, Any] | None = None,
@@ -385,9 +395,18 @@ class GraphQLScalarType(GraphQLNamedType):
             self.parse_value = parse_value  # type: ignore
         if parse_literal is not None:
             self.parse_literal = parse_literal  # type: ignore
+        if parse_const_literal is not None:
+            self.parse_const_literal = parse_const_literal  # type: ignore
+        self.value_to_literal = value_to_literal
         if parse_literal is not None and parse_value is None:
             msg = (
                 f"{name} must provide both 'parse_value' and 'parse_literal' functions."
+            )
+            raise TypeError(msg)
+        if parse_const_literal is not None and parse_value is None:
+            msg = (
+                f"{name} must provide both 'parse_value'"
+                " and 'parse_const_literal' functions."
             )
             raise TypeError(msg)
         self.specified_by_url = specified_by_url
@@ -423,8 +442,20 @@ class GraphQLScalarType(GraphQLNamedType):
 
         This default method uses the parse_value method and should be replaced
         with a more specific version when creating a scalar type.
+
+        .. deprecated:: 3.3
+            Use ``replace_variables()`` and ``parse_const_literal()`` instead.
+            ``parse_literal()`` will be removed in a future version.
         """
         return self.parse_value(value_from_ast_untyped(node, variables))
+
+    def parse_const_literal(self, node: ConstValueNode) -> Any:
+        """Parses an externally provided const literal value to use as an input.
+
+        This default method uses the parse_value method and should be replaced
+        with a more specific version when creating a scalar type.
+        """
+        return self.parse_value(value_from_ast_untyped(node))
 
     def to_kwargs(self) -> GraphQLScalarTypeKwargs:
         """Get corresponding arguments."""
@@ -440,6 +471,11 @@ class GraphQLScalarType(GraphQLNamedType):
             if getattr(self.parse_literal, "__func__", None)
             is GraphQLScalarType.parse_literal
             else self.parse_literal,
+            parse_const_literal=None
+            if getattr(self.parse_const_literal, "__func__", None)
+            is GraphQLScalarType.parse_const_literal
+            else self.parse_const_literal,
+            value_to_literal=self.value_to_literal,
             specified_by_url=self.specified_by_url,
         )
 
@@ -1228,8 +1264,17 @@ class GraphQLEnumType(GraphQLNamedType):
     def parse_literal(
         self, value_node: ValueNode, _variables: dict[str, Any] | None = None
     ) -> Any:
-        """Parse literal value."""
+        """Parse literal value.
+
+        .. deprecated:: 3.3
+            Use ``parse_const_literal()`` instead. ``parse_literal()`` will be
+            removed in a future version.
+        """
         # Note: variables will be resolved before calling this method.
+        return self.parse_const_literal(cast("ConstValueNode", value_node))
+
+    def parse_const_literal(self, value_node: ConstValueNode) -> Any:
+        """Parse const literal value."""
         if isinstance(value_node, EnumValueNode):
             try:
                 enum_value = self.values[value_node.value]
@@ -1247,6 +1292,12 @@ class GraphQLEnumType(GraphQLNamedType):
             + did_you_mean_enum_value(self, value_str)
         )
         raise GraphQLError(msg, value_node)
+
+    def value_to_literal(self, value: Any) -> ConstValueNode | None:
+        """Convert an external value to an enum literal (AST)."""
+        if isinstance(value, str) and self.values.get(value):
+            return EnumValueNode(value=value)
+        return None
 
 
 def is_enum_type(type_: Any) -> TypeGuard[GraphQLEnumType]:

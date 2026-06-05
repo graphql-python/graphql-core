@@ -17,7 +17,7 @@ from graphql.type import (
 from graphql.utilities import value_from_ast_untyped
 
 if TYPE_CHECKING:
-    from graphql.language import ValueNode
+    from graphql.language import ConstValueNode
 
 # this test is not (yet) part of GraphQL.js, see
 # https://github.com/graphql/graphql-js/issues/2657
@@ -47,23 +47,25 @@ def parse_money_value(input_value: Any) -> Money:
     return input_value
 
 
-def parse_money_literal(value_node: ValueNode, variables=None) -> Money:
-    money = value_from_ast_untyped(value_node, variables)
-    if variables is not None and (
-        # variables are not set when checked with ValuesOfCorrectTypeRule
-        not money
-        or not is_finite(money.get("amount"))
-        or not isinstance(money.get("currency"), str)
-    ):
+def parse_money_const_literal(value_node: ConstValueNode) -> Money:
+    money = value_from_ast_untyped(value_node)
+    amount: Any = money.get("amount") if isinstance(money, dict) else None
+    currency: Any = money.get("currency") if isinstance(money, dict) else None
+    # Note: when validating with the ValuesOfCorrectTypeRule, embedded variables
+    # are removed from the literal, so the fields may be missing here; only the
+    # values that are actually present are checked.
+    valid_amount = amount is None or is_finite(amount)
+    valid_currency = currency is None or isinstance(currency, str)
+    if not valid_amount or not valid_currency:
         raise GraphQLError("Cannot parse literal money value: " + inspect(money))
-    return Money(**money)
+    return Money(amount, currency)
 
 
 MoneyScalar = GraphQLScalarType(
     name="Money",
     serialize=serialize_money,
     parse_value=parse_money_value,
-    parse_literal=parse_money_literal,
+    parse_const_literal=parse_money_const_literal,
 )
 
 

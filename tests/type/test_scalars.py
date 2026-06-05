@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from graphql.error import GraphQLError
-from graphql.language import parse_value as parse_value_to_ast
+from graphql.language import parse_const_value as parse_const_value_to_ast
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
@@ -55,9 +55,9 @@ def describe_type_system_specified_scalar_types():
                 {"value": 1}, "Int cannot represent non-integer value: {'value': 1}"
             )
 
-        def parse_literal():
+        def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLInt.parse_literal(parse_value_to_ast(s))
+                return GraphQLInt.parse_const_literal(parse_const_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -99,9 +99,6 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "Int cannot represent non-integer value: ENUM_VALUE"
-            )
-            _parse_literal_raises(
-                "$var", "Int cannot represent non-integer value: $var"
             )
 
         def serializes():
@@ -217,9 +214,9 @@ def describe_type_system_specified_scalar_types():
                 "Float cannot represent non numeric value: {'value': 0.1}",
             )
 
-        def parse_literal():
+        def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLFloat.parse_literal(parse_value_to_ast(s))
+                return GraphQLFloat.parse_const_literal(parse_const_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -260,9 +257,6 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "Float cannot represent non numeric value: ENUM_VALUE"
-            )
-            _parse_literal_raises(
-                "$var", "Float cannot represent non numeric value: $var"
             )
 
         def serializes():
@@ -343,9 +337,9 @@ def describe_type_system_specified_scalar_types():
                 "String cannot represent a non string value: {'value': 'foo'}",
             )
 
-        def parse_literal():
+        def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLString.parse_literal(parse_value_to_ast(s))
+                return GraphQLString.parse_const_literal(parse_const_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -380,9 +374,6 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "String cannot represent a non string value: ENUM_VALUE"
-            )
-            _parse_literal_raises(
-                "$var", "String cannot represent a non string value: $var"
             )
 
         def serializes():
@@ -466,9 +457,9 @@ def describe_type_system_specified_scalar_types():
                 "Boolean cannot represent a non boolean value: {'value': False}",
             )
 
-        def parse_literal():
+        def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLBoolean.parse_literal(parse_value_to_ast(s))
+                return GraphQLBoolean.parse_const_literal(parse_const_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -524,9 +515,6 @@ def describe_type_system_specified_scalar_types():
             )
             _parse_literal_raises(
                 "ENUM_VALUE", "Boolean cannot represent a non boolean value: ENUM_VALUE"
-            )
-            _parse_literal_raises(
-                "$var", "Boolean cannot represent a non boolean value: $var"
             )
 
         def serializes():
@@ -611,9 +599,9 @@ def describe_type_system_specified_scalar_types():
                 {"value": "1"}, "ID cannot represent value: {'value': '1'}"
             )
 
-        def parse_literal():
+        def parse_const_literal():
             def _parse_literal(s: str):
-                return GraphQLID.parse_literal(parse_value_to_ast(s))
+                return GraphQLID.parse_const_literal(parse_const_value_to_ast(s))
 
             def _parse_literal_raises(s: str, message: str):
                 with pytest.raises(GraphQLError) as exc_info:
@@ -658,9 +646,6 @@ def describe_type_system_specified_scalar_types():
             _parse_literal_raises(
                 "ENUM_VALUE",
                 "ID cannot represent a non-string and non-integer value: ENUM_VALUE",
-            )
-            _parse_literal_raises(
-                "$var", "ID cannot represent a non-string and non-integer value: $var"
             )
 
         def serializes():

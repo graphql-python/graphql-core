@@ -49,6 +49,12 @@ from .value_from_ast_untyped import value_from_ast_untyped
 # Create a GraphQL language AST from a Python value.
 from .ast_from_value import ast_from_value
 
+# Create a GraphQL literal (AST) from a Python value.
+from .value_to_literal import value_to_literal
+
+# Replace any variables in an AST value with their literal values.
+from .replace_variables import replace_variables
+
 # A helper to use within recursive-descent visitors which need to be aware of
 # the GraphQL type system
 from .type_info import TypeInfo, TypeInfoVisitor
@@ -110,9 +116,11 @@ __all__ = [
     "print_schema",
     "print_type",
     "print_value",
+    "replace_variables",
     "separate_operations",
     "strip_ignored_characters",
     "type_from_ast",
     "value_from_ast",
     "value_from_ast_untyped",
+    "value_to_literal",
 ]
