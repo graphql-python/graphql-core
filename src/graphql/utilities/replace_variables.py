@@ -6,17 +6,18 @@ from typing import TYPE_CHECKING, cast
 
 from ..language import (
     ConstValueNode,
+    ListValueNode,
     NullValueNode,
+    ObjectFieldNode,
+    ObjectValueNode,
     ValueNode,
     VariableNode,
-    Visitor,
-    visit,
 )
 from ..pyutils import Undefined
 from .value_to_literal import value_to_literal
 
 if TYPE_CHECKING:
-    from ..execution.values import VariableValues
+    from ..execution.values import VariableValues, VariableValueSource
 
 __all__ = ["replace_variables"]
 
@@ -35,31 +36,12 @@ def replace_variables(
     Used primarily to ensure only complete constant values are used during input
     coercion of custom scalars which accept complex literals.
     """
-    visitor = _ReplaceVariablesVisitor(variable_values, fragment_variable_values)
-    return cast("ConstValueNode", visit(value_node, visitor))
-
-
-class _ReplaceVariablesVisitor(Visitor):
-    """A visitor that replaces variable nodes with their literal values."""
-
-    def __init__(
-        self,
-        variable_values: VariableValues | None,
-        fragment_variable_values: VariableValues | None,
-    ) -> None:
-        super().__init__()
-        self.variable_values = variable_values
-        self.fragment_variable_values = fragment_variable_values
-
-    def enter_variable(
-        self, node: VariableNode, *_args: object
-    ) -> ConstValueNode | None:
-        var_name = node.name.value
-        fragment_variable_values = self.fragment_variable_values
+    if isinstance(value_node, VariableNode):
+        var_name = value_node.name.value
         scoped_variable_values = (
             fragment_variable_values
             if fragment_variable_values and var_name in fragment_variable_values.sources
-            else self.variable_values
+            else variable_values
         )
 
         if scoped_variable_values is None:
@@ -71,33 +53,49 @@ class _ReplaceVariablesVisitor(Visitor):
             if default_value is not Undefined:
                 return default_value.literal
 
-        return value_to_literal(
-            scoped_variable_source.value, scoped_variable_source.signature.type
+        return cast(
+            "ConstValueNode",
+            value_to_literal(
+                scoped_variable_source.value, scoped_variable_source.signature.type
+            ),
         )
 
-    def enter_object_value(self, node: object, *_args: object) -> object:
-        variable_values = self.variable_values
-        fragment_variable_values = self.fragment_variable_values
-        # Filter out any fields with a missing variable.
-        fields = []
-        for field in node.fields:  # type: ignore
-            if not isinstance(field.value, VariableNode):
-                fields.append(field)
-                continue
-            var_name = field.value.name.value
-            scoped_variable_source = None
-            if (
-                fragment_variable_values
-                and var_name in fragment_variable_values.sources
-            ):
-                scoped_variable_source = fragment_variable_values.sources[var_name]
-            elif variable_values and var_name in variable_values.sources:
-                scoped_variable_source = variable_values.sources[var_name]
-            if scoped_variable_source is not None and not (
-                scoped_variable_source.value is Undefined
-                and scoped_variable_source.signature.default_value is Undefined
-            ):
-                fields.append(field)
-        if len(fields) == len(node.fields):  # type: ignore
-            return None  # No fields removed, keep the node unchanged.
-        return node.__class__(fields=tuple(fields))  # type: ignore
+    if isinstance(value_node, ObjectValueNode):
+        new_fields: list[ObjectFieldNode] = []
+        for field in value_node.fields:
+            if isinstance(field.value, VariableNode):
+                field_var_name = field.value.name.value
+                field_variable_source: VariableValueSource | None = None
+                if (
+                    fragment_variable_values
+                    and field_var_name in fragment_variable_values.sources
+                ):
+                    field_variable_source = fragment_variable_values.sources[
+                        field_var_name
+                    ]
+                elif variable_values and field_var_name in variable_values.sources:
+                    field_variable_source = variable_values.sources[field_var_name]
+
+                if field_variable_source is None or (
+                    field_variable_source.value is Undefined
+                    and field_variable_source.signature.default_value is Undefined
+                ):
+                    continue
+            new_field_node_value = replace_variables(
+                field.value, variable_values, fragment_variable_values
+            )
+            new_fields.append(
+                ObjectFieldNode(name=field.name, value=new_field_node_value)
+            )
+        return cast("ConstValueNode", ObjectValueNode(fields=tuple(new_fields)))
+
+    if isinstance(value_node, ListValueNode):
+        new_values: list[ConstValueNode] = []
+        for value in value_node.values:
+            new_item_node_value = replace_variables(
+                value, variable_values, fragment_variable_values
+            )
+            new_values.append(new_item_node_value)
+        return cast("ConstValueNode", ListValueNode(values=tuple(new_values)))
+
+    return cast("ConstValueNode", value_node)
