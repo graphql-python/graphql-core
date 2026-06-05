@@ -485,7 +485,6 @@ class Lexer:
 _punctuator_token_kinds = frozenset(
     [
         TokenKind.BANG,
-        TokenKind.QUESTION_MARK,
         TokenKind.DOLLAR,
         TokenKind.AMP,
         TokenKind.PAREN_L,
@@ -513,7 +512,6 @@ def is_punctuator_token_kind(kind: TokenKind) -> bool:
 
 _KIND_FOR_PUNCT = {
     "!": TokenKind.BANG,
-    "?": TokenKind.QUESTION_MARK,
     "$": TokenKind.DOLLAR,
     "&": TokenKind.AMP,
     "(": TokenKind.PAREN_L,

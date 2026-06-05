@@ -276,7 +276,6 @@ def describe_ast_to_disc():
                                 "directives": [],
                                 "kind": "field",
                                 "name": {"kind": "name", "value": "hero"},
-                                "nullability_assertion": None,
                                 "selection_set": {
                                     "kind": "selection_set",
                                     "selections": [
@@ -286,7 +285,6 @@ def describe_ast_to_disc():
                                             "directives": [],
                                             "kind": "field",
                                             "name": {"kind": "name", "value": "name"},
-                                            "nullability_assertion": None,
                                             "selection_set": None,
                                         },
                                         {
@@ -304,7 +302,6 @@ def describe_ast_to_disc():
                                                             "kind": "name",
                                                             "value": "primaryFunction",
                                                         },
-                                                        "nullability_assertion": None,
                                                         "selection_set": None,
                                                     }
                                                 ],
@@ -332,7 +329,6 @@ def describe_ast_to_disc():
                                                             "kind": "name",
                                                             "value": "height",
                                                         },
-                                                        "nullability_assertion": None,
                                                         "selection_set": None,
                                                     }
                                                 ],
@@ -440,7 +436,6 @@ def describe_ast_to_disc():
                                     "loc": {"end": 69, "start": 65},
                                     "value": "hero",
                                 },
-                                "nullability_assertion": None,
                                 "selection_set": {
                                     "kind": "selection_set",
                                     "loc": {"end": 279, "start": 84},
@@ -456,7 +451,6 @@ def describe_ast_to_disc():
                                                 "loc": {"end": 106, "start": 102},
                                                 "value": "name",
                                             },
-                                            "nullability_assertion": None,
                                             "selection_set": None,
                                         },
                                         {
@@ -484,7 +478,6 @@ def describe_ast_to_disc():
                                                             },
                                                             "value": "primaryFunction",
                                                         },
-                                                        "nullability_assertion": None,
                                                         "selection_set": None,
                                                     }
                                                 ],
@@ -524,7 +517,6 @@ def describe_ast_to_disc():
                                                             },
                                                             "value": "height",
                                                         },
-                                                        "nullability_assertion": None,
                                                         "selection_set": None,
                                                     }
                                                 ],

@@ -241,17 +241,11 @@ def describe_printer_query_document():
         )
 
     def prints_kitchen_sink_without_altering_ast(kitchen_sink_query):  # noqa: F811
-        ast = parse(
-            kitchen_sink_query,
-            no_location=True,
-            experimental_client_controlled_nullability=True,
-        )
+        ast = parse(kitchen_sink_query, no_location=True)
 
         ast_before_print_call = deepcopy(ast)
         printed = print_ast(ast)
-        printed_ast = parse(
-            printed, no_location=True, experimental_client_controlled_nullability=True
-        )
+        printed_ast = parse(printed, no_location=True)
         assert printed_ast == ast
         assert deepcopy(ast) == ast_before_print_call
 
@@ -273,19 +267,6 @@ def describe_printer_query_document():
                       ...frag @onFragmentSpread
                     }
                   }
-                  field3!
-                  field4?
-                  requiredField5: field5!
-                  requiredSelectionSet(first: 10)! @directive {
-                    field
-                  }
-                  unsetListItemsRequiredList: listField[]!
-                  requiredListItemsUnsetList: listField[!]
-                  requiredListItemsRequiredList: listField[!]!
-                  unsetListItemsOptionalList: listField[]?
-                  optionalListItemsUnsetList: listField[?]
-                  optionalListItemsOptionalList: listField[?]?
-                  multidimensionalList: listField[[[!]!]!]!
                 }
                 ... @skip(unless: $foo) {
                   id

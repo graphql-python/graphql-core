@@ -20,7 +20,6 @@ from .ast import (
     EnumTypeExtensionNode,
     EnumValueDefinitionNode,
     EnumValueNode,
-    ErrorBoundaryNode,
     FieldDefinitionNode,
     FieldNode,
     FloatValueNode,
@@ -34,15 +33,12 @@ from .ast import (
     InterfaceTypeDefinitionNode,
     InterfaceTypeExtensionNode,
     IntValueNode,
-    ListNullabilityOperatorNode,
     ListTypeNode,
     ListValueNode,
     Location,
     NamedTypeNode,
     NameNode,
-    NonNullAssertionNode,
     NonNullTypeNode,
-    NullabilityAssertionNode,
     NullValueNode,
     ObjectFieldNode,
     ObjectTypeDefinitionNode,
@@ -87,7 +83,6 @@ def parse(
     no_location: bool = False,
     max_tokens: int | None = None,
     experimental_fragment_arguments: bool = False,
-    experimental_client_controlled_nullability: bool = False,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -122,32 +117,12 @@ def parse(
         fragment A($var: Boolean = false) on T {
           ...B(x: $var)
         }
-
-    EXPERIMENTAL:
-
-    If enabled, the parser will understand and parse Client Controlled Nullability
-    Designators contained in Fields. They'll be represented in the
-    :attr:`~graphql.language.FieldNode.nullability_assertion` field
-    of the :class:`~graphql.language.FieldNode`.
-
-    The syntax looks like the following::
-
-       {
-         nullableField!
-         nonNullableField?
-         nonNullableSelectionSet? {
-           childField!
-        }
-      }
-
-    Note: this feature is experimental and may change or be removed in the future.
     """
     parser = Parser(
         source,
         no_location=no_location,
         max_tokens=max_tokens,
         experimental_fragment_arguments=experimental_fragment_arguments,
-        experimental_client_controlled_nullability=experimental_client_controlled_nullability,
     )
     return parser.parse_document()
 
@@ -243,7 +218,6 @@ class Parser:
     _no_location: bool
     _max_tokens: int | None
     _experimental_fragment_arguments: bool
-    _experimental_client_controlled_nullability: bool
     _lexer: Lexer
     _token_counter: int
 
@@ -253,7 +227,6 @@ class Parser:
         no_location: bool = False,
         max_tokens: int | None = None,
         experimental_fragment_arguments: bool = False,
-        experimental_client_controlled_nullability: bool = False,
     ) -> None:
         if not is_source(source):
             source = Source(cast("str", source))
@@ -261,9 +234,6 @@ class Parser:
         self._no_location = no_location
         self._max_tokens = max_tokens
         self._experimental_fragment_arguments = experimental_fragment_arguments
-        self._experimental_client_controlled_nullability = (
-            experimental_client_controlled_nullability
-        )
         self._lexer = Lexer(source)
         self._token_counter = 0
 
@@ -461,45 +431,12 @@ class Parser:
             alias=alias,
             name=name,
             arguments=self.parse_arguments(False),
-            # Experimental support for Client Controlled Nullability changes
-            # the grammar of Field:
-            nullability_assertion=self.parse_nullability_assertion(),
             directives=self.parse_directives(False),
             selection_set=self.parse_selection_set()
             if self.peek(TokenKind.BRACE_L)
             else None,
             loc=self.loc(start),
         )
-
-    def parse_nullability_assertion(self) -> NullabilityAssertionNode | None:
-        """NullabilityAssertion (grammar not yet finalized)
-
-        # Note: Client Controlled Nullability is experimental and may be changed or
-        # removed in the future.
-        """
-        if not self._experimental_client_controlled_nullability:
-            return None
-
-        start = self._lexer.token
-        list_nullability: ListNullabilityOperatorNode | None = None
-
-        if self.expect_optional_token(TokenKind.BRACKET_L):
-            inner_modifier = self.parse_nullability_assertion()
-            self.expect_token(TokenKind.BRACKET_R)
-            list_nullability = ListNullabilityOperatorNode(
-                nullability_assertion=inner_modifier, loc=self.loc(start)
-            )
-
-        if self.expect_optional_token(TokenKind.BANG):
-            return NonNullAssertionNode(
-                nullability_assertion=list_nullability, loc=self.loc(start)
-            )
-        if self.expect_optional_token(TokenKind.QUESTION_MARK):
-            return ErrorBoundaryNode(
-                nullability_assertion=list_nullability, loc=self.loc(start)
-            )
-
-        return list_nullability
 
     def parse_arguments(self, is_const: bool) -> tuple[ArgumentNode, ...]:
         """Arguments[Const]: (Argument[?Const]+)"""

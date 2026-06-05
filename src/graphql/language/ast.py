@@ -35,7 +35,6 @@ __all__ = [
     "EnumTypeExtensionNode",
     "EnumValueDefinitionNode",
     "EnumValueNode",
-    "ErrorBoundaryNode",
     "ExecutableDefinitionNode",
     "FieldDefinitionNode",
     "FieldNode",
@@ -50,17 +49,14 @@ __all__ = [
     "IntValueNode",
     "InterfaceTypeDefinitionNode",
     "InterfaceTypeExtensionNode",
-    "ListNullabilityOperatorNode",
     "ListTypeNode",
     "ListValueNode",
     "Location",
     "NameNode",
     "NamedTypeNode",
     "Node",
-    "NonNullAssertionNode",
     "NonNullTypeNode",
     "NullValueNode",
-    "NullabilityAssertionNode",
     "ObjectFieldNode",
     "ObjectTypeDefinitionNode",
     "ObjectTypeExtensionNode",
@@ -272,23 +268,9 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
     ),
     "variable": ("name",),
     "selection_set": ("selections",),
-    "field": (
-        "alias",
-        "name",
-        "arguments",
-        "directives",
-        "selection_set",
-        # note: Client controlled Nullability is experimental and may be changed
-        # or removed in the future.
-        "nullability_assertion",
-    ),
+    "field": ("alias", "name", "arguments", "directives", "selection_set"),
     "argument": ("name", "value"),
     "fragment_argument": ("name", "value"),
-    # note: Client controlled Nullability is experimental and may be changed
-    # or removed in the future.
-    "list_nullability_operator": ("nullability_assertion",),
-    "non_null_assertion": ("nullability_assertion",),
-    "error_boundary": ("nullability_assertion",),
     "fragment_spread": (
         "name",
         # note: Fragment arguments are experimental and may be changed
@@ -449,11 +431,6 @@ class SelectionNode(Node):
 
 
 @node_class
-class NullabilityAssertionNode(Node):
-    """Base class for nullability assertion nodes."""
-
-
-@node_class
 class ValueNode(Node):
     """Base class for value nodes."""
 
@@ -599,24 +576,6 @@ class ConstDirectiveNode(DirectiveNode):
     arguments: tuple[ConstArgumentNode, ...] = ()
 
 
-# Nullability Assertion nodes
-
-
-@node_class
-class ListNullabilityOperatorNode(NullabilityAssertionNode):
-    nullability_assertion: NullabilityAssertionNode | None = None
-
-
-@node_class
-class NonNullAssertionNode(NullabilityAssertionNode):
-    nullability_assertion: ListNullabilityOperatorNode | None = None
-
-
-@node_class
-class ErrorBoundaryNode(NullabilityAssertionNode):
-    nullability_assertion: ListNullabilityOperatorNode | None = None
-
-
 # Selection nodes
 
 
@@ -626,7 +585,6 @@ class FieldNode(SelectionNode):
     alias: NameNode | None = None
     arguments: tuple[ArgumentNode, ...] = ()
     directives: tuple[DirectiveNode, ...] = ()
-    nullability_assertion: NullabilityAssertionNode | None = None
     selection_set: SelectionSetNode | None = None
 
 

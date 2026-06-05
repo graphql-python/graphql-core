@@ -31,7 +31,6 @@ Each kind of AST node has its own class:
 .. autoclass:: EnumTypeExtensionNode
 .. autoclass:: EnumValueDefinitionNode
 .. autoclass:: EnumValueNode
-.. autoclass:: ErrorBoundaryNode
 .. autoclass:: ExecutableDefinitionNode
 .. autoclass:: FieldDefinitionNode
 .. autoclass:: FieldNode
@@ -46,14 +45,11 @@ Each kind of AST node has its own class:
 .. autoclass:: IntValueNode
 .. autoclass:: InterfaceTypeDefinitionNode
 .. autoclass:: InterfaceTypeExtensionNode
-.. autoclass:: ListNullabilityOperatorNode
 .. autoclass:: ListTypeNode
 .. autoclass:: ListValueNode
 .. autoclass:: NameNode
 .. autoclass:: NamedTypeNode
-.. autoclass:: NonNullAssertionNode
 .. autoclass:: NonNullTypeNode
-.. autoclass:: NullabilityAssertionNode
 .. autoclass:: NullValueNode
 .. autoclass:: ObjectFieldNode
 .. autoclass:: ObjectTypeDefinitionNode

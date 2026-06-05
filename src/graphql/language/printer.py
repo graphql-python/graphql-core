@@ -36,7 +36,6 @@ class PrintedNode:
     interfaces: Strings
     locations: Strings
     name: str
-    nullability_assertion: str
     operation: OperationType
     operation_types: Strings
     repeatable: bool
@@ -112,9 +111,6 @@ class PrintAstVisitor(Visitor):
         return join(
             (
                 wrapped_line_and_args(prefix, node.arguments),
-                #  Note: Client Controlled Nullability is experimental and may be
-                #  changed or removed in the future.
-                node.nullability_assertion,
                 wrap(" ", join(node.directives, " ")),
                 wrap(" ", node.selection_set),
             ),
@@ -127,20 +123,6 @@ class PrintAstVisitor(Visitor):
     @staticmethod
     def leave_fragment_argument(node: PrintedNode, *_args: Any) -> str:
         return f"{node.name}: {node.value}"
-
-    # Nullability Modifiers
-
-    @staticmethod
-    def leave_list_nullability_operator(node: PrintedNode, *_args: Any) -> str:
-        return join(("[", node.nullability_assertion, "]"))
-
-    @staticmethod
-    def leave_non_null_assertion(node: PrintedNode, *_args: Any) -> str:
-        return join((node.nullability_assertion, "!"))
-
-    @staticmethod
-    def leave_error_boundary(node: PrintedNode, *_args: Any) -> str:
-        return join((node.nullability_assertion, "?"))
 
     # Fragments
 

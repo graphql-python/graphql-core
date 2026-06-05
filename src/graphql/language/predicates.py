@@ -9,7 +9,6 @@ from .ast import (
     ExecutableDefinitionNode,
     ListValueNode,
     Node,
-    NullabilityAssertionNode,
     ObjectValueNode,
     SchemaExtensionNode,
     SelectionNode,
@@ -25,7 +24,6 @@ __all__ = [
     "is_const_value_node",
     "is_definition_node",
     "is_executable_definition_node",
-    "is_nullability_assertion_node",
     "is_selection_node",
     "is_type_definition_node",
     "is_type_extension_node",
@@ -49,11 +47,6 @@ def is_executable_definition_node(node: Node) -> TypeGuard[ExecutableDefinitionN
 def is_selection_node(node: Node) -> TypeGuard[SelectionNode]:
     """Check whether the given node represents a selection."""
     return isinstance(node, SelectionNode)
-
-
-def is_nullability_assertion_node(node: Node) -> TypeGuard[NullabilityAssertionNode]:
-    """Check whether the given node represents a nullability assertion node."""
-    return isinstance(node, NullabilityAssertionNode)
 
 
 def is_value_node(node: Node) -> TypeGuard[ValueNode]:

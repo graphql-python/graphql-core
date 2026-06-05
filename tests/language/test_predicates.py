@@ -7,7 +7,6 @@ from graphql.language import (
     is_const_value_node,
     is_definition_node,
     is_executable_definition_node,
-    is_nullability_assertion_node,
     is_selection_node,
     is_type_definition_node,
     is_type_extension_node,
@@ -165,14 +164,6 @@ def describe_ast_node_predicates():
             "fragment_spread",
             "inline_fragment",
             "selection",
-        ]
-
-    def check_nullability_assertion_node():
-        assert filter_nodes(is_nullability_assertion_node) == [
-            "error_boundary",
-            "list_nullability_operator",
-            "non_null_assertion",
-            "nullability_assertion",
         ]
 
     def check_value_node():
