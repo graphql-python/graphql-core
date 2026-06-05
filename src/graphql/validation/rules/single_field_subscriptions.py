@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ...error import GraphQLError
-from ...execution.collect_fields import FieldGroup, collect_fields
+from ...execution.collect_fields import FieldGroup, FragmentDetails, collect_fields
 from ...language import (
     FieldNode,
     FragmentDefinitionNode,
@@ -41,8 +41,8 @@ class SingleFieldSubscriptionsRule(ValidationRule):
             operation_name = node.name.value if node.name else None
             variable_values: dict[str, Any] = {}
             document = self.context.document
-            fragments: dict[str, FragmentDefinitionNode] = {
-                definition.name.value: definition
+            fragments: dict[str, FragmentDetails] = {
+                definition.name.value: FragmentDetails(definition)
                 for definition in document.definitions
                 if isinstance(definition, FragmentDefinitionNode)
             }

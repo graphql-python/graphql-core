@@ -112,6 +112,14 @@ def field_with_input_arg(input_arg: GraphQLArgument):
     )
 
 
+NestedType = GraphQLObjectType(
+    "NestedType",
+    {
+        "echo": field_with_input_arg(GraphQLArgument(GraphQLString)),
+    },
+)
+
+
 TestType = GraphQLObjectType(
     "TestType",
     {
@@ -138,6 +146,7 @@ TestType = GraphQLObjectType(
         "fieldWithNestedInputObject": field_with_input_arg(
             GraphQLArgument(TestNestedInputObject, default_value="Hello World")
         ),
+        "nested": GraphQLField(NestedType, resolve=lambda *_args: {}),
         "list": field_with_input_arg(GraphQLArgument(GraphQLList(GraphQLString))),
         "nnList": field_with_input_arg(
             GraphQLArgument(GraphQLNonNull(GraphQLList(GraphQLString)))
@@ -158,6 +167,13 @@ def execute_query(
     query: str, variable_values: dict[str, Any] | None = None
 ) -> ExecutionResult:
     document = parse(query)
+    return execute_sync(schema, document, variable_values=variable_values)
+
+
+def execute_query_with_fragment_arguments(
+    query: str, variable_values: dict[str, Any] | None = None
+) -> ExecutionResult:
+    document = parse(query, experimental_fragment_arguments=True)
     return execute_sync(schema, document, variable_values=variable_values)
 
 
@@ -978,6 +994,335 @@ def describe_execute_handles_inputs():
                     }
                 ],
             )
+
+    def describe_using_fragment_arguments():
+        def when_there_are_no_fragment_arguments():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a
+                }
+                fragment a on TestType {
+                  fieldWithNonNullableStringInput(input: "A")
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInput": "'A'"},
+                None,
+            )
+
+        def when_a_value_is_required_and_provided():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: "A")
+                }
+                fragment a($value: String!) on TestType {
+                  fieldWithNonNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInput": "'A'"},
+                None,
+            )
+
+        def when_a_value_is_required_and_not_provided():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a
+                }
+                fragment a($value: String!) on TestType {
+                  fieldWithNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result.errors is not None
+            assert len(result.errors) == 1
+            assert result.errors[0].message.startswith(
+                "Argument 'value' of required type 'String!'"
+            )
+
+        def when_the_definition_has_a_default_and_is_provided():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: "A")
+                }
+                fragment a($value: String! = "B") on TestType {
+                  fieldWithNonNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInput": "'A'"},
+                None,
+            )
+
+        def when_the_definition_has_a_default_and_is_not_provided():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a
+                }
+                fragment a($value: String! = "B") on TestType {
+                  fieldWithNonNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInput": "'B'"},
+                None,
+            )
+
+        def when_a_default_is_not_provided_and_spreads_another_fragment():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a
+                }
+                fragment a($a: String! = "B") on TestType {
+                  ...b(b: $a)
+                }
+                fragment b($b: String!) on TestType {
+                  fieldWithNonNullableStringInput(input: $b)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInput": "'B'"},
+                None,
+            )
+
+        def when_the_definition_has_a_non_nullable_default_and_is_provided_null():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: null)
+                }
+                fragment a($value: String! = "B") on TestType {
+                  fieldWithNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result.errors is not None
+            assert len(result.errors) == 1
+            assert result.errors[0].message.startswith(
+                "Argument 'value' of non-null type 'String!'"
+            )
+
+        def when_the_definition_has_no_default_and_is_not_provided():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a
+                }
+                fragment a($value: String) on TestType {
+                  fieldWithNonNullableStringInputAndDefaultArgValue(input: $value)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInputAndDefaultArgValue": "'Hello World'"},
+                None,
+            )
+
+        def when_an_argument_is_shadowed_by_an_operation_variable():
+            result = execute_query_with_fragment_arguments(
+                """
+                query($x: String! = "A") {
+                  ...a(x: "B")
+                }
+                fragment a($x: String) on TestType {
+                  fieldWithNullableStringInput(input: $x)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNullableStringInput": "'B'"},
+                None,
+            )
+
+        def when_a_nullable_argument_without_field_default_is_shadowed():
+            result = execute_query_with_fragment_arguments(
+                """
+                query($x: String = "A") {
+                  ...a
+                }
+                fragment a($x: String) on TestType {
+                  fieldWithNullableStringInput(input: $x)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNullableStringInput": None},
+                None,
+            )
+
+        def when_a_nullable_argument_with_field_default_is_shadowed():
+            result = execute_query_with_fragment_arguments(
+                """
+                query($x: String = "A") {
+                  ...a
+                }
+                fragment a($x: String) on TestType {
+                  fieldWithNonNullableStringInputAndDefaultArgValue(input: $x)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNonNullableStringInputAndDefaultArgValue": "'Hello World'"},
+                None,
+            )
+
+        def when_a_fragment_variable_is_shadowed_but_defined_in_op_variables():
+            result = execute_query_with_fragment_arguments(
+                """
+                query($x: String = "A") {
+                  ...a
+                }
+                fragment a($x: String) on TestType {
+                  ...b
+                }
+
+                fragment b on TestType {
+                  fieldWithNullableStringInput(input: $x)
+                }
+                """
+            )
+            assert result == (
+                {"fieldWithNullableStringInput": "'A'"},
+                None,
+            )
+
+        def when_a_fragment_is_used_with_different_args():
+            result = execute_query_with_fragment_arguments(
+                """
+                query($x: String = "Hello") {
+                  a: nested {
+                    ...a(x: "a")
+                  }
+                  b: nested {
+                    ...a(x: "b", b: true)
+                  }
+                  hello: nested {
+                    ...a(x: $x)
+                  }
+                }
+                fragment a($x: String, $b: Boolean = false) on NestedType {
+                  a: echo(input: $x) @skip(if: $b)
+                  b: echo(input: $x) @include(if: $b)
+                }
+                """
+            )
+            assert result == (
+                {
+                    "a": {"a": "'a'"},
+                    "b": {"b": "'b'"},
+                    "hello": {"a": "'Hello'"},
+                },
+                None,
+            )
+
+        def when_the_argument_variable_is_nested_in_a_complex_type():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: "C")
+                }
+                fragment a($value: String) on TestType {
+                  list(input: ["A", "B", $value, "D"])
+                }
+                """
+            )
+            assert result == (
+                {"list": "['A', 'B', 'C', 'D']"},
+                None,
+            )
+
+        def when_argument_variables_are_used_recursively():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(aValue: "C")
+                }
+                fragment a($aValue: String) on TestType {
+                  ...b(bValue: $aValue)
+                }
+                fragment b($bValue: String) on TestType {
+                  list(input: ["A", "B", $bValue, "D"])
+                }
+                """
+            )
+            assert result == (
+                {"list": "['A', 'B', 'C', 'D']"},
+                None,
+            )
+
+        def when_same_name_argument_variables_used_directly_and_recursively():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: "A")
+                }
+                fragment a($value: String!) on TestType {
+                  ...b(value: "B")
+                  fieldInFragmentA: fieldWithNonNullableStringInput(input: $value)
+                }
+                fragment b($value: String!) on TestType {
+                  fieldInFragmentB: fieldWithNonNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result == (
+                {
+                    "fieldInFragmentA": "'A'",
+                    "fieldInFragmentB": "'B'",
+                },
+                None,
+            )
+
+        def when_argument_passed_in_as_list():
+            result = execute_query_with_fragment_arguments(
+                """
+                query Q($opValue: String = "op") {
+                  ...a(aValue: "A")
+                }
+                fragment a($aValue: String, $bValue: String) on TestType {
+                  ...b(aValue: [$aValue, "B"], bValue: [$bValue, $opValue])
+                }
+                fragment b(
+                  $aValue: [String], $bValue: [String], $cValue: String
+                ) on TestType {
+                  aList: list(input: $aValue)
+                  bList: list(input: $bValue)
+                  cList: list(input: [$cValue])
+                }
+                """
+            )
+            assert result == (
+                {
+                    "aList": "['A', 'B']",
+                    "bList": "[None, 'op']",
+                    "cList": "[None]",
+                },
+                None,
+            )
+
+        def when_argument_passed_to_a_directive():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a(value: true)
+                }
+                fragment a($value: Boolean!) on TestType {
+                  fieldWithNonNullableStringInput @skip(if: $value)
+                }
+                """
+            )
+            assert result == ({}, None)
 
     def describe_execute_uses_argument_default_values():
         def when_no_argument_provided():

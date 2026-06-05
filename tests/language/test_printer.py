@@ -174,12 +174,12 @@ def describe_printer_query_document():
             """
         )
 
-    def legacy_prints_fragment_with_variable_directives():
-        query_ast_with_variable_directive = parse(
+    def prints_fragment_with_argument_definition_directives():
+        fragment_with_argument_definition_directive = parse(
             "fragment Foo($foo: TestType @test) on TestType @testDirective { id }",
-            allow_legacy_fragment_variables=True,
+            experimental_fragment_arguments=True,
         )
-        assert print_ast(query_ast_with_variable_directive) == dedent(
+        assert print_ast(fragment_with_argument_definition_directive) == dedent(
             """
             fragment Foo($foo: TestType @test) on TestType @testDirective {
               id
@@ -187,14 +187,47 @@ def describe_printer_query_document():
             """
         )
 
-    def legacy_correctly_prints_fragment_defined_variables():
+    def correctly_prints_fragment_defined_arguments():
         source = """
             fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {
               id
             }
             """
-        fragment_with_variable = parse(source, allow_legacy_fragment_variables=True)
-        assert print_ast(fragment_with_variable) == dedent(source)
+        fragment_with_argument_definition = parse(
+            source, experimental_fragment_arguments=True
+        )
+        assert print_ast(fragment_with_argument_definition) == dedent(source)
+
+    def prints_fragment_spread_with_arguments():
+        fragment_spread_with_arguments = parse(
+            "fragment Foo on TestType { ...Bar(a: {x: $x}, b: true) }",
+            experimental_fragment_arguments=True,
+        )
+        assert print_ast(fragment_spread_with_arguments) == dedent(
+            """
+            fragment Foo on TestType {
+              ...Bar(a: { x: $x }, b: true)
+            }
+            """
+        )
+
+    def prints_fragment_spread_with_multi_line_arguments():
+        fragment_spread_with_arguments = parse(
+            "fragment Foo on TestType { ...Bar(a: {x: $x, y: $y, z: $z, xy: $xy},"
+            ' b: true, c: "a long string extending arguments over max length") }',
+            experimental_fragment_arguments=True,
+        )
+        assert print_ast(fragment_spread_with_arguments) == dedent(
+            """
+            fragment Foo on TestType {
+              ...Bar(
+                a: { x: $x, y: $y, z: $z, xy: $xy }
+                b: true
+                c: "a long string extending arguments over max length"
+              )
+            }
+            """
+        )
 
     def prints_fragment():
         printed = print_ast(parse('"Fragment description" fragment Foo on Bar { baz }'))

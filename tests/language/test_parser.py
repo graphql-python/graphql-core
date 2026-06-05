@@ -680,9 +680,21 @@ def describe_parser():
         result = parse("{ id }", no_location=True)
         assert result.loc is None
 
-    def legacy_allows_parsing_fragment_defined_variables():
+    def allows_parsing_fragment_defined_variables():
         document = "fragment a($v: Boolean = false) on t { f(v: $v) }"
-        parse(document, allow_legacy_fragment_variables=True)
+        parse(document, experimental_fragment_arguments=True)
+
+    def disallows_parsing_fragment_defined_variables_without_experimental_flag():
+        document = "fragment a($v: Boolean = false) on t { f(v: $v) }"
+        with pytest.raises(GraphQLSyntaxError):
+            parse(document)
+
+    def allows_parsing_fragment_spread_arguments():
+        document = "fragment a on t { ...b(v: $v) }"
+        parse(document, experimental_fragment_arguments=True)
+
+    def disallows_parsing_fragment_spread_arguments_without_experimental_flag():
+        document = "fragment a on t { ...b(v: $v) }"
         with pytest.raises(GraphQLSyntaxError):
             parse(document)
 
@@ -867,10 +879,10 @@ def describe_parser():
             assert type_.name.value == "Int"
             assert type_.loc == (25, 28)
 
-        def parses_fragment_with_variable_description_legacy():
+        def parses_fragment_with_variable_description():
             doc = parse(
                 'fragment Foo("desc" $foo: Int) on Bar { baz }',
-                allow_legacy_fragment_variables=True,
+                experimental_fragment_arguments=True,
             )
             frag_def = doc.definitions[0]
             assert isinstance(frag_def, FragmentDefinitionNode)

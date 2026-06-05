@@ -36,6 +36,7 @@ Each kind of AST node has its own class:
 .. autoclass:: FieldDefinitionNode
 .. autoclass:: FieldNode
 .. autoclass:: FloatValueNode
+.. autoclass:: FragmentArgumentNode
 .. autoclass:: FragmentDefinitionNode
 .. autoclass:: FragmentSpreadNode
 .. autoclass:: InlineFragmentNode

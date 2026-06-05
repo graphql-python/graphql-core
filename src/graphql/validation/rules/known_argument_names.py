@@ -10,6 +10,7 @@ from ...language import (
     ArgumentNode,
     DirectiveDefinitionNode,
     DirectiveNode,
+    FragmentArgumentNode,
     VisitorAction,
 )
 from ...pyutils import did_you_mean, suggestion_list
@@ -81,6 +82,33 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
+
+    def enter_fragment_argument(
+        self, arg_node: FragmentArgumentNode, *_args: Any
+    ) -> None:
+        context = self.context
+        fragment_signature = context.get_fragment_signature()
+        if fragment_signature:
+            var_def = fragment_signature.variable_definitions.get(arg_node.name.value)
+            if not var_def:
+                arg_name = arg_node.name.value
+                suggestions = suggestion_list(
+                    arg_name,
+                    [
+                        var_signature.variable.name.value
+                        for var_signature in (
+                            fragment_signature.variable_definitions.values()
+                        )
+                    ],
+                )
+                context.report_error(
+                    GraphQLError(
+                        f"Unknown argument '{arg_name}'"
+                        f" on fragment '{fragment_signature.definition.name.value}'."
+                        + did_you_mean(suggestions),
+                        arg_node,
+                    )
+                )
 
     def enter_argument(self, arg_node: ArgumentNode, *args: Any) -> None:
         context = self.context

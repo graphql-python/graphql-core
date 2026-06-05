@@ -19,6 +19,7 @@ schema_with_directives = build_schema(
     directive @onFragmentSpread on FRAGMENT_SPREAD
     directive @onInlineFragment on INLINE_FRAGMENT
     directive @onVariableDefinition on VARIABLE_DEFINITION
+    directive @onFragmentVariableDefinition on FRAGMENT_VARIABLE_DEFINITION
     """
 )
 
@@ -132,7 +133,9 @@ def describe_known_directives():
               someField @onField
             }
 
-            fragment Frag on Human @onFragmentDefinition {
+            fragment Frag(
+              $arg: Int @onFragmentVariableDefinition
+            ) on Human @onFragmentDefinition {
               name @onField
             }
             """
@@ -158,7 +161,7 @@ def describe_known_directives():
               someField @onQuery
             }
 
-            fragment Frag on Human @onQuery {
+            fragment Frag($arg: Int @onVariableDefinition) on Human @onQuery {
               name @onQuery
             }
             """,
@@ -207,9 +210,14 @@ def describe_known_directives():
                     "locations": [(16, 25)],
                 },
                 {
+                    "message": "Directive '@onVariableDefinition'"
+                    " may not be used on fragment variable definition.",
+                    "locations": [(19, 37)],
+                },
+                {
                     "message": "Directive '@onQuery'"
                     " may not be used on fragment definition.",
-                    "locations": [(19, 36)],
+                    "locations": [(19, 69)],
                 },
                 {
                     "message": "Directive '@onQuery' may not be used on field.",

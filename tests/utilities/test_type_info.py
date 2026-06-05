@@ -77,6 +77,9 @@ def describe_type_info():
         assert type_info.get_default_value() is None
         assert type_info.get_directive() is None
         assert type_info.get_argument() is None
+        assert type_info.get_fragment_signature() is None
+        assert type_info.get_fragment_signature_by_name()("") is None
+        assert type_info.get_fragment_argument() is None
         assert type_info.get_enum_value() is None
 
 
@@ -539,4 +542,223 @@ def describe_visit_with_type_info():
             ("leave", "selection_set", None, "Pet", "[Pet]"),
             ("leave", "field", None, "Human", "[Pet]"),
             ("leave", "selection_set", None, "Human", "Human"),
+        ]
+
+    def supports_traversals_of_fragment_arguments():
+        type_info = TypeInfo(test_schema)
+
+        ast = parse(
+            """
+            query {
+              ...Foo(x: 4)
+              ...Bar
+            }
+            fragment Foo(
+              $x: ID!
+            ) on QueryRoot {
+              human(id: $x) { name }
+            }
+            """,
+            experimental_fragment_arguments=True,
+        )
+
+        visited = []
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(*args):
+                node = args[0]
+                visited.append(
+                    (
+                        "enter",
+                        node.kind,
+                        node.value if node.kind == "name" else None,
+                        str(type_info.get_type()),
+                        str(type_info.get_input_type()),
+                    )
+                )
+
+            @staticmethod
+            def leave(*args):
+                node = args[0]
+                visited.append(
+                    (
+                        "leave",
+                        node.kind,
+                        node.value if node.kind == "name" else None,
+                        str(type_info.get_type()),
+                        str(type_info.get_input_type()),
+                    )
+                )
+
+        visit(ast, TypeInfoVisitor(type_info, TestVisitor()))
+
+        assert visited == [
+            ("enter", "document", None, "None", "None"),
+            ("enter", "operation_definition", None, "QueryRoot", "None"),
+            ("enter", "selection_set", None, "QueryRoot", "None"),
+            ("enter", "fragment_spread", None, "QueryRoot", "None"),
+            ("enter", "name", "Foo", "QueryRoot", "None"),
+            ("leave", "name", "Foo", "QueryRoot", "None"),
+            ("enter", "fragment_argument", None, "QueryRoot", "ID!"),
+            ("enter", "name", "x", "QueryRoot", "ID!"),
+            ("leave", "name", "x", "QueryRoot", "ID!"),
+            ("enter", "int_value", None, "QueryRoot", "ID!"),
+            ("leave", "int_value", None, "QueryRoot", "ID!"),
+            ("leave", "fragment_argument", None, "QueryRoot", "ID!"),
+            ("leave", "fragment_spread", None, "QueryRoot", "None"),
+            ("enter", "fragment_spread", None, "QueryRoot", "None"),
+            ("enter", "name", "Bar", "QueryRoot", "None"),
+            ("leave", "name", "Bar", "QueryRoot", "None"),
+            ("leave", "fragment_spread", None, "QueryRoot", "None"),
+            ("leave", "selection_set", None, "QueryRoot", "None"),
+            ("leave", "operation_definition", None, "QueryRoot", "None"),
+            ("enter", "fragment_definition", None, "QueryRoot", "None"),
+            ("enter", "name", "Foo", "QueryRoot", "None"),
+            ("leave", "name", "Foo", "QueryRoot", "None"),
+            ("enter", "variable_definition", None, "QueryRoot", "ID!"),
+            ("enter", "variable", None, "QueryRoot", "ID!"),
+            ("enter", "name", "x", "QueryRoot", "ID!"),
+            ("leave", "name", "x", "QueryRoot", "ID!"),
+            ("leave", "variable", None, "QueryRoot", "ID!"),
+            ("enter", "non_null_type", None, "QueryRoot", "ID!"),
+            ("enter", "named_type", None, "QueryRoot", "ID!"),
+            ("enter", "name", "ID", "QueryRoot", "ID!"),
+            ("leave", "name", "ID", "QueryRoot", "ID!"),
+            ("leave", "named_type", None, "QueryRoot", "ID!"),
+            ("leave", "non_null_type", None, "QueryRoot", "ID!"),
+            ("leave", "variable_definition", None, "QueryRoot", "ID!"),
+            ("enter", "named_type", None, "QueryRoot", "None"),
+            ("enter", "name", "QueryRoot", "QueryRoot", "None"),
+            ("leave", "name", "QueryRoot", "QueryRoot", "None"),
+            ("leave", "named_type", None, "QueryRoot", "None"),
+            ("enter", "selection_set", None, "QueryRoot", "None"),
+            ("enter", "field", None, "Human", "None"),
+            ("enter", "name", "human", "Human", "None"),
+            ("leave", "name", "human", "Human", "None"),
+            ("enter", "argument", None, "Human", "ID"),
+            ("enter", "name", "id", "Human", "ID"),
+            ("leave", "name", "id", "Human", "ID"),
+            ("enter", "variable", None, "Human", "ID"),
+            ("enter", "name", "x", "Human", "ID"),
+            ("leave", "name", "x", "Human", "ID"),
+            ("leave", "variable", None, "Human", "ID"),
+            ("leave", "argument", None, "Human", "ID"),
+            ("enter", "selection_set", None, "Human", "None"),
+            ("enter", "field", None, "String", "None"),
+            ("enter", "name", "name", "String", "None"),
+            ("leave", "name", "name", "String", "None"),
+            ("leave", "field", None, "String", "None"),
+            ("leave", "selection_set", None, "Human", "None"),
+            ("leave", "field", None, "Human", "None"),
+            ("leave", "selection_set", None, "QueryRoot", "None"),
+            ("leave", "fragment_definition", None, "QueryRoot", "None"),
+            ("leave", "document", None, "None", "None"),
+        ]
+
+    def supports_traversals_of_fragment_arguments_with_default_value():
+        type_info = TypeInfo(test_schema)
+
+        ast = parse(
+            """
+            query {
+              ...Foo(x: null)
+            }
+            fragment Foo(
+              $x: ID = 4
+            ) on QueryRoot {
+              human(id: $x) { name }
+            }
+            """,
+            experimental_fragment_arguments=True,
+        )
+
+        visited = []
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(*args):
+                node = args[0]
+                visited.append(
+                    (
+                        "enter",
+                        node.kind,
+                        node.value if node.kind == "name" else None,
+                        str(type_info.get_type()),
+                        str(type_info.get_input_type()),
+                    )
+                )
+
+            @staticmethod
+            def leave(*args):
+                node = args[0]
+                visited.append(
+                    (
+                        "leave",
+                        node.kind,
+                        node.value if node.kind == "name" else None,
+                        str(type_info.get_type()),
+                        str(type_info.get_input_type()),
+                    )
+                )
+
+        visit(ast, TypeInfoVisitor(type_info, TestVisitor()))
+
+        assert visited == [
+            ("enter", "document", None, "None", "None"),
+            ("enter", "operation_definition", None, "QueryRoot", "None"),
+            ("enter", "selection_set", None, "QueryRoot", "None"),
+            ("enter", "fragment_spread", None, "QueryRoot", "None"),
+            ("enter", "name", "Foo", "QueryRoot", "None"),
+            ("leave", "name", "Foo", "QueryRoot", "None"),
+            ("enter", "fragment_argument", None, "QueryRoot", "ID"),
+            ("enter", "name", "x", "QueryRoot", "ID"),
+            ("leave", "name", "x", "QueryRoot", "ID"),
+            ("enter", "null_value", None, "QueryRoot", "ID"),
+            ("leave", "null_value", None, "QueryRoot", "ID"),
+            ("leave", "fragment_argument", None, "QueryRoot", "ID"),
+            ("leave", "fragment_spread", None, "QueryRoot", "None"),
+            ("leave", "selection_set", None, "QueryRoot", "None"),
+            ("leave", "operation_definition", None, "QueryRoot", "None"),
+            ("enter", "fragment_definition", None, "QueryRoot", "None"),
+            ("enter", "name", "Foo", "QueryRoot", "None"),
+            ("leave", "name", "Foo", "QueryRoot", "None"),
+            ("enter", "variable_definition", None, "QueryRoot", "ID"),
+            ("enter", "variable", None, "QueryRoot", "ID"),
+            ("enter", "name", "x", "QueryRoot", "ID"),
+            ("leave", "name", "x", "QueryRoot", "ID"),
+            ("leave", "variable", None, "QueryRoot", "ID"),
+            ("enter", "named_type", None, "QueryRoot", "ID"),
+            ("enter", "name", "ID", "QueryRoot", "ID"),
+            ("leave", "name", "ID", "QueryRoot", "ID"),
+            ("leave", "named_type", None, "QueryRoot", "ID"),
+            ("enter", "int_value", None, "QueryRoot", "ID"),
+            ("leave", "int_value", None, "QueryRoot", "ID"),
+            ("leave", "variable_definition", None, "QueryRoot", "ID"),
+            ("enter", "named_type", None, "QueryRoot", "None"),
+            ("enter", "name", "QueryRoot", "QueryRoot", "None"),
+            ("leave", "name", "QueryRoot", "QueryRoot", "None"),
+            ("leave", "named_type", None, "QueryRoot", "None"),
+            ("enter", "selection_set", None, "QueryRoot", "None"),
+            ("enter", "field", None, "Human", "None"),
+            ("enter", "name", "human", "Human", "None"),
+            ("leave", "name", "human", "Human", "None"),
+            ("enter", "argument", None, "Human", "ID"),
+            ("enter", "name", "id", "Human", "ID"),
+            ("leave", "name", "id", "Human", "ID"),
+            ("enter", "variable", None, "Human", "ID"),
+            ("enter", "name", "x", "Human", "ID"),
+            ("leave", "name", "x", "Human", "ID"),
+            ("leave", "variable", None, "Human", "ID"),
+            ("leave", "argument", None, "Human", "ID"),
+            ("enter", "selection_set", None, "Human", "None"),
+            ("enter", "field", None, "String", "None"),
+            ("enter", "name", "name", "String", "None"),
+            ("leave", "name", "name", "String", "None"),
+            ("leave", "field", None, "String", "None"),
+            ("leave", "selection_set", None, "Human", "None"),
+            ("leave", "field", None, "Human", "None"),
+            ("leave", "selection_set", None, "QueryRoot", "None"),
+            ("leave", "fragment_definition", None, "QueryRoot", "None"),
+            ("leave", "document", None, "None", "None"),
         ]

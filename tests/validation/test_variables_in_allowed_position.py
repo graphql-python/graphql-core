@@ -333,6 +333,110 @@ def describe_validate_variables_are_in_allowed_positions():
                 ],
             )
 
+        def undefined_in_directive_with_default_value_with_option():
+            assert_valid(
+                """
+                {
+                  dog @include(if: $x)
+                }
+                """
+            )
+
+    def describe_fragment_arguments_are_validated():
+        def boolean_to_boolean():
+            assert_valid(
+                """
+                query Query($booleanArg: Boolean)
+                {
+                  complicatedArgs {
+                    ...A(b: $booleanArg)
+                  }
+                }
+                fragment A($b: Boolean) on ComplicatedArgs {
+                  booleanArgField(booleanArg: $b)
+                }
+                """
+            )
+
+        def boolean_to_boolean_with_default_value():
+            assert_valid(
+                """
+                query Query($booleanArg: Boolean)
+                {
+                  complicatedArgs {
+                    ...A(b: $booleanArg)
+                  }
+                }
+                fragment A($b: Boolean = true) on ComplicatedArgs {
+                  booleanArgField(booleanArg: $b)
+                }
+                """
+            )
+
+        def boolean_to_boolean_non_null():
+            assert_errors(
+                """
+                query Query($ab: Boolean)
+                {
+                  complicatedArgs {
+                    ...A(b: $ab)
+                  }
+                }
+                fragment A($b: Boolean!) on ComplicatedArgs {
+                  booleanArgField(booleanArg: $b)
+                }
+                """,
+                [
+                    {
+                        "message": "Variable '$ab' of type 'Boolean'"
+                        " used in position expecting type 'Boolean!'.",
+                        "locations": [(2, 29), (5, 29)],
+                    },
+                ],
+            )
+
+        def int_to_non_null_int_fails_when_variable_provides_null_default_value():
+            assert_errors(
+                """
+                query Query($intVar: Int = null) {
+                  complicatedArgs {
+                    ...A(i: $intVar)
+                  }
+                }
+                fragment A($i: Int!) on ComplicatedArgs {
+                  nonNullIntArgField(nonNullIntArg: $i)
+                }
+                """,
+                [
+                    {
+                        "message": "Variable '$intVar' of type 'Int'"
+                        " used in position expecting type 'Int!'.",
+                        "locations": [(2, 29), (4, 29)],
+                    },
+                ],
+            )
+
+        def int_fragment_arg_to_non_null_int_field_arg_fails_when_shadowed():
+            assert_errors(
+                """
+                query Query($intVar: Int!) {
+                  complicatedArgs {
+                    ...A(i: $intVar)
+                  }
+                }
+                fragment A($intVar: Int) on ComplicatedArgs {
+                  nonNullIntArgField(nonNullIntArg: $intVar)
+                }
+                """,
+                [
+                    {
+                        "message": "Variable '$intVar' of type 'Int'"
+                        " used in position expecting type 'Int!'.",
+                        "locations": [(7, 28), (8, 53)],
+                    },
+                ],
+            )
+
     def int_to_non_null_int_when_var_provides_non_null_default_value():
         assert_valid(
             """

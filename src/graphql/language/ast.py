@@ -40,6 +40,7 @@ __all__ = [
     "FieldDefinitionNode",
     "FieldNode",
     "FloatValueNode",
+    "FragmentArgumentNode",
     "FragmentDefinitionNode",
     "FragmentSpreadNode",
     "InlineFragmentNode",
@@ -282,16 +283,16 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
         "nullability_assertion",
     ),
     "argument": ("name", "value"),
+    "fragment_argument": ("name", "value"),
     # note: Client controlled Nullability is experimental and may be changed
     # or removed in the future.
     "list_nullability_operator": ("nullability_assertion",),
     "non_null_assertion": ("nullability_assertion",),
     "error_boundary": ("nullability_assertion",),
-    "fragment_spread": ("name", "directives"),
+    "fragment_spread": ("name", "arguments", "directives"),
     "inline_fragment": ("type_condition", "directives", "selection_set"),
     "fragment_definition": (
         "description",
-        # Note: fragment variable definitions are deprecated and will be removed in v3.3
         "name",
         "variable_definitions",
         "type_condition",
@@ -624,6 +625,7 @@ class FieldNode(SelectionNode):
 @node_class
 class FragmentSpreadNode(SelectionNode):
     name: NameNode
+    arguments: tuple[FragmentArgumentNode, ...] = ()
     directives: tuple[DirectiveNode, ...] = ()
 
 
@@ -646,6 +648,12 @@ class ArgumentNode(Node):
 @node_class
 class ConstArgumentNode(ArgumentNode):
     value: ConstValueNode
+
+
+@node_class
+class FragmentArgumentNode(Node):
+    name: NameNode
+    value: ValueNode
 
 
 # Selection Set

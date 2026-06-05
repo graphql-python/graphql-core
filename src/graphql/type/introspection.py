@@ -215,7 +215,11 @@ _DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
         ),
         "VARIABLE_DEFINITION": GraphQLEnumValue(
             DirectiveLocation.VARIABLE_DEFINITION,
-            description="Location adjacent to a variable definition.",
+            description="Location adjacent to an operation variable definition.",
+        ),
+        "FRAGMENT_VARIABLE_DEFINITION": GraphQLEnumValue(
+            DirectiveLocation.FRAGMENT_VARIABLE_DEFINITION,
+            description="Location adjacent to a fragment variable definition.",
         ),
         "SCHEMA": GraphQLEnumValue(
             DirectiveLocation.SCHEMA,

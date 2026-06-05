@@ -44,7 +44,9 @@ class VariablesInAllowedPositionRule(ValidationRule):
             node, type_ = usage.node, usage.type
             default_value = usage.default_value
             var_name = node.name.value
-            var_def = var_def_map.get(var_name)
+            var_def = usage.fragment_variable_definition
+            if not var_def:
+                var_def = var_def_map.get(var_name)
             if var_def and type_:
                 # A var type is allowed if it is the same or more strict (e.g. is a
                 # subtype of) than the expected type. It can be more strict if the

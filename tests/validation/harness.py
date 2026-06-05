@@ -136,7 +136,7 @@ def assert_validation_errors(
     errors: list[GraphQLError | dict[str, Any]],
     schema: GraphQLSchema = test_schema,
 ) -> list[GraphQLError]:
-    doc = parse(query_str)
+    doc = parse(query_str, experimental_fragment_arguments=True)
     returned_errors = validate(schema, doc, [rule])
     assert returned_errors == errors
     return returned_errors

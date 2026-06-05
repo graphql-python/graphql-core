@@ -36,6 +36,8 @@ class NoUndefinedVariablesRule(ValidationRule):
         defined_variables = self.defined_variable_names
         for usage in usages:
             node = usage.node
+            if usage.fragment_variable_definition:
+                continue
             var_name = node.name.value
             if var_name not in defined_variables:
                 self.report_error(

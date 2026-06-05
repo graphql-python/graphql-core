@@ -24,6 +24,7 @@ from .ast import (
     FieldDefinitionNode,
     FieldNode,
     FloatValueNode,
+    FragmentArgumentNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
@@ -85,7 +86,7 @@ def parse(
     source: SourceType,
     no_location: bool = False,
     max_tokens: int | None = None,
-    allow_legacy_fragment_variables: bool = False,
+    experimental_fragment_arguments: bool = False,
     experimental_client_controlled_nullability: bool = False,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
@@ -102,18 +103,24 @@ def parse(
     CPU time and memory.
     To prevent this you can set a maximum number of tokens allowed within a document.
 
-    Legacy feature (will be removed in v3.3):
+    EXPERIMENTAL:
 
-    If ``allow_legacy_fragment_variables`` is set to ``True``, the parser will
-    understand and parse variable definitions contained in a fragment definition.
-    They'll be represented in the
+    If ``experimental_fragment_arguments`` is set to ``True``, the parser will
+    understand and parse fragment variable definitions and arguments on fragment
+    spreads. Fragment variable definitions will be represented in the
     :attr:`~graphql.language.FragmentDefinitionNode.variable_definitions` field
-    of the :class:`~graphql.language.FragmentDefinitionNode`.
+    of the :class:`~graphql.language.FragmentDefinitionNode`. Fragment spread
+    arguments will be represented in the
+    :attr:`~graphql.language.FragmentSpreadNode.arguments` field
+    of the :class:`~graphql.language.FragmentSpreadNode`.
 
-    The syntax is identical to normal, query-defined variables. For example::
+    For example::
 
-        fragment A($var: Boolean = false) on T  {
-          ...
+        {
+          t { ...A(var: true) }
+        }
+        fragment A($var: Boolean = false) on T {
+          ...B(x: $var)
         }
 
     EXPERIMENTAL:
@@ -139,7 +146,7 @@ def parse(
         source,
         no_location=no_location,
         max_tokens=max_tokens,
-        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_fragment_arguments=experimental_fragment_arguments,
         experimental_client_controlled_nullability=experimental_client_controlled_nullability,
     )
     return parser.parse_document()
@@ -149,7 +156,7 @@ def parse_value(
     source: SourceType,
     no_location: bool = False,
     max_tokens: int | None = None,
-    allow_legacy_fragment_variables: bool = False,
+    experimental_fragment_arguments: bool = False,
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
 
@@ -165,7 +172,7 @@ def parse_value(
         source,
         no_location=no_location,
         max_tokens=max_tokens,
-        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_fragment_arguments=experimental_fragment_arguments,
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_value_literal(False)
@@ -177,7 +184,7 @@ def parse_const_value(
     source: SourceType,
     no_location: bool = False,
     max_tokens: int | None = None,
-    allow_legacy_fragment_variables: bool = False,
+    experimental_fragment_arguments: bool = False,
 ) -> ConstValueNode:
     """Parse the AST for a given string containing a GraphQL constant value.
 
@@ -188,7 +195,7 @@ def parse_const_value(
         source,
         no_location=no_location,
         max_tokens=max_tokens,
-        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_fragment_arguments=experimental_fragment_arguments,
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_const_value_literal()
@@ -200,7 +207,7 @@ def parse_type(
     source: SourceType,
     no_location: bool = False,
     max_tokens: int | None = None,
-    allow_legacy_fragment_variables: bool = False,
+    experimental_fragment_arguments: bool = False,
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
 
@@ -216,7 +223,7 @@ def parse_type(
         source,
         no_location=no_location,
         max_tokens=max_tokens,
-        allow_legacy_fragment_variables=allow_legacy_fragment_variables,
+        experimental_fragment_arguments=experimental_fragment_arguments,
     )
     parser.expect_token(TokenKind.SOF)
     type_ = parser.parse_type_reference()
@@ -238,7 +245,7 @@ class Parser:
 
     _no_location: bool
     _max_tokens: int | None
-    _allow_legacy_fragment_variables: bool
+    _experimental_fragment_arguments: bool
     _experimental_client_controlled_nullability: bool
     _lexer: Lexer
     _token_counter: int
@@ -248,7 +255,7 @@ class Parser:
         source: SourceType,
         no_location: bool = False,
         max_tokens: int | None = None,
-        allow_legacy_fragment_variables: bool = False,
+        experimental_fragment_arguments: bool = False,
         experimental_client_controlled_nullability: bool = False,
     ) -> None:
         if not is_source(source):
@@ -256,7 +263,7 @@ class Parser:
 
         self._no_location = no_location
         self._max_tokens = max_tokens
-        self._allow_legacy_fragment_variables = allow_legacy_fragment_variables
+        self._experimental_fragment_arguments = experimental_fragment_arguments
         self._experimental_client_controlled_nullability = (
             experimental_client_controlled_nullability
         )
@@ -520,12 +527,27 @@ class Parser:
         """Argument[Const]: Name : Value[Const]"""
         return cast("ConstArgumentNode", self.parse_argument(True))
 
+    def parse_fragment_arguments(self) -> tuple[FragmentArgumentNode, ...]:
+        """Experimental: Parse arguments on a fragment spread."""
+        item = self.parse_fragment_argument
+        return self.optional_many(TokenKind.PAREN_L, item, TokenKind.PAREN_R)
+
+    def parse_fragment_argument(self) -> FragmentArgumentNode:
+        """Experimental: Parse a single argument on a fragment spread."""
+        start = self._lexer.token
+        name = self.parse_name()
+
+        self.expect_token(TokenKind.COLON)
+        return FragmentArgumentNode(
+            name=name, value=self.parse_value_literal(False), loc=self.loc(start)
+        )
+
     # Implement the parsing rules in the Fragments section.
 
     def parse_fragment(self) -> FragmentSpreadNode | InlineFragmentNode:
         """Corresponds to both FragmentSpread and InlineFragment in the spec.
 
-        FragmentSpread: ... FragmentName Directives?
+        FragmentSpread: ... FragmentName Arguments? Directives?
         InlineFragment: ... TypeCondition? Directives? SelectionSet
         """
         start = self._lexer.token
@@ -533,8 +555,16 @@ class Parser:
 
         has_type_condition = self.expect_optional_keyword("on")
         if not has_type_condition and self.peek(TokenKind.NAME):
+            name = self.parse_fragment_name()
+            if self.peek(TokenKind.PAREN_L) and self._experimental_fragment_arguments:
+                return FragmentSpreadNode(
+                    name=name,
+                    arguments=self.parse_fragment_arguments(),
+                    directives=self.parse_directives(False),
+                    loc=self.loc(start),
+                )
             return FragmentSpreadNode(
-                name=self.parse_fragment_name(),
+                name=name,
                 directives=self.parse_directives(False),
                 loc=self.loc(start),
             )
@@ -550,9 +580,10 @@ class Parser:
         start = self._lexer.token
         description = self.parse_description()
         self.expect_keyword("fragment")
-        # Legacy support for defining variables within fragments changes
-        # the grammar of FragmentDefinition
-        if self._allow_legacy_fragment_variables:
+        # Experimental support for defining variables within fragments changes
+        # the grammar of FragmentDefinition:
+        #   - fragment FragmentName VariableDefinitions? on TypeCondition ...
+        if self._experimental_fragment_arguments:
             return FragmentDefinitionNode(
                 description=description,
                 name=self.parse_fragment_name(),

@@ -10,12 +10,15 @@ from ...language import (
     DirectiveDefinitionNode,
     DirectiveNode,
     FieldNode,
+    FragmentSpreadNode,
     InputValueDefinitionNode,
     NonNullTypeNode,
     TypeNode,
+    VariableDefinitionNode,
     VisitorAction,
     print_ast,
 )
+from ...pyutils import inspect
 from ...type import (
     GraphQLArgument,
     get_named_type,
@@ -24,6 +27,7 @@ from ...type import (
     is_type,
     specified_directives,
 )
+from ...utilities import type_from_ast
 from . import ASTValidationRule, SDLValidationContext, ValidationContext
 
 __all__ = ["ProvidedRequiredArgumentsOnDirectivesRule", "ProvidedRequiredArgumentsRule"]
@@ -130,6 +134,36 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
 
         return None
 
+    def leave_fragment_spread(
+        self, spread_node: FragmentSpreadNode, *_args: Any
+    ) -> VisitorAction:
+        # Validate on leave to allow for deeper errors to appear first.
+        fragment_signature = self.context.get_fragment_signature()
+        if not fragment_signature:
+            return SKIP
 
-def is_required_argument_node(arg: InputValueDefinitionNode) -> bool:
+        provided_args = {arg.name.value for arg in spread_node.arguments or ()}
+        for (
+            var_name,
+            variable_definition,
+        ) in fragment_signature.variable_definitions.items():
+            if var_name not in provided_args and is_required_argument_node(
+                variable_definition
+            ):
+                arg_type = type_from_ast(self.context.schema, variable_definition.type)
+                self.report_error(
+                    GraphQLError(
+                        f"Fragment '{spread_node.name.value}' argument"
+                        f" '{var_name}' of type '{inspect(arg_type)}' is required,"
+                        " but it was not provided.",
+                        spread_node,
+                    )
+                )
+
+        return None
+
+
+def is_required_argument_node(
+    arg: InputValueDefinitionNode | VariableDefinitionNode,
+) -> bool:
     return isinstance(arg.type, NonNullTypeNode) and arg.default_value is None

@@ -852,6 +852,11 @@ def describe_introspection():
                                 "deprecationReason": None,
                             },
                             {
+                                "name": "FRAGMENT_VARIABLE_DEFINITION",
+                                "isDeprecated": False,
+                                "deprecationReason": None,
+                            },
+                            {
                                 "name": "SCHEMA",
                                 "isDeprecated": False,
                                 "deprecationReason": None,

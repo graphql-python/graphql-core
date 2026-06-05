@@ -10,6 +10,69 @@ assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_no_undefined_variables():
+    def fragment_defined_arguments_are_not_undefined_variables():
+        assert_valid(
+            """
+            query Foo {
+              ...FragA
+            }
+            fragment FragA($a: String) on Type {
+              field1(a: $a)
+            }
+            """
+        )
+
+    def defined_variables_used_as_fragment_arguments_are_not_undefined():
+        assert_valid(
+            """
+            query Foo($b: String) {
+              ...FragA(a: $b)
+            }
+            fragment FragA($a: String) on Type {
+              field1
+            }
+            """
+        )
+
+    def variables_used_as_fragment_arguments_may_be_undefined_variables():
+        assert_errors(
+            """
+            query Foo {
+              ...FragA(a: $a)
+            }
+            fragment FragA($a: String) on Type {
+              field1
+            }
+            """,
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(3, 27), (2, 13)],
+                },
+            ],
+        )
+
+    def variables_shadowed_by_parent_fragment_arguments_are_still_undefined():
+        assert_errors(
+            """
+            query Foo {
+              ...FragA
+            }
+            fragment FragA($a: String) on Type {
+              ...FragB
+            }
+            fragment FragB on Type {
+              field1(a: $a)
+            }
+            """,
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Foo'.",
+                    "locations": [(9, 25), (2, 13)],
+                },
+            ],
+        )
+
     def all_variables_defined():
         assert_valid(
             """

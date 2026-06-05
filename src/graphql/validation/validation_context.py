@@ -15,11 +15,13 @@ from ..language import (
     FragmentSpreadNode,
     OperationDefinitionNode,
     SelectionSetNode,
+    VariableDefinitionNode,
     VariableNode,
     Visitor,
     VisitorAction,
     visit,
 )
+from ..pyutils import Undefined
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 if TYPE_CHECKING:
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
         GraphQLOutputType,
         GraphQLSchema,
     )
+    from ..utilities.type_info import FragmentSignature, FragmentSignatureByNameFn
 
 from typing import TypeAlias
 
@@ -56,6 +59,7 @@ class VariableUsage(NamedTuple):
     node: VariableNode
     type: GraphQLInputType | None
     default_value: Any
+    fragment_variable_definition: VariableDefinitionNode | None
 
 
 class VariableUsageVisitor(Visitor):
@@ -63,20 +67,44 @@ class VariableUsageVisitor(Visitor):
 
     usages: list[VariableUsage]
 
-    def __init__(self, type_info: TypeInfo) -> None:
+    def __init__(
+        self,
+        type_info: TypeInfo,
+        fragment_definition: FragmentDefinitionNode | None = None,
+    ) -> None:
         super().__init__()
         self.usages = []
         self._append_usage = self.usages.append
         self._type_info = type_info
+        self._fragment_definition = fragment_definition
 
     def enter_variable_definition(self, *_args: Any) -> VisitorAction:
         return self.SKIP
 
     def enter_variable(self, node: VariableNode, *_args: Any) -> VisitorAction:
         type_info = self._type_info
-        usage = VariableUsage(
-            node, type_info.get_input_type(), type_info.get_default_value()
-        )
+        fragment_definition = self._fragment_definition
+        if fragment_definition:
+            fragment_signature = type_info.get_fragment_signature_by_name()(
+                fragment_definition.name.value
+            )
+            fragment_variable_definition = (
+                fragment_signature.variable_definitions.get(node.name.value)
+                if fragment_signature
+                else None
+            )
+            # Fragment variables have a variable default but no location default,
+            # which is what this default value represents.
+            usage = VariableUsage(
+                node,
+                type_info.get_input_type(),
+                Undefined,
+                fragment_variable_definition,
+            )
+        else:
+            usage = VariableUsage(
+                node, type_info.get_input_type(), type_info.get_default_value(), None
+            )
         self._append_usage(usage)
         return None
 
@@ -223,7 +251,10 @@ class ValidationContext(ASTValidationContext):
     def get_variable_usages(self, node: NodeWithSelectionSet) -> list[VariableUsage]:
         usages = self._variable_usages.get(node)
         if usages is None:
-            usage_visitor = VariableUsageVisitor(self._type_info)
+            fragment_definition = (
+                node if isinstance(node, FragmentDefinitionNode) else None
+            )
+            usage_visitor = VariableUsageVisitor(self._type_info, fragment_definition)
             visit(node, TypeInfoVisitor(self._type_info, usage_visitor))
             usages = usage_visitor.usages
             self._variable_usages[node] = usages
@@ -261,6 +292,12 @@ class ValidationContext(ASTValidationContext):
 
     def get_argument(self) -> GraphQLArgument | None:
         return self._type_info.get_argument()
+
+    def get_fragment_signature(self) -> FragmentSignature | None:
+        return self._type_info.get_fragment_signature()
+
+    def get_fragment_signature_by_name(self) -> FragmentSignatureByNameFn:
+        return self._type_info.get_fragment_signature_by_name()
 
     def get_enum_value(self) -> GraphQLEnumValue | None:
         return self._type_info.get_enum_value()

@@ -30,6 +30,95 @@ def describe_validate_provided_required_arguments():
             }"""
         )
 
+    def describe_fragment_required_arguments():
+        def ignores_unknown_arguments():
+            assert_valid(
+                """
+                {
+                  ...Foo(unknownArgument: true)
+                }
+                fragment Foo on Query {
+                  dog
+                }
+                """
+            )
+
+        def missing_nullable_argument_with_default_is_allowed():
+            assert_valid(
+                """
+                {
+                  ...F
+                }
+                fragment F($x: Int = 3) on Query {
+                  foo
+                }
+                """
+            )
+
+        def missing_nullable_argument_is_allowed():
+            assert_valid(
+                """
+                {
+                  ...F
+                }
+                fragment F($x: Int) on Query {
+                  foo
+                }
+                """
+            )
+
+        def missing_non_nullable_argument_with_default_is_allowed():
+            assert_valid(
+                """
+                {
+                  ...F
+                }
+                fragment F($x: Int! = 3) on Query {
+                  foo
+                }
+                """
+            )
+
+        def missing_non_nullable_argument_is_not_allowed():
+            assert_errors(
+                """
+                {
+                  ...F
+                }
+                fragment F($x: Int!) on Query {
+                  foo
+                }
+                """,
+                [
+                    {
+                        "message": "Fragment 'F' argument 'x' of type 'Int!'"
+                        " is required, but it was not provided.",
+                        "locations": [(3, 19)],
+                    },
+                ],
+            )
+
+        def supplies_required_variables():
+            assert_valid(
+                """
+                {
+                  ...F(x: 3)
+                }
+                fragment F($x: Int!) on Query {
+                  foo
+                }
+                """
+            )
+
+        def skips_missing_fragments():
+            assert_valid(
+                """
+                {
+                  ...Missing(x: 3)
+                }
+                """
+            )
+
     def describe_valid_non_nullable_value():
         def arg_on_optional_arg():
             assert_valid(

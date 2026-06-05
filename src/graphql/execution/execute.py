@@ -84,9 +84,11 @@ from .collect_fields import (
     CollectedFields,
     DeferUsage,
     FieldDetails,
+    FragmentDetails,
     collect_fields,
     collect_subfields,
 )
+from .get_variable_signature import get_variable_signature
 from .incremental_publisher import (
     IncrementalPublisherContext,
     build_incremental_response,
@@ -107,12 +109,18 @@ from .types import (
     StreamRecord,
     SuccessfulExecutionGroup,
 )
-from .values import get_argument_values, get_directive_values, get_variable_values
+from .values import (
+    experimental_get_argument_values,
+    get_argument_values,
+    get_directive_values,
+    get_variable_values,
+)
 
 if TYPE_CHECKING:
     from typing import TypeAlias, TypeGuard
 
     from ..pyutils import UndefinedType
+    from .get_variable_signature import GraphQLVariableSignature
 
 __all__ = [
     "ExecutionContext",
@@ -182,7 +190,7 @@ class ExecutionContext(IncrementalPublisherContext):
     """
 
     schema: GraphQLSchema
-    fragments: dict[str, FragmentDefinitionNode]
+    fragments: dict[str, FragmentDetails]
     root_value: Any
     context_value: Any
     operation: OperationDefinitionNode
@@ -205,7 +213,7 @@ class ExecutionContext(IncrementalPublisherContext):
     def __init__(
         self,
         schema: GraphQLSchema,
-        fragments: dict[str, FragmentDefinitionNode],
+        fragments: dict[str, FragmentDetails],
         root_value: Any,
         context_value: Any,
         operation: OperationDefinitionNode,
@@ -269,7 +277,7 @@ class ExecutionContext(IncrementalPublisherContext):
         assert_valid_schema(schema)
 
         operation: OperationDefinitionNode | None = None
-        fragments: dict[str, FragmentDefinitionNode] = {}
+        fragments: dict[str, FragmentDetails] = {}
         middleware_manager: MiddlewareManager | None = None
         if middleware is not None:
             if isinstance(middleware, (list, tuple)):
@@ -298,7 +306,17 @@ class ExecutionContext(IncrementalPublisherContext):
                 elif definition.name and definition.name.value == operation_name:
                     operation = definition
             elif isinstance(definition, FragmentDefinitionNode):
-                fragments[definition.name.value] = definition
+                variable_signatures: dict[str, GraphQLVariableSignature] | None = None
+                if definition.variable_definitions:
+                    variable_signatures = {}
+                    for var_def in definition.variable_definitions:
+                        signature = get_variable_signature(schema, var_def)
+                        # signature errors are validated before execution
+                        if not isinstance(signature, GraphQLError):  # pragma: no branch
+                            variable_signatures[signature.name] = signature
+                fragments[definition.name.value] = FragmentDetails(
+                    definition, variable_signatures
+                )
 
         if not operation:
             if operation_name is not None:
@@ -610,7 +628,9 @@ class ExecutionContext(IncrementalPublisherContext):
         calling its resolve function, then calls complete_value to await coroutine
         objects, serialize scalars, or execute the sub-selection-set for objects.
         """
-        field_name = field_group[0].node.name.value
+        first_field_details = field_group[0]
+        first_field_node = first_field_details.node
+        field_name = first_field_node.name.value
         field_def = self.schema.get_field(parent_type, field_name)
         if not field_def:
             return Undefined
@@ -630,8 +650,11 @@ class ExecutionContext(IncrementalPublisherContext):
         try:
             # Build a dictionary of arguments from the field.arguments AST, using the
             # variables scope to fulfill any variable references.
-            args = get_argument_values(
-                field_def, field_group[0].node, self.variable_values
+            args = experimental_get_argument_values(
+                first_field_node,
+                field_def.args,
+                self.variable_values,
+                first_field_details.fragment_variables,
             )
 
             # Note that contrary to the JavaScript implementation, we pass the context
@@ -707,7 +730,7 @@ class ExecutionContext(IncrementalPublisherContext):
             parent_type,
             path,
             self.schema,
-            self.fragments,
+            {name: details.definition for name, details in self.fragments.items()},
             self.root_value,
             self.operation,
             self.variable_values,

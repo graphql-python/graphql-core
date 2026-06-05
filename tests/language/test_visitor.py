@@ -10,6 +10,7 @@ from graphql.language import (
     BREAK,
     REMOVE,
     SKIP,
+    BooleanValueNode,
     DocumentNode,
     FieldNode,
     NameNode,
@@ -712,11 +713,11 @@ def describe_visitor():
 
         assert str(exc_info.value) == "Invalid AST node kind: type_system_extension."
 
-    def legacy_visits_variables_defined_in_fragments():
+    def visits_arguments_defined_on_fragments():
         ast = parse(
             "fragment a($v: Boolean = false) on t { f }",
             no_location=True,
-            allow_legacy_fragment_variables=True,
+            experimental_fragment_arguments=True,
         )
         visited = []
 
@@ -762,6 +763,55 @@ def describe_visitor():
             ["enter", "name", "f"],
             ["leave", "name", "f"],
             ["leave", "field", None],
+            ["leave", "selection_set", None],
+            ["leave", "fragment_definition", None],
+            ["leave", "document", None],
+        ]
+
+    def visits_arguments_on_fragment_spreads():
+        ast = parse(
+            "fragment a on t { ...s(v: false) }",
+            no_location=True,
+            experimental_fragment_arguments=True,
+        )
+        visited = []
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(*args):
+                check_visitor_fn_args(ast, *args)
+                node = args[0]
+                kind, value = node.kind, get_value(node)
+                visited.append(["enter", kind, value])
+
+            @staticmethod
+            def leave(*args):
+                check_visitor_fn_args(ast, *args)
+                node = args[0]
+                kind, value = node.kind, get_value(node)
+                visited.append(["leave", kind, value])
+
+        visit(ast, TestVisitor())
+        assert visited == [
+            ["enter", "document", None],
+            ["enter", "fragment_definition", None],
+            ["enter", "name", "a"],
+            ["leave", "name", "a"],
+            ["enter", "named_type", None],
+            ["enter", "name", "t"],
+            ["leave", "name", "t"],
+            ["leave", "named_type", None],
+            ["enter", "selection_set", None],
+            ["enter", "fragment_spread", None],
+            ["enter", "name", "s"],
+            ["leave", "name", "s"],
+            ["enter", "fragment_argument", BooleanValueNode(value=False)],
+            ["enter", "name", "v"],
+            ["leave", "name", "v"],
+            ["enter", "boolean_value", False],
+            ["leave", "boolean_value", False],
+            ["leave", "fragment_argument", BooleanValueNode(value=False)],
+            ["leave", "fragment_spread", None],
             ["leave", "selection_set", None],
             ["leave", "fragment_definition", None],
             ["leave", "document", None],

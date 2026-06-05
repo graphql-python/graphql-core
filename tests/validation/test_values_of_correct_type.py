@@ -19,6 +19,40 @@ assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_values_of_correct_type():
+    def describe_fragment_argument_values():
+        def list_variables_with_invalid_item():
+            assert_errors(
+                """
+                fragment InvalidItem($a: [String] = ["one", 2]) on Query {
+                  dog { name }
+                }
+                """,
+                [
+                    {
+                        "message": "String cannot represent a non string value: 2",
+                        "locations": [(2, 61)],
+                    },
+                ],
+            )
+
+        def fragment_spread_with_invalid_argument_value():
+            assert_errors(
+                """
+                fragment GivesString on Query {
+                  ...ExpectsInt(a: "three")
+                }
+                fragment ExpectsInt($a: Int) on Query {
+                  dog { name }
+                }
+                """,
+                [
+                    {
+                        "message": 'Int cannot represent non-integer value: "three"',
+                        "locations": [(3, 36)],
+                    },
+                ],
+            )
+
     def describe_valid_values():
         def good_int_value():
             assert_valid(

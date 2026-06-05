@@ -82,7 +82,6 @@ _directive_location = {
     "fragment_spread": DirectiveLocation.FRAGMENT_SPREAD,
     "inline_fragment": DirectiveLocation.INLINE_FRAGMENT,
     "fragment_definition": DirectiveLocation.FRAGMENT_DEFINITION,
-    "variable_definition": DirectiveLocation.VARIABLE_DEFINITION,
     "schema_definition": DirectiveLocation.SCHEMA,
     "schema_extension": DirectiveLocation.SCHEMA,
     "scalar_type_definition": DirectiveLocation.SCALAR,
@@ -119,5 +118,12 @@ def get_directive_location_for_ast_path(
             DirectiveLocation.INPUT_FIELD_DEFINITION
             if parent_node.kind == "input_object_type_definition"
             else DirectiveLocation.ARGUMENT_DEFINITION
+        )
+    if kind == "variable_definition":
+        parent_node = ancestors[-3]
+        return (
+            DirectiveLocation.VARIABLE_DEFINITION
+            if parent_node.kind == "operation_definition"
+            else DirectiveLocation.FRAGMENT_VARIABLE_DEFINITION
         )
     return _directive_location.get(kind)

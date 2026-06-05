@@ -16,6 +16,9 @@ def describe_validate_variables_are_input_types():
             query Foo($a: Unknown, $b: [[Unknown!]]!) {
               field(a: $a, b: $b)
             }
+            fragment Bar($a: Unknown, $b: [[Unknown!]]!) on Query {
+              field(a: $a, b: $b)
+            }
             """
         )
 
@@ -25,7 +28,34 @@ def describe_validate_variables_are_input_types():
             query Foo($a: String, $b: [Boolean!]!, $c: ComplexInput) {
               field(a: $a, b: $b, c: $c)
             }
+            fragment Bar($a: String, $b: [Boolean!]!, $c: ComplexInput) on Query {
+              field(a: $a, b: $b, c: $c)
+            }
             """
+        )
+
+    def output_types_on_fragment_arguments_are_invalid():
+        assert_errors(
+            """
+            fragment Bar($a: Dog, $b: [[CatOrDog!]]!, $c: Pet) on Query {
+              field(a: $a, b: $b, c: $c)
+            }
+            """,
+            [
+                {
+                    "locations": [(2, 30)],
+                    "message": "Variable '$a' cannot be non-input type 'Dog'.",
+                },
+                {
+                    "locations": [(2, 39)],
+                    "message": "Variable '$b' cannot be"
+                    " non-input type '[[CatOrDog!]]!'.",
+                },
+                {
+                    "locations": [(2, 59)],
+                    "message": "Variable '$c' cannot be non-input type 'Pet'.",
+                },
+            ],
         )
 
     def output_types_are_invalid():

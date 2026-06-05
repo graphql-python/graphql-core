@@ -108,14 +108,10 @@ class PrintAstVisitor(Visitor):
     @staticmethod
     def leave_field(node: PrintedNode, *_args: Any) -> str:
         prefix = join((wrap("", node.alias, ": "), node.name))
-        args_line = prefix + wrap("(", join(node.arguments, ", "), ")")
-
-        if len(args_line) > MAX_LINE_LENGTH:
-            args_line = prefix + wrap("(\n", indent(join(node.arguments, "\n")), "\n)")
 
         return join(
             (
-                args_line,
+                wrapped_line_and_args(prefix, node.arguments),
                 #  Note: Client Controlled Nullability is experimental and may be
                 #  changed or removed in the future.
                 node.nullability_assertion,
@@ -126,6 +122,10 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_argument(node: PrintedNode, *_args: Any) -> str:
+        return f"{node.name}: {node.value}"
+
+    @staticmethod
+    def leave_fragment_argument(node: PrintedNode, *_args: Any) -> str:
         return f"{node.name}: {node.value}"
 
     # Nullability Modifiers
@@ -146,7 +146,10 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_fragment_spread(node: PrintedNode, *_args: Any) -> str:
-        return f"...{node.name}{wrap(' ', join(node.directives, ' '))}"
+        prefix = f"...{node.name}"
+        return wrapped_line_and_args(prefix, node.arguments) + wrap(
+            " ", join(node.directives, " ")
+        )
 
     @staticmethod
     def leave_inline_fragment(node: PrintedNode, *_args: Any) -> str:
@@ -162,7 +165,6 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_fragment_definition(node: PrintedNode, *_args: Any) -> str:
-        # Note: fragment variable definitions are deprecated and will be removed in v3.3
         return (
             wrap("", node.description, "\n") + f"fragment {node.name}"
             f"{wrap('(', join(node.variable_definitions, ', '), ')')}"
@@ -471,3 +473,12 @@ def is_multiline(string: str) -> bool:
 def has_multiline_items(strings: Strings | None) -> bool:
     """Check whether one of the items in the list has multiple lines."""
     return any(is_multiline(item) for item in strings) if strings else False
+
+
+def wrapped_line_and_args(prefix: str, args: Strings | None) -> str:
+    """Print the given prefix with its arguments, wrapping long argument lists."""
+    args_line = prefix + wrap("(", join(args, ", "), ")")
+
+    if len(args_line) > MAX_LINE_LENGTH:
+        args_line = prefix + wrap("(\n", indent(join(args, "\n")), "\n)")
+    return args_line

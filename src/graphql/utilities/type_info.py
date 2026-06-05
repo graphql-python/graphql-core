@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, TypeAlias
+from typing import Any, NamedTuple, TypeAlias
 
 from ..language import (
     ArgumentNode,
     DirectiveNode,
+    DocumentNode,
     EnumValueNode,
     FieldNode,
+    FragmentArgumentNode,
+    FragmentDefinitionNode,
+    FragmentSpreadNode,
     InlineFragmentNode,
     ListValueNode,
     Node,
@@ -42,12 +46,21 @@ from ..type import (
 )
 from .type_from_ast import type_from_ast
 
-__all__ = ["TypeInfo", "TypeInfoVisitor"]
+__all__ = ["FragmentSignature", "TypeInfo", "TypeInfoVisitor"]
 
 
 GetFieldDefFn: TypeAlias = Callable[
     [GraphQLSchema, GraphQLCompositeType, FieldNode], GraphQLField | None
 ]
+
+FragmentSignatureByNameFn: TypeAlias = Callable[[str], "FragmentSignature | None"]
+
+
+class FragmentSignature(NamedTuple):
+    """A fragment definition with the variable definitions of its arguments."""
+
+    definition: FragmentDefinitionNode
+    variable_definitions: dict[str, VariableDefinitionNode]
 
 
 class TypeInfo:
@@ -64,13 +77,14 @@ class TypeInfo:
         schema: GraphQLSchema,
         initial_type: GraphQLType | None = None,
         get_field_def_fn: GetFieldDefFn | None = None,
+        fragment_signatures: FragmentSignatureByNameFn | None = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
         Initial type may be provided in rare cases to facilitate traversals beginning
         somewhere other than documents.
 
-        The optional last parameter is deprecated and will be removed in v3.3.
+        The ``get_field_def_fn`` parameter is deprecated and will be removed in v3.3.
         """
         self._schema = schema
         self._type_stack: list[GraphQLOutputType | None] = []
@@ -81,6 +95,11 @@ class TypeInfo:
         self._directive: GraphQLDirective | None = None
         self._argument: GraphQLArgument | None = None
         self._enum_value: GraphQLEnumValue | None = None
+        self._fragment_signatures_by_name: FragmentSignatureByNameFn = (
+            fragment_signatures or (lambda _fragment_name: None)
+        )
+        self._fragment_signature: FragmentSignature | None = None
+        self._fragment_argument: VariableDefinitionNode | None = None
         self._get_field_def: GetFieldDefFn = get_field_def_fn or get_field_def
         if initial_type:
             if is_input_type(initial_type):
@@ -126,6 +145,15 @@ class TypeInfo:
     def get_argument(self) -> GraphQLArgument | None:
         return self._argument
 
+    def get_fragment_signature(self) -> FragmentSignature | None:
+        return self._fragment_signature
+
+    def get_fragment_signature_by_name(self) -> FragmentSignatureByNameFn:
+        return self._fragment_signatures_by_name
+
+    def get_fragment_argument(self) -> VariableDefinitionNode | None:
+        return self._fragment_argument
+
     def get_enum_value(self) -> GraphQLEnumValue | None:
         return self._enum_value
 
@@ -138,6 +166,9 @@ class TypeInfo:
         method = getattr(self, "leave_" + node.kind, None)
         if method:
             method()
+
+    def enter_document(self, node: DocumentNode) -> None:
+        self._fragment_signatures_by_name = get_fragment_signatures(node).get
 
     def enter_selection_set(self, _node: SelectionSetNode) -> None:
         named_type = get_named_type(self.get_type())
@@ -162,6 +193,11 @@ class TypeInfo:
         root_type = self._schema.get_root_type(node.operation)
         self._type_stack.append(root_type if is_object_type(root_type) else None)
 
+    def enter_fragment_spread(self, node: FragmentSpreadNode) -> None:
+        self._fragment_signature = self.get_fragment_signature_by_name()(
+            node.name.value
+        )
+
     def enter_inline_fragment(self, node: InlineFragmentNode) -> None:
         type_condition_ast = node.type_condition
         output_type = (
@@ -176,6 +212,22 @@ class TypeInfo:
     def enter_variable_definition(self, node: VariableDefinitionNode) -> None:
         input_type = type_from_ast(self._schema, node.type)
         self._input_type_stack.append(input_type if is_input_type(input_type) else None)
+
+    def enter_fragment_argument(self, node: FragmentArgumentNode) -> None:
+        fragment_signature = self.get_fragment_signature()
+        arg_def = (
+            fragment_signature.variable_definitions.get(node.name.value)
+            if fragment_signature
+            else None
+        )
+        self._fragment_argument = arg_def
+        arg_type = type_from_ast(self._schema, arg_def.type) if arg_def else None
+        # Fragment arguments have a variable default but no location default;
+        # push Undefined so get_default_value() reports "no default" here and the
+        # leave handler's default-value pop stays balanced (unlike GraphQL.js,
+        # which relies on an empty-stack read returning undefined).
+        self._default_value_stack.append(Undefined)
+        self._input_type_stack.append(arg_type if is_input_type(arg_type) else None)
 
     def enter_argument(self, node: ArgumentNode) -> None:
         field_or_directive = self.get_directive() or self.get_field_def()
@@ -219,6 +271,11 @@ class TypeInfo:
             enum_value = None
         self._enum_value = enum_value
 
+    def leave_document(self) -> None:
+        self._fragment_signatures_by_name = (
+            lambda _fragment_name: None  # pragma: no cover
+        )
+
     def leave_selection_set(self) -> None:
         del self._parent_type_stack[-1:]
 
@@ -235,7 +292,15 @@ class TypeInfo:
     leave_inline_fragment = leave_operation_definition
     leave_fragment_definition = leave_operation_definition
 
+    def leave_fragment_spread(self) -> None:
+        self._fragment_signature = None
+
     def leave_variable_definition(self) -> None:
+        del self._input_type_stack[-1:]
+
+    def leave_fragment_argument(self) -> None:
+        self._fragment_argument = None
+        del self._default_value_stack[-1:]
         del self._input_type_stack[-1:]
 
     def leave_argument(self) -> None:
@@ -257,6 +322,21 @@ def get_field_def(
     schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode
 ) -> GraphQLField | None:
     return schema.get_field(parent_type, field_node.name.value)
+
+
+def get_fragment_signatures(document: DocumentNode) -> dict[str, FragmentSignature]:
+    """Collect the fragment signatures of all fragment definitions in a document."""
+    fragment_signatures: dict[str, FragmentSignature] = {}
+    for definition in document.definitions:
+        if isinstance(definition, FragmentDefinitionNode):
+            variable_definitions: dict[str, VariableDefinitionNode] = {}
+            if definition.variable_definitions:
+                for var_def in definition.variable_definitions:
+                    variable_definitions[var_def.variable.name.value] = var_def
+            fragment_signatures[definition.name.value] = FragmentSignature(
+                definition, variable_definitions
+            )
+    return fragment_signatures
 
 
 class TypeInfoVisitor(Visitor):

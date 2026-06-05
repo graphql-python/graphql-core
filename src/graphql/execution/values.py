@@ -11,6 +11,7 @@ from ..language import (
     ExecutableDefinitionNode,
     FieldDefinitionNode,
     FieldNode,
+    FragmentSpreadNode,
     InputValueDefinitionNode,
     NullValueNode,
     SchemaDefinitionNode,
@@ -27,17 +28,24 @@ from ..type import (
     GraphQLField,
     GraphQLSchema,
     is_input_object_type,
-    is_input_type,
     is_non_null_type,
 )
 from ..utilities.coerce_input_value import coerce_input_value
-from ..utilities.type_from_ast import type_from_ast
 from ..utilities.value_from_ast import value_from_ast
+from .get_variable_signature import GraphQLVariableSignature, get_variable_signature
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection
+    from collections.abc import Callable, Collection, Mapping
 
-__all__ = ["get_argument_values", "get_directive_values", "get_variable_values"]
+    from ..type import GraphQLArgument
+    from .collect_fields import FragmentVariables
+
+__all__ = [
+    "experimental_get_argument_values",
+    "get_argument_values",
+    "get_directive_values",
+    "get_variable_values",
+]
 
 CoercedVariableValues: TypeAlias = list[GraphQLError] | dict[str, Any]
 
@@ -83,26 +91,16 @@ def coerce_variable_values(
 ) -> dict[str, Any]:
     coerced_values: dict[str, Any] = {}
     for var_def_node in var_def_nodes:
-        var_name = var_def_node.variable.name.value
-        var_type = type_from_ast(schema, var_def_node.type)
-        if not is_input_type(var_type):
-            # Must use input types for variables. This should be caught during
-            # validation, however is checked again here for safety.
-            var_type_str = print_ast(var_def_node.type)
-            on_error(
-                GraphQLError(
-                    f"Variable '${var_name}' expected value of type '{var_type_str}'"
-                    " which cannot be used as an input type.",
-                    var_def_node.type,
-                )
-            )
+        var_signature = get_variable_signature(schema, var_def_node)
+        if isinstance(var_signature, GraphQLError):
+            on_error(var_signature)
             continue
 
+        var_name = var_signature.name
+        var_type = var_signature.type
         if var_name not in inputs:
             if var_def_node.default_value:
-                coerced_values[var_name] = value_from_ast(
-                    var_def_node.default_value, var_type
-                )
+                coerced_values[var_name] = var_signature.default_value
             elif is_non_null_type(var_type):  # pragma: no branch
                 var_type_str = inspect(var_type)
                 on_error(
@@ -162,11 +160,27 @@ def get_argument_values(
     Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
     """
+    return experimental_get_argument_values(node, type_def.args, variable_values)
+
+
+def experimental_get_argument_values(
+    node: FieldNode | DirectiveNode | FragmentSpreadNode,
+    arg_defs: Mapping[str, GraphQLArgument | GraphQLVariableSignature],
+    variable_values: dict[str, Any] | None = None,
+    fragment_variables: FragmentVariables | None = None,
+) -> dict[str, Any]:
+    """Get coerced argument values based on provided definitions and nodes.
+
+    Prepares a dict of argument values given a mapping of argument definitions
+    (which may be ``GraphQLArgument`` objects or fragment variable signatures) and
+    list of argument AST nodes.
+    """
     coerced_values: dict[str, Any] = {}
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}
 
-    for name, arg_def in type_def.args.items():
+    for name, arg_def in arg_defs.items():
         arg_type = arg_def.type
+        out_name = getattr(arg_def, "out_name", None) or name
         argument_node = arg_node_map.get(name)
 
         if argument_node is None:
@@ -175,7 +189,7 @@ def get_argument_values(
                 if is_input_object_type(arg_def.type):
                     # coerce input value so that out_names are used
                     value = coerce_input_value(value, arg_def.type)
-                coerced_values[arg_def.out_name or name] = value
+                coerced_values[out_name] = value
             elif is_non_null_type(arg_type):  # pragma: no branch
                 msg = (
                     f"Argument '{name}' of required type '{arg_type}' was not provided."
@@ -188,13 +202,21 @@ def get_argument_values(
 
         if isinstance(value_node, VariableNode):
             variable_name = value_node.name.value
-            if variable_values is None or variable_name not in variable_values:
+            scoped_variable_values = (
+                fragment_variables.values
+                if fragment_variables and variable_name in fragment_variables.signatures
+                else variable_values
+            )
+            if (
+                scoped_variable_values is None
+                or variable_name not in scoped_variable_values
+            ):
                 value = arg_def.default_value
                 if value is not Undefined:
                     if is_input_object_type(arg_def.type):
                         # coerce input value so that out_names are used
                         value = coerce_input_value(value, arg_def.type)
-                    coerced_values[arg_def.out_name or name] = value
+                    coerced_values[out_name] = value
                 elif is_non_null_type(arg_type):  # pragma: no branch
                     msg = (
                         f"Argument '{name}' of required type '{arg_type}'"
@@ -203,14 +225,19 @@ def get_argument_values(
                     )
                     raise GraphQLError(msg, value_node)
                 continue  # pragma: no cover
-            variable_value = variable_values[variable_name]
+            variable_value = scoped_variable_values[variable_name]
             is_null = variable_value is None or variable_value is Undefined
 
         if is_null and is_non_null_type(arg_type):
             msg = f"Argument '{name}' of non-null type '{arg_type}' must not be null."
             raise GraphQLError(msg, value_node)
 
-        coerced_value = value_from_ast(value_node, arg_type, variable_values)
+        coerced_value = value_from_ast(
+            value_node,
+            arg_type,
+            variable_values,
+            fragment_variables.values if fragment_variables else None,
+        )
         if coerced_value is Undefined:
             # Note: `values_of_correct_type` validation should catch this before
             # execution. This is a runtime check to ensure execution does not
@@ -220,7 +247,7 @@ def get_argument_values(
                 f" has invalid value {print_ast(value_node)}."
             )
             raise GraphQLError(msg, value_node)
-        coerced_values[arg_def.out_name or name] = coerced_value
+        coerced_values[out_name] = coerced_value
 
     return coerced_values
 
@@ -241,6 +268,7 @@ def get_directive_values(
     directive_def: GraphQLDirective,
     node: NodeWithDirective,
     variable_values: dict[str, Any] | None = None,
+    fragment_variables: FragmentVariables | None = None,
 ) -> dict[str, Any] | None:
     """Get coerced argument values based on provided nodes.
 
@@ -254,5 +282,10 @@ def get_directive_values(
         directive_name = directive_def.name
         for directive in directives:
             if directive.name.value == directive_name:
-                return get_argument_values(directive_def, directive, variable_values)
+                return experimental_get_argument_values(
+                    directive,
+                    directive_def.args,
+                    variable_values,
+                    fragment_variables,
+                )
     return None

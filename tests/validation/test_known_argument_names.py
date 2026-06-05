@@ -20,6 +20,72 @@ assert_sdl_valid = partial(assert_sdl_errors, errors=[])
 
 
 def describe_validate_known_argument_names():
+    def fragment_args_are_known():
+        assert_valid(
+            """
+            {
+              dog {
+                ...withArg(dogCommand: SIT)
+              }
+            }
+            fragment withArg($dogCommand: DogCommand) on Dog {
+              doesKnowCommand(dogCommand: $dogCommand)
+            }
+            """
+        )
+
+    def fragment_args_on_unknown_fragment_are_ignored():
+        assert_valid(
+            """
+            {
+              dog {
+                ...unknown(dogCommand: SIT)
+              }
+            }
+            """
+        )
+
+    def arg_passed_to_fragment_without_arg_is_reported():
+        assert_errors(
+            """
+            {
+              dog {
+                ...withoutArg(unknown: true)
+              }
+            }
+            fragment withoutArg on Dog {
+              doesKnowCommand
+            }
+            """,
+            [
+                {
+                    "message": "Unknown argument 'unknown' on fragment 'withoutArg'.",
+                    "locations": [(4, 31)],
+                },
+            ],
+        )
+
+    def misspelled_fragment_args_are_reported():
+        assert_errors(
+            """
+            {
+              dog {
+                ...withArg(command: SIT)
+              }
+            }
+            fragment withArg($dogCommand: DogCommand) on Dog {
+              doesKnowCommand(dogCommand: $dogCommand)
+            }
+            """,
+            [
+                {
+                    "message": "Unknown argument 'command' on fragment 'withArg'."
+                    " Did you mean 'dogCommand'?",
+                    "locations": [(4, 28)],
+                },
+            ],
+        )
+
     def single_arg_is_known():
         assert_valid(
             """

@@ -48,6 +48,7 @@ def _create_node(node_class: type) -> Node:
         ast.FragmentSpreadNode: {"name": name},
         ast.InlineFragmentNode: {"selection_set": selection_set},
         ast.ArgumentNode: {"name": name, "value": ast.NullValueNode()},
+        ast.FragmentArgumentNode: {"name": name, "value": ast.NullValueNode()},
         ast.VariableNode: {"name": name},
         ast.IntValueNode: {"value": "0"},
         ast.FloatValueNode: {"value": "0.0"},
