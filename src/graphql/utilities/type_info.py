@@ -49,10 +49,6 @@ from .type_from_ast import type_from_ast
 __all__ = ["FragmentSignature", "TypeInfo", "TypeInfoVisitor"]
 
 
-GetFieldDefFn: TypeAlias = Callable[
-    [GraphQLSchema, GraphQLCompositeType, FieldNode], GraphQLField | None
-]
-
 FragmentSignatureByNameFn: TypeAlias = Callable[[str], "FragmentSignature | None"]
 
 
@@ -76,15 +72,12 @@ class TypeInfo:
         self,
         schema: GraphQLSchema,
         initial_type: GraphQLType | None = None,
-        get_field_def_fn: GetFieldDefFn | None = None,
         fragment_signatures: FragmentSignatureByNameFn | None = None,
     ) -> None:
         """Initialize the TypeInfo for the given GraphQL schema.
 
         Initial type may be provided in rare cases to facilitate traversals beginning
         somewhere other than documents.
-
-        The ``get_field_def_fn`` parameter is deprecated and will be removed in v3.3.
         """
         self._schema = schema
         self._type_stack: list[GraphQLOutputType | None] = []
@@ -100,7 +93,6 @@ class TypeInfo:
         )
         self._fragment_signature: FragmentSignature | None = None
         self._fragment_argument: VariableDefinitionNode | None = None
-        self._get_field_def: GetFieldDefFn = get_field_def_fn or get_field_def
         if initial_type:
             if is_input_type(initial_type):
                 self._input_type_stack.append(initial_type)
@@ -179,7 +171,7 @@ class TypeInfo:
     def enter_field(self, node: FieldNode) -> None:
         parent_type = self.get_parent_type()
         if parent_type:
-            field_def = self._get_field_def(self._schema, parent_type, node)
+            field_def = self._schema.get_field(parent_type, node.name.value)
             field_type = field_def.type if field_def else None
         else:
             field_def = field_type = None
@@ -316,12 +308,6 @@ class TypeInfo:
 
     def leave_enum_value(self) -> None:
         self._enum_value = None
-
-
-def get_field_def(
-    schema: GraphQLSchema, parent_type: GraphQLCompositeType, field_node: FieldNode
-) -> GraphQLField | None:
-    return schema.get_field(parent_type, field_node.name.value)
 
 
 def get_fragment_signatures(document: DocumentNode) -> dict[str, FragmentSignature]:
