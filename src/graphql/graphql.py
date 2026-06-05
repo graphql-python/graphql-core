@@ -192,6 +192,7 @@ def graphql_impl(
         field_resolver,
         type_resolver,
         None,
+        50,
         middleware,
         execution_context_class,
         is_awaitable,

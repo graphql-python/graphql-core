@@ -35,6 +35,7 @@ async def subscribe(
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
+    max_coercion_errors: int = 50,
 ) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -63,6 +64,7 @@ async def subscribe(
         variable_values,
         operation_name,
         subscribe_field_resolver,
+        max_coercion_errors,
     )
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
@@ -100,6 +102,7 @@ async def create_source_event_stream(
     variable_values: Optional[Dict[str, Any]] = None,
     operation_name: Optional[str] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
+    max_coercion_errors: int = 50,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source event stream
 
@@ -138,6 +141,7 @@ async def create_source_event_stream(
         variable_values,
         operation_name,
         subscribe_field_resolver=subscribe_field_resolver,
+        max_coercion_errors=max_coercion_errors,
     )
 
     # Return early errors if execution context failed.

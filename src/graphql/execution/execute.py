@@ -236,6 +236,7 @@ class ExecutionContext:
         field_resolver: Optional[GraphQLFieldResolver] = None,
         type_resolver: Optional[GraphQLTypeResolver] = None,
         subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
+        max_coercion_errors: int = 50,
         middleware: Optional[Middleware] = None,
         is_awaitable: Optional[Callable[[Any], bool]] = None,
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
@@ -288,7 +289,7 @@ class ExecutionContext:
             schema,
             operation.variable_definitions or (),
             raw_variable_values or {},
-            max_errors=50,
+            max_errors=max_coercion_errors,
         )
 
         if isinstance(coerced_variable_values, list):
@@ -974,6 +975,7 @@ def execute(
     field_resolver: Optional[GraphQLFieldResolver] = None,
     type_resolver: Optional[GraphQLTypeResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
+    max_coercion_errors: int = 50,
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type["ExecutionContext"]] = None,
     is_awaitable: Optional[Callable[[Any], bool]] = None,
@@ -1006,6 +1008,7 @@ def execute(
         field_resolver,
         type_resolver,
         subscribe_field_resolver,
+        max_coercion_errors,
         middleware,
         is_awaitable,
     )
@@ -1062,6 +1065,7 @@ def execute_sync(
     operation_name: Optional[str] = None,
     field_resolver: Optional[GraphQLFieldResolver] = None,
     type_resolver: Optional[GraphQLTypeResolver] = None,
+    max_coercion_errors: int = 50,
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type["ExecutionContext"]] = None,
     check_sync: bool = False,
@@ -1091,6 +1095,7 @@ def execute_sync(
         field_resolver,
         type_resolver,
         None,
+        max_coercion_errors,
         middleware,
         execution_context_class,
         is_awaitable,
