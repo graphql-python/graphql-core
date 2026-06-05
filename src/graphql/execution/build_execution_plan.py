@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import NamedTuple, TypeAlias
 
 from ..pyutils import RefMap, RefSet
-from .collect_fields import DeferUsage, FieldGroup, GroupedFieldSet
+from .collect_fields import DeferUsage, FieldDetailsList, GroupedFieldSet
 
 __all__ = [
     "DeferUsageSet",
@@ -36,11 +36,11 @@ def build_execution_plan(
     grouped_field_set: GroupedFieldSet = {}
     new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet] = RefMap()
 
-    for response_key, field_group in original_grouped_field_set.items():
-        filtered_defer_usage_set = get_filtered_defer_usage_set(field_group)
+    for response_key, field_details_list in original_grouped_field_set.items():
+        filtered_defer_usage_set = get_filtered_defer_usage_set(field_details_list)
 
         if filtered_defer_usage_set == parent_defer_usages:
-            grouped_field_set[response_key] = field_group
+            grouped_field_set[response_key] = field_details_list
             continue
 
         for defer_usage_set in new_grouped_field_sets:
@@ -51,16 +51,18 @@ def build_execution_plan(
             new_grouped_field_set = {}
             new_grouped_field_sets[filtered_defer_usage_set] = new_grouped_field_set
 
-        new_grouped_field_set[response_key] = field_group
+        new_grouped_field_set[response_key] = field_details_list
 
     return ExecutionPlan(grouped_field_set, new_grouped_field_sets)
 
 
-def get_filtered_defer_usage_set(field_group: FieldGroup) -> RefSet[DeferUsage]:
+def get_filtered_defer_usage_set(
+    field_details_list: FieldDetailsList,
+) -> RefSet[DeferUsage]:
     """Get a filtered set of defer usages."""
     # Create the set of defer usages for the field group.
     filtered_defer_usage_set: RefSet[DeferUsage] = RefSet()
-    for field_details in field_group:
+    for field_details in field_details_list:
         defer_usage = field_details.defer_usage
         if defer_usage is None:
             filtered_defer_usage_set.clear()

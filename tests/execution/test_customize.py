@@ -45,7 +45,7 @@ def describe_customize_execution():
                 self,
                 parent_type,
                 source,
-                field_group,
+                field_details_list,
                 path,
                 incremental_context,
                 defer_map,
@@ -53,7 +53,7 @@ def describe_customize_execution():
                 result = super().execute_field(
                     parent_type,
                     source,
-                    field_group,
+                    field_details_list,
                     path,
                     incremental_context,
                     defer_map,

@@ -37,7 +37,7 @@ __all__ = [
     "CollectedFields",
     "DeferUsage",
     "FieldDetails",
-    "FieldGroup",
+    "FieldDetailsList",
     "FragmentDetails",
     "GroupedFieldSet",
     "collect_fields",
@@ -67,8 +67,8 @@ class FragmentDetails(NamedTuple):
     variable_signatures: dict[str, GraphQLVariableSignature] | None = None
 
 
-FieldGroup: TypeAlias = list[FieldDetails]
-GroupedFieldSet: TypeAlias = dict[str, FieldGroup]
+FieldDetailsList: TypeAlias = list[FieldDetails]
+GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
 
 
 class CollectFieldsContext(NamedTuple):
@@ -129,7 +129,7 @@ def collect_subfields(
     variable_values: VariableValues,
     operation: OperationDefinitionNode,
     return_type: GraphQLObjectType,
-    field_group: FieldGroup,
+    field_details_list: FieldDetailsList,
 ) -> CollectedFields:
     """Collect subfields.
 
@@ -153,7 +153,7 @@ def collect_subfields(
     sub_grouped_field_set: dict[str, list[FieldDetails]] = defaultdict(list)
     new_defer_usages: list[DeferUsage] = []
 
-    for field_detail in field_group:
+    for field_detail in field_details_list:
         node = field_detail.node
         if node.selection_set:
             collect_fields_impl(

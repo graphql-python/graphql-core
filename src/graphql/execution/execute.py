@@ -76,7 +76,7 @@ from .async_iterables import map_async_iterable
 from .build_execution_plan import (
     DeferUsageSet,
     ExecutionPlan,
-    FieldGroup,
+    FieldDetailsList,
     GroupedFieldSet,
     build_execution_plan,
 )
@@ -168,7 +168,7 @@ class StreamUsage(NamedTuple):
 
     label: str | None
     initial_count: int
-    field_group: FieldGroup
+    field_details_list: FieldDetailsList
 
 
 class IncrementalContext:
@@ -256,7 +256,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.errors = None
         self.cancellable_streams = None
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
-        self._stream_usages: RefMap[FieldGroup, StreamUsage] = RefMap()
+        self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
 
     @classmethod
@@ -530,14 +530,14 @@ class ExecutionContext(IncrementalPublisherContext):
 
         def reducer(
             graphql_wrapped_result: GraphQLWrappedResult[dict[str, Any]],
-            field_item: tuple[str, FieldGroup],
+            field_item: tuple[str, FieldDetailsList],
         ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
-            response_name, field_group = field_item
+            response_name, field_details_list = field_item
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
                 parent_type,
                 source_value,
-                field_group,
+                field_details_list,
                 field_path,
                 incremental_context,
                 defer_map,
@@ -583,12 +583,12 @@ class ExecutionContext(IncrementalPublisherContext):
         is_awaitable = self.is_awaitable
         awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
-        for response_name, field_group in grouped_field_set.items():
+        for response_name, field_details_list in grouped_field_set.items():
             field_path = Path(path, response_name, parent_type.name)
             result = self.execute_field(
                 parent_type,
                 source_value,
-                field_group,
+                field_details_list,
                 field_path,
                 incremental_context,
                 defer_map,
@@ -637,7 +637,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self,
         parent_type: GraphQLObjectType,
         source: Any,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         path: Path,
         incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
@@ -650,7 +650,7 @@ class ExecutionContext(IncrementalPublisherContext):
         calling its resolve function, then calls complete_value to await coroutine
         objects, serialize scalars, or execute the sub-selection-set for objects.
         """
-        first_field_details = field_group[0]
+        first_field_details = field_details_list[0]
         first_field_node = first_field_details.node
         field_name = first_field_node.name.value
         field_def = self.schema.get_field(parent_type, field_name)
@@ -664,7 +664,7 @@ class ExecutionContext(IncrementalPublisherContext):
             resolve_fn = self.middleware_manager.get_field_resolver(resolve_fn)
 
         info = self.build_resolve_info(
-            field_def, to_nodes(field_group), parent_type, path
+            field_def, to_nodes(field_details_list), parent_type, path
         )
 
         # Get the resolve function, regardless of if its result is normal or abrupt
@@ -686,7 +686,7 @@ class ExecutionContext(IncrementalPublisherContext):
             if self.is_awaitable(result):
                 return self.complete_awaitable_value(
                     return_type,
-                    field_group,
+                    field_details_list,
                     info,
                     path,
                     result,
@@ -696,7 +696,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
             completed = self.complete_value(
                 return_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 result,
@@ -712,7 +712,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         self.handle_field_error(
                             raw_error,
                             return_type,
-                            field_group,
+                            field_details_list,
                             path,
                             incremental_context,
                         )
@@ -724,7 +724,7 @@ class ExecutionContext(IncrementalPublisherContext):
             self.handle_field_error(
                 raw_error,
                 return_type,
-                field_group,
+                field_details_list,
                 path,
                 incremental_context,
             )
@@ -764,12 +764,12 @@ class ExecutionContext(IncrementalPublisherContext):
         self,
         raw_error: Exception,
         return_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         path: Path,
         incremental_context: IncrementalContext | None = None,
     ) -> None:
         """Handle error properly according to the field type."""
-        error = located_error(raw_error, to_nodes(field_group), path.as_list())
+        error = located_error(raw_error, to_nodes(field_details_list), path.as_list())
 
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
@@ -787,7 +787,7 @@ class ExecutionContext(IncrementalPublisherContext):
     def complete_value(
         self,
         return_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -825,7 +825,7 @@ class ExecutionContext(IncrementalPublisherContext):
         if is_non_null_type(return_type):
             completed = self.complete_value(
                 return_type.of_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 result,
@@ -848,7 +848,7 @@ class ExecutionContext(IncrementalPublisherContext):
         if is_list_type(return_type):
             return self.complete_list_value(
                 return_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 result,
@@ -866,7 +866,7 @@ class ExecutionContext(IncrementalPublisherContext):
         if is_abstract_type(return_type):
             return self.complete_abstract_value(
                 return_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 result,
@@ -878,7 +878,7 @@ class ExecutionContext(IncrementalPublisherContext):
         if is_object_type(return_type):
             return self.complete_object_value(
                 return_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 result,
@@ -896,7 +896,7 @@ class ExecutionContext(IncrementalPublisherContext):
     async def complete_awaitable_value(
         self,
         return_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -908,7 +908,7 @@ class ExecutionContext(IncrementalPublisherContext):
             resolved = await result
             completed = self.complete_value(
                 return_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 resolved,
@@ -919,13 +919,13 @@ class ExecutionContext(IncrementalPublisherContext):
                 completed = await completed
         except Exception as raw_error:
             self.handle_field_error(
-                raw_error, return_type, field_group, path, incremental_context
+                raw_error, return_type, field_details_list, path, incremental_context
             )
             completed = GraphQLWrappedResult(None)
         return completed  # type: ignore
 
     def get_stream_usage(
-        self, field_group: FieldGroup, path: Path
+        self, field_details_list: FieldDetailsList, path: Path
     ) -> StreamUsage | None:
         """Get stream usage.
 
@@ -937,14 +937,14 @@ class ExecutionContext(IncrementalPublisherContext):
         if isinstance(path.key, int):
             return None
 
-        stream_usage = self._stream_usages.get(field_group)
+        stream_usage = self._stream_usages.get(field_details_list)
         if stream_usage is not None:
             return stream_usage  # pragma: no cover
 
         # validation only allows equivalent streams on multiple fields, so it is
         # safe to only check the first field_node for the stream directive
         stream = get_directive_values(
-            GraphQLStreamDirective, field_group[0].node, self.variable_values
+            GraphQLStreamDirective, field_details_list[0].node, self.variable_values
         )
 
         if not stream or stream.get("if") is False:
@@ -962,22 +962,23 @@ class ExecutionContext(IncrementalPublisherContext):
             )
             raise TypeError(msg)
 
-        streamed_field_group: FieldGroup = [
-            FieldDetails(field_details.node, None) for field_details in field_group
+        streamed_field_details_list: FieldDetailsList = [
+            FieldDetails(field_details.node, None)
+            for field_details in field_details_list
         ]
 
         stream_usage = StreamUsage(
-            stream.get("label"), stream["initialCount"], streamed_field_group
+            stream.get("label"), stream["initialCount"], streamed_field_details_list
         )
 
-        self._stream_usages[field_group] = stream_usage
+        self._stream_usages[field_details_list] = stream_usage
 
         return stream_usage
 
     async def complete_async_iterator_value(
         self,
         item_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         async_iterator: AsyncIterator[Any],
@@ -998,7 +999,7 @@ class ExecutionContext(IncrementalPublisherContext):
         add_increment = graphql_wrapped_result.add_increment
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
-        stream_usage = self.get_stream_usage(field_group, path)
+        stream_usage = self.get_stream_usage(field_details_list, path)
         try:
             early_return = async_iterator.aclose  # type: ignore[attr-defined]
         except AttributeError:
@@ -1011,7 +1012,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         index,
                         path,
                         async_iterator,
-                        stream_usage.field_group,
+                        stream_usage.field_details_list,
                         info,
                         item_type,
                     )
@@ -1043,7 +1044,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     break
                 except Exception as raw_error:
                     raise located_error(
-                        raw_error, to_nodes(field_group), path.as_list()
+                        raw_error, to_nodes(field_details_list), path.as_list()
                     ) from raw_error
 
                 if is_awaitable(item):
@@ -1052,7 +1053,7 @@ class ExecutionContext(IncrementalPublisherContext):
                             item,
                             graphql_wrapped_result,
                             item_type,
-                            field_group,
+                            field_details_list,
                             info,
                             item_path,
                             incremental_context,
@@ -1066,7 +1067,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     completed_results,
                     graphql_wrapped_result,
                     item_type,
-                    field_group,
+                    field_details_list,
                     info,
                     item_path,
                     incremental_context,
@@ -1103,7 +1104,7 @@ class ExecutionContext(IncrementalPublisherContext):
     def complete_list_value(
         self,
         return_type: GraphQLList[GraphQLOutputType],
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         result: AsyncIterable[Any] | Iterable[Any],
@@ -1121,7 +1122,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
             return self.complete_async_iterator_value(
                 item_type,
-                field_group,
+                field_details_list,
                 info,
                 path,
                 async_iterator,
@@ -1138,7 +1139,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
         return self.complete_iterable_value(
             item_type,
-            field_group,
+            field_details_list,
             info,
             path,
             result,
@@ -1149,7 +1150,7 @@ class ExecutionContext(IncrementalPublisherContext):
     def complete_iterable_value(
         self,
         item_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         items: Iterable[Any],
@@ -1169,7 +1170,7 @@ class ExecutionContext(IncrementalPublisherContext):
         append_completed = completed_results.append
         awaitable_indices: list[int] = []
         append_awaitable = awaitable_indices.append
-        stream_usage = self.get_stream_usage(field_group, path)
+        stream_usage = self.get_stream_usage(field_details_list, path)
         iterator = iter(items)
         index = 0
         while True:
@@ -1183,7 +1184,7 @@ class ExecutionContext(IncrementalPublisherContext):
                     index,
                     path,
                     iterator,
-                    stream_usage.field_group,
+                    stream_usage.field_details_list,
                     info,
                     item_type,
                 )
@@ -1204,7 +1205,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         item,
                         graphql_wrapped_result,
                         item_type,
-                        field_group,
+                        field_details_list,
                         info,
                         item_path,
                         incremental_context,
@@ -1218,7 +1219,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 completed_results,
                 graphql_wrapped_result,
                 item_type,
-                field_group,
+                field_details_list,
                 info,
                 item_path,
                 incremental_context,
@@ -1256,7 +1257,7 @@ class ExecutionContext(IncrementalPublisherContext):
         complete_results: list[Any],
         parent: GraphQLWrappedResult[list[Any]],
         item_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         item_path: Path,
         incremental_context: IncrementalContext | None,
@@ -1271,7 +1272,7 @@ class ExecutionContext(IncrementalPublisherContext):
         try:
             completed_item = self.complete_value(
                 item_type,
-                field_group,
+                field_details_list,
                 info,
                 item_path,
                 item,
@@ -1288,7 +1289,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         self.handle_field_error(
                             raw_error,
                             item_type,
-                            field_group,
+                            field_details_list,
                             item_path,
                             incremental_context,
                         )
@@ -1307,7 +1308,7 @@ class ExecutionContext(IncrementalPublisherContext):
             self.handle_field_error(
                 raw_error,
                 item_type,
-                field_group,
+                field_details_list,
                 item_path,
                 incremental_context,
             )
@@ -1320,7 +1321,7 @@ class ExecutionContext(IncrementalPublisherContext):
         item: Any,
         parent: GraphQLWrappedResult[list[Any]],
         item_type: GraphQLOutputType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         item_path: Path,
         incremental_context: IncrementalContext | None,
@@ -1331,7 +1332,7 @@ class ExecutionContext(IncrementalPublisherContext):
             resolved = await item
             completed = self.complete_value(
                 item_type,
-                field_group,
+                field_details_list,
                 info,
                 item_path,
                 resolved,
@@ -1346,7 +1347,7 @@ class ExecutionContext(IncrementalPublisherContext):
             self.handle_field_error(
                 raw_error,
                 item_type,
-                field_group,
+                field_details_list,
                 item_path,
                 incremental_context,
             )
@@ -1374,7 +1375,7 @@ class ExecutionContext(IncrementalPublisherContext):
     def complete_abstract_value(
         self,
         return_type: GraphQLAbstractType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1396,11 +1397,11 @@ class ExecutionContext(IncrementalPublisherContext):
                     self.ensure_valid_runtime_type(
                         await runtime_type,  # type: ignore
                         return_type,
-                        field_group,
+                        field_details_list,
                         info,
                         result,
                     ),
-                    field_group,
+                    field_details_list,
                     info,
                     path,
                     result,
@@ -1416,9 +1417,9 @@ class ExecutionContext(IncrementalPublisherContext):
 
         return self.complete_object_value(
             self.ensure_valid_runtime_type(
-                runtime_type, return_type, field_group, info, result
+                runtime_type, return_type, field_details_list, info, result
             ),
-            field_group,
+            field_details_list,
             info,
             path,
             result,
@@ -1430,7 +1431,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self,
         runtime_type_name: Any,
         return_type: GraphQLAbstractType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
@@ -1444,7 +1445,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 " a 'resolve_type' function or each possible type should provide"
                 " an 'is_type_of' function."
             )
-            raise GraphQLError(msg, to_nodes(field_group))
+            raise GraphQLError(msg, to_nodes(field_details_list))
 
         if not isinstance(runtime_type_name, str):
             msg = (
@@ -1454,7 +1455,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 f" {inspect(result)}, received '{inspect(runtime_type_name)}',"
                 " which is not a valid Object type name."
             )
-            raise GraphQLError(msg, to_nodes(field_group))
+            raise GraphQLError(msg, to_nodes(field_details_list))
 
         runtime_type = self.schema.get_type(runtime_type_name)
 
@@ -1463,28 +1464,28 @@ class ExecutionContext(IncrementalPublisherContext):
                 f"Abstract type '{return_type}' was resolved to a type"
                 f" '{runtime_type_name}' that does not exist inside the schema."
             )
-            raise GraphQLError(msg, to_nodes(field_group))
+            raise GraphQLError(msg, to_nodes(field_details_list))
 
         if not is_object_type(runtime_type):
             msg = (
                 f"Abstract type '{return_type}' was resolved"
                 f" to a non-object type '{runtime_type_name}'."
             )
-            raise GraphQLError(msg, to_nodes(field_group))
+            raise GraphQLError(msg, to_nodes(field_details_list))
 
         if not self.schema.is_sub_type(return_type, runtime_type):
             msg = (
                 f"Runtime Object type '{runtime_type}' is not a possible"
                 f" type for '{return_type}'."
             )
-            raise GraphQLError(msg, to_nodes(field_group))
+            raise GraphQLError(msg, to_nodes(field_details_list))
 
         return runtime_type
 
     def complete_object_value(
         self,
         return_type: GraphQLObjectType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         path: Path,
         result: Any,
@@ -1505,11 +1506,11 @@ class ExecutionContext(IncrementalPublisherContext):
                 ]:
                     if not await is_type_of:
                         raise invalid_return_type_error(
-                            return_type, result, field_group
+                            return_type, result, field_details_list
                         )
                     graphql_wrapped_result = self.collect_and_execute_subfields(
                         return_type,
-                        field_group,
+                        field_details_list,
                         path,
                         result,
                         incremental_context,
@@ -1524,23 +1525,28 @@ class ExecutionContext(IncrementalPublisherContext):
                 return execute_subfields_async()
 
             if not is_type_of:
-                raise invalid_return_type_error(return_type, result, field_group)
+                raise invalid_return_type_error(return_type, result, field_details_list)
 
         return self.collect_and_execute_subfields(
-            return_type, field_group, path, result, incremental_context, defer_map
+            return_type,
+            field_details_list,
+            path,
+            result,
+            incremental_context,
+            defer_map,
         )
 
     def collect_and_execute_subfields(
         self,
         return_type: GraphQLObjectType,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         path: Path,
         result: Any,
         incremental_context: IncrementalContext | None,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Collect sub-fields to execute to complete this value."""
-        collected_subfields = self.collect_subfields(return_type, field_group)
+        collected_subfields = self.collect_subfields(return_type, field_details_list)
         grouped_field_set, new_defer_usages = collected_subfields
 
         return (
@@ -1565,7 +1571,7 @@ class ExecutionContext(IncrementalPublisherContext):
         )
 
     def collect_subfields(
-        self, return_type: GraphQLObjectType, field_group: FieldGroup
+        self, return_type: GraphQLObjectType, field_details_list: FieldDetailsList
     ) -> CollectedFields:
         """Collect subfields.
 
@@ -1574,17 +1580,17 @@ class ExecutionContext(IncrementalPublisherContext):
         overhead when resolving lists of values.
         """
         relevant_sub_fields = self._relevant_sub_fields
-        # We cannot use the field_group itself as key for the cache, since it
-        # is not hashable as a list. We also do not want to use the field_group
+        # We cannot use the field_details_list itself as key for the cache, since it
+        # is not hashable as a list. We also do not want to use the field_details_list
         # itself (converted to a tuple) as keys, since hashing them is slow.
-        # Therefore, we use the ids of the field_group items as keys. Note that we do
-        # not use the id of the list, since we want to hit the cache for all lists of
-        # the same nodes, not only for the same list of nodes. Also, the list id may
-        # even be reused, in which case we would get wrong results from the cache.
+        # Therefore, we use the ids of the field_details_list items as keys. Note that
+        # we do not use the id of the list, since we want to hit the cache for all
+        # lists of the same nodes, not only for the same list of nodes. Also, the list
+        # id may even be reused, in which case we would get wrong results from cache.
         key = (
-            (return_type, id(field_group[0]))
-            if len(field_group) == 1  # optimize most frequent case
-            else (return_type, *map(id, field_group))
+            (return_type, id(field_details_list[0]))
+            if len(field_details_list) == 1  # optimize most frequent case
+            else (return_type, *map(id, field_details_list))
         )
         collected_fields: CollectedFields | None = relevant_sub_fields.get(key)
         if collected_fields is None:
@@ -1594,7 +1600,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 self.variable_values,
                 self.operation,
                 return_type,
-                field_group,
+                field_details_list,
             )
             relevant_sub_fields[key] = collected_fields
         return collected_fields
@@ -1777,7 +1783,7 @@ class ExecutionContext(IncrementalPublisherContext):
         initial_index: int,
         stream_path: Path,
         iterator: Iterable[Any],
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
     ) -> list[StreamItemRecord]:
@@ -1798,7 +1804,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         initial_path,
                         initial_item,
                         IncrementalContext(),
-                        field_group,
+                        field_details_list,
                         info,
                         item_type,
                     )
@@ -1825,7 +1831,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         item_path,
                         item,
                         IncrementalContext(),
-                        field_group,
+                        field_details_list,
                         info,
                         item_type,
                     )
@@ -1862,7 +1868,7 @@ class ExecutionContext(IncrementalPublisherContext):
         initial_index: int,
         stream_path: Path,
         async_iterator: AsyncIterator[Any],
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
     ) -> list[StreamItemRecord]:
@@ -1874,7 +1880,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 stream_path,
                 initial_index,
                 async_iterator,
-                field_group,
+                field_details_list,
                 info,
                 item_type,
             )
@@ -1894,7 +1900,7 @@ class ExecutionContext(IncrementalPublisherContext):
         stream_path: Path,
         index: int,
         async_iterator: AsyncIterator[Any],
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
     ) -> StreamItemResult:
@@ -1906,7 +1912,9 @@ class ExecutionContext(IncrementalPublisherContext):
         except Exception as error:
             return StreamItemResult(
                 errors=[
-                    located_error(error, to_nodes(field_group), stream_path.as_list())
+                    located_error(
+                        error, to_nodes(field_details_list), stream_path.as_list()
+                    )
                 ],
             )
 
@@ -1916,7 +1924,7 @@ class ExecutionContext(IncrementalPublisherContext):
             item_path,
             item,
             IncrementalContext(),
-            field_group,
+            field_details_list,
             info,
             item_type,
         )
@@ -1927,7 +1935,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 stream_path,
                 index + 1,
                 async_iterator,
-                field_group,
+                field_details_list,
                 info,
                 item_type,
             )
@@ -1948,7 +1956,7 @@ class ExecutionContext(IncrementalPublisherContext):
         item_path: Path,
         item: Any,
         incremental_context: IncrementalContext,
-        field_group: FieldGroup,
+        field_details_list: FieldDetailsList,
         info: GraphQLResolveInfo,
         item_type: GraphQLOutputType,
     ) -> AwaitableOrValue[StreamItemResult]:
@@ -1960,7 +1968,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 try:
                     awaited_item = await self.complete_awaitable_value(
                         item_type,
-                        field_group,
+                        field_details_list,
                         info,
                         item_path,
                         item,
@@ -1981,7 +1989,7 @@ class ExecutionContext(IncrementalPublisherContext):
             try:
                 result = self.complete_value(
                     item_type,
-                    field_group,
+                    field_details_list,
                     info,
                     item_path,
                     item,
@@ -1992,7 +2000,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 self.handle_field_error(
                     raw_error,
                     item_type,
-                    field_group,
+                    field_details_list,
                     item_path,
                     incremental_context,
                 )
@@ -2012,7 +2020,7 @@ class ExecutionContext(IncrementalPublisherContext):
                         self.handle_field_error(
                             raw_error,
                             item_type,
-                            field_group,
+                            field_details_list,
                             item_path,
                             incremental_context,
                         )
@@ -2074,9 +2082,9 @@ def with_error(
     return [error] if errors is None else [*errors, error]
 
 
-def to_nodes(field_group: FieldGroup) -> list[FieldNode]:
+def to_nodes(field_details_list: FieldDetailsList) -> list[FieldNode]:
     """Convert a field group to a list of field nodes."""
-    return [field_details.node for field_details in field_group]
+    return [field_details.node for field_details in field_details_list]
 
 
 T = TypeVar("T")
@@ -2324,12 +2332,12 @@ def execute_sync(
 
 
 def invalid_return_type_error(
-    return_type: GraphQLObjectType, result: Any, field_group: FieldGroup
+    return_type: GraphQLObjectType, result: Any, field_details_list: FieldDetailsList
 ) -> GraphQLError:
     """Create a GraphQLError for an invalid return type."""
     return GraphQLError(
         f"Expected value of type '{return_type}' but got: {inspect(result)}.",
-        to_nodes(field_group),
+        to_nodes(field_details_list),
     )
 
 
@@ -2734,11 +2742,11 @@ def execute_subscription(
     ).grouped_field_set
 
     first_root_field = next(iter(grouped_field_set.items()))
-    response_name, field_group = first_root_field
-    field_name = field_group[0].node.name.value
+    response_name, field_details_list = first_root_field
+    field_name = field_details_list[0].node.name.value
     field_def = schema.get_field(root_type, field_name)
 
-    field_nodes = [field_details.node for field_details in field_group]
+    field_nodes = [field_details.node for field_details in field_details_list]
     if not field_def:
         msg = f"The subscription field '{field_name}' is not defined."
         raise GraphQLError(msg, field_nodes)
