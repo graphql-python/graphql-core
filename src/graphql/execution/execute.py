@@ -192,6 +192,10 @@ class ExecutionContext(IncrementalPublisherContext):
     """
 
     schema: GraphQLSchema
+    # TODO: consider deprecating/removing fragment_definitions if/when fragment
+    # arguments are officially supported and/or the full fragment details are
+    # exposed within GraphQLResolveInfo.
+    fragment_definitions: dict[str, FragmentDefinitionNode]
     fragments: dict[str, FragmentDetails]
     root_value: Any
     context_value: Any
@@ -216,6 +220,7 @@ class ExecutionContext(IncrementalPublisherContext):
     def __init__(
         self,
         schema: GraphQLSchema,
+        fragment_definitions: dict[str, FragmentDefinitionNode],
         fragments: dict[str, FragmentDetails],
         root_value: Any,
         context_value: Any,
@@ -234,6 +239,7 @@ class ExecutionContext(IncrementalPublisherContext):
         | None = None,
     ) -> None:
         self.schema = schema
+        self.fragment_definitions = fragment_definitions
         self.fragments = fragments
         self.root_value = root_value
         self.context_value = context_value
@@ -289,6 +295,7 @@ class ExecutionContext(IncrementalPublisherContext):
         assert_valid_schema(schema)
 
         operation: OperationDefinitionNode | None = None
+        fragment_definitions: dict[str, FragmentDefinitionNode] = {}
         fragments: dict[str, FragmentDetails] = {}
         middleware_manager: MiddlewareManager | None = None
         if middleware is not None:
@@ -318,6 +325,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 elif definition.name and definition.name.value == operation_name:
                     operation = definition
             elif isinstance(definition, FragmentDefinitionNode):
+                fragment_definitions[definition.name.value] = definition
                 variable_signatures: dict[str, GraphQLVariableSignature] | None = None
                 if definition.variable_definitions:
                     variable_signatures = {}
@@ -347,6 +355,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
         return cls(
             schema,
+            fragment_definitions,
             fragments,
             root_value,
             context_value,
@@ -743,7 +752,7 @@ class ExecutionContext(IncrementalPublisherContext):
             parent_type,
             path,
             self.schema,
-            {name: details.definition for name, details in self.fragments.items()},
+            self.fragment_definitions,
             self.root_value,
             self.operation,
             self.variable_values,
