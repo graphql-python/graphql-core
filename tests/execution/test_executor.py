@@ -15,6 +15,8 @@ from graphql.type import (
     GraphQLBoolean,
     GraphQLDeferDirective,
     GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
     GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
@@ -1172,3 +1174,69 @@ def describe_execute_handles_basic_execution_tasks():
 
         assert result == ({"foo": {"bar": "bar"}}, None)
         assert possible_types == [foo_object]
+
+    def uses_a_different_number_of_max_coercion_errors():
+        schema = GraphQLSchema(
+            query=GraphQLObjectType("Query", {"dummy": GraphQLField(GraphQLString)}),
+            mutation=GraphQLObjectType(
+                "Mutation",
+                {
+                    "updateUser": GraphQLField(
+                        GraphQLString,
+                        args={
+                            "data": GraphQLArgument(
+                                GraphQLInputObjectType(
+                                    "User",
+                                    {
+                                        "email": GraphQLInputField(
+                                            GraphQLNonNull(GraphQLString)
+                                        )
+                                    },
+                                )
+                            )
+                        },
+                    )
+                },
+            ),
+        )
+
+        document = parse(
+            """
+            mutation ($data: User) {
+                updateUser(data: $data)
+            }
+            """
+        )
+
+        result = execute_sync(
+            schema,
+            document,
+            variable_values={
+                "data": {
+                    "email": "",
+                    "wrongArg": "wrong",
+                    "wrongArg2": "wrong",
+                    "wrongArg3": "wrong",
+                }
+            },
+            max_coercion_errors=1,
+        )
+
+        # Returns at least 2 errors, one for the first 'wrongArg', and one for the
+        # coercion limit
+        assert result == (
+            None,
+            [
+                {
+                    "message": "Variable '$data' got invalid value"
+                    " {'email': '', 'wrongArg': 'wrong',"
+                    " 'wrongArg2': 'wrong', 'wrongArg3': 'wrong'};"
+                    " Field 'wrongArg' is not defined by type 'User'.",
+                    "locations": [(2, 23)],
+                },
+                {
+                    "message": "Too many errors processing variables,"
+                    " error limit reached. Execution aborted.",
+                },
+            ],
+        )

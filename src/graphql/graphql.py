@@ -214,6 +214,7 @@ def graphql_impl(
         field_resolver,
         type_resolver,
         None,
+        50,
         False,
         middleware,
         execution_context_class,
