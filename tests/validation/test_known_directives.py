@@ -362,6 +362,9 @@ def describe_known_directives():
                   query: MyQuery
                 }
 
+                directive @myDirective(arg:String) on ARGUMENT_DEFINITION
+                directive @myDirective2(arg:String @myDirective) on FIELD
+
                 extend schema @onSchema
                 """,
                 schema=schema_with_sdl_directives,
