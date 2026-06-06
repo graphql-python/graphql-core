@@ -100,7 +100,9 @@ def describe_execute_cancellation():
         )
 
         async def todo(_info):
-            return {
+            # never reached: a triggered abort signal cancels this resolver
+            # before its body runs (unlike the eager resolvers in graphql-js)
+            return {  # pragma: no cover
                 "id": "1",
                 "author": must_not_be_called,
             }
@@ -143,7 +145,8 @@ def describe_execute_cancellation():
         )
 
         async def cancellable_async_fn(abort_signal):
-            raise await abort_signal.wait()
+            # never reached: the resolver is cancelled before its body runs
+            raise await abort_signal.wait()  # pragma: no cover
 
         # Contrary to JavaScript, where the abort signal is passed as an additional
         # argument to the resolvers, in GraphQL-Core it is available via the resolve
@@ -192,7 +195,9 @@ def describe_execute_cancellation():
         )
 
         async def todo(_info):
-            return {
+            # never reached: a triggered abort signal cancels this resolver
+            # before its body runs (unlike the eager resolvers in graphql-js)
+            return {  # pragma: no cover
                 "id": "1",
                 "author": must_not_be_called,
             }
@@ -239,7 +244,9 @@ def describe_execute_cancellation():
         )
 
         async def todo(_info):
-            return {
+            # never reached: a triggered abort signal cancels this resolver
+            # before its body runs (unlike the eager resolvers in graphql-js)
+            return {  # pragma: no cover
                 "id": "1",
                 "author": must_not_be_called,
             }
@@ -283,7 +290,8 @@ def describe_execute_cancellation():
         )
 
         async def author(_info):
-            return must_not_be_called
+            # never reached: the resolver is cancelled before its body runs
+            return must_not_be_called  # pragma: no cover
 
         awaitable_result = execute(
             schema,
@@ -423,7 +431,9 @@ def describe_execute_cancellation():
         )
 
         async def non_nullable_todo(_info):
-            return {
+            # never reached: a triggered abort signal cancels this resolver
+            # before its body runs (unlike the eager resolvers in graphql-js)
+            return {  # pragma: no cover
                 "id": "1",
                 "author": must_not_be_called,
             }
