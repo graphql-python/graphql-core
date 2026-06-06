@@ -44,10 +44,14 @@ def replace_variables(
             else variable_values
         )
 
-        if scoped_variable_values is None:
+        scoped_variable_source = (
+            scoped_variable_values.sources.get(var_name)
+            if scoped_variable_values
+            else None
+        )
+        if scoped_variable_source is None:
             return NullValueNode()
 
-        scoped_variable_source = scoped_variable_values.sources[var_name]
         if scoped_variable_source.value is Undefined:
             default_value = scoped_variable_source.signature.default_value
             if default_value is not Undefined:

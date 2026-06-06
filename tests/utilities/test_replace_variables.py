@@ -50,13 +50,24 @@ def describe_replace_variables():
             ast = _parse_value("$var")
             assert replace_variables(ast, None) == _parse_value("null")
 
+        def replaces_missing_variable_declaration_with_null():
+            ast = _parse_value("$var")
+            vars_ = _test_variables("", {})
+            assert replace_variables(ast, vars_) == _parse_value("null")
+
+        def replaces_misspelled_variable_declaration_with_null():
+            ast = _parse_value("$var1")
+            vars_ = _test_variables("($var2: Int)", {"var2": 123})
+            assert replace_variables(ast, vars_) == _parse_value("null")
+
         def replaces_missing_variables_in_lists_with_null():
             ast = _parse_value("[1, $var]")
             assert replace_variables(ast, None) == _parse_value("[1, null]")
 
-    def omits_missing_variables_from_objects():
-        ast = _parse_value("{ foo: 1, bar: $var }")
-        assert replace_variables(ast, None) == _parse_value("{ foo: 1 }")
+        def omits_missing_variables_from_objects():
+            ast = _parse_value("{ foo: 1, bar: $var }")
+            vars_ = _test_variables("($wrongVar: Int)", {"var": 123})
+            assert replace_variables(ast, vars_) == _parse_value("{ foo: 1 }")
 
     def describe_fragment_variables():
         def replaces_simple_fragment_variables():
