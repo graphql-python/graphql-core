@@ -78,14 +78,17 @@ from .strip_ignored_characters import strip_ignored_characters
 # Comparators for types
 from .type_comparators import is_equal_type, is_type_sub_type_of, do_types_overlap
 
-# Compare two GraphQLSchemas and detect breaking changes.
-from .find_breaking_changes import (
+# Compare two GraphQLSchemas and detect changes.
+from .find_schema_changes import (
     BreakingChange,
     BreakingChangeType,
     DangerousChange,
     DangerousChangeType,
+    SafeChange,
+    SafeChangeType,
     find_breaking_changes,
     find_dangerous_changes,
+    find_schema_changes,
 )
 
 __all__ = [
@@ -94,6 +97,8 @@ __all__ = [
     "DangerousChange",
     "DangerousChangeType",
     "IntrospectionQuery",
+    "SafeChange",
+    "SafeChangeType",
     "TypeInfo",
     "TypeInfoVisitor",
     "ast_from_value",
@@ -108,6 +113,7 @@ __all__ = [
     "extend_schema",
     "find_breaking_changes",
     "find_dangerous_changes",
+    "find_schema_changes",
     "get_introspection_query",
     "get_operation_ast",
     "introspection_from_schema",

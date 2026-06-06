@@ -93,7 +93,7 @@ graphql_modules = {
     ],
     "pyutils": ["simple_pub_sub", "frozen_list", "path"],
     "type": ["definition", "directives", "schema"],
-    "utilities": ["find_breaking_changes", "type_info"],
+    "utilities": ["find_schema_changes", "type_info"],
     "validation": ["rules", "validation_context"],
 }
 

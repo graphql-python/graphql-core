@@ -115,11 +115,14 @@ Comparators for types:
 .. autofunction:: is_type_sub_type_of
 .. autofunction:: do_types_overlap
 
-Compare two GraphQLSchemas and detect breaking changes:
+Compare two GraphQLSchemas and detect changes:
 
+.. autofunction:: find_schema_changes
 .. autofunction:: find_breaking_changes
 .. autofunction:: find_dangerous_changes
 
+.. autoclass:: SafeChange
+.. autoclass:: SafeChangeType
 .. autoclass:: BreakingChange
 .. autoclass:: BreakingChangeType
 .. autoclass:: DangerousChange

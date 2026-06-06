@@ -226,13 +226,16 @@ from .utilities import (
     is_equal_type,
     is_type_sub_type_of,
     do_types_overlap,
-    # Compare two GraphQLSchemas and detect breaking changes.
+    # Compare two GraphQLSchemas and detect changes.
     BreakingChange,
     BreakingChangeType,
     DangerousChange,
     DangerousChangeType,
+    SafeChange,
+    SafeChangeType,
     find_breaking_changes,
     find_dangerous_changes,
+    find_schema_changes,
 )
 
 # Create and operate on GraphQL type definitions and schema.
@@ -662,6 +665,8 @@ __all__ = [
     "ProvidedRequiredArgumentsRule",
     "ResponsePath",
     "SDLValidationRule",
+    "SafeChange",
+    "SafeChangeType",
     "ScalarLeafsRule",
     "ScalarTypeDefinitionNode",
     "ScalarTypeExtensionNode",
@@ -758,6 +763,7 @@ __all__ = [
     "extend_schema",
     "find_breaking_changes",
     "find_dangerous_changes",
+    "find_schema_changes",
     "get_argument_values",
     "get_directive_values",
     "get_introspection_query",
