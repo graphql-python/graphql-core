@@ -8,6 +8,7 @@ Each utility should belong in its own file and be the default export.
 These functions are not part of the module interface and are subject to change.
 """
 
+from .abort_signal import AbortController, AbortSignal
 from .async_reduce import async_reduce
 from .boxed_awaitable_or_value import BoxedAwaitableOrValue
 from .gather_with_cancel import gather_with_cancel
@@ -39,6 +40,8 @@ from .ref_map import RefMap
 from .ref_set import RefSet
 
 __all__ = [
+    "AbortController",
+    "AbortSignal",
     "AwaitableOrValue",
     "BoxedAwaitableOrValue",
     "Description",

@@ -20,6 +20,8 @@ PyUtils
 .. autofunction:: is_collection
 .. autofunction:: is_iterable
 .. autofunction:: natural_comparison_key
+.. autoclass:: AbortController
+.. autoclass:: AbortSignal
 .. autoclass:: AwaitableOrValue
 .. autoclass:: BoxedAwaitableOrValue
 .. autofunction:: suggestion_list

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Awaitable, Callable
     from typing import TypeGuard
 
-    from .pyutils import AwaitableOrValue
+    from .pyutils import AbortSignal, AwaitableOrValue
 
 __all__ = ["graphql", "graphql_sync"]
 
@@ -39,6 +39,7 @@ async def graphql(
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
+    abort_signal: AbortSignal | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -88,6 +89,9 @@ async def graphql(
       The predicate to be used for checking whether values are awaitable
     :arg is_async_iterable:
       The predicate to be used for checking whether values are async iterables
+    :arg abort_signal:
+      A signal object that can be used to cancel execution, e.g. the signal of an
+      :class:`~graphql.AbortController`
     """
     # Always return asynchronously for a consistent API.
     result = graphql_impl(
@@ -104,6 +108,7 @@ async def graphql(
         is_awaitable,
         is_async_iterable,
         hide_suggestions,
+        abort_signal,
     )
 
     if default_is_awaitable(result):
@@ -135,6 +140,7 @@ def graphql_sync(
     execution_context_class: type[ExecutionContext] | None = None,
     check_sync: bool = False,
     hide_suggestions: bool = False,
+    abort_signal: AbortSignal | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -165,6 +171,7 @@ def graphql_sync(
         is_awaitable,
         is_async_iterable,
         hide_suggestions,
+        abort_signal,
     )
 
     # Assert that the execution was synchronous.
@@ -190,6 +197,7 @@ def graphql_impl(
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
+    abort_signal: AbortSignal | None = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
@@ -228,4 +236,5 @@ def graphql_impl(
         is_awaitable,
         is_async_iterable,
         hide_suggestions=hide_suggestions,
+        abort_signal=abort_signal,
     )

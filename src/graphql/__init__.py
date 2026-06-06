@@ -41,7 +41,7 @@ The sub-packages of GraphQL-core 3 are:
 from .version import version, version_info, version_js, version_info_js
 
 # Utilities for compatibility with the Python language.
-from .pyutils import Undefined, UndefinedType
+from .pyutils import AbortController, AbortSignal, Undefined, UndefinedType
 
 # Create, format, and print GraphQL errors.
 from .error import (
@@ -501,6 +501,8 @@ __all__ = [
     "REMOVE",
     "SKIP",
     "ASTValidationRule",
+    "AbortController",
+    "AbortSignal",
     "ArgumentNode",
     "BooleanValueNode",
     "BreakingChange",

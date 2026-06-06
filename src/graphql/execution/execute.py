@@ -37,6 +37,7 @@ from ..language import (
     OperationType,
 )
 from ..pyutils import (
+    AbortSignal,
     AwaitableOrValue,
     BoxedAwaitableOrValue,
     Path,
@@ -208,6 +209,7 @@ class ExecutionContext(IncrementalPublisherContext):
     per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
     enable_early_execution: bool
     hide_suggestions: bool
+    abort_signal: AbortSignal | None
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     middleware_manager: MiddlewareManager | None
@@ -240,6 +242,7 @@ class ExecutionContext(IncrementalPublisherContext):
         ]
         | None = None,
         hide_suggestions: bool = False,
+        abort_signal: AbortSignal | None = None,
     ) -> None:
         self.schema = schema
         self.fragment_definitions = fragment_definitions
@@ -254,6 +257,7 @@ class ExecutionContext(IncrementalPublisherContext):
         self.per_event_executor = per_event_executor or execute_subscription_event
         self.enable_early_execution = enable_early_execution
         self.hide_suggestions = hide_suggestions
+        self.abort_signal = abort_signal
         self.middleware_manager = middleware_manager
         self.is_awaitable = is_awaitable or default_is_awaitable
         self.is_async_iterable = is_async_iterable or default_is_async_iterable
@@ -285,6 +289,7 @@ class ExecutionContext(IncrementalPublisherContext):
         ]
         | None = None,
         hide_suggestions: bool = False,
+        abort_signal: AbortSignal | None = None,
         **custom_args: Any,
     ) -> list[GraphQLError] | ExecutionContext:
         """Build an execution context
@@ -296,6 +301,9 @@ class ExecutionContext(IncrementalPublisherContext):
 
         For internal use only.
         """
+        if abort_signal is not None and abort_signal.aborted:
+            return [located_error(Exception(abort_signal.reason))]
+
         # If the schema used for execution is invalid, raise an error.
         assert_valid_schema(schema)
 
@@ -376,6 +384,7 @@ class ExecutionContext(IncrementalPublisherContext):
             is_async_iterable,
             per_event_executor=per_event_executor,
             hide_suggestions=hide_suggestions,
+            abort_signal=abort_signal,
             **custom_args,
         )
 
@@ -539,6 +548,7 @@ class ExecutionContext(IncrementalPublisherContext):
         for fields that must be executed serially.
         """
         is_awaitable = self.is_awaitable
+        abort_signal = self.abort_signal
 
         def reducer(
             graphql_wrapped_result: GraphQLWrappedResult[dict[str, Any]],
@@ -546,6 +556,16 @@ class ExecutionContext(IncrementalPublisherContext):
         ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
             response_name, field_details_list = field_item
             field_path = Path(path, response_name, parent_type.name)
+            if abort_signal is not None and abort_signal.aborted:
+                self.handle_field_error(
+                    Exception(abort_signal.reason),
+                    parent_type,
+                    field_details_list,
+                    field_path,
+                    incremental_context,
+                )
+                graphql_wrapped_result.result[response_name] = None
+                return graphql_wrapped_result
             result = self.execute_field(
                 parent_type,
                 source_value,
@@ -593,10 +613,17 @@ class ExecutionContext(IncrementalPublisherContext):
         graphql_wrapped_result = GraphQLWrappedResult(results)
         add_increments = graphql_wrapped_result.add_increments
         is_awaitable = self.is_awaitable
+        abort_signal = self.abort_signal
         awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
         for response_name, field_details_list in grouped_field_set.items():
             field_path = Path(path, response_name, parent_type.name)
+            if abort_signal is not None and abort_signal.aborted:
+                raise located_error(
+                    Exception(abort_signal.reason),
+                    to_nodes(field_details_list),
+                    field_path.as_list(),
+                )
             result = self.execute_field(
                 parent_type,
                 source_value,
@@ -2173,6 +2200,7 @@ def execute(  # noqa: PLR0913
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
+    abort_signal: AbortSignal | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -2210,6 +2238,7 @@ def execute(  # noqa: PLR0913
         is_awaitable,
         is_async_iterable,
         hide_suggestions=hide_suggestions,
+        abort_signal=abort_signal,
         **custom_context_args,
     )
     if isinstance(result, ExecutionResult):
@@ -2243,6 +2272,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
+    abort_signal: AbortSignal | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
@@ -2276,6 +2306,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913
         is_awaitable,
         is_async_iterable,
         hide_suggestions=hide_suggestions,
+        abort_signal=abort_signal,
         **custom_context_args,
     )
 
@@ -2305,6 +2336,7 @@ def execute_sync(
     execution_context_class: type[ExecutionContext] | None = None,
     check_sync: bool = False,
     hide_suggestions: bool = False,
+    abort_signal: AbortSignal | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -2337,6 +2369,7 @@ def execute_sync(
         execution_context_class,
         is_awaitable,
         hide_suggestions=hide_suggestions,
+        abort_signal=abort_signal,
     )
 
     # Assert that the execution was synchronous.
