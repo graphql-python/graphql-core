@@ -97,6 +97,7 @@ class SafeChangeType(Enum):
     FIELD_CHANGED_KIND_SAFE = 78
     ARG_CHANGED_KIND_SAFE = 79
     ARG_DEFAULT_VALUE_ADDED = 80
+    DESCRIPTION_CHANGED = 81
 
 
 class BreakingChange(NamedTuple):
@@ -222,6 +223,17 @@ def find_directive_changes(
             for arg_name in args_diff.removed
         )
 
+        for old_arg, new_arg in args_diff.persisted.values():
+            if old_arg.description != new_arg.description:
+                schema_changes.append(
+                    SafeChange(
+                        SafeChangeType.DESCRIPTION_CHANGED,
+                        f"Description of @{old_directive.name}"
+                        f"({old_directive.name}) has changed to"
+                        f' "{new_arg.description}".',
+                    )
+                )
+
         if old_directive.is_repeatable and not new_directive.is_repeatable:
             schema_changes.append(
                 BreakingChange(
@@ -234,6 +246,15 @@ def find_directive_changes(
                 SafeChange(
                     SafeChangeType.DIRECTIVE_REPEATABLE_ADDED,
                     f"Repeatable flag was added to @{old_directive.name}.",
+                )
+            )
+
+        if old_directive.description != new_directive.description:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.DESCRIPTION_CHANGED,
+                    f"Description of @{old_directive.name} has changed to"
+                    f' "{new_directive.description}".',
                 )
             )
 
@@ -284,6 +305,15 @@ def find_type_changes(
     )
 
     for type_name, (old_type, new_type) in types_diff.persisted.items():
+        if old_type.description != new_type.description:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.DESCRIPTION_CHANGED,
+                    f"Description of {old_type.name} has changed to"
+                    f' "{new_type.description}".',
+                )
+            )
+
         if is_enum_type(old_type) and is_enum_type(new_type):
             schema_changes.extend(find_enum_type_changes(old_type, new_type))
         elif is_union_type(old_type) and is_union_type(new_type):
@@ -352,12 +382,21 @@ def find_input_object_type_changes(
                     f" from {old_field.type} to {new_field.type}.",
                 )
             )
-        else:
+        elif str(old_field.type) != str(new_field.type):
             schema_changes.append(
                 SafeChange(
                     SafeChangeType.FIELD_CHANGED_KIND_SAFE,
                     f"Field {old_type}.{field_name} changed type"
                     f" from {old_field.type} to {new_field.type}.",
+                )
+            )
+
+        if old_field.description != new_field.description:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.DESCRIPTION_CHANGED,
+                    f"Description of input-field {new_type}.{field_name}"
+                    f' has changed to "{new_field.description}".',
                 )
             )
 
@@ -410,6 +449,16 @@ def find_enum_type_changes(
         )
         for value_name in values_diff.removed
     )
+
+    for value_name, (old_value, new_value) in values_diff.persisted.items():
+        if old_value.description != new_value.description:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.DESCRIPTION_CHANGED,
+                    f"Description of enum value {old_type}.{value_name}"
+                    f' has changed to "{new_value.description}".',
+                )
+            )
 
     return schema_changes
 
@@ -487,6 +536,15 @@ def find_field_changes(
                 )
             )
 
+        if old_field.description != new_field.description:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.DESCRIPTION_CHANGED,
+                    f"Description of field {old_type}.{field_name}"
+                    f' has changed to "{new_field.description}".',
+                )
+            )
+
     return schema_changes
 
 
@@ -557,13 +615,22 @@ def find_arg_changes(
                     f" added a defaultValue {new_value_str}.",
                 )
             )
-        else:
+        elif str(old_arg.type) != str(new_arg.type):
             schema_changes.append(
                 SafeChange(
                     SafeChangeType.ARG_CHANGED_KIND_SAFE,
                     f"Argument {old_type}.{field_name}({arg_name}:)"
                     f" has changed type from"
                     f" {old_arg.type} to {new_arg.type}.",
+                )
+            )
+
+        if old_arg.description != new_arg.description:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.DESCRIPTION_CHANGED,
+                    f"Description of argument {old_type}.{field_name}"
+                    f'({arg_name}) has changed to "{new_arg.description}".',
                 )
             )
 

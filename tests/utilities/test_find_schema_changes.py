@@ -23,6 +23,26 @@ def describe_find_schema_changes():
             (SafeChangeType.TYPE_ADDED, "Type2 was added."),
         ]
 
+    def should_detect_a_type_changing_description():
+        new_schema = build_schema(
+            """
+            "New Description"
+            type Type1
+            """
+        )
+
+        old_schema = build_schema(
+            """
+            type Type1
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                'Description of Type1 has changed to "New Description".',
+            ),
+        ]
+
     def should_detect_if_a_field_was_added():
         old_schema = build_schema(
             """
@@ -42,6 +62,32 @@ def describe_find_schema_changes():
         )
         assert find_schema_changes(old_schema, new_schema) == [
             (SafeChangeType.FIELD_ADDED, "Field Query.bar was added."),
+        ]
+
+    def should_detect_a_field_changing_description():
+        old_schema = build_schema(
+            """
+            type Query {
+              foo: String
+              bar: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            type Query {
+              foo: String
+              "New Description"
+              bar: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                'Description of field Query.bar has changed to "New Description".',
+            ),
         ]
 
     def should_detect_if_a_default_value_was_added():
@@ -64,6 +110,33 @@ def describe_find_schema_changes():
             (
                 SafeChangeType.ARG_DEFAULT_VALUE_ADDED,
                 'Query.foo(x:) added a defaultValue "bar".',
+            ),
+        ]
+
+    def should_detect_if_an_arg_value_changes_description():
+        old_schema = build_schema(
+            """
+            type Query {
+              foo(x: String!): String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            type Query {
+              foo(
+                "New Description"
+                x: String!
+              ): String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                "Description of argument Query.foo(x)"
+                ' has changed to "New Description".',
             ),
         ]
 
@@ -110,6 +183,34 @@ def describe_find_schema_changes():
         )
         assert find_schema_changes(old_schema, new_schema) == [
             (SafeChangeType.DIRECTIVE_ADDED, "Directive @Foo was added."),
+        ]
+
+    def should_detect_if_a_directive_changes_description():
+        old_schema = build_schema(
+            """
+            directive @Foo on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            "New Description"
+            directive @Foo on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                'Description of @Foo has changed to "New Description".',
+            ),
         ]
 
     def should_detect_if_a_directive_becomes_repeatable():
@@ -187,5 +288,101 @@ def describe_find_schema_changes():
             (
                 SafeChangeType.OPTIONAL_DIRECTIVE_ARG_ADDED,
                 "An optional argument @Foo(arg1:) was added.",
+            ),
+        ]
+
+    def should_detect_if_a_directive_arg_changes_description():
+        old_schema = build_schema(
+            """
+            directive @Foo(
+              arg1: String
+            ) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @Foo(
+              "New Description"
+              arg1: String
+            ) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                'Description of @Foo(Foo) has changed to "New Description".',
+            ),
+        ]
+
+    def should_detect_if_an_enum_member_changes_description():
+        old_schema = build_schema(
+            """
+            enum Foo {
+              TEST
+            }
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            enum Foo {
+              "New Description"
+              TEST
+            }
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                'Description of enum value Foo.TEST has changed to "New Description".',
+            ),
+        ]
+
+    def should_detect_if_an_input_field_changes_description():
+        old_schema = build_schema(
+            """
+            input Foo {
+              x: String
+            }
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            input Foo {
+              "New Description"
+              x: String
+            }
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.DESCRIPTION_CHANGED,
+                'Description of input-field Foo.x has changed to "New Description".',
             ),
         ]
