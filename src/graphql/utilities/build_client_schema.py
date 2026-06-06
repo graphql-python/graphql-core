@@ -64,8 +64,8 @@ def build_client_schema(
     Given the result of a client running the introspection query, creates and returns
     a GraphQLSchema instance which can be then used with all GraphQL-core 3 tools,
     but cannot be used to execute a query, as introspection does not represent the
-    "resolver", "parse" or "serialize" functions or any other server-internal
-    mechanisms.
+    "resolver", "coerce_input_value" or "coerce_output_value" functions or any other
+    server-internal mechanisms.
 
     This function expects a complete introspection result. Don't forget to check the
     "errors" field of a server response before calling this function.

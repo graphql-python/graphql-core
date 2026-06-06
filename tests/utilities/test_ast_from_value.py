@@ -134,10 +134,10 @@ def describe_ast_from_value():
 
         assert ast_from_value(Undefined, GraphQLString) is None
 
-    def converts_using_serialize_from_a_custom_scalar_type():
+    def converts_using_coerce_output_value_from_a_custom_scalar_type():
         pass_through_scalar = GraphQLScalarType(
             "PassThroughScalar",
-            serialize=lambda value: value,
+            coerce_output_value=lambda value: value,
         )
 
         assert ast_from_value("value", pass_through_scalar) == StringValueNode(
@@ -154,7 +154,7 @@ def describe_ast_from_value():
 
         return_null_scalar = GraphQLScalarType(
             "ReturnNullScalar",
-            serialize=lambda value: None,  # noqa: ARG005
+            coerce_output_value=lambda value: None,  # noqa: ARG005
         )
 
         assert ast_from_value("value", return_null_scalar) is None
@@ -164,7 +164,7 @@ def describe_ast_from_value():
 
         return_custom_class_scalar = GraphQLScalarType(
             "ReturnCustomClassScalar",
-            serialize=lambda value: SomeClass(),  # noqa: ARG005
+            coerce_output_value=lambda value: SomeClass(),  # noqa: ARG005
         )
 
         with pytest.raises(TypeError) as exc_info:

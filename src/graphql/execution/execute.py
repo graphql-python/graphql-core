@@ -660,7 +660,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
         In particular, this method figures out the value that the field returns by
         calling its resolve function, then calls complete_value to await coroutine
-        objects, serialize scalars, or execute the sub-selection-set for objects.
+        objects, coercing scalars, or execute the sub-selection-set for objects.
         """
         first_field_details = field_details_list[0]
         first_field_node = first_field_details.node
@@ -820,7 +820,7 @@ class ExecutionContext(IncrementalPublisherContext):
         for the inner type on each item in the list.
 
         If the field type is a Scalar or Enum, ensures the completed value is a legal
-        value of the type by calling the ``serialize`` method of GraphQL type
+        value of the type by calling the ``coerce_output_value`` method of GraphQL type
         definition.
 
         If the field is an abstract type, determine the runtime type of the value and
@@ -869,8 +869,8 @@ class ExecutionContext(IncrementalPublisherContext):
                 defer_map,
             )
 
-        # If field type is a leaf type, Scalar or Enum, serialize to a valid value,
-        # returning null if serialization is not possible.
+        # If field type is a leaf type, Scalar or Enum, coerce to a valid value,
+        # returning null if coercion is not possible.
         if is_leaf_type(return_type):
             return GraphQLWrappedResult(self.complete_leaf_value(return_type, result))
 
@@ -1372,18 +1372,18 @@ class ExecutionContext(IncrementalPublisherContext):
     def complete_leaf_value(return_type: GraphQLLeafType, result: Any) -> Any:
         """Complete a leaf value.
 
-        Complete a Scalar or Enum by serializing to a valid value, returning null if
-        serialization is not possible.
+        Complete a Scalar or Enum by coercing to a valid value, returning null if
+        coercion is not possible.
         """
-        serialized_result = return_type.serialize(result)
-        if serialized_result is Undefined or serialized_result is None:
+        coerced = return_type.coerce_output_value(result)
+        if coerced is Undefined or coerced is None:
             msg = (
-                f"Expected `{inspect(return_type)}.serialize({inspect(result)})`"
-                " to return non-nullable value, returned:"
-                f" {inspect(serialized_result)}"
+                f"Expected `{inspect(return_type)}.coerce_output_value("
+                f"{inspect(result)})` to return non-nullable value, returned:"
+                f" {inspect(coerced)}"
             )
             raise TypeError(msg)
-        return serialized_result
+        return coerced
 
     def complete_abstract_value(
         self,

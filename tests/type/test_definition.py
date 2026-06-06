@@ -107,6 +107,8 @@ def describe_type_system_scalars():
             "serialize": None,
             "parse_value": None,
             "parse_literal": None,
+            "coerce_output_value": None,
+            "coerce_input_value": None,
             "coerce_input_literal": None,
             "value_to_literal": None,
             "extensions": {},
@@ -124,6 +126,8 @@ def describe_type_system_scalars():
             "serialize": pass_through,
             "parse_value": pass_through,
             "parse_literal": pass_through,
+            "coerce_output_value": pass_through,
+            "coerce_input_value": pass_through,
             "coerce_input_literal": pass_through,
             "value_to_literal": pass_through,
             "extensions": {"some_extension": "extension"},
@@ -182,8 +186,8 @@ def describe_type_system_scalars():
         assert kwargs["parse_value"] is parse_value
         assert kwargs["parse_literal"] is parse_literal
 
-    def accepts_a_scalar_type_defining_parse_value_and_coerce_input_literal():
-        def parse_value(_value):
+    def accepts_a_scalar_type_defining_coerce_input_value_and_coerce_input_literal():
+        def coerce_input_value(_value):
             pass
 
         def coerce_input_literal(_value_node):
@@ -191,14 +195,14 @@ def describe_type_system_scalars():
 
         scalar = GraphQLScalarType(
             "SomeScalar",
-            parse_value=parse_value,
+            coerce_input_value=coerce_input_value,
             coerce_input_literal=coerce_input_literal,
         )
-        assert scalar.parse_value is parse_value
+        assert scalar.coerce_input_value is coerce_input_value
         assert scalar.coerce_input_literal is coerce_input_literal
 
         kwargs = scalar.to_kwargs()
-        assert kwargs["parse_value"] is parse_value
+        assert kwargs["coerce_input_value"] is coerce_input_value
         assert kwargs["coerce_input_literal"] is coerce_input_literal
 
     def provides_default_methods_if_omitted():
@@ -206,6 +210,8 @@ def describe_type_system_scalars():
 
         assert scalar.serialize is GraphQLScalarType.serialize
         assert scalar.parse_value is GraphQLScalarType.parse_value
+        assert scalar.coerce_output_value is GraphQLScalarType.serialize
+        assert scalar.coerce_input_value is GraphQLScalarType.parse_value
         assert (
             scalar.parse_literal.__func__  # type: ignore
             is GraphQLScalarType.parse_literal
@@ -214,14 +220,18 @@ def describe_type_system_scalars():
         assert scalar.coerce_input_literal is None
         assert scalar.value_to_literal is None
 
-        # The default serialize and parse_value methods just pass values through.
+        # The default output and input value coercers just pass values through.
         some_value = object()
         assert scalar.serialize(some_value) is some_value
         assert scalar.parse_value(some_value) is some_value
+        assert scalar.coerce_output_value(some_value) is some_value
+        assert scalar.coerce_input_value(some_value) is some_value
 
         kwargs = scalar.to_kwargs()
         assert kwargs["serialize"] is None
         assert kwargs["parse_value"] is None
+        assert kwargs["coerce_output_value"] is None
+        assert kwargs["coerce_input_value"] is None
         assert kwargs["parse_literal"] is None
         assert kwargs["coerce_input_literal"] is None
         assert kwargs["value_to_literal"] is None
@@ -280,14 +290,14 @@ def describe_type_system_scalars():
             "SomeScalar must provide both 'parse_value' and 'parse_literal' functions."
         )
 
-    def rejects_a_scalar_type_defining_coerce_input_literal_but_not_parse_value():
+    def rejects_a_scalar_type_defining_coerce_input_literal_but_not_input_value():
         def coerce_input_literal(_node: ValueNode):
             return Undefined  # pragma: no cover
 
         with pytest.raises(TypeError) as exc_info:
             GraphQLScalarType("SomeScalar", coerce_input_literal=coerce_input_literal)
         assert str(exc_info.value) == (
-            "SomeScalar must provide both 'parse_value'"
+            "SomeScalar must provide both 'coerce_input_value'"
             " and 'coerce_input_literal' functions."
         )
 
@@ -921,6 +931,14 @@ def describe_type_system_enums():
         }
         some_enum = GraphQLEnumType(**some_enum_kwargs)  # type: ignore
         assert some_enum.to_kwargs() == some_enum_kwargs
+
+    def can_be_coerced_to_an_output_value_via_serialize_method():
+        some_enum = GraphQLEnumType("SomeEnum", {"FOO": GraphQLEnumValue("foo")})
+        assert some_enum.serialize("foo") == "FOO"
+
+    def can_be_coerced_to_an_input_value_via_parse_value_method():
+        some_enum = GraphQLEnumType("SomeEnum", {"FOO": GraphQLEnumValue("foo")})
+        assert some_enum.parse_value("FOO") == "foo"
 
     def defines_an_enum_using_a_dict():
         enum_type = GraphQLEnumType("SomeEnum", {"RED": 1, "BLUE": 2})

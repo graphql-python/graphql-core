@@ -1129,10 +1129,12 @@ def describe_validate_values_of_correct_type():
             )
 
         def reports_original_error_for_custom_scalar_which_throws():
-            def parse_value(value):
+            def coerce_input_value(value):
                 raise Exception(f"Invalid scalar is always invalid: {inspect(value)}")
 
-            custom_scalar = GraphQLScalarType("Invalid", parse_value=parse_value)
+            custom_scalar = GraphQLScalarType(
+                "Invalid", coerce_input_value=coerce_input_value
+            )
 
             schema = GraphQLSchema(
                 query=GraphQLObjectType(
@@ -1163,7 +1165,7 @@ def describe_validate_values_of_correct_type():
 
         def reports_error_for_custom_scalar_that_returns_undefined():
             custom_scalar = GraphQLScalarType(
-                "CustomScalar", parse_value=lambda _value: Undefined
+                "CustomScalar", coerce_input_value=lambda _value: Undefined
             )
 
             schema = GraphQLSchema(

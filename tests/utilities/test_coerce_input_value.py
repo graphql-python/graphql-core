@@ -94,14 +94,16 @@ def describe_coerce_input_value():
             ]
 
     def describe_for_graphql_scalar():
-        def _parse_value(input_dict):
+        def _coerce_input_value(input_dict):
             assert isinstance(input_dict, dict)
             error = input_dict.get("error")
             if error:
                 raise ValueError(error)
             return input_dict.get("value")
 
-        TestScalar = GraphQLScalarType("TestScalar", parse_value=_parse_value)
+        TestScalar = GraphQLScalarType(
+            "TestScalar", coerce_input_value=_coerce_input_value
+        )
 
         def returns_no_error_for_valid_input():
             result = _coerce_value({"value": 1}, TestScalar)
@@ -647,7 +649,7 @@ def describe_coerce_input_literal():
         pass_through_scalar = GraphQLScalarType(
             "PassThroughScalar",
             coerce_input_literal=pass_through_coerce_input_literal,
-            parse_value=lambda value: value,  # pragma: no cover
+            coerce_input_value=lambda value: value,  # pragma: no cover
         )
 
         _test('"value"', pass_through_scalar, "value")
@@ -658,7 +660,7 @@ def describe_coerce_input_literal():
         print_scalar = GraphQLScalarType(
             "PrintScalar",
             coerce_input_literal=print_coerce_input_literal,
-            parse_value=lambda value: value,  # pragma: no cover
+            coerce_input_value=lambda value: value,  # pragma: no cover
         )
 
         _test('"value"', print_scalar, '~~~"value"~~~')
@@ -676,7 +678,7 @@ def describe_coerce_input_literal():
         throw_scalar = GraphQLScalarType(
             "ThrowScalar",
             coerce_input_literal=throw_coerce_input_literal,
-            parse_value=lambda value: value,  # pragma: no cover
+            coerce_input_value=lambda value: value,  # pragma: no cover
         )
 
         _test("value", throw_scalar, Undefined)
@@ -687,7 +689,7 @@ def describe_coerce_input_literal():
         return_undefined_scalar = GraphQLScalarType(
             "ReturnUndefinedScalar",
             coerce_input_literal=undefined_coerce_input_literal,
-            parse_value=lambda value: value,  # pragma: no cover
+            coerce_input_value=lambda value: value,  # pragma: no cover
         )
 
         _test("value", return_undefined_scalar, Undefined)
@@ -909,13 +911,15 @@ def describe_coerce_input_literal():
 
 def describe_coerce_default_value():
     def memoizes_coercion():
-        parse_value_calls: list[Any] = []
+        coerce_input_value_calls: list[Any] = []
 
-        def parse_value(value):
-            parse_value_calls.append(value)
+        def coerce_input_value(value):
+            coerce_input_value_calls.append(value)
             return value
 
-        spy_scalar = GraphQLScalarType("SpyScalar", parse_value=parse_value)
+        spy_scalar = GraphQLScalarType(
+            "SpyScalar", coerce_input_value=coerce_input_value
+        )
 
         default_value_usage = GraphQLDefaultValueUsage(
             literal=StringValueNode(value="hello")
@@ -924,4 +928,4 @@ def describe_coerce_default_value():
 
         # Call a second time
         assert coerce_default_value(default_value_usage, spy_scalar, True) == "hello"
-        assert parse_value_calls == ["hello"]
+        assert coerce_input_value_calls == ["hello"]

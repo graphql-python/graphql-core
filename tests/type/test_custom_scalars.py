@@ -63,8 +63,8 @@ def coerce_money_input_literal(value_node: ConstValueNode) -> Money:
 
 MoneyScalar = GraphQLScalarType(
     name="Money",
-    serialize=serialize_money,
-    parse_value=parse_money_value,
+    coerce_output_value=serialize_money,
+    coerce_input_value=parse_money_value,
     coerce_input_literal=coerce_money_input_literal,
 )
 
@@ -99,7 +99,7 @@ schema = GraphQLSchema(
 
 
 def describe_custom_scalar():
-    def serialize():
+    def coerce_output_value():
         source = """
             {
               balance
@@ -109,7 +109,7 @@ def describe_custom_scalar():
         result = graphql_sync(schema, source, root_value=Money(42, "DM"))
         assert result == ({"balance": {"amount": 42, "currency": "DM"}}, None)
 
-    def serialize_with_error():
+    def coerce_output_value_with_error():
         source = """
             {
               balance
@@ -128,7 +128,7 @@ def describe_custom_scalar():
             ],
         )
 
-    def parse_value():
+    def coerce_input_value():
         source = """
             query Money($money: Money!) {
               toEuros(money: $money)
@@ -145,7 +145,7 @@ def describe_custom_scalar():
         )
         assert result == ({"toEuros": 21}, None)
 
-    def parse_value_with_error():
+    def coerce_input_value_with_error():
         source = """
             query Money($money: Money!) {
               toEuros(money: $money)

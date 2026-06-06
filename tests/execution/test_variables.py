@@ -29,7 +29,7 @@ TestFaultyScalarGraphQLError = GraphQLError(
 )
 
 
-def faulty_parse_value(_value: str) -> str:
+def faulty_coerce_input_value(_value: str) -> str:
     raise TestFaultyScalarGraphQLError
 
 
@@ -39,25 +39,25 @@ def faulty_coerce_input_literal(_ast: ValueNode) -> str:
 
 TestFaultyScalar = GraphQLScalarType(
     name="FaultyScalar",
-    parse_value=faulty_parse_value,
+    coerce_input_value=faulty_coerce_input_value,
     coerce_input_literal=faulty_coerce_input_literal,
 )
 
 
-def parse_serialized_value(value: str) -> str:
-    assert value == "SerializedValue"
-    return "DeserializedValue"
+def coerce_complex_input_value(value: str) -> str:
+    assert value == "ExternalValue"
+    return "InternalValue"
 
 
 def coerce_input_literal_value(ast: ValueNode) -> str:
     assert isinstance(ast, StringValueNode)
-    assert ast.value == "SerializedValue"
-    return parse_serialized_value(ast.value)
+    assert ast.value == "ExternalValue"
+    return coerce_complex_input_value(ast.value)
 
 
 TestComplexScalar = GraphQLScalarType(
     name="ComplexScalar",
-    parse_value=parse_serialized_value,
+    coerce_input_value=coerce_complex_input_value,
     coerce_input_literal=coerce_input_literal_value,
 )
 
@@ -283,13 +283,13 @@ def describe_execute_handles_inputs():
                 result = execute_query(
                     """
                     {
-                      fieldWithObjectInput(input: {c: "foo", d: "SerializedValue"})
+                      fieldWithObjectInput(input: {c: "foo", d: "ExternalValue"})
                     }
                     """
                 )
 
                 assert result == (
-                    {"fieldWithObjectInput": "{'c': 'foo', 'd': 'DeserializedValue'}"},
+                    {"fieldWithObjectInput": "{'c': 'foo', 'd': 'InternalValue'}"},
                     None,
                 )
 
@@ -419,16 +419,16 @@ def describe_execute_handles_inputs():
                 )
 
             def executes_with_complex_scalar_input():
-                params = {"input": {"c": "foo", "d": "SerializedValue"}}
+                params = {"input": {"c": "foo", "d": "ExternalValue"}}
                 result = execute_query(doc, params)
 
                 assert result == (
-                    {"fieldWithObjectInput": "{'c': 'foo', 'd': 'DeserializedValue'}"},
+                    {"fieldWithObjectInput": "{'c': 'foo', 'd': 'InternalValue'}"},
                     None,
                 )
 
             def errors_on_faulty_scalar_type_input():
-                params = {"input": {"c": "foo", "e": "SerializedValue"}}
+                params = {"input": {"c": "foo", "e": "ExternalValue"}}
                 result = execute_query(doc, params)
 
                 assert result == (
@@ -436,7 +436,7 @@ def describe_execute_handles_inputs():
                     [
                         {
                             "message": "Variable '$input' got invalid value"
-                            " 'SerializedValue' at 'input.e'; FaultyScalarErrorMessage",
+                            " 'ExternalValue' at 'input.e'; FaultyScalarErrorMessage",
                             "locations": [(2, 24)],
                             "extensions": {"code": "FaultyScalarExtensionCode"},
                         }

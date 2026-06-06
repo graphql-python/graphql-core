@@ -1101,10 +1101,10 @@ def describe_execute_handles_basic_execution_tasks():
         awaited_result = await async_result
         assert awaited_result == result
 
-    def fails_when_serialize_of_custom_scalar_does_not_return_a_value():
+    def fails_when_coerce_output_value_of_custom_scalar_does_not_return_a_value():
         custom_scalar = GraphQLScalarType(
             "CustomScalar",
-            serialize=lambda _value: Undefined,  # returns nothing
+            coerce_output_value=lambda _value: Undefined,  # returns nothing
         )
         schema = GraphQLSchema(
             GraphQLObjectType(
@@ -1122,8 +1122,9 @@ def describe_execute_handles_basic_execution_tasks():
             {"customScalar": None},
             [
                 {
-                    "message": "Expected `CustomScalar.serialize('CUSTOM_VALUE')`"
-                    " to return non-nullable value, returned: Undefined",
+                    "message": "Expected `CustomScalar.coerce_output_value("
+                    "'CUSTOM_VALUE')` to return non-nullable value,"
+                    " returned: Undefined",
                     "locations": [(1, 3)],
                     "path": ["customScalar"],
                 }

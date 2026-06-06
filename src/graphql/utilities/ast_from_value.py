@@ -102,36 +102,36 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> ConstValueNode | None
         return ConstObjectValueNode(fields=field_nodes)
 
     if is_leaf_type(type_):
-        # Since value is an internally represented value, it must be serialized to an
+        # Since value is an internally represented value, it must be coerced to an
         # externally represented value before converting into an AST.
-        serialized = type_.serialize(value)
-        if serialized is None or serialized is Undefined:
+        coerced = type_.coerce_output_value(value)
+        if coerced is None or coerced is Undefined:
             return None
 
-        # Others serialize based on their corresponding Python scalar types.
-        if isinstance(serialized, bool):
-            return BooleanValueNode(value=serialized)
+        # Others coerce based on their corresponding Python scalar types.
+        if isinstance(coerced, bool):
+            return BooleanValueNode(value=coerced)
 
         # Python ints and floats correspond nicely to Int and Float values.
-        if isinstance(serialized, int):
-            return IntValueNode(value=str(serialized))
-        if isinstance(serialized, float) and isfinite(serialized):
-            value = str(serialized)
+        if isinstance(coerced, int):
+            return IntValueNode(value=str(coerced))
+        if isinstance(coerced, float) and isfinite(coerced):
+            value = str(coerced)
             value = value.removesuffix(".0")
             return FloatValueNode(value=value)
 
-        if isinstance(serialized, str):
+        if isinstance(coerced, str):
             # Enum types use Enum literals.
             if is_enum_type(type_):
-                return EnumValueNode(value=serialized)
+                return EnumValueNode(value=coerced)
 
             # ID types can use Int literals.
-            if type_ is GraphQLID and _re_integer_string.match(serialized):
-                return IntValueNode(value=serialized)
+            if type_ is GraphQLID and _re_integer_string.match(coerced):
+                return IntValueNode(value=coerced)
 
-            return StringValueNode(value=serialized)
+            return StringValueNode(value=coerced)
 
-        msg = f"Cannot convert value to AST: {inspect(serialized)}."
+        msg = f"Cannot convert value to AST: {inspect(coerced)}."
         raise TypeError(msg)
 
     # Not reachable. All possible input types have been considered.

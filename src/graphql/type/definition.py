@@ -109,7 +109,9 @@ __all__ = [
     "GraphQLOutputType",
     "GraphQLResolveInfo",
     "GraphQLScalarInputLiteralCoercer",
+    "GraphQLScalarInputValueCoercer",
     "GraphQLScalarLiteralParser",
+    "GraphQLScalarOutputValueCoercer",
     "GraphQLScalarSerializer",
     "GraphQLScalarType",
     "GraphQLScalarTypeKwargs",
@@ -312,8 +314,12 @@ def resolve_thunk(thunk: Thunk[T]) -> T:
     return thunk() if callable(thunk) else thunk
 
 
+# Deprecated in favor of GraphQLScalarOutputValueCoercer, will be removed in v3.4
 GraphQLScalarSerializer: TypeAlias = Callable[[Any], Any]
+GraphQLScalarOutputValueCoercer: TypeAlias = Callable[[Any], Any]
+# Deprecated in favor of GraphQLScalarInputValueCoercer, will be removed in v3.4
 GraphQLScalarValueParser: TypeAlias = Callable[[Any], Any]
+GraphQLScalarInputValueCoercer: TypeAlias = Callable[[Any], Any]
 # Deprecated in favor of GraphQLScalarInputLiteralCoercer, will be removed in v3.4
 GraphQLScalarLiteralParser: TypeAlias = Callable[
     [ValueNode, dict[str, Any] | None], Any
@@ -328,6 +334,8 @@ class GraphQLScalarTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     serialize: GraphQLScalarSerializer | None
     parse_value: GraphQLScalarValueParser | None
     parse_literal: GraphQLScalarLiteralParser | None
+    coerce_output_value: GraphQLScalarOutputValueCoercer | None
+    coerce_input_value: GraphQLScalarInputValueCoercer | None
     coerce_input_literal: GraphQLScalarInputLiteralCoercer | None
     value_to_literal: GraphQLScalarValueToLiteral | None
     specified_by_url: str | None
@@ -340,12 +348,13 @@ class GraphQLScalarType(GraphQLNamedType):
     and are defined with a name and a series of functions used to parse input from ast
     or variables and to ensure validity.
 
-    If a type's serialize function returns ``None``, then an error will be raised and a
-    ``None`` value will be returned in the response. It is always better to validate.
+    If a type's coerce_output_value function returns ``None``, then an error will be
+    raised and a ``None`` value will be returned in the response. It is always better
+    to validate.
 
     Example::
 
-        def serialize_odd(value: Any) -> int:
+        def coerce_odd(value: Any) -> int:
             try:
                 value = int(value)
             except ValueError:
@@ -357,7 +366,7 @@ class GraphQLScalarType(GraphQLNamedType):
                     f"Scalar 'Odd' cannot represent '{value}' since it is even.")
             return value
 
-        odd_type = GraphQLScalarType('Odd', serialize=serialize_odd)
+        odd_type = GraphQLScalarType('Odd', coerce_output_value=coerce_odd)
 
     """
 
@@ -365,6 +374,8 @@ class GraphQLScalarType(GraphQLNamedType):
     ast_node: ScalarTypeDefinitionNode | None
     extension_ast_nodes: tuple[ScalarTypeExtensionNode, ...]
 
+    coerce_output_value: GraphQLScalarOutputValueCoercer
+    coerce_input_value: GraphQLScalarInputValueCoercer
     coerce_input_literal: GraphQLScalarInputLiteralCoercer | None
     value_to_literal: GraphQLScalarValueToLiteral | None
 
@@ -374,6 +385,8 @@ class GraphQLScalarType(GraphQLNamedType):
         serialize: GraphQLScalarSerializer | None = None,
         parse_value: GraphQLScalarValueParser | None = None,
         parse_literal: GraphQLScalarLiteralParser | None = None,
+        coerce_output_value: GraphQLScalarOutputValueCoercer | None = None,
+        coerce_input_value: GraphQLScalarInputValueCoercer | None = None,
         coerce_input_literal: GraphQLScalarInputLiteralCoercer | None = None,
         value_to_literal: GraphQLScalarValueToLiteral | None = None,
         description: str | None = None,
@@ -392,10 +405,20 @@ class GraphQLScalarType(GraphQLNamedType):
 
         if serialize is not None:
             self.serialize = serialize  # type: ignore
+        elif coerce_output_value is not None:
+            self.serialize = coerce_output_value  # type: ignore
         if parse_value is not None:
             self.parse_value = parse_value  # type: ignore
+        elif coerce_input_value is not None:
+            self.parse_value = coerce_input_value  # type: ignore
         if parse_literal is not None:
             self.parse_literal = parse_literal  # type: ignore
+        self.coerce_output_value = (
+            self.serialize if coerce_output_value is None else coerce_output_value
+        )
+        self.coerce_input_value = (
+            self.parse_value if coerce_input_value is None else coerce_input_value
+        )
         self.coerce_input_literal = coerce_input_literal
         self.value_to_literal = value_to_literal
         if parse_literal is not None and parse_value is None:
@@ -403,9 +426,9 @@ class GraphQLScalarType(GraphQLNamedType):
                 f"{name} must provide both 'parse_value' and 'parse_literal' functions."
             )
             raise TypeError(msg)
-        if coerce_input_literal is not None and parse_value is None:
+        if coerce_input_literal is not None and coerce_input_value is None:
             msg = (
-                f"{name} must provide both 'parse_value'"
+                f"{name} must provide both 'coerce_input_value'"
                 " and 'coerce_input_literal' functions."
             )
             raise TypeError(msg)
@@ -440,14 +463,14 @@ class GraphQLScalarType(GraphQLNamedType):
     ) -> Any:
         """Parses an externally provided literal value to use as an input.
 
-        This default method uses the parse_value method and should be replaced
+        This default method uses the coerce_input_value method and should be replaced
         with a more specific version when creating a scalar type.
 
         .. deprecated:: 3.3
             Use ``replace_variables()`` and ``coerce_input_literal()`` instead.
             ``parse_literal()`` will be removed in a future version.
         """
-        return self.parse_value(value_from_ast_untyped(node, variables))
+        return self.coerce_input_value(value_from_ast_untyped(node, variables))
 
     def to_kwargs(self) -> GraphQLScalarTypeKwargs:
         """Get corresponding arguments."""
@@ -463,6 +486,12 @@ class GraphQLScalarType(GraphQLNamedType):
             if getattr(self.parse_literal, "__func__", None)
             is GraphQLScalarType.parse_literal
             else self.parse_literal,
+            coerce_output_value=None
+            if self.coerce_output_value is GraphQLScalarType.serialize
+            else self.coerce_output_value,
+            coerce_input_value=None
+            if self.coerce_input_value is GraphQLScalarType.parse_value
+            else self.coerce_input_value,
             coerce_input_literal=self.coerce_input_literal,
             value_to_literal=self.value_to_literal,
             specified_by_url=self.specified_by_url,
@@ -1110,7 +1139,7 @@ class GraphQLEnumTypeKwargs(GraphQLNamedTypeKwargs, total=False):
 class GraphQLEnumType(GraphQLNamedType):
     """Enum Type Definition
 
-    Some leaf values of requests and input values are Enums. GraphQL serializes Enum
+    Some leaf values of requests and input values are Enums. GraphQL coerces Enum
     values as strings, however internally Enums can be represented by any kind of type,
     often integers. They can also be provided as a Python Enum. In this case, the flag
     `names_as_values` determines what will be used as internal representation. The
@@ -1219,7 +1248,16 @@ class GraphQLEnumType(GraphQLNamedType):
         return lookup
 
     def serialize(self, output_value: Any) -> str:
-        """Serialize an output value."""
+        """Serialize an output value.
+
+        .. deprecated:: 3.3
+            Use ``coerce_output_value()`` instead. ``serialize()`` will be removed
+            in a future version.
+        """
+        return self.coerce_output_value(output_value)
+
+    def coerce_output_value(self, output_value: Any) -> str:
+        """Coerce an output value."""
         try:
             return self._value_lookup[output_value]
         except KeyError:  # hashable value not found
@@ -1232,7 +1270,18 @@ class GraphQLEnumType(GraphQLNamedType):
         raise GraphQLError(msg)
 
     def parse_value(self, input_value: str, hide_suggestions: bool = False) -> Any:
-        """Parse an enum value."""
+        """Parse an enum value.
+
+        .. deprecated:: 3.3
+            Use ``coerce_input_value()`` instead. ``parse_value()`` will be removed
+            in a future version.
+        """
+        return self.coerce_input_value(input_value, hide_suggestions)
+
+    def coerce_input_value(
+        self, input_value: str, hide_suggestions: bool = False
+    ) -> Any:
+        """Coerce an enum input value."""
         if isinstance(input_value, str):
             try:
                 enum_value = self.values[input_value]

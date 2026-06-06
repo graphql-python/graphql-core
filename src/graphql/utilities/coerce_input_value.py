@@ -181,17 +181,17 @@ def coerce_input_value(
         return type_.out_type(coerced_dict)
 
     if is_leaf_type(type_):
-        # Scalars and Enums determine if an input value is valid via `parse_value()`,
-        # which can throw to indicate failure. If it throws, maintain a reference
-        # to the original error.
+        # Scalars and Enums determine if an input value is valid via
+        # `coerce_input_value()`, which can throw to indicate failure. If it throws,
+        # maintain a reference to the original error.
         try:
             # Note: only enum types accept `hide_suggestions`, since scalar
-            # `parse_value` functions are user-provided with a fixed signature.
+            # `coerce_input_value` functions are user-provided with a fixed signature.
             if is_enum_type(type_):
-                parse_result = type_.parse_value(input_value, hide_suggestions)
+                parse_result = type_.coerce_input_value(input_value, hide_suggestions)
             else:
                 type_ = cast("GraphQLScalarType", type_)
-                parse_result = type_.parse_value(input_value)
+                parse_result = type_.coerce_input_value(input_value)
         except GraphQLError as error:
             on_error(path.as_list() if path else [], input_value, error)
             return Undefined

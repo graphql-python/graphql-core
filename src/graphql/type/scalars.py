@@ -127,8 +127,8 @@ GraphQLInt = GraphQLScalarType(
     description="The `Int` scalar type represents"
     " non-fractional signed whole numeric values."
     " Int can represent values between -(2^31) and 2^31 - 1.",
-    serialize=serialize_int,
-    parse_value=coerce_int,
+    coerce_output_value=serialize_int,
+    coerce_input_value=coerce_int,
     coerce_input_literal=parse_int_literal,
     value_to_literal=int_value_to_literal,
 )
@@ -184,8 +184,8 @@ GraphQLFloat = GraphQLScalarType(
     " signed double-precision fractional values"
     " as specified by [IEEE 754]"
     "(https://en.wikipedia.org/wiki/IEEE_floating_point).",
-    serialize=serialize_float,
-    parse_value=coerce_float,
+    coerce_output_value=serialize_float,
+    coerce_input_value=coerce_float,
     coerce_input_literal=parse_float_literal,
     value_to_literal=float_value_to_literal,
 )
@@ -239,8 +239,8 @@ GraphQLString = GraphQLScalarType(
     " represented as UTF-8 character sequences."
     " The String type is most often used by GraphQL"
     " to represent free-form human-readable text.",
-    serialize=serialize_string,
-    parse_value=coerce_string,
+    coerce_output_value=serialize_string,
+    coerce_input_value=coerce_string,
     coerce_input_literal=parse_string_literal,
     value_to_literal=string_value_to_literal,
 )
@@ -287,8 +287,8 @@ def boolean_value_to_literal(value: Any) -> ConstValueNode | None:
 GraphQLBoolean = GraphQLScalarType(
     name="Boolean",
     description="The `Boolean` scalar type represents `true` or `false`.",
-    serialize=serialize_boolean,
-    parse_value=coerce_boolean,
+    coerce_output_value=serialize_boolean,
+    coerce_input_value=coerce_boolean,
     coerce_input_literal=parse_boolean_literal,
     value_to_literal=boolean_value_to_literal,
 )
@@ -366,8 +366,8 @@ GraphQLID = GraphQLScalarType(
     " it is not intended to be human-readable. When expected as an"
     ' input type, any string (such as `"4"`) or integer (such as'
     " `4`) input value will be accepted as an ID.",
-    serialize=serialize_id,
-    parse_value=coerce_id,
+    coerce_output_value=serialize_id,
+    coerce_input_value=coerce_id,
     coerce_input_literal=parse_id_literal,
     value_to_literal=id_value_to_literal,
 )
