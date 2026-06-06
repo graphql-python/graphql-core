@@ -613,17 +613,10 @@ class ExecutionContext(IncrementalPublisherContext):
         graphql_wrapped_result = GraphQLWrappedResult(results)
         add_increments = graphql_wrapped_result.add_increments
         is_awaitable = self.is_awaitable
-        abort_signal = self.abort_signal
         awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
         for response_name, field_details_list in grouped_field_set.items():
             field_path = Path(path, response_name, parent_type.name)
-            if abort_signal is not None and abort_signal.aborted:
-                raise located_error(
-                    Exception(abort_signal.reason),
-                    to_nodes(field_details_list),
-                    field_path.as_list(),
-                )
             result = self.execute_field(
                 parent_type,
                 source_value,
@@ -1533,6 +1526,14 @@ class ExecutionContext(IncrementalPublisherContext):
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Complete an Object value by executing all sub-selections."""
+        abort_signal = self.abort_signal
+        if abort_signal is not None and abort_signal.aborted:
+            raise located_error(
+                Exception(abort_signal.reason),
+                to_nodes(field_details_list),
+                path.as_list(),
+            )
+
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
         # continuing execution.

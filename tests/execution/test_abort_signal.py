@@ -114,7 +114,7 @@ def describe_execute_cancellation():
 
         assert result == (
             {"todo": None},
-            [{"message": "Aborted", "locations": [(4, 11)], "path": ["todo", "id"]}],
+            [{"message": "Aborted", "locations": [(3, 9)], "path": ["todo"]}],
         )
 
     async def stops_the_execution_when_aborted_during_nested_object_completion():
@@ -158,8 +158,8 @@ def describe_execute_cancellation():
             [
                 {
                     "message": "Aborted",
-                    "locations": [(6, 13)],
-                    "path": ["todo", "author", "id"],
+                    "locations": [(5, 11)],
+                    "path": ["todo", "author"],
                 }
             ],
         )
