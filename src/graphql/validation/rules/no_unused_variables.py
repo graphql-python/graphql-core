@@ -27,7 +27,7 @@ class NoUnusedVariablesRule(ValidationRule):
     ) -> None:
         usages = self.context.get_variable_usages(fragment)
         argument_name_used = {usage.node.name.value for usage in usages}
-        for var_def in fragment.variable_definitions:
+        for var_def in fragment.variable_definitions or ():
             arg_name = var_def.variable.name.value
             if arg_name not in argument_name_used:
                 self.report_error(
@@ -48,7 +48,7 @@ class NoUnusedVariablesRule(ValidationRule):
             if not usage.fragment_variable_definition:
                 operation_variable_name_used.add(usage.node.name.value)
 
-        for variable_def in operation.variable_definitions:
+        for variable_def in operation.variable_definitions or ():
             variable_name = variable_def.variable.name.value
             if variable_name not in operation_variable_name_used:
                 self.report_error(

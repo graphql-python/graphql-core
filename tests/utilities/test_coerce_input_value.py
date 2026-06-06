@@ -613,7 +613,7 @@ def describe_coerce_input_literal():
         parser = Parser(variable_defs)
         parser.expect_token(TokenKind.SOF)
         variable_values = get_variable_values(
-            GraphQLSchema(), parser.parse_variable_definitions(), inputs
+            GraphQLSchema(), parser.parse_variable_definitions() or (), inputs
         )
         assert not isinstance(variable_values, list)
         _test(value_text, type_, expected, variable_values)
@@ -866,6 +866,9 @@ def describe_coerce_input_literal():
             {"int": 42, "requiredBool": True},
         )
         _test("{ requiredBool: $foo }", test_input_obj, Undefined)
+        _test_with_variables(
+            "", {}, "{ requiredBool: $foo }", test_input_obj, Undefined
+        )
         _test_with_variables(
             "($foo: Boolean)",
             {"foo": True},

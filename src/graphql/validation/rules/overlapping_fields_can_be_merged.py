@@ -762,16 +762,17 @@ def stringify_value(value: ValueNode) -> str:
 
 
 def get_stream_directive(
-    directives: Sequence[DirectiveNode],
+    directives: Sequence[DirectiveNode] | None,
 ) -> DirectiveNode | None:
-    for directive in directives:
+    for directive in directives or ():
         if directive.name.value == "stream":
             return directive
     return None
 
 
 def same_streams(
-    directives1: Sequence[DirectiveNode], directives2: Sequence[DirectiveNode]
+    directives1: Sequence[DirectiveNode] | None,
+    directives2: Sequence[DirectiveNode] | None,
 ) -> bool:
     stream1 = get_stream_directive(directives1)
     stream2 = get_stream_directive(directives2)

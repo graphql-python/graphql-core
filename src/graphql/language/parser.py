@@ -345,8 +345,8 @@ class Parser:
                 operation=OperationType.QUERY,
                 description=None,
                 name=None,
-                variable_definitions=(),
-                directives=(),
+                variable_definitions=None,
+                directives=None,
                 selection_set=self.parse_selection_set(),
                 loc=self.loc(start),
             )
@@ -371,7 +371,7 @@ class Parser:
         except ValueError as error:
             raise self.unexpected(operation_token) from error
 
-    def parse_variable_definitions(self) -> tuple[VariableDefinitionNode, ...]:
+    def parse_variable_definitions(self) -> tuple[VariableDefinitionNode, ...] | None:
         """VariableDefinitions: (VariableDefinition+)"""
         return self.optional_many(
             TokenKind.PAREN_L, self.parse_variable_definition, TokenKind.PAREN_R
@@ -438,7 +438,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_arguments(self, is_const: bool) -> tuple[ArgumentNode, ...]:
+    def parse_arguments(self, is_const: bool) -> tuple[ArgumentNode, ...] | None:
         """Arguments[Const]: (Argument[?Const]+)"""
         item = self.parse_const_argument if is_const else self.parse_argument
         return self.optional_many(
@@ -461,7 +461,7 @@ class Parser:
         """Argument[Const]: Name : Value[Const]"""
         return cast("ConstArgumentNode", self.parse_argument(True))
 
-    def parse_fragment_arguments(self) -> tuple[FragmentArgumentNode, ...]:
+    def parse_fragment_arguments(self) -> tuple[FragmentArgumentNode, ...] | None:
         """Experimental: Parse arguments on a fragment spread."""
         item = self.parse_fragment_argument
         return self.optional_many(TokenKind.PAREN_L, item, TokenKind.PAREN_R)
@@ -648,15 +648,15 @@ class Parser:
 
     # Implement the parsing rules in the Directives section.
 
-    def parse_directives(self, is_const: bool) -> tuple[DirectiveNode, ...]:
+    def parse_directives(self, is_const: bool) -> tuple[DirectiveNode, ...] | None:
         """Directives[Const]: Directive[?Const]+"""
         directives: list[DirectiveNode] = []
         append = directives.append
         while self.peek(TokenKind.AT):
             append(self.parse_directive(is_const))
-        return tuple(directives)
+        return tuple(directives) if directives else None
 
-    def parse_const_directives(self) -> tuple[ConstDirectiveNode, ...]:
+    def parse_const_directives(self) -> tuple[ConstDirectiveNode, ...] | None:
         return cast("tuple[ConstDirectiveNode, ...]", self.parse_directives(True))
 
     def parse_directive(self, is_const: bool) -> DirectiveNode:
@@ -780,15 +780,15 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_implements_interfaces(self) -> tuple[NamedTypeNode, ...]:
+    def parse_implements_interfaces(self) -> tuple[NamedTypeNode, ...] | None:
         """ImplementsInterfaces"""
         return (
             self.delimited_many(TokenKind.AMP, self.parse_named_type)
             if self.expect_optional_keyword("implements")
-            else ()
+            else None
         )
 
-    def parse_fields_definition(self) -> tuple[FieldDefinitionNode, ...]:
+    def parse_fields_definition(self) -> tuple[FieldDefinitionNode, ...] | None:
         """FieldsDefinition: {FieldDefinition+}"""
         return self.optional_many(
             TokenKind.BRACE_L, self.parse_field_definition, TokenKind.BRACE_R
@@ -812,7 +812,7 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_argument_defs(self) -> tuple[InputValueDefinitionNode, ...]:
+    def parse_argument_defs(self) -> tuple[InputValueDefinitionNode, ...] | None:
         """ArgumentsDefinition: (InputValueDefinition+)"""
         return self.optional_many(
             TokenKind.PAREN_L, self.parse_input_value_def, TokenKind.PAREN_R
@@ -874,12 +874,12 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_union_member_types(self) -> tuple[NamedTypeNode, ...]:
+    def parse_union_member_types(self) -> tuple[NamedTypeNode, ...] | None:
         """UnionMemberTypes"""
         return (
             self.delimited_many(TokenKind.PIPE, self.parse_named_type)
             if self.expect_optional_token(TokenKind.EQUALS)
-            else ()
+            else None
         )
 
     def parse_enum_type_definition(self) -> EnumTypeDefinitionNode:
@@ -898,7 +898,9 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_enum_values_definition(self) -> tuple[EnumValueDefinitionNode, ...]:
+    def parse_enum_values_definition(
+        self,
+    ) -> tuple[EnumValueDefinitionNode, ...] | None:
         """EnumValuesDefinition: {EnumValueDefinition+}"""
         return self.optional_many(
             TokenKind.BRACE_L, self.parse_enum_value_definition, TokenKind.BRACE_R
@@ -944,7 +946,9 @@ class Parser:
             loc=self.loc(start),
         )
 
-    def parse_input_fields_definition(self) -> tuple[InputValueDefinitionNode, ...]:
+    def parse_input_fields_definition(
+        self,
+    ) -> tuple[InputValueDefinitionNode, ...] | None:
         """InputFieldsDefinition: {InputValueDefinition+}"""
         return self.optional_many(
             TokenKind.BRACE_L, self.parse_input_value_def, TokenKind.BRACE_R
@@ -1193,7 +1197,7 @@ class Parser:
 
     def optional_many(
         self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind
-    ) -> tuple[T, ...]:
+    ) -> tuple[T, ...] | None:
         """Fetch matching nodes, maybe none.
 
         Returns a tuple of parse nodes, determined by the ``parse_fn``. It can be empty
@@ -1209,7 +1213,7 @@ class Parser:
             while not expect_optional_token():
                 append(parse_fn())
             return tuple(nodes)
-        return ()
+        return None
 
     def many(
         self, open_kind: TokenKind, parse_fn: Callable[[], T], close_kind: TokenKind

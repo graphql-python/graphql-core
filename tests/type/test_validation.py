@@ -774,6 +774,41 @@ def describe_type_system_union_types_must_be_valid():
                 }
             ]
 
+    def rejects_a_union_type_with_non_object_members_types_with_malformed_ast():
+        schema = build_schema(
+            """
+            type Query {
+              test: BadUnion
+            }
+
+            type TypeA {
+              field: String
+            }
+
+            type TypeB {
+              field: String
+            }
+
+            union BadUnion =
+              | TypeA
+              | String
+              | TypeB
+            """
+        )
+
+        bad_union = schema.get_type("BadUnion")
+        assert bad_union is not None
+        bad_union_node = bad_union.ast_node
+        assert bad_union_node is not None
+        object.__setattr__(bad_union_node, "types", None)
+
+        assert validate_schema(schema) == [
+            {
+                "message": "Union type BadUnion can only include Object types,"
+                " it cannot include String.",
+            }
+        ]
+
 
 def describe_type_system_input_objects_must_have_fields():
     def accepts_an_input_object_type_with_fields():
@@ -1109,6 +1144,36 @@ def describe_type_system_objects_can_only_implement_unique_interfaces():
             }
             """
         )
+        assert validate_schema(schema) == [
+            {
+                "message": "Type BadObject must only implement Interface types,"
+                " it cannot implement SomeInputObject."
+            }
+        ]
+
+    def rejects_an_object_implementing_a_non_interface_type_with_malformed_ast():
+        schema = build_schema(
+            """
+            type Query {
+              test: BadObject
+            }
+
+            input SomeInputObject {
+              field: String
+            }
+
+            type BadObject implements SomeInputObject {
+              field: String
+            }
+            """
+        )
+
+        bad_object = schema.get_type("BadObject")
+        assert bad_object is not None
+        bad_object_node = bad_object.ast_node
+        assert bad_object_node is not None
+        object.__setattr__(bad_object_node, "interfaces", None)
+
         assert validate_schema(schema) == [
             {
                 "message": "Type BadObject must only implement Interface types,"

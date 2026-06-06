@@ -65,19 +65,21 @@ class UniqueArgumentDefinitionNamesRule(SDLValidationRule):
     def check_arg_uniqueness_per_field(
         self,
         name: NameNode,
-        fields: Collection[FieldDefinitionNode],
+        fields: Collection[FieldDefinitionNode] | None,
     ) -> VisitorAction:
         type_name = name.value
-        for field_def in fields:
+        for field_def in fields or ():
             field_name = field_def.name.value
             argument_nodes = field_def.arguments or ()
             self.check_arg_uniqueness(f"{type_name}.{field_name}", argument_nodes)
         return SKIP
 
     def check_arg_uniqueness(
-        self, parent_name: str, argument_nodes: Collection[InputValueDefinitionNode]
+        self,
+        parent_name: str,
+        argument_nodes: Collection[InputValueDefinitionNode] | None,
     ) -> VisitorAction:
-        seen_args = group_by(argument_nodes, attrgetter("name.value"))
+        seen_args = group_by(argument_nodes or (), attrgetter("name.value"))
         for arg_name, arg_nodes in seen_args.items():
             if len(arg_nodes) > 1:
                 self.report_error(

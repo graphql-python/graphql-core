@@ -32,8 +32,10 @@ class UniqueArgumentNamesRule(ASTValidationRule):
     def enter_directive(self, node: DirectiveNode, *_args: Any) -> None:
         self.check_arg_uniqueness(node.arguments)
 
-    def check_arg_uniqueness(self, argument_nodes: Collection[ArgumentNode]) -> None:
-        seen_args = group_by(argument_nodes, attrgetter("name.value"))
+    def check_arg_uniqueness(
+        self, argument_nodes: Collection[ArgumentNode] | None
+    ) -> None:
+        seen_args = group_by(argument_nodes or (), attrgetter("name.value"))
 
         for arg_name, arg_nodes in seen_args.items():
             if len(arg_nodes) > 1:

@@ -419,15 +419,15 @@ class ExecutableDefinitionNode(DefinitionNode):
     selection_set: SelectionSetNode
     description: StringValueNode | None = None
     name: NameNode | None = None
-    variable_definitions: tuple[VariableDefinitionNode, ...] = ()
-    directives: tuple[DirectiveNode, ...] = ()
+    variable_definitions: tuple[VariableDefinitionNode, ...] | None = None
+    directives: tuple[DirectiveNode, ...] | None = None
 
 
 @node_class
 class SelectionNode(Node):
     """Base class for selection nodes."""
 
-    directives: tuple[DirectiveNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] | None = None
 
 
 @node_class
@@ -451,7 +451,7 @@ class TypeDefinitionNode(TypeSystemDefinitionNode):
 
     name: NameNode
     description: StringValueNode | None = None
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
 
 
 @node_class
@@ -459,7 +459,7 @@ class TypeExtensionNode(TypeSystemDefinitionNode):
     """Base class for type extension nodes."""
 
     name: NameNode
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
 
 
 # Type Reference nodes
@@ -568,12 +568,12 @@ ConstValueNode: TypeAlias = (
 @node_class
 class DirectiveNode(Node):
     name: NameNode
-    arguments: tuple[ArgumentNode, ...] = ()
+    arguments: tuple[ArgumentNode, ...] | None = None
 
 
 @node_class
 class ConstDirectiveNode(DirectiveNode):
-    arguments: tuple[ConstArgumentNode, ...] = ()
+    arguments: tuple[ConstArgumentNode, ...] | None = None
 
 
 # Selection nodes
@@ -583,23 +583,23 @@ class ConstDirectiveNode(DirectiveNode):
 class FieldNode(SelectionNode):
     name: NameNode
     alias: NameNode | None = None
-    arguments: tuple[ArgumentNode, ...] = ()
-    directives: tuple[DirectiveNode, ...] = ()
+    arguments: tuple[ArgumentNode, ...] | None = None
+    directives: tuple[DirectiveNode, ...] | None = None
     selection_set: SelectionSetNode | None = None
 
 
 @node_class
 class FragmentSpreadNode(SelectionNode):
     name: NameNode
-    arguments: tuple[FragmentArgumentNode, ...] = ()
-    directives: tuple[DirectiveNode, ...] = ()
+    arguments: tuple[FragmentArgumentNode, ...] | None = None
+    directives: tuple[DirectiveNode, ...] | None = None
 
 
 @node_class
 class InlineFragmentNode(SelectionNode):
     selection_set: SelectionSetNode
     type_condition: NamedTypeNode | None = None
-    directives: tuple[DirectiveNode, ...] = ()
+    directives: tuple[DirectiveNode, ...] | None = None
 
 
 # Argument nodes
@@ -639,7 +639,7 @@ class VariableDefinitionNode(Node):
     variable: VariableNode
     type: TypeNode
     default_value: ConstValueNode | None = None
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
 
 
 # Executable Definition nodes
@@ -675,7 +675,7 @@ class DocumentNode(Node):
 @node_class
 class SchemaDefinitionNode(TypeSystemDefinitionNode):
     description: StringValueNode | None = None
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
     operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
 
 
@@ -695,8 +695,8 @@ class ScalarTypeDefinitionNode(TypeDefinitionNode):
 
 @node_class
 class ObjectTypeDefinitionNode(TypeDefinitionNode):
-    interfaces: tuple[NamedTypeNode, ...] = ()
-    fields: tuple[FieldDefinitionNode, ...] = ()
+    interfaces: tuple[NamedTypeNode, ...] | None = None
+    fields: tuple[FieldDefinitionNode, ...] | None = None
 
 
 @node_class
@@ -704,8 +704,8 @@ class FieldDefinitionNode(DefinitionNode):
     name: NameNode
     type: TypeNode
     description: StringValueNode | None = None
-    arguments: tuple[InputValueDefinitionNode, ...] = ()
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    arguments: tuple[InputValueDefinitionNode, ...] | None = None
+    directives: tuple[ConstDirectiveNode, ...] | None = None
 
 
 @node_class
@@ -714,35 +714,35 @@ class InputValueDefinitionNode(DefinitionNode):
     type: TypeNode
     description: StringValueNode | None = None
     default_value: ConstValueNode | None = None
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
 
 
 @node_class
 class InterfaceTypeDefinitionNode(TypeDefinitionNode):
-    interfaces: tuple[NamedTypeNode, ...] = ()
-    fields: tuple[FieldDefinitionNode, ...] = ()
+    interfaces: tuple[NamedTypeNode, ...] | None = None
+    fields: tuple[FieldDefinitionNode, ...] | None = None
 
 
 @node_class
 class UnionTypeDefinitionNode(TypeDefinitionNode):
-    types: tuple[NamedTypeNode, ...] = ()
+    types: tuple[NamedTypeNode, ...] | None = None
 
 
 @node_class
 class EnumTypeDefinitionNode(TypeDefinitionNode):
-    values: tuple[EnumValueDefinitionNode, ...] = ()
+    values: tuple[EnumValueDefinitionNode, ...] | None = None
 
 
 @node_class
 class EnumValueDefinitionNode(DefinitionNode):
     name: NameNode
     description: StringValueNode | None = None
-    directives: tuple[ConstDirectiveNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
 
 
 @node_class
 class InputObjectTypeDefinitionNode(TypeDefinitionNode):
-    fields: tuple[InputValueDefinitionNode, ...] = ()
+    fields: tuple[InputValueDefinitionNode, ...] | None = None
 
 
 # Directive Definition
@@ -753,7 +753,7 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
     name: NameNode
     locations: tuple[NameNode, ...]
     description: StringValueNode | None = None
-    arguments: tuple[InputValueDefinitionNode, ...] = ()
+    arguments: tuple[InputValueDefinitionNode, ...] | None = None
     repeatable: bool = False
 
 
@@ -762,8 +762,8 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
 
 @node_class
 class SchemaExtensionNode(Node):
-    directives: tuple[ConstDirectiveNode, ...] = ()
-    operation_types: tuple[OperationTypeDefinitionNode, ...] = ()
+    directives: tuple[ConstDirectiveNode, ...] | None = None
+    operation_types: tuple[OperationTypeDefinitionNode, ...] | None = None
 
 
 TypeSystemExtensionNode: TypeAlias = SchemaExtensionNode | TypeExtensionNode
@@ -779,26 +779,26 @@ class ScalarTypeExtensionNode(TypeExtensionNode):
 
 @node_class
 class ObjectTypeExtensionNode(TypeExtensionNode):
-    interfaces: tuple[NamedTypeNode, ...] = ()
-    fields: tuple[FieldDefinitionNode, ...] = ()
+    interfaces: tuple[NamedTypeNode, ...] | None = None
+    fields: tuple[FieldDefinitionNode, ...] | None = None
 
 
 @node_class
 class InterfaceTypeExtensionNode(TypeExtensionNode):
-    interfaces: tuple[NamedTypeNode, ...] = ()
-    fields: tuple[FieldDefinitionNode, ...] = ()
+    interfaces: tuple[NamedTypeNode, ...] | None = None
+    fields: tuple[FieldDefinitionNode, ...] | None = None
 
 
 @node_class
 class UnionTypeExtensionNode(TypeExtensionNode):
-    types: tuple[NamedTypeNode, ...] = ()
+    types: tuple[NamedTypeNode, ...] | None = None
 
 
 @node_class
 class EnumTypeExtensionNode(TypeExtensionNode):
-    values: tuple[EnumValueDefinitionNode, ...] = ()
+    values: tuple[EnumValueDefinitionNode, ...] | None = None
 
 
 @node_class
 class InputObjectTypeExtensionNode(TypeExtensionNode):
-    fields: tuple[InputValueDefinitionNode, ...] = ()
+    fields: tuple[InputValueDefinitionNode, ...] | None = None

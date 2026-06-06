@@ -16,7 +16,7 @@ def _test_variables(variable_defs: str, inputs: dict[str, Any]):
     parser.expect_token(TokenKind.SOF)
     variable_values = get_variable_values(
         GraphQLSchema(types=[GraphQLInt]),
-        parser.parse_variable_definitions(),
+        parser.parse_variable_definitions() or (),
         inputs,
     )
     assert not isinstance(variable_values, list)

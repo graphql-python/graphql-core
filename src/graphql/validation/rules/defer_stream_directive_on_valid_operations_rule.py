@@ -21,7 +21,7 @@ __all__ = ["DeferStreamDirectiveOnValidOperationsRule"]
 
 
 def if_argument_can_be_false(node: DirectiveNode) -> bool:
-    for argument in node.arguments:
+    for argument in node.arguments or ():
         if argument.name.value == "if":
             if isinstance(argument.value, BooleanValueNode):
                 if argument.value.value:

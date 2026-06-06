@@ -263,8 +263,8 @@ def describe_parser():
         assert definition.operation == OperationType.QUERY
         assert definition.description is None
         assert definition.name is None
-        assert definition.variable_definitions == ()
-        assert definition.directives == ()
+        assert definition.variable_definitions is None
+        assert definition.directives is None
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (0, 40)
@@ -294,7 +294,7 @@ def describe_parser():
         assert value.loc == (13, 14)
         assert value.value == "4"
         assert argument.loc == (9, 14)
-        assert field.directives == ()
+        assert field.directives is None
         selection_set = field.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         selections = selection_set.selections
@@ -308,8 +308,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (22, 24)
         assert name.value == "id"
-        assert field.arguments == ()
-        assert field.directives == ()
+        assert field.arguments is None
+        assert field.directives is None
         assert field.selection_set is None
         field = selections[1]
         assert isinstance(field, FieldNode)
@@ -319,8 +319,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (30, 34)
         assert name.value == "name"
-        assert field.arguments == ()
-        assert field.directives == ()
+        assert field.arguments is None
+        assert field.directives is None
         assert field.selection_set is None
 
     def creates_ast_from_nameless_query_without_variables():
@@ -346,8 +346,8 @@ def describe_parser():
         assert definition.operation == OperationType.QUERY
         assert definition.description is None
         assert definition.name is None
-        assert definition.variable_definitions == ()
-        assert definition.directives == ()
+        assert definition.variable_definitions is None
+        assert definition.directives is None
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (6, 29)
@@ -362,8 +362,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (10, 14)
         assert name.value == "node"
-        assert field.arguments == ()
-        assert field.directives == ()
+        assert field.arguments is None
+        assert field.directives is None
         selection_set = field.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (15, 27)
@@ -378,8 +378,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (21, 23)
         assert name.value == "id"
-        assert field.arguments == ()
-        assert field.directives == ()
+        assert field.arguments is None
+        assert field.directives is None
         assert field.selection_set is None
 
     def creates_ast_from_nameless_query_with_description():
@@ -410,8 +410,8 @@ def describe_parser():
         assert description.block is False
         assert definition.operation == OperationType.QUERY
         assert definition.name is None
-        assert definition.variable_definitions == ()
-        assert definition.directives == ()
+        assert definition.variable_definitions is None
+        assert definition.directives is None
         selection_set: SelectionSetNode | None = definition.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (20, 43)
@@ -426,8 +426,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (24, 28)
         assert name.value == "node"
-        assert field.arguments == ()
-        assert field.directives == ()
+        assert field.arguments is None
+        assert field.directives is None
         selection_set = field.selection_set
         assert isinstance(selection_set, SelectionSetNode)
         assert selection_set.loc == (29, 41)
@@ -442,8 +442,8 @@ def describe_parser():
         assert isinstance(name, NameNode)
         assert name.loc == (35, 37)
         assert name.value == "id"
-        assert field.arguments == ()
-        assert field.directives == ()
+        assert field.arguments is None
+        assert field.directives is None
         assert field.selection_set is None
 
     def allows_parsing_without_source_location_information():
@@ -559,7 +559,7 @@ def describe_parser():
             assert type_.name.value == "Int"
             assert type_.loc == (72, 75)
             assert var_def.default_value is None
-            assert var_def.directives == ()
+            assert var_def.directives is None
             var_def = var_defs[1]
             assert isinstance(var_def, VariableDefinitionNode)
             assert var_def.loc == (79, 130)
@@ -578,8 +578,8 @@ def describe_parser():
             assert type_.name.value == "String"
             assert type_.loc == (124, 130)
             assert var_def.default_value is None
-            assert var_def.directives == ()
-            assert op_def.directives == ()
+            assert var_def.directives is None
+            assert op_def.directives is None
             selection_set = op_def.selection_set
             assert isinstance(selection_set, SelectionSetNode)
             assert selection_set.loc == (133, 158)
@@ -619,6 +619,7 @@ def describe_parser():
             )
             op_def = doc.definitions[0]
             assert isinstance(op_def, OperationDefinitionNode)
+            assert op_def.variable_definitions is not None
             var_def = op_def.variable_definitions[0]
             assert isinstance(var_def, VariableDefinitionNode)
             assert var_def.loc == (10, 38)
@@ -632,7 +633,7 @@ def describe_parser():
             directive = directives[0]
             assert directive.name.value == "dir"
             assert directive.name.loc == (35, 38)
-            assert directive.arguments == ()
+            assert directive.arguments is None
             assert directive.loc == (34, 38)
             description = var_def.description
             assert isinstance(description, StringValueNode)
@@ -656,6 +657,7 @@ def describe_parser():
             )
             frag_def = doc.definitions[0]
             assert isinstance(frag_def, FragmentDefinitionNode)
+            assert frag_def.variable_definitions is not None
             var_def = frag_def.variable_definitions[0]
             assert isinstance(var_def, VariableDefinitionNode)
             assert var_def.loc == (13, 29)
@@ -674,7 +676,7 @@ def describe_parser():
             assert type_.name.value == "Int"
             assert type_.loc == (26, 29)
             assert var_def.default_value is None
-            assert var_def.directives == ()
+            assert var_def.directives is None
 
 
 def describe_parse_value():

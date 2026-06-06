@@ -587,7 +587,7 @@ def get_all_implements_interface_nodes(
     implements_nodes: list[NamedTypeNode] = []
     for node in nodes:
         iface_nodes = node.interfaces
-        if iface_nodes:  # pragma: no branch
+        if iface_nodes:
             implements_nodes.extend(
                 iface_node
                 for iface_node in iface_nodes
@@ -606,7 +606,7 @@ def get_union_member_type_nodes(
     member_type_nodes: list[NamedTypeNode] = []
     for node in nodes:
         type_nodes = node.types
-        if type_nodes:  # pragma: no branch
+        if type_nodes:
             member_type_nodes.extend(
                 type_node
                 for type_node in type_nodes

@@ -42,8 +42,8 @@ This will give the same result as manually creating the AST document::
                 FieldDefinitionNode(
                     name=NameNode(value='me'),
                     type=NamedTypeNode(name=NameNode(value='User')),
-                    arguments=(), directives=()),
-                ), interfaces=(), directives=()),
+                    arguments=None, directives=None),
+                ), interfaces=None, directives=None),
         ObjectTypeDefinitionNode(
             name=NameNode(value='User'),
             fields=(
@@ -51,13 +51,13 @@ This will give the same result as manually creating the AST document::
                     name=NameNode(value='id'),
                     type=NamedTypeNode(
                         name=NameNode(value='ID')),
-                    arguments=(), directives=()),
+                    arguments=None, directives=None),
                 FieldDefinitionNode(
                     name=NameNode(value='name'),
                     type=NamedTypeNode(
                         name=NameNode(value='String')),
-                    arguments=(), directives=()),
-                ), interfaces=(), directives=()),
+                    arguments=None, directives=None),
+                ), interfaces=None, directives=None),
         ))
 
 

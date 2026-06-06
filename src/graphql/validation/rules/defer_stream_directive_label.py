@@ -36,7 +36,7 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
             return
         try:
             label_argument = next(
-                arg for arg in node.arguments if arg.name.value == "label"
+                arg for arg in node.arguments or () if arg.name.value == "label"
             )
         except StopIteration:
             return

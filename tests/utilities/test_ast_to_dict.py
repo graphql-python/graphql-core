@@ -61,12 +61,12 @@ def describe_ast_to_disc():
             "definitions": [
                 {
                     "description": None,
-                    "directives": [],
+                    "directives": None,
                     "fields": [
                         {
-                            "arguments": [],
+                            "arguments": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "field_definition",
                             "name": {"kind": "name", "value": "me"},
                             "type": {
@@ -75,18 +75,18 @@ def describe_ast_to_disc():
                             },
                         }
                     ],
-                    "interfaces": [],
+                    "interfaces": None,
                     "kind": "object_type_definition",
                     "name": {"kind": "name", "value": "Query"},
                 },
                 {
                     "description": None,
-                    "directives": [],
+                    "directives": None,
                     "fields": [
                         {
-                            "arguments": [],
+                            "arguments": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "field_definition",
                             "name": {"kind": "name", "value": "id"},
                             "type": {
@@ -95,9 +95,9 @@ def describe_ast_to_disc():
                             },
                         },
                         {
-                            "arguments": [],
+                            "arguments": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "field_definition",
                             "name": {"kind": "name", "value": "name"},
                             "type": {
@@ -106,7 +106,7 @@ def describe_ast_to_disc():
                             },
                         },
                     ],
-                    "interfaces": [],
+                    "interfaces": None,
                     "kind": "object_type_definition",
                     "name": {"kind": "name", "value": "User"},
                 },
@@ -134,12 +134,12 @@ def describe_ast_to_disc():
             "definitions": [
                 {
                     "description": None,
-                    "directives": [],
+                    "directives": None,
                     "fields": [
                         {
-                            "arguments": [],
+                            "arguments": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "field_definition",
                             "loc": {"end": 48, "start": 40},
                             "name": {
@@ -158,7 +158,7 @@ def describe_ast_to_disc():
                             },
                         }
                     ],
-                    "interfaces": [],
+                    "interfaces": None,
                     "kind": "object_type_definition",
                     "loc": {"end": 62, "start": 13},
                     "name": {
@@ -169,12 +169,12 @@ def describe_ast_to_disc():
                 },
                 {
                     "description": None,
-                    "directives": [],
+                    "directives": None,
                     "fields": [
                         {
-                            "arguments": [],
+                            "arguments": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "field_definition",
                             "loc": {"end": 108, "start": 102},
                             "name": {
@@ -193,9 +193,9 @@ def describe_ast_to_disc():
                             },
                         },
                         {
-                            "arguments": [],
+                            "arguments": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "field_definition",
                             "loc": {"end": 135, "start": 123},
                             "name": {
@@ -214,7 +214,7 @@ def describe_ast_to_disc():
                             },
                         },
                     ],
-                    "interfaces": [],
+                    "interfaces": None,
                     "kind": "object_type_definition",
                     "loc": {"end": 149, "start": 76},
                     "name": {
@@ -254,7 +254,7 @@ def describe_ast_to_disc():
             "definitions": [
                 {
                     "description": None,
-                    "directives": [],
+                    "directives": None,
                     "kind": "operation_definition",
                     "name": {"kind": "name", "value": "HeroForEpisode"},
                     "operation": "query",
@@ -273,7 +273,7 @@ def describe_ast_to_disc():
                                         },
                                     }
                                 ],
-                                "directives": [],
+                                "directives": None,
                                 "kind": "field",
                                 "name": {"kind": "name", "value": "hero"},
                                 "selection_set": {
@@ -281,22 +281,22 @@ def describe_ast_to_disc():
                                     "selections": [
                                         {
                                             "alias": None,
-                                            "arguments": [],
-                                            "directives": [],
+                                            "arguments": None,
+                                            "directives": None,
                                             "kind": "field",
                                             "name": {"kind": "name", "value": "name"},
                                             "selection_set": None,
                                         },
                                         {
-                                            "directives": [],
+                                            "directives": None,
                                             "kind": "inline_fragment",
                                             "selection_set": {
                                                 "kind": "selection_set",
                                                 "selections": [
                                                     {
                                                         "alias": None,
-                                                        "arguments": [],
-                                                        "directives": [],
+                                                        "arguments": None,
+                                                        "directives": None,
                                                         "kind": "field",
                                                         "name": {
                                                             "kind": "name",
@@ -315,15 +315,15 @@ def describe_ast_to_disc():
                                             },
                                         },
                                         {
-                                            "directives": [],
+                                            "directives": None,
                                             "kind": "inline_fragment",
                                             "selection_set": {
                                                 "kind": "selection_set",
                                                 "selections": [
                                                     {
                                                         "alias": None,
-                                                        "arguments": [],
-                                                        "directives": [],
+                                                        "arguments": None,
+                                                        "directives": None,
                                                         "kind": "field",
                                                         "name": {
                                                             "kind": "name",
@@ -350,7 +350,7 @@ def describe_ast_to_disc():
                         {
                             "default_value": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "variable_definition",
                             "type": {
                                 "kind": "non_null_type",
@@ -393,7 +393,7 @@ def describe_ast_to_disc():
             "definitions": [
                 {
                     "description": None,
-                    "directives": [],
+                    "directives": None,
                     "kind": "operation_definition",
                     "loc": {"end": 293, "start": 13},
                     "name": {
@@ -428,7 +428,7 @@ def describe_ast_to_disc():
                                         },
                                     }
                                 ],
-                                "directives": [],
+                                "directives": None,
                                 "kind": "field",
                                 "loc": {"end": 279, "start": 65},
                                 "name": {
@@ -442,8 +442,8 @@ def describe_ast_to_disc():
                                     "selections": [
                                         {
                                             "alias": None,
-                                            "arguments": [],
-                                            "directives": [],
+                                            "arguments": None,
+                                            "directives": None,
                                             "kind": "field",
                                             "loc": {"end": 106, "start": 102},
                                             "name": {
@@ -454,7 +454,7 @@ def describe_ast_to_disc():
                                             "selection_set": None,
                                         },
                                         {
-                                            "directives": [],
+                                            "directives": None,
                                             "kind": "inline_fragment",
                                             "loc": {"end": 189, "start": 123},
                                             "selection_set": {
@@ -463,8 +463,8 @@ def describe_ast_to_disc():
                                                 "selections": [
                                                     {
                                                         "alias": None,
-                                                        "arguments": [],
-                                                        "directives": [],
+                                                        "arguments": None,
+                                                        "directives": None,
                                                         "kind": "field",
                                                         "loc": {
                                                             "end": 171,
@@ -493,7 +493,7 @@ def describe_ast_to_disc():
                                             },
                                         },
                                         {
-                                            "directives": [],
+                                            "directives": None,
                                             "kind": "inline_fragment",
                                             "loc": {"end": 263, "start": 206},
                                             "selection_set": {
@@ -502,8 +502,8 @@ def describe_ast_to_disc():
                                                 "selections": [
                                                     {
                                                         "alias": None,
-                                                        "arguments": [],
-                                                        "directives": [],
+                                                        "arguments": None,
+                                                        "directives": None,
                                                         "kind": "field",
                                                         "loc": {
                                                             "end": 245,
@@ -540,7 +540,7 @@ def describe_ast_to_disc():
                         {
                             "default_value": None,
                             "description": None,
-                            "directives": [],
+                            "directives": None,
                             "kind": "variable_definition",
                             "loc": {"end": 47, "start": 34},
                             "type": {

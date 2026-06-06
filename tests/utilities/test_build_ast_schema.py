@@ -360,7 +360,7 @@ def describe_schema_builder():
 
         definition = parse(sdl).definitions[0]
         assert isinstance(definition, InterfaceTypeDefinitionNode)
-        assert definition.interfaces == ()
+        assert definition.interfaces is None
 
         assert cycle_sdl(sdl) == sdl
 
