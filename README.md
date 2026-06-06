@@ -11,7 +11,7 @@ a query language for APIs created by Facebook.
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/graphql-python/graphql-core)
 [![Code style](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-An extensive test suite with over 2600 unit tests and 100% coverage replicates the
+An extensive test suite with over 3000 unit tests and 100% coverage replicates the
 complete test suite of GraphQL.js, ensuring that this port is reliable and compatible
 with GraphQL.js.
 
