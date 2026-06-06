@@ -964,6 +964,34 @@ class ExecutionContext(IncrementalPublisherContext):
         msg = f"Unexpected error value: {inspect(reason)}"
         raise TypeError(msg)
 
+    def cancellable_iterable(self, iterable: AsyncIterable[T]) -> AsyncIterable[T]:
+        """Wrap an async iterable so pending iteration is cancelled on abort.
+
+        When the abort signal is triggered, any pending ``__anext__`` call returns
+        immediately by raising the abort reason. This mirrors the JavaScript
+        ``PromiseCanceller.cancellableIterable``; GraphQL-Core needs no
+        ``PromiseCanceller`` class since :meth:`with_abort_signal` already provides
+        the cancellation mechanism.
+        """
+        if self.abort_signal is None:
+            return iterable
+        with_abort_signal = self.with_abort_signal
+        iterator = iterable.__aiter__()
+
+        class CancellableAsyncIterator:
+            def __aiter__(self) -> AsyncIterator[T]:
+                return self
+
+            def __anext__(self) -> Awaitable[T]:
+                return with_abort_signal(iterator.__anext__())
+
+            async def aclose(self) -> None:
+                aclose = getattr(iterator, "aclose", None)
+                if aclose is not None:
+                    await aclose()
+
+        return CancellableAsyncIterator()
+
     async def complete_awaitable_value(
         self,
         return_type: GraphQLOutputType,
@@ -1189,7 +1217,7 @@ class ExecutionContext(IncrementalPublisherContext):
         item_type = return_type.of_type
 
         if self.is_async_iterable(result):
-            async_iterator = result.__aiter__()
+            async_iterator = self.cancellable_iterable(result).__aiter__()
 
             return self.complete_async_iterator_value(
                 item_type,
@@ -1724,7 +1752,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 else cast("ExecutionResult", result)
             )
 
-        return map_async_iterable(result_or_stream, callback)
+        return map_async_iterable(self.cancellable_iterable(result_or_stream), callback)
 
     def collect_execution_groups(
         self,

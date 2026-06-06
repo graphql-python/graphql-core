@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from asyncio import Event, Future, ensure_future, sleep
-from collections.abc import Awaitable
+from collections.abc import AsyncIterator, Awaitable
 
 import pytest
 
@@ -415,6 +415,102 @@ def describe_execute_cancellation():
             ],
         )
 
+    async def stops_the_execution_when_aborted_despite_a_hanging_async_item():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          items
+        }
+      }
+    """
+        )
+
+        async def items(_info):
+            # never reached: the iterator is cancelled before its body runs
+            yield await Future()  # will never resolve  # pragma: no cover
+
+        def todo(_info):
+            return {"id": "1", "items": items}
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            {"todo": {"id": "1", "items": None}},
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(5, 11)],
+                    "path": ["todo", "items"],
+                }
+            ],
+        )
+
+    async def stops_the_execution_when_aborted_despite_a_hanging_iterator_no_close():
+        # Like the test above, but the async iterator has no aclose() method, so
+        # the cancellable wrapper has nothing to forward the close to.
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          items
+        }
+      }
+    """
+        )
+
+        class Items:
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                # never reached: the iterator is cancelled before its body runs
+                return await Future()  # will never resolve  # pragma: no cover
+
+        def todo(_info):
+            return {"id": "1", "items": Items()}
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            {"todo": {"id": "1", "items": None}},
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(5, 11)],
+                    "path": ["todo", "items"],
+                }
+            ],
+        )
+
     async def stops_the_execution_when_aborted_with_proper_null_bubbling():
         abort_controller = AbortController()
         document = parse(
@@ -532,7 +628,7 @@ def describe_execute_cancellation():
 
         assert result == (None, [{"message": "This operation was aborted"}])
 
-    async def stops_the_execution_when_aborted_during_subscription():
+    async def stops_the_execution_when_aborted_prior_to_return_of_subscription():
         abort_controller = AbortController()
         document = parse(
             """
@@ -545,17 +641,17 @@ def describe_execute_cancellation():
         def foo(_info):
             return Future()  # will never resolve
 
-        awaitable_result = subscribe(
+        subscription_promise = subscribe(
             schema,
             document,
             abort_signal=abort_controller.signal,
             root_value={"foo": foo},
         )
-        assert isinstance(awaitable_result, Awaitable)
+        assert isinstance(subscription_promise, Awaitable)
 
         abort_controller.abort()
 
-        result = await awaitable_result
+        result = await subscription_promise
 
         assert result == (
             None,
@@ -567,3 +663,98 @@ def describe_execute_cancellation():
                 }
             ],
         )
+
+    async def successfully_wraps_the_subscription():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      subscription {
+        foo
+      }
+    """
+        )
+
+        async def foo():
+            yield {"foo": "foo"}
+
+        async def resolve_foo(_info):
+            return foo()
+
+        subscription_promise = subscribe(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"foo": resolve_foo},
+        )
+        assert isinstance(subscription_promise, Awaitable)
+        subscription = await subscription_promise
+
+        assert isinstance(subscription, AsyncIterator)
+
+        assert await anext(subscription) == ({"foo": "foo"}, None)
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(subscription)
+
+    async def stops_the_execution_when_aborted_during_subscription():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      subscription {
+        foo
+      }
+    """
+        )
+
+        async def foo():
+            yield {"foo": "foo"}
+
+        subscription = subscribe(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"foo": foo()},
+        )
+
+        assert isinstance(subscription, AsyncIterator)
+
+        assert await anext(subscription) == ({"foo": "foo"}, None)
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await anext(subscription)
+
+    async def stops_the_execution_when_aborted_during_async_returned_subscription():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      subscription {
+        foo
+      }
+    """
+        )
+
+        async def foo():
+            yield {"foo": "foo"}
+
+        async def resolve_foo(_info):
+            return foo()
+
+        subscription_promise = subscribe(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"foo": resolve_foo},
+        )
+        assert isinstance(subscription_promise, Awaitable)
+        subscription = await subscription_promise
+
+        assert isinstance(subscription, AsyncIterator)
+
+        assert await anext(subscription) == ({"foo": "foo"}, None)
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await anext(subscription)
