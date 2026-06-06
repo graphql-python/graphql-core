@@ -126,6 +126,52 @@ def describe_execute_cancellation():
             ],
         )
 
+    async def provides_access_to_the_abort_signal_within_resolvers():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+        }
+      }
+    """
+        )
+
+        async def cancellable_async_fn(abort_signal):
+            raise await abort_signal.wait()
+
+        # Contrary to JavaScript, where the abort signal is passed as an additional
+        # argument to the resolvers, in GraphQL-Core it is available via the resolve
+        # info, just like the context value.
+        def resolve_id(info):
+            return cancellable_async_fn(info.abort_signal)
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": {"id": resolve_id}},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            {"todo": {"id": None}},
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(4, 11)],
+                    "path": ["todo", "id"],
+                }
+            ],
+        )
+
     async def stops_the_execution_when_aborted_during_completion_with_custom_error():
         abort_controller = AbortController()
         document = parse(

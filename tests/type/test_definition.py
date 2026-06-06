@@ -38,7 +38,7 @@ from graphql.language import (
     ValueNode,
     parse_value,
 )
-from graphql.pyutils import Path, Undefined, is_awaitable
+from graphql.pyutils import AbortSignal, Path, Undefined, is_awaitable
 from graphql.type import (
     GraphQLArgument,
     GraphQLDefaultValueUsage,
@@ -1614,6 +1614,7 @@ def describe_resolve_info():
         operation: OperationDefinitionNode
         variable_values: VariableValues
         is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
+        abort_signal: AbortSignal | None
 
     info_args: InfoArgs = {
         "field_name": "foo",
@@ -1629,6 +1630,7 @@ def describe_resolve_info():
         ),
         "variable_values": VariableValues({}, {}),
         "is_awaitable": is_awaitable,
+        "abort_signal": None,
     }
 
     def resolve_info_with_unspecified_context_type_can_use_any_type():

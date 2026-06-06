@@ -283,6 +283,7 @@ def describe_execute_handles_basic_execution_tasks():
             ),
             context=None,
             is_awaitable=resolved_infos[0].is_awaitable,
+            abort_signal=None,
         )
 
     def it_populates_path_correctly_with_complex_types():

@@ -791,6 +791,7 @@ class ExecutionContext(IncrementalPublisherContext):
             self.variable_values,
             self.context_value,
             self.is_awaitable,
+            self.abort_signal,
         )
 
     def handle_field_error(

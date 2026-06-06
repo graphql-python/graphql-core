@@ -46,6 +46,7 @@ from ..language import (
     print_ast,
 )
 from ..pyutils import (
+    AbortSignal,
     AwaitableOrValue,
     Path,
     Undefined,
@@ -617,7 +618,8 @@ try:
 
         Note that contrary to the JavaScript implementation, the context (commonly used
         to represent an authenticated user, or request-specific caches) is included here
-        and not passed as an additional argument.
+        and not passed as an additional argument. The same applies to the abort signal
+        which in JavaScript is passed as an additional argument to the resolvers.
         """
 
         field_name: str
@@ -632,6 +634,7 @@ try:
         variable_values: VariableValues
         context: TContext
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
+        abort_signal: AbortSignal | None
 except TypeError as error:  # pragma: no cover
     if "Multiple inheritance with NamedTuple is not supported" not in str(error):
         raise  # only catch expected error for Python 3.10
@@ -643,7 +646,8 @@ except TypeError as error:  # pragma: no cover
 
         Note that contrary to the JavaScript implementation, the context (commonly used
         to represent an authenticated user, or request-specific caches) is included here
-        and not passed as an additional argument.
+        and not passed as an additional argument. The same applies to the abort signal
+        which in JavaScript is passed as an additional argument to the resolvers.
         """
 
         field_name: str
@@ -658,6 +662,7 @@ except TypeError as error:  # pragma: no cover
         variable_values: VariableValues
         context: Any
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
+        abort_signal: AbortSignal | None
 
 
 # Note: Contrary to the Javascript implementation of GraphQLFieldResolver,
