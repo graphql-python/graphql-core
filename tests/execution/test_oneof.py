@@ -68,8 +68,9 @@ def describe_execute_handles_one_of_input_objects():
                     {
                         # This type of error would be caught at validation-time
                         # hence the vague error message here.
-                        "message": "Argument 'input' of non-null type"
-                        " 'TestInputObject!' must not be null.",
+                        "message": "Argument 'input' has invalid value:"
+                        " Expected variable '$input' provided to type"
+                        " 'TestInputObject!' to provide a runtime value.",
                         "locations": [(3, 31)],
                         "path": ["test"],
                     }
@@ -117,8 +118,8 @@ def describe_execute_handles_one_of_input_objects():
                 None,
                 [
                     {
-                        "message": "Variable '$input' got invalid value"
-                        " {'a': 'abc', 'b': 123}; Exactly one key must be specified"
+                        "message": "Variable '$input' has invalid value:"
+                        " Exactly one key must be specified"
                         " for OneOf type 'TestInputObject'.",
                         "locations": [(2, 24)],
                     }
@@ -142,8 +143,8 @@ def describe_execute_handles_one_of_input_objects():
                 None,
                 [
                     {
-                        "message": "Variable '$input' got invalid value"
-                        " {'a': 'abc', 'b': None}; Exactly one key must be specified"
+                        "message": "Variable '$input' has invalid value:"
+                        " Exactly one key must be specified"
                         " for OneOf type 'TestInputObject'.",
                         "locations": [(2, 24)],
                     }

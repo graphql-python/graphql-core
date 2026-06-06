@@ -170,7 +170,7 @@ def describe_custom_scalar():
             None,
             [
                 {
-                    "message": "Variable '$money' got invalid value 21;"
+                    "message": "Variable '$money' has invalid value:"
                     " Cannot parse money value: 21",
                     "locations": [(2, 25)],
                 }
@@ -201,9 +201,10 @@ def describe_custom_scalar():
             {"toEuros": None},
             [
                 {
-                    "message": "Argument 'money' of type 'Money' has invalid value"
-                    " { amount: $amount, currency: $currency }.",
-                    "locations": [(3, 30)],
+                    "message": "Argument 'money' has invalid value:"
+                    " Cannot parse literal money value:"
+                    " {'amount': 'DM', 'currency': 42}",
+                    "locations": [(3, 15)],
                 },
             ],
         )

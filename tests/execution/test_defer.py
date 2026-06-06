@@ -741,8 +741,8 @@ def describe_execute_defer_directive():
             "errors": [
                 {
                     "locations": [{"column": 33, "line": 3}],
-                    "message": "Argument 'label' of type 'String'"
-                    " has invalid value 42.",
+                    "message": "Argument 'label' has invalid value:"
+                    " String cannot represent a non string value: 42",
                 }
             ],
         }

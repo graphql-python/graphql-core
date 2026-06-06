@@ -24,17 +24,23 @@ from graphql.type import (
     GraphQLString,
 )
 
-TestFaultyScalarGraphQLError = GraphQLError(
-    "FaultyScalarErrorMessage", extensions={"code": "FaultyScalarExtensionCode"}
-)
+
+def make_faulty_scalar_error() -> GraphQLError:
+    # Note: unlike GraphQL.js, a fresh error is raised on each call. The runtime
+    # argument-coercion fallback now mutates the error message in place, so a
+    # shared singleton would otherwise leak the mutated message into other tests
+    # (test order is randomized).
+    return GraphQLError(
+        "FaultyScalarErrorMessage", extensions={"code": "FaultyScalarExtensionCode"}
+    )
 
 
 def faulty_coerce_input_value(_value: str) -> str:
-    raise TestFaultyScalarGraphQLError
+    raise make_faulty_scalar_error()
 
 
 def faulty_coerce_input_literal(_ast: ValueNode) -> str:
-    raise TestFaultyScalarGraphQLError
+    raise make_faulty_scalar_error()
 
 
 TestFaultyScalar = GraphQLScalarType(
@@ -77,6 +83,16 @@ TestCustomInputObject = GraphQLInputObjectType(
     "TestCustomInputObject",
     {"x": GraphQLInputField(GraphQLFloat), "y": GraphQLInputField(GraphQLFloat)},
     out_type=lambda value: f"(x|y) = ({value['x']}|{value['y']})",
+)
+
+
+TestOneOfInputObject = GraphQLInputObjectType(
+    "TestOneOfInputObject",
+    {
+        "a": GraphQLInputField(GraphQLString),
+        "b": GraphQLInputField(GraphQLString),
+    },
+    is_one_of=True,
 )
 
 
@@ -128,6 +144,9 @@ TestType = GraphQLObjectType(
             GraphQLArgument(GraphQLNonNull(TestEnum))
         ),
         "fieldWithObjectInput": field_with_input_arg(GraphQLArgument(TestInputObject)),
+        "fieldWithOneOfObjectInput": field_with_input_arg(
+            GraphQLArgument(TestOneOfInputObject)
+        ),
         "fieldWithCustomObjectInput": field_with_input_arg(
             GraphQLArgument(TestCustomInputObject)
         ),
@@ -270,9 +289,9 @@ def describe_execute_handles_inputs():
                     {"fieldWithObjectInput": None},
                     [
                         {
-                            "message": "Argument 'input' of type"
-                            " 'TestInputObject' has invalid value"
-                            ' ["foo", "bar", "baz"].',
+                            "message": "Argument 'input' has invalid value:"
+                            " Expected value of type 'TestInputObject'"
+                            ' to be an object, found: ["foo", "bar", "baz"].',
                             "path": ["fieldWithObjectInput"],
                             "locations": [(3, 51)],
                         }
@@ -306,11 +325,11 @@ def describe_execute_handles_inputs():
                     {"fieldWithObjectInput": None},
                     [
                         {
-                            "message": "Argument 'input' of type"
-                            " 'TestInputObject' has invalid value"
-                            ' { c: "foo", e: "bar" }.',
+                            "message": "Argument 'input' has invalid value at .e:"
+                            " FaultyScalarErrorMessage",
                             "path": ["fieldWithObjectInput"],
-                            "locations": [(3, 51)],
+                            "locations": [(3, 23)],
+                            "extensions": {"code": "FaultyScalarExtensionCode"},
                         }
                     ],
                 )
@@ -435,8 +454,8 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value"
-                            " 'ExternalValue' at 'input.e'; FaultyScalarErrorMessage",
+                            "message": "Variable '$input' has invalid value at .e:"
+                            " FaultyScalarErrorMessage",
                             "locations": [(2, 24)],
                             "extensions": {"code": "FaultyScalarExtensionCode"},
                         }
@@ -451,9 +470,9 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value"
-                            " None at 'input.c';"
-                            " Expected non-nullable type 'String!' not to be None.",
+                            "message": "Variable '$input' has invalid value at .c:"
+                            " Expected value of non-null type 'String!'"
+                            " not to be None.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -466,8 +485,9 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value 'foo bar';"
-                            " Expected type 'TestInputObject' to be a mapping.",
+                            "message": "Variable '$input' has invalid value:"
+                            " Expected value of type 'TestInputObject'"
+                            " to be an object, found: 'foo bar'.",
                             "locations": [(2, 24)],
                             "path": None,
                         }
@@ -481,10 +501,10 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value"
-                            " {'a': 'foo', 'b': 'bar'};"
-                            " Field 'TestInputObject.c' of required type 'String!'"
-                            " was not provided.",
+                            "message": "Variable '$input' has invalid value:"
+                            " Expected value of type 'TestInputObject'"
+                            " to include required field 'c',"
+                            " found: {'a': 'foo', 'b': 'bar'}.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -502,17 +522,17 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value"
-                            " {'a': 'foo'} at 'input.na';"
-                            " Field 'TestInputObject.c' of required type 'String!'"
-                            " was not provided.",
+                            "message": "Variable '$input' has invalid value at .na:"
+                            " Expected value of type 'TestInputObject'"
+                            " to include required field 'c',"
+                            " found: {'a': 'foo'}.",
                             "locations": [(2, 28)],
                         },
                         {
-                            "message": "Variable '$input' got invalid value"
-                            " {'na': {'a': 'foo'}};"
-                            " Field 'TestNestedInputObject.nb' of required type"
-                            " 'String!' was not provided.",
+                            "message": "Variable '$input' has invalid value:"
+                            " Expected value of type 'TestNestedInputObject'"
+                            " to include required field 'nb',"
+                            " found: {'na': {'a': 'foo'}}.",
                             "locations": [(2, 28)],
                         },
                     ],
@@ -526,9 +546,10 @@ def describe_execute_handles_inputs():
                     None,
                     [
                         {
-                            "message": "Variable '$input' got invalid value {'a':"
-                            " 'foo', 'b': 'bar', 'c': 'baz', 'extra': 'dog'}; Field"
-                            " 'extra' is not defined by type 'TestInputObject'.",
+                            "message": "Variable '$input' has invalid value:"
+                            " Expected value of type 'TestInputObject'"
+                            " not to include unknown field 'extra', found:"
+                            " {'a': 'foo', 'b': 'bar', 'c': 'baz', 'extra': 'dog'}.",
                             "locations": [(2, 24)],
                         }
                     ],
@@ -672,8 +693,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$value' of required type 'String!'"
-                        " was not provided.",
+                        "message": "Variable '$value' has invalid value:"
+                        " Expected a value of non-null type 'String!'"
+                        " to be provided.",
                         "locations": [(2, 24)],
                         "path": None,
                     }
@@ -692,8 +714,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$value' of non-null type 'String!'"
-                        " must not be null.",
+                        "message": "Variable '$value' has invalid value:"
+                        " Expected value of non-null type 'String!'"
+                        " not to be None.",
                         "locations": [(2, 24)],
                         "path": None,
                     }
@@ -748,7 +771,7 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$value' got invalid value [1, 2, 3];"
+                        "message": "Variable '$value' has invalid value:"
                         " String cannot represent a non string value: [1, 2, 3]",
                         "locations": [(2, 24)],
                         "path": None,
@@ -779,9 +802,9 @@ def describe_execute_handles_inputs():
                 {"fieldWithNonNullableStringInput": None},
                 [
                     {
-                        "message": "Argument 'input' of required type 'String!'"
-                        " was provided the variable '$foo' which was"
-                        " not provided a runtime value.",
+                        "message": "Argument 'input' has invalid value:"
+                        " Expected variable '$foo' provided to type 'String!'"
+                        " to provide a runtime value.",
                         "locations": [(3, 58)],
                         "path": ["fieldWithNonNullableStringInput"],
                     }
@@ -833,8 +856,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$input' of non-null type '[String]!'"
-                        " must not be null.",
+                        "message": "Variable '$input' has invalid value:"
+                        " Expected value of non-null type '[String]!'"
+                        " not to be None.",
                         "locations": [(2, 24)],
                         "path": None,
                     }
@@ -897,9 +921,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$input' got invalid value None"
-                        " at 'input[1]';"
-                        " Expected non-nullable type 'String!' not to be None.",
+                        "message": "Variable '$input' has invalid value at [1]:"
+                        " Expected value of non-null type 'String!'"
+                        " not to be None.",
                         "locations": [(2, 24)],
                     }
                 ],
@@ -917,8 +941,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$input' of non-null type '[String!]!'"
-                        " must not be null.",
+                        "message": "Variable '$input' has invalid value:"
+                        " Expected value of non-null type '[String!]!'"
+                        " not to be None.",
                         "locations": [(2, 24)],
                     }
                 ],
@@ -946,9 +971,9 @@ def describe_execute_handles_inputs():
                 None,
                 [
                     {
-                        "message": "Variable '$input' got invalid value None"
-                        " at 'input[1]';"
-                        " Expected non-nullable type 'String!' not to be None.",
+                        "message": "Variable '$input' has invalid value at [1]:"
+                        " Expected value of non-null type 'String!'"
+                        " not to be None.",
                         "locations": [(2, 24)],
                         "path": None,
                     }
@@ -1110,7 +1135,8 @@ def describe_execute_handles_inputs():
             assert result.errors is not None
             assert len(result.errors) == 1
             assert result.errors[0].message.startswith(
-                "Argument 'value' of non-null type 'String!'"
+                "Argument 'value' has invalid value:"
+                " Expected value of non-null type 'String!' not to be None."
             )
 
         def when_the_definition_has_no_default_and_is_not_provided():
@@ -1367,8 +1393,8 @@ def describe_execute_handles_inputs():
                 {"fieldWithDefaultArgumentValue": None},
                 [
                     {
-                        "message": "Argument 'input' of type 'String'"
-                        " has invalid value WRONG_TYPE.",
+                        "message": "Argument 'input' has invalid value:"
+                        " String cannot represent a non string value: WRONG_TYPE",
                         "locations": [(3, 56)],
                         "path": ["fieldWithDefaultArgumentValue"],
                     }
@@ -1407,8 +1433,8 @@ def describe_execute_handles_inputs():
 
         def _invalid_value_error(value: int, index: int) -> dict[str, Any]:
             return {
-                "message": "Variable '$input' got invalid value"
-                f" {value} at 'input[{index}]';"
+                "message": "Variable '$input' has invalid value"
+                f" at [{index}]:"
                 f" String cannot represent a non string value: {value}",
                 "locations": [(2, 20)],
             }

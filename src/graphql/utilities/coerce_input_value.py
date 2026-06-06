@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any
 
-from ..error import GraphQLError
 from ..language import (
     ListValueNode,
     NullValueNode,
@@ -14,22 +12,14 @@ from ..language import (
     VariableNode,
 )
 from ..pyutils import (
-    Path,
     Undefined,
-    did_you_mean,
-    inspect,
     is_iterable,
-    print_path_list,
-    suggestion_list,
 )
 from ..type import (
     GraphQLDefaultValueUsage,
     GraphQLInputType,
-    GraphQLScalarType,
     assert_leaf_type,
-    is_enum_type,
     is_input_object_type,
-    is_leaf_type,
     is_list_type,
     is_non_null_type,
     is_required_input_field,
@@ -42,177 +32,78 @@ if TYPE_CHECKING:
 __all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
 
 
-OnErrorCB: TypeAlias = Callable[[list[str | int], Any, GraphQLError], None]
+def coerce_input_value(input_value: Any, type_: GraphQLInputType) -> Any:
+    """Coerce a Python value given a GraphQL Input Type.
 
-
-def default_on_error(
-    path: list[str | int], invalid_value: Any, error: GraphQLError
-) -> None:
-    error_prefix = "Invalid value " + inspect(invalid_value)
-    if path:
-        error_prefix += f" at 'value{print_path_list(path)}'"
-    error.message = error_prefix + ": " + error.message
-    raise error
-
-
-def coerce_input_value(
-    input_value: Any,
-    type_: GraphQLInputType,
-    on_error: OnErrorCB = default_on_error,
-    path: Path | None = None,
-    hide_suggestions: bool = False,
-) -> Any:
-    """Coerce a Python value given a GraphQL Input Type."""
+    Returns ``Undefined`` when the value could not be validly coerced according
+    to the provided type.
+    """
     if is_non_null_type(type_):
-        if input_value is not None and input_value is not Undefined:
-            return coerce_input_value(
-                input_value, type_.of_type, on_error, path, hide_suggestions
-            )
-        on_error(
-            path.as_list() if path else [],
-            input_value,
-            GraphQLError(
-                f"Expected non-nullable type '{inspect(type_)}' not to be None."
-            ),
-        )
-        return Undefined
+        if input_value is None or input_value is Undefined:
+            return Undefined  # Invalid: intentionally return no value.
+        return coerce_input_value(input_value, type_.of_type)
 
     if input_value is None or input_value is Undefined:
-        # Explicitly return the value null.
-        return None
+        return None  # Explicitly return the value null.
 
     if is_list_type(type_):
         item_type = type_.of_type
-        if is_iterable(input_value):
-            coerced_list: list[Any] = []
-            append_item = coerced_list.append
-            for index, item_value in enumerate(input_value):
-                append_item(
-                    coerce_input_value(
-                        item_value,
-                        item_type,
-                        on_error,
-                        Path(path, index, None),
-                        hide_suggestions,
-                    )
-                )
-            return coerced_list
-        # Lists accept a non-list value as a list of one.
-        return [
-            coerce_input_value(input_value, item_type, on_error, path, hide_suggestions)
-        ]
+        if not is_iterable(input_value):
+            # Lists accept a non-list value as a list of one.
+            coerced_item = coerce_input_value(input_value, item_type)
+            if coerced_item is Undefined:
+                return Undefined  # Invalid: intentionally return no value.
+            return [coerced_item]
+        coerced_list: list[Any] = []
+        append_item = coerced_list.append
+        for item_value in input_value:
+            coerced_item = coerce_input_value(item_value, item_type)
+            if coerced_item is Undefined:
+                return Undefined  # Invalid: intentionally return no value.
+            append_item(coerced_item)
+        return coerced_list
 
     if is_input_object_type(type_):
         if not isinstance(input_value, dict):
-            on_error(
-                path.as_list() if path else [],
-                input_value,
-                GraphQLError(f"Expected type '{type_}' to be a mapping."),
-            )
-            return Undefined
+            return Undefined  # Invalid: intentionally return no value.
 
         coerced_dict: dict[str, Any] = {}
         fields = type_.fields
-
+        if any(field_name not in fields for field_name in input_value):
+            return Undefined  # Invalid: intentionally return no value.
         for field_name, field in fields.items():
             field_value = input_value.get(field_name, Undefined)
-
             if field_value is Undefined:
+                if is_required_input_field(field):
+                    return Undefined  # Invalid: intentionally return no value.
                 if field.default_value:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_dict[field.out_name or field_name] = coerce_default_value(
-                        field.default_value, field.type, hide_suggestions
+                        field.default_value, field.type
                     )
-                elif is_non_null_type(field.type):  # pragma: no branch
-                    type_str = inspect(field.type)
-                    on_error(
-                        path.as_list() if path else [],
-                        input_value,
-                        GraphQLError(
-                            f"Field '{type_}.{field_name}' of required type"
-                            f" '{type_str}' was not provided."
-                        ),
-                    )
-                continue
-
-            coerced_dict[field.out_name or field_name] = coerce_input_value(
-                field_value,
-                field.type,
-                on_error,
-                Path(path, field_name, type_.name),
-                hide_suggestions,
-            )
-
-        # Ensure every provided field is defined.
-        for field_name in input_value:
-            if field_name not in fields:
-                suggestions = suggestion_list(field_name, fields)
-                on_error(
-                    path.as_list() if path else [],
-                    input_value,
-                    GraphQLError(
-                        f"Field '{field_name}' is not defined by type '{type_}'."
-                        + ("" if hide_suggestions else did_you_mean(suggestions))
-                    ),
-                )
+            else:
+                coerced_field = coerce_input_value(field_value, field.type)
+                if coerced_field is Undefined:
+                    return Undefined  # Invalid: intentionally return no value.
+                coerced_dict[field.out_name or field_name] = coerced_field
 
         if type_.is_one_of:
             keys = list(coerced_dict)
             if len(keys) != 1:
-                on_error(
-                    path.as_list() if path else [],
-                    input_value,
-                    GraphQLError(
-                        f"Exactly one key must be specified for OneOf type '{type_}'.",
-                    ),
-                )
-            else:
-                key = keys[0]
-                value = coerced_dict[key]
-                if value is None:
-                    on_error(
-                        (path.as_list() if path else []) + [key],
-                        value,
-                        GraphQLError(
-                            f"Field '{key}' must be non-null.",
-                        ),
-                    )
+                # Invalid: not exactly one key, intentionally return no value.
+                return Undefined
+            if coerced_dict[keys[0]] is None:
+                # Invalid: value not non-null, intentionally return no value.
+                return Undefined
 
         return type_.out_type(coerced_dict)
 
-    if is_leaf_type(type_):
-        # Scalars and Enums determine if an input value is valid via
-        # `coerce_input_value()`, which can throw to indicate failure. If it throws,
-        # maintain a reference to the original error.
-        try:
-            # Note: only enum types accept `hide_suggestions`, since scalar
-            # `coerce_input_value` functions are user-provided with a fixed signature.
-            if is_enum_type(type_):
-                parse_result = type_.coerce_input_value(input_value, hide_suggestions)
-            else:
-                type_ = cast("GraphQLScalarType", type_)
-                parse_result = type_.coerce_input_value(input_value)
-        except GraphQLError as error:
-            on_error(path.as_list() if path else [], input_value, error)
-            return Undefined
-        except Exception as error:  # noqa: BLE001
-            on_error(
-                path.as_list() if path else [],
-                input_value,
-                GraphQLError(f"Expected type '{type_}'. {error}", original_error=error),
-            )
-            return Undefined
-        if parse_result is Undefined:
-            on_error(
-                path.as_list() if path else [],
-                input_value,
-                GraphQLError(f"Expected type '{type_}'."),
-            )
-        return parse_result
-
-    # Not reachable. All possible input types have been considered.
-    msg = f"Unexpected input type: {inspect(type_)}."  # pragma: no cover
-    raise TypeError(msg)  # pragma: no cover
+    leaf_type = assert_leaf_type(type_)
+    try:
+        return leaf_type.coerce_input_value(input_value)
+    except Exception:  # noqa: BLE001
+        # Invalid: ignore error and intentionally return no value.
+        return Undefined
 
 
 def coerce_input_literal(
@@ -220,7 +111,6 @@ def coerce_input_literal(
     type_: GraphQLInputType,
     variable_values: VariableValues | None = None,
     fragment_variable_values: VariableValues | None = None,
-    hide_suggestions: bool = False,
 ) -> Any:
     """Produce a coerced Python value given a GraphQL Value AST.
 
@@ -250,7 +140,6 @@ def coerce_input_literal(
             type_.of_type,
             variable_values,
             fragment_variable_values,
-            hide_suggestions,
         )
 
     if isinstance(value_node, NullValueNode):
@@ -265,7 +154,6 @@ def coerce_input_literal(
                 item_type,
                 variable_values,
                 fragment_variable_values,
-                hide_suggestions,
             )
             if item_value is Undefined:
                 return Undefined  # Invalid: intentionally return no value.
@@ -277,7 +165,6 @@ def coerce_input_literal(
                 item_type,
                 variable_values,
                 fragment_variable_values,
-                hide_suggestions,
             )
             if item_value is Undefined:
                 if (
@@ -317,7 +204,7 @@ def coerce_input_literal(
                 if field.default_value:
                     # Use out name as name if it exists (extension of GraphQL.js).
                     coerced_dict[field.out_name or field_name] = coerce_default_value(
-                        field.default_value, field.type, hide_suggestions
+                        field.default_value, field.type
                     )
             else:
                 field_value = coerce_input_literal(
@@ -325,7 +212,6 @@ def coerce_input_literal(
                     field.type,
                     variable_values,
                     fragment_variable_values,
-                    hide_suggestions,
                 )
                 if field_value is Undefined:
                     return Undefined  # Invalid: intentionally return no value.
@@ -344,16 +230,6 @@ def coerce_input_literal(
 
     leaf_type = assert_leaf_type(type_)
     try:
-        # Note: only enum types accept `hide_suggestions`, since scalar
-        # `coerce_input_literal`/`parse_literal` functions are user-provided
-        # with a fixed signature.
-        if is_enum_type(leaf_type):
-            return leaf_type.coerce_input_literal(
-                replace_variables(
-                    value_node, variable_values, fragment_variable_values
-                ),
-                hide_suggestions,
-            )
         if leaf_type.coerce_input_literal is not None:
             return leaf_type.coerce_input_literal(
                 replace_variables(value_node, variable_values, fragment_variable_values)
@@ -369,7 +245,6 @@ def coerce_input_literal(
 def coerce_default_value(
     default_value: GraphQLDefaultValueUsage,
     type_: GraphQLInputType,
-    hide_suggestions: bool = False,
 ) -> Any:
     """Coerce a default value usage to a Python value.
 
@@ -379,9 +254,7 @@ def coerce_default_value(
     coerced_value = default_value._memoized_coerced_value  # noqa: SLF001
     if coerced_value is Undefined:
         coerced_value = (
-            coerce_input_literal(
-                default_value.literal, type_, None, None, hide_suggestions
-            )
+            coerce_input_literal(default_value.literal, type_)
             if default_value.literal is not None
             else default_value.value
         )

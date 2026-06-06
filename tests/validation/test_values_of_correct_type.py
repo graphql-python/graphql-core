@@ -1,6 +1,6 @@
 from functools import partial
 
-from graphql.pyutils import Undefined, inspect
+from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
     GraphQLField,
@@ -917,7 +917,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int!', found null.",
+                        "message": "Expected value of non-null type 'Int!'"
+                        " not to be None.",
                         "locations": [(4, 40)],
                     },
                 ],
@@ -1037,8 +1038,9 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field 'ComplexInput.requiredField'"
-                        " of required type 'Boolean!' was not provided.",
+                        "message": "Expected value of type 'ComplexInput'"
+                        " to include required field 'requiredField',"
+                        " found: { intField: 4 }.",
                         "locations": [(4, 49)],
                     },
                 ],
@@ -1078,7 +1080,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Boolean!', found null.",
+                        "message": "Expected value of non-null type 'Boolean!'"
+                        " not to be None.",
                         "locations": [(6, 37)],
                     }
                 ],
@@ -1098,9 +1101,10 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field 'invalidField'"
-                        " is not defined by type 'ComplexInput'."
-                        " Did you mean 'intField'?",
+                        "message": "Expected value of type 'ComplexInput'"
+                        " not to include unknown field 'invalidField'."
+                        " Did you mean 'intField'?"
+                        ' Found: { requiredField: true, invalidField: "value" }.',
                         "locations": [(6, 23)],
                     },
                 ],
@@ -1120,8 +1124,9 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field 'invalidField'"
-                        " is not defined by type 'ComplexInput'.",
+                        "message": "Expected value of type 'ComplexInput'"
+                        " not to include unknown field 'invalidField',"
+                        ' found: { requiredField: true, invalidField: "value" }.',
                         "locations": [(6, 23)],
                     },
                 ],
@@ -1129,8 +1134,8 @@ def describe_validate_values_of_correct_type():
             )
 
         def reports_original_error_for_custom_scalar_which_throws():
-            def coerce_input_value(value):
-                raise Exception(f"Invalid scalar is always invalid: {inspect(value)}")
+            def coerce_input_value(_value):
+                raise Exception("Invalid scalar is always invalid.")
 
             custom_scalar = GraphQLScalarType(
                 "Invalid", coerce_input_value=coerce_input_value
@@ -1151,8 +1156,9 @@ def describe_validate_values_of_correct_type():
                 "{ invalidArg(arg: 123) }",
                 [
                     {
-                        "message": "Expected value of type 'Invalid', found 123;"
-                        " Invalid scalar is always invalid: 123",
+                        "message": "Expected value of type 'Invalid',"
+                        " but encountered error"
+                        " 'Invalid scalar is always invalid.'; found: 123.",
                         "locations": [(1, 19)],
                     }
                 ],
@@ -1160,7 +1166,7 @@ def describe_validate_values_of_correct_type():
             )
 
             assert str(errors[0].original_error) == (
-                "Invalid scalar is always invalid: 123"
+                "Invalid scalar is always invalid."
             )
 
         def reports_error_for_custom_scalar_that_returns_undefined():
@@ -1183,7 +1189,7 @@ def describe_validate_values_of_correct_type():
                 "{ invalidArg(arg: 123) }",
                 [
                     {
-                        "message": "Expected value of type 'CustomScalar', found 123.",
+                        "message": "Expected value of type 'CustomScalar', found: 123.",
                         "locations": [(1, 19)],
                     },
                 ],
@@ -1244,7 +1250,8 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field 'OneOfInput.stringField' must be non-null.",
+                        "message": "Field 'OneOfInput.stringField' used for"
+                        " OneOf Input Object must be non-null.",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -1346,15 +1353,18 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Expected value of type 'Int!', found null.",
+                        "message": "Expected value of non-null type 'Int!'"
+                        " not to be None.",
                         "locations": [(3, 30)],
                     },
                     {
-                        "message": "Expected value of type 'String!', found null.",
+                        "message": "Expected value of non-null type 'String!'"
+                        " not to be None.",
                         "locations": [(4, 33)],
                     },
                     {
-                        "message": "Expected value of type 'Boolean!', found null.",
+                        "message": "Expected value of non-null type 'Boolean!'"
+                        " not to be None.",
                         "locations": [(5, 55)],
                     },
                 ],
@@ -1381,8 +1391,8 @@ def describe_validate_values_of_correct_type():
                         "locations": [(4, 32)],
                     },
                     {
-                        "message": "Expected value of type 'ComplexInput',"
-                        ' found "NotVeryComplex".',
+                        "message": "Expected value of type 'ComplexInput'"
+                        ' to be an object, found: "NotVeryComplex".',
                         "locations": [(5, 38)],
                     },
                 ],
@@ -1418,8 +1428,9 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field 'ComplexInput.requiredField'"
-                        " of required type 'Boolean!' was not provided.",
+                        "message": "Expected value of type 'ComplexInput'"
+                        " to include required field 'requiredField',"
+                        " found: { intField: 3 }.",
                         "locations": [(2, 63)],
                     },
                 ],

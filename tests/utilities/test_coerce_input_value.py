@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 from math import isnan, nan
-from typing import Any, NamedTuple
+from typing import Any
 
-import pytest
-
-from graphql.error import GraphQLError
 from graphql.execution.values import (
     VariableValues,
     get_variable_values,
@@ -39,100 +36,53 @@ from graphql.utilities import coerce_input_literal, coerce_input_value
 from graphql.utilities.coerce_input_value import coerce_default_value
 
 
-class CoercedValueError(NamedTuple):
-    error: str
-    path: list[str | int]
-    value: Any
-
-
-class CoercedValue(NamedTuple):
-    errors: list[CoercedValueError]
-    value: Any
-
-
-def expect_value(result: CoercedValue) -> Any:
-    assert result.errors == []
-    return result.value
-
-
-def expect_errors(result: CoercedValue) -> list[CoercedValueError]:
-    return result.errors
-
-
 def describe_coerce_input_value():
-    def _coerce_value(
-        input_value: Any, type_: GraphQLInputType, hide_suggestions: bool = False
-    ):
-        errors: list[CoercedValueError] = []
-        append = errors.append
-
-        def on_error(path, invalid_value, error):
-            append(CoercedValueError(error.message, path, invalid_value))
-
-        value = coerce_input_value(
-            input_value, type_, on_error, hide_suggestions=hide_suggestions
-        )
-        return CoercedValue(errors, value)
+    def _test(input_value: Any, type_: GraphQLInputType, expected: Any) -> None:
+        result = coerce_input_value(input_value, type_)
+        if expected is Undefined:
+            assert result is Undefined
+        elif isinstance(expected, float) and isnan(expected):
+            assert isinstance(result, float)
+            assert isnan(result)
+        else:
+            assert result == expected
 
     def describe_for_graphql_non_null():
         TestNonNull = GraphQLNonNull(GraphQLInt)
 
-        def returns_non_error_for_non_null_value():
-            result = _coerce_value(1, TestNonNull)
-            assert expect_value(result) == 1
+        def returns_for_a_non_null_value():
+            _test(1, TestNonNull, 1)
 
-        def returns_an_error_for_undefined_value():
-            result = _coerce_value(Undefined, TestNonNull)
-            assert expect_errors(result) == [
-                ("Expected non-nullable type 'Int!' not to be None.", [], Undefined)
-            ]
+        def invalid_for_undefined_value():
+            _test(Undefined, TestNonNull, Undefined)
 
-        def returns_an_error_for_null_value():
-            result = _coerce_value(None, TestNonNull)
-            assert expect_errors(result) == [
-                ("Expected non-nullable type 'Int!' not to be None.", [], None)
-            ]
+        def invalid_for_null_value():
+            _test(None, TestNonNull, Undefined)
 
     def describe_for_graphql_scalar():
-        def _coerce_input_value(input_dict):
-            assert isinstance(input_dict, dict)
-            error = input_dict.get("error")
-            if error:
-                raise ValueError(error)
-            return input_dict.get("value")
+        def _coerce_input_value(input_value):
+            if input_value.get("error") is not None:
+                raise ValueError(input_value["error"])
+            return input_value.get("value", Undefined)
 
         TestScalar = GraphQLScalarType(
             "TestScalar", coerce_input_value=_coerce_input_value
         )
 
-        def returns_no_error_for_valid_input():
-            result = _coerce_value({"value": 1}, TestScalar)
-            assert expect_value(result) == 1
+        def returns_for_valid_input():
+            _test({"value": 1}, TestScalar, 1)
 
-        def returns_no_error_for_null_result():
-            result = _coerce_value({"value": None}, TestScalar)
-            assert expect_value(result) is None
+        def returns_for_null_result():
+            _test({"value": None}, TestScalar, None)
 
-        def returns_no_error_for_nan_result():
-            result = _coerce_value({"value": nan}, TestScalar)
-            assert isnan(expect_value(result))
+        def returns_for_nan_result():
+            _test({"value": nan}, TestScalar, nan)
 
-        def returns_an_error_for_undefined_result():
-            result = _coerce_value({"value": Undefined}, TestScalar)
-            assert expect_errors(result) == [
-                ("Expected type 'TestScalar'.", [], {"value": Undefined})
-            ]
+        def invalid_for_undefined_result():
+            _test({"value": Undefined}, TestScalar, Undefined)
 
-        def returns_an_error_for_undefined_result_with_some_error_message():
-            input_value = {"error": "Some error message"}
-            result = _coerce_value(input_value, TestScalar)
-            assert expect_errors(result) == [
-                (
-                    "Expected type 'TestScalar'. Some error message",
-                    [],
-                    {"error": "Some error message"},
-                )
-            ]
+        def invalid_for_raised_error():
+            _test({"error": "Some error message"}, TestScalar, Undefined)
 
     def describe_for_graphql_enum():
         TestEnum = GraphQLEnumType(
@@ -140,182 +90,53 @@ def describe_coerce_input_value():
         )
 
         def returns_no_error_for_a_known_enum_name():
-            foo_result = _coerce_value("FOO", TestEnum)
-            assert expect_value(foo_result) == "InternalFoo"
+            _test("FOO", TestEnum, "InternalFoo")
+            _test("BAR", TestEnum, 123_456_789)
 
-            bar_result = _coerce_value("BAR", TestEnum)
-            assert expect_value(bar_result) == 123_456_789
+        def invalid_for_misspelled_enum_value():
+            _test("foo", TestEnum, Undefined)
 
-        def returns_an_error_for_misspelled_enum_value():
-            result = _coerce_value("foo", TestEnum)
-            assert expect_errors(result) == [
-                (
-                    "Value 'foo' does not exist in 'TestEnum' enum."
-                    " Did you mean the enum value 'FOO'?",
-                    [],
-                    "foo",
-                )
-            ]
-
-        def returns_an_error_for_misspelled_enum_value_no_suggestions():
-            result = _coerce_value("foo", TestEnum, hide_suggestions=True)
-            assert expect_errors(result) == [
-                (
-                    "Value 'foo' does not exist in 'TestEnum' enum.",
-                    [],
-                    "foo",
-                )
-            ]
-
-        def returns_an_error_for_incorrect_value_type():
-            result1 = _coerce_value(123, TestEnum)
-            assert expect_errors(result1) == [
-                ("Enum 'TestEnum' cannot represent non-string value: 123.", [], 123)
-            ]
-
-            result2 = _coerce_value({"field": "value"}, TestEnum)
-            assert expect_errors(result2) == [
-                (
-                    "Enum 'TestEnum' cannot represent non-string value:"
-                    " {'field': 'value'}.",
-                    [],
-                    {"field": "value"},
-                )
-            ]
-
-        def returns_an_error_for_incorrect_value_type_no_suggestions():
-            result1 = _coerce_value(123, TestEnum, hide_suggestions=True)
-            assert expect_errors(result1) == [
-                ("Enum 'TestEnum' cannot represent non-string value: 123.", [], 123)
-            ]
-
-            result2 = _coerce_value(
-                {"field": "value"}, TestEnum, hide_suggestions=False
-            )
-            assert expect_errors(result2) == [
-                (
-                    "Enum 'TestEnum' cannot represent non-string value:"
-                    " {'field': 'value'}.",
-                    [],
-                    {"field": "value"},
-                )
-            ]
+        def invalid_for_incorrect_value_type():
+            _test(123, TestEnum, Undefined)
+            _test({"field": "value"}, TestEnum, Undefined)
 
     def describe_for_graphql_input_object():
-        DeepObject = GraphQLInputObjectType(
-            "DeepObject",
-            {
-                "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt)),
-                "bar": GraphQLInputField(GraphQLInt),
-            },
-        )
         TestInputObject = GraphQLInputObjectType(
             "TestInputObject",
-            {
+            lambda: {
                 "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt)),
                 "bar": GraphQLInputField(GraphQLInt),
-                "deepObject": GraphQLInputField(DeepObject),
+                "nestedObject": GraphQLInputField(TestInputObject),
             },
         )
 
         def returns_no_error_for_a_valid_input():
-            result = _coerce_value({"foo": 123}, TestInputObject)
-            assert expect_value(result) == {"foo": 123}
+            _test({"foo": 123}, TestInputObject, {"foo": 123})
 
-        def returns_an_error_for_a_non_dict_value():
-            result = _coerce_value(123, TestInputObject)
-            assert expect_errors(result) == [
-                ("Expected type 'TestInputObject' to be a mapping.", [], 123)
-            ]
+        def invalid_for_a_non_object_type():
+            _test(123, TestInputObject, Undefined)
 
-        def returns_an_error_for_an_invalid_field():
-            result = _coerce_value({"foo": nan}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Int cannot represent non-integer value: nan",
-                    ["foo"],
-                    nan,
-                )
-            ]
+        def invalid_for_an_invalid_field():
+            _test({"foo": nan}, TestInputObject, Undefined)
 
-        def returns_multiple_errors_for_multiple_invalid_fields():
-            result = _coerce_value({"foo": "abc", "bar": "def"}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Int cannot represent non-integer value: 'abc'",
-                    ["foo"],
-                    "abc",
-                ),
-                (
-                    "Int cannot represent non-integer value: 'def'",
-                    ["bar"],
-                    "def",
-                ),
-            ]
+        def invalid_for_multiple_invalid_fields():
+            _test({"foo": "abc", "bar": "def"}, TestInputObject, Undefined)
 
-        def returns_error_for_a_missing_required_field():
-            result = _coerce_value({"bar": 123}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Field 'TestInputObject.foo' of required type 'Int!'"
-                    " was not provided.",
-                    [],
-                    {"bar": 123},
-                )
-            ]
+        def invalid_for_a_missing_required_field():
+            _test({"bar": 123}, TestInputObject, Undefined)
 
-        def returns_error_for_an_unknown_field():
-            result = _coerce_value({"foo": 123, "unknownField": 123}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Field 'unknownField' is not defined by type 'TestInputObject'.",
-                    [],
-                    {"foo": 123, "unknownField": 123},
-                )
-            ]
+        def invalid_for_an_unknown_field():
+            _test({"foo": 123, "unknownField": 123}, TestInputObject, Undefined)
 
-        def returns_error_for_a_misspelled_field():
-            result = _coerce_value({"foo": 123, "bart": 123}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Field 'bart' is not defined by type 'TestInputObject'."
-                    " Did you mean 'bar'?",
-                    [],
-                    {"foo": 123, "bart": 123},
-                )
-            ]
+        def invalid_when_supplied_with_an_array():
+            _test([{"foo": 123}, {"bar": 456}], TestInputObject, Undefined)
 
-        def returns_error_for_a_misspelled_field_no_suggestions():
-            result = _coerce_value(
-                {"foo": 123, "bart": 123}, TestInputObject, hide_suggestions=True
+        def invalid_when_a_nested_input_object_is_supplied_with_an_array():
+            _test(
+                {"foo": 123, "nested": [{"foo": 123}, {"bar": 456}]},
+                TestInputObject,
+                Undefined,
             )
-            assert expect_errors(result) == [
-                (
-                    "Field 'bart' is not defined by type 'TestInputObject'.",
-                    [],
-                    {"foo": 123, "bart": 123},
-                )
-            ]
-
-        def returns_an_error_for_an_array_type():
-            result = _coerce_value([{"foo": 1}, {"bar": 1}], TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Expected type 'TestInputObject' to be a mapping.",
-                    [],
-                    [{"foo": 1}, {"bar": 1}],
-                )
-            ]
-
-        def returns_an_error_for_an_array_type_on_a_nested_field():
-            result = _coerce_value({"foo": 1, "deepObject": [1, 2, 3]}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Expected type 'DeepObject' to be a mapping.",
-                    ["deepObject"],
-                    [1, 2, 3],
-                )
-            ]
 
         def transforms_names_using_out_name():
             # This is an extension of GraphQL.js.
@@ -328,8 +149,11 @@ def describe_coerce_input_value():
                     ),
                 },
             )
-            result = _coerce_value({"realPart": 1}, ComplexInputObject)
-            assert expect_value(result) == {"real_part": 1, "imag_part": 0}
+            _test(
+                {"realPart": 1},
+                ComplexInputObject,
+                {"real_part": 1, "imag_part": 0},
+            )
 
         def transforms_values_with_out_type():
             # This is an extension of GraphQL.js.
@@ -341,8 +165,7 @@ def describe_coerce_input_value():
                 },
                 out_type=lambda value: complex(value["real"], value["imag"]),
             )
-            result = _coerce_value({"real": 1, "imag": 2}, ComplexInputObject)
-            assert expect_value(result) == 1 + 2j
+            _test({"real": 1, "imag": 2}, ComplexInputObject, 1 + 2j)
 
     def describe_for_graphql_input_object_that_is_one_of():
         TestInputObject = GraphQLInputObjectType(
@@ -354,106 +177,20 @@ def describe_coerce_input_value():
             is_one_of=True,
         )
 
-        def returns_no_error_for_a_valid_input():
-            result = _coerce_value({"foo": 123}, TestInputObject)
-            assert expect_value(result) == {"foo": 123}
+        def returns_for_valid_input():
+            _test({"foo": 123}, TestInputObject, {"foo": 123})
 
-        def returns_an_error_if_more_than_one_field_is_specified():
-            result = _coerce_value({"foo": 123, "bar": None}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Exactly one key must be specified"
-                    " for OneOf type 'TestInputObject'.",
-                    [],
-                    {"foo": 123, "bar": None},
-                )
-            ]
+        def invalid_if_more_than_one_field_is_specified():
+            _test({"foo": 123, "bar": None}, TestInputObject, Undefined)
 
-        def returns_an_error_if_the_one_field_is_null():
-            result = _coerce_value({"bar": None}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Field 'bar' must be non-null.",
-                    ["bar"],
-                    None,
-                )
-            ]
+        def invalid_if_the_one_field_is_null():
+            _test({"bar": None}, TestInputObject, Undefined)
 
-        def returns_an_error_for_an_invalid_field():
-            result = _coerce_value({"foo": nan}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Int cannot represent non-integer value: nan",
-                    ["foo"],
-                    nan,
-                )
-            ]
+        def invalid_for_an_invalid_field():
+            _test({"foo": nan}, TestInputObject, Undefined)
 
-        def returns_multiple_errors_for_multiple_invalid_fields():
-            result = _coerce_value({"foo": "abc", "bar": "def"}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Int cannot represent non-integer value: 'abc'",
-                    ["foo"],
-                    "abc",
-                ),
-                (
-                    "Int cannot represent non-integer value: 'def'",
-                    ["bar"],
-                    "def",
-                ),
-                (
-                    "Exactly one key must be specified"
-                    " for OneOf type 'TestInputObject'.",
-                    [],
-                    {"foo": "abc", "bar": "def"},
-                ),
-            ]
-
-        def returns_error_for_a_misspelled_field_no_suggestions():
-            result = _coerce_value(
-                {"bart": 123}, TestInputObject, hide_suggestions=True
-            )
-            assert expect_errors(result) == [
-                (
-                    "Field 'bart' is not defined by type 'TestInputObject'.",
-                    [],
-                    {"bart": 123},
-                ),
-                (
-                    "Exactly one key must be specified"
-                    " for OneOf type 'TestInputObject'.",
-                    [],
-                    {"bart": 123},
-                ),
-            ]
-
-        def returns_an_error_for_an_unknown_field():
-            result = _coerce_value({"foo": 123, "unknownField": 123}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Field 'unknownField' is not defined by type 'TestInputObject'.",
-                    [],
-                    {"foo": 123, "unknownField": 123},
-                )
-            ]
-
-        def returns_an_error_for_a_misspelled_field():
-            result = _coerce_value({"bart": 123}, TestInputObject)
-            assert expect_errors(result) == [
-                (
-                    "Field 'bart' is not defined by type 'TestInputObject'."
-                    " Did you mean 'bar'?",
-                    [],
-                    {"bart": 123},
-                ),
-                (
-                    "Exactly one key must be specified"
-                    " for OneOf type 'TestInputObject'.",
-                    [],
-                    {"bart": 123},
-                ),
-            ]
+        def invalid_for_an_unknown_field():
+            _test({"foo": 123, "unknownField": 123}, TestInputObject, Undefined)
 
     def describe_for_graphql_input_object_with_default_value():
         def _get_test_input_object(default_value):
@@ -467,29 +204,24 @@ def describe_coerce_input_value():
             )
 
         def returns_no_errors_for_valid_input_value():
-            result = _coerce_value({"foo": 5}, _get_test_input_object(7))
-            assert expect_value(result) == {"foo": 5}
+            _test({"foo": 5}, _get_test_input_object(7), {"foo": 5})
 
         def returns_object_with_default_value():
-            result = _coerce_value({}, _get_test_input_object(7))
-            assert expect_value(result) == {"foo": 7}
+            _test({}, _get_test_input_object(7), {"foo": 7})
 
         def returns_null_as_value():
-            result = _coerce_value({}, _get_test_input_object(None))
-            assert expect_value(result) == {"foo": None}
+            _test({}, _get_test_input_object(None), {"foo": None})
 
         def returns_nan_as_value():
-            result = _coerce_value({}, _get_test_input_object(nan))
-            result_value = expect_value(result)
-            assert "foo" in result_value
-            assert isnan(result_value["foo"])
+            result = coerce_input_value({}, _get_test_input_object(nan))
+            assert "foo" in result
+            assert isnan(result["foo"])
 
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)
 
         def returns_no_error_for_a_valid_input():
-            result = _coerce_value([1, 2, 3], TestList)
-            assert expect_value(result) == [1, 2, 3]
+            _test([1, 2, 3], TestList, [1, 2, 3])
 
         def returns_no_error_for_a_valid_iterable_input():
             def list_generator():
@@ -497,96 +229,46 @@ def describe_coerce_input_value():
                 yield 2
                 yield 3
 
-            result = _coerce_value(list_generator(), TestList)
-            assert expect_value(result) == [1, 2, 3]
+            _test(list_generator(), TestList, [1, 2, 3])
 
-        def returns_an_error_for_an_invalid_input():
-            result = _coerce_value([1, "b", True, 4], TestList)
-            assert expect_errors(result) == [
-                (
-                    "Int cannot represent non-integer value: 'b'",
-                    [1],
-                    "b",
-                ),
-                (
-                    "Int cannot represent non-integer value: True",
-                    [2],
-                    True,
-                ),
-            ]
+        def invalid_for_an_invalid_input():
+            _test([1, "b", True, 4], TestList, Undefined)
 
         def returns_a_list_for_a_non_list_value():
-            result = _coerce_value(42, TestList)
-            assert expect_value(result) == [42]
+            _test(42, TestList, [42])
 
-        def returns_a_list_for_a_dictionary():
+        def returns_a_list_for_a_non_list_object_value():
             test_list_of_objects = GraphQLList(
                 GraphQLInputObjectType(
                     "TestObject", {"length": GraphQLInputField(GraphQLInt)}
                 )
             )
 
-            result = _coerce_value({"length": 100500}, test_list_of_objects)
-            assert expect_value(result) == [{"length": 100500}]
+            _test({"length": 100500}, test_list_of_objects, [{"length": 100500}])
 
-        def returns_a_list_for_a_non_list_invalid_value():
-            result = _coerce_value("Undefined", TestList)
-            assert expect_errors(result) == [
-                (
-                    "Int cannot represent non-integer value: 'Undefined'",
-                    [],
-                    "Undefined",
-                )
-            ]
+        def invalid_for_a_non_list_invalid_value():
+            _test("INVALID", TestList, Undefined)
 
         def returns_null_for_a_null_value():
-            result = _coerce_value(None, TestList)
-            assert expect_value(result) is None
+            _test(None, TestList, None)
 
     def describe_for_nested_graphql_list():
         TestNestedList = GraphQLList(GraphQLList(GraphQLInt))
 
         def returns_no_error_for_a_valid_input():
-            result = _coerce_value([[1], [2], [3]], TestNestedList)
-            assert expect_value(result) == [[1], [2], [3]]
+            _test([[1], [2, 3]], TestNestedList, [[1], [2, 3]])
 
         def returns_a_list_for_a_non_list_value():
-            result = _coerce_value(42, TestNestedList)
-            assert expect_value(result) == [[42]]
+            _test(42, TestNestedList, [[42]])
 
         def returns_null_for_a_null_value():
-            result = _coerce_value(None, TestNestedList)
-            assert expect_value(result) is None
+            _test(None, TestNestedList, None)
 
         def returns_nested_list_for_nested_non_list_values():
-            result = _coerce_value([1, 2, 3], TestNestedList)
-            assert expect_value(result) == [[1], [2], [3]]
+            _test([1, 2, 3], TestNestedList, [[1], [2], [3]])
 
         def returns_nested_null_for_nested_null_values():
-            result = _coerce_value([42, [None], None], TestNestedList)
-            assert expect_value(result) == [[42], [None], None]
-
-    def describe_with_default_on_error():
-        def throw_error_without_path():
-            with pytest.raises(GraphQLError) as exc_info:
-                assert coerce_input_value(
-                    None, GraphQLNonNull(GraphQLInt), hide_suggestions=True
-                )
-            assert exc_info.value.message == (
-                "Invalid value None: Expected non-nullable type 'Int!' not to be None."
-            )
-
-        def throw_error_with_path():
-            with pytest.raises(GraphQLError) as exc_info:
-                assert coerce_input_value(
-                    [None],
-                    GraphQLList(GraphQLNonNull(GraphQLInt)),
-                    hide_suggestions=True,
-                )
-            assert exc_info.value.message == (
-                "Invalid value None at 'value[0]':"
-                " Expected non-nullable type 'Int!' not to be None."
-            )
+            _test([42, [None], None], TestNestedList, [[42], [None], None])
 
 
 def describe_coerce_input_literal():
@@ -597,7 +279,7 @@ def describe_coerce_input_literal():
         variable_values: VariableValues | None = None,
     ):
         ast = parse_value(value_text)
-        value = coerce_input_literal(ast, type_, variable_values, None, True)
+        value = coerce_input_literal(ast, type_, variable_values, None)
         if expected is Undefined:
             assert value is Undefined
         elif isinstance(expected, float) and isnan(expected):
@@ -924,8 +606,8 @@ def describe_coerce_default_value():
         default_value_usage = GraphQLDefaultValueUsage(
             literal=StringValueNode(value="hello")
         )
-        assert coerce_default_value(default_value_usage, spy_scalar, True) == "hello"
+        assert coerce_default_value(default_value_usage, spy_scalar) == "hello"
 
         # Call a second time
-        assert coerce_default_value(default_value_usage, spy_scalar, True) == "hello"
+        assert coerce_default_value(default_value_usage, spy_scalar) == "hello"
         assert coerce_input_value_calls == ["hello"]

@@ -1243,10 +1243,10 @@ def describe_execute_handles_basic_execution_tasks():
             None,
             [
                 {
-                    "message": "Variable '$data' got invalid value"
-                    " {'email': '', 'wrongArg': 'wrong',"
-                    " 'wrongArg2': 'wrong', 'wrongArg3': 'wrong'};"
-                    " Field 'wrongArg' is not defined by type 'User'.",
+                    "message": "Variable '$data' has invalid value:"
+                    " Expected value of type 'User' not to include unknown field"
+                    " 'wrongArg', found: {'email': '', 'wrongArg': 'wrong',"
+                    " 'wrongArg2': 'wrong', 'wrongArg3': 'wrong'}.",
                     "locations": [(2, 23)],
                 },
                 {

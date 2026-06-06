@@ -80,13 +80,21 @@ type system:
 .. autoclass:: TypeInfo
 .. autoclass:: TypeInfoVisitor
 
-Coerce a Python value to a GraphQL type, or produce errors:
+Coerce a Python value to a GraphQL type, or return ``Undefined``:
 
 .. autofunction:: coerce_input_value
 
 Coerce a GraphQL literal (AST) to a GraphQL type, or return ``Undefined``:
 
 .. autofunction:: coerce_input_literal
+
+Validate a Python value with a GraphQL type, collecting all errors:
+
+.. autofunction:: validate_input_value
+
+Validate a GraphQL literal (AST) with a GraphQL type, collecting all errors:
+
+.. autofunction:: validate_input_literal
 
 Concatenate multiple ASTs together:
 

@@ -59,8 +59,11 @@ from .replace_variables import replace_variables
 # the GraphQL type system
 from .type_info import TypeInfo, TypeInfoVisitor
 
-# Coerce a Python value to a GraphQL type, or produce errors.
+# Coerce a Python value to a GraphQL type, or return Undefined.
 from .coerce_input_value import coerce_input_literal, coerce_input_value
+
+# Validate a Python value or a GraphQL literal with a GraphQL type.
+from .validate_input_value import validate_input_literal, validate_input_value
 
 # Concatenate multiple ASTs together.
 from .concat_ast import concat_ast
@@ -120,6 +123,8 @@ __all__ = [
     "separate_operations",
     "strip_ignored_characters",
     "type_from_ast",
+    "validate_input_literal",
+    "validate_input_value",
     "value_from_ast",
     "value_from_ast_untyped",
     "value_to_literal",

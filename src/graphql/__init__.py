@@ -207,10 +207,14 @@ from .utilities import (
     # GraphQL type system.
     TypeInfo,
     TypeInfoVisitor,
-    # Coerce a Python value to a GraphQL type, or produce errors.
+    # Coerce a Python value to a GraphQL type, or return Undefined.
     coerce_input_value,
     # Coerce a GraphQL literal (AST) to a GraphQL type, or return Undefined.
     coerce_input_literal,
+    # Validate a Python value with a GraphQL type, collecting all errors.
+    validate_input_value,
+    # Validate a GraphQL literal (AST) with a GraphQL type, collecting all errors.
+    validate_input_literal,
     # Concatenates multiple ASTs together.
     concat_ast,
     # Separate an AST into an AST per Operation.
@@ -827,6 +831,8 @@ __all__ = [
     "subscribe",
     "type_from_ast",
     "validate",
+    "validate_input_literal",
+    "validate_input_value",
     "validate_schema",
     "value_from_ast",
     "value_from_ast_untyped",

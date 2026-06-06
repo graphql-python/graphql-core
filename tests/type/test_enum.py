@@ -286,7 +286,7 @@ def describe_type_system_enum_values():
             None,
             [
                 {
-                    "message": "Variable '$color' got invalid value 2;"
+                    "message": "Variable '$color' has invalid value:"
                     " Enum 'Color' cannot represent non-string value: 2.",
                     "locations": [(1, 8)],
                 }

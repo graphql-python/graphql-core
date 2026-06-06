@@ -59,6 +59,7 @@ from ..utilities.value_from_ast_untyped import value_from_ast_untyped
 from .assert_name import assert_enum_value_name, assert_name
 
 if TYPE_CHECKING:
+    from ..execution.get_variable_signature import GraphQLVariableSignature
     from ..execution.values import VariableValues
     from .schema import GraphQLSchema
 
@@ -811,7 +812,9 @@ class GraphQLArgument:  # noqa: PLW1641
         return self.__class__(**self.to_kwargs())
 
 
-def is_required_argument(arg: GraphQLArgument) -> bool:
+def is_required_argument(
+    arg: GraphQLArgument | GraphQLVariableSignature,
+) -> bool:
     """Check whether the argument is required."""
     return is_non_null_type(arg.type) and arg.default_value is Undefined
 

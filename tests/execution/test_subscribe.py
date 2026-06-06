@@ -489,7 +489,7 @@ def describe_subscription_initialization_phase():
             None,
             [
                 {
-                    "message": "Variable '$arg' got invalid value 'meow';"
+                    "message": "Variable '$arg' has invalid value:"
                     " Int cannot represent non-integer value: 'meow'",
                     "locations": [(2, 27)],
                 }

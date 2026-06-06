@@ -13,27 +13,30 @@ from ..language import (
     FieldNode,
     FragmentSpreadNode,
     InputValueDefinitionNode,
-    NullValueNode,
     SchemaDefinitionNode,
     SelectionNode,
     TypeDefinitionNode,
     TypeExtensionNode,
     VariableDefinitionNode,
     VariableNode,
-    print_ast,
 )
-from ..pyutils import Undefined, inspect, print_path_list
+from ..pyutils import Undefined, print_path_list
 from ..type import (
     GraphQLDirective,
     GraphQLField,
     GraphQLSchema,
     is_input_object_type,
     is_non_null_type,
+    is_required_argument,
 )
 from ..utilities.coerce_input_value import (
     coerce_default_value,
     coerce_input_literal,
     coerce_input_value,
+)
+from ..utilities.validate_input_value import (
+    validate_input_literal,
+    validate_input_value,
 )
 from .get_variable_signature import GraphQLVariableSignature, get_variable_signature
 
@@ -123,61 +126,44 @@ def coerce_variable_values(
 
         var_name = var_signature.name
         var_type = var_signature.type
+        value: Any = Undefined
         if var_name not in inputs:
-            default_value = var_signature.default_value
-            if default_value:
-                sources[var_name] = VariableValueSource(var_signature)
-                coerced[var_name] = coerce_default_value(
-                    default_value, var_type, hide_suggestions
+            sources[var_name] = VariableValueSource(var_signature)
+            if var_def_node.default_value:
+                coerced[var_name] = coerce_input_literal(
+                    var_def_node.default_value, var_type
                 )
-            elif is_non_null_type(var_type):
-                var_type_str = inspect(var_type)
+                continue
+            if not is_non_null_type(var_type):
+                # Non-provided values for nullable variables are omitted.
+                continue
+        else:
+            value = inputs[var_name]
+            sources[var_name] = VariableValueSource(var_signature, value)
+
+        coerced_value = coerce_input_value(value, var_type)
+        if coerced_value is not Undefined:
+            coerced[var_name] = coerced_value
+        else:
+
+            def on_input_value_error(
+                error: GraphQLError,
+                path: list[str | int],
+                var_name: str = var_name,
+                var_def_node: VariableDefinitionNode = var_def_node,
+            ) -> None:
                 on_error(
                     GraphQLError(
-                        f"Variable '${var_name}' of required type '{var_type_str}'"
-                        " was not provided.",
+                        f"Variable '${var_name}' has invalid value"
+                        f"{print_path_list(path)}: {error.message}",
                         var_def_node,
+                        original_error=error,
                     )
                 )
-            else:
-                sources[var_name] = VariableValueSource(var_signature)
-            continue
 
-        value = inputs[var_name]
-        if value is None and is_non_null_type(var_type):
-            var_type_str = inspect(var_type)
-            on_error(
-                GraphQLError(
-                    f"Variable '${var_name}' of non-null type '{var_type_str}'"
-                    " must not be null.",
-                    var_def_node,
-                )
+            validate_input_value(
+                value, var_type, on_input_value_error, hide_suggestions
             )
-            continue
-
-        def on_input_value_error(
-            path: list[str | int],
-            invalid_value: Any,
-            error: GraphQLError,
-            var_name: str = var_name,
-            var_def_node: VariableDefinitionNode = var_def_node,
-        ) -> None:
-            invalid_str = inspect(invalid_value)
-            prefix = f"Variable '${var_name}' got invalid value {invalid_str}"
-            if path:
-                prefix += f" at '{var_name}{print_path_list(path)}'"
-            on_error(
-                GraphQLError(
-                    prefix + "; " + error.message,
-                    var_def_node,
-                    original_error=error,
-                )
-            )
-
-        sources[var_name] = VariableValueSource(var_signature, value)
-        coerced[var_name] = coerce_input_value(
-            value, var_type, on_input_value_error, hide_suggestions=hide_suggestions
-        )
 
     return VariableValues(sources, coerced)
 
@@ -255,27 +241,27 @@ def experimental_get_argument_values(
         argument_node = arg_node_map.get(name)
 
         if argument_node is None:
-            default_value = arg_def.default_value
-            if default_value:
-                value = coerce_default_value(
-                    default_value, arg_def.type, hide_suggestions
-                )
-                if default_value.literal is None and is_input_object_type(arg_def.type):
-                    # coerce input value so that out_names are used
-                    value = coerce_input_value(
-                        value, arg_def.type, hide_suggestions=hide_suggestions
-                    )
-                coerced_values[out_name] = value
-            elif is_non_null_type(arg_type):  # pragma: no branch
+            if is_required_argument(arg_def):
+                # Note: ProvidedRequiredArgumentsRule validation should catch this
+                # before execution. This is a runtime check to ensure execution does
+                # not continue with an invalid argument value.
                 msg = (
                     f"Argument '{name}' of required type '{arg_type}' was not provided."
                 )
                 raise GraphQLError(msg, node)
-            continue  # pragma: no cover
+            default_value = arg_def.default_value
+            if default_value:
+                value = coerce_default_value(default_value, arg_def.type)
+                if default_value.literal is None and is_input_object_type(arg_def.type):
+                    # coerce input value so that out_names are used
+                    value = coerce_input_value(value, arg_def.type)
+                coerced_values[out_name] = value
+            continue
 
         value_node = argument_node.value
-        is_null = isinstance(argument_node.value, NullValueNode)
 
+        # Variables without a value are treated as if no argument was provided if
+        # the argument is not required.
         if isinstance(value_node, VariableNode):
             variable_name = value_node.name.value
             scoped_variable_values = (
@@ -287,51 +273,50 @@ def experimental_get_argument_values(
             if (
                 scoped_variable_values is None
                 or variable_name not in scoped_variable_values.coerced
-            ):
+            ) and not is_required_argument(arg_def):
                 default_value = arg_def.default_value
                 if default_value:
-                    value = coerce_default_value(
-                        default_value, arg_def.type, hide_suggestions
-                    )
+                    value = coerce_default_value(default_value, arg_def.type)
                     if default_value.literal is None and is_input_object_type(
                         arg_def.type
                     ):
                         # coerce input value so that out_names are used
-                        value = coerce_input_value(
-                            value, arg_def.type, hide_suggestions=hide_suggestions
-                        )
+                        value = coerce_input_value(value, arg_def.type)
                     coerced_values[out_name] = value
-                elif is_non_null_type(arg_type):  # pragma: no branch
-                    msg = (
-                        f"Argument '{name}' of required type '{arg_type}'"
-                        f" was provided the variable '${variable_name}'"
-                        " which was not provided a runtime value."
-                    )
-                    raise GraphQLError(msg, value_node)
-                continue  # pragma: no cover
-            variable_value = scoped_variable_values.coerced[variable_name]
-            is_null = variable_value is None or variable_value is Undefined
-
-        if is_null and is_non_null_type(arg_type):
-            msg = f"Argument '{name}' of non-null type '{arg_type}' must not be null."
-            raise GraphQLError(msg, value_node)
+                continue
 
         coerced_value = coerce_input_literal(
             value_node,
             arg_type,
             variable_values,
             fragment_variable_values,
-            hide_suggestions,
         )
         if coerced_value is Undefined:
             # Note: `values_of_correct_type` validation should catch this before
             # execution. This is a runtime check to ensure execution does not
             # continue with an invalid argument value.
-            msg = (
-                f"Argument '{name}' of type '{inspect(arg_type)}'"
-                f" has invalid value {print_ast(value_node)}."
+            def on_argument_value_error(
+                error: GraphQLError,
+                path: list[str | int],
+                arg_name: str = name,
+            ) -> None:
+                error.message = (
+                    f"Argument '{arg_name}' has invalid value"
+                    f"{print_path_list(path)}: {error.message}"
+                )
+                raise error
+
+            validate_input_literal(
+                value_node,
+                arg_type,
+                on_argument_value_error,
+                variable_values,
+                fragment_variable_values,
+                hide_suggestions,
             )
-            raise GraphQLError(msg, value_node)
+            # Unreachable: validate_input_literal always reports an error here.
+            msg = "Invalid argument"  # pragma: no cover
+            raise GraphQLError(msg, value_node)  # pragma: no cover
         coerced_values[out_name] = coerced_value
 
     return coerced_values

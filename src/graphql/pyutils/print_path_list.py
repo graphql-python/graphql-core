@@ -10,4 +10,8 @@ if TYPE_CHECKING:
 
 def print_path_list(path: Collection[str | int]) -> str:
     """Build a string describing the path."""
-    return "".join(f"[{key}]" if isinstance(key, int) else f".{key}" for key in path)
+    if not path:
+        return ""
+    return " at " + "".join(
+        f"[{key}]" if isinstance(key, int) else f".{key}" for key in path
+    )

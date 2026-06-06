@@ -769,8 +769,9 @@ def describe_execute_handles_non_nullable_types():
                 {"withNonNullArg": None},
                 [
                     {
-                        "message": "Argument 'cannotBeNull' of non-null type"
-                        " 'String!' must not be null.",
+                        "message": "Argument 'cannotBeNull' has invalid value:"
+                        " Expected value of non-null type 'String!'"
+                        " not to be None.",
                         "locations": [(3, 52)],
                         "path": ["withNonNullArg"],
                     }
@@ -797,10 +798,9 @@ def describe_execute_handles_non_nullable_types():
                 {"withNonNullArg": None},
                 [
                     {
-                        "message": "Argument 'cannotBeNull' of required type"
-                        " 'String!' was provided the variable"
-                        " '$testVar' which was not provided"
-                        " a runtime value.",
+                        "message": "Argument 'cannotBeNull' has invalid value:"
+                        " Expected variable '$testVar' provided to type"
+                        " 'String!' to provide a runtime value.",
                         "locations": [(3, 52)],
                         "path": ["withNonNullArg"],
                     }
@@ -824,8 +824,9 @@ def describe_execute_handles_non_nullable_types():
                 {"withNonNullArg": None},
                 [
                     {
-                        "message": "Argument 'cannotBeNull' of non-null type"
-                        " 'String!' must not be null.",
+                        "message": "Argument 'cannotBeNull' has invalid value:"
+                        " Expected variable '$testVar' provided to non-null type"
+                        " 'String!' not to be None.",
                         "locations": [(3, 53)],
                         "path": ["withNonNullArg"],
                     }
