@@ -33,14 +33,14 @@ def faulty_parse_value(_value: str) -> str:
     raise TestFaultyScalarGraphQLError
 
 
-def faulty_parse_const_literal(_ast: ValueNode) -> str:
+def faulty_coerce_input_literal(_ast: ValueNode) -> str:
     raise TestFaultyScalarGraphQLError
 
 
 TestFaultyScalar = GraphQLScalarType(
     name="FaultyScalar",
     parse_value=faulty_parse_value,
-    parse_const_literal=faulty_parse_const_literal,
+    coerce_input_literal=faulty_coerce_input_literal,
 )
 
 
@@ -49,7 +49,7 @@ def parse_serialized_value(value: str) -> str:
     return "DeserializedValue"
 
 
-def parse_const_literal_value(ast: ValueNode) -> str:
+def coerce_input_literal_value(ast: ValueNode) -> str:
     assert isinstance(ast, StringValueNode)
     assert ast.value == "SerializedValue"
     return parse_serialized_value(ast.value)
@@ -58,7 +58,7 @@ def parse_const_literal_value(ast: ValueNode) -> str:
 TestComplexScalar = GraphQLScalarType(
     name="ComplexScalar",
     parse_value=parse_serialized_value,
-    parse_const_literal=parse_const_literal_value,
+    coerce_input_literal=coerce_input_literal_value,
 )
 
 
@@ -279,7 +279,7 @@ def describe_execute_handles_inputs():
                     ],
                 )
 
-            def properly_runs_parse_const_literal_on_complex_scalar_types():
+            def properly_runs_coerce_input_literal_on_complex_scalar_types():
                 result = execute_query(
                     """
                     {

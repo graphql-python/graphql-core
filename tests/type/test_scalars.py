@@ -55,10 +55,10 @@ def describe_type_system_specified_scalar_types():
                 {"value": 1}, "Int cannot represent non-integer value: {'value': 1}"
             )
 
-        def parse_const_literal():
+        def coerce_input_literal():
             def _parse_literal(s: str):
                 # to be removed in v18 when all custom scalars have a default method
-                return GraphQLInt.parse_const_literal(  # type: ignore
+                return GraphQLInt.coerce_input_literal(  # type: ignore
                     parse_const_value_to_ast(s)
                 )
 
@@ -217,10 +217,10 @@ def describe_type_system_specified_scalar_types():
                 "Float cannot represent non numeric value: {'value': 0.1}",
             )
 
-        def parse_const_literal():
+        def coerce_input_literal():
             def _parse_literal(s: str):
                 # to be removed in v18 when all custom scalars have a default method
-                return GraphQLFloat.parse_const_literal(  # type: ignore
+                return GraphQLFloat.coerce_input_literal(  # type: ignore
                     parse_const_value_to_ast(s)
                 )
 
@@ -343,10 +343,10 @@ def describe_type_system_specified_scalar_types():
                 "String cannot represent a non string value: {'value': 'foo'}",
             )
 
-        def parse_const_literal():
+        def coerce_input_literal():
             def _parse_literal(s: str):
                 # to be removed in v18 when all custom scalars have a default method
-                return GraphQLString.parse_const_literal(  # type: ignore
+                return GraphQLString.coerce_input_literal(  # type: ignore
                     parse_const_value_to_ast(s)
                 )
 
@@ -466,10 +466,10 @@ def describe_type_system_specified_scalar_types():
                 "Boolean cannot represent a non boolean value: {'value': False}",
             )
 
-        def parse_const_literal():
+        def coerce_input_literal():
             def _parse_literal(s: str):
                 # to be removed in v18 when all custom scalars have a default method
-                return GraphQLBoolean.parse_const_literal(  # type: ignore
+                return GraphQLBoolean.coerce_input_literal(  # type: ignore
                     parse_const_value_to_ast(s)
                 )
 
@@ -611,10 +611,10 @@ def describe_type_system_specified_scalar_types():
                 {"value": "1"}, "ID cannot represent value: {'value': '1'}"
             )
 
-        def parse_const_literal():
+        def coerce_input_literal():
             def _parse_literal(s: str):
                 # to be removed in v18 when all custom scalars have a default method
-                return GraphQLID.parse_const_literal(  # type: ignore
+                return GraphQLID.coerce_input_literal(  # type: ignore
                     parse_const_value_to_ast(s)
                 )
 

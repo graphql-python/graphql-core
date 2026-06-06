@@ -109,7 +109,7 @@ __all__ = [
     "GraphQLObjectTypeKwargs",
     "GraphQLOutputType",
     "GraphQLResolveInfo",
-    "GraphQLScalarConstLiteralParser",
+    "GraphQLScalarInputLiteralCoercer",
     "GraphQLScalarLiteralParser",
     "GraphQLScalarSerializer",
     "GraphQLScalarType",
@@ -315,10 +315,11 @@ def resolve_thunk(thunk: Thunk[T]) -> T:
 
 GraphQLScalarSerializer: TypeAlias = Callable[[Any], Any]
 GraphQLScalarValueParser: TypeAlias = Callable[[Any], Any]
+# Deprecated in favor of GraphQLScalarInputLiteralCoercer, will be removed in v3.4
 GraphQLScalarLiteralParser: TypeAlias = Callable[
     [ValueNode, dict[str, Any] | None], Any
 ]
-GraphQLScalarConstLiteralParser: TypeAlias = Callable[[ConstValueNode], Any]
+GraphQLScalarInputLiteralCoercer: TypeAlias = Callable[[ConstValueNode], Any]
 GraphQLScalarValueToLiteral: TypeAlias = Callable[[Any], "ConstValueNode | None"]
 
 
@@ -328,7 +329,7 @@ class GraphQLScalarTypeKwargs(GraphQLNamedTypeKwargs, total=False):
     serialize: GraphQLScalarSerializer | None
     parse_value: GraphQLScalarValueParser | None
     parse_literal: GraphQLScalarLiteralParser | None
-    parse_const_literal: GraphQLScalarConstLiteralParser | None
+    coerce_input_literal: GraphQLScalarInputLiteralCoercer | None
     value_to_literal: GraphQLScalarValueToLiteral | None
     specified_by_url: str | None
 
@@ -365,7 +366,7 @@ class GraphQLScalarType(GraphQLNamedType):
     ast_node: ScalarTypeDefinitionNode | None
     extension_ast_nodes: tuple[ScalarTypeExtensionNode, ...]
 
-    parse_const_literal: GraphQLScalarConstLiteralParser | None
+    coerce_input_literal: GraphQLScalarInputLiteralCoercer | None
     value_to_literal: GraphQLScalarValueToLiteral | None
 
     def __init__(
@@ -374,7 +375,7 @@ class GraphQLScalarType(GraphQLNamedType):
         serialize: GraphQLScalarSerializer | None = None,
         parse_value: GraphQLScalarValueParser | None = None,
         parse_literal: GraphQLScalarLiteralParser | None = None,
-        parse_const_literal: GraphQLScalarConstLiteralParser | None = None,
+        coerce_input_literal: GraphQLScalarInputLiteralCoercer | None = None,
         value_to_literal: GraphQLScalarValueToLiteral | None = None,
         description: str | None = None,
         specified_by_url: str | None = None,
@@ -396,17 +397,17 @@ class GraphQLScalarType(GraphQLNamedType):
             self.parse_value = parse_value  # type: ignore
         if parse_literal is not None:
             self.parse_literal = parse_literal  # type: ignore
-        self.parse_const_literal = parse_const_literal
+        self.coerce_input_literal = coerce_input_literal
         self.value_to_literal = value_to_literal
         if parse_literal is not None and parse_value is None:
             msg = (
                 f"{name} must provide both 'parse_value' and 'parse_literal' functions."
             )
             raise TypeError(msg)
-        if parse_const_literal is not None and parse_value is None:
+        if coerce_input_literal is not None and parse_value is None:
             msg = (
                 f"{name} must provide both 'parse_value'"
-                " and 'parse_const_literal' functions."
+                " and 'coerce_input_literal' functions."
             )
             raise TypeError(msg)
         self.specified_by_url = specified_by_url
@@ -444,7 +445,7 @@ class GraphQLScalarType(GraphQLNamedType):
         with a more specific version when creating a scalar type.
 
         .. deprecated:: 3.3
-            Use ``replace_variables()`` and ``parse_const_literal()`` instead.
+            Use ``replace_variables()`` and ``coerce_input_literal()`` instead.
             ``parse_literal()`` will be removed in a future version.
         """
         return self.parse_value(value_from_ast_untyped(node, variables))
@@ -463,7 +464,7 @@ class GraphQLScalarType(GraphQLNamedType):
             if getattr(self.parse_literal, "__func__", None)
             is GraphQLScalarType.parse_literal
             else self.parse_literal,
-            parse_const_literal=self.parse_const_literal,
+            coerce_input_literal=self.coerce_input_literal,
             value_to_literal=self.value_to_literal,
             specified_by_url=self.specified_by_url,
         )
@@ -1259,18 +1260,18 @@ class GraphQLEnumType(GraphQLNamedType):
         """Parse literal value.
 
         .. deprecated:: 3.3
-            Use ``parse_const_literal()`` instead. ``parse_literal()`` will be
+            Use ``coerce_input_literal()`` instead. ``parse_literal()`` will be
             removed in a future version.
         """
         # Note: variables will be resolved before calling this method.
-        return self.parse_const_literal(
+        return self.coerce_input_literal(
             cast("ConstValueNode", value_node), hide_suggestions
         )
 
-    def parse_const_literal(
+    def coerce_input_literal(
         self, value_node: ConstValueNode, hide_suggestions: bool = False
     ) -> Any:
-        """Parse const literal value."""
+        """Coerce a const input literal value."""
         if isinstance(value_node, EnumValueNode):
             try:
                 enum_value = self.values[value_node.value]

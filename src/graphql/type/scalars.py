@@ -129,7 +129,7 @@ GraphQLInt = GraphQLScalarType(
     " Int can represent values between -(2^31) and 2^31 - 1.",
     serialize=serialize_int,
     parse_value=coerce_int,
-    parse_const_literal=parse_int_literal,
+    coerce_input_literal=parse_int_literal,
     value_to_literal=int_value_to_literal,
 )
 
@@ -186,7 +186,7 @@ GraphQLFloat = GraphQLScalarType(
     "(https://en.wikipedia.org/wiki/IEEE_floating_point).",
     serialize=serialize_float,
     parse_value=coerce_float,
-    parse_const_literal=parse_float_literal,
+    coerce_input_literal=parse_float_literal,
     value_to_literal=float_value_to_literal,
 )
 
@@ -241,7 +241,7 @@ GraphQLString = GraphQLScalarType(
     " to represent free-form human-readable text.",
     serialize=serialize_string,
     parse_value=coerce_string,
-    parse_const_literal=parse_string_literal,
+    coerce_input_literal=parse_string_literal,
     value_to_literal=string_value_to_literal,
 )
 
@@ -289,7 +289,7 @@ GraphQLBoolean = GraphQLScalarType(
     description="The `Boolean` scalar type represents `true` or `false`.",
     serialize=serialize_boolean,
     parse_value=coerce_boolean,
-    parse_const_literal=parse_boolean_literal,
+    coerce_input_literal=parse_boolean_literal,
     value_to_literal=boolean_value_to_literal,
 )
 
@@ -368,7 +368,7 @@ GraphQLID = GraphQLScalarType(
     " `4`) input value will be accepted as an ID.",
     serialize=serialize_id,
     parse_value=coerce_id,
-    parse_const_literal=parse_id_literal,
+    coerce_input_literal=parse_id_literal,
     value_to_literal=id_value_to_literal,
 )
 

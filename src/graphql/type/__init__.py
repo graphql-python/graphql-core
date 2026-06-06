@@ -103,7 +103,7 @@ from .definition import (
     GraphQLScalarSerializer,
     GraphQLScalarValueParser,
     GraphQLScalarLiteralParser,
-    GraphQLScalarConstLiteralParser,
+    GraphQLScalarInputLiteralCoercer,
     GraphQLScalarValueToLiteral,
     GraphQLDefaultValueUsage,
     # Keyword Args
@@ -236,7 +236,7 @@ __all__ = [
     "GraphQLOneOfDirective",
     "GraphQLOutputType",
     "GraphQLResolveInfo",
-    "GraphQLScalarConstLiteralParser",
+    "GraphQLScalarInputLiteralCoercer",
     "GraphQLScalarLiteralParser",
     "GraphQLScalarSerializer",
     "GraphQLScalarType",

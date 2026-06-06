@@ -47,7 +47,7 @@ def parse_money_value(input_value: Any) -> Money:
     return input_value
 
 
-def parse_money_const_literal(value_node: ConstValueNode) -> Money:
+def coerce_money_input_literal(value_node: ConstValueNode) -> Money:
     money = value_from_ast_untyped(value_node)
     amount: Any = money.get("amount") if isinstance(money, dict) else None
     currency: Any = money.get("currency") if isinstance(money, dict) else None
@@ -65,7 +65,7 @@ MoneyScalar = GraphQLScalarType(
     name="Money",
     serialize=serialize_money,
     parse_value=parse_money_value,
-    parse_const_literal=parse_money_const_literal,
+    coerce_input_literal=coerce_money_input_literal,
 )
 
 

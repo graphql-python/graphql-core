@@ -345,17 +345,17 @@ def coerce_input_literal(
     leaf_type = assert_leaf_type(type_)
     try:
         # Note: only enum types accept `hide_suggestions`, since scalar
-        # `parse_const_literal`/`parse_literal` functions are user-provided
+        # `coerce_input_literal`/`parse_literal` functions are user-provided
         # with a fixed signature.
         if is_enum_type(leaf_type):
-            return leaf_type.parse_const_literal(
+            return leaf_type.coerce_input_literal(
                 replace_variables(
                     value_node, variable_values, fragment_variable_values
                 ),
                 hide_suggestions,
             )
-        if leaf_type.parse_const_literal is not None:
-            return leaf_type.parse_const_literal(
+        if leaf_type.coerce_input_literal is not None:
+            return leaf_type.coerce_input_literal(
                 replace_variables(value_node, variable_values, fragment_variable_values)
             )
         return leaf_type.parse_literal(

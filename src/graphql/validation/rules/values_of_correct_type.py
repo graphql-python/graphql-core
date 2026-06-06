@@ -169,18 +169,18 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             return
 
         # Scalars and Enums determine if a literal value is valid via
-        # `parse_const_literal()`, which may raise or return ``Undefined`` to
+        # `coerce_input_literal()`, which may raise or return ``Undefined`` to
         # indicate an invalid value.
         # Note: only enum types accept `hide_suggestions`, since scalar
-        # `parse_const_literal`/`parse_literal` functions are user-provided
+        # `coerce_input_literal`/`parse_literal` functions are user-provided
         # with a fixed signature.
         try:
             if is_enum_type(type_):
-                parse_result = type_.parse_const_literal(
+                parse_result = type_.coerce_input_literal(
                     replace_variables(node), self.context.hide_suggestions
                 )
-            elif type_.parse_const_literal is not None:
-                parse_result = type_.parse_const_literal(replace_variables(node))
+            elif type_.coerce_input_literal is not None:
+                parse_result = type_.coerce_input_literal(replace_variables(node))
             else:
                 parse_result = type_.parse_literal(node)
             if parse_result is Undefined:

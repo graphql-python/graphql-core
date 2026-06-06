@@ -639,25 +639,25 @@ def describe_coerce_input_literal():
         _test("123.456", GraphQLString, Undefined)
         _test("123.456", GraphQLID, Undefined)
 
-    def convert_using_parse_const_literal_from_a_custom_scalar_type():
-        def pass_through_parse_const_literal(node):
+    def convert_using_coerce_input_literal_from_a_custom_scalar_type():
+        def pass_through_coerce_input_literal(node):
             assert node.kind == "string_value"
             return node.value
 
         pass_through_scalar = GraphQLScalarType(
             "PassThroughScalar",
-            parse_const_literal=pass_through_parse_const_literal,
+            coerce_input_literal=pass_through_coerce_input_literal,
             parse_value=lambda value: value,  # pragma: no cover
         )
 
         _test('"value"', pass_through_scalar, "value")
 
-        def print_parse_const_literal(node):
+        def print_coerce_input_literal(node):
             return f"~~~{print_ast(node)}~~~"
 
         print_scalar = GraphQLScalarType(
             "PrintScalar",
-            parse_const_literal=print_parse_const_literal,
+            coerce_input_literal=print_coerce_input_literal,
             parse_value=lambda value: value,  # pragma: no cover
         )
 
@@ -670,23 +670,23 @@ def describe_coerce_input_literal():
             '~~~{ field: "value" }~~~',
         )
 
-        def throw_parse_const_literal(_node):
+        def throw_coerce_input_literal(_node):
             raise RuntimeError("Test")
 
         throw_scalar = GraphQLScalarType(
             "ThrowScalar",
-            parse_const_literal=throw_parse_const_literal,
+            coerce_input_literal=throw_coerce_input_literal,
             parse_value=lambda value: value,  # pragma: no cover
         )
 
         _test("value", throw_scalar, Undefined)
 
-        def undefined_parse_const_literal(_node):
+        def undefined_coerce_input_literal(_node):
             return Undefined
 
         return_undefined_scalar = GraphQLScalarType(
             "ReturnUndefinedScalar",
-            parse_const_literal=undefined_parse_const_literal,
+            coerce_input_literal=undefined_coerce_input_literal,
             parse_value=lambda value: value,  # pragma: no cover
         )
 

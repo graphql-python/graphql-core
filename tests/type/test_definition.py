@@ -107,7 +107,7 @@ def describe_type_system_scalars():
             "serialize": None,
             "parse_value": None,
             "parse_literal": None,
-            "parse_const_literal": None,
+            "coerce_input_literal": None,
             "value_to_literal": None,
             "extensions": {},
             "ast_node": None,
@@ -124,7 +124,7 @@ def describe_type_system_scalars():
             "serialize": pass_through,
             "parse_value": pass_through,
             "parse_literal": pass_through,
-            "parse_const_literal": pass_through,
+            "coerce_input_literal": pass_through,
             "value_to_literal": pass_through,
             "extensions": {"some_extension": "extension"},
             "ast_node": ast_node,
@@ -170,24 +170,24 @@ def describe_type_system_scalars():
         assert kwargs["parse_value"] is parse_value
         assert kwargs["parse_literal"] is parse_literal
 
-    def accepts_a_scalar_type_defining_parse_value_and_parse_const_literal():
+    def accepts_a_scalar_type_defining_parse_value_and_coerce_input_literal():
         def parse_value(_value):
             pass
 
-        def parse_const_literal(_value_node):
+        def coerce_input_literal(_value_node):
             pass
 
         scalar = GraphQLScalarType(
             "SomeScalar",
             parse_value=parse_value,
-            parse_const_literal=parse_const_literal,
+            coerce_input_literal=coerce_input_literal,
         )
         assert scalar.parse_value is parse_value
-        assert scalar.parse_const_literal is parse_const_literal
+        assert scalar.coerce_input_literal is coerce_input_literal
 
         kwargs = scalar.to_kwargs()
         assert kwargs["parse_value"] is parse_value
-        assert kwargs["parse_const_literal"] is parse_const_literal
+        assert kwargs["coerce_input_literal"] is coerce_input_literal
 
     def provides_default_methods_if_omitted():
         scalar = GraphQLScalarType("Foo")
@@ -199,7 +199,7 @@ def describe_type_system_scalars():
             is GraphQLScalarType.parse_literal
         )
         # A default will be provided in v18 when parse_literal is removed.
-        assert scalar.parse_const_literal is None
+        assert scalar.coerce_input_literal is None
         assert scalar.value_to_literal is None
 
         # The default serialize and parse_value methods just pass values through.
@@ -211,7 +211,7 @@ def describe_type_system_scalars():
         assert kwargs["serialize"] is None
         assert kwargs["parse_value"] is None
         assert kwargs["parse_literal"] is None
-        assert kwargs["parse_const_literal"] is None
+        assert kwargs["coerce_input_literal"] is None
         assert kwargs["value_to_literal"] is None
 
     def use_parse_value_for_parsing_literals_if_parse_literal_omitted():
@@ -268,15 +268,15 @@ def describe_type_system_scalars():
             "SomeScalar must provide both 'parse_value' and 'parse_literal' functions."
         )
 
-    def rejects_a_scalar_type_defining_parse_const_literal_but_not_parse_value():
-        def parse_const_literal(_node: ValueNode):
+    def rejects_a_scalar_type_defining_coerce_input_literal_but_not_parse_value():
+        def coerce_input_literal(_node: ValueNode):
             return Undefined  # pragma: no cover
 
         with pytest.raises(TypeError) as exc_info:
-            GraphQLScalarType("SomeScalar", parse_const_literal=parse_const_literal)
+            GraphQLScalarType("SomeScalar", coerce_input_literal=coerce_input_literal)
         assert str(exc_info.value) == (
             "SomeScalar must provide both 'parse_value'"
-            " and 'parse_const_literal' functions."
+            " and 'coerce_input_literal' functions."
         )
 
     def pickles_a_custom_scalar_type():
