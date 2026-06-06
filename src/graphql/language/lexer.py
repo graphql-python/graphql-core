@@ -45,7 +45,10 @@ class Lexer:
         return token
 
     def lookahead(self) -> Token:
-        """Look ahead and return the next non-ignored token, but do not change state."""
+        """Look ahead and return the next non-ignored token.
+
+        This does not change the current token.
+        """
         token = self.token
         if token.kind != TokenKind.EOF:
             while True:
