@@ -10,7 +10,7 @@ import pytest
 from graphql import build_schema
 from graphql.execution import execute
 from graphql.language import parse
-from graphql.pyutils import AbortController
+from graphql.pyutils import AbortController, AbortError
 
 pytestmark = pytest.mark.anyio
 
@@ -60,7 +60,8 @@ def describe_abort_controller():
         controller = AbortController()
         controller.abort()
         assert controller.signal.aborted is True
-        assert controller.signal.reason == "This operation was aborted"
+        assert isinstance(controller.signal.reason, AbortError)
+        assert str(controller.signal.reason) == "This operation was aborted"
 
     def aborting_more_than_once_keeps_the_first_reason():
         controller = AbortController()
@@ -108,13 +109,114 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
-        abort_controller.abort("Aborted")
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            {"todo": None},
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(3, 9)],
+                    "path": ["todo"],
+                }
+            ],
+        )
+
+    async def stops_the_execution_when_aborted_during_completion_with_custom_error():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          author {
+            id
+          }
+        }
+      }
+    """
+        )
+
+        async def todo(_info):
+            return {
+                "id": "1",
+                "text": "Hello, World!",
+                "author": must_not_be_called,
+            }
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        custom_error = RuntimeError("Custom abort error")
+        abort_controller.abort(custom_error)
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert result.errors[0].original_error is custom_error
+        assert result == (
+            {"todo": None},
+            [
+                {
+                    "message": "Custom abort error",
+                    "locations": [(3, 9)],
+                    "path": ["todo"],
+                }
+            ],
+        )
+
+    async def stops_the_execution_when_aborted_during_completion_with_custom_string():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          author {
+            id
+          }
+        }
+      }
+    """
+        )
+
+        async def todo(_info):
+            return {
+                "id": "1",
+                "text": "Hello, World!",
+                "author": must_not_be_called,
+            }
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort("Custom abort error message")
 
         result = await awaitable_result
 
         assert result == (
             {"todo": None},
-            [{"message": "Aborted", "locations": [(3, 9)], "path": ["todo"]}],
+            [
+                {
+                    "message": "Unexpected error value: 'Custom abort error message'",
+                    "locations": [(3, 9)],
+                    "path": ["todo"],
+                }
+            ],
         )
 
     async def stops_the_execution_when_aborted_during_nested_object_completion():
@@ -149,7 +251,7 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
-        abort_controller.abort("Aborted")
+        abort_controller.abort()
 
         result = await awaitable_result
 
@@ -157,7 +259,7 @@ def describe_execute_cancellation():
             {"todo": {"id": "1", "author": None}},
             [
                 {
-                    "message": "Aborted",
+                    "message": "This operation was aborted",
                     "locations": [(5, 11)],
                     "path": ["todo", "author"],
                 }
@@ -186,13 +288,19 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
-        abort_controller.abort("Aborted")
+        abort_controller.abort()
 
         result = await awaitable_result
 
         assert result == (
             {"foo": "baz", "bar": None},
-            [{"message": "Aborted", "locations": [(4, 9)], "path": ["bar"]}],
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(4, 9)],
+                    "path": ["bar"],
+                }
+            ],
         )
 
     async def stops_the_execution_when_aborted_pre_execute():
@@ -209,7 +317,7 @@ def describe_execute_cancellation():
       }
     """
         )
-        abort_controller.abort("Aborted")
+        abort_controller.abort()
 
         result = execute(
             schema,
@@ -218,4 +326,4 @@ def describe_execute_cancellation():
             root_value={"todo": must_not_be_called},
         )
 
-        assert result == (None, [{"message": "Aborted"}])
+        assert result == (None, [{"message": "This operation was aborted"}])

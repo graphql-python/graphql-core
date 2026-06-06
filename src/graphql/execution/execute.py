@@ -302,7 +302,7 @@ class ExecutionContext(IncrementalPublisherContext):
         For internal use only.
         """
         if abort_signal is not None and abort_signal.aborted:
-            return [located_error(Exception(abort_signal.reason))]
+            return [located_error(abort_signal.reason)]
 
         # If the schema used for execution is invalid, raise an error.
         assert_valid_schema(schema)
@@ -558,7 +558,7 @@ class ExecutionContext(IncrementalPublisherContext):
             field_path = Path(path, response_name, parent_type.name)
             if abort_signal is not None and abort_signal.aborted:
                 self.handle_field_error(
-                    Exception(abort_signal.reason),
+                    abort_signal.reason,
                     parent_type,
                     field_details_list,
                     field_path,
@@ -1529,7 +1529,7 @@ class ExecutionContext(IncrementalPublisherContext):
         abort_signal = self.abort_signal
         if abort_signal is not None and abort_signal.aborted:
             raise located_error(
-                Exception(abort_signal.reason),
+                abort_signal.reason,
                 to_nodes(field_details_list),
                 path.as_list(),
             )

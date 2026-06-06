@@ -5,7 +5,15 @@ from __future__ import annotations
 from asyncio import Event
 from typing import Any
 
-__all__ = ["AbortController", "AbortSignal"]
+__all__ = ["AbortController", "AbortError", "AbortSignal"]
+
+
+class AbortError(Exception):
+    """Error used as the default reason when an operation is aborted.
+
+    This is the Python counterpart of the ``AbortError`` ``DOMException`` that the
+    JavaScript ``AbortController.abort()`` uses when called without a reason.
+    """
 
 
 class AbortSignal:
@@ -51,13 +59,16 @@ class AbortController:
     def abort(self, reason: Any = None) -> None:
         """Abort the operation, optionally specifying a reason.
 
-        The reason is used as the message of the resulting GraphQL error. If no
-        reason is given, a generic default message is used. Aborting more than once
-        has no further effect.
+        The reason becomes the resulting GraphQL error: an exception is used as its
+        original error, while any other value is wrapped by ``located_error`` as an
+        "Unexpected error value". If no reason is given, an :class:`AbortError` with
+        a generic message is used. Aborting more than once has no further effect.
         """
         signal = self.signal
         if signal.aborted:
             return
         signal.aborted = True
-        signal.reason = "This operation was aborted" if reason is None else reason
+        signal.reason = (
+            AbortError("This operation was aborted") if reason is None else reason
+        )
         signal._event.set()  # noqa: SLF001

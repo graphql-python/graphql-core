@@ -22,6 +22,7 @@ PyUtils
 .. autofunction:: natural_comparison_key
 .. autoclass:: AbortController
 .. autoclass:: AbortSignal
+.. autoexception:: AbortError
 .. autoclass:: AwaitableOrValue
 .. autoclass:: BoxedAwaitableOrValue
 .. autofunction:: suggestion_list
