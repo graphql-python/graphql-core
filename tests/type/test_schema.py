@@ -29,6 +29,7 @@ from graphql.type import (
     TypeMetaFieldDef,
     TypeNameMetaFieldDef,
     specified_directives,
+    validate_schema,
 )
 from graphql.utilities import build_schema, lexicographic_sort_schema, print_schema
 
@@ -346,7 +347,16 @@ def describe_type_system_schema():
     def describe_validity():
         def describe_when_not_assumed_valid():
             def configures_the_schema_to_still_needing_validation():
-                assert GraphQLSchema(assume_valid=False).validation_errors is None
+                schema = GraphQLSchema(assume_valid=False)
+                assert schema.assume_valid is False
+                assert schema.validation_errors is None
+
+            def configures_the_schema_to_have_required_validation_even_once_validated():
+                schema = GraphQLSchema(assume_valid=False)
+                validation_errors = validate_schema(schema)
+                assert len(validation_errors) > 0
+                assert validation_errors == schema.validation_errors
+                assert schema.assume_valid is False
 
     def describe_a_schema_must_contain_uniquely_named_types():
         def rejects_a_schema_which_redefines_a_built_in_type():
@@ -421,7 +431,9 @@ def describe_type_system_schema():
 
         def describe_when_assumed_valid():
             def configures_the_schema_to_have_no_errors():
-                assert GraphQLSchema(assume_valid=True).validation_errors == []
+                schema = GraphQLSchema(assume_valid=True)
+                assert schema.assume_valid is True
+                assert schema.validation_errors == []
 
     def describe_ast_nodes():
         def accepts_a_scalar_type_with_ast_node_and_extension_ast_nodes():

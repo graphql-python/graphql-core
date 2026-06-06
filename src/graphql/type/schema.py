@@ -128,6 +128,8 @@ class GraphQLSchema:
     ast_node: ast.SchemaDefinitionNode | None
     extension_ast_nodes: tuple[ast.SchemaExtensionNode, ...]
 
+    assume_valid: bool
+
     _implementations_map: dict[str, InterfaceImplementations]
     _sub_type_map: dict[str, set[str]]
     _validation_errors: list[GraphQLError] | None
@@ -150,6 +152,8 @@ class GraphQLSchema:
         If this schema was built from a source known to be valid, then it may be marked
         with ``assume_valid`` to avoid an additional type system validation.
         """
+        self.assume_valid = assume_valid
+        # Used as a cache for validate_schema().
         self._validation_errors = [] if assume_valid else None
 
         self.description = description
@@ -262,7 +266,7 @@ class GraphQLSchema:
             extensions=self.extensions,
             ast_node=self.ast_node,
             extension_ast_nodes=self.extension_ast_nodes,
-            assume_valid=self._validation_errors is not None,
+            assume_valid=self.assume_valid,
         )
 
     def __copy__(self) -> GraphQLSchema:  # pragma: no cover
