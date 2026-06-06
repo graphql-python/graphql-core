@@ -58,6 +58,7 @@ class VariableUsage(NamedTuple):
 
     node: VariableNode
     type: GraphQLInputType | None
+    parent_type: GraphQLInputType | None
     default_value: Any
     fragment_variable_definition: VariableDefinitionNode | None
 
@@ -98,12 +99,17 @@ class VariableUsageVisitor(Visitor):
             usage = VariableUsage(
                 node,
                 type_info.get_input_type(),
+                type_info.get_parent_input_type(),
                 Undefined,
                 fragment_variable_definition,
             )
         else:
             usage = VariableUsage(
-                node, type_info.get_input_type(), type_info.get_default_value(), None
+                node,
+                type_info.get_input_type(),
+                type_info.get_parent_input_type(),
+                type_info.get_default_value(),
+                None,
             )
         self._append_usage(usage)
         return None

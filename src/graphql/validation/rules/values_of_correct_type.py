@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
 from ...language import (
@@ -12,14 +12,11 @@ from ...language import (
     FloatValueNode,
     IntValueNode,
     ListValueNode,
-    NonNullTypeNode,
     NullValueNode,
     ObjectFieldNode,
     ObjectValueNode,
     StringValueNode,
     ValueNode,
-    VariableDefinitionNode,
-    VariableNode,
     VisitorAction,
     print_ast,
 )
@@ -53,18 +50,6 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     See https://spec.graphql.org/draft/#sec-Values-of-Correct-Type
     """
 
-    def __init__(self, context: ValidationContext) -> None:
-        super().__init__(context)
-        self.variable_definitions: dict[str, VariableDefinitionNode] = {}
-
-    def enter_operation_definition(self, *_args: Any) -> None:
-        self.variable_definitions.clear()
-
-    def enter_variable_definition(
-        self, definition: VariableDefinitionNode, *_args: Any
-    ) -> None:
-        self.variable_definitions[definition.variable.name.value] = definition
-
     def enter_list_value(self, node: ListValueNode, *_args: Any) -> VisitorAction:
         # Note: TypeInfo will traverse into a list's item type, so look to the parent
         # input type to check if it is a list.
@@ -93,9 +78,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                     )
                 )
         if type_.is_one_of:
-            validate_one_of_input_object(
-                self.context, node, type_, field_node_map, self.variable_definitions
-            )
+            validate_one_of_input_object(self.context, node, type_, field_node_map)
         return None
 
     def enter_object_field(self, node: ObjectFieldNode, *_args: Any) -> None:
@@ -212,7 +195,6 @@ def validate_one_of_input_object(
     node: ObjectValueNode,
     type_: GraphQLInputObjectType,
     field_node_map: Mapping[str, ObjectFieldNode],
-    variable_definitions: dict[str, VariableDefinitionNode],
 ) -> None:
     keys = list(field_node_map)
     is_not_exactly_one_filed = len(keys) != 1
@@ -237,19 +219,3 @@ def validate_one_of_input_object(
                 node,
             )
         )
-        return
-
-    is_variable = value and isinstance(value, VariableNode)
-    if is_variable:
-        variable_name = cast("VariableNode", value).name.value
-        definition = variable_definitions[variable_name]
-        is_nullable_variable = not isinstance(definition.type, NonNullTypeNode)
-
-        if is_nullable_variable:
-            context.report_error(
-                GraphQLError(
-                    f"Variable '{variable_name}' must be non-nullable"
-                    f" to be used for OneOf Input Object '{type_.name}'.",
-                    node,
-                )
-            )

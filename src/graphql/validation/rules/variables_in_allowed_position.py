@@ -12,7 +12,13 @@ from ...language import (
     VariableDefinitionNode,
 )
 from ...pyutils import Undefined
-from ...type import GraphQLSchema, GraphQLType, is_non_null_type
+from ...type import (
+    GraphQLSchema,
+    GraphQLType,
+    is_input_object_type,
+    is_non_null_type,
+    is_nullable_type,
+)
 from ...utilities import is_type_sub_type_of, type_from_ast
 from . import ValidationContext, ValidationRule
 
@@ -42,6 +48,7 @@ class VariablesInAllowedPositionRule(ValidationRule):
 
         for usage in usages:
             node, type_ = usage.node, usage.type
+            parent_type = usage.parent_type
             default_value = usage.default_value
             var_name = node.name.value
             var_def = usage.fragment_variable_definition
@@ -66,6 +73,20 @@ class VariablesInAllowedPositionRule(ValidationRule):
                         )
                     )
 
+                if (
+                    is_input_object_type(parent_type)
+                    and parent_type.is_one_of
+                    and is_nullable_type(var_type)
+                ):
+                    self.report_error(
+                        GraphQLError(
+                            f"Variable '${var_name}' is of type '{var_type}'"
+                            " but must be non-nullable to be used for OneOf"
+                            f" Input Object '{parent_type}'.",
+                            [var_def, node],
+                        )
+                    )
+
     def enter_variable_definition(
         self, node: VariableDefinitionNode, *_args: Any
     ) -> None:
@@ -81,9 +102,12 @@ def allowed_variable_usage(
 ) -> bool:
     """Check for allowed variable usage.
 
-    Returns True if the variable is allowed in the location it was found, which includes
+    Returns True if the variable is allowed in the location it was found, including
     considering if default values exist for either the variable or the location at which
     it is located.
+
+    OneOf Input Object Type fields are considered separately above to provide a more
+    descriptive error message.
     """
     if is_non_null_type(location_type) and not is_non_null_type(var_type):
         has_non_null_variable_default_value = (

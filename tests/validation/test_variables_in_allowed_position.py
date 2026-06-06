@@ -342,6 +342,37 @@ def describe_validate_variables_are_in_allowed_positions():
                 """
             )
 
+    def describe_validates_one_of_input_objects():
+        def allows_exactly_one_non_nullable_variable():
+            assert_valid(
+                """
+                query ($string: String!) {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: $string })
+                  }
+                }
+                """
+            )
+
+        def forbids_one_nullable_variable():
+            assert_errors(
+                """
+                query ($string: String) {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: { stringField: $string })
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Variable '$string' is of type 'String'"
+                        " but must be non-nullable to be used for OneOf"
+                        " Input Object 'OneOfInput'.",
+                        "locations": [(2, 24), (4, 60)],
+                    },
+                ],
+            )
+
     def describe_fragment_arguments_are_validated():
         def boolean_to_boolean():
             assert_valid(
