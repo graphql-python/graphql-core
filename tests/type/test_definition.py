@@ -133,6 +133,18 @@ def describe_type_system_scalars():
         some_scalar = GraphQLScalarType(**some_scalar_kwargs)  # type: ignore
         assert some_scalar.to_kwargs() == some_scalar_kwargs
 
+    def supports_non_string_extension_keys():
+        # Python has no equivalent of JavaScript Symbols (graphql/graphql-js#4234),
+        # but extensions are stored as a plain dict, so keys of any hashable type
+        # are preserved through to_kwargs() without being dropped.
+        key = object()
+        some_scalar = GraphQLScalarType(
+            "SomeScalar",
+            extensions={key: "extension"},  # type: ignore
+        )
+        assert some_scalar.extensions == {key: "extension"}
+        assert some_scalar.to_kwargs()["extensions"] == {key: "extension"}
+
     def accepts_a_scalar_type_defining_serialize():
         def serialize(_value):
             pass
