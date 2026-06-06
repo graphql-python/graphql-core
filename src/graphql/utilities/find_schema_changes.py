@@ -223,7 +223,66 @@ def find_directive_changes(
             for arg_name in args_diff.removed
         )
 
-        for old_arg, new_arg in args_diff.persisted.values():
+        for arg_name, (old_arg, new_arg) in args_diff.persisted.items():
+            is_safe = is_change_safe_for_input_object_field_or_field_arg(
+                old_arg.type, new_arg.type
+            )
+            if not is_safe:
+                schema_changes.append(
+                    BreakingChange(
+                        BreakingChangeType.ARG_CHANGED_KIND,
+                        f"Argument @{old_directive.name}({arg_name}:)"
+                        f" has changed type from"
+                        f" {old_arg.type} to {new_arg.type}.",
+                    )
+                )
+            elif old_arg.default_value is not Undefined:
+                if new_arg.default_value is Undefined:
+                    schema_changes.append(
+                        DangerousChange(
+                            DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                            f"@{old_directive.name}({arg_name}:)"
+                            f" defaultValue was removed.",
+                        )
+                    )
+                else:
+                    # Since we are looking only for client's observable changes
+                    # we should compare default values in the same representation
+                    # as they are represented inside introspection.
+                    old_value_str = stringify_value(old_arg.default_value, old_arg.type)
+                    new_value_str = stringify_value(new_arg.default_value, new_arg.type)
+
+                    if old_value_str != new_value_str:
+                        schema_changes.append(
+                            DangerousChange(
+                                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                                f"@{old_directive.name}({arg_name}:)"
+                                f" has changed defaultValue"
+                                f" from {old_value_str} to {new_value_str}.",
+                            )
+                        )
+            elif (
+                new_arg.default_value is not Undefined
+                and old_arg.default_value is Undefined
+            ):
+                new_value_str = stringify_value(new_arg.default_value, new_arg.type)
+                schema_changes.append(
+                    SafeChange(
+                        SafeChangeType.ARG_DEFAULT_VALUE_ADDED,
+                        f"@{old_directive.name}({arg_name}:)"
+                        f" added a defaultValue {new_value_str}.",
+                    )
+                )
+            elif str(old_arg.type) != str(new_arg.type):
+                schema_changes.append(
+                    SafeChange(
+                        SafeChangeType.ARG_CHANGED_KIND_SAFE,
+                        f"Argument @{old_directive.name}({arg_name}:)"
+                        f" has changed type from"
+                        f" {old_arg.type} to {new_arg.type}.",
+                    )
+                )
+
             if old_arg.description != new_arg.description:
                 schema_changes.append(
                     SafeChange(

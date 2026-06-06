@@ -1,4 +1,6 @@
 from graphql.utilities import (
+    BreakingChangeType,
+    DangerousChangeType,
     SafeChangeType,
     build_schema,
     find_schema_changes,
@@ -184,6 +186,163 @@ def describe_find_schema_changes():
         assert find_schema_changes(old_schema, new_schema) == [
             (SafeChangeType.DIRECTIVE_ADDED, "Directive @Foo was added."),
         ]
+
+    def should_detect_if_a_changes_argument_safely():
+        old_schema = build_schema(
+            """
+            directive @Foo(foo: String!) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @Foo(foo: String) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.ARG_CHANGED_KIND_SAFE,
+                "Argument @Foo(foo:) has changed type from String! to String.",
+            ),
+        ]
+
+    def should_detect_if_a_default_value_is_added_to_an_argument():
+        old_schema = build_schema(
+            """
+            directive @Foo(foo: String) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @Foo(foo: String = "Foo") on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                SafeChangeType.ARG_DEFAULT_VALUE_ADDED,
+                '@Foo(foo:) added a defaultValue "Foo".',
+            ),
+        ]
+
+    def should_detect_if_a_default_value_is_removed_from_an_argument():
+        new_schema = build_schema(
+            """
+            directive @Foo(foo: String) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        old_schema = build_schema(
+            """
+            directive @Foo(foo: String = "Foo") on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                "@Foo(foo:) defaultValue was removed.",
+            ),
+        ]
+
+    def should_detect_if_a_default_value_is_changed_in_an_argument():
+        old_schema = build_schema(
+            """
+            directive @Foo(foo: String = "Bar") on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @Foo(foo: String = "Foo") on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                '@Foo(foo:) has changed defaultValue from "Bar" to "Foo".',
+            ),
+        ]
+
+    def should_detect_if_a_directive_argument_does_a_breaking_change():
+        old_schema = build_schema(
+            """
+            directive @Foo(foo: String) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @Foo(foo: String!) on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == [
+            (
+                BreakingChangeType.ARG_CHANGED_KIND,
+                "Argument @Foo(foo:) has changed type from String to String!.",
+            ),
+        ]
+
+    def should_not_detect_if_a_directive_argument_default_value_does_not_change():
+        old_schema = build_schema(
+            """
+            directive @Foo(foo: String = "FOO") on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+
+        new_schema = build_schema(
+            """
+            directive @Foo(foo: String = "FOO") on FIELD_DEFINITION
+
+            type Query {
+              foo: String
+            }
+            """
+        )
+        assert find_schema_changes(old_schema, new_schema) == []
 
     def should_detect_if_a_directive_changes_description():
         old_schema = build_schema(
