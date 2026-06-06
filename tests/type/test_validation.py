@@ -8,18 +8,21 @@ from graphql.language import DirectiveLocation, parse
 from graphql.pyutils import inspect
 from graphql.type import (
     GraphQLArgument,
+    GraphQLDefaultValueUsage,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLField,
     GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInputType,
+    GraphQLInt,
     GraphQLInterfaceType,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLOutputType,
+    GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
     GraphQLUnionType,
@@ -897,9 +900,11 @@ def describe_type_system_input_objects_must_have_fields():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Cannot reference Input Object 'SomeInputObject'"
-                " within itself through a series of non-null fields:"
-                " 'startLoop.nextInLoop.closeLoop'.",
+                "message": "Invalid circular reference."
+                " The Input Object SomeInputObject references itself"
+                " via the non-null fields: SomeInputObject.startLoop,"
+                " AnotherInputObject.nextInLoop,"
+                " YetAnotherInputObject.closeLoop.",
                 "locations": [(7, 15), (11, 15), (15, 15)],
             }
         ]
@@ -928,22 +933,302 @@ def describe_type_system_input_objects_must_have_fields():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Cannot reference Input Object 'SomeInputObject'"
-                " within itself through a series of non-null fields:"
-                " 'startLoop.closeLoop'.",
+                "message": "Invalid circular reference."
+                " The Input Object SomeInputObject references itself"
+                " via the non-null fields: SomeInputObject.startLoop,"
+                " AnotherInputObject.closeLoop.",
                 "locations": [(7, 15), (11, 15)],
             },
             {
-                "message": "Cannot reference Input Object 'AnotherInputObject'"
-                " within itself through a series of non-null fields:"
-                " 'startSecondLoop.closeSecondLoop'.",
+                "message": "Invalid circular reference."
+                " The Input Object AnotherInputObject references itself"
+                " via the non-null fields: AnotherInputObject.startSecondLoop,"
+                " YetAnotherInputObject.closeSecondLoop.",
                 "locations": [(12, 15), (16, 15)],
             },
             {
-                "message": "Cannot reference Input Object 'YetAnotherInputObject'"
-                " within itself through a series of non-null fields:"
-                " 'nonNullSelf'.",
+                "message": "Invalid circular reference."
+                " The Input Object YetAnotherInputObject references itself"
+                " in the non-null field YetAnotherInputObject.nonNullSelf.",
                 "locations": [(17, 15)],
+            },
+        ]
+
+    def accepts_input_objects_with_default_values_without_circular_refs_sdl():
+        valid_schema = build_schema(
+            """
+            type Query {
+              field(arg1: A, arg2: B): String
+            }
+
+            input A {
+              x: A = null
+              y: A = { x: null, y: null }
+              z: [A] = []
+            }
+
+            input B {
+              x: B2! = {}
+              y: String = "abc"
+              z: Custom = {}
+            }
+
+            input B2 {
+              x: B3 = {}
+            }
+
+            input B3 {
+              x: B = { x: { x: null } }
+            }
+
+            scalar Custom
+            """
+        )
+        assert validate_schema(valid_schema) == []
+
+    def accepts_input_objects_with_default_values_without_circular_refs():
+        a_type = GraphQLInputObjectType(
+            "A",
+            lambda: {
+                "x": GraphQLInputField(a_type, default_value=None),
+                "y": GraphQLInputField(a_type, default_value={"x": None, "y": None}),
+                "z": GraphQLInputField(GraphQLList(a_type), default_value=[]),
+            },
+        )
+
+        b_type = GraphQLInputObjectType(
+            "B",
+            lambda: {
+                "x": GraphQLInputField(GraphQLNonNull(b2_type), default_value={}),
+                "y": GraphQLInputField(GraphQLString, default_value="abc"),
+                "z": GraphQLInputField(custom_type, default_value={}),
+            },
+        )
+
+        b2_type = GraphQLInputObjectType(
+            "B2",
+            lambda: {
+                "x": GraphQLInputField(b3_type, default_value={}),
+            },
+        )
+
+        b3_type = GraphQLInputObjectType(
+            "B3",
+            lambda: {
+                "x": GraphQLInputField(b_type, default_value={"x": {"x": None}}),
+            },
+        )
+
+        custom_type = GraphQLScalarType("Custom")
+
+        valid_schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "field": GraphQLField(
+                        GraphQLString,
+                        args={
+                            "arg1": GraphQLArgument(a_type),
+                            "arg2": GraphQLArgument(b_type),
+                        },
+                    )
+                },
+            )
+        )
+
+        assert validate_schema(valid_schema) == []
+
+    def rejects_input_objects_with_default_value_circular_reference_sdl():
+        invalid_schema = build_schema(
+            """
+            type Query {
+              field(arg1: A, arg2: B, arg3: C, arg4: D, arg5: E): String
+            }
+
+            input A {
+              x: A = {}
+            }
+
+            input B {
+              x: B2 = {}
+            }
+
+            input B2 {
+              x: B3 = {}
+            }
+
+            input B3 {
+              x: B = {}
+            }
+
+            input C {
+              x: [C] = [{}]
+            }
+
+            input D {
+              x: D = { x: { x: {} } }
+            }
+
+            input E {
+              x: E = { x: null }
+              y: E = { y: null }
+            }
+
+            input F {
+              x: F2! = {}
+            }
+
+            input F2 {
+              x: F = { x: {} }
+            }
+            """
+        )
+
+        assert validate_schema(invalid_schema) == [
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field A.x references itself.",
+                "locations": [(7, 22)],
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field B.x references itself via the default values of:"
+                " B2.x, B3.x.",
+                "locations": [(11, 23), (15, 23), (19, 22)],
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field C.x references itself.",
+                "locations": [(23, 24)],
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field D.x references itself.",
+                "locations": [(27, 22)],
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field E.x references itself via the default values of:"
+                " E.y.",
+                "locations": [(31, 22), (32, 22)],
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field F2.x references itself.",
+                "locations": [(40, 22)],
+            },
+        ]
+
+    def rejects_input_objects_with_default_value_circular_reference():
+        a_type = GraphQLInputObjectType(
+            "A",
+            lambda: {
+                "x": GraphQLInputField(a_type, default_value={}),
+            },
+        )
+
+        b_type = GraphQLInputObjectType(
+            "B",
+            lambda: {
+                "x": GraphQLInputField(b2_type, default_value={}),
+            },
+        )
+
+        b2_type = GraphQLInputObjectType(
+            "B2",
+            lambda: {
+                "x": GraphQLInputField(b3_type, default_value={}),
+            },
+        )
+
+        b3_type = GraphQLInputObjectType(
+            "B3",
+            lambda: {
+                "x": GraphQLInputField(b_type, default_value={}),
+            },
+        )
+
+        c_type = GraphQLInputObjectType(
+            "C",
+            lambda: {
+                "x": GraphQLInputField(GraphQLList(c_type), default_value=[{}]),
+            },
+        )
+
+        d_type = GraphQLInputObjectType(
+            "D",
+            lambda: {
+                "x": GraphQLInputField(d_type, default_value={"x": {"x": {}}}),
+            },
+        )
+
+        e_type = GraphQLInputObjectType(
+            "E",
+            lambda: {
+                "x": GraphQLInputField(e_type, default_value={"x": None}),
+                "y": GraphQLInputField(e_type, default_value={"y": None}),
+            },
+        )
+
+        f_type = GraphQLInputObjectType(
+            "F",
+            lambda: {
+                "x": GraphQLInputField(GraphQLNonNull(f2_type), default_value={}),
+            },
+        )
+
+        f2_type = GraphQLInputObjectType(
+            "F2",
+            lambda: {
+                "x": GraphQLInputField(f_type, default_value={"x": {}}),
+            },
+        )
+
+        invalid_schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "field": GraphQLField(
+                        GraphQLString,
+                        args={
+                            "arg1": GraphQLArgument(a_type),
+                            "arg2": GraphQLArgument(b_type),
+                            "arg3": GraphQLArgument(c_type),
+                            "arg4": GraphQLArgument(d_type),
+                            "arg5": GraphQLArgument(e_type),
+                            "arg6": GraphQLArgument(f_type),
+                        },
+                    )
+                },
+            )
+        )
+
+        assert validate_schema(invalid_schema) == [
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field A.x references itself.",
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field B.x references itself via the default values of:"
+                " B2.x, B3.x.",
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field C.x references itself.",
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field D.x references itself.",
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field E.x references itself via the default values of:"
+                " E.y.",
+            },
+            {
+                "message": "Invalid circular reference. The default value of Input"
+                " Object field F2.x references itself.",
             },
         ]
 
@@ -980,7 +1265,7 @@ def describe_type_system_input_objects_must_have_fields():
             },
         ]
 
-    def rejects_an_input_object_type_with_required_arguments_that_is_deprecated():
+    def rejects_an_input_object_type_with_required_field_that_is_deprecated():
         schema = build_schema(
             """
             type Query {
@@ -1591,6 +1876,213 @@ def describe_type_system_arguments_must_have_input_types():
         ]
 
 
+def describe_type_system_argument_default_values_must_be_valid():
+    def rejects_an_argument_with_invalid_default_values_sdl():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: Int = 3.14): Int
+            }
+
+            directive @bad(arg: Int = 2.718) on FIELD
+            """
+        )
+
+        assert validate_schema(schema) == [
+            {
+                "message": "@bad(arg:) has invalid default value:"
+                " Int cannot represent non-integer value: 2.718",
+                "locations": [(6, 39)],
+            },
+            {
+                "message": "Query.field(arg:) has invalid default value:"
+                " Int cannot represent non-integer value: 3.14",
+                "locations": [(3, 32)],
+            },
+        ]
+
+    def rejects_an_argument_with_invalid_default_values_programmatic():
+        schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "Query",
+                {
+                    "field": GraphQLField(
+                        GraphQLInt,
+                        args={
+                            "arg": GraphQLArgument(GraphQLInt, default_value=3.14),
+                        },
+                    )
+                },
+            ),
+            directives=[
+                GraphQLDirective(
+                    "bad",
+                    args={
+                        "arg": GraphQLArgument(GraphQLInt, default_value=2.718),
+                    },
+                    locations=[DirectiveLocation.FIELD],
+                ),
+            ],
+        )
+
+        assert validate_schema(schema) == [
+            {
+                "message": "@bad(arg:) has invalid default value:"
+                " Int cannot represent non-integer value: 2.718",
+            },
+            {
+                "message": "Query.field(arg:) has invalid default value:"
+                " Int cannot represent non-integer value: 3.14",
+            },
+        ]
+
+    def attempts_to_offer_a_suggested_fix_if_possible_programmatic():
+        exotic = object()
+
+        test_enum = GraphQLEnumType(
+            "TestEnum",
+            {
+                "ONE": 1,
+                "TWO": exotic,
+            },
+        )
+
+        test_input = GraphQLInputObjectType(
+            "TestInput",
+            lambda: {
+                "self": GraphQLInputField(test_input),
+                "string": GraphQLInputField(GraphQLNonNull(GraphQLList(GraphQLString))),
+                "enum": GraphQLInputField(GraphQLList(test_enum)),
+            },
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "field": GraphQLField(
+                        GraphQLInt,
+                        args={
+                            "argWithPossibleFix": GraphQLArgument(
+                                test_input,
+                                default_value={
+                                    "self": None,
+                                    "string": [1],
+                                    "enum": exotic,
+                                },
+                            ),
+                            "argWithInvalidPossibleFix": GraphQLArgument(
+                                test_input, default_value={"string": None}
+                            ),
+                            "argWithoutPossibleFix": GraphQLArgument(
+                                test_input, default_value={"enum": "Exotic"}
+                            ),
+                        },
+                    )
+                },
+            )
+        )
+
+        assert validate_schema(schema) == [
+            {
+                "message": "Query.field(argWithPossibleFix:) has invalid default"
+                " value: {'self': None, 'string': [1], 'enum': "
+                + inspect(exotic)
+                + "}. Did you mean: {'self': None, 'string': ['1'],"
+                " 'enum': ['TWO']}?",
+            },
+            {
+                "message": "Query.field(argWithInvalidPossibleFix:) has invalid"
+                " default value at .string: Expected value of non-null type"
+                " '[String]!' not to be None.",
+            },
+            {
+                "message": "Query.field(argWithoutPossibleFix:) has invalid default"
+                " value: Expected value of type 'TestInput' to include required"
+                " field 'string', found: {'enum': 'Exotic'}.",
+            },
+            {
+                "message": "Query.field(argWithoutPossibleFix:) has invalid default"
+                " value at .enum: Value 'Exotic' does not exist in 'TestEnum' enum.",
+            },
+        ]
+
+    def attempts_to_offer_a_suggested_fix_if_possible_sdl():
+        original_schema = build_schema(
+            """
+            enum TestEnum {
+              ONE
+              TWO
+            }
+
+            input TestInput {
+              self: TestInput
+              string: [String]!
+              enum: [TestEnum]
+            }
+
+            type Query {
+              field(
+                argWithPossibleFix: TestInput
+                argWithInvalidPossibleFix: TestInput
+                argWithoutPossibleFix: TestInput
+              ): Int
+            }
+            """
+        )
+
+        exotic = object()
+
+        # workaround as we cannot inject custom internal values into enums
+        # defined in SDL
+        test_enum = GraphQLEnumType(
+            "TestEnum",
+            {
+                "ONE": 1,
+                "TWO": exotic,
+            },
+        )
+
+        test_input = assert_input_object_type(original_schema.get_type("TestInput"))
+        test_input.fields["enum"].type = GraphQLList(test_enum)
+
+        # workaround as we cannot inject exotic default values into arguments
+        # defined in SDL
+        default_values = {
+            "argWithPossibleFix": {"self": None, "string": [1], "enum": exotic},
+            "argWithInvalidPossibleFix": {"string": None},
+            "argWithoutPossibleFix": {"enum": "Exotic"},
+        }
+        query_type = assert_object_type(original_schema.get_type("Query"))
+        for arg_name, arg in query_type.fields["field"].args.items():
+            arg.type = test_input
+            arg.default_value = GraphQLDefaultValueUsage(value=default_values[arg_name])
+
+        assert validate_schema(original_schema) == [
+            {
+                "message": "Query.field(argWithPossibleFix:) has invalid default"
+                " value: {'self': None, 'string': [1], 'enum': "
+                + inspect(exotic)
+                + "}. Did you mean: {'self': None, 'string': ['1'],"
+                " 'enum': ['TWO']}?",
+            },
+            {
+                "message": "Query.field(argWithInvalidPossibleFix:) has invalid"
+                " default value at .string: Expected value of non-null type"
+                " '[String]!' not to be None.",
+            },
+            {
+                "message": "Query.field(argWithoutPossibleFix:) has invalid default"
+                " value: Expected value of type 'TestInput' to include required"
+                " field 'string', found: {'enum': 'Exotic'}.",
+            },
+            {
+                "message": "Query.field(argWithoutPossibleFix:) has invalid default"
+                " value at .enum: Value 'Exotic' does not exist in 'TestEnum' enum.",
+            },
+        ]
+
+
 def describe_type_system_input_object_fields_must_have_input_types():
     def _schema_with_input_field(type_: GraphQLInputType) -> GraphQLSchema:
         bad_input_object_type = GraphQLInputObjectType(
@@ -1664,6 +2156,56 @@ def describe_type_system_input_object_fields_must_have_input_types():
                 "message": "The type of SomeInputObject.foo must be Input Type"
                 " but got: SomeObject.",
                 "locations": [(7, 20)],
+            }
+        ]
+
+
+def describe_type_system_input_object_field_default_values_must_be_valid():
+    def rejects_an_input_object_field_with_invalid_default_values_sdl():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): Int
+            }
+
+            input SomeInputObject {
+              field: Int = 3.14
+            }
+            """
+        )
+
+        assert validate_schema(schema) == [
+            {
+                "message": "SomeInputObject.field has invalid default value:"
+                " Int cannot represent non-integer value: 3.14",
+                "locations": [(7, 28)],
+            }
+        ]
+
+    def rejects_an_input_object_field_with_invalid_default_values_programmatic():
+        some_input_object = GraphQLInputObjectType(
+            "SomeInputObject",
+            {
+                "field": GraphQLInputField(GraphQLInt, default_value=3.14),
+            },
+        )
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "field": GraphQLField(
+                        GraphQLInt,
+                        args={"arg": GraphQLArgument(some_input_object)},
+                    )
+                },
+            )
+        )
+
+        assert validate_schema(schema) == [
+            {
+                "message": "SomeInputObject.field has invalid default value:"
+                " Int cannot represent non-integer value: 3.14",
             }
         ]
 

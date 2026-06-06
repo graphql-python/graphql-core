@@ -25,6 +25,7 @@ from ..type import (
     is_specified_directive,
 )
 from .ast_from_value import ast_from_value
+from .value_to_literal import value_to_literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -263,7 +264,7 @@ def print_input_value(name: str, arg: GraphQLArgument) -> str:
         literal = (
             default_value.literal
             if default_value.literal is not None
-            else ast_from_value(default_value.value, arg.type)
+            else value_to_literal(default_value.value, arg.type)
         )
         if literal is None:  # pragma: no cover
             msg = "Invalid default value"

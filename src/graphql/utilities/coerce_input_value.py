@@ -13,6 +13,7 @@ from ..language import (
 )
 from ..pyutils import (
     Undefined,
+    inspect,
     is_iterable,
 )
 from ..type import (
@@ -256,8 +257,11 @@ def coerce_default_value(
         coerced_value = (
             coerce_input_literal(default_value.literal, type_)
             if default_value.literal is not None
-            else default_value.value
+            else coerce_input_value(default_value.value, type_)
         )
+        if coerced_value is Undefined:  # pragma: no cover
+            msg = f"Invalid default value: {inspect(default_value)}"
+            raise TypeError(msg)
         default_value._memoized_coerced_value = coerced_value  # noqa: SLF001
     return coerced_value
 

@@ -33,7 +33,7 @@ from ..type import (
     is_union_type,
 )
 from ..utilities.sort_value_node import sort_value_node
-from .ast_from_value import ast_from_value
+from .value_to_literal import value_to_literal
 
 if TYPE_CHECKING:
     from collections.abc import Collection
@@ -690,7 +690,7 @@ def stringify_value(
     ast = (
         default_value.literal
         if default_value.literal is not None
-        else ast_from_value(default_value.value, type_)
+        else value_to_literal(default_value.value, type_)
     )
     if ast is None:  # pragma: no cover
         msg = f"Invalid value: {inspect(default_value)}"

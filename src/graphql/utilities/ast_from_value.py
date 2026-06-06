@@ -59,6 +59,10 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> ConstValueNode | None
        null            NullValue
     ================ =======================
 
+    .. deprecated:: 3.3
+        Use :func:`~graphql.utilities.value_to_literal` instead with care to
+        operate on external values. ``ast_from_value`` will be removed in v18.
+
     """
     if is_non_null_type(type_):
         ast_value = ast_from_value(value, type_.of_type)

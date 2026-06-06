@@ -3,32 +3,43 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from operator import attrgetter, itemgetter
 from typing import TYPE_CHECKING, Any, cast
 
 from ..error import GraphQLError
 from ..language import (
+    ConstValueNode,
     DirectiveNode,
     InputValueDefinitionNode,
+    ListValueNode,
     NamedTypeNode,
     Node,
+    ObjectValueNode,
     OperationType,
     SchemaDefinitionNode,
     SchemaExtensionNode,
 )
-from ..pyutils import Undefined, and_list, inspect
+from ..pyutils import Undefined, and_list, inspect, is_iterable, print_path_list
 from ..utilities.type_comparators import is_equal_type, is_type_sub_type_of
+from ..utilities.validate_input_value import (
+    validate_input_literal,
+    validate_input_value,
+)
 from .definition import (
+    GraphQLArgument,
     GraphQLEnumType,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLObjectType,
     GraphQLUnionType,
+    assert_leaf_type,
+    get_named_type,
     is_enum_type,
     is_input_object_type,
     is_input_type,
     is_interface_type,
+    is_list_type,
     is_named_type,
     is_non_null_type,
     is_object_type,
@@ -168,23 +179,90 @@ class SchemaValidationContext:
                 # Ensure they are named correctly.
                 self.validate_name(arg, arg_name)
 
+                arg_str = f"{directive}({arg_name}:)"
+
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
                     self.report_error(
-                        f"The type of {directive}({arg_name}:)"
+                        f"The type of {arg_str}"
                         f" must be Input Type but got: {inspect(arg.type)}.",
                         arg.ast_node,
                     )
 
                 if is_required_argument(arg) and arg.deprecation_reason is not None:
                     self.report_error(
-                        f"Required argument {directive}({arg_name}:)"
-                        " cannot be deprecated.",
+                        f"Required argument {arg_str} cannot be deprecated.",
                         [
                             get_deprecated_directive_node(arg.ast_node),
                             arg.ast_node and arg.ast_node.type,
                         ],
                     )
+
+                self.validate_default_value(arg, arg_str)
+
+    def validate_default_value(
+        self,
+        input_value: GraphQLArgument | GraphQLInputField,
+        arg_str: str,
+    ) -> None:
+        default_value = input_value.default_value
+
+        if not default_value:
+            return
+
+        if default_value.literal:
+
+            def on_error(error: GraphQLError, path: list[str | int]) -> None:
+                self.report_error(
+                    f"{arg_str} has invalid default value{print_path_list(path)}:"
+                    f" {error.message}",
+                    error.nodes,
+                )
+
+            validate_input_literal(default_value.literal, input_value.type, on_error)
+        else:
+            errors: list[tuple[GraphQLError, list[str | int]]] = []
+            validate_input_value(
+                default_value.value,
+                input_value.type,
+                lambda error, path: errors.append((error, path)),
+            )
+
+            # If there were validation errors, check to see if it can be
+            # "uncoerced" and then correctly validated. If so, report a clear
+            # error with a path to resolution.
+            if errors:
+                try:
+                    uncoerced_value = uncoerce_default_value(
+                        default_value.value, input_value.type
+                    )
+
+                    uncoerced_errors: list[tuple[GraphQLError, list[str | int]]] = []
+                    validate_input_value(
+                        uncoerced_value,
+                        input_value.type,
+                        lambda error, path: uncoerced_errors.append((error, path)),
+                    )
+
+                    if not uncoerced_errors:
+                        self.report_error(
+                            f"{arg_str} has invalid default value:"
+                            f" {inspect(default_value.value)}."
+                            f" Did you mean: {inspect(uncoerced_value)}?",
+                            input_value.ast_node and input_value.ast_node.default_value,
+                        )
+                        return
+                except Exception:  # noqa: BLE001, S110
+                    # ignore
+                    pass
+
+            # Otherwise report the original set of errors.
+            for error, path in errors:
+                self.report_error(
+                    f"{arg_str} has invalid default value{print_path_list(path)}:"
+                    f" {error.message}",
+                    input_value.ast_node and input_value.ast_node.default_value,
+                )
 
     def validate_name(self, node: Any, name: str | None = None) -> None:
         # Ensure names are valid, however introspection types opt out.
@@ -204,7 +282,14 @@ class SchemaValidationContext:
                 )
 
     def validate_types(self) -> None:
-        validate_input_object_circular_refs = InputObjectCircularRefsValidator(self)
+        # Ensure Input Objects do not contain non-nullable circular references.
+        validate_input_object_non_null_circular_refs = (
+            InputObjectNonNullCircularRefsValidator(self)
+        )
+        # Ensure Input Objects do not contain invalid default value circular refs.
+        validate_input_object_default_value_circular_refs = (
+            InputObjectDefaultValueCircularRefsValidator(self)
+        )
         for type_ in self.schema.type_map.values():
             # Ensure all provided types are in fact GraphQL type.
             if not is_named_type(type_):
@@ -240,8 +325,13 @@ class SchemaValidationContext:
                 # Ensure Input Object fields are valid.
                 self.validate_input_fields(type_)
 
-                # Ensure Input Objects do not contain non-nullable circular references
-                validate_input_object_circular_refs(type_)
+                # Ensure Input Objects do not contain invalid field circular refs.
+                # Ensure Input Objects do not contain non-nullable circular refs.
+                validate_input_object_non_null_circular_refs(type_)
+
+                # Ensure Input Objects do not contain invalid default value
+                # circular references.
+                validate_input_object_default_value_circular_refs(type_)
 
     def validate_fields(self, type_: GraphQLObjectType | GraphQLInterfaceType) -> None:
         fields = type_.fields
@@ -270,23 +360,26 @@ class SchemaValidationContext:
                 # Ensure they are named correctly.
                 self.validate_name(arg, arg_name)
 
+                arg_str = f"{type_}.{field_name}({arg_name}:)"
+
                 # Ensure the type is an input type.
                 if not is_input_type(arg.type):
                     self.report_error(
-                        f"The type of {type_}.{field_name}({arg_name}:)"
+                        f"The type of {arg_str}"
                         f" must be Input Type but got: {inspect(arg.type)}.",
                         arg.ast_node and arg.ast_node.type,
                     )
 
                 if is_required_argument(arg) and arg.deprecation_reason is not None:
                     self.report_error(
-                        f"Required argument {type_}.{field_name}({arg_name}:)"
-                        " cannot be deprecated.",
+                        f"Required argument {arg_str} cannot be deprecated.",
                         [
                             get_deprecated_directive_node(arg.ast_node),
                             arg.ast_node and arg.ast_node.type,
                         ],
                     )
+
+                self.validate_default_value(arg, arg_str)
 
     def validate_interfaces(
         self, type_: GraphQLObjectType | GraphQLInterfaceType
@@ -466,7 +559,7 @@ class SchemaValidationContext:
                 [input_obj.ast_node, *input_obj.extension_ast_nodes],
             )
 
-        # Ensure the arguments are valid
+        # Ensure the input fields are valid
         for field_name, field in fields.items():
             # Ensure they are named correctly.
             self.validate_name(field, field_name)
@@ -479,15 +572,18 @@ class SchemaValidationContext:
                     field.ast_node.type if field.ast_node else None,
                 )
 
+            field_str = f"{input_obj.name}.{field_name}"
+
             if is_required_input_field(field) and field.deprecation_reason is not None:
                 self.report_error(
-                    f"Required input field {input_obj.name}.{field_name}"
-                    " cannot be deprecated.",
+                    f"Required input field {field_str} cannot be deprecated.",
                     [
                         get_deprecated_directive_node(field.ast_node),
                         field.ast_node and field.ast_node.type,
                     ],
                 )
+
+            self.validate_default_value(field, field_str)
 
             if input_obj.is_one_of:
                 self.validate_one_of_input_object_field(input_obj, field_name, field)
@@ -511,6 +607,50 @@ class SchemaValidationContext:
             )
 
 
+def uncoerce_default_value(value: Any, type_: GraphQLInputType) -> Any:
+    """Convert an assumed-coerced "internal" value to an "external" value.
+
+    Historically GraphQL-Core allowed default values to be provided as
+    assumed-coerced "internal" values, however default values should be provided
+    as "external" pre-coerced values. ``uncoerce_default_value()`` will convert
+    such "internal" values to "external" values to display as part of validation.
+
+    This performs the "opposite" of ``coerce_input_value()``. Given an "internal"
+    coerced value, reverse the process to provide an "external" uncoerced value.
+    """
+    if is_non_null_type(type_):
+        return uncoerce_default_value(value, type_.of_type)
+
+    if value is None:
+        return None
+
+    if is_list_type(type_):
+        item_type = type_.of_type
+        if is_iterable(value):
+            return [
+                uncoerce_default_value(item_value, item_type) for item_value in value
+            ]
+        return [uncoerce_default_value(value, item_type)]
+
+    if is_input_object_type(type_):
+        if not isinstance(value, dict):  # pragma: no cover
+            msg = f"Expected {inspect(value)} to be an object."
+            raise TypeError(msg)
+        field_defs = type_.fields
+        return {
+            field_name: uncoerce_default_value(field_value, field_defs[field_name].type)
+            for field_name, field_value in value.items()
+        }
+
+    leaf_type = assert_leaf_type(type_)
+
+    # For most leaf types (Scalars, Enums), output value coercion ("serialize")
+    # is the inverse of input coercion ("parse_value") and will produce an
+    # "external" value. Historically, this method was also used as part of the
+    # now-deprecated "ast_from_value" to perform the same behavior.
+    return leaf_type.coerce_output_value(value)
+
+
 def get_operation_type_node(
     schema: GraphQLSchema, operation: OperationType
 ) -> Node | None:
@@ -525,7 +665,7 @@ def get_operation_type_node(
     return None
 
 
-class InputObjectCircularRefsValidator:
+class InputObjectNonNullCircularRefsValidator:
     """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
 
     def __init__(self, context: SchemaValidationContext) -> None:
@@ -533,8 +673,8 @@ class InputObjectCircularRefsValidator:
         # Tracks already visited types to maintain O(N) and to ensure that cycles
         # are not redundantly reported.
         self.visited_types: set[str] = set()
-        # Array of input fields used to produce meaningful errors
-        self.field_path: list[tuple[str, GraphQLInputField]] = []
+        # Array of types nodes used to produce meaningful errors
+        self.field_path: list[tuple[str, Node | None]] = []
         # Position in the type path
         self.field_path_index_by_type_name: dict[str, int] = {}
 
@@ -557,24 +697,168 @@ class InputObjectCircularRefsValidator:
                 field_type = field.type.of_type
                 cycle_index = self.field_path_index_by_type_name.get(field_type.name)
 
-                self.field_path.append((field_name, field))
+                self.field_path.append((f"{input_obj}.{field_name}", field.ast_node))
                 if cycle_index is None:
                     self(field_type)
                 else:
                     cycle_path = self.field_path[cycle_index:]
-                    field_names = map(itemgetter(0), cycle_path)
+                    path_str = ", ".join(field_str for field_str, _ in cycle_path)
                     self.context.report_error(
-                        f"Cannot reference Input Object '{field_type}'"
-                        " within itself through a series of non-null fields:"
-                        f" '{'.'.join(field_names)}'.",
+                        f"Invalid circular reference. The Input Object {field_type}"
+                        " references itself"
+                        + (
+                            " via the non-null fields:"
+                            if len(cycle_path) > 1
+                            else " in the non-null field"
+                        )
+                        + f" {path_str}.",
                         cast(
                             "Collection[Node]",
-                            map(attrgetter("ast_node"), map(itemgetter(1), cycle_path)),
+                            [ast_node for _, ast_node in cycle_path],
                         ),
                     )
                 self.field_path.pop()
 
         del self.field_path_index_by_type_name[name]
+
+
+class InputObjectDefaultValueCircularRefsValidator:
+    """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
+
+    def __init__(self, context: SchemaValidationContext) -> None:
+        self.context = context
+        # Tracks already visited fields to maintain O(N) and to ensure that
+        # cycles are not redundantly reported.
+        self.visited_fields: dict[str, bool] = {}
+        # Array of keys for fields and default values used to produce meaningful
+        # errors.
+        self.field_path: list[tuple[str, ConstValueNode | None]] = []
+        # Position in the path
+        self.field_path_index: dict[str, int | None] = {}
+
+    def __call__(self, input_obj: GraphQLInputObjectType) -> None:
+        """Detect default value cycles recursively."""
+        # This does a straight-forward DFS to find cycles.
+        # It does not terminate when a cycle was found but continues to explore
+        # the graph to find all possible cycles.
+        # Start with an empty object as a way to visit every field in this input
+        # object type and apply every default value.
+        self.detect_value_default_value_cycle(input_obj, {})
+
+    def detect_value_default_value_cycle(
+        self, input_obj: GraphQLInputObjectType, default_value: Any
+    ) -> None:
+        # If the value is a List, recursively check each entry for a cycle.
+        # Otherwise, only object values can contain a cycle.
+        if is_iterable(default_value):
+            for item_value in default_value:
+                self.detect_value_default_value_cycle(input_obj, item_value)
+            return
+        if not isinstance(default_value, dict):
+            return
+
+        # Check each defined field for a cycle.
+        for field_name, field in input_obj.fields.items():
+            named_field_type = get_named_type(field.type)
+
+            # Only input object type fields can result in a cycle.
+            if not is_input_object_type(named_field_type):
+                continue
+
+            if field_name in default_value:
+                # If the provided value has this field defined, recursively check
+                # it for cycles.
+                self.detect_value_default_value_cycle(
+                    named_field_type, default_value[field_name]
+                )
+            else:
+                # Otherwise check this field's default value for cycles.
+                self.detect_field_default_value_cycle(
+                    field, named_field_type, f"{input_obj}.{field_name}"
+                )
+
+    def detect_literal_default_value_cycle(
+        self, input_obj: GraphQLInputObjectType, default_value: ConstValueNode
+    ) -> None:
+        # If the value is a List, recursively check each entry for a cycle.
+        # Otherwise, only object values can contain a cycle.
+        if isinstance(default_value, ListValueNode):
+            for item_literal in default_value.values:
+                self.detect_literal_default_value_cycle(input_obj, item_literal)
+            return
+        if not isinstance(default_value, ObjectValueNode):
+            return
+
+        # Check each defined field for a cycle.
+        field_nodes = {field.name.value: field for field in default_value.fields}
+        for field_name, field in input_obj.fields.items():
+            named_field_type = get_named_type(field.type)
+
+            # Only input object type fields can result in a cycle.
+            if not is_input_object_type(named_field_type):
+                continue
+
+            if field_name in field_nodes:
+                # If the provided value has this field defined, recursively check
+                # it for cycles.
+                self.detect_literal_default_value_cycle(
+                    named_field_type, field_nodes[field_name].value
+                )
+            else:
+                # Otherwise check this field's default value for cycles.
+                self.detect_field_default_value_cycle(
+                    field, named_field_type, f"{input_obj}.{field_name}"
+                )
+
+    def detect_field_default_value_cycle(
+        self,
+        field: GraphQLInputField,
+        field_type: GraphQLInputObjectType,
+        field_str: str,
+    ) -> None:
+        # Only a field with a default value can result in a cycle.
+        default_value = field.default_value
+        if not default_value:
+            return
+
+        # Check to see if there is a cycle.
+        cycle_index = self.field_path_index.get(field_str)
+        if cycle_index is not None and cycle_index > 0:
+            self.context.report_error(
+                "Invalid circular reference. The default value of Input Object"
+                f" field {field_str} references itself"
+                + (
+                    " via the default values of: "
+                    + ", ".join(
+                        string_for_message
+                        for string_for_message, _ in self.field_path[cycle_index:]
+                    )
+                    if cycle_index < len(self.field_path)
+                    else ""
+                )
+                + ".",
+                cast(
+                    "Collection[Node]",
+                    [node for _, node in self.field_path[cycle_index - 1 :]],
+                ),
+            )
+            return
+
+        # Recurse into this field's default value once, tracking the path.
+        if self.visited_fields.get(field_str) is None:
+            self.visited_fields[field_str] = True
+            self.field_path.append(
+                (field_str, field.ast_node.default_value if field.ast_node else None)
+            )
+            self.field_path_index[field_str] = len(self.field_path)
+            if default_value.literal:
+                self.detect_literal_default_value_cycle(
+                    field_type, default_value.literal
+                )
+            else:
+                self.detect_value_default_value_cycle(field_type, default_value.value)
+            self.field_path.pop()
+            self.field_path_index[field_str] = None
 
 
 def get_all_implements_interface_nodes(

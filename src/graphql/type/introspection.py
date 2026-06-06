@@ -522,8 +522,8 @@ class InputValueFields(GraphQLFieldMap):
 
     @staticmethod
     def default_value(item, _info):
-        # Since ast_from_value needs graphql.type, it can only be imported later
-        from ..utilities import ast_from_value
+        # Since value_to_literal needs graphql.type, it can only be imported later
+        from ..utilities import value_to_literal
 
         input_value = item[1]
         default_value = input_value.default_value
@@ -532,7 +532,7 @@ class InputValueFields(GraphQLFieldMap):
         literal = (
             default_value.literal
             if default_value.literal is not None
-            else ast_from_value(default_value.value, input_value.type)
+            else value_to_literal(default_value.value, input_value.type)
         )
         if literal is None:  # pragma: no cover
             msg = "Invalid default value"

@@ -163,7 +163,7 @@ TestType = GraphQLObjectType(
             GraphQLArgument(GraphQLNonNull(GraphQLString), default_value="Hello World")
         ),
         "fieldWithNestedInputObject": field_with_input_arg(
-            GraphQLArgument(TestNestedInputObject, default_value="Hello World")
+            GraphQLArgument(TestNestedInputObject)
         ),
         "nested": GraphQLField(NestedType, resolve=lambda *_args: {}),
         "list": field_with_input_arg(GraphQLArgument(GraphQLList(GraphQLString))),

@@ -69,9 +69,7 @@ QueryType = GraphQLObjectType(
         "complexEnum": GraphQLField(
             ComplexEnum,
             args={
-                # Note: default_value is provided an *internal* representation for
-                # Enums, rather than the string name.
-                "fromEnum": GraphQLArgument(ComplexEnum, default_value=complex1),
+                "fromEnum": GraphQLArgument(ComplexEnum, default_value="ONE"),
                 "provideGoodValue": GraphQLArgument(GraphQLBoolean),
                 "provideBadValue": GraphQLArgument(GraphQLBoolean),
             },

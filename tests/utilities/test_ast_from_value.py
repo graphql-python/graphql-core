@@ -33,6 +33,8 @@ from graphql.utilities import ast_from_value
 
 
 def describe_ast_from_value():
+    # deprecated: use value_to_literal() instead with care to operate on external
+    # values - ast_from_value() will be removed in v18
     def converts_boolean_values_to_asts():
         assert ast_from_value(True, GraphQLBoolean) == BooleanValueNode(value=True)
 

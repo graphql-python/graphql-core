@@ -25,7 +25,6 @@ from ..type import (
     GraphQLDirective,
     GraphQLField,
     GraphQLSchema,
-    is_input_object_type,
     is_non_null_type,
     is_required_argument,
 )
@@ -251,11 +250,9 @@ def experimental_get_argument_values(
                 raise GraphQLError(msg, node)
             default_value = arg_def.default_value
             if default_value:
-                value = coerce_default_value(default_value, arg_def.type)
-                if default_value.literal is None and is_input_object_type(arg_def.type):
-                    # coerce input value so that out_names are used
-                    value = coerce_input_value(value, arg_def.type)
-                coerced_values[out_name] = value
+                coerced_values[out_name] = coerce_default_value(
+                    default_value, arg_def.type
+                )
             continue
 
         value_node = argument_node.value
@@ -276,13 +273,9 @@ def experimental_get_argument_values(
             ) and not is_required_argument(arg_def):
                 default_value = arg_def.default_value
                 if default_value:
-                    value = coerce_default_value(default_value, arg_def.type)
-                    if default_value.literal is None and is_input_object_type(
-                        arg_def.type
-                    ):
-                        # coerce input value so that out_names are used
-                        value = coerce_input_value(value, arg_def.type)
-                    coerced_values[out_name] = value
+                    coerced_values[out_name] = coerce_default_value(
+                        default_value, arg_def.type
+                    )
                 continue
 
         coerced_value = coerce_input_literal(
