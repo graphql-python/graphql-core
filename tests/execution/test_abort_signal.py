@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from asyncio import ensure_future, sleep
+from asyncio import Event, Future, ensure_future, sleep
 from collections.abc import Awaitable
 
 import pytest
 
 from graphql import build_schema
-from graphql.execution import execute
+from graphql.execution import execute, subscribe
 from graphql.language import parse
 from graphql.pyutils import AbortController, AbortError
 
@@ -19,7 +19,7 @@ schema = build_schema(
     """
     type Todo {
       id: ID
-      text: String
+      items: [String]
       author: User
     }
 
@@ -30,11 +30,16 @@ schema = build_schema(
 
     type Query {
       todo: Todo
+      nonNullableTodo: Todo!
     }
 
     type Mutation {
       foo: String
       bar: String
+    }
+
+    type Subscription {
+      foo: String
     }
     """
 )
@@ -97,7 +102,6 @@ def describe_execute_cancellation():
         async def todo(_info):
             return {
                 "id": "1",
-                "text": "Hello, World!",
                 "author": must_not_be_called,
             }
 
@@ -190,7 +194,6 @@ def describe_execute_cancellation():
         async def todo(_info):
             return {
                 "id": "1",
-                "text": "Hello, World!",
                 "author": must_not_be_called,
             }
 
@@ -238,7 +241,6 @@ def describe_execute_cancellation():
         async def todo(_info):
             return {
                 "id": "1",
-                "text": "Hello, World!",
                 "author": must_not_be_called,
             }
 
@@ -290,7 +292,6 @@ def describe_execute_cancellation():
             root_value={
                 "todo": {
                     "id": "1",
-                    "text": "Hello, World!",
                     "author": author,
                 }
             },
@@ -308,6 +309,146 @@ def describe_execute_cancellation():
                     "message": "This operation was aborted",
                     "locations": [(5, 11)],
                     "path": ["todo", "author"],
+                }
+            ],
+        )
+
+    async def stops_the_execution_when_aborted_despite_a_hanging_resolver():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          author {
+            id
+          }
+        }
+      }
+    """
+        )
+
+        started = Event()
+
+        async def todo(_info):
+            started.set()
+            await Future()  # will never resolve
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        # Abort only once the resolver is actually in flight, so that cancellation
+        # must interrupt the hanging resolver instead of being caught up front.
+        task = ensure_future(awaitable_result)
+        await started.wait()
+        abort_controller.abort()
+
+        result = await task
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            {"todo": None},
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(3, 9)],
+                    "path": ["todo"],
+                }
+            ],
+        )
+
+    async def stops_the_execution_when_aborted_despite_a_hanging_item():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          items
+        }
+      }
+    """
+        )
+
+        def todo(_info):
+            return {
+                "id": "1",
+                "items": [Future()],  # will never resolve
+            }
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            {"todo": {"id": "1", "items": [None]}},
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(5, 11)],
+                    "path": ["todo", "items", 0],
+                }
+            ],
+        )
+
+    async def stops_the_execution_when_aborted_with_proper_null_bubbling():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        nonNullableTodo {
+          id
+          author {
+            id
+          }
+        }
+      }
+    """
+        )
+
+        async def non_nullable_todo(_info):
+            return {
+                "id": "1",
+                "author": must_not_be_called,
+            }
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"nonNullableTodo": non_nullable_todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result.errors is not None
+        assert isinstance(result.errors[0].original_error, AbortError)
+        assert result == (
+            None,
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(3, 9)],
+                    "path": ["nonNullableTodo"],
                 }
             ],
         )
@@ -334,9 +475,16 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
+        # Let the first field resolve before aborting, so that the abort is only
+        # observed when serially moving on to the second field (mirrors the
+        # ``resolveOnNextTick`` calls in the GraphQL.js test).
+        task = ensure_future(awaitable_result)
+        for _ in range(3):
+            await sleep(0)
+
         abort_controller.abort()
 
-        result = await awaitable_result
+        result = await task
 
         assert result == (
             {"foo": "baz", "bar": None},
@@ -373,3 +521,39 @@ def describe_execute_cancellation():
         )
 
         assert result == (None, [{"message": "This operation was aborted"}])
+
+    async def stops_the_execution_when_aborted_during_subscription():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      subscription {
+        foo
+      }
+    """
+        )
+
+        def foo(_info):
+            return Future()  # will never resolve
+
+        awaitable_result = subscribe(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"foo": foo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        abort_controller.abort()
+
+        result = await awaitable_result
+
+        assert result == (
+            None,
+            [
+                {
+                    "message": "This operation was aborted",
+                    "locations": [(3, 9)],
+                    "path": ["foo"],
+                }
+            ],
+        )

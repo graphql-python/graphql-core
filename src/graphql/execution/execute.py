@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from asyncio import (
+    FIRST_COMPLETED,
+    CancelledError,
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
     sleep,
+    wait,
 )
 from collections.abc import (
     AsyncGenerator,
@@ -927,6 +930,40 @@ class ExecutionContext(IncrementalPublisherContext):
         )  # pragma: no cover
         raise TypeError(msg)  # pragma: no cover
 
+    async def with_abort_signal(self, awaitable: Awaitable[T]) -> T:
+        """Await a value, but cancel immediately if the abort signal is triggered.
+
+        This wraps awaitables returned by resolvers (and awaitable list items) so
+        that a triggered abort signal interrupts execution *immediately* instead of
+        only at the next field boundary. Without this, a hanging asynchronous
+        resolver would prevent the operation from ever being cancelled.
+
+        If the abort signal fires before the awaitable settles, the underlying
+        awaitable is cancelled and the abort reason is raised (an exception reason
+        is raised as is, any other value is reported as an unexpected error value).
+        """
+        abort_signal = self.abort_signal
+        if abort_signal is None:
+            return await awaitable
+        task = ensure_future(awaitable)
+        if not abort_signal.aborted:
+            abort = ensure_future(abort_signal.wait())
+            try:
+                await wait({task, abort}, return_when=FIRST_COMPLETED)
+            finally:
+                if not abort.done():
+                    abort.cancel()
+            if task.done():
+                return task.result()
+        task.cancel()
+        with suppress(CancelledError):
+            await task
+        reason = abort_signal.reason
+        if isinstance(reason, Exception):
+            raise reason
+        msg = f"Unexpected error value: {inspect(reason)}"
+        raise TypeError(msg)
+
     async def complete_awaitable_value(
         self,
         return_type: GraphQLOutputType,
@@ -939,7 +976,7 @@ class ExecutionContext(IncrementalPublisherContext):
     ) -> GraphQLWrappedResult[Any]:
         """Complete an awaitable value."""
         try:
-            resolved = await result
+            resolved = await self.with_abort_signal(result)
             completed = self.complete_value(
                 return_type,
                 field_details_list,
@@ -1363,7 +1400,7 @@ class ExecutionContext(IncrementalPublisherContext):
     ) -> Any:
         """Complete an awaitable list item value."""
         try:
-            resolved = await item
+            resolved = await self.with_abort_signal(item)
             completed = self.complete_value(
                 item_type,
                 field_details_list,
@@ -1527,14 +1564,6 @@ class ExecutionContext(IncrementalPublisherContext):
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Complete an Object value by executing all sub-selections."""
-        abort_signal = self.abort_signal
-        if abort_signal is not None and abort_signal.aborted:
-            raise located_error(
-                abort_signal.reason,
-                to_nodes(field_details_list),
-                path.as_list(),
-            )
-
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
         # continuing execution.
@@ -2845,7 +2874,7 @@ def execute_subscription(
 
             async def await_result() -> AsyncIterable[Any]:
                 try:
-                    return assert_event_stream(await result)
+                    return assert_event_stream(await context.with_abort_signal(result))
                 except Exception as error:
                     raise located_error(error, field_nodes, path.as_list()) from error
 
