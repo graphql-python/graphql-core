@@ -93,7 +93,6 @@ __all__ = [
     "GraphQLInputObjectTypeKwargs",
     "GraphQLInputType",
     "GraphQLInterfaceType",
-    "GraphQLInterfaceTypeKwargs",
     "GraphQLIsTypeOfFn",
     "GraphQLLeafType",
     "GraphQLList",

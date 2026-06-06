@@ -57,7 +57,6 @@ from ..type import (
     GraphQLInputObjectTypeKwargs,
     GraphQLInputType,
     GraphQLInterfaceType,
-    GraphQLInterfaceTypeKwargs,
     GraphQLList,
     GraphQLNamedType,
     GraphQLNonNull,
@@ -85,6 +84,8 @@ from ..type import (
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Mapping
+
+    from ..type.definition import GraphQLInterfaceTypeKwargs
 
 __all__ = [
     "ExtendSchemaImpl",
