@@ -270,6 +270,17 @@ GraphQLOneOfDirective = GraphQLDirective(
     " and this field must not be `null`.",
 )
 
+# Disables error propagation (experimental).
+GraphQLDisableErrorPropagationDirective = GraphQLDirective(
+    name="experimental_disableErrorPropagation",
+    locations=[
+        DirectiveLocation.QUERY,
+        DirectiveLocation.MUTATION,
+        DirectiveLocation.SUBSCRIPTION,
+    ],
+    description="Disables error propagation.",
+)
+
 specified_directives: tuple[GraphQLDirective, ...] = (
     GraphQLIncludeDirective,
     GraphQLSkipDirective,

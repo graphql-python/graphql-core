@@ -76,6 +76,7 @@ from ..type import (
     is_non_null_type,
     is_object_type,
 )
+from ..type.directives import GraphQLDisableErrorPropagationDirective
 from .async_iterables import map_async_iterable
 from .build_execution_plan import (
     DeferUsageSet,
@@ -216,6 +217,7 @@ class ExecutionContext(IncrementalPublisherContext):
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     middleware_manager: MiddlewareManager | None
+    error_propagation: bool
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
         default_is_awaitable  # type: ignore
@@ -262,6 +264,10 @@ class ExecutionContext(IncrementalPublisherContext):
         self.hide_suggestions = hide_suggestions
         self.abort_signal = abort_signal
         self.middleware_manager = middleware_manager
+        self.error_propagation = not any(
+            directive.name.value == GraphQLDisableErrorPropagationDirective.name
+            for directive in operation.directives or ()
+        )
         self.is_awaitable = is_awaitable or default_is_awaitable
         self.is_async_iterable = is_async_iterable or default_is_async_iterable
         self.errors = None
@@ -811,7 +817,7 @@ class ExecutionContext(IncrementalPublisherContext):
 
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
-        if is_non_null_type(return_type):
+        if self.error_propagation and is_non_null_type(return_type):
             raise error
 
         # Otherwise, error protection is applied, logging the error and resolving a
