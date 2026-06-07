@@ -35,7 +35,7 @@ async def graphql(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     middleware: Middleware | None = None,
-    execution_context_class: type[Executor] | None = None,
+    executor_class: type[Executor] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
@@ -83,8 +83,8 @@ async def graphql(
       :meth:`~graphql.type.GraphQLObjectType.is_type_of` method).
     :arg middleware:
       The middleware to wrap the resolvers with
-    :arg execution_context_class:
-      The execution context class to use to build the context
+    :arg executor_class:
+      The executor class to use to build the executor
     :arg is_awaitable:
       The predicate to be used for checking whether values are awaitable
     :arg is_async_iterable:
@@ -104,7 +104,7 @@ async def graphql(
         field_resolver,
         type_resolver,
         middleware,
-        execution_context_class,
+        executor_class,
         is_awaitable,
         is_async_iterable,
         hide_suggestions,
@@ -137,7 +137,7 @@ def graphql_sync(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     middleware: Middleware | None = None,
-    execution_context_class: type[Executor] | None = None,
+    executor_class: type[Executor] | None = None,
     check_sync: bool = False,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
@@ -167,7 +167,7 @@ def graphql_sync(
         field_resolver,
         type_resolver,
         middleware,
-        execution_context_class,
+        executor_class,
         is_awaitable,
         is_async_iterable,
         hide_suggestions,
@@ -193,7 +193,7 @@ def graphql_impl(
     field_resolver: GraphQLFieldResolver | None,
     type_resolver: GraphQLTypeResolver | None,
     middleware: Middleware | None,
-    execution_context_class: type[Executor] | None,
+    executor_class: type[Executor] | None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
@@ -232,7 +232,7 @@ def graphql_impl(
         50,
         False,
         middleware,
-        execution_context_class,
+        executor_class,
         is_awaitable,
         is_async_iterable,
         hide_suggestions=hide_suggestions,

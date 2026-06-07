@@ -71,10 +71,10 @@ Custom middleware
 The :func:`execute` function takes an additional ``middleware`` argument which must be a sequence of middleware functions or a :class:`MiddlewareManager` object. This feature is used by Graphene to affect the evaluation of fields using custom middleware. There has been a `request <https://github.com/graphql/graphql-js/issues/1516>`_ to add this to GraphQL.js as well, but so far this feature only exists in GraphQL-core.
 
 
-Custom execution context
-------------------------
+Custom executor
+---------------
 
-The :func:`execute` function takes an additional ``execution_context_class`` argument which allows specifying a custom execution context class instead of the default :class:`Executor` used by GraphQL-core.
+The :func:`execute` function takes an additional ``executor_class`` argument which allows specifying a custom executor class instead of the default :class:`Executor` used by GraphQL-core.
 
 
 .. currentmodule:: graphql

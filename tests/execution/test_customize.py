@@ -26,7 +26,7 @@ def describe_customize_execution():
             None,
         )
 
-    def uses_a_custom_execution_context_class():
+    def uses_a_custom_executor_class():
         query = parse("{ foo }")
 
         schema = GraphQLSchema(
@@ -65,7 +65,7 @@ def describe_customize_execution():
         assert execute(
             schema,
             query,
-            execution_context_class=TestExecutor,
+            executor_class=TestExecutor,
             custom_arg="baz",
         ) == (
             {"foo": "barbar"},
@@ -102,7 +102,7 @@ def describe_customize_subscription():
 
         await subscription.aclose()
 
-    async def uses_a_custom_execution_context_class():
+    async def uses_a_custom_executor_class():
         class TestExecutor(Executor):
             def __init__(self, *args, **kwargs):
                 assert kwargs.pop("custom_arg", None) == "baz"
@@ -138,7 +138,7 @@ def describe_customize_subscription():
             schema,
             document,
             context_value={},
-            execution_context_class=TestExecutor,
+            executor_class=TestExecutor,
             custom_arg="baz",
         )
         assert isasyncgen(subscription)

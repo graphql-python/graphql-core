@@ -490,7 +490,6 @@ from .execution import (
     get_directive_values,
     get_variable_values,
     # Types
-    ExecutionContext,
     Executor,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
@@ -566,7 +565,6 @@ __all__ = [
     "EnumValueNode",
     "ExecutableDefinitionNode",
     "ExecutableDefinitionsRule",
-    "ExecutionContext",
     "ExecutionResult",
     "Executor",
     "ExperimentalIncrementalExecutionResults",
