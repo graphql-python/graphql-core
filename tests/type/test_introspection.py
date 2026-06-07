@@ -234,9 +234,13 @@ def describe_introspection():
                                     {
                                         "name": "includeDeprecated",
                                         "type": {
-                                            "kind": "SCALAR",
-                                            "name": "Boolean",
-                                            "ofType": None,
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "Boolean",
+                                                "ofType": None,
+                                            },
                                         },
                                         "defaultValue": "false",
                                     }
@@ -301,9 +305,13 @@ def describe_introspection():
                                     {
                                         "name": "includeDeprecated",
                                         "type": {
-                                            "kind": "SCALAR",
-                                            "name": "Boolean",
-                                            "ofType": None,
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "Boolean",
+                                                "ofType": None,
+                                            },
                                         },
                                         "defaultValue": "false",
                                     }
@@ -330,9 +338,13 @@ def describe_introspection():
                                     {
                                         "name": "includeDeprecated",
                                         "type": {
-                                            "kind": "SCALAR",
-                                            "name": "Boolean",
-                                            "ofType": None,
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "Boolean",
+                                                "ofType": None,
+                                            },
                                         },
                                         "defaultValue": "false",
                                     }
@@ -469,9 +481,13 @@ def describe_introspection():
                                     {
                                         "name": "includeDeprecated",
                                         "type": {
-                                            "kind": "SCALAR",
-                                            "name": "Boolean",
-                                            "ofType": None,
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "Boolean",
+                                                "ofType": None,
+                                            },
                                         },
                                         "defaultValue": "false",
                                     }
@@ -770,9 +786,13 @@ def describe_introspection():
                                     {
                                         "name": "includeDeprecated",
                                         "type": {
-                                            "kind": "SCALAR",
-                                            "name": "Boolean",
-                                            "ofType": None,
+                                            "kind": "NON_NULL",
+                                            "name": None,
+                                            "ofType": {
+                                                "kind": "SCALAR",
+                                                "name": "Boolean",
+                                                "ofType": None,
+                                            },
                                         },
                                         "defaultValue": "false",
                                     }

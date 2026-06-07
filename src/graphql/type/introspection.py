@@ -135,7 +135,8 @@ class DirectiveFields(GraphQLFieldMap):
                 GraphQLNonNull(GraphQLList(GraphQLNonNull(_InputValue))),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
+                        GraphQLNonNull(GraphQLBoolean),
+                        default=GraphQLDefaultInput(value=False),
                     )
                 },
                 resolve=cls.args,
@@ -281,7 +282,8 @@ class TypeFields(GraphQLFieldMap):
                 GraphQLList(GraphQLNonNull(_Field)),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
+                        GraphQLNonNull(GraphQLBoolean),
+                        default=GraphQLDefaultInput(value=False),
                     )
                 },
                 resolve=cls.fields,
@@ -297,7 +299,8 @@ class TypeFields(GraphQLFieldMap):
                 GraphQLList(GraphQLNonNull(_EnumValue)),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
+                        GraphQLNonNull(GraphQLBoolean),
+                        default=GraphQLDefaultInput(value=False),
                     )
                 },
                 resolve=cls.enum_values,
@@ -306,7 +309,8 @@ class TypeFields(GraphQLFieldMap):
                 GraphQLList(GraphQLNonNull(_InputValue)),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
+                        GraphQLNonNull(GraphQLBoolean),
+                        default=GraphQLDefaultInput(value=False),
                     )
                 },
                 resolve=cls.input_fields,
@@ -432,7 +436,8 @@ class FieldFields(GraphQLFieldMap):
                 GraphQLNonNull(GraphQLList(GraphQLNonNull(_InputValue))),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
+                        GraphQLNonNull(GraphQLBoolean),
+                        default=GraphQLDefaultInput(value=False),
                     )
                 },
                 resolve=cls.args,
