@@ -838,7 +838,7 @@ class InputObjectDefaultValueCircularRefsValidator:
 
         # Check to see if there is a cycle.
         cycle_index = self.field_path_index.get(field_str)
-        if cycle_index is not None and cycle_index > 0:
+        if cycle_index is not None:
             self.context.report_error(
                 "Invalid circular reference. The default value of Input Object"
                 f" field {field_str} references itself"
