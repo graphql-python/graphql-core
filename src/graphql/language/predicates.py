@@ -5,13 +5,19 @@ from __future__ import annotations
 from typing import TypeGuard
 
 from .ast import (
+    ArgumentCoordinateNode,
     DefinitionNode,
+    DirectiveArgumentCoordinateNode,
+    DirectiveCoordinateNode,
     ExecutableDefinitionNode,
     ListValueNode,
+    MemberCoordinateNode,
     Node,
     ObjectValueNode,
+    SchemaCoordinateNode,
     SchemaExtensionNode,
     SelectionNode,
+    TypeCoordinateNode,
     TypeDefinitionNode,
     TypeExtensionNode,
     TypeNode,
@@ -24,6 +30,7 @@ __all__ = [
     "is_const_value_node",
     "is_definition_node",
     "is_executable_definition_node",
+    "is_schema_coordinate_node",
     "is_selection_node",
     "is_type_definition_node",
     "is_type_extension_node",
@@ -90,3 +97,17 @@ def is_type_system_extension_node(
 def is_type_extension_node(node: Node) -> TypeGuard[TypeExtensionNode]:
     """Check whether the given node represents a type extension."""
     return isinstance(node, TypeExtensionNode)
+
+
+def is_schema_coordinate_node(node: Node) -> TypeGuard[SchemaCoordinateNode]:
+    """Check whether the given node represents a schema coordinate."""
+    return isinstance(
+        node,
+        (
+            TypeCoordinateNode,
+            MemberCoordinateNode,
+            ArgumentCoordinateNode,
+            DirectiveCoordinateNode,
+            DirectiveArgumentCoordinateNode,
+        ),
+    )

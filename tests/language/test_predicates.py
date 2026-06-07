@@ -7,6 +7,7 @@ from graphql.language import (
     is_const_value_node,
     is_definition_node,
     is_executable_definition_node,
+    is_schema_coordinate_node,
     is_selection_node,
     is_type_definition_node,
     is_type_extension_node,
@@ -96,6 +97,16 @@ def _create_node(node_class: type) -> Node:
         ast.UnionTypeExtensionNode: {"name": name},
         ast.EnumTypeExtensionNode: {"name": name},
         ast.InputObjectTypeExtensionNode: {"name": name},
+        # Schema coordinate nodes
+        ast.TypeCoordinateNode: {"name": name},
+        ast.MemberCoordinateNode: {"name": name, "member_name": name},
+        ast.ArgumentCoordinateNode: {
+            "name": name,
+            "field_name": name,
+            "argument_name": name,
+        },
+        ast.DirectiveCoordinateNode: {"name": name},
+        ast.DirectiveArgumentCoordinateNode: {"name": name, "argument_name": name},
     }
 
     if node_class in constructors:
@@ -251,4 +262,13 @@ def describe_ast_node_predicates():
             "scalar_type_extension",
             "type_extension",
             "union_type_extension",
+        ]
+
+    def check_schema_coordinate_node():
+        assert filter_nodes(is_schema_coordinate_node) == [
+            "argument_coordinate",
+            "directive_argument_coordinate",
+            "directive_coordinate",
+            "member_coordinate",
+            "type_coordinate",
         ]

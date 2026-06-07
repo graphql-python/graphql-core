@@ -7,12 +7,15 @@ from typing import TYPE_CHECKING, TypeAlias, TypeVar, cast
 
 from ..error import GraphQLError, GraphQLSyntaxError
 from .ast import (
+    ArgumentCoordinateNode,
     ArgumentNode,
     BooleanValueNode,
     ConstArgumentNode,
     ConstDirectiveNode,
     ConstValueNode,
     DefinitionNode,
+    DirectiveArgumentCoordinateNode,
+    DirectiveCoordinateNode,
     DirectiveDefinitionNode,
     DirectiveNode,
     DocumentNode,
@@ -36,6 +39,7 @@ from .ast import (
     ListTypeNode,
     ListValueNode,
     Location,
+    MemberCoordinateNode,
     NamedTypeNode,
     NameNode,
     NonNullTypeNode,
@@ -49,12 +53,14 @@ from .ast import (
     OperationTypeDefinitionNode,
     ScalarTypeDefinitionNode,
     ScalarTypeExtensionNode,
+    SchemaCoordinateNode,
     SchemaDefinitionNode,
     SchemaExtensionNode,
     SelectionNode,
     SelectionSetNode,
     StringValueNode,
     Token,
+    TypeCoordinateNode,
     TypeNode,
     TypeSystemExtensionNode,
     UnionTypeDefinitionNode,
@@ -65,13 +71,20 @@ from .ast import (
 )
 from .directive_locations import DirectiveLocation
 from .lexer import Lexer, is_punctuator_token_kind
+from .schema_coordinate_lexer import SchemaCoordinateLexer
 from .source import Source, is_source
 from .token_kind import TokenKind
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-__all__ = ["parse", "parse_const_value", "parse_type", "parse_value"]
+__all__ = [
+    "parse",
+    "parse_const_value",
+    "parse_schema_coordinate",
+    "parse_type",
+    "parse_value",
+]
 
 T = TypeVar("T")
 
@@ -203,6 +216,33 @@ def parse_type(
     return type_
 
 
+def parse_schema_coordinate(
+    source: SourceType,
+    no_location: bool = False,
+    max_tokens: int | None = None,
+) -> SchemaCoordinateNode:
+    """Parse the AST for a given string containing a GraphQL schema coordinate.
+
+    Throws GraphQLError if a syntax error is encountered.
+
+    This is useful within tools that operate upon GraphQL schema coordinates
+    (ex. ``Type.field``) directly and in isolation of complete GraphQL documents.
+
+    Consider providing the results to the utility function:
+    :func:`~graphql.utilities.resolve_ast_schema_coordinate`. Or calling
+    :func:`~graphql.utilities.resolve_schema_coordinate` directly with an
+    unparsed source.
+    """
+    if not is_source(source):
+        source = Source(cast("str", source))
+    lexer = SchemaCoordinateLexer(source)
+    parser = Parser(source, no_location=no_location, max_tokens=max_tokens, lexer=lexer)
+    parser.expect_token(TokenKind.SOF)
+    coordinate = parser.parse_schema_coordinate()
+    parser.expect_token(TokenKind.EOF)
+    return coordinate
+
+
 class Parser:
     """GraphQL AST parser.
 
@@ -227,6 +267,7 @@ class Parser:
         no_location: bool = False,
         max_tokens: int | None = None,
         experimental_fragment_arguments: bool = False,
+        lexer: Lexer | None = None,
     ) -> None:
         if not is_source(source):
             source = Source(cast("str", source))
@@ -234,7 +275,9 @@ class Parser:
         self._no_location = no_location
         self._max_tokens = max_tokens
         self._experimental_fragment_arguments = experimental_fragment_arguments
-        self._lexer = Lexer(source)
+        # You may override the lexer used to lex the source; this is used by schema
+        # coordinates to introduce a lexer with a restricted syntax.
+        self._lexer = lexer if lexer is not None else Lexer(source)
         self._token_counter = 0
 
     def parse_name(self) -> NameNode:
@@ -1093,6 +1136,50 @@ class Parser:
         if name.value in DirectiveLocation.__members__:
             return name
         raise self.unexpected(start)
+
+    # Implements the parsing rules in the Schema Coordinates section.
+
+    def parse_schema_coordinate(self) -> SchemaCoordinateNode:
+        """SchemaCoordinate
+
+        - Name
+        - Name . Name
+        - Name . Name ( Name : )
+        - @ Name
+        - @ Name ( Name : )
+        """
+        start = self._lexer.token
+        of_directive = self.expect_optional_token(TokenKind.AT)
+        name = self.parse_name()
+        member_name: NameNode | None = None
+        if not of_directive and self.expect_optional_token(TokenKind.DOT):
+            member_name = self.parse_name()
+        argument_name: NameNode | None = None
+        if (of_directive or member_name) and self.expect_optional_token(
+            TokenKind.PAREN_L
+        ):
+            argument_name = self.parse_name()
+            self.expect_token(TokenKind.COLON)
+            self.expect_token(TokenKind.PAREN_R)
+
+        if of_directive:
+            if argument_name:
+                return DirectiveArgumentCoordinateNode(
+                    name=name, argument_name=argument_name, loc=self.loc(start)
+                )
+            return DirectiveCoordinateNode(name=name, loc=self.loc(start))
+        if member_name:
+            if argument_name:
+                return ArgumentCoordinateNode(
+                    name=name,
+                    field_name=member_name,
+                    argument_name=argument_name,
+                    loc=self.loc(start),
+                )
+            return MemberCoordinateNode(
+                name=name, member_name=member_name, loc=self.loc(start)
+            )
+        return TypeCoordinateNode(name=name, loc=self.loc(start))
 
     # Core parsing utility functions
 

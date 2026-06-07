@@ -26,15 +26,18 @@ class PrintedNode:
     """A union type for all nodes that have been processed by the printer."""
 
     alias: str
+    argument_name: str
     arguments: Strings
     block: bool
     default_value: str
     definitions: Strings
     description: str
     directives: str
+    field_name: str
     fields: Strings
     interfaces: Strings
     locations: Strings
+    member_name: str
     name: str
     operation: OperationType
     operation_types: Strings
@@ -409,6 +412,30 @@ class PrintAstVisitor(Visitor):
             ("extend input", node.name, join(node.directives, " "), block(node.fields)),
             " ",
         )
+
+    # Schema Coordinates
+
+    @staticmethod
+    def leave_type_coordinate(node: PrintedNode, *_args: Any) -> str:
+        return node.name
+
+    @staticmethod
+    def leave_member_coordinate(node: PrintedNode, *_args: Any) -> str:
+        return join((node.name, wrap(".", node.member_name)))
+
+    @staticmethod
+    def leave_argument_coordinate(node: PrintedNode, *_args: Any) -> str:
+        return join(
+            (node.name, wrap(".", node.field_name), wrap("(", node.argument_name, ":)"))
+        )
+
+    @staticmethod
+    def leave_directive_coordinate(node: PrintedNode, *_args: Any) -> str:
+        return f"@{node.name}"
+
+    @staticmethod
+    def leave_directive_argument_coordinate(node: PrintedNode, *_args: Any) -> str:
+        return f"@{node.name}{wrap('(', node.argument_name, ':)')}"
 
 
 def join(strings: Strings | None, separator: str = "") -> str:

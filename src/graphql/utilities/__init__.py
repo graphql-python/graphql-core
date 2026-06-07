@@ -94,12 +94,34 @@ from .find_schema_changes import (
     find_schema_changes,
 )
 
+# Resolve a schema coordinate to a schema element.
+from .resolve_schema_coordinate import (
+    resolve_schema_coordinate,
+    resolve_ast_schema_coordinate,
+    ResolvedNamedType,
+    ResolvedField,
+    ResolvedInputField,
+    ResolvedEnumValue,
+    ResolvedFieldArgument,
+    ResolvedDirective,
+    ResolvedDirectiveArgument,
+    ResolvedSchemaElement,
+)
+
 __all__ = [
     "BreakingChange",
     "BreakingChangeType",
     "DangerousChange",
     "DangerousChangeType",
     "IntrospectionQuery",
+    "ResolvedDirective",
+    "ResolvedDirectiveArgument",
+    "ResolvedEnumValue",
+    "ResolvedField",
+    "ResolvedFieldArgument",
+    "ResolvedInputField",
+    "ResolvedNamedType",
+    "ResolvedSchemaElement",
     "SafeChange",
     "SafeChangeType",
     "TypeInfo",
@@ -130,6 +152,8 @@ __all__ = [
     "print_type",
     "print_value",
     "replace_variables",
+    "resolve_ast_schema_coordinate",
+    "resolve_schema_coordinate",
     "separate_operations",
     "strip_ignored_characters",
     "type_from_ast",

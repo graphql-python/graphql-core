@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "QUERY_DOCUMENT_KEYS",
+    "ArgumentCoordinateNode",
     "ArgumentNode",
     "BooleanValueNode",
     "ConstArgumentNode",
@@ -28,6 +29,8 @@ __all__ = [
     "ConstObjectValueNode",
     "ConstValueNode",
     "DefinitionNode",
+    "DirectiveArgumentCoordinateNode",
+    "DirectiveCoordinateNode",
     "DirectiveDefinitionNode",
     "DirectiveNode",
     "DocumentNode",
@@ -52,6 +55,7 @@ __all__ = [
     "ListTypeNode",
     "ListValueNode",
     "Location",
+    "MemberCoordinateNode",
     "NameNode",
     "NamedTypeNode",
     "Node",
@@ -66,12 +70,14 @@ __all__ = [
     "OperationTypeDefinitionNode",
     "ScalarTypeDefinitionNode",
     "ScalarTypeExtensionNode",
+    "SchemaCoordinateNode",
     "SchemaDefinitionNode",
     "SchemaExtensionNode",
     "SelectionNode",
     "SelectionSetNode",
     "StringValueNode",
     "Token",
+    "TypeCoordinateNode",
     "TypeDefinitionNode",
     "TypeExtensionNode",
     "TypeNode",
@@ -333,6 +339,11 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
     "union_type_extension": ("name", "directives", "types"),
     "enum_type_extension": ("name", "directives", "values"),
     "input_object_type_extension": ("name", "directives", "fields"),
+    "type_coordinate": ("name",),
+    "member_coordinate": ("name", "member_name"),
+    "argument_coordinate": ("name", "field_name", "argument_name"),
+    "directive_coordinate": ("name",),
+    "directive_argument_coordinate": ("name", "argument_name"),
 }
 
 
@@ -802,3 +813,44 @@ class EnumTypeExtensionNode(TypeExtensionNode):
 @node_class
 class InputObjectTypeExtensionNode(TypeExtensionNode):
     fields: tuple[InputValueDefinitionNode, ...] | None = None
+
+
+# Schema Coordinates
+
+
+@node_class
+class TypeCoordinateNode(Node):
+    name: NameNode
+
+
+@node_class
+class MemberCoordinateNode(Node):
+    name: NameNode
+    member_name: NameNode
+
+
+@node_class
+class ArgumentCoordinateNode(Node):
+    name: NameNode
+    field_name: NameNode
+    argument_name: NameNode
+
+
+@node_class
+class DirectiveCoordinateNode(Node):
+    name: NameNode
+
+
+@node_class
+class DirectiveArgumentCoordinateNode(Node):
+    name: NameNode
+    argument_name: NameNode
+
+
+SchemaCoordinateNode: TypeAlias = (
+    TypeCoordinateNode
+    | MemberCoordinateNode
+    | ArgumentCoordinateNode
+    | DirectiveCoordinateNode
+    | DirectiveArgumentCoordinateNode
+)

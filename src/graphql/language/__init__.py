@@ -14,7 +14,13 @@ from .token_kind import TokenKind
 
 from .lexer import Lexer
 
-from .parser import parse, parse_type, parse_value, parse_const_value
+from .parser import (
+    parse,
+    parse_type,
+    parse_value,
+    parse_const_value,
+    parse_schema_coordinate,
+)
 
 from .printer import print_ast
 
@@ -95,6 +101,12 @@ from .ast import (
     UnionTypeExtensionNode,
     EnumTypeExtensionNode,
     InputObjectTypeExtensionNode,
+    SchemaCoordinateNode,
+    TypeCoordinateNode,
+    MemberCoordinateNode,
+    ArgumentCoordinateNode,
+    DirectiveCoordinateNode,
+    DirectiveArgumentCoordinateNode,
 )
 from .predicates import (
     is_definition_node,
@@ -107,6 +119,7 @@ from .predicates import (
     is_type_definition_node,
     is_type_system_extension_node,
     is_type_extension_node,
+    is_schema_coordinate_node,
 )
 from .directive_locations import DirectiveLocation
 
@@ -115,6 +128,7 @@ __all__ = [
     "IDLE",
     "REMOVE",
     "SKIP",
+    "ArgumentCoordinateNode",
     "ArgumentNode",
     "BooleanValueNode",
     "ConstArgumentNode",
@@ -124,6 +138,8 @@ __all__ = [
     "ConstObjectValueNode",
     "ConstValueNode",
     "DefinitionNode",
+    "DirectiveArgumentCoordinateNode",
+    "DirectiveCoordinateNode",
     "DirectiveDefinitionNode",
     "DirectiveLocation",
     "DirectiveNode",
@@ -151,6 +167,7 @@ __all__ = [
     "ListTypeNode",
     "ListValueNode",
     "Location",
+    "MemberCoordinateNode",
     "NameNode",
     "NamedTypeNode",
     "Node",
@@ -166,6 +183,7 @@ __all__ = [
     "ParallelVisitor",
     "ScalarTypeDefinitionNode",
     "ScalarTypeExtensionNode",
+    "SchemaCoordinateNode",
     "SchemaDefinitionNode",
     "SchemaExtensionNode",
     "SelectionNode",
@@ -175,6 +193,7 @@ __all__ = [
     "StringValueNode",
     "Token",
     "TokenKind",
+    "TypeCoordinateNode",
     "TypeDefinitionNode",
     "TypeExtensionNode",
     "TypeNode",
@@ -192,6 +211,7 @@ __all__ = [
     "is_const_value_node",
     "is_definition_node",
     "is_executable_definition_node",
+    "is_schema_coordinate_node",
     "is_selection_node",
     "is_type_definition_node",
     "is_type_extension_node",
@@ -201,6 +221,7 @@ __all__ = [
     "is_value_node",
     "parse",
     "parse_const_value",
+    "parse_schema_coordinate",
     "parse_type",
     "parse_value",
     "print_ast",
