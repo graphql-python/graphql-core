@@ -1010,6 +1010,23 @@ def describe_type_system_printer():
         printed = print_schema(viral_schema)
         assert printed == viral_sdl
 
+    def prints_schema_with_description_and_default_root_operation_types():
+        query = GraphQLObjectType(name="Query", fields={"a": GraphQLField(GraphQLInt)})
+        schema = GraphQLSchema(query=query, description="Test")
+        printed = print_schema(schema)
+        assert printed == dedent(
+            '''
+            """Test"""
+            schema {
+              query: Query
+            }
+
+            type Query {
+              a: Int
+            }
+            '''
+        )
+
 
 def describe_print_value():
     def print_value_convenience_function():
