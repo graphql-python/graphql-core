@@ -7,7 +7,8 @@ from typing import Any, cast
 import pytest
 
 from graphql.error import GraphQLError
-from graphql.execution import execute, execute_sync
+from graphql.execution import Executor, execute, execute_sync
+from graphql.execution.collect_fields import FieldDetails
 from graphql.execution.get_variable_signature import GraphQLVariableSignature
 from graphql.execution.values import VariableValues, VariableValueSource
 from graphql.language import FieldNode, OperationDefinitionNode, parse
@@ -1256,3 +1257,30 @@ def describe_execute_handles_basic_execution_tasks():
                 },
             ],
         )
+
+    def memoizes_collect_subfields_results():
+        deep_type = GraphQLObjectType("DeepType", {"name": GraphQLField(GraphQLString)})
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"deep": GraphQLField(deep_type)})
+        )
+        document = parse("{ deep { name } }")
+        executor = Executor.build(schema, document)
+
+        assert isinstance(executor, Executor)
+
+        operation = executor.operation
+        node = operation.selection_set.selections[0]
+        assert isinstance(node, FieldNode)
+
+        field_details_list = [FieldDetails(node=node, defer_usage=None)]
+
+        first = executor.collect_subfields(deep_type, field_details_list)
+        second = executor.collect_subfields(deep_type, field_details_list)
+
+        assert second is first
+
+        third = executor.collect_subfields(
+            deep_type, [FieldDetails(node=node, defer_usage=None)]
+        )
+
+        assert third is not first
