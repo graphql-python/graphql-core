@@ -516,6 +516,16 @@ from .execution import (
 # The primary entry point into fulfilling a GraphQL request.
 from .graphql import graphql, graphql_sync
 
+# The default parse/validate/execute/subscribe harness used by graphql.
+from .harness import (
+    GraphQLExecuteFn,
+    GraphQLHarness,
+    GraphQLParseFn,
+    GraphQLSubscribeFn,
+    GraphQLValidateFn,
+    default_harness,
+)
+
 INVALID = Undefined  # deprecated alias
 
 # The GraphQL-core version info.
@@ -601,6 +611,7 @@ __all__ = [
     "GraphQLEnumValuesDefinition",
     "GraphQLError",
     "GraphQLErrorExtensions",
+    "GraphQLExecuteFn",
     "GraphQLField",
     "GraphQLFieldKwargs",
     "GraphQLFieldMap",
@@ -608,6 +619,7 @@ __all__ = [
     "GraphQLFloat",
     "GraphQLFormattedError",
     "GraphQLFormattedErrorExtensions",
+    "GraphQLHarness",
     "GraphQLID",
     "GraphQLIncludeDirective",
     "GraphQLInputField",
@@ -635,6 +647,7 @@ __all__ = [
     "GraphQLObjectTypeKwargs",
     "GraphQLOneOfDirective",
     "GraphQLOutputType",
+    "GraphQLParseFn",
     "GraphQLResolveInfo",
     "GraphQLScalarInputLiteralCoercer",
     "GraphQLScalarInputValueCoercer",
@@ -651,11 +664,13 @@ __all__ = [
     "GraphQLSpecifiedByDirective",
     "GraphQLStreamDirective",
     "GraphQLString",
+    "GraphQLSubscribeFn",
     "GraphQLSyntaxError",
     "GraphQLType",
     "GraphQLTypeResolver",
     "GraphQLUnionType",
     "GraphQLUnionTypeKwargs",
+    "GraphQLValidateFn",
     "GraphQLWrappingType",
     "IncrementalDeferResult",
     "IncrementalResult",
@@ -812,6 +827,7 @@ __all__ = [
     "concat_ast",
     "create_source_event_stream",
     "default_field_resolver",
+    "default_harness",
     "default_type_resolver",
     "do_types_overlap",
     "execute",

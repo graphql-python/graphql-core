@@ -6,8 +6,8 @@ from asyncio import ensure_future
 from typing import TYPE_CHECKING, Any, cast
 
 from .error import GraphQLError
-from .execution import ExecutionResult, Executor, Middleware, execute
-from .language import Source, parse
+from .execution import ExecutionResult, Executor, Middleware
+from .harness import GraphQLHarness, default_harness
 from .pyutils.is_awaitable import is_awaitable as default_is_awaitable
 from .type import (
     GraphQLFieldResolver,
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Awaitable, Callable, Collection
     from typing import TypeGuard
 
+    from .language import DocumentNode, Source
     from .pyutils import AbortSignal, AwaitableOrValue
     from .validation import ASTValidationRule
 
@@ -46,6 +47,7 @@ async def graphql(  # noqa: PLR0913
     experimental_fragment_arguments: bool = False,
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
+    harness: GraphQLHarness = default_harness,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -109,6 +111,9 @@ async def graphql(  # noqa: PLR0913
       If not provided, the specified rules are used.
     :arg max_errors:
       The maximum number of validation errors to report before stopping.
+    :arg harness:
+      A custom set of parse/validate/execute/subscribe functions to use when
+      fulfilling the operation. Defaults to ``default_harness``.
     """
     # Always return asynchronously for a consistent API.
     result = graphql_impl(
@@ -131,6 +136,7 @@ async def graphql(  # noqa: PLR0913
         experimental_fragment_arguments,
         rules,
         max_errors,
+        harness,
     )
 
     if default_is_awaitable(result):
@@ -168,6 +174,7 @@ def graphql_sync(  # noqa: PLR0913
     experimental_fragment_arguments: bool = False,
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
+    harness: GraphQLHarness = default_harness,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -204,6 +211,7 @@ def graphql_sync(  # noqa: PLR0913
         experimental_fragment_arguments,
         rules,
         max_errors,
+        harness,
     )
 
     # Assert that the execution was synchronous.
@@ -235,15 +243,68 @@ def graphql_impl(  # noqa: PLR0913
     experimental_fragment_arguments: bool = False,
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
+    harness: GraphQLHarness = default_harness,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
     if schema_validation_errors := validate_schema(schema):
         return ExecutionResult(data=None, errors=schema_validation_errors)
 
+    def check_validation_and_execute(
+        validation_errors: list[GraphQLError], document: DocumentNode
+    ) -> AwaitableOrValue[ExecutionResult]:
+        if validation_errors:
+            return ExecutionResult(data=None, errors=validation_errors)
+
+        # Execute
+        return harness.execute(
+            schema,
+            document,
+            root_value,
+            context_value,
+            variable_values,
+            operation_name,
+            field_resolver,
+            type_resolver,
+            None,
+            50,
+            False,
+            middleware,
+            executor_class,
+            is_awaitable,
+            is_async_iterable,
+            hide_suggestions=hide_suggestions,
+            abort_signal=abort_signal,
+        )
+
+    def validate_and_execute(
+        document: DocumentNode,
+    ) -> AwaitableOrValue[ExecutionResult]:
+        # Validate
+        validation_result = harness.validate(
+            schema, document, rules, max_errors, hide_suggestions=hide_suggestions
+        )
+
+        if default_is_awaitable(validation_result):
+
+            async def await_validation() -> ExecutionResult:
+                validation_errors = await cast(
+                    "Awaitable[list[GraphQLError]]", validation_result
+                )
+                result = check_validation_and_execute(validation_errors, document)
+                if default_is_awaitable(result):
+                    return await cast("Awaitable[ExecutionResult]", result)
+                return cast("ExecutionResult", result)
+
+            return await_validation()
+
+        return check_validation_and_execute(
+            cast("list[GraphQLError]", validation_result), document
+        )
+
     # Parse
     try:
-        document = parse(
+        document = harness.parse(
             source,
             no_location=no_location,
             max_tokens=max_tokens,
@@ -252,31 +313,18 @@ def graphql_impl(  # noqa: PLR0913
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])
 
-    # Validate
-    from .validation import validate
+    if default_is_awaitable(document):
 
-    if validation_errors := validate(
-        schema, document, rules, max_errors, hide_suggestions=hide_suggestions
-    ):
-        return ExecutionResult(data=None, errors=validation_errors)
+        async def await_document() -> ExecutionResult:
+            try:
+                resolved_document = await cast("Awaitable[DocumentNode]", document)
+            except GraphQLError as error:
+                return ExecutionResult(data=None, errors=[error])
+            result = validate_and_execute(resolved_document)
+            if default_is_awaitable(result):
+                return await cast("Awaitable[ExecutionResult]", result)
+            return cast("ExecutionResult", result)
 
-    # Execute
-    return execute(
-        schema,
-        document,
-        root_value,
-        context_value,
-        variable_values,
-        operation_name,
-        field_resolver,
-        type_resolver,
-        None,
-        50,
-        False,
-        middleware,
-        executor_class,
-        is_awaitable,
-        is_async_iterable,
-        hide_suggestions=hide_suggestions,
-        abort_signal=abort_signal,
-    )
+        return await_document()
+
+    return validate_and_execute(cast("DocumentNode", document))
