@@ -111,8 +111,10 @@ GraphQLInt = GraphQLScalarType(
 def serialize_float(output_value: Any) -> float:
     if isinstance(output_value, bool):
         return 1 if output_value else 0
-    if isinstance(output_value, (int, float)):
+    if isinstance(output_value, float):
         return coerce_float_from_number(output_value)
+    if isinstance(output_value, int):
+        return coerce_float_from_int(output_value)
     if isinstance(output_value, str):
         return coerce_float_from_string(output_value)
     msg = "Float cannot represent non numeric value: " + inspect(output_value)
@@ -120,8 +122,10 @@ def serialize_float(output_value: Any) -> float:
 
 
 def coerce_float(input_value: Any) -> float:
-    if isinstance(input_value, (int, float)) and not isinstance(input_value, bool):
+    if isinstance(input_value, float):
         return coerce_float_from_number(input_value)
+    if isinstance(input_value, int) and not isinstance(input_value, bool):
+        return coerce_float_from_int(input_value)
     msg = "Float cannot represent non numeric value: " + inspect(input_value)
     raise GraphQLError(msg)
 
@@ -162,8 +166,12 @@ def serialize_string(output_value: Any) -> str:
         return output_value
     if isinstance(output_value, bool):
         return "true" if output_value else "false"
-    if isinstance(output_value, (int, float)):
+    if isinstance(output_value, float):
         return coerce_string_from_number(output_value)
+    # Python's int is the arbitrary-precision analog of a JavaScript bigint and is
+    # always finite, so it is serialized directly.
+    if isinstance(output_value, int):
+        return str(output_value)
     # do not serialize builtin types as strings, but allow serialization of custom
     # types via their `__str__` method
     if type(output_value).__module__ == "builtins":
@@ -213,8 +221,12 @@ GraphQLString = GraphQLScalarType(
 def serialize_boolean(output_value: Any) -> bool:
     if isinstance(output_value, bool):
         return output_value
-    if isinstance(output_value, (int, float)):
+    if isinstance(output_value, float):
         return coerce_boolean_from_number(output_value)
+    # Python's int is the arbitrary-precision analog of a JavaScript bigint and is
+    # always finite.
+    if isinstance(output_value, int):
+        return output_value != 0
     raise GraphQLError(
         "Boolean cannot represent a non boolean value: " + inspect(output_value)
     )
@@ -358,6 +370,28 @@ def coerce_float_from_string(value: str) -> float:
         raise GraphQLError(msg) from error
     if not isfinite(num):
         msg = "Float cannot represent non numeric value: " + inspect(value)
+        raise GraphQLError(msg)
+    return num
+
+
+def coerce_float_from_int(value: int) -> float:
+    # Python's int is the arbitrary-precision analog of a JavaScript bigint, so it
+    # may be too large to represent as a float or may lose precision when converted.
+    try:
+        num = float(value)
+    except OverflowError as error:
+        msg = (
+            "Float cannot represent non numeric value: "
+            + inspect(value)
+            + " (value is too large)"
+        )
+        raise GraphQLError(msg) from error
+    if int(num) != value:
+        msg = (
+            "Float cannot represent non numeric value: "
+            + inspect(value)
+            + " (value would lose precision)"
+        )
         raise GraphQLError(msg)
     return num
 

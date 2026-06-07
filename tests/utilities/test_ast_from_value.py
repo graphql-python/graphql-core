@@ -15,7 +15,7 @@ from graphql.language import (
     NullValueNode,
     StringValueNode,
 )
-from graphql.pyutils import Undefined
+from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLBoolean,
     GraphQLEnumType,
@@ -93,6 +93,27 @@ def describe_ast_from_value():
         )
 
         assert ast_from_value(1.1, GraphQLFloat) == FloatValueNode(value="1.1")
+
+        # Python's int is arbitrary-precision (the bigint analog): an integer that
+        # fits exactly is converted, but a larger one raises rather than lose data.
+        assert ast_from_value(9007199254740992, GraphQLFloat) == FloatValueNode(
+            value="9007199254740992"
+        )
+
+        with pytest.raises(GraphQLError) as exc_info:
+            ast_from_value(9007199254740993, GraphQLFloat)
+        assert str(exc_info.value) == (
+            "Float cannot represent non numeric value:"
+            " 9007199254740993 (value would lose precision)"
+        )
+
+        with pytest.raises(GraphQLError) as exc_info:
+            ast_from_value(2**1024, GraphQLFloat)
+        assert str(exc_info.value) == (
+            "Float cannot represent non numeric value: "
+            + inspect(2**1024)
+            + " (value is too large)"
+        )
 
     def converts_string_values_to_string_asts():
         assert ast_from_value("hello", GraphQLString) == StringValueNode(value="hello")

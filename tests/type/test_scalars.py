@@ -6,7 +6,7 @@ import pytest
 
 from graphql.error import GraphQLError
 from graphql.language import parse_const_value as parse_const_value_to_ast
-from graphql.pyutils import Undefined
+from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLBoolean,
     GraphQLFloat,
@@ -221,12 +221,26 @@ def describe_type_system_specified_scalar_types():
             assert _coerce_input_value(-1) == -1
             assert _coerce_input_value(0.1) == 0.1
             assert _coerce_input_value(pi) == pi
+            assert _coerce_input_value(9007199254740992) == 9007199254740992
 
             _coerce_input_value_raises(
                 nan, "Float cannot represent non numeric value: nan"
             )
             _coerce_input_value_raises(
                 inf, "Float cannot represent non numeric value: inf"
+            )
+            # Python's int is arbitrary-precision (the bigint analog): too large to
+            # represent as a float, or representable only with loss of precision.
+            _coerce_input_value_raises(
+                9007199254740993,
+                "Float cannot represent non numeric value:"
+                " 9007199254740993 (value would lose precision)",
+            )
+            _coerce_input_value_raises(
+                2**1024,
+                "Float cannot represent non numeric value: "
+                + inspect(2**1024)
+                + " (value is too large)",
             )
             _coerce_input_value_raises(
                 "", "Float cannot represent non numeric value: ''"
@@ -313,6 +327,7 @@ def describe_type_system_specified_scalar_types():
             assert coerce_output_value(False) == 0
             assert coerce_output_value(True) == 1
             assert coerce_output_value(type("Float", (float,), {})(5.5)) == 5.5
+            assert coerce_output_value(9007199254740992) == 9007199254740992
 
             with pytest.raises(GraphQLError) as exc_info:
                 coerce_output_value(nan)
@@ -323,6 +338,21 @@ def describe_type_system_specified_scalar_types():
                 coerce_output_value(inf)
             assert (
                 str(exc_info.value) == "Float cannot represent non numeric value: inf"
+            )
+            # Python's int is arbitrary-precision (the bigint analog): too large to
+            # represent as a float, or representable only with loss of precision.
+            with pytest.raises(GraphQLError) as exc_info:
+                coerce_output_value(9007199254740993)
+            assert str(exc_info.value) == (
+                "Float cannot represent non numeric value:"
+                " 9007199254740993 (value would lose precision)"
+            )
+            with pytest.raises(GraphQLError) as exc_info:
+                coerce_output_value(2**1024)
+            assert str(exc_info.value) == (
+                "Float cannot represent non numeric value: "
+                + inspect(2**1024)
+                + " (value is too large)"
             )
             with pytest.raises(GraphQLError) as exc_info:
                 coerce_output_value("one")
@@ -588,6 +618,8 @@ def describe_type_system_specified_scalar_types():
 
             assert coerce_output_value(1) is True
             assert coerce_output_value(0) is False
+            assert coerce_output_value(1.5) is True
+            assert coerce_output_value(0.0) is False
             assert coerce_output_value(True) is True
             assert coerce_output_value(False) is False
             with pytest.raises(TypeError, match="not an acceptable base type"):

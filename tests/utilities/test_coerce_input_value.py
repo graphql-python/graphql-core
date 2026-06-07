@@ -84,6 +84,13 @@ def describe_coerce_input_value():
         def invalid_for_raised_error():
             _test({"error": "Some error message"}, TestScalar, Undefined)
 
+    def converts_large_int_values_for_numeric_scalars():
+        # Python's int is arbitrary-precision (the bigint analog): a large integer
+        # is coerced if it fits exactly, otherwise the coercion error makes the
+        # result undefined.
+        _test(9007199254740992, GraphQLFloat, 9007199254740992)
+        _test(9007199254740993, GraphQLFloat, Undefined)
+
     def describe_for_graphql_enum():
         TestEnum = GraphQLEnumType(
             "TestEnum", {"FOO": "InternalFoo", "BAR": 123_456_789}
