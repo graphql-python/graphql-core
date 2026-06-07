@@ -3196,6 +3196,30 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
             },
         ]
 
+    def rejects_deprecated_implementation_field_when_iface_field_not_deprecated():
+        schema = build_schema(
+            """
+            interface Node {
+              id: ID!
+            }
+
+            type Foo implements Node {
+              id: ID! @deprecated
+            }
+
+            type Query {
+              foo: Foo
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Interface field Node.id is not deprecated, so"
+                " implementation field Foo.id must not be deprecated.",
+                "locations": [(7, 23), (7, 19)],
+            }
+        ]
+
 
 def describe_assert_valid_schema():
     def does_not_throw_on_valid_schemas():

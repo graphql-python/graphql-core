@@ -492,6 +492,21 @@ class SchemaValidationContext:
                         [type_arg.ast_node, iface_field.ast_node],
                     )
 
+            # Assert that field is not deprecated unless interface field is.
+            if (
+                type_field.deprecation_reason is not None
+                and iface_field.deprecation_reason is None
+            ):
+                self.report_error(
+                    f"Interface field {iface.name}.{field_name} is not deprecated,"
+                    f" so implementation field {type_.name}.{field_name}"
+                    " must not be deprecated.",
+                    [
+                        get_deprecated_directive_node(type_field.ast_node),
+                        type_field.ast_node and type_field.ast_node.type,
+                    ],
+                )
+
     def validate_type_implements_ancestors(
         self,
         type_: GraphQLObjectType | GraphQLInterfaceType,
