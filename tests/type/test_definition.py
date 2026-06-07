@@ -1170,23 +1170,26 @@ def describe_type_system_enums():
         )
 
     def rejects_an_enum_type_with_incorrectly_named_values():
+        enum_type = GraphQLEnumType("SomeEnum", {"bad-name": GraphQLField(ScalarType)})
         with pytest.raises(GraphQLError) as exc_info:
-            GraphQLEnumType("SomeEnum", {"bad-name": GraphQLField(ScalarType)})
+            assert not enum_type.values
         msg = str(exc_info.value)
         assert msg == "Names must only contain [_a-zA-Z0-9] but 'bad-name' does not."
 
     def rejects_an_enum_type_without_values():
         with pytest.raises(TypeError, match=r"missing .* required .* 'values'"):
             GraphQLEnumType("SomeEnum")  # type: ignore
+        enum_type = GraphQLEnumType("SomeEnum", values=None)  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            GraphQLEnumType("SomeEnum", values=None)  # type: ignore
+            assert not enum_type.values
         assert str(exc_info.value) == (
             "SomeEnum values must be an Enum or a mapping with value names as keys."
         )
 
     def rejects_an_enum_type_with_incorrectly_typed_values():
+        enum_type = GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
         with pytest.raises(TypeError) as exc_info:
-            GraphQLEnumType("SomeEnum", [{"FOO": 10}])  # type: ignore
+            assert not enum_type.values
         assert str(exc_info.value) == (
             "SomeEnum values must be an Enum or a mapping with value names as keys."
         )

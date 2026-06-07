@@ -1200,7 +1200,6 @@ class GraphQLEnumType(GraphQLNamedType):
     be used as its internal value when the value is serialized.
     """
 
-    values: GraphQLEnumValueMap
     ast_node: EnumTypeDefinitionNode | None
     extension_ast_nodes: tuple[EnumTypeExtensionNode, ...]
 
@@ -1221,6 +1220,24 @@ class GraphQLEnumType(GraphQLNamedType):
             ast_node=ast_node,
             extension_ast_nodes=extension_ast_nodes,
         )
+        self._values = values
+        self._names_as_values = names_as_values
+
+    def to_kwargs(self) -> GraphQLEnumTypeKwargs:
+        """Get corresponding arguments."""
+        return GraphQLEnumTypeKwargs(
+            super().to_kwargs(),  # type: ignore
+            values=self.values.copy(),
+        )
+
+    def __copy__(self) -> GraphQLEnumType:  # pragma: no cover
+        return self.__class__(**self.to_kwargs())
+
+    @cached_property
+    def values(self) -> GraphQLEnumValueMap:
+        """Get provided values, wrapping them as GraphQLEnumValues if needed."""
+        values = self._values
+        names_as_values = self._names_as_values
         if not isinstance(values, type):
             values = resolve_thunk(values)  # type: ignore
         try:  # check for enum
@@ -1233,7 +1250,7 @@ class GraphQLEnumType(GraphQLNamedType):
                     values = dict(values)  # type: ignore
                 except (TypeError, ValueError) as error:
                     msg = (
-                        f"{name} values must be an Enum or a mapping"
+                        f"{self.name} values must be an Enum or a mapping"
                         " with value names as keys."
                     )
                     raise TypeError(msg) from error
@@ -1244,23 +1261,12 @@ class GraphQLEnumType(GraphQLNamedType):
                 values = {key: value.value for key, value in values.items()}
             elif names_as_values is True:
                 values = {key: key for key in values}
-        values = {
+        return {
             assert_enum_value_name(key): value
             if isinstance(value, GraphQLEnumValue)
             else GraphQLEnumValue(value)
             for key, value in values.items()
         }
-        self.values = values
-
-    def to_kwargs(self) -> GraphQLEnumTypeKwargs:
-        """Get corresponding arguments."""
-        return GraphQLEnumTypeKwargs(
-            super().to_kwargs(),  # type: ignore
-            values=self.values.copy(),
-        )
-
-    def __copy__(self) -> GraphQLEnumType:  # pragma: no cover
-        return self.__class__(**self.to_kwargs())
 
     @cached_property
     def _value_lookup(self) -> dict[Any, str]:
