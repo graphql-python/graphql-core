@@ -139,6 +139,47 @@ def describe_map_async_iterable():
         with pytest.raises(StopAsyncIteration):
             await anext(doubles)
 
+    async def closes_source_on_throw_when_source_has_no_throw_method():
+        items = [1, 2, 3]
+
+        class Iterable:
+            def __init__(self):
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.closed:
+                    raise StopAsyncIteration
+                try:
+                    return items.pop(0)
+                except IndexError:  # pragma: no cover
+                    raise StopAsyncIteration
+
+            async def aclose(self):
+                self.closed = True
+
+            # NOTE: deliberately no athrow() method
+
+        iterable = Iterable()
+        doubles = map_async_iterable(iterable, double)
+
+        assert await anext(doubles) == 2
+        assert await anext(doubles) == 4
+
+        # Throw error
+        message = "allows throwing errors when mapping async iterable"
+        with pytest.raises(RuntimeError) as exc_info:
+            await doubles.athrow(RuntimeError(message))
+
+        assert str(exc_info.value) == message
+
+        # Returns early and closes the source when throwing errors
+        assert iterable.closed is True
+        with pytest.raises(StopAsyncIteration):
+            await anext(doubles)
+
     async def allows_throwing_errors_with_traceback_through_async_iterables():
         class Iterable:
             def __aiter__(self):
