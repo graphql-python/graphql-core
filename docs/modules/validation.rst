@@ -57,6 +57,10 @@ Rules
 
 .. autoclass:: KnownFragmentNamesRule
 
+**Spec Section: "Operation Type Existence"**
+
+.. autoclass:: KnownOperationTypesRule
+
 **Spec Section: "Fragment Spread Type Existence"**
 
 .. autoclass:: KnownTypeNamesRule

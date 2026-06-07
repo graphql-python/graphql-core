@@ -36,6 +36,9 @@ from .rules.known_directives import KnownDirectivesRule
 # Spec Section: "Fragment spread target defined"
 from .rules.known_fragment_names import KnownFragmentNamesRule
 
+# Spec Section: "Operation Type Existence"
+from .rules.known_operation_types import KnownOperationTypesRule
+
 # Spec Section: "Fragment Spread Type Existence"
 from .rules.known_type_names import KnownTypeNamesRule
 
@@ -134,6 +137,7 @@ recommended_rules: tuple[type[ASTValidationRule], ...] = (MaxIntrospectionDepthR
 
 specified_rules: tuple[type[ASTValidationRule], ...] = (
     ExecutableDefinitionsRule,
+    KnownOperationTypesRule,
     UniqueOperationNamesRule,
     LoneAnonymousOperationRule,
     SingleFieldSubscriptionsRule,
