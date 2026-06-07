@@ -24,6 +24,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
+from graphql.utilities.value_from_ast_untyped import value_from_ast_untyped
 
 
 def make_faulty_scalar_error() -> GraphQLError:
@@ -66,6 +67,21 @@ TestComplexScalar = GraphQLScalarType(
     name="ComplexScalar",
     coerce_input_value=coerce_complex_input_value,
     coerce_input_literal=coerce_input_literal_value,
+)
+
+
+def coerce_json_input_value(value: Any) -> Any:
+    return value
+
+
+def coerce_json_input_literal(value: ValueNode) -> Any:
+    return value_from_ast_untyped(value)
+
+
+TestJSONScalar = GraphQLScalarType(
+    name="JSONScalar",
+    coerce_input_value=coerce_json_input_value,
+    coerce_input_literal=coerce_json_input_literal,
 )
 
 
@@ -170,6 +186,9 @@ TestType = GraphQLObjectType(
         ),
         "fieldWithNestedInputObject": field_with_input_arg(
             GraphQLArgument(TestNestedInputObject)
+        ),
+        "fieldWithJSONScalarInput": field_with_input_arg(
+            GraphQLArgument(TestJSONScalar)
         ),
         "nested": GraphQLField(NestedType, resolve=lambda *_args: {}),
         "list": field_with_input_arg(GraphQLArgument(GraphQLList(GraphQLString))),
@@ -816,6 +835,76 @@ def describe_execute_handles_inputs():
                     }
                 ],
             )
+
+    # Note: the below is non-specified custom graphql-core behavior.
+    def describe_handles_custom_scalars_with_embedded_variables():
+        expected = "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"
+
+        def allows_custom_scalars():
+            result = execute_query(
+                """
+                {
+                  fieldWithJSONScalarInput(input: { a: "foo", b: ["bar"], c: "baz" })
+                }
+                """
+            )
+
+            assert result == ({"fieldWithJSONScalarInput": expected}, None)
+
+        def allows_custom_scalars_with_non_embedded_variables():
+            result = execute_query(
+                """
+                query ($input: JSONScalar) {
+                  fieldWithJSONScalarInput(input: $input)
+                }
+                """,
+                {"input": {"a": "foo", "b": ["bar"], "c": "baz"}},
+            )
+
+            assert result == ({"fieldWithJSONScalarInput": expected}, None)
+
+        def allows_custom_scalars_with_embedded_operation_variables():
+            result = execute_query(
+                """
+                query ($input: String) {
+                  fieldWithJSONScalarInput(input: { a: $input, b: ["bar"], c: "baz" })
+                }
+                """,
+                {"input": "foo"},
+            )
+
+            assert result == ({"fieldWithJSONScalarInput": expected}, None)
+
+        def allows_custom_scalars_with_embedded_fragment_variables():
+            result = execute_query_with_fragment_arguments(
+                """
+                {
+                  ...JSONFragment(input: "foo")
+                }
+                fragment JSONFragment($input: String) on TestType {
+                  fieldWithJSONScalarInput(input: { a: $input, b: ["bar"], c: "baz" })
+                }
+                """
+            )
+
+            assert result == ({"fieldWithJSONScalarInput": expected}, None)
+
+        def allows_custom_scalars_with_embedded_nested_fragment_variables():
+            result = execute_query_with_fragment_arguments(
+                """
+                {
+                  ...JSONFragment(input1: "foo")
+                }
+                fragment JSONFragment($input1: String) on TestType {
+                  ...JSONNestedFragment(input2: $input1)
+                }
+                fragment JSONNestedFragment($input2: String) on TestType {
+                  fieldWithJSONScalarInput(input: { a: $input2, b: ["bar"], c: "baz" })
+                }
+                """
+            )
+
+            assert result == ({"fieldWithJSONScalarInput": expected}, None)
 
     def describe_handles_lists_and_nullability():
         def allows_lists_to_be_null():

@@ -25,8 +25,9 @@ from ..type import (
 )
 from ..utilities.type_from_ast import type_from_ast
 from .values import (
+    FragmentVariableValues,
     VariableValues,
-    experimental_get_argument_values,
+    get_argument_values,
     get_directive_values,
     get_fragment_variable_values,
 )
@@ -59,7 +60,7 @@ class FieldDetails(NamedTuple):
 
     node: FieldNode
     defer_usage: DeferUsage | None
-    fragment_variable_values: VariableValues | None = None
+    fragment_variable_values: FragmentVariableValues | None = None
 
 
 class FragmentDetails(NamedTuple):
@@ -193,7 +194,7 @@ def collect_fields_impl(
     grouped_field_set: dict[str, list[FieldDetails]],
     new_defer_usages: list[DeferUsage],
     defer_usage: DeferUsage | None = None,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
 ) -> None:
     """Collect fields (internal implementation)."""
     (
@@ -277,7 +278,7 @@ def collect_fields_impl(
                 continue
 
             fragment_variable_signatures = fragment.variable_signatures
-            new_fragment_variable_values: VariableValues | None = None
+            new_fragment_variable_values: FragmentVariableValues | None = None
             if fragment_variable_signatures:
                 new_fragment_variable_values = get_fragment_variable_values(
                     selection,
@@ -312,7 +313,7 @@ def collect_fields_impl(
 def get_defer_usage(
     operation: OperationDefinitionNode,
     variable_values: VariableValues,
-    fragment_variable_values: VariableValues | None,
+    fragment_variable_values: FragmentVariableValues | None,
     node: FragmentSpreadNode | InlineFragmentNode,
     parent_defer_usage: DeferUsage | None,
 ) -> DeferUsage | None:
@@ -343,7 +344,7 @@ def should_include_node(
     context: CollectFieldsContext,
     node: FragmentSpreadNode | FieldNode | InlineFragmentNode,
     variable_values: VariableValues,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
 ) -> bool:
     """Check if node should be included
 
@@ -366,9 +367,9 @@ def should_include_node(
         context.forbidden_directive_instances.append(skip_directive_node)
         return False
     skip = (
-        experimental_get_argument_values(
+        get_argument_values(
+            GraphQLSkipDirective,
             skip_directive_node,
-            GraphQLSkipDirective.args,
             variable_values,
             fragment_variable_values,
             context.hide_suggestions,
@@ -395,9 +396,9 @@ def should_include_node(
         context.forbidden_directive_instances.append(include_directive_node)
         return False
     include = (
-        experimental_get_argument_values(
+        get_argument_values(
+            GraphQLIncludeDirective,
             include_directive_node,
-            GraphQLIncludeDirective.args,
             variable_values,
             fragment_variable_values,
             context.hide_suggestions,

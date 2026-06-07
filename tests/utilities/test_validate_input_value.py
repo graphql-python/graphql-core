@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING, Any
 
 from graphql.execution.get_variable_signature import GraphQLVariableSignature
 from graphql.execution.values import (
+    FragmentVariableValues,
+    FragmentVariableValueSource,
     VariableValues,
-    VariableValueSource,
     get_variable_values,
 )
 from graphql.language import TokenKind, parse_value
@@ -617,8 +618,8 @@ def describe_validate_input_literal():
         # When a variable is provided by fragment variable values, those are
         # scoped in preference to the operation variable values.
         signature = GraphQLVariableSignature("var", GraphQLInt, None)
-        fragment_variable_values = VariableValues(
-            sources={"var": VariableValueSource(signature)},
+        fragment_variable_values = FragmentVariableValues(
+            sources={"var": FragmentVariableValueSource(signature)},
             coerced={},
         )
         errors: list[dict[str, Any]] = []

@@ -42,12 +42,14 @@ from .get_variable_signature import GraphQLVariableSignature, get_variable_signa
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping
 
+    from ..language import ArgumentNode, FragmentArgumentNode
     from ..type import GraphQLArgument
 
 __all__ = [
+    "FragmentVariableValueSource",
+    "FragmentVariableValues",
     "VariableValueSource",
     "VariableValues",
-    "experimental_get_argument_values",
     "get_argument_values",
     "get_directive_values",
     "get_fragment_variable_values",
@@ -66,6 +68,21 @@ class VariableValues(NamedTuple):
     """The coerced values of the variables and their original sources."""
 
     sources: dict[str, VariableValueSource]
+    coerced: dict[str, Any]
+
+
+class FragmentVariableValueSource(NamedTuple):
+    """A fragment variable signature with the source value from its spread."""
+
+    signature: GraphQLVariableSignature
+    value: Any = Undefined
+    fragment_variable_values: FragmentVariableValues | None = None
+
+
+class FragmentVariableValues(NamedTuple):
+    """The coerced values of fragment variables and their original sources."""
+
+    sources: dict[str, FragmentVariableValueSource]
     coerced: dict[str, Any]
 
 
@@ -171,41 +188,45 @@ def get_fragment_variable_values(
     fragment_spread_node: FragmentSpreadNode,
     fragment_signatures: Mapping[str, GraphQLVariableSignature],
     variable_values: VariableValues,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
     hide_suggestions: bool = False,
-) -> VariableValues:
+) -> FragmentVariableValues:
     """Get coerced variable values for a fragment spread.
 
     Prepares the variable values for a fragment spread, preserving the original
     sources of the variable values alongside the coerced values.
     """
-    sources: dict[str, VariableValueSource] = {}
+    arg_node_map = {arg.name.value: arg for arg in fragment_spread_node.arguments or []}
+    sources: dict[str, FragmentVariableValueSource] = {}
+    coerced: dict[str, Any] = {}
     for var_name, var_signature in fragment_signatures.items():
-        value = Undefined
-        if fragment_variable_values and var_name in fragment_variable_values.sources:
-            value = fragment_variable_values.sources[var_name].value
-        if value is None or value is Undefined:  # pragma: no branch
-            # The preserved source value is not used directly here, but is
-            # carried so that it can be made available downstream.
-            source = variable_values.sources.get(var_name)
-            value = source.value if source else Undefined
-        sources[var_name] = VariableValueSource(var_signature, value)
+        argument_node = arg_node_map.get(var_name)
+        if argument_node is None:
+            sources[var_name] = FragmentVariableValueSource(var_signature)
+        else:
+            sources[var_name] = FragmentVariableValueSource(
+                var_signature, argument_node.value, fragment_variable_values
+            )
 
-    coerced = experimental_get_argument_values(
-        fragment_spread_node,
-        fragment_signatures,
-        variable_values,
-        fragment_variable_values,
-        hide_suggestions,
-    )
+        coerce_argument(
+            coerced,
+            fragment_spread_node,
+            var_name,
+            var_signature,
+            argument_node,
+            variable_values,
+            fragment_variable_values,
+            hide_suggestions,
+        )
 
-    return VariableValues(sources, coerced)
+    return FragmentVariableValues(sources, coerced)
 
 
 def get_argument_values(
     type_def: GraphQLField | GraphQLDirective,
     node: FieldNode | DirectiveNode,
     variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
     hide_suggestions: bool = False,
 ) -> dict[str, Any]:
     """Get coerced argument values based on provided definitions and nodes.
@@ -213,102 +234,105 @@ def get_argument_values(
     Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
     """
-    return experimental_get_argument_values(
-        node, type_def.args, variable_values, hide_suggestions=hide_suggestions
-    )
-
-
-def experimental_get_argument_values(
-    node: FieldNode | DirectiveNode | FragmentSpreadNode,
-    arg_defs: Mapping[str, GraphQLArgument | GraphQLVariableSignature],
-    variable_values: VariableValues | None = None,
-    fragment_variable_values: VariableValues | None = None,
-    hide_suggestions: bool = False,
-) -> dict[str, Any]:
-    """Get coerced argument values based on provided definitions and nodes.
-
-    Prepares a dict of argument values given a mapping of argument definitions
-    (which may be ``GraphQLArgument`` objects or fragment variable signatures) and
-    list of argument AST nodes.
-    """
     coerced_values: dict[str, Any] = {}
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}
 
-    for name, arg_def in arg_defs.items():
-        arg_type = arg_def.type
-        out_name = getattr(arg_def, "out_name", None) or name
-        argument_node = arg_node_map.get(name)
+    for name, arg_def in type_def.args.items():
+        coerce_argument(
+            coerced_values,
+            node,
+            name,
+            arg_def,
+            arg_node_map.get(name),
+            variable_values,
+            fragment_variable_values,
+            hide_suggestions,
+        )
+    return coerced_values
 
-        if argument_node is None:
-            if is_required_argument(arg_def):
-                # Note: ProvidedRequiredArgumentsRule validation should catch this
-                # before execution. This is a runtime check to ensure execution does
-                # not continue with an invalid argument value.
-                msg = (
-                    f"Argument '{name}' of required type '{arg_type}' was not provided."
-                )
-                raise GraphQLError(msg, node)
+
+def coerce_argument(
+    coerced_values: dict[str, Any],
+    node: FieldNode | DirectiveNode | FragmentSpreadNode,
+    arg_name: str,
+    arg_def: GraphQLArgument | GraphQLVariableSignature,
+    argument_node: ArgumentNode | FragmentArgumentNode | None,
+    variable_values: VariableValues | None,
+    fragment_variable_values: FragmentVariableValues | None,
+    hide_suggestions: bool = False,
+) -> None:
+    """Coerce a single argument value into the given coerced values mapping."""
+    arg_type = arg_def.type
+    out_name = getattr(arg_def, "out_name", None) or arg_name
+
+    if argument_node is None:
+        if is_required_argument(arg_def):
+            # Note: ProvidedRequiredArgumentsRule validation should catch this
+            # before execution. This is a runtime check to ensure execution does
+            # not continue with an invalid argument value.
+            msg = (
+                f"Argument '{arg_name}' of required type '{arg_type}' was not provided."
+            )
+            raise GraphQLError(msg, node)
+        coerced_default_value = coerce_default_value(arg_def)
+        if coerced_default_value is not Undefined:
+            coerced_values[out_name] = coerced_default_value
+        return
+
+    value_node = argument_node.value
+
+    # Variables without a value are treated as if no argument was provided if
+    # the argument is not required.
+    if isinstance(value_node, VariableNode):
+        variable_name = value_node.name.value
+        scoped_variable_values = (
+            fragment_variable_values
+            if fragment_variable_values
+            and variable_name in fragment_variable_values.sources
+            else variable_values
+        )
+        if (
+            scoped_variable_values is None
+            or variable_name not in scoped_variable_values.coerced
+        ) and not is_required_argument(arg_def):
             coerced_default_value = coerce_default_value(arg_def)
             if coerced_default_value is not Undefined:
                 coerced_values[out_name] = coerced_default_value
-            continue
+            return
 
-        value_node = argument_node.value
-
-        # Variables without a value are treated as if no argument was provided if
-        # the argument is not required.
-        if isinstance(value_node, VariableNode):
-            variable_name = value_node.name.value
-            scoped_variable_values = (
-                fragment_variable_values
-                if fragment_variable_values
-                and variable_name in fragment_variable_values.sources
-                else variable_values
+    coerced_value = coerce_input_literal(
+        value_node,
+        arg_type,
+        variable_values,
+        fragment_variable_values,
+    )
+    if coerced_value is Undefined:
+        # Note: `values_of_correct_type` validation should catch this before
+        # execution. This is a runtime check to ensure execution does not
+        # continue with an invalid argument value.
+        def on_argument_value_error(
+            error: GraphQLError,
+            path: list[str | int],
+            arg_name: str = arg_name,
+        ) -> None:
+            error.message = (
+                f"Argument '{arg_name}' has invalid value"
+                f"{print_path_list(path)}: {error.message}"
             )
-            if (
-                scoped_variable_values is None
-                or variable_name not in scoped_variable_values.coerced
-            ) and not is_required_argument(arg_def):
-                coerced_default_value = coerce_default_value(arg_def)
-                if coerced_default_value is not Undefined:
-                    coerced_values[out_name] = coerced_default_value
-                continue
+            raise error
 
-        coerced_value = coerce_input_literal(
+        validate_input_literal(
             value_node,
             arg_type,
+            on_argument_value_error,
             variable_values,
             fragment_variable_values,
+            hide_suggestions,
         )
-        if coerced_value is Undefined:
-            # Note: `values_of_correct_type` validation should catch this before
-            # execution. This is a runtime check to ensure execution does not
-            # continue with an invalid argument value.
-            def on_argument_value_error(
-                error: GraphQLError,
-                path: list[str | int],
-                arg_name: str = name,
-            ) -> None:
-                error.message = (
-                    f"Argument '{arg_name}' has invalid value"
-                    f"{print_path_list(path)}: {error.message}"
-                )
-                raise error
-
-            validate_input_literal(
-                value_node,
-                arg_type,
-                on_argument_value_error,
-                variable_values,
-                fragment_variable_values,
-                hide_suggestions,
-            )
-            # Unreachable: validate_input_literal always reports an error here.
-            msg = "Invalid argument"  # pragma: no cover
-            raise GraphQLError(msg, value_node)  # pragma: no cover
-        coerced_values[out_name] = coerced_value
-
-    return coerced_values
+        # Unreachable: validate_input_literal always reports an error here.
+        msg = "Invalid argument"  # pragma: no cover
+        raise GraphQLError(msg, value_node)  # pragma: no cover
+    coerced_values[out_name] = coerced_value
 
 
 NodeWithDirective: TypeAlias = (
@@ -327,7 +351,7 @@ def get_directive_values(
     directive_def: GraphQLDirective,
     node: NodeWithDirective,
     variable_values: VariableValues | None = None,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
     hide_suggestions: bool = False,
 ) -> dict[str, Any] | None:
     """Get coerced argument values based on provided nodes.
@@ -342,9 +366,9 @@ def get_directive_values(
         directive_name = directive_def.name
         for directive in directives:
             if directive.name.value == directive_name:
-                return experimental_get_argument_values(
+                return get_argument_values(
+                    directive_def,
                     directive,
-                    directive_def.args,
                     variable_values,
                     fragment_variable_values,
                     hide_suggestions,

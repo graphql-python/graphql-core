@@ -116,7 +116,6 @@ from .types import (
 )
 from .values import (
     VariableValues,
-    experimental_get_argument_values,
     get_argument_values,
     get_directive_values,
     get_variable_values,
@@ -714,9 +713,9 @@ class ExecutionContext(IncrementalPublisherContext):
         try:
             # Build a dictionary of arguments from the field.arguments AST, using the
             # variables scope to fulfill any variable references.
-            args = experimental_get_argument_values(
+            args = get_argument_values(
+                field_def,
                 first_field_node,
-                field_def.args,
                 self.variable_values,
                 first_field_details.fragment_variable_values,
                 self.hide_suggestions,
@@ -2897,7 +2896,11 @@ def execute_subscription(
         # Build a dictionary of arguments from the field.arguments AST, using the
         # variables scope to fulfill any variable references.
         args = get_argument_values(
-            field_def, field_nodes[0], context.variable_values, context.hide_suggestions
+            field_def,
+            field_nodes[0],
+            context.variable_values,
+            field_details_list[0].fragment_variable_values,
+            context.hide_suggestions,
         )
 
         # Call the `subscribe()` resolver or the default resolver to produce an

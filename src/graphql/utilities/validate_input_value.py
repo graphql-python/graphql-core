@@ -36,7 +36,7 @@ from ..type import (
 from .replace_variables import replace_variables
 
 if TYPE_CHECKING:
-    from ..execution.values import VariableValues
+    from ..execution.values import FragmentVariableValues, VariableValues
 
 __all__ = ["validate_input_literal", "validate_input_value"]
 
@@ -221,7 +221,7 @@ def validate_input_literal(
     type_: GraphQLInputType,
     on_error: OnErrorCB,
     variables: VariableValues | None = None,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
     hide_suggestions: bool = False,
 ) -> None:
     """Validate that the provided input literal is allowed for this type.
@@ -246,7 +246,7 @@ class ValidationContext(NamedTuple):
     static: bool
     on_error: OnErrorCB
     variables: VariableValues | None
-    fragment_variable_values: VariableValues | None
+    fragment_variable_values: FragmentVariableValues | None
 
 
 def validate_input_literal_impl(
@@ -483,7 +483,7 @@ def validate_input_literal_impl(
 
 def get_scoped_variable_values(
     context: ValidationContext, value_node: VariableNode
-) -> VariableValues | None:
+) -> VariableValues | FragmentVariableValues | None:
     """Select the variable values that provide the given variable node."""
     variable_name = value_node.name.value
     fragment_variable_values = context.fragment_variable_values

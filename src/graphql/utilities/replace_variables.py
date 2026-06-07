@@ -17,7 +17,12 @@ from ..pyutils import Undefined
 from .value_to_literal import value_to_literal
 
 if TYPE_CHECKING:
-    from ..execution.values import VariableValues, VariableValueSource
+    from ..execution.values import (
+        FragmentVariableValues,
+        FragmentVariableValueSource,
+        VariableValues,
+        VariableValueSource,
+    )
 
 __all__ = ["replace_variables"]
 
@@ -25,7 +30,7 @@ __all__ = ["replace_variables"]
 def replace_variables(
     value_node: ValueNode,
     variable_values: VariableValues | None = None,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
 ) -> ConstValueNode:
     """Replace any variables in an AST value with literal values.
 
@@ -38,29 +43,40 @@ def replace_variables(
     """
     if isinstance(value_node, VariableNode):
         var_name = value_node.name.value
-        scoped_variable_values = (
-            fragment_variable_values
-            if fragment_variable_values and var_name in fragment_variable_values.sources
-            else variable_values
-        )
-
-        scoped_variable_source = (
-            scoped_variable_values.sources.get(var_name)
-            if scoped_variable_values
+        fragment_variable_value_source = (
+            fragment_variable_values.sources.get(var_name)
+            if fragment_variable_values
             else None
         )
-        if scoped_variable_source is None:
+
+        if fragment_variable_value_source is not None:
+            value = fragment_variable_value_source.value
+            if value is Undefined:
+                default = fragment_variable_value_source.signature.default
+                if default is not None:
+                    return cast("ConstValueNode", default.literal)
+                return NullValueNode()
+            return replace_variables(
+                value,
+                variable_values,
+                fragment_variable_value_source.fragment_variable_values,
+            )
+
+        variable_value_source = (
+            variable_values.sources.get(var_name) if variable_values else None
+        )
+        if variable_value_source is None:
             return NullValueNode()
 
-        if scoped_variable_source.value is Undefined:
-            default = scoped_variable_source.signature.default
+        if variable_value_source.value is Undefined:
+            default = variable_value_source.signature.default
             if default is not None:
                 return cast("ConstValueNode", default.literal)
 
         return cast(
             "ConstValueNode",
             value_to_literal(
-                scoped_variable_source.value, scoped_variable_source.signature.type
+                variable_value_source.value, variable_value_source.signature.type
             ),
         )
 
@@ -69,7 +85,9 @@ def replace_variables(
         for field in value_node.fields:
             if isinstance(field.value, VariableNode):
                 field_var_name = field.value.name.value
-                field_variable_source: VariableValueSource | None = None
+                field_variable_source: (
+                    VariableValueSource | FragmentVariableValueSource | None
+                ) = None
                 if (
                     fragment_variable_values
                     and field_var_name in fragment_variable_values.sources

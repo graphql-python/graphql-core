@@ -28,7 +28,7 @@ from .replace_variables import replace_variables
 
 if TYPE_CHECKING:
     from ..execution.get_variable_signature import GraphQLVariableSignature
-    from ..execution.values import VariableValues
+    from ..execution.values import FragmentVariableValues, VariableValues
     from ..type import GraphQLArgument, GraphQLInputField
 
 __all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
@@ -111,7 +111,7 @@ def coerce_input_literal(
     value_node: ValueNode,
     type_: GraphQLInputType,
     variable_values: VariableValues | None = None,
-    fragment_variable_values: VariableValues | None = None,
+    fragment_variable_values: FragmentVariableValues | None = None,
 ) -> Any:
     """Produce a coerced Python value given a GraphQL Value AST.
 
@@ -278,7 +278,7 @@ def coerce_default_value(
 def get_coerced_variable_value(
     variable_node: VariableNode,
     variable_values: VariableValues | None,
-    fragment_variable_values: VariableValues | None,
+    fragment_variable_values: FragmentVariableValues | None,
 ) -> Any:
     """Retrieve the coerced variable value for the given variable node."""
     var_name = variable_node.name.value
@@ -292,7 +292,7 @@ def get_coerced_variable_value(
 def _variable_value_is_null(
     variable_node: VariableNode,
     variable_values: VariableValues | None,
-    fragment_variable_values: VariableValues | None,
+    fragment_variable_values: FragmentVariableValues | None,
 ) -> bool:
     """Check whether the given variable node resolves to null or undefined."""
     variable_value = get_coerced_variable_value(
