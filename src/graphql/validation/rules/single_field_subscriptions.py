@@ -30,7 +30,8 @@ class SingleFieldSubscriptionsRule(ValidationRule):
     """Subscriptions must only include a single non-introspection field.
 
     A GraphQL subscription is valid only if it contains a single root field and
-    that root field is not an introspection field.
+    that root field is not an introspection field. `@skip` and `@include`
+    directives are forbidden.
 
     See https://spec.graphql.org/draft/#sec-Single-root-field
     """
@@ -51,14 +52,31 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 for definition in document.definitions
                 if isinstance(definition, FragmentDefinitionNode)
             }
-            grouped_field_set = collect_fields(
-                schema,
-                fragments,
-                variable_values,
-                subscription_type,
-                node,
-                self.context.hide_suggestions,
-            ).grouped_field_set
+            grouped_field_set, _new_defer_usages, forbidden_directive_instances = (
+                collect_fields(
+                    schema,
+                    fragments,
+                    variable_values,
+                    subscription_type,
+                    node,
+                    self.context.hide_suggestions,
+                    True,
+                )
+            )
+            if forbidden_directive_instances:
+                self.report_error(
+                    GraphQLError(
+                        (
+                            "Anonymous Subscription"
+                            if operation_name is None
+                            else f"Subscription '{operation_name}'"
+                        )
+                        + " must not use `@skip` or `@include` directives"
+                        " in the top level selection.",
+                        forbidden_directive_instances,
+                    )
+                )
+                return
             if len(grouped_field_set) > 1:
                 field_details_lists = list(grouped_field_set.values())
                 extra_field_details_lists = field_details_lists[1:]

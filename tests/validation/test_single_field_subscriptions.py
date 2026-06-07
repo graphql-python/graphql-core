@@ -291,6 +291,48 @@ def describe_validate_subscriptions_with_single_field():
             ],
         )
 
+    def fails_with_skip_or_include_directive():
+        assert_errors(
+            """
+            subscription RequiredRuntimeValidation($bool: Boolean!) {
+              newMessage @include(if: $bool) {
+                body
+                sender
+              }
+              disallowedSecondRootField @skip(if: $bool)
+            }
+            """,
+            [
+                {
+                    "message": "Subscription 'RequiredRuntimeValidation' must not"
+                    " use `@skip` or `@include` directives"
+                    " in the top level selection.",
+                    "locations": [(3, 26), (7, 41)],
+                }
+            ],
+        )
+
+    def fails_with_skip_or_include_directive_in_anonymous_subscription():
+        assert_errors(
+            """
+            subscription ($bool: Boolean!) {
+              newMessage @include(if: $bool) {
+                body
+                sender
+              }
+              disallowedSecondRootField @skip(if: $bool)
+            }
+            """,
+            [
+                {
+                    "message": "Anonymous Subscription must not"
+                    " use `@skip` or `@include` directives"
+                    " in the top level selection.",
+                    "locations": [(3, 26), (7, 41)],
+                }
+            ],
+        )
+
     def skips_if_not_subscription_type():
         empty_schema = build_schema(
             """

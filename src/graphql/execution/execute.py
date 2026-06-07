@@ -445,7 +445,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 self.hide_suggestions,
             )
 
-            grouped_field_set, new_defer_usages = collected_fields
+            grouped_field_set, new_defer_usages, _forbidden = collected_fields
 
             graphql_wrapped_result = (
                 self.execute_execution_plan(
@@ -1653,7 +1653,7 @@ class ExecutionContext(IncrementalPublisherContext):
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Collect sub-fields to execute to complete this value."""
         collected_subfields = self.collect_subfields(return_type, field_details_list)
-        grouped_field_set, new_defer_usages = collected_subfields
+        grouped_field_set, new_defer_usages, _forbidden = collected_subfields
 
         return (
             self.execute_fields(

@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, NamedTuple, TypeAlias
 
 from ..language import (
+    DirectiveNode,
     FieldNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
@@ -25,6 +26,7 @@ from ..type import (
 from ..utilities.type_from_ast import type_from_ast
 from .values import (
     VariableValues,
+    experimental_get_argument_values,
     get_directive_values,
     get_fragment_variable_values,
 )
@@ -81,6 +83,8 @@ class CollectFieldsContext(NamedTuple):
     runtime_type: GraphQLObjectType
     visited_fragment_names: set[str]
     hide_suggestions: bool
+    forbidden_directive_instances: list[DirectiveNode]
+    forbid_skip_and_include: bool
 
 
 class CollectedFields(NamedTuple):
@@ -88,6 +92,7 @@ class CollectedFields(NamedTuple):
 
     grouped_field_set: GroupedFieldSet
     new_defer_usages: list[DeferUsage]
+    forbidden_directive_instances: list[DirectiveNode]
 
 
 def collect_fields(
@@ -97,6 +102,7 @@ def collect_fields(
     runtime_type: GraphQLObjectType,
     operation: OperationDefinitionNode,
     hide_suggestions: bool = False,
+    forbid_skip_and_include: bool = False,
 ) -> CollectedFields:
     """Collect fields.
 
@@ -118,12 +124,16 @@ def collect_fields(
         runtime_type,
         set(),
         hide_suggestions,
+        [],
+        forbid_skip_and_include,
     )
 
     collect_fields_impl(
         context, operation.selection_set, grouped_field_set, new_defer_usages
     )
-    return CollectedFields(grouped_field_set, new_defer_usages)
+    return CollectedFields(
+        grouped_field_set, new_defer_usages, context.forbidden_directive_instances
+    )
 
 
 def collect_subfields(
@@ -154,6 +164,8 @@ def collect_subfields(
         return_type,
         set(),
         hide_suggestions,
+        [],
+        False,
     )
     sub_grouped_field_set: dict[str, list[FieldDetails]] = defaultdict(list)
     new_defer_usages: list[DeferUsage] = []
@@ -170,7 +182,9 @@ def collect_subfields(
                 field_detail.fragment_variable_values,
             )
 
-    return CollectedFields(sub_grouped_field_set, new_defer_usages)
+    return CollectedFields(
+        sub_grouped_field_set, new_defer_usages, context.forbidden_directive_instances
+    )
 
 
 def collect_fields_impl(
@@ -190,12 +204,14 @@ def collect_fields_impl(
         runtime_type,
         visited_fragment_names,
         hide_suggestions,
+        _forbidden_directive_instances,
+        _forbid_skip_and_include,
     ) = context
 
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
             if not should_include_node(
-                selection, variable_values, fragment_variable_values
+                context, selection, variable_values, fragment_variable_values
             ):
                 continue
             key = get_field_entry_key(selection)
@@ -204,7 +220,7 @@ def collect_fields_impl(
             )
         elif isinstance(selection, InlineFragmentNode):
             if not should_include_node(
-                selection, variable_values, fragment_variable_values
+                context, selection, variable_values, fragment_variable_values
             ) or not does_fragment_condition_match(schema, selection, runtime_type):
                 continue
 
@@ -249,7 +265,7 @@ def collect_fields_impl(
             if new_defer_usage is None and (
                 frag_name in visited_fragment_names
                 or not should_include_node(
-                    selection, variable_values, fragment_variable_values
+                    context, selection, variable_values, fragment_variable_values
                 )
             ):
                 continue
@@ -324,6 +340,7 @@ def get_defer_usage(
 
 
 def should_include_node(
+    context: CollectFieldsContext,
     node: FragmentSpreadNode | FieldNode | InlineFragmentNode,
     variable_values: VariableValues,
     fragment_variable_values: VariableValues | None = None,
@@ -333,14 +350,60 @@ def should_include_node(
     Determines if a field should be included based on the @include and @skip
     directives, where @skip has higher precedence than @include.
     """
-    skip = get_directive_values(
-        GraphQLSkipDirective, node, variable_values, fragment_variable_values
+    skip_directive_node = (
+        next(
+            (
+                directive
+                for directive in node.directives
+                if directive.name.value == GraphQLSkipDirective.name
+            ),
+            None,
+        )
+        if node.directives
+        else None
+    )
+    if skip_directive_node and context.forbid_skip_and_include:
+        context.forbidden_directive_instances.append(skip_directive_node)
+        return False
+    skip = (
+        experimental_get_argument_values(
+            skip_directive_node,
+            GraphQLSkipDirective.args,
+            variable_values,
+            fragment_variable_values,
+            context.hide_suggestions,
+        )
+        if skip_directive_node
+        else None
     )
     if skip and skip["if"]:
         return False
 
-    include = get_directive_values(
-        GraphQLIncludeDirective, node, variable_values, fragment_variable_values
+    include_directive_node = (
+        next(
+            (
+                directive
+                for directive in node.directives
+                if directive.name.value == GraphQLIncludeDirective.name
+            ),
+            None,
+        )
+        if node.directives
+        else None
+    )
+    if include_directive_node and context.forbid_skip_and_include:
+        context.forbidden_directive_instances.append(include_directive_node)
+        return False
+    include = (
+        experimental_get_argument_values(
+            include_directive_node,
+            GraphQLIncludeDirective.args,
+            variable_values,
+            fragment_variable_values,
+            context.hide_suggestions,
+        )
+        if include_directive_node
+        else None
     )
     return not (include and not include["if"])
 
