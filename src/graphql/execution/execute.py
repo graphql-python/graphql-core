@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from asyncio import (
     FIRST_COMPLETED,
-    CancelledError,
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
     sleep,
@@ -307,9 +306,6 @@ class Executor(IncrementalPublisherContext):
 
         For internal use only.
         """
-        if abort_signal is not None and abort_signal.aborted:
-            return [located_error(abort_signal.reason)]
-
         # If the schema used for execution is invalid, raise an error.
         assert_valid_schema(schema)
 
@@ -419,7 +415,13 @@ class Executor(IncrementalPublisherContext):
         Errors from sub-fields of a NonNull type may propagate to the top level,
         at which point we still log the error and null the parent field, which
         in this case is the entire response.
+
+        If the operation is aborted, the whole operation is rejected with the abort
+        reason rather than resolving to a partial response with located errors.
         """
+        abort_signal = self.abort_signal
+        if abort_signal is not None and abort_signal.aborted:
+            raise self.abort_error()
         try:
             operation = self.operation
             schema = self.schema
@@ -463,7 +465,7 @@ class Executor(IncrementalPublisherContext):
                     ExecutionResult | ExperimentalIncrementalExecutionResults
                 ):
                     try:
-                        resolved = await graphql_wrapped_result
+                        resolved = await self.with_abort_signal(graphql_wrapped_result)
                     except GraphQLError as error:
                         return ExecutionResult(None, with_error(self.errors, error))
                     return self.build_data_response(
@@ -564,15 +566,9 @@ class Executor(IncrementalPublisherContext):
             response_name, field_details_list = field_item
             field_path = Path(path, response_name, parent_type.name)
             if abort_signal is not None and abort_signal.aborted:
-                self.handle_field_error(
-                    abort_signal.reason,
-                    parent_type,
-                    field_details_list,
-                    field_path,
-                    incremental_context,
-                )
-                graphql_wrapped_result.result[response_name] = None
-                return graphql_wrapped_result
+                # Reject the whole operation rather than serially completing the
+                # remaining fields with located abort errors.
+                raise self.abort_error()
             result = self.execute_field(
                 parent_type,
                 source_value,
@@ -957,16 +953,26 @@ class Executor(IncrementalPublisherContext):
             finally:
                 if not abort.done():
                     abort.cancel()
-            if task.done():
+            if not abort_signal.aborted:
                 return task.result()
+        # The abort signal fired (possibly in the same tick the task settled);
+        # discard any task result and reject with the abort reason.
         task.cancel()
-        with suppress(CancelledError):
+        with suppress(BaseException):
             await task
-        reason = abort_signal.reason
+        raise self.abort_error()
+
+    def abort_error(self) -> Exception:
+        """Return the exception to raise when execution has been aborted.
+
+        An abort reason that is itself an exception is raised as is; any other value
+        is reported as an unexpected error value.
+        """
+        reason = self.abort_signal.reason  # type: ignore[union-attr]
         if isinstance(reason, Exception):
-            raise reason
+            return reason
         msg = f"Unexpected error value: {inspect(reason)}"
-        raise TypeError(msg)
+        return TypeError(msg)
 
     def cancellable_iterable(self, iterable: AsyncIterable[T]) -> AsyncIterable[T]:
         """Wrap an async iterable so pending iteration is cancelled on abort.

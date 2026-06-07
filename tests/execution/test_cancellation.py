@@ -7,12 +7,24 @@ from collections.abc import AsyncIterator, Awaitable
 
 import pytest
 
-from graphql import build_schema
+from graphql import (
+    GraphQLField,
+    GraphQLInterfaceType,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+    build_schema,
+)
 from graphql.execution import execute, subscribe
 from graphql.language import parse
 from graphql.pyutils import AbortController, AbortError
 
-pytestmark = pytest.mark.anyio
+pytestmark = [
+    pytest.mark.anyio,
+    pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning"),
+    pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning"),
+]
 
 
 schema = build_schema(
@@ -117,20 +129,10 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        result = await awaitable_result
-
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
-        assert result == (
-            {"todo": None},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(3, 9)],
-                    "path": ["todo"],
-                }
-            ],
-        )
+        # Unlike graphql-js, which resolves to a partial response with a located
+        # error, an aborted operation is rejected with the abort reason.
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await awaitable_result
 
     async def provides_access_to_the_abort_signal_within_resolvers():
         abort_controller = AbortController()
@@ -144,20 +146,20 @@ def describe_execute_cancellation():
     """
         )
 
-        async def cancellable_async_fn(abort_signal):
-            # never reached: the resolver task is cancelled before its body runs
-            raise await abort_signal.wait()  # pragma: no cover
+        started = Event()
+        seen_signal = None
+
+        async def hanging_async_fn():
+            await Future()  # will never resolve  # pragma: no cover
 
         # Contrary to JavaScript, where the abort signal is passed as an additional
         # argument to the resolvers, in GraphQL-Core it is available via the resolve
-        # info, just like the context value. The GraphQL.js test that this mirrors
-        # subscribes to the signal's "abort" event and then throws an unrelated error
-        # to prove the abort error supersedes it; GraphQL-Core has no event listener
-        # and instead cancels the running resolver task, so the resolver awaits the
-        # signal directly and raises its reason (which the cancellation pre-empts) --
-        # this is race-safe because either path yields the same abort error.
+        # info, just like the context value.
         def resolve_id(info):
-            return cancellable_async_fn(info.abort_signal)
+            nonlocal seen_signal
+            seen_signal = info.abort_signal
+            started.set()
+            return hanging_async_fn()
 
         awaitable_result = execute(
             schema,
@@ -167,22 +169,16 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
+        # Abort only once the resolver is in flight, so that it has had a chance to
+        # access the abort signal via the resolve info.
+        task = ensure_future(awaitable_result)
+        await started.wait()
         abort_controller.abort()
 
-        result = await awaitable_result
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
 
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
-        assert result == (
-            {"todo": {"id": None}},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(4, 11)],
-                    "path": ["todo", "id"],
-                }
-            ],
-        )
+        assert seen_signal is abort_controller.signal
 
     async def stops_the_execution_when_aborted_during_completion_with_custom_error():
         abort_controller = AbortController()
@@ -218,66 +214,26 @@ def describe_execute_cancellation():
         custom_error = RuntimeError("Custom abort error")
         abort_controller.abort(custom_error)
 
-        result = await awaitable_result
+        with pytest.raises(RuntimeError, match="Custom abort error") as exc_info:
+            await awaitable_result
+        assert exc_info.value is custom_error
 
-        assert result.errors is not None
-        assert result.errors[0].original_error is custom_error
-        assert result == (
-            {"todo": None},
-            [
-                {
-                    "message": "Custom abort error",
-                    "locations": [(3, 9)],
-                    "path": ["todo"],
-                }
-            ],
-        )
-
-    async def stops_the_execution_when_aborted_during_completion_with_custom_string():
+    async def stops_the_execution_when_aborted_with_a_custom_string_reason():
+        # gc3-specific: unlike graphql-js (which can reject with any value), a
+        # non-exception abort reason is surfaced as an "unexpected error value".
         abort_controller = AbortController()
-        document = parse(
-            """
-      query {
-        todo {
-          id
-          author {
-            id
-          }
-        }
-      }
-    """
-        )
-
-        async def todo(_info):
-            # never reached: a triggered abort signal cancels this resolver
-            # before its body runs (unlike the eager resolvers in graphql-js)
-            return {  # pragma: no cover
-                "id": "1",
-                "author": must_not_be_called,
-            }
-
-        awaitable_result = execute(
-            schema,
-            document,
-            abort_signal=abort_controller.signal,
-            root_value={"todo": todo},
-        )
-        assert isinstance(awaitable_result, Awaitable)
-
+        document = parse("{ todo { id } }")
         abort_controller.abort("Custom abort error message")
 
-        result = await awaitable_result
-
-        assert result == (
-            {"todo": None},
-            [
-                {
-                    "message": "Unexpected error value: 'Custom abort error message'",
-                    "locations": [(3, 9)],
-                    "path": ["todo"],
-                }
-            ],
-        )
+        with pytest.raises(
+            TypeError, match="Unexpected error value: 'Custom abort error message'"
+        ):
+            execute(
+                schema,
+                document,
+                abort_signal=abort_controller.signal,
+                root_value={"todo": must_not_be_called},
+            )
 
     async def stops_the_execution_when_aborted_during_nested_object_completion():
         abort_controller = AbortController()
@@ -313,18 +269,8 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        result = await awaitable_result
-
-        assert result == (
-            {"todo": {"id": "1", "author": None}},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(5, 11)],
-                    "path": ["todo", "author"],
-                }
-            ],
-        )
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await awaitable_result
 
     async def stops_the_execution_when_aborted_despite_a_hanging_resolver():
         abort_controller = AbortController()
@@ -361,20 +307,8 @@ def describe_execute_cancellation():
         await started.wait()
         abort_controller.abort()
 
-        result = await task
-
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
-        assert result == (
-            {"todo": None},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(3, 9)],
-                    "path": ["todo"],
-                }
-            ],
-        )
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
 
     async def stops_the_execution_when_aborted_despite_a_hanging_item():
         abort_controller = AbortController()
@@ -405,20 +339,44 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        result = await awaitable_result
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await awaitable_result
 
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
-        assert result == (
-            {"todo": {"id": "1", "items": [None]}},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(5, 11)],
-                    "path": ["todo", "items", 0],
-                }
-            ],
+    async def stops_the_execution_when_aborted_during_promised_list_item_completion():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          items
+        }
+      }
+    """
         )
+
+        item_future: Future[str] = Future()
+        started = Event()
+
+        def items(_info):
+            started.set()
+            return [item_future]
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": {"items": items}},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        task = ensure_future(awaitable_result)
+        await started.wait()
+        await sleep(0)
+        abort_controller.abort()
+        item_future.set_result("value")
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
 
     async def stops_the_execution_when_aborted_despite_a_hanging_async_item():
         abort_controller = AbortController()
@@ -450,24 +408,96 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        result = await awaitable_result
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await awaitable_result
 
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
-        assert result == (
-            {"todo": {"id": "1", "items": None}},
-            [
+    async def stops_resolving_abstract_types_after_aborting():
+        abort_controller = AbortController()
+
+        resolve_type_future: Future[str] = Future()
+        resolve_type_started = Event()
+
+        def resolve_type(_value, _info, _type):
+            resolve_type_started.set()
+            return resolve_type_future
+
+        node_interface = GraphQLInterfaceType(
+            "Node",
+            {"id": GraphQLField(GraphQLString)},
+            resolve_type=resolve_type,
+        )
+        user_type = GraphQLObjectType(
+            "User",
+            {"id": GraphQLField(GraphQLString)},
+            interfaces=[node_interface],
+        )
+        interface_schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "Query",
                 {
-                    "message": "This operation was aborted",
-                    "locations": [(5, 11)],
-                    "path": ["todo", "items"],
-                }
-            ],
+                    "node": GraphQLField(
+                        node_interface, resolve=lambda *_args: {"id": "1"}
+                    )
+                },
+            ),
+            types=[user_type],
         )
 
+        document = parse("{ node { id } }")
+
+        awaitable_result = execute(
+            interface_schema, document, abort_signal=abort_controller.signal
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        task = ensure_future(awaitable_result)
+        await resolve_type_started.wait()
+        abort_controller.abort()
+        resolve_type_future.set_result("User")
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
+
+    async def stops_resolving_is_type_of_after_aborting():
+        abort_controller = AbortController()
+
+        is_type_of_future: Future[bool] = Future()
+        is_type_of_started = Event()
+
+        def is_type_of(_value, _info):
+            is_type_of_started.set()
+            return is_type_of_future
+
+        todo_type = GraphQLObjectType(
+            "Todo",
+            {"id": GraphQLField(GraphQLString)},
+            is_type_of=is_type_of,
+        )
+        is_type_of_schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "Query",
+                {"todo": GraphQLField(todo_type, resolve=lambda *_args: {"id": "1"})},
+            )
+        )
+
+        document = parse("{ todo { id } }")
+
+        awaitable_result = execute(
+            is_type_of_schema, document, abort_signal=abort_controller.signal
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        task = ensure_future(awaitable_result)
+        await is_type_of_started.wait()
+        abort_controller.abort()
+        is_type_of_future.set_result(True)
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
+
     async def stops_the_execution_when_aborted_despite_a_hanging_iterator_no_close():
-        # Like the test above, but the async iterator has no aclose() method, so
-        # the cancellable wrapper has nothing to forward the close to.
+        # Like the hanging async item test, but the async iterator has no aclose()
+        # method, so the cancellable wrapper has nothing to forward the close to.
         abort_controller = AbortController()
         document = parse(
             """
@@ -480,13 +510,16 @@ def describe_execute_cancellation():
     """
         )
 
+        started = Event()
+        hanging: Future[str] = Future()
+
         class Items:
             def __aiter__(self):
                 return self
 
-            async def __anext__(self):
-                # never reached: the iterator is cancelled before its body runs
-                return await Future()  # will never resolve  # pragma: no cover
+            def __anext__(self):
+                started.set()
+                return hanging  # will never resolve; the iterator has no aclose()
 
         def todo(_info):
             return {"id": "1", "items": Items()}
@@ -499,22 +532,14 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
+        # Abort only once the iterator is actually in flight, so the cancellable
+        # wrapper closes a source that has no aclose() method.
+        task = ensure_future(awaitable_result)
+        await started.wait()
         abort_controller.abort()
 
-        result = await awaitable_result
-
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
-        assert result == (
-            {"todo": {"id": "1", "items": None}},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(5, 11)],
-                    "path": ["todo", "items"],
-                }
-            ],
-        )
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
 
     async def stops_the_execution_when_aborted_with_proper_null_bubbling():
         abort_controller = AbortController()
@@ -549,17 +574,51 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        result = await awaitable_result
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await awaitable_result
 
-        assert result.errors is not None
-        assert isinstance(result.errors[0].original_error, AbortError)
+    async def suppresses_sibling_errors_after_a_non_null_error_bubbles():
+        boom_future: Future[str] = Future()
+        side_future: Future[str] = Future()
+
+        parent_type = GraphQLObjectType(
+            "Parent",
+            {
+                "boom": GraphQLField(
+                    GraphQLNonNull(GraphQLString), resolve=lambda *_args: boom_future
+                ),
+                "side": GraphQLField(GraphQLString, resolve=lambda *_args: side_future),
+            },
+        )
+        bubble_schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "Query",
+                {
+                    "parent": GraphQLField(parent_type, resolve=lambda *_args: {}),
+                    "other": GraphQLField(GraphQLString, resolve=lambda *_args: "ok"),
+                },
+            )
+        )
+
+        document = parse("{ parent { boom side } other }")
+        awaitable_result = execute(bubble_schema, document)
+        assert isinstance(awaitable_result, Awaitable)
+        task = ensure_future(awaitable_result)
+
+        boom_future.set_exception(RuntimeError("boom"))
+        # wait for boom to bubble up
+        for _ in range(3):
+            await sleep(0)
+        side_future.set_exception(RuntimeError("side"))
+
+        result = await task
         assert result == (
-            None,
+            {"parent": None, "other": "ok"},
             [
                 {
-                    "message": "This operation was aborted",
-                    "locations": [(3, 9)],
-                    "path": ["nonNullableTodo"],
+                    "message": "boom",
+                    "locations": [(1, 12)],
+                    "path": ["parent", "boom"],
                 }
             ],
         )
@@ -595,18 +654,8 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        result = await task
-
-        assert result == (
-            {"foo": "baz", "bar": None},
-            [
-                {
-                    "message": "This operation was aborted",
-                    "locations": [(4, 9)],
-                    "path": ["bar"],
-                }
-            ],
-        )
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
 
     async def stops_the_execution_when_aborted_pre_execute():
         abort_controller = AbortController()
@@ -624,14 +673,14 @@ def describe_execute_cancellation():
         )
         abort_controller.abort()
 
-        result = execute(
-            schema,
-            document,
-            abort_signal=abort_controller.signal,
-            root_value={"todo": must_not_be_called},
-        )
-
-        assert result == (None, [{"message": "This operation was aborted"}])
+        # The operation is rejected synchronously, before any resolver runs.
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            execute(
+                schema,
+                document,
+                abort_signal=abort_controller.signal,
+                root_value={"todo": must_not_be_called},
+            )
 
     async def stops_the_execution_when_aborted_prior_to_return_of_subscription():
         abort_controller = AbortController()
@@ -763,3 +812,95 @@ def describe_execute_cancellation():
 
         with pytest.raises(AbortError, match="This operation was aborted"):
             await anext(subscription)
+
+    async def ignores_async_iterator_return_errors_after_aborting_list_completion():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          items
+        }
+      }
+    """
+        )
+
+        next_returned: Future[str] = Future()
+        next_started = Event()
+        return_called = False
+
+        class AsyncIter:
+            def __aiter__(self):
+                return self
+
+            def __anext__(self):
+                next_started.set()
+                return next_returned
+
+            async def aclose(self):
+                nonlocal return_called
+                return_called = True
+                raise RuntimeError("Return failed")
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": {"items": AsyncIter()}},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        task = ensure_future(awaitable_result)
+        await next_started.wait()
+        abort_controller.abort()
+        next_returned.set_result("value")
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
+        assert return_called is True
+
+    async def ignores_async_iterator_return_rejections_after_aborting_list_completion():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        todo {
+          items
+        }
+      }
+    """
+        )
+
+        next_returned: Future[str] = Future()
+        next_started = Event()
+        return_called = False
+
+        class AsyncIter:
+            def __aiter__(self):
+                return self
+
+            def __anext__(self):
+                next_started.set()
+                return next_returned
+
+            async def aclose(self):
+                nonlocal return_called
+                return_called = True
+                raise RuntimeError("Return failed")
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": {"items": AsyncIter()}},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        task = ensure_future(awaitable_result)
+        await next_started.wait()
+        abort_controller.abort()
+        next_returned.set_result("value")
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await task
+        assert return_called is True
