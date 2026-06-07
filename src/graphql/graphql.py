@@ -17,15 +17,16 @@ from .type import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Awaitable, Callable
+    from collections.abc import AsyncIterable, Awaitable, Callable, Collection
     from typing import TypeGuard
 
     from .pyutils import AbortSignal, AwaitableOrValue
+    from .validation import ASTValidationRule
 
 __all__ = ["graphql", "graphql_sync"]
 
 
-async def graphql(
+async def graphql(  # noqa: PLR0913
     schema: GraphQLSchema,
     source: str | Source,
     root_value: Any = None,
@@ -40,6 +41,11 @@ async def graphql(
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
+    no_location: bool = False,
+    max_tokens: int | None = None,
+    experimental_fragment_arguments: bool = False,
+    rules: Collection[type[ASTValidationRule]] | None = None,
+    max_errors: int | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -92,6 +98,17 @@ async def graphql(
     :arg abort_signal:
       A signal object that can be used to cancel execution, e.g. the signal of an
       :class:`~graphql.AbortController`
+    :arg no_location:
+      Parse option: do not include location information in the parsed document.
+    :arg max_tokens:
+      Parse option: the maximum number of tokens the document may contain.
+    :arg experimental_fragment_arguments:
+      Parse option: enable experimental support for fragment arguments.
+    :arg rules:
+      The validation rules to use when validating the query.
+      If not provided, the specified rules are used.
+    :arg max_errors:
+      The maximum number of validation errors to report before stopping.
     """
     # Always return asynchronously for a consistent API.
     result = graphql_impl(
@@ -109,6 +126,11 @@ async def graphql(
         is_async_iterable,
         hide_suggestions,
         abort_signal,
+        no_location,
+        max_tokens,
+        experimental_fragment_arguments,
+        rules,
+        max_errors,
     )
 
     if default_is_awaitable(result):
@@ -127,7 +149,7 @@ def assume_not_async_iterable(_value: Any) -> TypeGuard[AsyncIterable]:
     return False
 
 
-def graphql_sync(
+def graphql_sync(  # noqa: PLR0913
     schema: GraphQLSchema,
     source: str | Source,
     root_value: Any = None,
@@ -141,6 +163,11 @@ def graphql_sync(
     check_sync: bool = False,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
+    no_location: bool = False,
+    max_tokens: int | None = None,
+    experimental_fragment_arguments: bool = False,
+    rules: Collection[type[ASTValidationRule]] | None = None,
+    max_errors: int | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -172,6 +199,11 @@ def graphql_sync(
         is_async_iterable,
         hide_suggestions,
         abort_signal,
+        no_location,
+        max_tokens,
+        experimental_fragment_arguments,
+        rules,
+        max_errors,
     )
 
     # Assert that the execution was synchronous.
@@ -183,7 +215,7 @@ def graphql_sync(
     return cast("ExecutionResult", result)
 
 
-def graphql_impl(
+def graphql_impl(  # noqa: PLR0913
     schema: GraphQLSchema,
     source: str | Source,
     root_value: Any,
@@ -198,6 +230,11 @@ def graphql_impl(
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
+    no_location: bool = False,
+    max_tokens: int | None = None,
+    experimental_fragment_arguments: bool = False,
+    rules: Collection[type[ASTValidationRule]] | None = None,
+    max_errors: int | None = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary."""
     # Validate Schema
@@ -206,7 +243,12 @@ def graphql_impl(
 
     # Parse
     try:
-        document = parse(source)
+        document = parse(
+            source,
+            no_location=no_location,
+            max_tokens=max_tokens,
+            experimental_fragment_arguments=experimental_fragment_arguments,
+        )
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])
 
@@ -214,7 +256,7 @@ def graphql_impl(
     from .validation import validate
 
     if validation_errors := validate(
-        schema, document, hide_suggestions=hide_suggestions
+        schema, document, rules, max_errors, hide_suggestions=hide_suggestions
     ):
         return ExecutionResult(data=None, errors=validation_errors)
 
