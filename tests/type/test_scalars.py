@@ -160,6 +160,16 @@ def describe_type_system_specified_scalar_types():
             assert str(exc_info.value) == (
                 "Int cannot represent non 32-bit signed integer value: -9876504321"
             )
+            with pytest.raises(GraphQLError) as exc_info:
+                coerce_output_value("9876504321")
+            assert str(exc_info.value) == (
+                "Int cannot represent non 32-bit signed integer value: '9876504321'"
+            )
+            with pytest.raises(GraphQLError) as exc_info:
+                coerce_output_value("-9876504321")
+            assert str(exc_info.value) == (
+                "Int cannot represent non 32-bit signed integer value: '-9876504321'"
+            )
             # Too big to represent as an Int in JavaScript or GraphQL
             with pytest.raises(GraphQLError) as exc_info:
                 coerce_output_value(1e100)
@@ -318,6 +328,16 @@ def describe_type_system_specified_scalar_types():
                 coerce_output_value("one")
             assert str(exc_info.value) == (
                 "Float cannot represent non numeric value: 'one'"
+            )
+            with pytest.raises(GraphQLError) as exc_info:
+                coerce_output_value("inf")
+            assert str(exc_info.value) == (
+                "Float cannot represent non numeric value: 'inf'"
+            )
+            with pytest.raises(GraphQLError) as exc_info:
+                coerce_output_value("nan")
+            assert str(exc_info.value) == (
+                "Float cannot represent non numeric value: 'nan'"
             )
             with pytest.raises(GraphQLError) as exc_info:
                 coerce_output_value("")

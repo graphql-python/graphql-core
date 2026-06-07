@@ -54,45 +54,19 @@ GRAPHQL_MIN_INT = -2_147_483_648
 def serialize_int(output_value: Any) -> int:
     if isinstance(output_value, bool):
         return 1 if output_value else 0
-    try:
-        if isinstance(output_value, int):
-            num = output_value
-        elif isinstance(output_value, float):
-            num = int(output_value)
-            if num != output_value:
-                raise ValueError  # noqa: TRY301
-        elif not output_value and isinstance(output_value, str):
-            output_value = ""
-            raise ValueError  # noqa: TRY301
-        else:
-            num = int(output_value)  # raises ValueError if not an integer
-    except (OverflowError, ValueError, TypeError) as error:
-        msg = "Int cannot represent non-integer value: " + inspect(output_value)
-        raise GraphQLError(msg) from error
-    if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
-        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(
-            output_value
-        )
-        raise GraphQLError(msg)
-    return num
+    if isinstance(output_value, (int, float)):
+        return coerce_int_from_number(output_value)
+    if isinstance(output_value, str):
+        return coerce_int_from_string(output_value)
+    msg = "Int cannot represent non-integer value: " + inspect(output_value)
+    raise GraphQLError(msg)
 
 
 def coerce_int(input_value: Any) -> int:
-    if not (
-        isinstance(input_value, int) and not isinstance(input_value, bool)
-    ) and not (
-        isinstance(input_value, float)
-        and isfinite(input_value)
-        and int(input_value) == input_value
-    ):
-        msg = "Int cannot represent non-integer value: " + inspect(input_value)
-        raise GraphQLError(msg)
-    if not GRAPHQL_MIN_INT <= input_value <= GRAPHQL_MAX_INT:
-        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(
-            input_value
-        )
-        raise GraphQLError(msg)
-    return int(input_value)
+    if isinstance(input_value, (int, float)) and not isinstance(input_value, bool):
+        return coerce_int_from_number(input_value)
+    msg = "Int cannot represent non-integer value: " + inspect(input_value)
+    raise GraphQLError(msg)
 
 
 def parse_int_literal(value_node: ValueNode, _variables: Any = None) -> int:
@@ -137,27 +111,19 @@ GraphQLInt = GraphQLScalarType(
 def serialize_float(output_value: Any) -> float:
     if isinstance(output_value, bool):
         return 1 if output_value else 0
-    try:
-        if not output_value and isinstance(output_value, str):
-            output_value = ""
-            raise ValueError  # noqa: TRY301
-        num = output_value if isinstance(output_value, float) else float(output_value)
-        if not isfinite(num):
-            raise ValueError  # noqa: TRY301
-    except (ValueError, TypeError) as error:
-        msg = "Float cannot represent non numeric value: " + inspect(output_value)
-        raise GraphQLError(msg) from error
-    return num
+    if isinstance(output_value, (int, float)):
+        return coerce_float_from_number(output_value)
+    if isinstance(output_value, str):
+        return coerce_float_from_string(output_value)
+    msg = "Float cannot represent non numeric value: " + inspect(output_value)
+    raise GraphQLError(msg)
 
 
 def coerce_float(input_value: Any) -> float:
-    if not (
-        isinstance(input_value, int) and not isinstance(input_value, bool)
-    ) and not (isinstance(input_value, float) and isfinite(input_value)):
-        raise GraphQLError(
-            "Float cannot represent non numeric value: " + inspect(input_value)
-        )
-    return float(input_value)
+    if isinstance(input_value, (int, float)) and not isinstance(input_value, bool):
+        return coerce_float_from_number(input_value)
+    msg = "Float cannot represent non numeric value: " + inspect(input_value)
+    raise GraphQLError(msg)
 
 
 def parse_float_literal(value_node: ValueNode, _variables: Any = None) -> float:
@@ -196,10 +162,8 @@ def serialize_string(output_value: Any) -> str:
         return output_value
     if isinstance(output_value, bool):
         return "true" if output_value else "false"
-    if isinstance(output_value, int) or (
-        isinstance(output_value, float) and isfinite(output_value)
-    ):
-        return str(output_value)
+    if isinstance(output_value, (int, float)):
+        return coerce_string_from_number(output_value)
     # do not serialize builtin types as strings, but allow serialization of custom
     # types via their `__str__` method
     if type(output_value).__module__ == "builtins":
@@ -249,10 +213,8 @@ GraphQLString = GraphQLScalarType(
 def serialize_boolean(output_value: Any) -> bool:
     if isinstance(output_value, bool):
         return output_value
-    if isinstance(output_value, int) or (
-        isinstance(output_value, float) and isfinite(output_value)
-    ):
-        return bool(output_value)
+    if isinstance(output_value, (int, float)):
+        return coerce_boolean_from_number(output_value)
     raise GraphQLError(
         "Boolean cannot represent a non boolean value: " + inspect(output_value)
     )
@@ -297,14 +259,8 @@ GraphQLBoolean = GraphQLScalarType(
 def serialize_id(output_value: Any) -> str:
     if isinstance(output_value, str):
         return output_value
-    if isinstance(output_value, int) and not isinstance(output_value, bool):
-        return str(output_value)
-    if (
-        isinstance(output_value, float)
-        and isfinite(output_value)
-        and int(output_value) == output_value
-    ):
-        return str(int(output_value))
+    if isinstance(output_value, (int, float)) and not isinstance(output_value, bool):
+        return coerce_id_from_number(output_value)
     # do not serialize builtin types as IDs, but allow serialization of custom types
     # via their `__str__` method
     if type(output_value).__module__ == "builtins":
@@ -315,14 +271,8 @@ def serialize_id(output_value: Any) -> str:
 def coerce_id(input_value: Any) -> str:
     if isinstance(input_value, str):
         return input_value
-    if isinstance(input_value, int) and not isinstance(input_value, bool):
-        return str(input_value)
-    if (
-        isinstance(input_value, float)
-        and isfinite(input_value)
-        and int(input_value) == input_value
-    ):
-        return str(int(input_value))
+    if isinstance(input_value, (int, float)) and not isinstance(input_value, bool):
+        return coerce_id_from_number(input_value)
     raise GraphQLError("ID cannot represent value: " + inspect(input_value))
 
 
@@ -340,21 +290,15 @@ def parse_id_literal(value_node: ValueNode, _variables: Any = None) -> str:
 def id_value_to_literal(value: Any) -> ConstValueNode | None:
     """Convert an ID value to an Int or String literal in the AST."""
     # ID types can use number values and Int literals.
-    string_value: Any = (
-        str(int(value))
-        if isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and isfinite(value)
-        and value == int(value)
-        else value
-    )
-    if isinstance(string_value, str):
+    if isinstance(value, str):
         # Will parse as an IntValue if it consists only of integer digits.
         return (
-            IntValueNode(value=string_value)
-            if _re_integer_string.match(string_value)
-            else StringValueNode(value=string_value, block=False)
+            IntValueNode(value=value)
+            if _re_integer_string.match(value)
+            else StringValueNode(value=value, block=False)
         )
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return IntValueNode(value=coerce_id_from_number(value))
     return None
 
 
@@ -371,6 +315,73 @@ GraphQLID = GraphQLScalarType(
     coerce_input_literal=parse_id_literal,
     value_to_literal=id_value_to_literal,
 )
+
+
+def coerce_int_from_number(value: float) -> int:
+    if isinstance(value, float) and (not isfinite(value) or int(value) != value):
+        msg = "Int cannot represent non-integer value: " + inspect(value)
+        raise GraphQLError(msg)
+    if not GRAPHQL_MIN_INT <= value <= GRAPHQL_MAX_INT:
+        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(value)
+        raise GraphQLError(msg)
+    return int(value)
+
+
+def coerce_int_from_string(value: str) -> int:
+    try:
+        if not value:
+            raise ValueError  # noqa: TRY301
+        num = int(value)
+    except ValueError as error:
+        msg = "Int cannot represent non-integer value: " + inspect(value)
+        raise GraphQLError(msg) from error
+    if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
+        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(value)
+        raise GraphQLError(msg)
+    return num
+
+
+def coerce_float_from_number(value: float) -> float:
+    if not isfinite(value):
+        msg = "Float cannot represent non numeric value: " + inspect(value)
+        raise GraphQLError(msg)
+    return float(value)
+
+
+def coerce_float_from_string(value: str) -> float:
+    try:
+        if not value:
+            raise ValueError  # noqa: TRY301
+        num = float(value)
+    except ValueError as error:
+        msg = "Float cannot represent non numeric value: " + inspect(value)
+        raise GraphQLError(msg) from error
+    if not isfinite(num):
+        msg = "Float cannot represent non numeric value: " + inspect(value)
+        raise GraphQLError(msg)
+    return num
+
+
+def coerce_string_from_number(value: float) -> str:
+    if not isfinite(value):
+        msg = "String cannot represent value: " + inspect(value)
+        raise GraphQLError(msg)
+    return str(value)
+
+
+def coerce_boolean_from_number(value: float) -> bool:
+    if not isfinite(value):
+        msg = "Boolean cannot represent a non boolean value: " + inspect(value)
+        raise GraphQLError(msg)
+    return value != 0
+
+
+def coerce_id_from_number(value: float) -> str:
+    if isinstance(value, float) and (not isfinite(value) or int(value) != value):
+        msg = "ID cannot represent value: " + inspect(value)
+        raise GraphQLError(msg)
+    return str(int(value))
+
 
 specified_scalar_types: Mapping[str, GraphQLScalarType] = {
     type_.name: type_

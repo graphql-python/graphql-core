@@ -71,6 +71,7 @@ def describe_value_to_literal():
             "123456789123456789123456789123456789",
         )
         _test(123.5, GraphQLID, None)
+        _test(True, GraphQLID, None)
 
     my_enum = GraphQLEnumType(
         "MyEnum",
