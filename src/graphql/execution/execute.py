@@ -420,11 +420,12 @@ class ExecutionContext(IncrementalPublisherContext):
         try:
             operation = self.operation
             schema = self.schema
-            root_type = schema.get_root_type(operation.operation)
+            operation_type = operation.operation
+            root_type = schema.get_root_type(operation_type)
             if root_type is None:
                 msg = (
                     "Schema is not configured to execute"
-                    f" {operation.operation.value} operation."
+                    f" {operation_type.value} operation."
                 )
                 raise GraphQLError(msg, operation)  # noqa: TRY301
             root_value = self.root_value
@@ -449,7 +450,7 @@ class ExecutionContext(IncrementalPublisherContext):
                 )
                 if new_defer_usages
                 else self.execute_root_grouped_field_set(
-                    operation.operation, root_type, root_value, grouped_field_set, None
+                    operation_type, root_type, root_value, grouped_field_set, None
                 )
             )
 
