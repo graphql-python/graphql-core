@@ -41,6 +41,7 @@ from .execute import (
     default_type_resolver,
     subscribe,
     ExecutionContext,
+    Executor,
     GraphQLWrappedResult,
     Middleware,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "DeferredFragmentRecord",
     "ExecutionContext",
     "ExecutionResult",
+    "Executor",
     "ExperimentalIncrementalExecutionResults",
     "FormattedExecutionResult",
     "FormattedIncrementalDeferResult",

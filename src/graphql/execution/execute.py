@@ -130,6 +130,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ExecutionContext",
+    "Executor",
     "GraphQLWrappedResult",
     "Middleware",
     "create_source_event_stream",
@@ -190,7 +191,7 @@ class IncrementalContext:
         self.defer_usage_set = defer_usage_set
 
 
-class ExecutionContext(IncrementalPublisherContext):
+class Executor(IncrementalPublisherContext):
     """Data that must be available at all points during query execution.
 
     Namely, schema of the type system that is currently executing, and the fragments
@@ -210,7 +211,7 @@ class ExecutionContext(IncrementalPublisherContext):
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
-    per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
+    per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
     enable_early_execution: bool
     hide_suggestions: bool
     abort_signal: AbortSignal | None
@@ -242,9 +243,7 @@ class ExecutionContext(IncrementalPublisherContext):
         middleware_manager: MiddlewareManager | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
-        per_event_executor: Callable[
-            [ExecutionContext], AwaitableOrValue[ExecutionResult]
-        ]
+        per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
         | None = None,
         hide_suggestions: bool = False,
         abort_signal: AbortSignal | None = None,
@@ -293,17 +292,15 @@ class ExecutionContext(IncrementalPublisherContext):
         middleware: Middleware | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
-        per_event_executor: Callable[
-            [ExecutionContext], AwaitableOrValue[ExecutionResult]
-        ]
+        per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
         | None = None,
         hide_suggestions: bool = False,
         abort_signal: AbortSignal | None = None,
         **custom_args: Any,
-    ) -> list[GraphQLError] | ExecutionContext:
+    ) -> list[GraphQLError] | Executor:
         """Build an execution context
 
-        Constructs a ExecutionContext object from the arguments passed to execute, which
+        Constructs an Executor object from the arguments passed to execute, which
         we will pass throughout the other execution methods.
 
         Throws a GraphQLError if a valid execution context cannot be created.
@@ -397,7 +394,7 @@ class ExecutionContext(IncrementalPublisherContext):
             **custom_args,
         )
 
-    def build_per_event_execution_context(self, payload: Any) -> ExecutionContext:
+    def build_per_event_execution_context(self, payload: Any) -> Executor:
         """Create a copy of the execution context for usage with subscribe events."""
         context = copy(self)
         context.root_value = payload
@@ -2186,6 +2183,9 @@ class ExecutionContext(IncrementalPublisherContext):
         )
 
 
+ExecutionContext = Executor  # deprecated alias
+
+
 def with_error(
     errors: Sequence[GraphQLError] | None, error: GraphQLError
 ) -> list[GraphQLError]:
@@ -2266,7 +2266,7 @@ def execute(  # noqa: PLR0913
     max_coercion_errors: int = 50,
     enable_early_execution: bool = False,
     middleware: Middleware | None = None,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
@@ -2338,7 +2338,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913
     max_coercion_errors: int = 50,
     enable_early_execution: bool = False,
     middleware: Middleware | None = None,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
@@ -2356,7 +2356,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913
     and a stream of `subsequent_results`.
     """
     if execution_context_class is None:
-        execution_context_class = ExecutionContext
+        execution_context_class = Executor
 
     # If a valid execution context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
@@ -2403,7 +2403,7 @@ def execute_sync(
     type_resolver: GraphQLTypeResolver | None = None,
     max_coercion_errors: int = 50,
     middleware: Middleware | None = None,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     check_sync: bool = False,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
@@ -2668,9 +2668,9 @@ def subscribe(
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     max_coercion_errors: int = 50,
     enable_early_execution: bool = False,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     middleware: MiddlewareManager | None = None,
-    per_event_executor: Callable[[ExecutionContext], AwaitableOrValue[ExecutionResult]]
+    per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
     | None = None,
     hide_suggestions: bool = False,
     **custom_context_args: Any,
@@ -2704,7 +2704,7 @@ def subscribe(
     :func:`~graphql.execution.execute_subscription_event` (the default executor).
     """
     if execution_context_class is None:
-        execution_context_class = ExecutionContext
+        execution_context_class = Executor
 
     # If a valid context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
@@ -2749,7 +2749,7 @@ def subscribe(
 
 
 def execute_query_or_mutation_or_subscription_event(
-    context: ExecutionContext,
+    context: Executor,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, mutation, or subscription event.
 
@@ -2761,7 +2761,7 @@ def execute_query_or_mutation_or_subscription_event(
 
 
 def execute_subscription_event(
-    context: ExecutionContext,
+    context: Executor,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a single subscription event.
 
@@ -2771,7 +2771,7 @@ def execute_subscription_event(
     wrap this function to set up and tear down a per-event context.
 
     The passed context should be a per-event execution context as created by
-    :meth:`ExecutionContext.build_per_event_execution_context`.
+    :meth:`Executor.build_per_event_execution_context`.
     """
     return execute_query_or_mutation_or_subscription_event(context)
 
@@ -2788,7 +2788,7 @@ def create_source_event_stream(
     subscribe_field_resolver: GraphQLFieldResolver | None = None,
     max_coercion_errors: int = 50,
     enable_early_execution: bool = False,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     hide_suggestions: bool = False,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
@@ -2817,7 +2817,7 @@ def create_source_event_stream(
     """
     # If a valid context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
-    context = (execution_context_class or ExecutionContext).build(
+    context = (execution_context_class or Executor).build(
         schema,
         document,
         root_value,
@@ -2841,7 +2841,7 @@ def create_source_event_stream(
 
 
 def create_source_event_stream_impl(
-    context: ExecutionContext,
+    context: Executor,
 ) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
     """Create source event stream (internal implementation)."""
     try:
@@ -2863,7 +2863,7 @@ def create_source_event_stream_impl(
 
 
 def execute_subscription(
-    context: ExecutionContext,
+    context: Executor,
 ) -> AwaitableOrValue[AsyncIterable[Any]]:
     schema = context.schema
 

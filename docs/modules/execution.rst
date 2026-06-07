@@ -19,7 +19,7 @@ Execution
 
 .. autofunction:: default_type_resolver
 
-.. autoclass:: ExecutionContext
+.. autoclass:: Executor
 
 .. autoclass:: ExecutionResult
 

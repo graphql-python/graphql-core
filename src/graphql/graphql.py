@@ -6,7 +6,7 @@ from asyncio import ensure_future
 from typing import TYPE_CHECKING, Any, cast
 
 from .error import GraphQLError
-from .execution import ExecutionContext, ExecutionResult, Middleware, execute
+from .execution import ExecutionResult, Executor, Middleware, execute
 from .language import Source, parse
 from .pyutils.is_awaitable import is_awaitable as default_is_awaitable
 from .type import (
@@ -35,7 +35,7 @@ async def graphql(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     middleware: Middleware | None = None,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
@@ -137,7 +137,7 @@ def graphql_sync(
     field_resolver: GraphQLFieldResolver | None = None,
     type_resolver: GraphQLTypeResolver | None = None,
     middleware: Middleware | None = None,
-    execution_context_class: type[ExecutionContext] | None = None,
+    execution_context_class: type[Executor] | None = None,
     check_sync: bool = False,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
@@ -193,7 +193,7 @@ def graphql_impl(
     field_resolver: GraphQLFieldResolver | None,
     type_resolver: GraphQLTypeResolver | None,
     middleware: Middleware | None,
-    execution_context_class: type[ExecutionContext] | None,
+    execution_context_class: type[Executor] | None,
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None,
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,

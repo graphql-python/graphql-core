@@ -74,7 +74,7 @@ The :func:`execute` function takes an additional ``middleware`` argument which m
 Custom execution context
 ------------------------
 
-The :func:`execute` function takes an additional ``execution_context_class`` argument which allows specifying a custom execution context class instead of the default :class:`ExecutionContext` used by GraphQL-core.
+The :func:`execute` function takes an additional ``execution_context_class`` argument which allows specifying a custom execution context class instead of the default :class:`Executor` used by GraphQL-core.
 
 
 .. currentmodule:: graphql

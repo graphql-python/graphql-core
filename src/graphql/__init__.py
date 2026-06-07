@@ -491,6 +491,7 @@ from .execution import (
     get_variable_values,
     # Types
     ExecutionContext,
+    Executor,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     InitialIncrementalExecutionResult,
@@ -567,6 +568,7 @@ __all__ = [
     "ExecutableDefinitionsRule",
     "ExecutionContext",
     "ExecutionResult",
+    "Executor",
     "ExperimentalIncrementalExecutionResults",
     "FieldDefinitionNode",
     "FieldNode",

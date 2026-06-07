@@ -2,7 +2,7 @@ from inspect import isasyncgen
 
 import pytest
 
-from graphql.execution import ExecutionContext, GraphQLWrappedResult, execute, subscribe
+from graphql.execution import Executor, GraphQLWrappedResult, execute, subscribe
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
@@ -36,7 +36,7 @@ def describe_customize_execution():
             )
         )
 
-        class TestExecutionContext(ExecutionContext):
+        class TestExecutor(Executor):
             def __init__(self, *args, **kwargs):
                 assert kwargs.pop("custom_arg", None) == "baz"
                 super().__init__(*args, **kwargs)
@@ -65,7 +65,7 @@ def describe_customize_execution():
         assert execute(
             schema,
             query,
-            execution_context_class=TestExecutionContext,
+            execution_context_class=TestExecutor,
             custom_arg="baz",
         ) == (
             {"foo": "barbar"},
@@ -103,7 +103,7 @@ def describe_customize_subscription():
         await subscription.aclose()
 
     async def uses_a_custom_execution_context_class():
-        class TestExecutionContext(ExecutionContext):
+        class TestExecutor(Executor):
             def __init__(self, *args, **kwargs):
                 assert kwargs.pop("custom_arg", None) == "baz"
                 super().__init__(*args, **kwargs)
@@ -138,7 +138,7 @@ def describe_customize_subscription():
             schema,
             document,
             context_value={},
-            execution_context_class=TestExecutionContext,
+            execution_context_class=TestExecutor,
             custom_arg="baz",
         )
         assert isasyncgen(subscription)
