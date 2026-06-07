@@ -17,6 +17,7 @@ from collections.abc import (
     Awaitable,
     Callable,
     Iterable,
+    Iterator,
     Mapping,
     Sequence,
 )
@@ -1278,61 +1279,65 @@ class ExecutionContext(IncrementalPublisherContext):
         stream_usage = self.get_stream_usage(field_details_list, path)
         iterator = iter(items)
         index = 0
-        while True:
-            try:
-                item = next(iterator)
-            except StopIteration:
-                break
-            if stream_usage and index >= stream_usage.initial_count:
-                sync_stream_item_queue = self.build_sync_stream_item_queue(
-                    item,
-                    index,
-                    path,
-                    iterator,
-                    stream_usage.field_details_list,
-                    info,
-                    item_type,
-                )
-                sync_stream_record = StreamRecord(
-                    sync_stream_item_queue, path, stream_usage.label
-                )
-
-                add_increment(sync_stream_record)
-                break
-
-            # No need to modify the info object containing the path,
-            # since from here on it is not ever accessed by resolver functions.
-            item_path = path.add_key(index, None)
-
-            if is_awaitable(item):
-                append_completed(
-                    complete_awaitable_list_item_value(
+        try:
+            while True:
+                try:
+                    item = next(iterator)
+                except StopIteration:
+                    break
+                if stream_usage and index >= stream_usage.initial_count:
+                    sync_stream_item_queue = self.build_sync_stream_item_queue(
                         item,
-                        graphql_wrapped_result,
-                        item_type,
-                        field_details_list,
+                        index,
+                        path,
+                        iterator,
+                        stream_usage.field_details_list,
                         info,
-                        item_path,
-                        incremental_context,
-                        defer_map,
+                        item_type,
                     )
-                )
-                append_awaitable(index)
+                    sync_stream_record = StreamRecord(
+                        sync_stream_item_queue, path, stream_usage.label
+                    )
 
-            elif complete_list_item_value(
-                item,
-                completed_results,
-                graphql_wrapped_result,
-                item_type,
-                field_details_list,
-                info,
-                item_path,
-                incremental_context,
-                defer_map,
-            ):
-                append_awaitable(index)
+                    add_increment(sync_stream_record)
+                    break
 
-            index += 1
+                # No need to modify the info object containing the path,
+                # since from here on it is not ever accessed by resolver functions.
+                item_path = path.add_key(index, None)
+
+                if is_awaitable(item):
+                    append_completed(
+                        complete_awaitable_list_item_value(
+                            item,
+                            graphql_wrapped_result,
+                            item_type,
+                            field_details_list,
+                            info,
+                            item_path,
+                            incremental_context,
+                            defer_map,
+                        )
+                    )
+                    append_awaitable(index)
+
+                elif complete_list_item_value(
+                    item,
+                    completed_results,
+                    graphql_wrapped_result,
+                    item_type,
+                    field_details_list,
+                    info,
+                    item_path,
+                    incremental_context,
+                    defer_map,
+                ):
+                    append_awaitable(index)
+
+                index += 1
+        except Exception:
+            return_iterator_ignoring_errors(iterator)
+            raise
 
         if not awaitable_indices:
             return graphql_wrapped_result
@@ -2937,3 +2942,11 @@ def assert_event_stream(result: Any) -> AsyncIterable:
         raise GraphQLError(msg)
 
     return result
+
+
+def return_iterator_ignoring_errors(iterator: Iterator[Any]) -> None:
+    """Close the given iterator, ignoring any errors."""
+    close = getattr(iterator, "close", None)
+    if close is not None:
+        with suppress_exceptions:
+            close()

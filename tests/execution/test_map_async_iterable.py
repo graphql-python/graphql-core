@@ -150,7 +150,7 @@ def describe_map_async_iterable():
                 return self
 
             async def __anext__(self):
-                if self.closed:
+                if self.closed:  # pragma: no cover
                     raise StopAsyncIteration
                 try:
                     return items.pop(0)

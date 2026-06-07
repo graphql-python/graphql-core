@@ -128,6 +128,114 @@ def describe_execute_accepts_any_iterable_as_list_value():
         )
 
 
+def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
+    def _complete(list_field, as_: str = "[String]"):
+        return execute_sync(
+            build_schema(f"type Query {{ listField: {as_} }}"),
+            parse("{ listField }"),
+            Data(list_field),
+        )
+
+    def closes_the_iterator_when_next_throws():
+        next_calls = 0
+        returned = False
+
+        class ListField:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                nonlocal next_calls
+                next_calls += 1
+                if next_calls == 1:
+                    return "ok"
+                raise RuntimeError("bad")
+
+            def close(self):
+                nonlocal returned
+                returned = True
+
+        assert _complete(ListField()) == (
+            {"listField": None},
+            [
+                {
+                    "message": "bad",
+                    "locations": [(1, 3)],
+                    "path": ["listField"],
+                }
+            ],
+        )
+        assert next_calls == 2
+        assert returned is True
+
+    def closes_the_iterator_when_a_null_bubbles_up_from_a_non_null_item():
+        values = (1, None, 2)
+        index = 0
+        returned = False
+
+        class ListField:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                nonlocal index
+                value = values[index]
+                index += 1
+                return value
+
+            def close(self):
+                nonlocal returned
+                returned = True
+
+        assert _complete(ListField(), "[Int!]") == (
+            {"listField": None},
+            [
+                {
+                    "message": "Cannot return null"
+                    " for non-nullable field Query.listField.",
+                    "locations": [(1, 3)],
+                    "path": ["listField", 1],
+                }
+            ],
+        )
+        assert index == 2
+        assert returned is True
+
+    def ignores_errors_thrown_by_the_iterator_close_method():
+        values = (1, None, 2)
+        index = 0
+        returned = False
+
+        class ListField:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                nonlocal index
+                value = values[index]
+                index += 1
+                return value
+
+            def close(self):
+                nonlocal returned
+                returned = True
+                raise RuntimeError("ignored return error")
+
+        assert _complete(ListField(), "[Int!]") == (
+            {"listField": None},
+            [
+                {
+                    "message": "Cannot return null"
+                    " for non-nullable field Query.listField.",
+                    "locations": [(1, 3)],
+                    "path": ["listField", 1],
+                }
+            ],
+        )
+        assert index == 2
+        assert returned is True
+
+
 def describe_execute_accepts_async_iterables_as_list_value():
     async def _complete(list_field, as_: str = "[String]"):
         result = execute(
