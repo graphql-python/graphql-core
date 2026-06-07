@@ -970,9 +970,13 @@ def describe_introspection():
                                 "defaultValue": '"No longer supported"',
                                 "name": "reason",
                                 "type": {
-                                    "kind": "SCALAR",
-                                    "name": "String",
-                                    "ofType": None,
+                                    "kind": "NON_NULL",
+                                    "name": None,
+                                    "ofType": {
+                                        "kind": "SCALAR",
+                                        "name": "String",
+                                        "ofType": None,
+                                    },
                                 },
                             }
                         ],

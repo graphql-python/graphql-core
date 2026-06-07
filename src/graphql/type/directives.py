@@ -231,7 +231,7 @@ GraphQLDeprecatedDirective = GraphQLDirective(
     ],
     args={
         "reason": GraphQLArgument(
-            GraphQLString,
+            GraphQLNonNull(GraphQLString),
             description="Explains why this element was deprecated,"
             " usually also including a suggestion for how to access"
             " supported similar data."
