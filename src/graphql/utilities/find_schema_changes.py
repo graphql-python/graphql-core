@@ -6,13 +6,13 @@ from enum import Enum
 from typing import TYPE_CHECKING, NamedTuple, TypeAlias
 
 from ..language import print_ast
-from ..pyutils import Undefined, inspect
+from ..pyutils import inspect
 from ..type import (
-    GraphQLDefaultValueUsage,
+    GraphQLArgument,
     GraphQLEnumType,
     GraphQLField,
+    GraphQLInputField,
     GraphQLInputObjectType,
-    GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
@@ -33,7 +33,7 @@ from ..type import (
     is_union_type,
 )
 from ..utilities.sort_value_node import sort_value_node
-from .value_to_literal import value_to_literal
+from .get_default_value_ast import get_default_value_ast
 
 if TYPE_CHECKING:
     from collections.abc import Collection
@@ -227,6 +227,8 @@ def find_directive_changes(
             is_safe = is_change_safe_for_input_object_field_or_field_arg(
                 old_arg.type, new_arg.type
             )
+            old_default_value_str = get_default_value(old_arg)
+            new_default_value_str = get_default_value(new_arg)
             if not is_safe:
                 schema_changes.append(
                     BreakingChange(
@@ -236,8 +238,8 @@ def find_directive_changes(
                         f" {old_arg.type} to {new_arg.type}.",
                     )
                 )
-            elif old_arg.default_value is not Undefined:
-                if new_arg.default_value is Undefined:
+            elif old_default_value_str is not None:
+                if new_default_value_str is None:
                     schema_changes.append(
                         DangerousChange(
                             DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
@@ -245,32 +247,22 @@ def find_directive_changes(
                             f" defaultValue was removed.",
                         )
                     )
-                else:
-                    # Since we are looking only for client's observable changes
-                    # we should compare default values in the same representation
-                    # as they are represented inside introspection.
-                    old_value_str = stringify_value(old_arg.default_value, old_arg.type)
-                    new_value_str = stringify_value(new_arg.default_value, new_arg.type)
-
-                    if old_value_str != new_value_str:
-                        schema_changes.append(
-                            DangerousChange(
-                                DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                                f"@{old_directive.name}({arg_name}:)"
-                                f" has changed defaultValue"
-                                f" from {old_value_str} to {new_value_str}.",
-                            )
+                elif old_default_value_str != new_default_value_str:
+                    schema_changes.append(
+                        DangerousChange(
+                            DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                            f"@{old_directive.name}({arg_name}:)"
+                            f" has changed defaultValue"
+                            f" from {old_default_value_str}"
+                            f" to {new_default_value_str}.",
                         )
-            elif (
-                new_arg.default_value is not Undefined
-                and old_arg.default_value is Undefined
-            ):
-                new_value_str = stringify_value(new_arg.default_value, new_arg.type)
+                    )
+            elif new_default_value_str is not None and old_default_value_str is None:
                 schema_changes.append(
                     SafeChange(
                         SafeChangeType.ARG_DEFAULT_VALUE_ADDED,
                         f"@{old_directive.name}({arg_name}:)"
-                        f" added a defaultValue {new_value_str}.",
+                        f" added a defaultValue {new_default_value_str}.",
                     )
                 )
             elif str(old_arg.type) != str(new_arg.type):
@@ -628,6 +620,8 @@ def find_arg_changes(
         is_safe = is_change_safe_for_input_object_field_or_field_arg(
             old_arg.type, new_arg.type
         )
+        old_default_value_str = get_default_value(old_arg)
+        new_default_value_str = get_default_value(new_arg)
         if not is_safe:
             schema_changes.append(
                 BreakingChange(
@@ -637,8 +631,8 @@ def find_arg_changes(
                     f" {old_arg.type} to {new_arg.type}.",
                 )
             )
-        elif old_arg.default_value is not Undefined:
-            if new_arg.default_value is Undefined:
+        elif old_default_value_str is not None:
+            if new_default_value_str is None:
                 schema_changes.append(
                     DangerousChange(
                         DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
@@ -646,32 +640,22 @@ def find_arg_changes(
                         f" defaultValue was removed.",
                     )
                 )
-            else:
-                # Since we are looking only for client's observable changes we should
-                # compare default values in the same representation as they are
-                # represented inside introspection.
-                old_value_str = stringify_value(old_arg.default_value, old_arg.type)
-                new_value_str = stringify_value(new_arg.default_value, new_arg.type)
-
-                if old_value_str != new_value_str:
-                    schema_changes.append(
-                        DangerousChange(
-                            DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                            f"{old_type}.{field_name}({arg_name}:)"
-                            f" has changed defaultValue"
-                            f" from {old_value_str} to {new_value_str}.",
-                        )
+            elif old_default_value_str != new_default_value_str:
+                schema_changes.append(
+                    DangerousChange(
+                        DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
+                        f"{old_type}.{field_name}({arg_name}:)"
+                        f" has changed defaultValue"
+                        f" from {old_default_value_str}"
+                        f" to {new_default_value_str}.",
                     )
-        elif (
-            new_arg.default_value is not Undefined
-            and old_arg.default_value is Undefined
-        ):
-            new_value_str = stringify_value(new_arg.default_value, new_arg.type)
+                )
+        elif new_default_value_str is not None and old_default_value_str is None:
             schema_changes.append(
                 SafeChange(
                     SafeChangeType.ARG_DEFAULT_VALUE_ADDED,
                     f"{old_type}.{field_name}({arg_name}:)"
-                    f" added a defaultValue {new_value_str}.",
+                    f" added a defaultValue {new_default_value_str}.",
                 )
             )
         elif str(old_arg.type) != str(new_arg.type):
@@ -810,18 +794,16 @@ def type_kind_name(type_: GraphQLNamedType) -> str:
             raise TypeError(msg)
 
 
-def stringify_value(
-    default_value: GraphQLDefaultValueUsage, type_: GraphQLInputType
-) -> str:
-    ast = (
-        default_value.literal
-        if default_value.literal is not None
-        else value_to_literal(default_value.value, type_)
-    )
-    if ast is None:  # pragma: no cover
-        msg = f"Invalid value: {inspect(default_value)}"
-        raise TypeError(msg)
-    return print_ast(sort_value_node(ast))
+def get_default_value(
+    arg_or_input_field: GraphQLArgument | GraphQLInputField,
+) -> str | None:
+    # Since we are looking only for client's observable changes we should
+    # compare default values in the same representation as they are
+    # represented inside introspection.
+    ast = get_default_value_ast(arg_or_input_field)
+    if ast:
+        return print_ast(sort_value_node(ast))
+    return None
 
 
 class ListDiff(NamedTuple):

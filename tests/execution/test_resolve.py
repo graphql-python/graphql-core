@@ -6,6 +6,7 @@ from graphql.execution import ExecutionResult, execute_sync
 from graphql.language import SourceLocation, parse
 from graphql.type import (
     GraphQLArgument,
+    GraphQLDefaultInput,
     GraphQLField,
     GraphQLID,
     GraphQLInputField,
@@ -236,7 +237,9 @@ def describe_execute_resolve_function():
                     GraphQLList(result_type),
                     {
                         "searchFilters": GraphQLArgument(
-                            filters_type, {"pageSize": 10}, out_name="search_filters"
+                            filters_type,
+                            default=GraphQLDefaultInput(value={"pageSize": 10}),
+                            out_name="search_filters",
                         )
                     },
                     resolve=search_resolver,

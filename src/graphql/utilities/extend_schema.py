@@ -42,6 +42,7 @@ from ..pyutils import inspect, merge_kwargs
 from ..type import (
     GraphQLArgument,
     GraphQLArgumentMap,
+    GraphQLDefaultInput,
     GraphQLDeprecatedDirective,
     GraphQLDirective,
     GraphQLEnumType,
@@ -283,7 +284,9 @@ class ExtendSchemaImpl:
                     arg_map[arg.name.value] = GraphQLArgument(
                         type_=type_,
                         description=arg.description.value if arg.description else None,
-                        default_value_literal=arg.default_value,
+                        default=GraphQLDefaultInput(literal=arg.default_value)
+                        if arg.default_value
+                        else None,
                         deprecation_reason=get_deprecation_reason(arg),
                         ast_node=arg,
                     )
@@ -307,7 +310,9 @@ class ExtendSchemaImpl:
                             description=field.description.value
                             if field.description
                             else None,
-                            default_value_literal=field.default_value,
+                            default=GraphQLDefaultInput(literal=field.default_value)
+                            if field.default_value
+                            else None,
                             deprecation_reason=get_deprecation_reason(field),
                             ast_node=field,
                         )

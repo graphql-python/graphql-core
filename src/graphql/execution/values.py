@@ -248,11 +248,9 @@ def experimental_get_argument_values(
                     f"Argument '{name}' of required type '{arg_type}' was not provided."
                 )
                 raise GraphQLError(msg, node)
-            default_value = arg_def.default_value
-            if default_value:
-                coerced_values[out_name] = coerce_default_value(
-                    default_value, arg_def.type
-                )
+            coerced_default_value = coerce_default_value(arg_def)
+            if coerced_default_value is not Undefined:
+                coerced_values[out_name] = coerced_default_value
             continue
 
         value_node = argument_node.value
@@ -271,11 +269,9 @@ def experimental_get_argument_values(
                 scoped_variable_values is None
                 or variable_name not in scoped_variable_values.coerced
             ) and not is_required_argument(arg_def):
-                default_value = arg_def.default_value
-                if default_value:
-                    coerced_values[out_name] = coerce_default_value(
-                        default_value, arg_def.type
-                    )
+                coerced_default_value = coerce_default_value(arg_def)
+                if coerced_default_value is not Undefined:
+                    coerced_values[out_name] = coerced_default_value
                 continue
 
         coerced_value = coerce_input_literal(

@@ -10,6 +10,7 @@ from graphql.language import OperationDefinitionNode, StringValueNode, ValueNode
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -157,10 +158,15 @@ TestType = GraphQLObjectType(
             GraphQLArgument(GraphQLNonNull(GraphQLString))
         ),
         "fieldWithDefaultArgumentValue": field_with_input_arg(
-            GraphQLArgument(GraphQLString, default_value="Hello World")
+            GraphQLArgument(
+                GraphQLString, default=GraphQLDefaultInput(value="Hello World")
+            )
         ),
         "fieldWithNonNullableStringInputAndDefaultArgValue": field_with_input_arg(
-            GraphQLArgument(GraphQLNonNull(GraphQLString), default_value="Hello World")
+            GraphQLArgument(
+                GraphQLNonNull(GraphQLString),
+                default=GraphQLDefaultInput(value="Hello World"),
+            )
         ),
         "fieldWithNestedInputObject": field_with_input_arg(
             GraphQLArgument(TestNestedInputObject)

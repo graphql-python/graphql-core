@@ -9,6 +9,7 @@ from ..language import DirectiveLocation, print_ast
 from ..pyutils import inspect
 from .definition import (
     GraphQLArgument,
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -134,7 +135,7 @@ class DirectiveFields(GraphQLFieldMap):
                 GraphQLNonNull(GraphQLList(GraphQLNonNull(_InputValue))),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default_value=False
+                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
                     )
                 },
                 resolve=cls.args,
@@ -280,7 +281,7 @@ class TypeFields(GraphQLFieldMap):
                 GraphQLList(GraphQLNonNull(_Field)),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default_value=False
+                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
                     )
                 },
                 resolve=cls.fields,
@@ -296,7 +297,7 @@ class TypeFields(GraphQLFieldMap):
                 GraphQLList(GraphQLNonNull(_EnumValue)),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default_value=False
+                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
                     )
                 },
                 resolve=cls.enum_values,
@@ -305,7 +306,7 @@ class TypeFields(GraphQLFieldMap):
                 GraphQLList(GraphQLNonNull(_InputValue)),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default_value=False
+                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
                     )
                 },
                 resolve=cls.input_fields,
@@ -431,7 +432,7 @@ class FieldFields(GraphQLFieldMap):
                 GraphQLNonNull(GraphQLList(GraphQLNonNull(_InputValue))),
                 args={
                     "includeDeprecated": GraphQLArgument(
-                        GraphQLBoolean, default_value=False
+                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
                     )
                 },
                 resolve=cls.args,
@@ -522,22 +523,15 @@ class InputValueFields(GraphQLFieldMap):
 
     @staticmethod
     def default_value(item, _info):
-        # Since value_to_literal needs graphql.type, it can only be imported later
-        from ..utilities import value_to_literal
+        # Since get_default_value_ast needs graphql.type,
+        # it can only be imported later
+        from ..utilities import get_default_value_ast
 
         input_value = item[1]
-        default_value = input_value.default_value
-        if not default_value:
-            return None
-        literal = (
-            default_value.literal
-            if default_value.literal is not None
-            else value_to_literal(default_value.value, input_value.type)
-        )
-        if literal is None:  # pragma: no cover
-            msg = "Invalid default value"
-            raise TypeError(msg)
-        return print_ast(literal)
+        ast = get_default_value_ast(input_value)
+        if ast:
+            return print_ast(ast)
+        return None
 
     @staticmethod
     def is_deprecated(item, _info):

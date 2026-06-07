@@ -9,6 +9,7 @@ from ..language import DirectiveLocation, parse_const_value
 from ..pyutils import inspect
 from ..type import (
     GraphQLArgument,
+    GraphQLDefaultInput,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
@@ -327,14 +328,16 @@ def build_client_schema(
             raise TypeError(msg)
 
         default_value_introspection = argument_introspection.get("defaultValue")
-        default_value_literal = (
+        default = (
             None
             if default_value_introspection is None
-            else parse_const_value(default_value_introspection)
+            else GraphQLDefaultInput(
+                literal=parse_const_value(default_value_introspection)
+            )
         )
         return GraphQLArgument(
             type_,
-            default_value_literal=default_value_literal,
+            default=default,
             description=argument_introspection.get("description"),
             deprecation_reason=argument_introspection.get("deprecationReason"),
         )
@@ -364,14 +367,16 @@ def build_client_schema(
             raise TypeError(msg)
 
         default_value_introspection = input_value_introspection.get("defaultValue")
-        default_value_literal = (
+        default = (
             None
             if default_value_introspection is None
-            else parse_const_value(default_value_introspection)
+            else GraphQLDefaultInput(
+                literal=parse_const_value(default_value_introspection)
+            )
         )
         return GraphQLInputField(
             type_,
-            default_value_literal=default_value_literal,
+            default=default,
             description=input_value_introspection.get("description"),
             deprecation_reason=input_value_introspection.get("deprecationReason"),
         )

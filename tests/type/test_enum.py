@@ -8,6 +8,7 @@ from graphql import graphql_sync
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -69,7 +70,9 @@ QueryType = GraphQLObjectType(
         "complexEnum": GraphQLField(
             ComplexEnum,
             args={
-                "fromEnum": GraphQLArgument(ComplexEnum, default_value="ONE"),
+                "fromEnum": GraphQLArgument(
+                    ComplexEnum, default=GraphQLDefaultInput(value="ONE")
+                ),
                 "provideGoodValue": GraphQLArgument(GraphQLBoolean),
                 "provideBadValue": GraphQLArgument(GraphQLBoolean),
             },
@@ -84,6 +87,13 @@ QueryType = GraphQLObjectType(
                 if args.get("provideBadValue")
                 else args.get("fromEnum")
             ),
+        ),
+        "complexEnumWithLegacyDefault": GraphQLField(
+            ComplexEnum,
+            args={
+                "fromEnum": GraphQLArgument(ComplexEnum, default_value=complex1),
+            },
+            resolve=lambda _source, _info, fromEnum: fromEnum,
         ),
         "thunkValuesString": GraphQLField(
             GraphQLString,
@@ -377,6 +387,17 @@ def describe_type_system_enum_values():
                 }
             ],
         )
+
+    def may_be_internally_represented_with_complex_values_using_legacy_default():
+        result = execute_query(
+            """
+            {
+              complexEnumWithLegacyDefault
+            }
+            """
+        )
+
+        assert result == ({"complexEnumWithLegacyDefault": "ONE"}, None)
 
     def may_have_values_specified_via_a_callable():
         result = execute_query("{ thunkValuesString(fromEnum: B) }")

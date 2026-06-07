@@ -52,6 +52,9 @@ from .ast_from_value import ast_from_value
 # Create a GraphQL literal (AST) from a Python value.
 from .value_to_literal import value_to_literal
 
+# Get the AST of the default value of an argument or input field.
+from .get_default_value_ast import get_default_value_ast
+
 # Replace any variables in an AST value with their literal values.
 from .replace_variables import replace_variables
 
@@ -114,6 +117,7 @@ __all__ = [
     "find_breaking_changes",
     "find_dangerous_changes",
     "find_schema_changes",
+    "get_default_value_ast",
     "get_introspection_query",
     "get_operation_ast",
     "introspection_from_schema",

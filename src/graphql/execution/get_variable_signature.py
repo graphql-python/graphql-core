@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 from ..error import GraphQLError
 from ..language import print_ast
 from ..pyutils import Undefined
-from ..type import GraphQLDefaultValueUsage, is_input_type
+from ..type import GraphQLDefaultInput, is_input_type
 from ..utilities.type_from_ast import type_from_ast
 
 if TYPE_CHECKING:
@@ -21,12 +21,16 @@ class GraphQLVariableSignature(NamedTuple):
     """A GraphQL variable signature is required to coerce a variable value.
 
     Designed to have a comparable interface to ``GraphQLArgument`` so that
-    ``get_argument_values()`` can be reused for fragment arguments.
+    ``get_argument_values()`` can be reused for fragment arguments. The
+    deprecated ``default_value`` is never set on a variable signature (it only
+    ever carries an external ``default``); it exists solely to mirror the
+    ``GraphQLArgument`` interface.
     """
 
     name: str
     type: GraphQLInputType
-    default_value: Any
+    default: GraphQLDefaultInput | None
+    default_value: Any = Undefined
 
 
 def get_variable_signature(
@@ -50,7 +54,5 @@ def get_variable_signature(
     return GraphQLVariableSignature(
         name=var_name,
         type=var_type,
-        default_value=GraphQLDefaultValueUsage(literal=default_value)
-        if default_value
-        else Undefined,
+        default=GraphQLDefaultInput(literal=default_value) if default_value else None,
     )

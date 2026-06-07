@@ -274,7 +274,7 @@ def describe_execute_handles_basic_execution_tasks():
                         signature=GraphQLVariableSignature(
                             name="var",
                             type=GraphQLString,
-                            default_value=Undefined,
+                            default=None,
                         ),
                         value="abc",
                     )

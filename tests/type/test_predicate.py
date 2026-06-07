@@ -6,6 +6,7 @@ from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDefaultInput,
     GraphQLDeprecatedDirective,
     GraphQLDirective,
     GraphQLEnumType,
@@ -530,14 +531,17 @@ def describe_type_predicates():
             opt_arg1 = GraphQLArgument(GraphQLString)
             assert is_required_argument(opt_arg1) is False
 
-            opt_arg2 = GraphQLArgument(GraphQLString, default_value=None)
+            opt_arg2 = GraphQLArgument(
+                GraphQLString, default=GraphQLDefaultInput(value=None)
+            )
             assert is_required_argument(opt_arg2) is False
 
             opt_arg3 = GraphQLArgument(GraphQLList(GraphQLNonNull(GraphQLString)))
             assert is_required_argument(opt_arg3) is False
 
             opt_arg4 = GraphQLArgument(
-                GraphQLNonNull(GraphQLString), default_value="default"
+                GraphQLNonNull(GraphQLString),
+                default=GraphQLDefaultInput(value="default"),
             )
             assert is_required_argument(opt_arg4) is False
 
@@ -550,14 +554,17 @@ def describe_type_predicates():
             opt_field1 = GraphQLInputField(GraphQLString)
             assert is_required_input_field(opt_field1) is False
 
-            opt_field2 = GraphQLInputField(GraphQLString, default_value=None)
+            opt_field2 = GraphQLInputField(
+                GraphQLString, default=GraphQLDefaultInput(value=None)
+            )
             assert is_required_input_field(opt_field2) is False
 
             opt_field3 = GraphQLInputField(GraphQLList(GraphQLNonNull(GraphQLString)))
             assert is_required_input_field(opt_field3) is False
 
             opt_field4 = GraphQLInputField(
-                GraphQLNonNull(GraphQLString), default_value="default"
+                GraphQLNonNull(GraphQLString),
+                default=GraphQLDefaultInput(value="default"),
             )
             assert is_required_input_field(opt_field4) is False
 

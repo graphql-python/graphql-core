@@ -18,7 +18,7 @@ from graphql.language.parser import Parser
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLBoolean,
-    GraphQLDefaultValueUsage,
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLFloat,
     GraphQLID,
@@ -198,7 +198,8 @@ def describe_coerce_input_value():
                 "TestInputObject",
                 {
                     "foo": GraphQLInputField(
-                        GraphQLScalarType("TestScalar"), default_value=default_value
+                        GraphQLScalarType("TestScalar"),
+                        default=GraphQLDefaultInput(value=default_value),
                     )
                 },
             )
@@ -452,9 +453,12 @@ def describe_coerce_input_literal():
         type_ = GraphQLInputObjectType(
             "TestInput",
             {
-                "int": GraphQLInputField(GraphQLInt, default_value=42),
+                "int": GraphQLInputField(
+                    GraphQLInt, default=GraphQLDefaultInput(value=42)
+                ),
                 "float": GraphQLInputField(
-                    GraphQLFloat, default_value_literal=FloatValueNode(value="3.14")
+                    GraphQLFloat,
+                    default=GraphQLDefaultInput(literal=FloatValueNode(value="3.14")),
                 ),
             },
         )
@@ -464,7 +468,7 @@ def describe_coerce_input_literal():
     test_input_obj = GraphQLInputObjectType(
         "TestInput",
         {
-            "int": GraphQLInputField(GraphQLInt, default_value=42),
+            "int": GraphQLInputField(GraphQLInt, default=GraphQLDefaultInput(value=42)),
             "bool": GraphQLInputField(GraphQLBoolean),
             "requiredBool": GraphQLInputField(non_null_bool),
         },
@@ -603,11 +607,12 @@ def describe_coerce_default_value():
             "SpyScalar", coerce_input_value=coerce_input_value
         )
 
-        default_value_usage = GraphQLDefaultValueUsage(
-            literal=StringValueNode(value="hello")
-        )
-        assert coerce_default_value(default_value_usage, spy_scalar) == "hello"
+        input_default = GraphQLDefaultInput(literal=StringValueNode(value="hello"))
+
+        input_value = GraphQLInputField(spy_scalar, default=input_default)
+
+        assert coerce_default_value(input_value) == "hello"
 
         # Call a second time
-        assert coerce_default_value(default_value_usage, spy_scalar) == "hello"
+        assert coerce_default_value(input_value) == "hello"
         assert coerce_input_value_calls == ["hello"]

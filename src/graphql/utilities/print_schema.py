@@ -25,7 +25,7 @@ from ..type import (
     is_specified_directive,
 )
 from .ast_from_value import ast_from_value
-from .value_to_literal import value_to_literal
+from .get_default_value_ast import get_default_value_ast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -259,17 +259,9 @@ def print_args(args: dict[str, GraphQLArgument], indentation: str = "") -> str:
 def print_input_value(name: str, arg: GraphQLArgument) -> str:
     """Print an input value."""
     arg_decl = f"{name}: {arg.type}"
-    default_value = arg.default_value
-    if default_value:
-        literal = (
-            default_value.literal
-            if default_value.literal is not None
-            else value_to_literal(default_value.value, arg.type)
-        )
-        if literal is None:  # pragma: no cover
-            msg = "Invalid default value"
-            raise TypeError(msg)
-        arg_decl += f" = {print_ast(literal)}"
+    default_value_ast = get_default_value_ast(arg)
+    if default_value_ast:
+        arg_decl += f" = {print_ast(default_value_ast)}"
     return arg_decl + print_deprecated(arg.deprecation_reason)
 
 

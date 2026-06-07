@@ -41,7 +41,7 @@ from graphql.language import (
 from graphql.pyutils import AbortSignal, Path, Undefined, is_awaitable
 from graphql.type import (
     GraphQLArgument,
-    GraphQLDefaultValueUsage,
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -682,7 +682,9 @@ def describe_type_system_interfaces():
                     args={
                         "input": GraphQLArgument(
                             ScalarType,
-                            default_value_literal=IntValueNode(value="10"),
+                            default=GraphQLDefaultInput(
+                                literal=IntValueNode(value="10")
+                            ),
                             description="Argument description.",
                             deprecation_reason="Argument deprecation reason.",
                             extensions={"some_extension": "extension"},
@@ -1467,12 +1469,17 @@ def describe_type_system_input_fields():
         def accepts_an_input_object_type_with_a_default_value():
             input_obj_type = GraphQLInputObjectType(
                 "SomeInputObject",
-                {"f": GraphQLInputField(ScalarType, default_value=3)},
+                {
+                    "f": GraphQLInputField(
+                        ScalarType, default=GraphQLDefaultInput(value=3)
+                    )
+                },
             )
             field = input_obj_type.fields["f"]
             assert field.type is ScalarType
             assert field.description is None
-            assert field.default_value == GraphQLDefaultValueUsage(value=3)
+            assert field.default_value is Undefined
+            assert field.default == GraphQLDefaultInput(value=3)
             assert field.deprecation_reason is None
             assert field.extensions == {}
             assert field.ast_node is None
@@ -1482,31 +1489,19 @@ def describe_type_system_input_fields():
                 "SomeInputObject",
                 {
                     "f": GraphQLInputField(
-                        ScalarType, default_value_literal=IntValueNode(value="3")
+                        ScalarType,
+                        default=GraphQLDefaultInput(literal=IntValueNode(value="3")),
                     )
                 },
             )
             field = input_obj_type.fields["f"]
             assert field.type is ScalarType
             assert field.description is None
-            assert field.default_value == GraphQLDefaultValueUsage(
-                literal=IntValueNode(value="3")
-            )
+            assert field.default_value is Undefined
+            assert field.default == GraphQLDefaultInput(literal=IntValueNode(value="3"))
             assert field.deprecation_reason is None
             assert field.extensions == {}
             assert field.ast_node is None
-
-        def rejects_an_input_object_type_with_conflicting_default_values():
-            with pytest.raises(TypeError) as exc_info:
-                GraphQLInputField(
-                    ScalarType,
-                    default_value=3,
-                    default_value_literal=IntValueNode(value="3"),
-                )
-            assert str(exc_info.value) == (
-                "A default value and a default value literal cannot both be"
-                " provided, but only one of them must be specified."
-            )
 
 
 def describe_type_system_list():

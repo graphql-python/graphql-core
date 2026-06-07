@@ -8,7 +8,7 @@ from graphql.language import DirectiveLocation, parse
 from graphql.pyutils import inspect
 from graphql.type import (
     GraphQLArgument,
-    GraphQLDefaultValueUsage,
+    GraphQLDefaultInput,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLField,
@@ -990,32 +990,44 @@ def describe_type_system_input_objects_must_have_fields():
         a_type = GraphQLInputObjectType(
             "A",
             lambda: {
-                "x": GraphQLInputField(a_type, default_value=None),
-                "y": GraphQLInputField(a_type, default_value={"x": None, "y": None}),
-                "z": GraphQLInputField(GraphQLList(a_type), default_value=[]),
+                "x": GraphQLInputField(a_type, default=GraphQLDefaultInput(value=None)),
+                "y": GraphQLInputField(
+                    a_type, default=GraphQLDefaultInput(value={"x": None, "y": None})
+                ),
+                "z": GraphQLInputField(
+                    GraphQLList(a_type), default=GraphQLDefaultInput(value=[])
+                ),
             },
         )
 
         b_type = GraphQLInputObjectType(
             "B",
             lambda: {
-                "x": GraphQLInputField(GraphQLNonNull(b2_type), default_value={}),
-                "y": GraphQLInputField(GraphQLString, default_value="abc"),
-                "z": GraphQLInputField(custom_type, default_value={}),
+                "x": GraphQLInputField(
+                    GraphQLNonNull(b2_type), default=GraphQLDefaultInput(value={})
+                ),
+                "y": GraphQLInputField(
+                    GraphQLString, default=GraphQLDefaultInput(value="abc")
+                ),
+                "z": GraphQLInputField(
+                    custom_type, default=GraphQLDefaultInput(value={})
+                ),
             },
         )
 
         b2_type = GraphQLInputObjectType(
             "B2",
             lambda: {
-                "x": GraphQLInputField(b3_type, default_value={}),
+                "x": GraphQLInputField(b3_type, default=GraphQLDefaultInput(value={})),
             },
         )
 
         b3_type = GraphQLInputObjectType(
             "B3",
             lambda: {
-                "x": GraphQLInputField(b_type, default_value={"x": {"x": None}}),
+                "x": GraphQLInputField(
+                    b_type, default=GraphQLDefaultInput(value={"x": {"x": None}})
+                ),
             },
         )
 
@@ -1123,64 +1135,76 @@ def describe_type_system_input_objects_must_have_fields():
         a_type = GraphQLInputObjectType(
             "A",
             lambda: {
-                "x": GraphQLInputField(a_type, default_value={}),
+                "x": GraphQLInputField(a_type, default=GraphQLDefaultInput(value={})),
             },
         )
 
         b_type = GraphQLInputObjectType(
             "B",
             lambda: {
-                "x": GraphQLInputField(b2_type, default_value={}),
+                "x": GraphQLInputField(b2_type, default=GraphQLDefaultInput(value={})),
             },
         )
 
         b2_type = GraphQLInputObjectType(
             "B2",
             lambda: {
-                "x": GraphQLInputField(b3_type, default_value={}),
+                "x": GraphQLInputField(b3_type, default=GraphQLDefaultInput(value={})),
             },
         )
 
         b3_type = GraphQLInputObjectType(
             "B3",
             lambda: {
-                "x": GraphQLInputField(b_type, default_value={}),
+                "x": GraphQLInputField(b_type, default=GraphQLDefaultInput(value={})),
             },
         )
 
         c_type = GraphQLInputObjectType(
             "C",
             lambda: {
-                "x": GraphQLInputField(GraphQLList(c_type), default_value=[{}]),
+                "x": GraphQLInputField(
+                    GraphQLList(c_type), default=GraphQLDefaultInput(value=[{}])
+                ),
             },
         )
 
         d_type = GraphQLInputObjectType(
             "D",
             lambda: {
-                "x": GraphQLInputField(d_type, default_value={"x": {"x": {}}}),
+                "x": GraphQLInputField(
+                    d_type, default=GraphQLDefaultInput(value={"x": {"x": {}}})
+                ),
             },
         )
 
         e_type = GraphQLInputObjectType(
             "E",
             lambda: {
-                "x": GraphQLInputField(e_type, default_value={"x": None}),
-                "y": GraphQLInputField(e_type, default_value={"y": None}),
+                "x": GraphQLInputField(
+                    e_type, default=GraphQLDefaultInput(value={"x": None})
+                ),
+                "y": GraphQLInputField(
+                    e_type, default=GraphQLDefaultInput(value={"y": None})
+                ),
             },
         )
 
         f_type = GraphQLInputObjectType(
             "F",
             lambda: {
-                "x": GraphQLInputField(GraphQLNonNull(f2_type), default_value={}),
+                "x": GraphQLInputField(
+                    GraphQLNonNull(f2_type), default=GraphQLDefaultInput(value={})
+                ),
             },
         )
 
         f2_type = GraphQLInputObjectType(
             "F2",
             lambda: {
-                "x": GraphQLInputField(f_type, default_value={"x": {}}),
+                "x": GraphQLInputField(
+                    f_type, default=GraphQLDefaultInput(value={"x": {}})
+                ),
             },
         )
 
@@ -1909,7 +1933,9 @@ def describe_type_system_argument_default_values_must_be_valid():
                     "field": GraphQLField(
                         GraphQLInt,
                         args={
-                            "arg": GraphQLArgument(GraphQLInt, default_value=3.14),
+                            "arg": GraphQLArgument(
+                                GraphQLInt, default=GraphQLDefaultInput(value=3.14)
+                            ),
                         },
                     )
                 },
@@ -1918,7 +1944,9 @@ def describe_type_system_argument_default_values_must_be_valid():
                 GraphQLDirective(
                     "bad",
                     args={
-                        "arg": GraphQLArgument(GraphQLInt, default_value=2.718),
+                        "arg": GraphQLArgument(
+                            GraphQLInt, default=GraphQLDefaultInput(value=2.718)
+                        ),
                     },
                     locations=[DirectiveLocation.FIELD],
                 ),
@@ -1965,17 +1993,21 @@ def describe_type_system_argument_default_values_must_be_valid():
                         args={
                             "argWithPossibleFix": GraphQLArgument(
                                 test_input,
-                                default_value={
-                                    "self": None,
-                                    "string": [1],
-                                    "enum": exotic,
-                                },
+                                default=GraphQLDefaultInput(
+                                    value={
+                                        "self": None,
+                                        "string": [1],
+                                        "enum": exotic,
+                                    }
+                                ),
                             ),
                             "argWithInvalidPossibleFix": GraphQLArgument(
-                                test_input, default_value={"string": None}
+                                test_input,
+                                default=GraphQLDefaultInput(value={"string": None}),
                             ),
                             "argWithoutPossibleFix": GraphQLArgument(
-                                test_input, default_value={"enum": "Exotic"}
+                                test_input,
+                                default=GraphQLDefaultInput(value={"enum": "Exotic"}),
                             ),
                         },
                     )
@@ -2056,7 +2088,7 @@ def describe_type_system_argument_default_values_must_be_valid():
         query_type = assert_object_type(original_schema.get_type("Query"))
         for arg_name, arg in query_type.fields["field"].args.items():
             arg.type = test_input
-            arg.default_value = GraphQLDefaultValueUsage(value=default_values[arg_name])
+            arg.default = GraphQLDefaultInput(value=default_values[arg_name])
 
         assert validate_schema(original_schema) == [
             {
@@ -2186,7 +2218,9 @@ def describe_type_system_input_object_field_default_values_must_be_valid():
         some_input_object = GraphQLInputObjectType(
             "SomeInputObject",
             {
-                "field": GraphQLInputField(GraphQLInt, default_value=3.14),
+                "field": GraphQLInputField(
+                    GraphQLInt, default=GraphQLDefaultInput(value=3.14)
+                ),
             },
         )
 

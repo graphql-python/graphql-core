@@ -205,12 +205,12 @@ class SchemaValidationContext:
         input_value: GraphQLArgument | GraphQLInputField,
         arg_str: str,
     ) -> None:
-        default_value = input_value.default_value
+        default_input = input_value.default
 
-        if not default_value:
+        if not default_input:
             return
 
-        if default_value.literal:
+        if default_input.literal:
 
             def on_error(error: GraphQLError, path: list[str | int]) -> None:
                 self.report_error(
@@ -219,11 +219,11 @@ class SchemaValidationContext:
                     error.nodes,
                 )
 
-            validate_input_literal(default_value.literal, input_value.type, on_error)
+            validate_input_literal(default_input.literal, input_value.type, on_error)
         else:
             errors: list[tuple[GraphQLError, list[str | int]]] = []
             validate_input_value(
-                default_value.value,
+                default_input.value,
                 input_value.type,
                 lambda error, path: errors.append((error, path)),
             )
@@ -234,7 +234,7 @@ class SchemaValidationContext:
             if errors:
                 try:
                     uncoerced_value = uncoerce_default_value(
-                        default_value.value, input_value.type
+                        default_input.value, input_value.type
                     )
 
                     uncoerced_errors: list[tuple[GraphQLError, list[str | int]]] = []
@@ -247,7 +247,7 @@ class SchemaValidationContext:
                     if not uncoerced_errors:
                         self.report_error(
                             f"{arg_str} has invalid default value:"
-                            f" {inspect(default_value.value)}."
+                            f" {inspect(default_input.value)}."
                             f" Did you mean: {inspect(uncoerced_value)}?",
                             input_value.ast_node and input_value.ast_node.default_value,
                         )
@@ -600,7 +600,7 @@ class SchemaValidationContext:
                 field.ast_node and field.ast_node.type,
             )
 
-        if field.default_value is not Undefined:
+        if field.default is not None or field.default_value is not Undefined:
             self.report_error(
                 f"OneOf input field {type_}.{field_name} cannot have a default value.",
                 field.ast_node,
@@ -817,8 +817,8 @@ class InputObjectDefaultValueCircularRefsValidator:
         field_str: str,
     ) -> None:
         # Only a field with a default value can result in a cycle.
-        default_value = field.default_value
-        if not default_value:
+        default_input = field.default
+        if not default_input:
             return
 
         # Check to see if there is a cycle.
@@ -851,12 +851,12 @@ class InputObjectDefaultValueCircularRefsValidator:
                 (field_str, field.ast_node.default_value if field.ast_node else None)
             )
             self.field_path_index[field_str] = len(self.field_path)
-            if default_value.literal:
+            if default_input.literal:
                 self.detect_literal_default_value_cycle(
-                    field_type, default_value.literal
+                    field_type, default_input.literal
                 )
             else:
-                self.detect_value_default_value_cycle(field_type, default_value.value)
+                self.detect_value_default_value_cycle(field_type, default_input.value)
             self.field_path.pop()
             self.field_path_index[field_str] = None
 

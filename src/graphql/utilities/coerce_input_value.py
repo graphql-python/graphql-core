@@ -17,7 +17,6 @@ from ..pyutils import (
     is_iterable,
 )
 from ..type import (
-    GraphQLDefaultValueUsage,
     GraphQLInputType,
     assert_leaf_type,
     is_input_object_type,
@@ -28,7 +27,9 @@ from ..type import (
 from .replace_variables import replace_variables
 
 if TYPE_CHECKING:
+    from ..execution.get_variable_signature import GraphQLVariableSignature
     from ..execution.values import VariableValues
+    from ..type import GraphQLArgument, GraphQLInputField
 
 __all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
 
@@ -77,11 +78,10 @@ def coerce_input_value(input_value: Any, type_: GraphQLInputType) -> Any:
             if field_value is Undefined:
                 if is_required_input_field(field):
                     return Undefined  # Invalid: intentionally return no value.
-                if field.default_value:
+                coerced_default_value = coerce_default_value(field)
+                if coerced_default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
-                    coerced_dict[field.out_name or field_name] = coerce_default_value(
-                        field.default_value, field.type
-                    )
+                    coerced_dict[field.out_name or field_name] = coerced_default_value
             else:
                 coerced_field = coerce_input_value(field_value, field.type)
                 if coerced_field is Undefined:
@@ -202,11 +202,10 @@ def coerce_input_literal(
             ):
                 if is_required_input_field(field):
                     return Undefined  # Invalid: intentionally return no value.
-                if field.default_value:
+                coerced_default_value = coerce_default_value(field)
+                if coerced_default_value is not Undefined:
                     # Use out name as name if it exists (extension of GraphQL.js).
-                    coerced_dict[field.out_name or field_name] = coerce_default_value(
-                        field.default_value, field.type
-                    )
+                    coerced_dict[field.out_name or field_name] = coerced_default_value
             else:
                 field_value = coerce_input_literal(
                     field_node.value,
@@ -244,26 +243,36 @@ def coerce_input_literal(
 
 
 def coerce_default_value(
-    default_value: GraphQLDefaultValueUsage,
-    type_: GraphQLInputType,
+    input_value: GraphQLArgument | GraphQLInputField | GraphQLVariableSignature,
 ) -> Any:
-    """Coerce a default value usage to a Python value.
+    """Coerce the default value of an argument or input field to a Python value.
+
+    Returns ``Undefined`` when neither an external ``default`` nor a deprecated
+    internal ``default_value`` is provided.
 
     .. internal::
     """
-    # Memoize the result of coercing the default value in a hidden field.
-    coerced_value = default_value._memoized_coerced_value  # noqa: SLF001
-    if coerced_value is Undefined:
-        coerced_value = (
-            coerce_input_literal(default_value.literal, type_)
-            if default_value.literal is not None
-            else coerce_input_value(default_value.value, type_)
-        )
-        if coerced_value is Undefined:  # pragma: no cover
-            msg = f"Invalid default value: {inspect(default_value)}"
-            raise TypeError(msg)
-        default_value._memoized_coerced_value = coerced_value  # noqa: SLF001
-    return coerced_value
+    # The external default value is coerced; the result is memoized in a hidden
+    # field on the GraphQLDefaultInput object. (Contrary to GraphQL.js, which
+    # memoizes on the input value itself, this also works for the immutable
+    # variable signatures that reuse this function for fragment arguments.)
+    default_input = input_value.default
+    if default_input is not None:
+        coerced_value = default_input._memoized_coerced_value  # noqa: SLF001
+        if coerced_value is Undefined:
+            coerced_value = (
+                coerce_input_literal(default_input.literal, input_value.type)
+                if default_input.literal is not None
+                else coerce_input_value(default_input.value, input_value.type)
+            )
+            if coerced_value is Undefined:  # pragma: no cover
+                msg = f"Invalid default value: {inspect(default_input)}"
+                raise TypeError(msg)
+            default_input._memoized_coerced_value = coerced_value  # noqa: SLF001
+        return coerced_value
+
+    # The deprecated internal default value is used as is.
+    return input_value.default_value
 
 
 def get_coerced_variable_value(

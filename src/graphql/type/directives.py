@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, Any, TypedDict, TypeGuard, cast
 from ..language import DirectiveLocation, ast
 from ..pyutils import inspect
 from .assert_name import assert_name
-from .definition import GraphQLArgument, GraphQLInputType, GraphQLNonNull
+from .definition import (
+    GraphQLArgument,
+    GraphQLDefaultInput,
+    GraphQLInputType,
+    GraphQLNonNull,
+)
 from .scalars import GraphQLBoolean, GraphQLInt, GraphQLString
 
 if TYPE_CHECKING:
@@ -237,7 +242,7 @@ GraphQLDeprecatedDirective = GraphQLDirective(
             " supported similar data."
             " Formatted using the Markdown syntax, as specified by"
             " [CommonMark](https://commonmark.org/).",
-            default_value=DEFAULT_DEPRECATION_REASON,
+            default=GraphQLDefaultInput(value=DEFAULT_DEPRECATION_REASON),
         )
     },
     description="Marks an element of a GraphQL schema as no longer supported.",

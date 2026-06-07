@@ -115,7 +115,7 @@ from .definition import (
     GraphQLScalarInputValueCoercer,
     GraphQLScalarInputLiteralCoercer,
     GraphQLScalarValueToLiteral,
-    GraphQLDefaultValueUsage,
+    GraphQLDefaultInput,
     # Keyword Args
     GraphQLArgumentKwargs,
     GraphQLEnumTypeKwargs,
@@ -201,7 +201,7 @@ __all__ = [
     "GraphQLArgumentMap",
     "GraphQLBoolean",
     "GraphQLCompositeType",
-    "GraphQLDefaultValueUsage",
+    "GraphQLDefaultInput",
     "GraphQLDeferDirective",
     "GraphQLDeprecatedDirective",
     "GraphQLDirective",

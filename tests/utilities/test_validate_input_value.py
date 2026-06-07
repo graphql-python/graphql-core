@@ -13,6 +13,7 @@ from graphql.language import TokenKind, parse_value
 from graphql.language.parser import Parser
 from graphql.pyutils import Undefined
 from graphql.type import (
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLInputField,
     GraphQLInputObjectType,
@@ -363,7 +364,8 @@ def describe_validate_input_value():
                 "TestInputObject",
                 {
                     "foo": GraphQLInputField(
-                        GraphQLScalarType("TestScalar"), default_value=default_value
+                        GraphQLScalarType("TestScalar"),
+                        default=GraphQLDefaultInput(value=default_value),
                     )
                 },
             )
@@ -614,7 +616,7 @@ def describe_validate_input_literal():
     def uses_fragment_variable_values_when_present():
         # When a variable is provided by fragment variable values, those are
         # scoped in preference to the operation variable values.
-        signature = GraphQLVariableSignature("var", GraphQLInt, Undefined)
+        signature = GraphQLVariableSignature("var", GraphQLInt, None)
         fragment_variable_values = VariableValues(
             sources={"var": VariableValueSource(signature)},
             coerced={},
@@ -857,7 +859,7 @@ def describe_validate_input_literal():
                 "foo": GraphQLInputField(GraphQLNonNull(GraphQLInt)),
                 "bar": GraphQLInputField(GraphQLInt),
                 "optional": GraphQLInputField(
-                    GraphQLNonNull(GraphQLInt), default_value=42
+                    GraphQLNonNull(GraphQLInt), default=GraphQLDefaultInput(value=42)
                 ),
             },
         )
@@ -1014,7 +1016,8 @@ def describe_validate_input_literal():
                 "TestInputObject",
                 {
                     "foo": GraphQLInputField(
-                        GraphQLScalarType("TestScalar"), default_value=default_value
+                        GraphQLScalarType("TestScalar"),
+                        default=GraphQLDefaultInput(value=default_value),
                     )
                 },
             )

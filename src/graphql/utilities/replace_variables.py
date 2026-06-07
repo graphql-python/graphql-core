@@ -53,9 +53,9 @@ def replace_variables(
             return NullValueNode()
 
         if scoped_variable_source.value is Undefined:
-            default_value = scoped_variable_source.signature.default_value
-            if default_value is not Undefined:
-                return default_value.literal
+            default = scoped_variable_source.signature.default
+            if default is not None:
+                return cast("ConstValueNode", default.literal)
 
         return cast(
             "ConstValueNode",
@@ -82,7 +82,7 @@ def replace_variables(
 
                 if field_variable_source is None or (
                     field_variable_source.value is Undefined
-                    and field_variable_source.signature.default_value is Undefined
+                    and field_variable_source.signature.default is None
                 ):
                     continue
             new_field_node_value = replace_variables(

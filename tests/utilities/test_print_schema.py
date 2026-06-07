@@ -6,6 +6,7 @@ from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDefaultInput,
     GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
@@ -145,7 +146,11 @@ def describe_type_system_printer():
         schema = build_single_field_schema(
             GraphQLField(
                 type_=GraphQLString,
-                args={"argOne": GraphQLArgument(GraphQLInt, default_value=2)},
+                args={
+                    "argOne": GraphQLArgument(
+                        GraphQLInt, default=GraphQLDefaultInput(value=2)
+                    )
+                },
             )
         )
 
@@ -163,7 +168,8 @@ def describe_type_system_printer():
                 type_=GraphQLString,
                 args={
                     "argOne": GraphQLArgument(
-                        GraphQLString, default_value="tes\t de\fault"
+                        GraphQLString,
+                        default=GraphQLDefaultInput(value="tes\t de\fault"),
                     )
                 },
             )
@@ -181,7 +187,11 @@ def describe_type_system_printer():
         schema = build_single_field_schema(
             GraphQLField(
                 type_=GraphQLString,
-                args={"argOne": GraphQLArgument(GraphQLInt, default_value=None)},
+                args={
+                    "argOne": GraphQLArgument(
+                        GraphQLInt, default=GraphQLDefaultInput(value=None)
+                    )
+                },
             )
         )
 
@@ -233,7 +243,9 @@ def describe_type_system_printer():
             GraphQLField(
                 type_=GraphQLString,
                 args={
-                    "argOne": GraphQLArgument(GraphQLInt, default_value=1),
+                    "argOne": GraphQLArgument(
+                        GraphQLInt, default=GraphQLDefaultInput(value=1)
+                    ),
                     "argTwo": GraphQLArgument(GraphQLString),
                     "argThree": GraphQLArgument(GraphQLBoolean),
                 },
@@ -254,7 +266,9 @@ def describe_type_system_printer():
                 type_=GraphQLString,
                 args={
                     "argOne": GraphQLArgument(GraphQLInt),
-                    "argTwo": GraphQLArgument(GraphQLString, default_value="foo"),
+                    "argTwo": GraphQLArgument(
+                        GraphQLString, default=GraphQLDefaultInput(value="foo")
+                    ),
                     "argThree": GraphQLArgument(GraphQLBoolean),
                 },
             )
@@ -275,7 +289,9 @@ def describe_type_system_printer():
                 args={
                     "argOne": GraphQLArgument(GraphQLInt),
                     "argTwo": GraphQLArgument(GraphQLString),
-                    "argThree": GraphQLArgument(GraphQLBoolean, default_value=False),
+                    "argThree": GraphQLArgument(
+                        GraphQLBoolean, default=GraphQLDefaultInput(value=False)
+                    ),
                 },
             )
         )
@@ -603,7 +619,9 @@ def describe_type_system_printer():
             description="Complex Directive",
             args={
                 "stringArg": GraphQLArgument(GraphQLString),
-                "intArg": GraphQLArgument(GraphQLInt, default_value=-1),
+                "intArg": GraphQLArgument(
+                    GraphQLInt, default=GraphQLDefaultInput(value=-1)
+                ),
             },
             is_repeatable=True,
         )
