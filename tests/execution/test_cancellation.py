@@ -145,12 +145,17 @@ def describe_execute_cancellation():
         )
 
         async def cancellable_async_fn(abort_signal):
-            # never reached: the resolver is cancelled before its body runs
+            # never reached: the resolver task is cancelled before its body runs
             raise await abort_signal.wait()  # pragma: no cover
 
         # Contrary to JavaScript, where the abort signal is passed as an additional
         # argument to the resolvers, in GraphQL-Core it is available via the resolve
-        # info, just like the context value.
+        # info, just like the context value. The GraphQL.js test that this mirrors
+        # subscribes to the signal's "abort" event and then throws an unrelated error
+        # to prove the abort error supersedes it; GraphQL-Core has no event listener
+        # and instead cancels the running resolver task, so the resolver awaits the
+        # signal directly and raises its reason (which the cancellation pre-empts) --
+        # this is race-safe because either path yields the same abort error.
         def resolve_id(info):
             return cancellable_async_fn(info.abort_signal)
 
