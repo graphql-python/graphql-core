@@ -13,6 +13,7 @@ from graphql.execution import (
     IncrementalStreamResult,
     StreamItemRecord,
     StreamRecord,
+    execute,
     experimental_execute_incrementally,
 )
 from graphql.language import DocumentNode, parse
@@ -2522,3 +2523,60 @@ def describe_execute_stream_directive():
         # is actually a generator that cannot do the cleanup in case of an athrow()
         await sleep(0)
         assert not finished
+
+    async def original_execute_function_throws_error_if_streamed_and_all_is_sync():
+        """Original execute function throws error if streamed and all is sync
+
+        Original execute function throws error if anything is streamed and everything
+        else is sync.
+        """
+        document = parse(
+            """
+            query {
+              scalarList
+              friendList @stream { name }
+            }
+            """
+        )
+
+        root_value = {
+            "scalarList": ["apple", "banana", "coconut"],
+            "friendList": [{"name": "Alice"}, {"name": "Bob"}],
+        }
+        with pytest.raises(GraphQLError) as exc_info:
+            await execute(schema, document, root_value)  # type: ignore
+
+        assert str(exc_info.value) == (
+            "Executing this GraphQL operation would unexpectedly produce"
+            " multiple payloads (due to @defer or @stream directive)"
+        )
+
+    async def original_execute_function_throws_error_if_streamed_and_not_all_is_sync():
+        """Original execute function throws error if streamed and not all is sync
+
+        Original execute function resolves to error if anything is streamed and
+        something else is async.
+        """
+        document = parse(
+            """
+            query {
+              scalarList
+              friendList @stream { name }
+            }
+            """
+        )
+
+        async def scalar_list(_info):
+            return ["apple", "banana", "coconut"]
+
+        root_value = {
+            "scalarList": scalar_list,
+            "friendList": [{"name": "Alice"}, {"name": "Bob"}],
+        }
+        with pytest.raises(GraphQLError) as exc_info:
+            await execute(schema, document, root_value)  # type: ignore
+
+        assert str(exc_info.value) == (
+            "Executing this GraphQL operation would unexpectedly produce"
+            " multiple payloads (due to @defer or @stream directive)"
+        )

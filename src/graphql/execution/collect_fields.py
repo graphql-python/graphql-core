@@ -82,7 +82,7 @@ class CollectFieldsContext(NamedTuple):
     variable_values: VariableValues
     operation: OperationDefinitionNode
     runtime_type: GraphQLObjectType
-    visited_fragment_names: set[str]
+    visited_fragment_names: dict[str, bool]
     hide_suggestions: bool
     forbidden_directive_instances: list[DirectiveNode]
     forbid_skip_and_include: bool
@@ -123,7 +123,7 @@ def collect_fields(
         variable_values,
         operation,
         runtime_type,
-        set(),
+        {},
         hide_suggestions,
         [],
         forbid_skip_and_include,
@@ -163,7 +163,7 @@ def collect_subfields(
         variable_values,
         operation,
         return_type,
-        set(),
+        {},
         hide_suggestions,
         [],
         False,
@@ -255,19 +255,8 @@ def collect_fields_impl(
         elif isinstance(selection, FragmentSpreadNode):  # pragma: no branch
             frag_name = selection.name.value
 
-            new_defer_usage = get_defer_usage(
-                operation,
-                variable_values,
-                fragment_variable_values,
-                selection,
-                defer_usage,
-            )
-
-            if new_defer_usage is None and (
-                frag_name in visited_fragment_names
-                or not should_include_node(
-                    context, selection, variable_values, fragment_variable_values
-                )
+            if not should_include_node(
+                context, selection, variable_values, fragment_variable_values
             ):
                 continue
 
@@ -276,6 +265,33 @@ def collect_fields_impl(
                 schema, fragment.definition, runtime_type
             ):
                 continue
+
+            new_defer_usage = get_defer_usage(
+                operation,
+                variable_values,
+                fragment_variable_values,
+                selection,
+                defer_usage,
+            )
+
+            visited_as_deferred = visited_fragment_names.get(frag_name)
+
+            if new_defer_usage is None:
+                # If this spread is not deferred, it may be skipped when already
+                # visited as a non-deferred spread. If it was previously visited as
+                # a deferred spread, it must be revisited.
+                if visited_as_deferred is False:
+                    continue
+                visited_fragment_names[frag_name] = False
+                maybe_new_defer_usage = defer_usage
+            else:
+                # If this spread is deferred, it can be skipped if it has already
+                # been visited.
+                if visited_as_deferred is not None:
+                    continue
+                visited_fragment_names[frag_name] = True
+                new_defer_usages.append(new_defer_usage)
+                maybe_new_defer_usage = new_defer_usage
 
             fragment_variable_signatures = fragment.variable_signatures
             new_fragment_variable_values: FragmentVariableValues | None = None
@@ -288,26 +304,14 @@ def collect_fields_impl(
                     hide_suggestions,
                 )
 
-            if new_defer_usage is None:
-                visited_fragment_names.add(frag_name)
-                collect_fields_impl(
-                    context,
-                    fragment.definition.selection_set,
-                    grouped_field_set,
-                    new_defer_usages,
-                    defer_usage,
-                    new_fragment_variable_values,
-                )
-            else:
-                new_defer_usages.append(new_defer_usage)
-                collect_fields_impl(
-                    context,
-                    fragment.definition.selection_set,
-                    grouped_field_set,
-                    new_defer_usages,
-                    new_defer_usage,
-                    new_fragment_variable_values,
-                )
+            collect_fields_impl(
+                context,
+                fragment.definition.selection_set,
+                grouped_field_set,
+                new_defer_usages,
+                maybe_new_defer_usage,
+                new_fragment_variable_values,
+            )
 
 
 def get_defer_usage(
