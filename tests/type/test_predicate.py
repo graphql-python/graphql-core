@@ -9,6 +9,7 @@ from graphql.type import (
     GraphQLDeprecatedDirective,
     GraphQLDirective,
     GraphQLEnumType,
+    GraphQLField,
     GraphQLFloat,
     GraphQLID,
     GraphQLIncludeDirective,
@@ -25,9 +26,13 @@ from graphql.type import (
     GraphQLString,
     GraphQLUnionType,
     assert_abstract_type,
+    assert_argument,
     assert_composite_type,
     assert_directive,
     assert_enum_type,
+    assert_enum_value,
+    assert_field,
+    assert_input_field,
     assert_input_object_type,
     assert_input_type,
     assert_interface_type,
@@ -46,9 +51,13 @@ from graphql.type import (
     get_named_type,
     get_nullable_type,
     is_abstract_type,
+    is_argument,
     is_composite_type,
     is_directive,
     is_enum_type,
+    is_enum_value,
+    is_field,
+    is_input_field,
     is_input_object_type,
     is_input_type,
     is_interface_type,
@@ -70,11 +79,16 @@ from graphql.type import (
     is_wrapping_type,
 )
 
-ObjectType = GraphQLObjectType("Object", {})
+ObjectType = GraphQLObjectType(
+    "Object",
+    {"f": GraphQLField(GraphQLString, args={"a": GraphQLArgument(GraphQLString)})},
+)
 InterfaceType = GraphQLInterfaceType("Interface", {})
 UnionType = GraphQLUnionType("Union", types=[ObjectType])
 EnumType = GraphQLEnumType("Enum", values={"foo": {}})
-InputObjectType = GraphQLInputObjectType("InputObject", {})
+InputObjectType = GraphQLInputObjectType(
+    "InputObject", {"f": GraphQLInputField(GraphQLString)}
+)
 ScalarType = GraphQLScalarType("Scalar")
 Directive = GraphQLDirective("Directive", [DirectiveLocation.QUERY])
 
@@ -159,6 +173,30 @@ def describe_type_predicates():
             with pytest.raises(TypeError):
                 assert_scalar_type(InterfaceType)
 
+    def describe_is_field():
+        def returns_true_for_fields():
+            f = ObjectType.fields["f"]
+            assert is_field(f) is True
+            assert_field(f)
+
+        def returns_false_for_non_field():
+            input_field = InputObjectType.fields["f"]
+            assert is_field(input_field) is False
+            with pytest.raises(TypeError):
+                assert_field(input_field)
+
+    def describe_is_argument():
+        def returns_true_for_arguments():
+            a = ObjectType.fields["f"].args["a"]
+            assert is_argument(a) is True
+            assert_argument(a)
+
+        def returns_false_for_non_arguments():
+            f = ObjectType.fields["f"]
+            assert is_argument(f) is False
+            with pytest.raises(TypeError):
+                assert_argument(f)
+
     def describe_is_interface_type():
         def returns_true_for_interface_type():
             assert is_interface_type(InterfaceType) is True
@@ -204,6 +242,17 @@ def describe_type_predicates():
             with pytest.raises(TypeError):
                 assert_enum_type(ScalarType)
 
+    def describe_is_enum_value():
+        def returns_true_for_enum_value():
+            value = EnumType.values["foo"]
+            assert is_enum_value(value) is True
+            assert_enum_value(value)
+
+        def returns_false_for_non_enum_value():
+            assert is_enum_value(EnumType) is False
+            with pytest.raises(TypeError):
+                assert_enum_value(EnumType)
+
     def describe_is_input_object_type():
         def returns_true_for_input_object_type():
             assert is_input_object_type(InputObjectType) is True
@@ -218,6 +267,18 @@ def describe_type_predicates():
             assert is_input_object_type(ObjectType) is False
             with pytest.raises(TypeError):
                 assert_input_object_type(ObjectType)
+
+    def describe_is_input_field():
+        def returns_true_for_input_fields():
+            f = InputObjectType.fields["f"]
+            assert is_input_field(f) is True
+            assert_input_field(f)
+
+        def returns_false_for_non_input_fields():
+            f = ObjectType.fields["f"]
+            assert is_input_field(f) is False
+            with pytest.raises(TypeError):
+                assert_input_field(f)
 
     def describe_is_list_type():
         def returns_true_for_a_list_wrapped_type():

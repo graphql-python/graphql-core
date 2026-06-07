@@ -13,8 +13,12 @@ Definition
 Predicates
 ^^^^^^^^^^
 
+.. autofunction:: is_argument
 .. autofunction:: is_composite_type
 .. autofunction:: is_enum_type
+.. autofunction:: is_enum_value
+.. autofunction:: is_field
+.. autofunction:: is_input_field
 .. autofunction:: is_input_object_type
 .. autofunction:: is_input_type
 .. autofunction:: is_interface_type
@@ -34,8 +38,12 @@ Assertions
 ^^^^^^^^^^
 
 .. autofunction:: assert_abstract_type
+.. autofunction:: assert_argument
 .. autofunction:: assert_composite_type
 .. autofunction:: assert_enum_type
+.. autofunction:: assert_enum_value
+.. autofunction:: assert_field
+.. autofunction:: assert_input_field
 .. autofunction:: assert_input_object_type
 .. autofunction:: assert_input_type
 .. autofunction:: assert_interface_type

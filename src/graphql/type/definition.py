@@ -129,8 +129,12 @@ __all__ = [
     "ThunkCollection",
     "ThunkMapping",
     "assert_abstract_type",
+    "assert_argument",
     "assert_composite_type",
     "assert_enum_type",
+    "assert_enum_value",
+    "assert_field",
+    "assert_input_field",
     "assert_input_object_type",
     "assert_input_type",
     "assert_interface_type",
@@ -148,8 +152,12 @@ __all__ = [
     "get_named_type",
     "get_nullable_type",
     "is_abstract_type",
+    "is_argument",
     "is_composite_type",
     "is_enum_type",
+    "is_enum_value",
+    "is_field",
+    "is_input_field",
     "is_input_object_type",
     "is_input_type",
     "is_interface_type",
@@ -608,6 +616,19 @@ class GraphQLField:  # noqa: PLW1641
         return self.__class__(**self.to_kwargs())
 
 
+def is_field(field: Any) -> TypeGuard[GraphQLField]:
+    """Check whether this is a GraphQL field."""
+    return isinstance(field, GraphQLField)
+
+
+def assert_field(field: Any) -> GraphQLField:
+    """Assert that this is a GraphQL field."""
+    if not is_field(field):
+        msg = f"Expected {inspect(field)} to be a GraphQL field."
+        raise TypeError(msg)
+    return field
+
+
 TContext = TypeVar("TContext")  # pylint: disable=invalid-name
 
 try:
@@ -816,6 +837,19 @@ class GraphQLArgument:  # noqa: PLW1641
 
     def __copy__(self) -> GraphQLArgument:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
+
+
+def is_argument(arg: Any) -> TypeGuard[GraphQLArgument]:
+    """Check whether this is a GraphQL argument."""
+    return isinstance(arg, GraphQLArgument)
+
+
+def assert_argument(arg: Any) -> GraphQLArgument:
+    """Assert that this is a GraphQL argument."""
+    if not is_argument(arg):
+        msg = f"Expected {inspect(arg)} to be a GraphQL argument."
+        raise TypeError(msg)
+    return arg
 
 
 def is_required_argument(
@@ -1427,6 +1461,19 @@ class GraphQLEnumValue:  # noqa: PLW1641
         return self.__class__(**self.to_kwargs())
 
 
+def is_enum_value(value: Any) -> TypeGuard[GraphQLEnumValue]:
+    """Check whether this is a GraphQL enum value."""
+    return isinstance(value, GraphQLEnumValue)
+
+
+def assert_enum_value(value: Any) -> GraphQLEnumValue:
+    """Assert that this is a GraphQL enum value."""
+    if not is_enum_value(value):
+        msg = f"Expected {inspect(value)} to be a GraphQL Enum value."
+        raise TypeError(msg)
+    return value
+
+
 GraphQLInputFieldMap: TypeAlias = dict[str, "GraphQLInputField"]
 GraphQLInputFieldOutType = Callable[[dict[str, Any]], Any]
 
@@ -1613,6 +1660,19 @@ class GraphQLInputField:  # noqa: PLW1641
 
     def __copy__(self) -> GraphQLInputField:  # pragma: no cover
         return self.__class__(**self.to_kwargs())
+
+
+def is_input_field(field: Any) -> TypeGuard[GraphQLInputField]:
+    """Check whether this is a GraphQL input field."""
+    return isinstance(field, GraphQLInputField)
+
+
+def assert_input_field(field: Any) -> GraphQLInputField:
+    """Assert that this is a GraphQL input field."""
+    if not is_input_field(field):
+        msg = f"Expected {inspect(field)} to be a GraphQL input field."
+        raise TypeError(msg)
+    return field
 
 
 def is_required_input_field(field: GraphQLInputField) -> bool:
