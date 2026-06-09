@@ -129,14 +129,17 @@ def describe_execute_accepts_any_iterable_as_list_value():
 
 
 def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
-    def _complete(list_field, as_: str = "[String]"):
-        return execute_sync(
+    async def _complete(list_field, as_: str = "[String]"):
+        result = execute(
             build_schema(f"type Query {{ listField: {as_} }}"),
             parse("{ listField }"),
             Data(list_field),
         )
+        if is_awaitable(result):
+            result = await result
+        return result
 
-    def closes_the_iterator_when_next_throws():
+    async def drains_the_iterator_when_next_throws():
         next_calls = 0
         returned = False
 
@@ -149,13 +152,15 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                 next_calls += 1
                 if next_calls == 1:
                     return "ok"
-                raise RuntimeError("bad")
+                if next_calls == 2:
+                    raise RuntimeError("bad")
+                raise StopIteration
 
             def close(self):
                 nonlocal returned
                 returned = True
 
-        assert _complete(ListField()) == (
+        assert await _complete(ListField()) == (
             {"listField": None},
             [
                 {
@@ -165,10 +170,10 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                 }
             ],
         )
-        assert next_calls == 2
-        assert returned is True
+        assert next_calls == 3
+        assert returned is False
 
-    def closes_the_iterator_when_a_null_bubbles_up_from_a_non_null_item():
+    async def drains_the_iterator_when_a_null_bubbles_up_from_a_non_null_item():
         values = (1, None, 2)
         index = 0
         returned = False
@@ -179,6 +184,8 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
 
             def __next__(self):
                 nonlocal index
+                if index >= len(values):
+                    raise StopIteration
                 value = values[index]
                 index += 1
                 return value
@@ -187,7 +194,7 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                 nonlocal returned
                 returned = True
 
-        assert _complete(ListField(), "[Int!]") == (
+        assert await _complete(ListField(), "[Int!]") == (
             {"listField": None},
             [
                 {
@@ -198,31 +205,82 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                 }
             ],
         )
-        assert index == 2
-        assert returned is True
+        assert index == 3
+        assert returned is False
 
-    def ignores_errors_thrown_by_the_iterator_close_method():
-        values = (1, None, 2)
-        index = 0
+    async def handles_iterator_errors_with_later_pending_awaitables():
+        awaited: list[str] = []
         returned = False
+        next_calls = 0
+
+        async def reject(message: str) -> None:
+            awaited.append(message)
+            raise RuntimeError(message)
 
         class ListField:
             def __iter__(self):
                 return self
 
             def __next__(self):
-                nonlocal index
-                value = values[index]
-                index += 1
-                return value
+                nonlocal next_calls
+                next_calls += 1
+                if next_calls == 1:
+                    return 1
+                if next_calls == 2:
+                    raise RuntimeError("bad")
+                if next_calls == 3:
+                    return reject("later bad")
+                raise StopIteration
 
             def close(self):
                 nonlocal returned
                 returned = True
                 raise RuntimeError("ignored return error")
 
-        assert _complete(ListField(), "[Int!]") == (
+        assert await _complete(ListField(), "[Int]") == (
             {"listField": None},
+            [
+                {
+                    "message": "bad",
+                    "locations": [(1, 3)],
+                    "path": ["listField"],
+                }
+            ],
+        )
+        assert next_calls == 4
+        assert returned is False
+        # the later awaitable was drained and settled instead of being orphaned
+        assert awaited == ["later bad"]
+
+    async def handles_sync_errors_with_later_pending_awaitables():
+        awaited: list[str] = []
+        returned = False
+        next_calls = 0
+
+        async def reject(message: str) -> str:
+            awaited.append(message)
+            raise RuntimeError(message)
+
+        values = (reject("first bad"), None, reject("third bad"))
+
+        class ListField:
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                nonlocal next_calls
+                next_calls += 1
+                if next_calls > len(values):
+                    raise StopIteration
+                return values[next_calls - 1]
+
+            def close(self):
+                nonlocal returned
+                returned = True
+                raise RuntimeError("ignored return error")
+
+        assert await _complete(ListField(), "[String!]!") == (
+            None,
             [
                 {
                     "message": "Cannot return null"
@@ -232,8 +290,10 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                 }
             ],
         )
-        assert index == 2
-        assert returned is True
+        assert next_calls == 4
+        assert returned is False
+        # both later awaitables were drained and settled instead of being orphaned
+        assert sorted(awaited) == ["first bad", "third bad"]
 
 
 def describe_execute_accepts_async_iterables_as_list_value():
@@ -251,7 +311,7 @@ def describe_execute_accepts_async_iterables_as_list_value():
             self.index = index
 
     async def _complete_object_lists(
-        resolve: GraphQLFieldResolver, count=3
+        resolve: GraphQLFieldResolver, count=3, non_nullable=False
     ) -> ExecutionResult:
         async def _list_field(
             _obj: Any, _info: GraphQLResolveInfo
@@ -259,20 +319,19 @@ def describe_execute_accepts_async_iterables_as_list_value():
             for index in range(count):
                 yield _IndexData(index)
 
+        object_wrapper = GraphQLObjectType(
+            "ObjectWrapper",
+            {"index": GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve)},
+        )
         schema = GraphQLSchema(
             GraphQLObjectType(
                 "Query",
                 {
                     "listField": GraphQLField(
                         GraphQLList(
-                            GraphQLObjectType(
-                                "ObjectWrapper",
-                                {
-                                    "index": GraphQLField(
-                                        GraphQLNonNull(GraphQLString), resolve=resolve
-                                    )
-                                },
-                            )
+                            GraphQLNonNull(object_wrapper)
+                            if non_nullable
+                            else object_wrapper
                         ),
                         resolve=_list_field,
                     )
@@ -448,6 +507,31 @@ def describe_execute_accepts_async_iterables_as_list_value():
                 }
             ],
         )
+
+    async def handles_mixture_of_sync_and_async_errors_in_async_iterables():
+        awaited: list[str] = []
+
+        async def reject(message: str) -> int:
+            awaited.append(message)
+            raise RuntimeError(message)
+
+        def resolve(data: _IndexData, _info: GraphQLResolveInfo) -> Any:
+            if data.index == 0:
+                return reject("bad")
+            raise RuntimeError("also bad")
+
+        assert await _complete_object_lists(resolve, non_nullable=True) == (
+            {"listField": None},
+            [
+                {
+                    "message": "also bad",
+                    "locations": [(1, 15)],
+                    "path": ["listField", 1, "index"],
+                }
+            ],
+        )
+        # the earlier pending awaitable was settled instead of being orphaned
+        assert awaited == ["bad"]
 
     async def handles_nulls_yielded_by_async_generator():
         async def list_field():

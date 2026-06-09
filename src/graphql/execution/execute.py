@@ -6,6 +6,7 @@ from asyncio import (
     FIRST_COMPLETED,
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
+    gather,
     sleep,
     wait,
 )
@@ -27,6 +28,7 @@ from typing import (
     Any,
     Generic,
     NamedTuple,
+    NoReturn,
     TypeVar,
     cast,
 )
@@ -1188,6 +1190,13 @@ class Executor(IncrementalPublisherContext):
             if early_return is not None:  # pragma: no branch
                 with suppress_exceptions:
                     await early_return()
+            if awaitable_indices:
+                # Settle any awaitable items already collected so that their
+                # errors can be observed before they would be orphaned.
+                await gather(
+                    *(completed_results[index] for index in awaitable_indices),
+                    return_exceptions=True,
+                )
             raise
 
         if not awaitable_indices:
@@ -1337,8 +1346,21 @@ class Executor(IncrementalPublisherContext):
                     append_awaitable(index)
 
                 index += 1
-        except Exception:
-            return_iterator_ignoring_errors(iterator)
+        except Exception as error:
+            # Do not close the iterator. Instead, drain it so that any awaitable
+            # items it still holds can be settled before they would be orphaned.
+            maybe_awaitables = [completed_results[index] for index in awaitable_indices]
+            maybe_awaitables.extend(collect_iterator_awaitables(iterator, is_awaitable))
+            if maybe_awaitables:
+
+                async def settle_and_raise(
+                    error: Exception = error,
+                    awaitables: list[Awaitable[Any]] = maybe_awaitables,
+                ) -> NoReturn:
+                    await gather(*awaitables, return_exceptions=True)
+                    raise error  # noqa: TRY201
+
+                return settle_and_raise()
             raise
 
         if not awaitable_indices:
@@ -2946,9 +2968,15 @@ def assert_event_stream(result: Any) -> AsyncIterable:
     return result
 
 
-def return_iterator_ignoring_errors(iterator: Iterator[Any]) -> None:
-    """Close the given iterator, ignoring any errors."""
-    close = getattr(iterator, "close", None)
-    if close is not None:
-        with suppress_exceptions:
-            close()
+def collect_iterator_awaitables(
+    iterator: Iterator[Any], is_awaitable: Callable[[Any], bool]
+) -> list[Awaitable[Any]]:
+    """Drain a synchronous iterator after an abrupt completion.
+
+    Collects any awaitable values the iterator still holds so that their errors
+    can be observed before they would otherwise be left orphaned.
+    """
+    awaitables: list[Awaitable[Any]] = []
+    with suppress_exceptions:
+        awaitables.extend(item for item in iterator if is_awaitable(item))
+    return awaitables
