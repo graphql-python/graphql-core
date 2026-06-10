@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from asyncio import Event, Lock, gather, sleep
+from asyncio import CancelledError, Event, Future, Lock, ensure_future, gather, sleep
 from collections.abc import Awaitable
 from typing import Any, NamedTuple
 
@@ -17,7 +17,7 @@ from graphql.execution import (
     experimental_execute_incrementally,
 )
 from graphql.language import DocumentNode, parse
-from graphql.pyutils import Path
+from graphql.pyutils import AbortController, AbortError, Path
 from graphql.type import (
     GraphQLField,
     GraphQLID,
@@ -2580,3 +2580,794 @@ def describe_execute_stream_directive():
             "Executing this GraphQL operation would unexpectedly produce"
             " multiple payloads (due to @defer or @stream directive)"
         )
+
+    async def awaits_stream_source_aclose_when_consumer_cancels():
+        """Awaits stream source async iterable return before iterator return settles
+
+        The JavaScript version cancels by calling return() on the iterator while
+        next() is still pending; the asyncio analog of such a concurrent consumer
+        cancellation is cancelling the task that awaits the pending anext().
+        """
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                id
+              }
+            }
+            """
+        )
+
+        class Source:
+            def __init__(self):
+                self.next_started = Event()
+                self.aclose_started = Event()
+                self.release_aclose = Event()
+                self.aclose_finished = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                self.next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_started.set()
+                await self.release_aclose.wait()
+                self.aclose_finished = True
+
+        source = Source()
+
+        execute_result = await experimental_execute_incrementally(  # type: ignore
+            schema, document, {"friendList": source}
+        )
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+        iterator = execute_result.subsequent_results
+
+        assert execute_result.initial_result == {
+            "data": {"friendList": []},
+            "pending": [{"id": "0", "path": ["friendList"]}],
+            "hasNext": True,
+        }
+
+        next_task = ensure_future(anext(iterator))
+        await source.next_started.wait()
+
+        next_task.cancel()
+        await source.aclose_started.wait()
+        # the cancellation must settle only after the source cleanup has settled
+        assert not next_task.done()
+
+        source.release_aclose.set()
+        with pytest.raises(CancelledError):
+            await next_task
+        assert source.aclose_finished
+
+    async def does_not_finish_async_iterable_when_closed_after_source_completion():
+        """Does not return underlying async iterables when disposed after completion"""
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 0) {
+                id
+              }
+            }
+            """
+        )
+
+        class Source:
+            def __init__(self):
+                self.index = 0
+                self.aclose_calls = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.index:
+                    raise StopAsyncIteration
+                self.index += 1
+                return friends[0]
+
+            async def aclose(self):
+                self.aclose_calls += 1  # pragma: no cover
+
+        source = Source()
+
+        execute_result = await experimental_execute_incrementally(  # type: ignore
+            schema, document, {"friendList": source}
+        )
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+        iterator = execute_result.subsequent_results
+
+        assert execute_result.initial_result == {
+            "data": {"friendList": []},
+            "pending": [{"id": "0", "path": ["friendList"]}],
+            "hasNext": True,
+        }
+
+        results = [result.formatted async for result in iterator]
+        assert results == [
+            {
+                "incremental": [{"items": [{"id": "1"}], "id": "0"}],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            }
+        ]
+
+        await iterator.aclose()
+        assert source.aclose_calls == 0
+
+
+user_type = GraphQLObjectType("User", {"id": GraphQLField(GraphQLID)})
+
+todo_type = GraphQLObjectType(
+    "Todo",
+    {
+        "id": GraphQLField(GraphQLID),
+        "items": GraphQLField(GraphQLList(GraphQLString)),
+        "author": GraphQLField(user_type),
+    },
+)
+
+cancellation_schema = GraphQLSchema(
+    GraphQLObjectType(
+        "Query",
+        {
+            "todo": GraphQLField(todo_type),
+            "todos": GraphQLField(GraphQLList(todo_type)),
+            "scalarList": GraphQLField(GraphQLList(GraphQLString)),
+            "blocker": GraphQLField(GraphQLString),
+        },
+    )
+)
+
+
+def describe_execute_stream_directive_cancellation():
+    async def stops_streamed_execution_when_aborted():
+        """Should stop streamed execution when aborted"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                items @stream
+              }
+            }
+            """
+        )
+
+        async def item():
+            return "item"  # pragma: no cover
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"todo": {"id": "1", "items": [item()]}},
+            abort_signal=abort_controller.signal,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await anext(iterator)
+
+    async def cancels_streaming_when_aborted_during_async_iterator_next():
+        """Cancels streaming when aborted during async iterator next"""
+        abort_controller = AbortController()
+        document = parse("{ scalarList @stream(initialCount: 0) }")
+
+        class Source:
+            def __init__(self):
+                self.next_calls = 0
+                self.next_started = Event()
+                self.aclose_calls = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if not self.next_calls:
+                    self.next_calls += 1
+                    return "banana"
+                self.next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_calls += 1
+
+        source = Source()
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"scalarList": source},
+            abort_signal=abort_controller.signal,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        # streaming works normally as long as the operation is not aborted
+        result1 = await anext(iterator)
+        assert result1.formatted == {
+            "incremental": [{"items": ["banana"], "id": "0"}],
+            "hasNext": True,
+        }
+
+        next_task = ensure_future(anext(iterator))
+        await source.next_started.wait()
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
+        assert source.aclose_calls == 1
+
+    async def closes_stream_source_with_sync_aclose_method_on_cancellation():
+        """Closes a stream source with a synchronous aclose method on cancellation
+
+        A synchronous aclose method must be called on abnormal stop only,
+        and must not be awaited.
+        """
+        document = parse("{ scalarList @stream(initialCount: 0) }")
+
+        class Source:
+            def __init__(self):
+                self.next_started = Event()
+                self.aclose_calls = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                self.next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            def aclose(self):
+                self.aclose_calls += 1
+
+        source = Source()
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"scalarList": source},
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+        await source.next_started.wait()
+
+        next_task.cancel()
+        with pytest.raises(CancelledError):
+            await next_task
+        assert source.aclose_calls == 1
+
+    async def waits_for_async_stream_source_cleanup_before_abort_settles():
+        """Waits for async stream source return cleanup before cancellation settles"""
+        abort_controller = AbortController()
+        document = parse("{ scalarList @stream(initialCount: 0) }")
+
+        class Source:
+            def __init__(self):
+                self.next_started = Event()
+                self.aclose_started = Event()
+                self.release_aclose = Event()
+                self.aclose_finished = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                self.next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_started.set()
+                await self.release_aclose.wait()
+                self.aclose_finished = True
+
+        source = Source()
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"scalarList": source},
+            abort_signal=abort_controller.signal,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+        await source.next_started.wait()
+
+        abort_controller.abort()
+        await source.aclose_started.wait()
+        # the rejection must settle only after the source cleanup has settled
+        assert not next_task.done()
+
+        source.release_aclose.set()
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
+        assert source.aclose_finished
+
+    async def waits_for_deferred_nested_stream_cleanup_before_abort_settles():
+        """Waits for async deferred nested stream item cleanup before abort settles"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todos @stream(initialCount: 0) {
+                id
+                ... @defer {
+                  author {
+                    id
+                  }
+                  items @stream(initialCount: 0)
+                }
+              }
+            }
+            """
+        )
+
+        class ItemsSource:
+            def __init__(self):
+                self.next_started = Event()
+                self.aclose_started = Event()
+                self.release_aclose = Event()
+                self.aclose_finished = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                self.next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_started.set()
+                await self.release_aclose.wait()
+                self.aclose_finished = True
+
+        items_source = ItemsSource()
+        id_started = Event()
+        author_started = Event()
+
+        async def todo_id(_info):
+            id_started.set()
+            await Future()  # never resolves
+
+        async def author(_info):
+            author_started.set()
+            await Future()  # never resolves
+
+        class TodosSource:
+            def __init__(self):
+                self.yielded = False
+                self.next_started = Event()
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.yielded:
+                    await Future()  # never resolves
+                    raise StopAsyncIteration  # pragma: no cover
+                self.yielded = True
+                self.next_started.set()
+                return {
+                    "id": todo_id,
+                    "author": author,
+                    "items": lambda _info: items_source,
+                }
+
+        todos_source = TodosSource()
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"todos": todos_source},
+            abort_signal=abort_controller.signal,
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+
+        await todos_source.next_started.wait()
+        await id_started.wait()
+        await author_started.wait()
+        await items_source.next_started.wait()
+
+        abort_controller.abort()
+        await items_source.aclose_started.wait()
+        # the rejection must settle only after the nested cleanup has settled
+        assert not next_task.done()
+
+        items_source.release_aclose.set()
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
+        assert items_source.aclose_finished
+
+    async def cancels_streaming_when_aborted_while_item_promise_is_pending():
+        """Cancels streaming when aborted while item promise is pending"""
+        abort_controller = AbortController()
+        document = parse("{ scalarList @stream(initialCount: 0) }")
+
+        item_future: Future[str] = Future()
+
+        class Source:
+            def __init__(self):
+                self.done = False
+                self.next_started = Event()
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.done:
+                    raise StopAsyncIteration  # pragma: no cover
+                self.done = True
+                self.next_started.set()
+                return item_future
+
+        source = Source()
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"scalarList": source},
+            abort_signal=abort_controller.signal,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+        await source.next_started.wait()
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
+
+        # a late resolution of the pending item has no effect any more
+        # (the item may have already been cancelled together with its executor)
+        if not item_future.cancelled():
+            item_future.set_result("value")
+        await sleep(0)
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def cancels_tasks_and_streams_when_aborted_before_initial_execution():
+        """Cancels tasks and streams when aborted before initial execution finishes"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                items @stream(initialCount: 0)
+                ... @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+              blocker
+            }
+            """
+        )
+
+        blocker_started = Event()
+        items_started = Event()
+
+        async def blocker(_info):
+            blocker_started.set()
+            await Future()  # never resolves
+
+        def items(_info):
+            items_started.set()
+            return ["a", "b"]
+
+        result_task = ensure_future(
+            experimental_execute_incrementally(  # type: ignore
+                cancellation_schema,
+                document,
+                {
+                    "blocker": blocker,
+                    "todo": {
+                        "id": "todo",
+                        "items": items,
+                        "author": {"id": "author"},
+                    },
+                },
+                abort_signal=abort_controller.signal,
+            )
+        )
+
+        await items_started.wait()
+        await blocker_started.wait()
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await result_task
+
+    async def cancels_async_stream_source_cleanup_when_aborted_before_initial():
+        """Cancels async stream source cleanup when aborted before initial execution
+
+        Other than the JavaScript version, which rejects immediately and runs the
+        async cleanup in the background, GraphQL-Core awaits the async cleanup
+        before rejecting with the abort reason, so that no cleanup coroutine is
+        left behind unawaited.
+        """
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                items @stream(initialCount: 0)
+              }
+              blocker
+            }
+            """
+        )
+
+        class Source:
+            def __init__(self):
+                self.aclose_started = Event()
+                self.release_aclose = Event()
+                self.aclose_calls = 0
+                self.aclose_finished = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_calls += 1
+                self.aclose_started.set()
+                await self.release_aclose.wait()
+                self.aclose_finished = True
+
+        source = Source()
+        blocker_started = Event()
+        items_started = Event()
+
+        async def blocker(_info):
+            blocker_started.set()
+            await Future()  # never resolves
+
+        def items(_info):
+            items_started.set()
+            return source
+
+        result_task = ensure_future(
+            experimental_execute_incrementally(  # type: ignore
+                cancellation_schema,
+                document,
+                {"blocker": blocker, "todo": {"id": "todo", "items": items}},
+                abort_signal=abort_controller.signal,
+            )
+        )
+
+        await items_started.wait()
+        await blocker_started.wait()
+
+        abort_controller.abort()
+        await source.aclose_started.wait()
+        assert source.aclose_calls == 1
+        # the rejection must settle only after the source cleanup has settled
+        assert not result_task.done()
+
+        source.release_aclose.set()
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await result_task
+        assert source.aclose_finished
+
+    async def cancels_pending_stream_item_executors_when_consumer_cancels():
+        """Cancels pending stream item executors with deferred work on cancel
+
+        The JavaScript version cancels by calling return() on the iterator while
+        next() is still pending; the asyncio analog of such a concurrent consumer
+        cancellation is cancelling the task that awaits the pending anext().
+        """
+        document = parse(
+            """
+            query {
+              todos @stream(initialCount: 0) {
+                id
+                ... @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        author_calls = 0
+
+        def author(_info):
+            nonlocal author_calls
+            author_calls += 1  # pragma: no cover
+            return {"id": "author"}  # pragma: no cover
+
+        item_future: Future[Any] = Future()
+
+        class Source:
+            def __init__(self):
+                self.next_calls = 0
+                self.second_next_started = Event()
+                self.aclose_calls = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if not self.next_calls:
+                    self.next_calls += 1
+                    return item_future
+                self.second_next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_calls += 1
+
+        source = Source()
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"todos": source},
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+        await source.second_next_started.wait()
+
+        next_task.cancel()
+        with pytest.raises(CancelledError):
+            await next_task
+        assert source.aclose_calls == 1
+
+        # the pending stream item executor was cancelled with its deferred work
+        assert item_future.cancelled()
+        await sleep(0)
+        await sleep(0)
+        assert author_calls == 0
+
+    async def stops_streaming_when_pending_stream_item_is_cancelled():
+        """Stops streaming when a pending stream item resolves after cancellation
+
+        In the asyncio implementation, cancelling the consumer also cancels the
+        pending stream item of a synchronous source, so that it can no longer
+        resolve after the cancellation.
+        """
+        document = parse("{ scalarList @stream(initialCount: 0) }")
+
+        item_future: Future[str] = Future()
+
+        class Source:
+            def __init__(self):
+                self.done = False
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                if self.done:
+                    raise StopIteration  # pragma: no cover
+                self.done = True
+                return item_future
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"scalarList": lambda _info: Source()},
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+        await sleep(0)
+        await sleep(0)
+
+        next_task.cancel()
+        with pytest.raises(CancelledError):
+            await next_task
+
+        # the pending item was cancelled instead of being resolved late
+        assert item_future.cancelled()
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def ignores_repeated_cancellation_attempts_during_incremental_execution():
+        """Should ignore repeated cancellation attempts during incremental execution"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                items @stream(initialCount: 0)
+                ... @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        class Source:
+            def __init__(self):
+                self.next_started = Event()
+                self.aclose_calls = 0
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                self.next_started.set()
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_calls += 1
+
+        source = Source()
+        author_started = Event()
+
+        async def author(_info):
+            author_started.set()
+            await Future()  # never resolves
+
+        result = await experimental_execute_incrementally(  # type: ignore
+            cancellation_schema,
+            document,
+            {"todo": {"id": "todo", "items": lambda _info: source, "author": author}},
+            abort_signal=abort_controller.signal,
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        next_task = ensure_future(anext(iterator))
+        await author_started.wait()
+        await source.next_started.wait()
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
+
+        # follow-up requests just finish the iteration
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+        assert source.aclose_calls == 1
+
+        # repeated cancellation attempts have no further effect
+        abort_controller.abort()
+        await sleep(0)
+        assert source.aclose_calls == 1

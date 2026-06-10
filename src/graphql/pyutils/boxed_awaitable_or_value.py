@@ -43,6 +43,14 @@ class BoxedAwaitableOrValue(Generic[T]):
             self._value = value = value.result()
         return value  # type: ignore
 
+    @property
+    def pending_future(self) -> Future[T] | None:
+        """Get the still pending Future, or None if the value is already settled."""
+        value = self._value
+        if isfuture(value) and not value.done():
+            return value
+        return None
+
     def _update_value(self, value: Future[T]) -> None:
         """Update the boxed value when the Awaitable is done."""
         with suppress(CancelledError):

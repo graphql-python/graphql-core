@@ -891,13 +891,13 @@ DeliveryGroup: TypeAlias = DeferredFragmentRecord | StreamRecord
 class CancellableStreamRecord(StreamRecord):
     """Cancellable stream record"""
 
-    early_return: Awaitable[None]
+    early_return: Callable[[], Awaitable[None]]
 
     __slots__ = ("early_return",)
 
     def __init__(
         self,
-        early_return: Awaitable[None],
+        early_return: Callable[[], Awaitable[None]],
         stream_item_queue: list[StreamItemRecord],
         path: Path,
         label: str | None = None,

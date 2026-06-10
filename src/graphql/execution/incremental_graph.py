@@ -6,6 +6,7 @@ from asyncio import (
     Future,
     Task,
     ensure_future,
+    gather,
     get_running_loop,
     isfuture,
     sleep,
@@ -108,7 +109,8 @@ class IncrementalGraph:
     def abort(self) -> None:
         """Abort the incremental graph execution."""
         for resolve in self._next_queue:
-            resolve.set_result(None)  # pragma: no cover
+            if not resolve.cancelled():  # pragma: no cover
+                resolve.set_result(None)
 
     def has_next(self) -> bool:
         """Check if there are more results to process."""
@@ -161,10 +163,20 @@ class IncrementalGraph:
         """Remove a stream record as no longer pending."""
         del self._root_nodes[stream_record]
 
-    def stop_incremental_data(self) -> None:
-        """Stop the delivery of incremental data."""
+    async def stop_incremental_data(self) -> None:
+        """Stop the delivery and execution of incremental data.
+
+        Cancels all pending requests for the next completed batch and all still
+        running incremental execution tasks, waiting until their cancellation
+        has settled.
+        """
         for future in self._next_queue:
-            future.cancel()  # pragma: no cover
+            future.cancel()
+        tasks = list(self._tasks)
+        if tasks:
+            for task in tasks:
+                task.cancel()
+            await gather(*tasks, return_exceptions=True)
 
     def _add_incremental_data_records(
         self,
@@ -321,12 +333,14 @@ class IncrementalGraph:
     def _enqueue(self, completed: IncrementalDataRecordResult) -> None:
         """Enqueue completed incremental data record result."""
         self._completed_queue.append(completed)
-        try:
-            future = self._next_queue.pop(0)
-        except IndexError:
-            pass
-        else:
+        next_queue = self._next_queue
+        while next_queue:
+            future = next_queue.pop(0)
+            if future.cancelled():  # pragma: no cover
+                # defensive guard against a race with a stopping consumer
+                continue
             future.set_result(self.current_completed_batch())
+            break
 
     def _add_task(self, awaitable: Awaitable[Any]) -> None:
         """Add the given task to the tasks set for later execution."""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import gather, sleep
+from asyncio import FIRST_COMPLETED, ensure_future, sleep, wait
 from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
@@ -12,6 +12,7 @@ from typing import (
     cast,
 )
 
+from ..pyutils import is_awaitable
 from .incremental_graph import IncrementalGraph
 from .types import (
     CompletedResult,
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Iterable, Sequence
 
     from ..error import GraphQLError
+    from ..pyutils import AbortSignal
     from .types import (
         CancellableStreamRecord,
         CompletedExecutionGroup,
@@ -54,7 +56,16 @@ suppress_key_error = suppress(KeyError)
 class IncrementalPublisherContext(Protocol):
     """The context for incremental publishing."""
 
+    abort_signal: AbortSignal | None
     cancellable_streams: set[CancellableStreamRecord] | None
+
+    def abort_error(self) -> Exception:
+        """Return the exception to raise when execution has been aborted."""
+        ...  # pragma: no cover
+
+    async def cancel_incremental_work(self) -> None:
+        """Cancel all pending incremental work and close the stream sources."""
+        ...  # pragma: no cover
 
 
 class SubsequentIncrementalExecutionResultContext(NamedTuple):
@@ -134,9 +145,13 @@ class IncrementalPublisher:
         incremental_graph = self._incremental_graph
         check_has_next = incremental_graph.has_next
         handle_completed_incremental_data = self._handle_completed_incremental_data
+        abort_signal = self._context.abort_signal
 
         try:
             while True:
+                if abort_signal is not None and abort_signal.aborted:
+                    raise self._context.abort_error()
+
                 batch: Iterable[IncrementalDataRecordResult] | None = (
                     incremental_graph.current_completed_batch()
                 )
@@ -160,21 +175,29 @@ class IncrementalPublisher:
 
                         if not has_next:
                             return
-                    batch = await incremental_graph.next_completed_batch()
+
+                    next_batch = incremental_graph.next_completed_batch()
+                    if abort_signal is None:
+                        batch = await next_batch
+                    else:
+                        # reject the pending request when the operation is aborted
+                        abort = ensure_future(abort_signal.wait())
+                        try:
+                            await wait({next_batch, abort}, return_when=FIRST_COMPLETED)
+                        finally:
+                            if not abort.done():
+                                abort.cancel()
+                        if abort_signal.aborted:
+                            next_batch.cancel()
+                            raise self._context.abort_error()
+                        batch = next_batch.result()
         finally:
             await self._stop_async_iterators()
 
     async def _stop_async_iterators(self) -> None:
-        """Finish all async iterators."""
-        self._incremental_graph.stop_incremental_data()
-        cancellable_streams = self._context.cancellable_streams
-        if cancellable_streams is None:
-            return
-        early_returns = [
-            stream_record.early_return for stream_record in cancellable_streams
-        ]
-        if early_returns:
-            await gather(*early_returns, return_exceptions=True)
+        """Stop the incremental execution and finish all async iterators."""
+        await self._incremental_graph.stop_incremental_data()
+        await self._context.cancel_incremental_work()
 
     async def _handle_completed_incremental_data(
         self,
@@ -267,7 +290,9 @@ class IncrementalPublisher:
                 if cancellable_streams:  # pragma: no branch
                     cancellable_streams.discard(stream_record)
                 with suppress(Exception):
-                    await stream_record.early_return
+                    early_return = stream_record.early_return()
+                    if is_awaitable(early_return):  # pragma: no branch
+                        await early_return
         elif stream_items_result.result is None:
             context.completed.append(CompletedResult(id_))
             incremental_graph.remove_stream(stream_record)

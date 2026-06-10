@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import (
     FIRST_COMPLETED,
+    Future,
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
     gather,
@@ -217,6 +218,7 @@ class Executor(IncrementalPublisherContext):
     abort_signal: AbortSignal | None
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
+    pending_incremental_futures: set[Future[Any]]
     middleware_manager: MiddlewareManager | None
     error_propagation: bool
 
@@ -271,6 +273,7 @@ class Executor(IncrementalPublisherContext):
         self.is_async_iterable = is_async_iterable or default_is_async_iterable
         self.errors = None
         self.cancellable_streams = None
+        self.pending_incremental_futures = set()
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
@@ -469,6 +472,11 @@ class Executor(IncrementalPublisherContext):
                         resolved = await self.with_abort_signal(graphql_wrapped_result)
                     except GraphQLError as error:
                         return ExecutionResult(None, with_error(self.errors, error))
+                    except Exception:
+                        # cancel incremental work started early and close the
+                        # stream sources before re-raising, e.g. the abort reason
+                        await self.cancel_incremental_work()
+                        raise
                     return self.build_data_response(
                         resolved.result, resolved.increments
                     )
@@ -975,6 +983,50 @@ class Executor(IncrementalPublisherContext):
         msg = f"Unexpected error value: {inspect(reason)}"
         return TypeError(msg)
 
+    def box_incremental_result(
+        self, result: AwaitableOrValue[T]
+    ) -> BoxedAwaitableOrValue[T]:
+        """Box a possibly awaitable incremental result.
+
+        A pending result is registered so that it can be cancelled when the
+        incremental execution is stopped before it has settled.
+        """
+        boxed = BoxedAwaitableOrValue(result)
+        future = boxed.pending_future
+        if future is not None:
+            futures = self.pending_incremental_futures
+            futures.add(future)
+            future.add_done_callback(futures.discard)
+        return boxed
+
+    async def cancel_incremental_work(self) -> None:
+        """Cancel all pending incremental work and close the stream sources.
+
+        Cancels the still pending incremental execution tasks first and waits for
+        their cancellation to settle, so that no early execution continues and no
+        iteration is pending on the stream sources any more, then triggers and
+        awaits the early return of all remaining cancellable streams.
+        """
+        futures = self.pending_incremental_futures
+        if futures:
+            pending = list(futures)
+            for future in pending:
+                future.cancel()
+            await gather(*pending, return_exceptions=True)
+        cancellable_streams = self.cancellable_streams
+        if cancellable_streams:
+            early_returns = [
+                early_return
+                for early_return in (
+                    stream_record.early_return()
+                    for stream_record in cancellable_streams
+                )
+                if default_is_awaitable(early_return)
+            ]
+            cancellable_streams.clear()
+            if early_returns:
+                await gather(*early_returns, return_exceptions=True)
+
     def cancellable_iterable(self, iterable: AsyncIterable[T]) -> AsyncIterable[T]:
         """Wrap an async iterable so pending iteration is cancelled on abort.
 
@@ -1135,7 +1187,7 @@ class Executor(IncrementalPublisherContext):
                         )
                     else:
                         stream_record = CancellableStreamRecord(
-                            early_return(),
+                            early_return,
                             stream_item_queue,
                             path,
                             stream_usage.label,
@@ -1840,9 +1892,9 @@ class Executor(IncrementalPublisherContext):
                             return await result
                         return result  # type: ignore
 
-                    pending_group.result = BoxedAwaitableOrValue(execute_async())
+                    pending_group.result = self.box_incremental_result(execute_async())
                 else:
-                    pending_group.result = BoxedAwaitableOrValue(executor())
+                    pending_group.result = self.box_incremental_result(executor())
             else:
 
                 def execute_sync(
@@ -1850,7 +1902,7 @@ class Executor(IncrementalPublisherContext):
                         [], AwaitableOrValue[CompletedExecutionGroup]
                     ] = executor,
                 ) -> BoxedAwaitableOrValue[CompletedExecutionGroup]:
-                    return BoxedAwaitableOrValue(executor())
+                    return self.box_incremental_result(executor())
 
                 pending_group.result = execute_sync
 
@@ -1934,7 +1986,7 @@ class Executor(IncrementalPublisherContext):
             initial_path = stream_path.add_key(initial_index)
 
             first_stream_item: BoxedAwaitableOrValue[StreamItemResult] = (
-                BoxedAwaitableOrValue(
+                self.box_incremental_result(
                     complete_stream_item(
                         initial_path,
                         initial_item,
@@ -1972,9 +2024,9 @@ class Executor(IncrementalPublisherContext):
                     )
 
                 current_stream_item = (
-                    BoxedAwaitableOrValue(current_executor())
+                    self.box_incremental_result(current_executor())
                     if enable_early_execution
-                    else lambda executor=current_executor: BoxedAwaitableOrValue(
+                    else lambda executor=current_executor: self.box_incremental_result(
                         executor()
                     )
                 )
@@ -1992,9 +2044,9 @@ class Executor(IncrementalPublisherContext):
             async def await_first_stream_item() -> StreamItemResult:
                 return first_executor()
 
-            append_stream_item(BoxedAwaitableOrValue(await_first_stream_item()))
+            append_stream_item(self.box_incremental_result(await_first_stream_item()))
         else:
-            append_stream_item(lambda: BoxedAwaitableOrValue(first_executor()))
+            append_stream_item(lambda: self.box_incremental_result(first_executor()))
 
         return stream_item_queue
 
@@ -2022,9 +2074,9 @@ class Executor(IncrementalPublisherContext):
 
         stream_item_queue: list[StreamItemRecord] = []
         stream_item_queue.append(
-            BoxedAwaitableOrValue(executor())
+            self.box_incremental_result(executor())
             if self.enable_early_execution
-            else lambda: BoxedAwaitableOrValue(executor())
+            else lambda: self.box_incremental_result(executor())
         )
 
         return stream_item_queue
@@ -2076,9 +2128,9 @@ class Executor(IncrementalPublisherContext):
             )
 
         stream_item_queue.append(
-            BoxedAwaitableOrValue(executor())
+            self.box_incremental_result(executor())
             if self.enable_early_execution
-            else lambda: BoxedAwaitableOrValue(executor())
+            else lambda: self.box_incremental_result(executor())
         )
 
         if self.is_awaitable(result):

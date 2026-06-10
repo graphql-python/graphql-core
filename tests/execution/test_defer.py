@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from asyncio import Event, sleep
+from asyncio import Event, Future, ensure_future, sleep
 from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 import pytest
@@ -20,7 +20,7 @@ from graphql.execution import (
     experimental_execute_incrementally,
 )
 from graphql.language import DocumentNode, parse
-from graphql.pyutils import Path, is_awaitable
+from graphql.pyutils import AbortController, AbortError, Path, is_awaitable
 from graphql.type import (
     GraphQLField,
     GraphQLID,
@@ -2819,3 +2819,113 @@ def describe_execute_defer_directive():
             "Executing this GraphQL operation would unexpectedly produce"
             " multiple payloads (due to @defer or @stream directive)"
         )
+
+    async def cancels_pending_deferred_tasks_with_async_child_stream_cleanup():
+        """Cancels pending deferred tasks with async child stream cleanup
+
+        Other than the JavaScript version, which rejects immediately and runs the
+        async cleanup in the background, GraphQL-Core awaits the async cleanup
+        before rejecting with the abort reason, so that no cleanup coroutine is
+        left behind unawaited.
+        """
+        user_type = GraphQLObjectType("User", {"id": GraphQLField(GraphQLID)})
+        todo_type = GraphQLObjectType(
+            "Todo",
+            {
+                "id": GraphQLField(GraphQLID),
+                "items": GraphQLField(GraphQLList(GraphQLString)),
+                "author": GraphQLField(user_type),
+            },
+        )
+        cancellation_schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "todo": GraphQLField(todo_type),
+                    "blocker": GraphQLField(GraphQLString),
+                },
+            )
+        )
+
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                ... @defer {
+                  items @stream(initialCount: 0)
+                  author {
+                    id
+                  }
+                }
+              }
+              blocker
+            }
+            """
+        )
+
+        class ItemsSource:
+            def __init__(self):
+                self.aclose_started = Event()
+                self.release_aclose = Event()
+                self.aclose_calls = 0
+                self.aclose_finished = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                await Future()  # never resolves
+                raise StopAsyncIteration  # pragma: no cover
+
+            async def aclose(self):
+                self.aclose_calls += 1
+                self.aclose_started.set()
+                await self.release_aclose.wait()
+                self.aclose_finished = True
+
+        items_source = ItemsSource()
+        blocker_started = Event()
+        items_started = Event()
+        author_started = Event()
+
+        async def blocker(_info):
+            blocker_started.set()
+            await Future()  # never resolves
+
+        def items(_info):
+            items_started.set()
+            return items_source
+
+        async def author(_info):
+            author_started.set()
+            await Future()  # never resolves
+
+        result_task = ensure_future(
+            experimental_execute_incrementally(  # type: ignore
+                cancellation_schema,
+                document,
+                {
+                    "blocker": blocker,
+                    "todo": {"id": "todo", "items": items, "author": author},
+                },
+                abort_signal=abort_controller.signal,
+                enable_early_execution=True,
+            )
+        )
+
+        await blocker_started.wait()
+        await items_started.wait()
+        await author_started.wait()
+
+        abort_controller.abort()
+        await items_source.aclose_started.wait()
+        assert items_source.aclose_calls == 1
+        # the rejection must settle only after the child cleanup has settled
+        assert not result_task.done()
+
+        items_source.release_aclose.set()
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await result_task
+        assert items_source.aclose_finished
