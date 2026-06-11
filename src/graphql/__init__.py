@@ -484,7 +484,7 @@ from .validation import (
 from .execution import (
     AbortedGraphQLExecutionError,
     execute,
-    execute_query_or_mutation_or_subscription_event,
+    execute_root_selection_set,
     execute_subscription_event,
     execute_sync,
     default_field_resolver,
@@ -840,7 +840,7 @@ __all__ = [
     "default_type_resolver",
     "do_types_overlap",
     "execute",
-    "execute_query_or_mutation_or_subscription_event",
+    "execute_root_selection_set",
     "execute_subscription_event",
     "execute_sync",
     "extend_schema",

@@ -144,7 +144,7 @@ __all__ = [
     "default_field_resolver",
     "default_type_resolver",
     "execute",
-    "execute_query_or_mutation_or_subscription_event",
+    "execute_root_selection_set",
     "execute_subscription_event",
     "execute_sync",
     "experimental_execute_incrementally",
@@ -3003,10 +3003,10 @@ def subscribe(
     return executor.map_source_to_response(result_or_stream)  # type: ignore
 
 
-def execute_query_or_mutation_or_subscription_event(
+def execute_root_selection_set(
     executor: Executor,
 ) -> AwaitableOrValue[ExecutionResult]:
-    """Execute a query, mutation, or subscription event.
+    """Execute the root selection set.
 
     Implements the "Executing operations" section of the GraphQL specification,
     running the given executor to completion. This does not support
@@ -3028,7 +3028,7 @@ def execute_subscription_event(
     The passed executor should be a per-event executor as created by
     :meth:`Executor.build_per_event_executor`.
     """
-    return execute_query_or_mutation_or_subscription_event(executor)
+    return execute_root_selection_set(executor)
 
 
 def create_source_event_stream(

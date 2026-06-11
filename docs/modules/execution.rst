@@ -9,7 +9,7 @@ Execution
 
 .. autofunction:: execute
 
-.. autofunction:: execute_query_or_mutation_or_subscription_event
+.. autofunction:: execute_root_selection_set
 
 .. autofunction:: experimental_execute_incrementally
 
