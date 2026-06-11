@@ -407,6 +407,7 @@ from .type import (
     GraphQLDefaultInput,
     GraphQLIsTypeOfFn,
     GraphQLResolveInfo,
+    GraphQLResolveInfoHelpers,
     ResponsePath,
     GraphQLTypeResolver,
     # Keyword args
@@ -649,6 +650,7 @@ __all__ = [
     "GraphQLOutputType",
     "GraphQLParseFn",
     "GraphQLResolveInfo",
+    "GraphQLResolveInfoHelpers",
     "GraphQLScalarInputLiteralCoercer",
     "GraphQLScalarInputValueCoercer",
     "GraphQLScalarLiteralParser",

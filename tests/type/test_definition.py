@@ -54,6 +54,7 @@ from graphql.type import (
     GraphQLObjectType,
     GraphQLOutputType,
     GraphQLResolveInfo,
+    GraphQLResolveInfoHelpers,
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLString,
@@ -1613,6 +1614,7 @@ def describe_resolve_info():
         variable_values: VariableValues
         is_awaitable: Callable[[Any], TypeGuard[Awaitable[Any]]]
         abort_signal: AbortSignal | None
+        async_helpers: GraphQLResolveInfoHelpers
 
     info_args: InfoArgs = {
         "field_name": "foo",
@@ -1629,6 +1631,7 @@ def describe_resolve_info():
         "variable_values": VariableValues({}, {}),
         "is_awaitable": is_awaitable,
         "abort_signal": None,
+        "async_helpers": GraphQLResolveInfoHelpers(track=lambda _values: None),
     }
 
     def resolve_info_with_unspecified_context_type_can_use_any_type():

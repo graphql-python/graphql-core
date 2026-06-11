@@ -31,7 +31,6 @@ from typing import (
     Any,
     Generic,
     NamedTuple,
-    NoReturn,
     TypeVar,
     cast,
 )
@@ -71,6 +70,7 @@ from ..type import (
     GraphQLObjectType,
     GraphQLOutputType,
     GraphQLResolveInfo,
+    GraphQLResolveInfoHelpers,
     GraphQLSchema,
     GraphQLStreamDirective,
     GraphQLTypeResolver,
@@ -218,6 +218,7 @@ class Executor(IncrementalPublisherContext):
     enable_early_execution: bool
     hide_suggestions: bool
     abort_signal: AbortSignal | None
+    async_helpers: GraphQLResolveInfoHelpers
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     pending_incremental_futures: set[Future[Any]]
@@ -267,6 +268,7 @@ class Executor(IncrementalPublisherContext):
         self.enable_early_execution = enable_early_execution
         self.hide_suggestions = hide_suggestions
         self.abort_signal = abort_signal
+        self.async_helpers = GraphQLResolveInfoHelpers(track=self.track_async_work)
         self.middleware_manager = middleware_manager
         self.error_propagation = not any(
             directive.name.value == GraphQLDisableErrorPropagationDirective.name
@@ -817,6 +819,7 @@ class Executor(IncrementalPublisherContext):
             self.context_value,
             self.is_awaitable,
             self.abort_signal,
+            self.async_helpers,
         )
 
     def handle_field_error(
@@ -1060,6 +1063,20 @@ class Executor(IncrementalPublisherContext):
         background_futures = self.background_futures
         background_futures.add(future)
         future.add_done_callback(background_futures.discard)
+
+    def track_async_work(self, values: Sequence[Any]) -> None:
+        """Track possibly awaitable values as pending asynchronous work.
+
+        Awaitables among the given values are settled in the background, so that
+        they are still settled and their errors observed when they would otherwise
+        be abandoned. Non-awaitable values are ignored.
+        """
+        is_awaitable = self.is_awaitable
+        awaitables: list[Awaitable[Any]] = [
+            value for value in values if is_awaitable(value)
+        ]
+        if awaitables:
+            self.settle_in_background(awaitables)
 
     def cancellable_iterable(self, iterable: AsyncIterable[T]) -> AsyncIterable[T]:
         """Wrap an async iterable so pending iteration is cancelled on abort.
@@ -2709,25 +2726,13 @@ def default_type_resolver(
                     append_awaitable_type(type_)
                 elif is_type_of_result:
                     if awaitable_is_type_of_results:
-
-                        async def await_is_type_of_and_return_type(
-                            resolved_type_name: str = type_.name,
-                        ) -> str:
-                            with suppress(Exception):
-                                await gather_with_cancel(*awaitable_is_type_of_results)
-                            return resolved_type_name
-
-                        return await_is_type_of_and_return_type()
+                        info.async_helpers.track(awaitable_is_type_of_results)
                     return type_.name
-    except Exception as error:
+    except Exception:
         if awaitable_is_type_of_results:
-            # Settle the pending isTypeOf results so that their errors can be
-            # observed before they would be orphaned.
-            async def settle_and_raise(error: Exception = error) -> NoReturn:
-                await gather(*awaitable_is_type_of_results, return_exceptions=True)
-                raise error  # noqa: TRY201
-
-            return settle_and_raise()
+            # Settle the pending isTypeOf results in the background so that
+            # their errors can be observed before they would be orphaned.
+            info.async_helpers.track(awaitable_is_type_of_results)
         raise
 
     if awaitable_is_type_of_results:

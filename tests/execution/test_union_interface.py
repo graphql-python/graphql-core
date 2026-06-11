@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from asyncio import sleep
+
 import pytest
 
 from graphql.execution import ExecutionResult, execute, execute_sync
@@ -579,8 +581,7 @@ def describe_execute_union_and_intersection_types():
         context_value = {"authToken": "123abc"}
 
         result = execute(schema, document, root_value, context_value)
-        assert not isinstance(result, ExecutionResult)
-        result = await result
+        # the synchronous isTypeOf match keeps the result synchronous
         assert isinstance(result, ExecutionResult)
 
         assert result == (
@@ -591,6 +592,10 @@ def describe_execute_union_and_intersection_types():
             },
             None,
         )
+
+        # give the pending isTypeOf rejection a chance to settle in the background
+        await sleep(0)
+        await sleep(0)
 
     @pytest.mark.filterwarnings("error:.*was never awaited:RuntimeWarning")
     async def handles_pending_is_type_of_rejections_when_a_later_one_throws_sync():
@@ -656,10 +661,13 @@ def describe_execute_union_and_intersection_types():
         )
 
         result = execute(schema_with_throwing_is_type_of, document)
-        assert not isinstance(result, ExecutionResult)
-        result = await result
+        # the synchronously throwing isTypeOf keeps the result synchronous
         assert isinstance(result, ExecutionResult)
 
         assert result.data == {"search": None}
         assert result.errors
         assert result.errors[0].message == "TypeThrowing_isTypeOf_threw"
+
+        # give the pending isTypeOf rejection a chance to settle in the background
+        await sleep(0)
+        await sleep(0)

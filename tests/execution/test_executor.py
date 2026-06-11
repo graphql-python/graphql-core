@@ -26,6 +26,7 @@ from graphql.type import (
     GraphQLNonNull,
     GraphQLObjectType,
     GraphQLResolveInfo,
+    GraphQLResolveInfoHelpers,
     GraphQLScalarType,
     GraphQLSchema,
     GraphQLStreamDirective,
@@ -254,6 +255,13 @@ def describe_execute_handles_basic_execution_tasks():
         execute_sync(schema, document, root_value, variable_values=variable_values)
 
         assert len(resolved_infos) == 1
+        async_helpers = resolved_infos[0].async_helpers
+        assert isinstance(async_helpers, GraphQLResolveInfoHelpers)
+        assert async_helpers._fields == ("track",)
+        track = async_helpers.track
+        assert callable(track)
+        track(["not awaitable"])  # non-awaitable values are ignored
+
         operation = cast("OperationDefinitionNode", document.definitions[0])
         assert operation
         assert operation.kind == "operation_definition"
@@ -285,6 +293,7 @@ def describe_execute_handles_basic_execution_tasks():
             context=None,
             is_awaitable=resolved_infos[0].is_awaitable,
             abort_signal=None,
+            async_helpers=async_helpers,
         )
 
     def it_populates_path_correctly_with_complex_types():

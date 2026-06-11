@@ -112,6 +112,7 @@ Resolvers
 .. autoclass:: GraphQLFieldResolver
 .. autoclass:: GraphQLIsTypeOfFn
 .. autoclass:: GraphQLResolveInfo
+.. autoclass:: GraphQLResolveInfoHelpers
 .. autoclass:: GraphQLTypeResolver
 
 

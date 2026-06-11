@@ -133,6 +133,7 @@ from .definition import (
     GraphQLTypeResolver,
     GraphQLIsTypeOfFn,
     GraphQLResolveInfo,
+    GraphQLResolveInfoHelpers,
 )
 
 from .directives import (
@@ -246,6 +247,7 @@ __all__ = [
     "GraphQLOneOfDirective",
     "GraphQLOutputType",
     "GraphQLResolveInfo",
+    "GraphQLResolveInfoHelpers",
     "GraphQLScalarInputLiteralCoercer",
     "GraphQLScalarInputValueCoercer",
     "GraphQLScalarLiteralParser",

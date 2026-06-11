@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Collection, Mapping
+from collections.abc import Awaitable, Callable, Collection, Mapping, Sequence
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -110,6 +110,7 @@ __all__ = [
     "GraphQLObjectTypeKwargs",
     "GraphQLOutputType",
     "GraphQLResolveInfo",
+    "GraphQLResolveInfoHelpers",
     "GraphQLScalarInputLiteralCoercer",
     "GraphQLScalarInputValueCoercer",
     "GraphQLScalarLiteralParser",
@@ -630,6 +631,18 @@ def assert_field(field: Any) -> GraphQLField:
 
 TContext = TypeVar("TContext")  # pylint: disable=invalid-name
 
+
+class GraphQLResolveInfoHelpers(NamedTuple):
+    """Helpers for resolvers to interact with the execution engine.
+
+    The ``track`` helper registers possibly awaitable values as pending
+    asynchronous work of the execution, so that they are still settled and
+    their errors observed when they would otherwise be abandoned.
+    """
+
+    track: Callable[[Sequence[Any]], None]
+
+
 try:
 
     class GraphQLResolveInfo(NamedTuple, Generic[TContext]):  # pyright: ignore
@@ -656,6 +669,7 @@ try:
         context: TContext
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
         abort_signal: AbortSignal | None
+        async_helpers: GraphQLResolveInfoHelpers
 except TypeError as error:  # pragma: no cover
     if "Multiple inheritance with NamedTuple is not supported" not in str(error):
         raise  # only catch expected error for Python 3.10
@@ -684,6 +698,7 @@ except TypeError as error:  # pragma: no cover
         context: Any
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]]
         abort_signal: AbortSignal | None
+        async_helpers: GraphQLResolveInfoHelpers
 
 
 # Note: Contrary to the Javascript implementation of GraphQLFieldResolver,
